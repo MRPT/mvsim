@@ -11,4 +11,3 @@ target_link_libraries(
 	${MRPT_LIBS}  # MRPT libs
 	${BOX2D_LIBRARIES}  # Box2D libs
 	)
-	

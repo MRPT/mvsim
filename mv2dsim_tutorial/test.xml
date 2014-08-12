@@ -16,10 +16,16 @@
 		   Vehicle definition 
 	     ======================== -->
 	<vehicle name="r1">
+		<pose>0 0 0</pose>
 		
 		<!--  Dynamical model -->
 		<dynamics class="differential">
 			<!-- Params -->
+			<l_wheel pos="0.0 -0.5" mass="2.0" />
+			<r_wheel pos="0.0  0.5" mass="2.0" />
+			<chassis mass="10.0">
+				<!-- shape -->
+			</chassis>
 		</dynamics>
 		
 		<!--   Motor controller -->
@@ -35,7 +41,7 @@
 		<!-- Sensors: -->
 		
 		<sensor:laser name="laser1">
-			<pos> 0.5  0.0  0.0 </pos>
+			<pose> 0.5  0.0  0.0 </pose>
 			<fov_degrees>180</fov_degrees>
 			<nrays>181</nrays>
 		</sensor:laser>
