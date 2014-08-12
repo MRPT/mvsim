@@ -13,5 +13,5 @@
 #include "mv2dsim_version.h"
 
 // Generic classes ------------------
-
+#include "World.h"
 

@@ -8,48 +8,8 @@
 
 #include <mv2dsim/mv2dsim.h>
 
-#include <cstdlib>
-#include <iostream>
-#include <stdexcept>
-
-#include <rapidxml.hpp>
-#include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-
-void parse(const char* filename)
-{
-	using namespace std;
-	using namespace rapidxml;
-
-	rapidxml::file<> fil(filename);
-	rapidxml::xml_document<> doc;    // character type defaults to char
-
-	try 
-	{
-		doc.parse<0>(fil.data());
-
-		// Print to stream using operator <<
-		std::cout << doc; 
-
-		xml_node<> *root = doc.first_node();
-
-		cout << "Name of my first node is: " << root->name() << "\n";
-
-		xml_node<> *node = root->first_node("vehicle");
-		cout << "Node vehicle has value " << node->value() << "\n";
-		for (xml_attribute<> *attr = node->first_attribute();
-			 attr; attr = attr->next_attribute())
-		{
-			cout << "Node foobar has attribute " << attr->name() << " ";
-			cout << "with value " << attr->value() << "\n";
-		}
-	}
-	catch (rapidxml::parse_error &e)
-	{
-		long line = static_cast<long>(std::count(fil.data(), e.where<char>(), '\n') + 1);
-		std::cerr << "Line " << line << ": " << e.what() << std::endl;
-	}
-}
+#include <iostream>
 
 	
 int main(int argc, char **argv) 
@@ -58,8 +18,12 @@ int main(int argc, char **argv)
 	{
 		if (argc!=2) return -1;
 
-		parse(argv[1]);
-				
+		mv2dsim::World  world;
+		
+		// Load from XML:
+		rapidxml::file<> fil_xml(argv[1]);
+		world.load_from_XML( fil_xml.data() );
+
 
     } catch (const std::exception& e) 
 	{

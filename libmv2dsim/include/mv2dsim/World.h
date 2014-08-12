@@ -30,6 +30,12 @@ namespace mv2dsim
 
 		void clear_all(); //!< Resets the entire simulation environment to an empty world.
 
+		/** Load an entire world description into this object from a specification in XML format.
+		  * \exception std::exception On any error, with what() giving a descriptive error message
+		  */
+		void load_from_XML(const std::string &xml_text); 
+
+
 	private:
 		mrpt::synch::CCriticalSection m_world_cs; //!< The main semaphore to protect simulation objects from multithreading access.
 		b2World  m_box2d_world; //!< Box2D dynamic simulator instance
