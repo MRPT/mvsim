@@ -68,7 +68,17 @@ IF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 
 	# 2nd attempt: Fatal error if not found:
 	FIND_PACKAGE(Box2D REQUIRED)
+	
+	# It seems BOX2D doesn't return the correct #include dir (???):
+	SET(BOX2D_INCLUDE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/externals/Box2D/")
+	
 ENDIF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
+
+IF (Box2D_FOUND)
+	#MESSAGE(STATUS "BOX2D_INCLUDE_DIR: ${BOX2D_INCLUDE_DIR}")
+	INCLUDE_DIRECTORIES("${BOX2D_INCLUDE_DIR}")
+	LINK_DIRECTORIES("${BOX2D_LIBRARY_DIRS}")
+ENDIF (Box2D_FOUND)
 
 
 # --------------------------
