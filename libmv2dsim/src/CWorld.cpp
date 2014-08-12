@@ -6,7 +6,6 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+  */
 
-
 #include <cstdarg>
 #include <cstdlib>
 #include <cstdarg>

@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<mv2dsim_world version="1.0">
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+	<world:gridmap>
+		<!-- File can be an image or an MRPT .gridmap file -->
+		<file>mv2dsim_demo_world1.png</file>
+		
+		<!-- The rest of params are ignored if file is an MRPT gridmap -->
+		<resolution>0.20</resolution>
+	</world:gridmap>
+		 
+		 
+	<!-- ========================
+		   Vehicle definition 
+	     ======================== -->
+	<vehicle name="r1">
+		
+		<!--  Dynamical model -->
+		<dynamics class="differential">
+			<!-- Params -->
+		</dynamics>
+		
+		<!--   Motor controller -->
+		<controller class="default">
+			<!-- Params -->
+		</controller>
+		
+		<!-- Friction force simulation -->
+		<friction class="default">
+			<!-- Params -->
+		</friction>
+
+		<!-- Sensors: -->
+		
+		<sensor:laser name="laser1">
+			<pos> 0.5  0.0  0.0 </pos>
+			<fov_degrees>180</fov_degrees>
+			<nrays>181</nrays>
+		</sensor:laser>
+	</vehicle>
+
+</mv2dsim_world>

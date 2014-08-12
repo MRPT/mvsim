@@ -64,11 +64,18 @@ IF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 	add_subdirectory(externals/Box2D)
 
 	SET(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
-	MESSAGE(STATUS "Warning: Box2D not found in the system. Using embedded version in: ${Box2D_DIR}")
+	MESSAGE(STATUS "[Info] Box2D not found in the system. Using embedded version in: ${Box2D_DIR}")
 
 	# 2nd attempt: Fatal error if not found:
 	FIND_PACKAGE(Box2D REQUIRED)
 ENDIF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
+
+
+# --------------------------
+# Dependency: rapidxml
+# --------------------------
+# headers-only:
+INCLUDE_DIRECTORIES("${EXTERNALS_DIR}/rapidxml")
 
 # --------------------------
 # Global compiler flags
