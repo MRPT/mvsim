@@ -8,9 +8,12 @@
 #include <mv2dsim/World.h>
 
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
+#include <mrpt/opengl.h>
+
 #include <iostream> // for debugging
 #include <algorithm> // count()
 #include <stdexcept>
+#include <map>
 
 // XML parsing:
 #include <rapidxml.hpp>
@@ -21,6 +24,8 @@ using namespace std;
 
 // Default ctor: inits empty world.
 World::World() : 
+	m_simul_time(0.0),
+	m_simul_timestep(0.010),
 	m_box2d_world( b2Vec2_zero )
 {
 	this->clear_all();
@@ -39,10 +44,18 @@ void World::clear_all(bool acquire_mt_lock)
 	{
 		if (acquire_mt_lock) m_world_cs.enter();
 
+		// Reset params:
+		m_simul_time = 0.0;
+
+
 		// Clear m_vehicles:
-		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
-			delete *it;
+		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) delete *it;
 		m_vehicles.clear();
+
+		// Clear world elements:
+		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it) delete *it;
+		m_world_elements.clear();
+		
 
 		if (acquire_mt_lock) m_world_cs.leave();
 	}
@@ -88,26 +101,112 @@ void World::load_from_XML(const std::string &xml_text)
 	if (attrb_version)
 		sscanf(attrb_version->value(),"%i.%i",&version_major, &version_min);
 
+	// load general parameters:
+	// ------------------------------------------------
+	struct TParamEntry { const char* frmt; void *val; TParamEntry() : frmt(NULL),val(NULL) {} TParamEntry(const char* frmt_,void *val_) : frmt(frmt_),val(val_) {} };
+	std::map<std::string,TParamEntry> other_world_params;
+	other_world_params["simul_timestep"] = TParamEntry("%lf", &this->m_simul_timestep);
+
+
 	// Process all nodes:
+	// ------------------------------------------------
 	xml_node<> *node = root->first_node();
 	while (node)
 	{
 		if (!strcmp(node->name(),"world:gridmap")) 
 		{
+			// TODO!!!
+			WorldElementBase *element_gridmap = new WorldElementBase(this);
+
+			this->m_world_elements.push_back(element_gridmap);
 		} 
 		else if (!strcmp(node->name(),"vehicle")) 
 		{
 			VehicleBase* veh = VehicleBase::factory(node);
 			this->m_vehicles.push_back( veh );
 		} 
-		else 
+		else
 		{
-			// Unknown element!!
-			std::cerr << "[World::load_from_XML] *Warning* Ignoring unknown XML node type '"<< node->name() <<"'\n";
+			// Default: Check if it's a parameter: 
+			std::map<std::string,TParamEntry>::const_iterator it_param = other_world_params.find(node->name());
+			
+			if (it_param != other_world_params.end() )
+			{
+				// parse parameter:
+				if (1 != ::sscanf(node->value(),it_param->second.frmt, it_param->second.val ) )
+				{
+					throw std::runtime_error( 
+						mrpt::format(
+							"Error parsing entry '%s' with expected format '%s' and content '%s'", 
+							node->name(), it_param->second.frmt, node->value()
+							) );
+				}
+			}
+			else
+			{
+				// Unknown element!!
+				std::cerr << "[World::load_from_XML] *Warning* Ignoring unknown XML node type '"<< node->name() <<"'\n";
+			}
 		}
 
 		// Move on to next node:
 		node = node->next_sibling(NULL);
 	}
 		
+}
+
+/** Runs the simulation for a given time interval (in seconds) */
+void World::run_simulation(double dt)
+{
+	// sanity checks:
+	ASSERT_(dt>0)
+	ASSERT_(m_simul_timestep>0)
+
+	// Run in time steps:
+	const double end_time = m_simul_time+dt;
+	const double timetol = 1e-6; // tolerance for rounding errors summing time steps
+	while (m_simul_time<(end_time-timetol))
+	{
+		const double step = std::min(end_time-m_simul_time, this->m_simul_timestep);
+		internal_one_timestep(step);
+	}
+}
+
+/** Runs one individual time step */
+void World::internal_one_timestep(double dt)
+{
+	// 1) Pre-step
+	
+	// 2) Run dynamics
+	
+	m_simul_time+= dt;  // Avance time
+
+	// 3) Simulate sensors
+	
+	// 4) Save dynamical state into vehicles classes
+	
+}
+
+/** Updates (or sets-up upon first call) the GUI visualization of the scene. 
+	* \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
+	*/
+size_t ID_GLTEXT_CLOCK = 0;
+
+void World::update_GUI()
+{
+	// First call?
+	if (!m_gui_win)
+	{
+		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",800,600);
+		mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock();
+
+		gl_scene->insert( mrpt::opengl::CGridPlaneXY::Create() );
+
+		m_gui_win->unlockAccess3DScene();
+	}
+
+	m_gui_win->addTextMessage(2,2, mrpt::format("Time: %s", mrpt::system::formatTimeInterval(this->m_simul_time).c_str()), mrpt::utils::TColorf(1,1,1,0.5), "serif", 10, mrpt::opengl::NICE, ID_GLTEXT_CLOCK );
+	
+	// Refresh view: 
+	m_gui_win->repaint();
 }
