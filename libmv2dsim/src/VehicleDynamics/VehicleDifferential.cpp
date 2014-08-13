@@ -6,14 +6,14 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+  */
 
-#include <cstdarg>
-#include <cstdlib>
-#include <cstdarg>
-#include <cstring>
-#include <float.h>
-#include <iostream>
-#include <algorithm>
-#include <cctype>
-#include <ctime>
-#include <cstdio>
+#include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
+
+using namespace mv2dsim;
+using namespace std;
+
+/** The derived-class part of load_params_from_xml() */
+void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
+{
+
+}
 

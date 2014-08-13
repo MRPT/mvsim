@@ -28,7 +28,7 @@ namespace mv2dsim
 		World(); //!< Default ctor: inits an empty world
 		~World(); //!< Dtor.
 
-		void clear_all(); //!< Resets the entire simulation environment to an empty world.
+		void clear_all(bool acquire_mt_lock=true); //!< Resets the entire simulation environment to an empty world. \a acquire_mt_lock determines whether to lock the multithreading semaphore before (set to false only if it's already acquired).
 
 		/** Load an entire world description into this object from a specification in XML format.
 		  * \exception std::exception On any error, with what() giving a descriptive error message

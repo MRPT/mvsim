@@ -8,9 +8,19 @@
 
 #pragma once
 
+#include <mv2dsim/VehicleBase.h>
+
 namespace mv2dsim
 {
+	/** Implementation of differential-driven vehicles.
+	  * \sa class factory in VehicleBase::factory
+	  */
+	class DynamicsDifferential : public VehicleBase
+	{
 
-
+	protected:
+		// See base class docs
+		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
+	};
 
 }

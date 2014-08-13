@@ -15,7 +15,6 @@
 // XML parsing:
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
-//#include <rapidxml_utils.hpp>
 
 using namespace mv2dsim;
 using namespace std;
@@ -34,14 +33,24 @@ World::~World()
 }
 
 // Resets the entire simulation environment to an empty world.
-void World::clear_all()
+void World::clear_all(bool acquire_mt_lock)
 {
-	mrpt::synch::CCriticalSectionLocker csl( &m_world_cs ); // Protect multithread access
+	try
+	{
+		if (acquire_mt_lock) m_world_cs.enter();
 
-	// Clear m_vehicles:
-	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
-		delete *it;
-	m_vehicles.clear();
+		// Clear m_vehicles:
+		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
+			delete *it;
+		m_vehicles.clear();
+
+		if (acquire_mt_lock) m_world_cs.leave();
+	}
+	catch (std::exception &)
+	{
+		if (acquire_mt_lock) m_world_cs.leave();
+		throw; // re-throw
+	}
 }
 
 /** Load an entire world description into this object from a specification in XML format.
@@ -52,9 +61,11 @@ void World::load_from_XML(const std::string &xml_text)
 	using namespace std;
 	using namespace rapidxml;
 
-	// Clear the existing world.
-	this->clear_all(); 
+	mrpt::synch::CCriticalSectionLocker csl( &m_world_cs ); // Protect multithread access
 
+	// Clear the existing world.
+	this->clear_all(false /* critical section is already acquired */); 
+	
 	// Parse the XML input:
 	rapidxml::xml_document<> xml;
 	char* input_str = const_cast<char*>(xml_text.c_str());
@@ -81,18 +92,22 @@ void World::load_from_XML(const std::string &xml_text)
 	xml_node<> *node = root->first_node();
 	while (node)
 	{
-		cout << "- Node: " << node->name() <<  endl;
-		for (xml_attribute<> *attr = node->first_attribute();
-				attr; attr = attr->next_attribute())
+		if (!strcmp(node->name(),"world:gridmap")) 
 		{
-			cout << "  - Attribute " << attr->name() << " " << "with value " << attr->value() << "\n";
+		} 
+		else if (!strcmp(node->name(),"vehicle")) 
+		{
+			VehicleBase* veh = VehicleBase::factory(node);
+			this->m_vehicles.push_back( veh );
+		} 
+		else 
+		{
+			// Unknown element!!
+			std::cerr << "[World::load_from_XML] *Warning* Ignoring unknown XML node type '"<< node->name() <<"'\n";
 		}
-		
 
 		// Move on to next node:
 		node = node->next_sibling(NULL);
 	}
-
-
-	
+		
 }
