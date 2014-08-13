@@ -24,11 +24,19 @@ namespace rapidxml
 namespace mv2dsim
 {
 	/** Vector to store a pose (x,y,yaw), vel (dx,dy,omega) or acc (ddx,ddy,alpha) */
-	struct vec3
+	struct vec3 
 	{
 		double vals[3];
 		vec3() {}
 		vec3(double x,double y,double th) { vals[0]=x;vals[1]=y;vals[2]=th; }
+	};
+
+	/** 2D points or vectors */
+	struct vec2 
+	{
+		double vals[2];
+		vec2() {}
+		vec2(double x,double y) { vals[0]=x;vals[1]=y;}
 	};
 
 }

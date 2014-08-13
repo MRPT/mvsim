@@ -10,7 +10,18 @@
 
 namespace mv2dsim
 {
+	class World;
 
+	class WorldElementBase
+	{
+	public:
+		WorldElementBase(World*parent) : m_parent(parent) 
+		{
+		}
 
+	protected:
+		World *m_parent;
+
+	};
 
 }
