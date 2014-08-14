@@ -26,7 +26,9 @@ using namespace std;
 World::World() : 
 	m_simul_time(0.0),
 	m_simul_timestep(0.010),
-	m_box2d_world( b2Vec2_zero )
+	m_b2d_vel_iters(6), 
+	m_b2d_pos_iters(3),
+	m_box2d_world( NULL )
 {
 	this->clear_all();
 }
@@ -35,6 +37,7 @@ World::World() :
 World::~World()
 {
 	this->clear_all();
+	delete m_box2d_world; m_box2d_world=NULL;
 }
 
 // Resets the entire simulation environment to an empty world.
@@ -46,13 +49,22 @@ void World::clear_all(bool acquire_mt_lock)
 
 		// Reset params:
 		m_simul_time = 0.0;
+		
+		// (B2D) World contents:
+		// ---------------------------------------------
+		delete m_box2d_world;
+		m_box2d_world = new b2World( b2Vec2_zero );
 
+		// Define the ground body.
+		b2BodyDef groundBodyDef;
+		groundBodyDef.position.Set(5.0f, 0.0f);
+		m_b2_ground_body = m_box2d_world->CreateBody(&groundBodyDef);
 
-		// Clear m_vehicles:
+		// Clear m_vehicles & other lists of objs:
+		// ---------------------------------------------
 		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) delete *it;
 		m_vehicles.clear();
 
-		// Clear world elements:
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it) delete *it;
 		m_world_elements.clear();
 		
@@ -106,7 +118,10 @@ void World::load_from_XML(const std::string &xml_text)
 	struct TParamEntry { const char* frmt; void *val; TParamEntry() : frmt(NULL),val(NULL) {} TParamEntry(const char* frmt_,void *val_) : frmt(frmt_),val(val_) {} };
 	std::map<std::string,TParamEntry> other_world_params;
 	other_world_params["simul_timestep"] = TParamEntry("%lf", &this->m_simul_timestep);
-
+	other_world_params["b2d_vel_iters"] = TParamEntry("%i", &this->m_b2d_vel_iters);
+	other_world_params["b2d_pos_iters"] = TParamEntry("%i", &this->m_b2d_pos_iters);
+	
+	MRPT_TODO("Export this list of params to ROS dynamic reconfigure")
 
 	// Process all nodes:
 	// ------------------------------------------------
@@ -122,7 +137,7 @@ void World::load_from_XML(const std::string &xml_text)
 		} 
 		else if (!strcmp(node->name(),"vehicle")) 
 		{
-			VehicleBase* veh = VehicleBase::factory(node);
+			VehicleBase* veh = VehicleBase::factory(this,node);
 			this->m_vehicles.push_back( veh );
 		} 
 		else
@@ -176,14 +191,27 @@ void World::run_simulation(double dt)
 void World::internal_one_timestep(double dt)
 {
 	// 1) Pre-step
+	TSimulContext context;
+	context.b2_world   = m_box2d_world;
+	context.simul_time = m_simul_time;
+
+	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) 
+		(*it)->simul_pre_timestep(context);
 	
 	// 2) Run dynamics
+	m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
 	
 	m_simul_time+= dt;  // Avance time
 
 	// 3) Simulate sensors
 	
 	// 4) Save dynamical state into vehicles classes
+	context.simul_time = m_simul_time;
+	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) 
+	{
+		(*it)->simul_post_timestep_common(context);
+		(*it)->simul_post_timestep(context);
+	}
 	
 }
 
@@ -195,6 +223,7 @@ size_t ID_GLTEXT_CLOCK = 0;
 void World::update_GUI()
 {
 	// First call?
+	// -----------------------
 	if (!m_gui_win)
 	{
 		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",800,600);
@@ -205,8 +234,25 @@ void World::update_GUI()
 		m_gui_win->unlockAccess3DScene();
 	}
 
+	mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock(); // ** LOCK **
+
+	// Update view of map elements
+	// -----------------------------
+
+	// Update view of vehicles
+	// -----------------------------
+	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) 
+		(*it)->gui_update(*gl_scene);
+
+	// Update view of sensors
+	// -----------------------------
+
+	// Other messages
+	// -----------------------------
 	m_gui_win->addTextMessage(2,2, mrpt::format("Time: %s", mrpt::system::formatTimeInterval(this->m_simul_time).c_str()), mrpt::utils::TColorf(1,1,1,0.5), "serif", 10, mrpt::opengl::NICE, ID_GLTEXT_CLOCK );
 	
-	// Refresh view: 
+	// Force refresh view
+	// -----------------------
+	m_gui_win->unlockAccess3DScene(); // ** UNLOCK **
 	m_gui_win->repaint();
 }
