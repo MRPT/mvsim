@@ -21,7 +21,7 @@ using namespace std;
 
 
 // Protected ctor:
-VehicleBase::VehicleBase(World *parent) : 
+VehicleBase::VehicleBase(World *parent) :
 	VisualObject(parent),
 	m_b2d_vehicle_body(NULL),
 	m_q(0,0,0),
@@ -36,16 +36,16 @@ void VehicleBase::simul_post_timestep_common(const TSimulContext &context)
 		// Pos:
 		const b2Vec2 &pos = m_b2d_vehicle_body->GetPosition();
 		const float32 angle = m_b2d_vehicle_body->GetAngle();
-		m_q.vals[0]=pos(0); 
-		m_q.vals[1]=pos(1); 
-		m_q.vals[2]=angle; 
+		m_q.vals[0]=pos(0);
+		m_q.vals[1]=pos(1);
+		m_q.vals[2]=angle;
 
 		// Vel:
 		const b2Vec2 &vel = m_b2d_vehicle_body->GetLinearVelocity();
 		const float32 w = m_b2d_vehicle_body->GetAngularVelocity();
-		m_dq.vals[0]=vel(0); 
-		m_dq.vals[1]=vel(1); 
-		m_dq.vals[2]=w; 
+		m_dq.vals[0]=vel(0);
+		m_dq.vals[1]=vel(1);
+		m_dq.vals[2]=w;
 	}
 }
 
@@ -72,15 +72,15 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	{
 		veh = new DynamicsDifferential(parent);
 	}
-	else 
+	else
 	{
-		throw runtime_error(mrpt::format("[VehicleBase::factory] Unknown vehicle dynamics class '%s'",dyn_class->value()));		
+		throw runtime_error(mrpt::format("[VehicleBase::factory] Unknown vehicle dynamics class '%s'",dyn_class->value()));
 	}
 
 	// Initialize here all common params shared by any polymorphic class:
 	// -------------------------------------------------
 	// attrib: name
-		
+
 	// (Mandatory) initial pose:
 	{
 		const xml_node<> *node = root->first_node("init_pose");
@@ -89,8 +89,8 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		if (3!= ::sscanf(node->value(),"%lf %lf %lf",&veh->m_q.vals[0],&veh->m_q.vals[1],&veh->m_q.vals[2]))
 			throw runtime_error("[VehicleBase::factory] Error parsing <init_pose>...</init_pose>");
 		veh->m_q.vals[2] *= M_PI/180.0;
-	}	
-	
+	}
+
 	// (Optional) initial vel:
 	{
 		const xml_node<> *node = root->first_node("init_vel");
@@ -147,13 +147,13 @@ VehicleBase* VehicleBase::factory(World* parent, const std::string &xml_text)
 	}
 	catch (rapidxml::parse_error &e) {
 		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
-		throw std::runtime_error( mrpt::format("[VehicleBase::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line), line, e.what() ) );
+		throw std::runtime_error( mrpt::format("[VehicleBase::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line), e.what() ) );
 	}
 	return VehicleBase::factory(parent,xml.first_node());
 }
 
-/** Loads vehicle params from input XML node of type "<vehicle>...</vehicle>". 
-	* See derived classes & documentation for a list of accepted params.  
+/** Loads vehicle params from input XML node of type "<vehicle>...</vehicle>".
+	* See derived classes & documentation for a list of accepted params.
 	*/
 void VehicleBase::load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
 {

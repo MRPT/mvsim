@@ -29,6 +29,26 @@ SET(BUILD_SHARED_LIBS ${DEFAULT_SHARED_LIBS} CACHE BOOL "Build shared libraries 
 SET( LIBRARY_OUTPUT_PATH ${${PROJECT_NAME}_BINARY_DIR}/lib CACHE PATH "Output directory for libraries" )
 SET( EXECUTABLE_OUTPUT_PATH ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Output directory for applications" )
 
+# --------------------------
+# Global compiler flags
+# --------------------------
+IF(MSVC)
+	# Warnings level
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3") 
+	# Force usage of UNICODE projects, which is not the default in MSVC:
+	add_definitions(-DUNICODE -D_UNICODE)
+ENDIF(MSVC)
+
+IF(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	# Warnings level
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wno-strict-aliasing -Wno-unused-local-typedefs")
+	# Set optimized building:
+	IF(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+	ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+ENDIF(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+
+
 set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals/")
 
 # --------------------------
@@ -41,7 +61,6 @@ FIND_PACKAGE( MRPT REQUIRED COMPONENTS base opengl obs maps gui)
 # Dependency: Box2D
 # --------------------------
 SET(EMBEDDED_Box2D_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/Box2D/Box2D")
-
 
 # 1st) Try to locate it via CMake (installed in the system or precompiled somewhere)
 FIND_PACKAGE(Box2D QUIET) # Quiet in a 1st try...
@@ -87,24 +106,6 @@ ENDIF (Box2D_FOUND)
 # headers-only:
 INCLUDE_DIRECTORIES("${EXTERNALS_DIR}/rapidxml")
 
-# --------------------------
-# Global compiler flags
-# --------------------------
-IF(MSVC)
-	# Warnings level
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3") 
-	# Force usage of UNICODE projects, which is not the default in MSVC:
-	add_definitions(-DUNICODE -D_UNICODE)
-ENDIF(MSVC)
-
-IF(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	# Warnings level
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
-	# Set optimized building:
-	IF(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
-		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-	ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
-ENDIF(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
 # --------------------------
 #       The Library 
