@@ -91,6 +91,10 @@ void World::load_from_XML(const std::string &xml_text)
 			VehicleBase* veh = VehicleBase::factory(this,node);
 			this->m_vehicles.push_back( veh );
 		}
+		else if (!strcmp(node->name(),"vehicle:class"))
+		{
+			VehicleBase::register_vehicle_class(node);
+		}
 		else
 		{
 			// Default: Check if it's a parameter:

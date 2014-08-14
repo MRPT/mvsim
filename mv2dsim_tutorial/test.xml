@@ -12,77 +12,50 @@
 		<resolution>0.20</resolution>
 	</world:gridmap>
 		 
+	<!-- =============================
+		   Vehicle classes definition 
+	     ============================= -->
+	<vehicle:class name="small-car">
+		<!--  Dynamical model -->
+		<dynamics class="differential">
+			<!-- Params -->
+			<l_wheel pos="0.0 -0.5" mass="2.0" />
+			<r_wheel pos="0.0  0.5" mass="2.0" />
+			<chassis mass="10.0">
+				<!-- shape -->
+			</chassis>
+		</dynamics>
+		
+		<!--   Motor controller -->
+		<controller class="default">
+			<!-- Params -->
+		</controller>
+		
+		<!-- Friction force simulation -->
+		<friction class="default">
+			<!-- Params -->
+		</friction>
+
+		<!-- Sensors: -->
+		
+		<sensor:laser name="laser1">
+			<pose> 0.5  0.0  0.0 </pose>
+			<fov_degrees>180</fov_degrees>
+			<nrays>181</nrays>
+		</sensor:laser>
+	</vehicle:class>
 		 
 	<!-- ========================
-		   Vehicle definition 
+		   Vehicle(s) definition 
 	     ======================== -->
-	<vehicle name="r1">
+	<vehicle name="r1" class="small-car">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>1.5 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
-		
-		<!--  Dynamical model -->
-		<dynamics class="differential">
-			<!-- Params -->
-			<l_wheel pos="0.0 -0.5" mass="2.0" />
-			<r_wheel pos="0.0  0.5" mass="2.0" />
-			<chassis mass="10.0">
-				<!-- shape -->
-			</chassis>
-		</dynamics>
-		
-		<!--   Motor controller -->
-		<controller class="default">
-			<!-- Params -->
-		</controller>
-		
-		<!-- Friction force simulation -->
-		<friction class="default">
-			<!-- Params -->
-		</friction>
-
-		<!-- Sensors: -->
-		
-		<sensor:laser name="laser1">
-			<pose> 0.5  0.0  0.0 </pose>
-			<fov_degrees>180</fov_degrees>
-			<nrays>181</nrays>
-		</sensor:laser>
 	</vehicle>
 
-	<!-- ========================
-		   Vehicle definition 
-	     ======================== -->
-	<vehicle name="r2">
+	<vehicle name="r2" class="small-car">
 		<init_pose>7.0 0.2 -175</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>1.0 0 10</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
-		
-		<!--  Dynamical model -->
-		<dynamics class="differential">
-			<!-- Params -->
-			<l_wheel pos="0.0 -0.5" mass="2.0" />
-			<r_wheel pos="0.0  0.5" mass="2.0" />
-			<chassis mass="10.0">
-				<!-- shape -->
-			</chassis>
-		</dynamics>
-		
-		<!--   Motor controller -->
-		<controller class="default">
-			<!-- Params -->
-		</controller>
-		
-		<!-- Friction force simulation -->
-		<friction class="default">
-			<!-- Params -->
-		</friction>
-
-		<!-- Sensors: -->
-		
-		<sensor:laser name="laser1">
-			<pose> 0.5  0.0  0.0 </pose>
-			<fov_degrees>180</fov_degrees>
-			<nrays>181</nrays>
-		</sensor:laser>
 	</vehicle>
 	
 </mv2dsim_world>

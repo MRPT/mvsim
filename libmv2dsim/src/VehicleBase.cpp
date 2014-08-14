@@ -12,6 +12,7 @@
 
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
+#include <rapidxml_print.hpp>
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/poses/CPose2D.h>
 
@@ -51,6 +52,77 @@ void VehicleBase::simul_post_timestep_common(const TSimulContext &context)
 		m_dq.vals[2]=w;
 	}
 }
+
+class VehicleClassesRegistry
+{
+public:
+	~VehicleClassesRegistry()
+	{
+	}
+
+	void add(const std::string &xml_node_vehicle_class)
+	{
+		// Parse the string as if it was an XML file:
+		std::stringstream s;
+		s.str( xml_node_vehicle_class );
+
+		rapidxml::file<> fil(s);
+		char* input_str = const_cast<char*>(xml_node_vehicle_class.c_str());
+		rapidxml::xml_document<> *xml = new rapidxml::xml_document<>();
+		try 
+		{
+			xml->parse<0>(input_str);
+
+			// sanity checks:
+			const rapidxml::xml_node<> *root_node = xml->first_node("vehicle:class");
+			if (!root_node) throw runtime_error("[VehicleClassesRegistry] Missing XML node <vehicle:class>");
+
+			const rapidxml::xml_attribute<> *att_name = root_node->first_attribute("name");
+			if (!att_name || !att_name->value() ) throw runtime_error("[VehicleClassesRegistry] Missing mandatory attribute 'name' in node <vehicle:class>");
+
+			const string sClassName = att_name->value();
+
+			// All OK:
+			m_classes[sClassName] = xml;
+			cout << "[VehicleClassesRegistry] INFO: Registered vehicle type '"<<sClassName<<"'\n";
+		}
+		catch (rapidxml::parse_error &e) 
+		{
+			unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
+			delete xml;
+			throw std::runtime_error( mrpt::format("[VehicleClassesRegistry] XML parse error (Line %u): %s", static_cast<unsigned>(line), e.what() ) );
+		}
+		catch (std::exception &) 
+		{
+			delete xml;
+			throw;
+		}
+
+	}
+
+private:
+	map<string,rapidxml::xml_document<>*> m_classes;
+
+};
+
+VehicleClassesRegistry veh_classes_registry;
+
+
+/** Register a new class of vehicles from XML description of type "<vehicle:class name='name'>...</vehicle:class>".  */
+void VehicleBase::register_vehicle_class(const rapidxml::xml_node<char> *xml_node)
+{
+	// Sanity checks:
+	if (!xml_node) throw runtime_error("[VehicleBase::register_vehicle_class] XML node is NULL");
+	if (0!=strcmp(xml_node->name(),"vehicle:class")) throw runtime_error(mrpt::format("[VehicleBase::register_vehicle_class] XML element is '%s' ('vehicle:class' expected)",xml_node->name()));
+
+	// rapidxml doesn't allow making copied of objects.
+	// So: convert to txt; then re-parse.
+	std::stringstream ss;
+	ss << *xml_node;
+
+	veh_classes_registry.add( ss.str() );
+}
+
 
 /** Class factory: Creates a vehicle from XML description of type "<vehicle>...</vehicle>".  */
 VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> *root)

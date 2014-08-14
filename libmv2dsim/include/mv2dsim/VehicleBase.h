@@ -28,6 +28,9 @@ namespace mv2dsim
 		static VehicleBase* factory(World* parent, const rapidxml::xml_node<char> *xml_node);
 		/// \overload
 		static VehicleBase* factory(World* parent, const std::string &xml_text);
+		
+		/** Register a new class of vehicles from XML description of type "<vehicle:class name='name'>...</vehicle:class>".  */
+		static void register_vehicle_class(const rapidxml::xml_node<char> *xml_node);
 
 		/** Loads vehicle params from input XML node of type "<vehicle>...</vehicle>". 
 		  * See derived classes & documentation for a list of accepted params.  
