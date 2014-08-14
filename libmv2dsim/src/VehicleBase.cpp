@@ -9,6 +9,8 @@
 #include <mv2dsim/World.h>
 #include <mv2dsim/VehicleBase.h>
 #include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
+#include "JointXMLnode.h"
+#include "VehicleClassesRegistry.h"
 
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
@@ -22,6 +24,9 @@
 
 using namespace mv2dsim;
 using namespace std;
+
+
+VehicleClassesRegistry veh_classes_registry;
 
 
 // Protected ctor:
@@ -53,60 +58,6 @@ void VehicleBase::simul_post_timestep_common(const TSimulContext &context)
 	}
 }
 
-class VehicleClassesRegistry
-{
-public:
-	~VehicleClassesRegistry()
-	{
-	}
-
-	void add(const std::string &xml_node_vehicle_class)
-	{
-		// Parse the string as if it was an XML file:
-		std::stringstream s;
-		s.str( xml_node_vehicle_class );
-
-		rapidxml::file<> fil(s);
-		char* input_str = const_cast<char*>(xml_node_vehicle_class.c_str());
-		rapidxml::xml_document<> *xml = new rapidxml::xml_document<>();
-		try 
-		{
-			xml->parse<0>(input_str);
-
-			// sanity checks:
-			const rapidxml::xml_node<> *root_node = xml->first_node("vehicle:class");
-			if (!root_node) throw runtime_error("[VehicleClassesRegistry] Missing XML node <vehicle:class>");
-
-			const rapidxml::xml_attribute<> *att_name = root_node->first_attribute("name");
-			if (!att_name || !att_name->value() ) throw runtime_error("[VehicleClassesRegistry] Missing mandatory attribute 'name' in node <vehicle:class>");
-
-			const string sClassName = att_name->value();
-
-			// All OK:
-			m_classes[sClassName] = xml;
-			cout << "[VehicleClassesRegistry] INFO: Registered vehicle type '"<<sClassName<<"'\n";
-		}
-		catch (rapidxml::parse_error &e) 
-		{
-			unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
-			delete xml;
-			throw std::runtime_error( mrpt::format("[VehicleClassesRegistry] XML parse error (Line %u): %s", static_cast<unsigned>(line), e.what() ) );
-		}
-		catch (std::exception &) 
-		{
-			delete xml;
-			throw;
-		}
-
-	}
-
-private:
-	map<string,rapidxml::xml_document<>*> m_classes;
-
-};
-
-VehicleClassesRegistry veh_classes_registry;
-
 
 /** Register a new class of vehicles from XML description of type "<vehicle:class name='name'>...</vehicle:class>".  */
 void VehicleBase::register_vehicle_class(const rapidxml::xml_node<char> *xml_node)
@@ -132,11 +83,31 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	if (!root) throw runtime_error("[VehicleBase::factory] XML node is NULL");
 	if (0!=strcmp(root->name(),"vehicle")) throw runtime_error(mrpt::format("[VehicleBase::factory] XML root element is '%s' ('vehicle' expected)",root->name()));
+	
+	// "class": When a vehicle has a 'class="XXX"' attribute, look for each parameter 
+	//  in the set of "root" + "class_root" XML nodes:
+	// --------------------------------------------------------------------------------
+	JointXMLnode<> veh_root_node;
+	{
+		veh_root_node.add(root); // Always search in root. Also in the class root, if any:
 
+		const xml_attribute<> *veh_class = root->first_attribute("class");
+		if (veh_class)
+		{
+			const string sClassName = veh_class->value();
+			const rapidxml::xml_node<char>* class_root= veh_classes_registry.get(sClassName);
+			if (!class_root)
+				throw runtime_error(mrpt::format("[VehicleBase::factory] Vehicle class '%s' undefined",sClassName.c_str() ));
+
+			veh_root_node.add(class_root);
+			//cout << *class_root; 
+		}
+	}
+	
 	// Class factory according to: <dynamics class="XXX">
 	// -------------------------------------------------
 	VehicleBase *veh = NULL;
-	const xml_node<> *dyn_node = root->first_node("dynamics");
+	const xml_node<> *dyn_node = veh_root_node.first_node("dynamics");
 	if (!dyn_node) throw runtime_error("[VehicleBase::factory] Missing XML node <dynamics>");
 
 	const xml_attribute<> *dyn_class = dyn_node->first_attribute("class");
@@ -157,7 +128,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	// (Mandatory) initial pose:
 	{
-		const xml_node<> *node = root->first_node("init_pose");
+		const xml_node<> *node = veh_root_node.first_node("init_pose");
 		if (!node) throw runtime_error("[VehicleBase::factory] Missing XML node <init_pose>");
 
 		if (3!= ::sscanf(node->value(),"%lf %lf %lf",&veh->m_q.vals[0],&veh->m_q.vals[1],&veh->m_q.vals[2]))
@@ -167,7 +138,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	// (Optional) initial vel:
 	{
-		const xml_node<> *node = root->first_node("init_vel");
+		const xml_node<> *node = veh_root_node.first_node("init_vel");
 		if (node)
 		{
 			if (3!= ::sscanf(node->value(),"%lf %lf %lf",&veh->m_dq.vals[0],&veh->m_dq.vals[1],&veh->m_dq.vals[2]))
