@@ -17,8 +17,8 @@
 		   Vehicle definition 
 	     ======================== -->
 	<vehicle name="r1">
-		<init_pose>0 0 0</init_pose>
-		<init_vel>1.5 0 0</init_vel>
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>1.5 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 		
 		<!--  Dynamical model -->
 		<dynamics class="differential">
@@ -53,8 +53,8 @@
 		   Vehicle definition 
 	     ======================== -->
 	<vehicle name="r2">
-		<init_pose>7 0.2 -170</init_pose>
-		<init_vel>-0.5 -0.05 0</init_vel>
+		<init_pose>7.0 0.2 -175</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>1.0 0 10</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 		
 		<!--  Dynamical model -->
 		<dynamics class="differential">

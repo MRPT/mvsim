@@ -13,8 +13,11 @@
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
+#include <mrpt/poses/CPose2D.h>
 
 #include <sstream>      // std::stringstream
+#include <map>
+#include <string>
 
 using namespace mv2dsim;
 using namespace std;
@@ -48,7 +51,6 @@ void VehicleBase::simul_post_timestep_common(const TSimulContext &context)
 		m_dq.vals[2]=w;
 	}
 }
-
 
 /** Class factory: Creates a vehicle from XML description of type "<vehicle>...</vehicle>".  */
 VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> *root)
@@ -99,6 +101,12 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 			if (3!= ::sscanf(node->value(),"%lf %lf %lf",&veh->m_dq.vals[0],&veh->m_dq.vals[1],&veh->m_dq.vals[2]))
 				throw runtime_error("[VehicleBase::factory] Error parsing <init_vel>...</init_vel>");
 			veh->m_dq.vals[2] *= M_PI/180.0;
+
+			// Convert twist (velocity) from local -> global coords:
+			const mrpt::poses::CPose2D pose(0,0,veh->m_q.vals[2]); // Only the rotation
+			pose.composePoint(
+				veh->m_dq.vals[0], veh->m_dq.vals[1], 
+				veh->m_dq.vals[0], veh->m_dq.vals[1] );
 		}
 	}
 
