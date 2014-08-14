@@ -13,7 +13,10 @@
 
 #include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/gui/CDisplayWindow3D.h>
+
 #include <Box2D/Dynamics/b2World.h>
+#include <Box2D/Dynamics/b2Body.h>
+
 #include <list>
 
 namespace mv2dsim
@@ -55,14 +58,22 @@ namespace mv2dsim
 
 		/** @} */
 
+		
+		b2World* getBox2DWorld() { return m_box2d_world; }
+		const b2World* getBox2DWorld() const { return m_box2d_world; }
+
 	private:
 		// -------- World Params ----------
 		double m_simul_time;    //!< In seconds, real simulation time since beginning (may be different than wall-clock time because of time warp, etc.)
 		double m_simul_timestep; //!< Simulation fixed-time interval for numerical integration.
+		int m_b2d_vel_iters, m_b2d_pos_iters; //!< Velocity and position iteration count (Box2D)
 
 		// -------- World contents ----------
 		mrpt::synch::CCriticalSection m_world_cs; //!< The main semaphore to protect simulation objects from multithreading access.
-		b2World  m_box2d_world; //!< Box2D dynamic simulator instance
+		
+		b2World* m_box2d_world; //!< Box2D dynamic simulator instance
+		b2Body*  m_b2_ground_body;
+		
 
 		std::list<VehicleBase*> m_vehicles;
 		std::list<WorldElementBase*> m_world_elements; 
@@ -76,5 +87,11 @@ namespace mv2dsim
 
 	};
 
+	/** XX */
+	struct TSimulContext
+	{
+		b2World * b2_world; 
+		double    simul_time; //!< Current time in the simulated world
+	};
 
 }

@@ -17,7 +17,8 @@
 		   Vehicle definition 
 	     ======================== -->
 	<vehicle name="r1">
-		<pose>0 0 0</pose>
+		<init_pose>0 0 0</init_pose>
+		<init_vel>1.5 0 0</init_vel>
 		
 		<!--  Dynamical model -->
 		<dynamics class="differential">
@@ -48,4 +49,40 @@
 		</sensor:laser>
 	</vehicle>
 
+	<!-- ========================
+		   Vehicle definition 
+	     ======================== -->
+	<vehicle name="r2">
+		<init_pose>7 0.2 -170</init_pose>
+		<init_vel>-0.5 -0.05 0</init_vel>
+		
+		<!--  Dynamical model -->
+		<dynamics class="differential">
+			<!-- Params -->
+			<l_wheel pos="0.0 -0.5" mass="2.0" />
+			<r_wheel pos="0.0  0.5" mass="2.0" />
+			<chassis mass="10.0">
+				<!-- shape -->
+			</chassis>
+		</dynamics>
+		
+		<!--   Motor controller -->
+		<controller class="default">
+			<!-- Params -->
+		</controller>
+		
+		<!-- Friction force simulation -->
+		<friction class="default">
+			<!-- Params -->
+		</friction>
+
+		<!-- Sensors: -->
+		
+		<sensor:laser name="laser1">
+			<pose> 0.5  0.0  0.0 </pose>
+			<fov_degrees>180</fov_degrees>
+			<nrays>181</nrays>
+		</sensor:laser>
+	</vehicle>
+	
 </mv2dsim_world>
