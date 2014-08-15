@@ -40,7 +40,9 @@ namespace mv2dsim
 		void load_params_from_xml(const std::string &xml_text);
 
 		// ------- Interface with "World" ------
-		/** Override to do any required process right before the integration of dynamic equations for each timestep */
+		/** Override to do any required process right before the integration of dynamic equations for each timestep
+		  * E.g. set action forces from motors, etc.
+		  */
 		virtual void simul_pre_timestep(const TSimulContext &context) {
 			/* Default: do nothing. */
 		}
