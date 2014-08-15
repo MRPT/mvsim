@@ -33,6 +33,7 @@ namespace mv2dsim
 {
 	class World;
 	struct TSimulContext;
+	class VehicleBase;
 
 	/** Vector to store a pose (x,y,yaw), vel (dx,dy,omega) or acc (ddx,ddy,alpha) */
 	struct vec3

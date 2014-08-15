@@ -9,6 +9,8 @@
 #include <mv2dsim/World.h>
 #include <mv2dsim/VehicleBase.h>
 #include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
+#include <mv2dsim/FrictionModels/LinearFriction.h>
+
 #include "JointXMLnode.h"
 #include "VehicleClassesRegistry.h"
 #include "xml_utils.h"
@@ -178,6 +180,8 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	// Friction model:
 	// -------------------------------------------------
+	veh->m_friction = stlplus::smart_ptr<FrictionBase>( new LinearFriction() );
+	veh->m_friction->init(parent,veh);
 
 	// Sensors:
 	// -------------------------------------------------
@@ -275,3 +279,13 @@ void VehicleBase::TInfoPerWheel::loadFromXML(const rapidxml::xml_node<char> *xml
 
 }
 
+
+void VehicleBase::simul_pre_timestep(const TSimulContext &context)
+{
+	// Apply motor forces/torques:
+	this->apply_motor_forces(context);
+
+	// Apply friction model at each wheel:
+	m_friction->update_step(context);
+
+}
