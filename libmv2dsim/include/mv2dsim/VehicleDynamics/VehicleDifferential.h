@@ -29,6 +29,9 @@ namespace mv2dsim
 		/** Create bodies, fixtures, etc. for the dynamical simulation */
 		virtual void create_multibody_system(b2World* world);
 
+		// See docs in base class:
+		virtual void simul_pre_timestep(const TSimulContext &context);
+
 	protected:
 		// See base class docs
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);

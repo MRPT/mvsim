@@ -184,3 +184,21 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 
 }
 
+// See docs in base class:
+void DynamicsDifferential::simul_pre_timestep(const TSimulContext &context)
+{
+	// Apply one force on each wheel:
+	b2Vec2 net_wheels_forces[2]; // In local (x,y) coordinates (Newtons)
+
+	net_wheels_forces[0]= b2Vec2(1.0,0.0);
+	net_wheels_forces[1]= b2Vec2(1.0,0.0);
+
+	for (int wheel=0;wheel<2;wheel++)
+	{
+		m_b2d_vehicle_body->ApplyForce(
+			m_b2d_vehicle_body->GetWorldVector(net_wheels_forces[wheel]), /* force */
+			m_b2d_vehicle_body->GetWorldPoint( b2Vec2( m_wheels_info[wheel].x,m_wheels_info[wheel].y) ), /* point */
+			true /* wake up */
+			);
+	}
+}
