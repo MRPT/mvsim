@@ -94,7 +94,10 @@ void World::run_simulation(double dt)
 /** Runs one individual time step */
 void World::internal_one_timestep(double dt)
 {
+	m_timlogger.enter("timestep");
+
 	// 1) Pre-step
+	m_timlogger.enter("timestep.prestep");
 	TSimulContext context;
 	context.b2_world   = m_box2d_world;
 	context.simul_time = m_simul_time;
@@ -102,14 +105,24 @@ void World::internal_one_timestep(double dt)
 	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 		(*it)->simul_pre_timestep(context);
 
-	// 2) Run dynamics
-	m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
+	m_timlogger.leave("timestep.prestep");
 
+	// 2) Run dynamics
+	m_timlogger.enter("timestep.dynamics_integrator");
+
+	m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
 	m_simul_time+= dt;  // Avance time
 
+	m_timlogger.leave("timestep.dynamics_integrator");
+
+
 	// 3) Simulate sensors
+	m_timlogger.enter("timestep.sensors");
+	m_timlogger.leave("timestep.sensors");
 
 	// 4) Save dynamical state into vehicles classes
+	m_timlogger.enter("timestep.save_dynstate");
+
 	context.simul_time = m_simul_time;
 	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 	{
@@ -117,6 +130,9 @@ void World::internal_one_timestep(double dt)
 		(*it)->simul_post_timestep(context);
 	}
 
+	m_timlogger.leave("timestep.save_dynstate");
+
+	m_timlogger.leave("timestep");
 }
 
 /** Updates (or sets-up upon first call) the GUI visualization of the scene.

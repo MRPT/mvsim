@@ -12,6 +12,7 @@
 #include <mv2dsim/WorldElements/WorldElementBase.h>
 
 #include <mrpt/synch/CCriticalSection.h>
+#include <mrpt/utils/CTimeLogger.h>
 #include <mrpt/gui/CDisplayWindow3D.h>
 
 #include <Box2D/Dynamics/b2World.h>
@@ -21,8 +22,8 @@
 
 namespace mv2dsim
 {
-	/** Simulation happens inside a World object. 
-	  * This is the central class for usage from user code, running the simulation, 
+	/** Simulation happens inside a World object.
+	  * This is the central class for usage from user code, running the simulation,
 	  * loading XML models, managing GUI visualization, etc.
 	  * The ROS node acts as a bridge between this class and the ROS subsystem.
 	  */
@@ -39,26 +40,26 @@ namespace mv2dsim
 		/** Load an entire world description into this object from a specification in XML format.
 		  * \exception std::exception On any error, with what() giving a descriptive error message
 		  */
-		void load_from_XML(const std::string &xml_text); 
+		void load_from_XML(const std::string &xml_text);
 		/** @} */
 
 		/** \name Simulation execution
 		  @{*/
-		
+
 		double get_simul_timestep() const { return m_simul_timestep; } //!< Simulation fixed-time interval for numerical integration
 		void   set_simul_timestep(double timestep) { m_simul_timestep=timestep; } //!< Simulation fixed-time interval for numerical integration
-		
+
 		/** Runs the simulation for a given time interval (in seconds) */
 		void run_simulation(double dt);
 
-		/** Updates (or sets-up upon first call) the GUI visualization of the scene. 
+		/** Updates (or sets-up upon first call) the GUI visualization of the scene.
 		  * \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
 		  */
 		void update_GUI();
 
 		/** @} */
 
-		
+
 		b2World* getBox2DWorld() { return m_box2d_world; }
 		const b2World* getBox2DWorld() const { return m_box2d_world; }
 
@@ -70,13 +71,13 @@ namespace mv2dsim
 
 		// -------- World contents ----------
 		mrpt::synch::CCriticalSection m_world_cs; //!< The main semaphore to protect simulation objects from multithreading access.
-		
+
 		b2World* m_box2d_world; //!< Box2D dynamic simulator instance
 		b2Body*  m_b2_ground_body;
-		
+
 
 		std::list<VehicleBase*> m_vehicles;
-		std::list<WorldElementBase*> m_world_elements; 
+		std::list<WorldElementBase*> m_world_elements;
 
 		/** Runs one individual time step */
 		void internal_one_timestep(double dt);
@@ -85,12 +86,15 @@ namespace mv2dsim
 		// -------- GUI stuff ----------
 		mrpt::gui::CDisplayWindow3DPtr  m_gui_win;
 
+
+		mrpt::utils::CTimeLogger m_timlogger;
+
 	};
 
 	/** XX */
 	struct TSimulContext
 	{
-		b2World * b2_world; 
+		b2World * b2_world;
 		double    simul_time; //!< Current time in the simulated world
 	};
 

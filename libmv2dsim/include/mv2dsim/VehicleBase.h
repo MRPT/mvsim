@@ -10,11 +10,14 @@
 
 #include <mv2dsim/basic_types.h>
 #include <mv2dsim/VisualObject.h>
+#include <mv2dsim/FrictionModels/FrictionBase.h>
 
 #include <Box2D/Dynamics/b2World.h>
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Collision/Shapes/b2PolygonShape.h>
 #include <Box2D/Dynamics/b2Fixture.h>
+
+#include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 
 namespace mv2dsim
 {
@@ -40,12 +43,8 @@ namespace mv2dsim
 		void load_params_from_xml(const std::string &xml_text);
 
 		// ------- Interface with "World" ------
-		/** Override to do any required process right before the integration of dynamic equations for each timestep
-		  * E.g. set action forces from motors, etc.
-		  */
-		virtual void simul_pre_timestep(const TSimulContext &context) {
-			/* Default: do nothing. */
-		}
+		/** Process right before the integration of dynamic equations for each timestep: set action forces from motors, update friction models, etc. */
+		void simul_pre_timestep(const TSimulContext &context);
 
 		/** Override to do any required process right after the integration of dynamic equations for each timestep */
 		virtual void simul_post_timestep(const TSimulContext &context) {
@@ -59,18 +58,23 @@ namespace mv2dsim
 		virtual void create_multibody_system(b2World* world) = 0;
 
 	protected:
+		// Protected ctor for class factory
+		VehicleBase(World *parent);
+
 		/** Parse node <dynamics>: The derived-class part of load_params_from_xml(), also called in factory() */
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node) = 0;
+
+		virtual void apply_motor_forces(const TSimulContext &context) = 0;
 
 		/** Derived classes must store here the body of the vehicle main body (chassis).
 		  * This is used by \a simul_post_timestep() to extract the vehicle dynamical coords (q,\dot{q}) after each simulation step.
 		  */
 		b2Body *m_b2d_vehicle_body;
 
+		stlplus::smart_ptr<FrictionBase> m_friction; //!< Instance of friction model for the vehicle-to-ground interaction.
+
 		vec3 m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)
-
-		VehicleBase(World *parent);
 
 		/** Common info for 2D wheels, for usage in derived classes.
 		  * Wheels are modeled as a mass with a rectangular shape.
@@ -86,6 +90,9 @@ namespace mv2dsim
 			void getAs3DObject(mrpt::opengl::CSetOfObjects &obj);
 			void loadFromXML(const rapidxml::xml_node<char> *xml_node);
 		};
+
+		virtual size_t getNumWheels() const = 0;
+		virtual const VehicleBase::TInfoPerWheel & getWheelInfo(const size_t idx) const = 0;
 
 	};
 }
