@@ -9,6 +9,8 @@
 #include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
 #include <mrpt/opengl.h>
 
+#include <rapidxml.hpp>
+
 using namespace mv2dsim;
 using namespace std;
 
@@ -21,6 +23,28 @@ DynamicsDifferential::DynamicsDifferential(World *parent) :
 /** The derived-class part of load_params_from_xml() */
 void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
 {
+     // <l_wheel ...>, <r_wheel ...>
+     {
+     	const rapidxml::xml_node<char> * xml_wheel_l = xml_node->first_node("l_wheel");
+		if (xml_wheel_l)
+			m_wheels_info[0].loadFromXML(xml_wheel_l);
+		else
+		{
+			m_wheels_info[0] = VehicleBase::TInfoPerWheel();
+			m_wheels_info[0].y = 0.5;
+		}
+     }
+     {
+     	const rapidxml::xml_node<char> * xml_wheel_r = xml_node->first_node("r_wheel");
+		if (xml_wheel_r)
+			m_wheels_info[1].loadFromXML(xml_wheel_r);
+		else
+		{
+			m_wheels_info[1] = VehicleBase::TInfoPerWheel();
+			m_wheels_info[1].y = -0.5;
+		}
+     }
+
 
 }
 
@@ -40,7 +64,7 @@ void DynamicsDifferential::create_multibody_system(b2World* world)
 	// Define the dynamic body fixture.
 	b2FixtureDef fixtureDef;
 	fixtureDef.shape = &dynamicBox;
-	fixtureDef.restitution = 0.1;
+	fixtureDef.restitution = 0.05;
 
 	// Set the box density to be non-zero, so it will be dynamic.
 	fixtureDef.density = 1.0f;
@@ -62,7 +86,13 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 	{
 		m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_chassis->insert( mrpt::opengl::stock_objects::RobotPioneer() );
-		
+
+		for (int i=0;i<2;i++)
+		{
+			m_gl_wheels[i]= mrpt::opengl::CSetOfObjects::Create();
+			m_wheels_info[i].getAs3DObject(*m_gl_wheels[i]);
+			m_gl_chassis->insert(m_gl_wheels[i]);
+		}
 		scene.insert(m_gl_chassis);
 	}
 
@@ -70,5 +100,12 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 	// Update them:
 	// ----------------------------------
 	m_gl_chassis->setPose( mrpt::math::TPose3D( m_q.vals[0], m_q.vals[1], 0.01, m_q.vals[2], 0.0, 0.0) );
+
+	for (int i=0;i<2;i++)
+	{
+		const VehicleBase::TInfoPerWheel & w = m_wheels_info[i];
+		m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.length, w.yaw, 0.0, 0.0) );
+	}
+
 }
 

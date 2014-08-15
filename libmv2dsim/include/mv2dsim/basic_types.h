@@ -11,7 +11,7 @@
 
 #include <string>
 
-class b2World; 
+class b2World;
 class b2Body;
 
 namespace rapidxml
@@ -22,9 +22,10 @@ namespace rapidxml
     template<class Ch> class xml_document;
 }
 
-namespace mrpt { 
+namespace mrpt {
 	namespace opengl {
 		class COpenGLScene;
+		class CSetOfObjects;
 	}
 }
 
@@ -34,7 +35,7 @@ namespace mv2dsim
 	struct TSimulContext;
 
 	/** Vector to store a pose (x,y,yaw), vel (dx,dy,omega) or acc (ddx,ddy,alpha) */
-	struct vec3 
+	struct vec3
 	{
 		double vals[3];
 		vec3() {}
@@ -42,7 +43,7 @@ namespace mv2dsim
 	};
 
 	/** 2D points or vectors */
-	struct vec2 
+	struct vec2
 	{
 		double vals[2];
 		vec2() {}
