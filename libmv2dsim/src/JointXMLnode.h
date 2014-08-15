@@ -21,11 +21,11 @@ namespace mv2dsim
 
 	public:
 		void add(const rapidxml::xml_node<Ch>* node) { m_nodes.push_back(node); }
-	
-		const rapidxml::xml_node<Ch> * first_node(const char* name) 
+
+		const rapidxml::xml_node<Ch> * first_node(const char* name)
 		{
 			const rapidxml::xml_node<Ch> *ret=NULL;
-			for (TListNodes::const_iterator it=m_nodes.begin();it!=m_nodes.end();++it) {
+			for (typename TListNodes::const_iterator it=m_nodes.begin();it!=m_nodes.end();++it) {
 				ret = (*it)->first_node(name);
 				if (ret!=NULL) return ret;
 			}
