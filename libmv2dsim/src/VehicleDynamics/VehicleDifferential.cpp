@@ -10,19 +10,50 @@
 #include <mrpt/opengl.h>
 
 #include <rapidxml.hpp>
+#include "xml_utils.h"
 
 using namespace mv2dsim;
 using namespace std;
 
 // Ctor:
 DynamicsDifferential::DynamicsDifferential(World *parent) :
-	VehicleBase(parent)
+	VehicleBase(parent),
+	m_chassis_mass(15.0),
+	m_chassis_z_min(0.05),
+	m_chassis_z_max(0.6)
 {
+	using namespace mrpt::math;
+
+	// Default shape:
+	m_chassis_poly.push_back( TPoint2D(-0.4, -0.5) );
+	m_chassis_poly.push_back( TPoint2D(-0.4,  0.5) );
+	m_chassis_poly.push_back( TPoint2D( 0.4,  0.5) );
+	m_chassis_poly.push_back( TPoint2D( 0.6,  0.3) );
+	m_chassis_poly.push_back( TPoint2D( 0.6, -0.3) );
+	m_chassis_poly.push_back( TPoint2D( 0.4, -0.5) );
+
+	m_fixture_chassis = NULL;
+	for (int i=0;i<2;i++) m_fixture_wheels[i]=NULL;
 }
 
 /** The derived-class part of load_params_from_xml() */
 void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
 {
+	// <chassis ...> </chassis>
+	const rapidxml::xml_node<char> * xml_chassis = xml_node->first_node("chassis");
+	if (xml_chassis)
+	{
+		TXMLAttribs attribs[] = {
+			{ "mass","%lf", &this->m_chassis_mass },
+			{ "zmin","%lf", &this->m_chassis_z_min },
+			{ "zmax","%lf", &this->m_chassis_z_max }
+		};
+		parse_xmlnode_attribs(*xml_chassis, attribs, sizeof(attribs)/sizeof(attribs[0]),"[DynamicsDifferential::dynamics_load_params_from_xml]" );
+
+		MRPT_TODO("XML->Shape")
+	}
+
+
      // <l_wheel ...>, <r_wheel ...>
      {
      	const rapidxml::xml_node<char> * xml_wheel_l = xml_node->first_node("l_wheel");
@@ -45,7 +76,6 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 		}
      }
 
-
 }
 
 /** Create bodies, fixtures, etc. for the dynamical simulation */
@@ -57,42 +87,87 @@ void DynamicsDifferential::create_multibody_system(b2World* world)
 
 	m_b2d_vehicle_body = world->CreateBody(&bodyDef);
 
-	// Define another box shape for our dynamic body.
-	b2PolygonShape dynamicBox;
-	dynamicBox.SetAsBox(0.1f, 0.1f);
+	// Define shape of chassis:
+	// ------------------------------
+	{
+		// Convert shape into Box2D format:
+		const size_t nPts = m_chassis_poly.size();
+		ASSERT_(nPts>=3)
+		std::vector<b2Vec2> pts(nPts);
+		for (size_t i=0;i<nPts;i++) pts[i] = b2Vec2( m_chassis_poly[i].x, m_chassis_poly[i].y );
 
-	// Define the dynamic body fixture.
-	b2FixtureDef fixtureDef;
-	fixtureDef.shape = &dynamicBox;
-	fixtureDef.restitution = 0.05;
+		b2PolygonShape chassisPoly;
+		chassisPoly.Set(&pts[0],nPts);
 
-	// Set the box density to be non-zero, so it will be dynamic.
-	fixtureDef.density = 1.0f;
+		// Define the dynamic body fixture.
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &chassisPoly;
+		fixtureDef.restitution = 0.05;
 
-	// Override the default friction.
-	fixtureDef.friction = 0.3f;
+		// Set the box density to be non-zero, so it will be dynamic.
+		b2MassData mass;
+		chassisPoly.ComputeMass(&mass,1);  // Mass with density=1 => compute area
+		fixtureDef.density = m_chassis_mass / mass.mass;
 
-	// Add the shape to the body.
-	m_b2d_vehicle_body->CreateFixture(&fixtureDef);
+		// Override the default friction.
+		fixtureDef.friction = 0.3f;
+
+		// Add the shape to the body.
+		m_fixture_chassis = m_b2d_vehicle_body->CreateFixture(&fixtureDef);
+	}
+
+	// Define shape of wheels:
+	// ------------------------------
+	for (int i=0;i<2;i++)
+	{
+		b2PolygonShape wheelShape;
+		wheelShape.SetAsBox(
+			m_wheels_info[i].diameter*0.5, m_wheels_info[i].width*0.5,
+			b2Vec2(m_wheels_info[i].x,m_wheels_info[i].y), 0 );
+
+		// Define the dynamic body fixture.
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &wheelShape;
+		fixtureDef.restitution = 0.05;
+
+		// Set the box density to be non-zero, so it will be dynamic.
+		b2MassData mass;
+		wheelShape.ComputeMass(&mass,1);  // Mass with density=1 => compute area
+		fixtureDef.density = m_wheels_info[i].mass / mass.mass;
+
+		// Override the default friction.
+		fixtureDef.friction = 0.5f;
+
+		m_fixture_wheels[i] = m_b2d_vehicle_body->CreateFixture(&fixtureDef);
+	}
 }
 
 
 /** Must create a new object in the scene and/or update it according to the current state */
 void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 {
+	using namespace mrpt::math;
+
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	if (!m_gl_chassis)
 	{
 		m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
-		m_gl_chassis->insert( mrpt::opengl::stock_objects::RobotPioneer() );
 
+		// Wheels shape:
 		for (int i=0;i<2;i++)
 		{
 			m_gl_wheels[i]= mrpt::opengl::CSetOfObjects::Create();
 			m_wheels_info[i].getAs3DObject(*m_gl_wheels[i]);
 			m_gl_chassis->insert(m_gl_wheels[i]);
 		}
+		// Robot shape:
+		//m_gl_chassis->insert( mrpt::opengl::stock_objects::RobotPioneer() );
+		mrpt::opengl::CPolyhedronPtr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_chassis_poly, m_chassis_z_max-m_chassis_z_min);
+		gl_poly->setLocation(0,0, m_chassis_z_min);
+		gl_poly->setColor(1.0,0.0,0.0,1.0);
+		m_gl_chassis->insert(gl_poly);
+
 		scene.insert(m_gl_chassis);
 	}
 
@@ -104,7 +179,7 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 	for (int i=0;i<2;i++)
 	{
 		const VehicleBase::TInfoPerWheel & w = m_wheels_info[i];
-		m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.length, w.yaw, 0.0, 0.0) );
+		m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.diameter, w.yaw, 0.0, 0.0) );
 	}
 
 }

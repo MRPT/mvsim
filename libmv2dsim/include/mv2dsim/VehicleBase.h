@@ -76,7 +76,7 @@ namespace mv2dsim
 		struct TInfoPerWheel
 		{
 			double x,y,yaw; //!< Location of the wheel wrt the chassis ref point [m,rad] (in local coords)
-			double length,width; //!< Length and width of the wheel rectangle [m]
+			double diameter,width; //!< Length(diameter) and width of the wheel rectangle [m]
                double mass; //!< [kg]
 			double color_r,color_g,color_b,color_a; //!< Color for OpenGL rendering (in range [0,1])
 
