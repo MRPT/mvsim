@@ -11,6 +11,7 @@
 #include <mv2dsim/VehicleBase.h>
 
 #include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/math/lightweight_geom_data.h>
 
 namespace mv2dsim
 {
@@ -36,7 +37,15 @@ namespace mv2dsim
 		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
 		mrpt::opengl::CSetOfObjectsPtr m_gl_wheels[2]; //!< [0]:left, [1]:right
 
+		// Chassis info:
+          double m_chassis_mass;
+          mrpt::math::TPolygon2D m_chassis_poly;
+          double m_chassis_z_min,m_chassis_z_max;
+
 		VehicleBase::TInfoPerWheel m_wheels_info[2]; //!< [0]:left, [1]:right wheel info
+
+		b2Fixture* m_fixture_chassis;
+		b2Fixture* m_fixture_wheels[2]; //!< [0]:left, [1]:right
 
 	};
 

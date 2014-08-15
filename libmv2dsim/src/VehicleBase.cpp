@@ -11,6 +11,7 @@
 #include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
 #include "JointXMLnode.h"
 #include "VehicleClassesRegistry.h"
+#include "xml_utils.h"
 
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
@@ -218,7 +219,7 @@ void VehicleBase::load_params_from_xml(const std::string &xml_text)
 
 VehicleBase::TInfoPerWheel::TInfoPerWheel() :
 	x(.0),y(-.5),yaw(.0),
-	length(.4),width(.1),
+	diameter(.4),width(.2),
 	mass(2.0),
 	color_r(0.2),color_g(0.2),color_b(0.2),color_a(1.0)
 {
@@ -228,7 +229,7 @@ void VehicleBase::TInfoPerWheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
 {
 	obj.clear();
 
-	mrpt::opengl::CCylinderPtr gl_wheel = mrpt::opengl::CCylinder::Create( 0.5*length,0.5*length,this->width, 15, 1);
+	mrpt::opengl::CCylinderPtr gl_wheel = mrpt::opengl::CCylinder::Create( 0.5*diameter,0.5*diameter,this->width, 15, 1);
 	gl_wheel->setColor(color_r,color_g,color_b,color_a);
 	gl_wheel->setPose(mrpt::poses::CPose3D(0,0.5*width,0,  0,0,mrpt::utils::DEG2RAD(90) ));
 
@@ -236,7 +237,7 @@ void VehicleBase::TInfoPerWheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
 	gl_wheel_frame->insert(gl_wheel);
 	//gl_wheel_frame->insert( mrpt::opengl::stock_objects::CornerXYZSimple() );
 
-	obj.setPose( mrpt::math::TPose3D( x,y, 0.5*length, yaw, 0.0, 0.0) );
+	obj.setPose( mrpt::math::TPose3D( x,y, 0.5*diameter, yaw, 0.0, 0.0) );
 
      obj.insert(gl_wheel_frame);
 }
@@ -245,7 +246,7 @@ void VehicleBase::TInfoPerWheel::loadFromXML(const rapidxml::xml_node<char> *xml
 {
 	ASSERT_(xml_node)
 	// Parse attributes:
-	// <l_wheel pos="0.0 -0.5" mass="2.0" width="0.10" length="0.30" />
+	// <l_wheel pos="0.0 -0.5" mass="2.0" width="0.10" diameter="0.30" />
 	// pos:
      {
      	const rapidxml::xml_attribute<char> * attr = xml_node->first_attribute("pos");
@@ -260,32 +261,17 @@ void VehicleBase::TInfoPerWheel::loadFromXML(const rapidxml::xml_node<char> *xml
 		}
      }
 
-     MRPT_TODO("Refactor")
-
-     struct TXMLAttribs
-     {
-     	const char * name;
-     	const char * frmt;
-     	void * ptr;
-     };
-
      TXMLAttribs attribs[] = {
      	{ "mass","%lf", &this->mass },
      	{ "width","%lf", &this->width },
-     	{ "length","%lf", &this->length }
+     	{ "diameter","%lf", &this->diameter },
+     	{ "color_r","%lf", &this->color_r },
+     	{ "color_g","%lf", &this->color_g },
+     	{ "color_b","%lf", &this->color_b },
+     	{ "color_a","%lf", &this->color_a }
 	};
 
-     for (size_t i=0;i<sizeof(attribs)/sizeof(attribs[0]) ;i++)
-     {
-     	const rapidxml::xml_attribute<char> * attr = xml_node->first_attribute( attribs[i].name );
-		if (attr && attr->value())
-		{
-			const std::string sAttr = attr->value();
-			if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,attribs[i].ptr))
-				throw runtime_error(mrpt::format("[VehicleBase::TInfoPerWheel] Error parsing attribute '%s'='%s' (Expected format:'%s')",attr->name(),attr->value(),attribs[i].frmt ));
-		}
-     }
-
+	parse_xmlnode_attribs(*xml_node, attribs, sizeof(attribs)/sizeof(attribs[0]),"[VehicleBase::TInfoPerWheel]" );
 
 }
 
