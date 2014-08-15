@@ -34,6 +34,9 @@ namespace mv2dsim
 
 	private:
 		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
+		mrpt::opengl::CSetOfObjectsPtr m_gl_wheels[2]; //!< [0]:left, [1]:right
+
+		VehicleBase::TInfoPerWheel m_wheels_info[2]; //!< [0]:left, [1]:right wheel info
 
 	};
 

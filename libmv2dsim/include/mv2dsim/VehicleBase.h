@@ -18,7 +18,7 @@
 
 namespace mv2dsim
 {
-	/** Virtual base class for each vehicle "actor" in the simulation. 
+	/** Virtual base class for each vehicle "actor" in the simulation.
 	  * Derived classes implements different dynamical models (Differential, Ackermann,...)
 	  */
 	class VehicleBase : public VisualObject
@@ -28,12 +28,12 @@ namespace mv2dsim
 		static VehicleBase* factory(World* parent, const rapidxml::xml_node<char> *xml_node);
 		/// \overload
 		static VehicleBase* factory(World* parent, const std::string &xml_text);
-		
+
 		/** Register a new class of vehicles from XML description of type "<vehicle:class name='name'>...</vehicle:class>".  */
 		static void register_vehicle_class(const rapidxml::xml_node<char> *xml_node);
 
-		/** Loads vehicle params from input XML node of type "<vehicle>...</vehicle>". 
-		  * See derived classes & documentation for a list of accepted params.  
+		/** Loads vehicle params from input XML node of type "<vehicle>...</vehicle>".
+		  * See derived classes & documentation for a list of accepted params.
 		  */
 		void load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
 		/// \overload
@@ -41,12 +41,12 @@ namespace mv2dsim
 
 		// ------- Interface with "World" ------
 		/** Override to do any required process right before the integration of dynamic equations for each timestep */
-		virtual void simul_pre_timestep(const TSimulContext &context) {	
+		virtual void simul_pre_timestep(const TSimulContext &context) {
 			/* Default: do nothing. */
 		}
 
 		/** Override to do any required process right after the integration of dynamic equations for each timestep */
-		virtual void simul_post_timestep(const TSimulContext &context) {	
+		virtual void simul_post_timestep(const TSimulContext &context) {
 			/* Default: do nothing. */
 		}
 
@@ -55,7 +55,7 @@ namespace mv2dsim
 
 		/** Create bodies, fixtures, etc. for the dynamical simulation */
 		virtual void create_multibody_system(b2World* world) = 0;
-		
+
 	protected:
 		/** Parse node <dynamics>: The derived-class part of load_params_from_xml(), also called in factory() */
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node) = 0;
@@ -64,10 +64,26 @@ namespace mv2dsim
 		  * This is used by \a simul_post_timestep() to extract the vehicle dynamical coords (q,\dot{q}) after each simulation step.
 		  */
 		b2Body *m_b2d_vehicle_body;
-				
+
 		vec3 m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)
 
 		VehicleBase(World *parent);
+
+		/** Common info for 2D wheels, for usage in derived classes.
+		  * Wheels are modeled as a mass with a rectangular shape.
+		  */
+		struct TInfoPerWheel
+		{
+			double x,y,yaw; //!< Location of the wheel wrt the chassis ref point [m,rad] (in local coords)
+			double length,width; //!< Length and width of the wheel rectangle [m]
+               double mass; //!< [kg]
+			double color_r,color_g,color_b,color_a; //!< Color for OpenGL rendering (in range [0,1])
+
+			TInfoPerWheel();
+			void getAs3DObject(mrpt::opengl::CSetOfObjects &obj);
+			void loadFromXML(const rapidxml::xml_node<char> *xml_node);
+		};
+
 	};
 }

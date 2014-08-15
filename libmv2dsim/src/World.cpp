@@ -15,10 +15,6 @@
 #include <stdexcept>
 #include <map>
 
-//// XML parsing:
-//#include <rapidxml.hpp>
-//#include <rapidxml_print.hpp>
-
 using namespace mv2dsim;
 using namespace std;
 

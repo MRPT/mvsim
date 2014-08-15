@@ -17,6 +17,7 @@
 #include <rapidxml_print.hpp>
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/opengl/CCylinder.h>
 
 #include <sstream>      // std::stringstream
 #include <map>
@@ -83,8 +84,8 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	if (!root) throw runtime_error("[VehicleBase::factory] XML node is NULL");
 	if (0!=strcmp(root->name(),"vehicle")) throw runtime_error(mrpt::format("[VehicleBase::factory] XML root element is '%s' ('vehicle' expected)",root->name()));
-	
-	// "class": When a vehicle has a 'class="XXX"' attribute, look for each parameter 
+
+	// "class": When a vehicle has a 'class="XXX"' attribute, look for each parameter
 	//  in the set of "root" + "class_root" XML nodes:
 	// --------------------------------------------------------------------------------
 	JointXMLnode<> veh_root_node;
@@ -100,10 +101,10 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 				throw runtime_error(mrpt::format("[VehicleBase::factory] Vehicle class '%s' undefined",sClassName.c_str() ));
 
 			veh_root_node.add(class_root);
-			//cout << *class_root; 
+			//cout << *class_root;
 		}
 	}
-	
+
 	// Class factory according to: <dynamics class="XXX">
 	// -------------------------------------------------
 	VehicleBase *veh = NULL;
@@ -148,7 +149,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 			// Convert twist (velocity) from local -> global coords:
 			const mrpt::poses::CPose2D pose(0,0,veh->m_q.vals[2]); // Only the rotation
 			pose.composePoint(
-				veh->m_dq.vals[0], veh->m_dq.vals[1], 
+				veh->m_dq.vals[0], veh->m_dq.vals[1],
 				veh->m_dq.vals[0], veh->m_dq.vals[1] );
 		}
 	}
@@ -213,5 +214,78 @@ void VehicleBase::load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
 /// \overload
 void VehicleBase::load_params_from_xml(const std::string &xml_text)
 {
+}
+
+VehicleBase::TInfoPerWheel::TInfoPerWheel() :
+	x(.0),y(-.5),yaw(.0),
+	length(.4),width(.1),
+	mass(2.0),
+	color_r(0.2),color_g(0.2),color_b(0.2),color_a(1.0)
+{
+}
+
+void VehicleBase::TInfoPerWheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
+{
+	obj.clear();
+
+	mrpt::opengl::CCylinderPtr gl_wheel = mrpt::opengl::CCylinder::Create( 0.5*length,0.5*length,this->width, 15, 1);
+	gl_wheel->setColor(color_r,color_g,color_b,color_a);
+	gl_wheel->setPose(mrpt::poses::CPose3D(0,0.5*width,0,  0,0,mrpt::utils::DEG2RAD(90) ));
+
+	mrpt::opengl::CSetOfObjectsPtr gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
+	gl_wheel_frame->insert(gl_wheel);
+	//gl_wheel_frame->insert( mrpt::opengl::stock_objects::CornerXYZSimple() );
+
+	obj.setPose( mrpt::math::TPose3D( x,y, 0.5*length, yaw, 0.0, 0.0) );
+
+     obj.insert(gl_wheel_frame);
+}
+
+void VehicleBase::TInfoPerWheel::loadFromXML(const rapidxml::xml_node<char> *xml_node)
+{
+	ASSERT_(xml_node)
+	// Parse attributes:
+	// <l_wheel pos="0.0 -0.5" mass="2.0" width="0.10" length="0.30" />
+	// pos:
+     {
+     	const rapidxml::xml_attribute<char> * attr = xml_node->first_attribute("pos");
+		if (attr && attr->value())
+		{
+			const std::string sAttr = attr->value();
+			mrpt::math::TPose2D p(0,0,0);
+			::sscanf(sAttr.c_str(),"%lf %lf %lf",&p.x,&p.y,&p.phi);
+               this->x = p.x;
+               this->y = p.y;
+               this->yaw = p.phi;
+		}
+     }
+
+     MRPT_TODO("Refactor")
+
+     struct TXMLAttribs
+     {
+     	const char * name;
+     	const char * frmt;
+     	void * ptr;
+     };
+
+     TXMLAttribs attribs[] = {
+     	{ "mass","%lf", &this->mass },
+     	{ "width","%lf", &this->width },
+     	{ "length","%lf", &this->length }
+	};
+
+     for (size_t i=0;i<sizeof(attribs)/sizeof(attribs[0]) ;i++)
+     {
+     	const rapidxml::xml_attribute<char> * attr = xml_node->first_attribute( attribs[i].name );
+		if (attr && attr->value())
+		{
+			const std::string sAttr = attr->value();
+			if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,attribs[i].ptr))
+				throw runtime_error(mrpt::format("[VehicleBase::TInfoPerWheel] Error parsing attribute '%s'='%s' (Expected format:'%s')",attr->name(),attr->value(),attribs[i].frmt ));
+		}
+     }
+
 
 }
+
