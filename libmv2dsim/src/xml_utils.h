@@ -37,8 +37,9 @@ namespace mv2dsim
 		const size_t nAttribs,
 		const char* function_name_context = "");
 
-	/** Return false if none found */
-	bool parse_xmlnode_children(
+	/** Check whether the given XML node name matches any of the param list
+	  * \return false if no match found */
+	bool parse_xmlnode_as_param(
 		const rapidxml::xml_node<char> &xml_node,
 		const std::map<std::string,TParamEntry> &params);
 

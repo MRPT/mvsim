@@ -9,7 +9,7 @@
 		<file>mv2dsim_demo_world1.png</file>
 		
 		<!-- The rest of params are ignored if file is an MRPT gridmap -->
-		<resolution>0.20</resolution>
+		<resolution>0.15</resolution>
 	</world:gridmap>
 		 
 	<!-- =============================
