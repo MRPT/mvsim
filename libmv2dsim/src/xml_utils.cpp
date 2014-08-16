@@ -33,3 +33,24 @@ void mv2dsim::parse_xmlnode_attribs(
 }
 
 
+bool mv2dsim::parse_xmlnode_children(
+	const rapidxml::xml_node<char> &xml_node,
+	const std::map<std::string,TParamEntry> &params)
+{
+	std::map<std::string,TParamEntry>::const_iterator it_param = params.find(xml_node.name());
+
+	if (it_param != params.end() )
+	{
+		// parse parameter:
+		if (1 != ::sscanf(xml_node.value(),it_param->second.frmt, it_param->second.val ) )
+		{
+			throw std::runtime_error(
+				mrpt::format(
+					"Error parsing entry '%s' with expected format '%s' and content '%s'",
+					xml_node.name(), it_param->second.frmt, xml_node.value()
+					) );
+		}
+		return true;
+	}
+	return false;
+}
