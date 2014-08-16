@@ -92,7 +92,7 @@ void World::load_from_XML(const std::string &xml_text)
 		else
 		{
 			// Default: Check if it's a parameter:
-			if (!parse_xmlnode_children(*node,other_world_params) )
+			if (!parse_xmlnode_as_param(*node,other_world_params) )
 			{
 				// Unknown element!!
 				std::cerr << "[World::load_from_XML] *Warning* Ignoring unknown XML node type '"<< node->name() <<"'\n";

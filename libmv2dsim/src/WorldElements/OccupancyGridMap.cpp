@@ -7,6 +7,7 @@
   +-------------------------------------------------------------------------+  */
 
 #include <mv2dsim/WorldElements/OccupancyGridMap.h>
+#include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/utils/CFileGZInputStream.h>
@@ -50,8 +51,21 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	else
 	// Assume it's an image:
 	{
-		float xcenterpixel=-1,ycenterpixel=-1;
-		float resolution=0.10;
+		std::map<std::string,TParamEntry> other_params;
+		double xcenterpixel=-1,ycenterpixel=-1;
+		double resolution=0.10;
+
+		other_params["resolution"] = TParamEntry("%lf", &resolution);
+		other_params["centerpixel_x"] = TParamEntry("%lf", &xcenterpixel);
+		other_params["centerpixel_y"] = TParamEntry("%lf", &ycenterpixel);
+
+		xml_node<> *child = root->first_node();
+		while (child)
+		{
+			parse_xmlnode_as_param(*child,other_params);
+			child = child->next_sibling();
+		}
+
 		m_grid.loadFromBitmapFile(sFile,resolution,xcenterpixel,ycenterpixel);
 	}
 

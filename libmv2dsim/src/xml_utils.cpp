@@ -33,7 +33,7 @@ void mv2dsim::parse_xmlnode_attribs(
 }
 
 
-bool mv2dsim::parse_xmlnode_children(
+bool mv2dsim::parse_xmlnode_as_param(
 	const rapidxml::xml_node<char> &xml_node,
 	const std::map<std::string,TParamEntry> &params)
 {
