@@ -9,6 +9,8 @@
 #pragma once
 
 #include <mv2dsim/FrictionModels/FrictionBase.h>
+#include <vector>
+#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 
 namespace mv2dsim
 {
@@ -28,6 +30,7 @@ namespace mv2dsim
 
 
 	private:
+		std::vector<b2FrictionJoint*> m_joints;
 
 	};
 }

@@ -57,6 +57,27 @@ namespace mv2dsim
 		/** Create bodies, fixtures, etc. for the dynamical simulation */
 		virtual void create_multibody_system(b2World* world) = 0;
 
+
+		b2Body * getBox2DChassisBody() { return m_b2d_vehicle_body; }
+
+		/** Common info for 2D wheels, for usage in derived classes.
+		  * Wheels are modeled as a mass with a rectangular shape.
+		  */
+		struct TInfoPerWheel
+		{
+			double x,y,yaw; //!< Location of the wheel wrt the chassis ref point [m,rad] (in local coords)
+			double diameter,width; //!< Length(diameter) and width of the wheel rectangle [m]
+               double mass; //!< [kg]
+			double color_r,color_g,color_b,color_a; //!< Color for OpenGL rendering (in range [0,1])
+
+			TInfoPerWheel();
+			void getAs3DObject(mrpt::opengl::CSetOfObjects &obj);
+			void loadFromXML(const rapidxml::xml_node<char> *xml_node);
+		};
+
+		virtual size_t getNumWheels() const = 0;
+		virtual const VehicleBase::TInfoPerWheel & getWheelInfo(const size_t idx) const = 0;
+
 	protected:
 		// Protected ctor for class factory
 		VehicleBase(World *parent);
@@ -76,23 +97,6 @@ namespace mv2dsim
 		vec3 m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)
 
-		/** Common info for 2D wheels, for usage in derived classes.
-		  * Wheels are modeled as a mass with a rectangular shape.
-		  */
-		struct TInfoPerWheel
-		{
-			double x,y,yaw; //!< Location of the wheel wrt the chassis ref point [m,rad] (in local coords)
-			double diameter,width; //!< Length(diameter) and width of the wheel rectangle [m]
-               double mass; //!< [kg]
-			double color_r,color_g,color_b,color_a; //!< Color for OpenGL rendering (in range [0,1])
-
-			TInfoPerWheel();
-			void getAs3DObject(mrpt::opengl::CSetOfObjects &obj);
-			void loadFromXML(const rapidxml::xml_node<char> *xml_node);
-		};
-
-		virtual size_t getNumWheels() const = 0;
-		virtual const VehicleBase::TInfoPerWheel & getWheelInfo(const size_t idx) const = 0;
 
 	};
 }

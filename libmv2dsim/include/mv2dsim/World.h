@@ -63,6 +63,8 @@ namespace mv2dsim
 		b2World* getBox2DWorld() { return m_box2d_world; }
 		const b2World* getBox2DWorld() const { return m_box2d_world; }
 
+		b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
+
 	private:
 		// -------- World Params ----------
 		double m_simul_time;    //!< In seconds, real simulation time since beginning (may be different than wall-clock time because of time warp, etc.)
