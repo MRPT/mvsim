@@ -8,19 +8,22 @@
 
 #pragma once
 
+#include <mv2dsim/VisualObject.h>
+
 namespace mv2dsim
 {
-	class World;
-
-	class WorldElementBase
+	class WorldElementBase : public VisualObject
 	{
 	public:
-		WorldElementBase(World*parent) : m_parent(parent) 
-		{
-		}
+		WorldElementBase(World*parent) : VisualObject(parent) { }
+		virtual ~WorldElementBase() { }
+
+		/** Class factory: Creates a world element from XML description of type "<world:*>...</world:*>".  */
+		static WorldElementBase* factory(World* parent, const rapidxml::xml_node<char> *xml_node);
+
+		virtual void loadConfigFrom(const rapidxml::xml_node<char> *root) = 0;
 
 	protected:
-		World *m_parent;
 
 	};
 

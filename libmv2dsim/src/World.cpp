@@ -158,6 +158,8 @@ void World::update_GUI()
 
 	// Update view of map elements
 	// -----------------------------
+	for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
+		(*it)->gui_update(*gl_scene);
 
 	// Update view of vehicles
 	// -----------------------------

@@ -79,18 +79,19 @@ void World::load_from_XML(const std::string &xml_text)
 	xml_node<> *node = root->first_node();
 	while (node)
 	{
-		if (!strcmp(node->name(),"world:gridmap"))
+		// <world:*> entries:
+		if (!strncmp(node->name(),"world:",strlen("world:")))
 		{
-			// TODO!!!
-			WorldElementBase *element_gridmap = new WorldElementBase(this);
-
-			this->m_world_elements.push_back(element_gridmap);
+			WorldElementBase *we = WorldElementBase::factory(this,node);
+			this->m_world_elements.push_back(we);
 		}
+		// <vehicle> entries:
 		else if (!strcmp(node->name(),"vehicle"))
 		{
 			VehicleBase* veh = VehicleBase::factory(this,node);
 			this->m_vehicles.push_back( veh );
 		}
+		// <vehicle:class> entries:
 		else if (!strcmp(node->name(),"vehicle:class"))
 		{
 			VehicleBase::register_vehicle_class(node);
