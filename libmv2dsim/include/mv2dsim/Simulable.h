@@ -8,24 +8,16 @@
 
 #pragma once
 
-#include <mv2dsim/VisualObject.h>
-#include <mv2dsim/Simulable.h>
+#include <mv2dsim/basic_types.h>
 
 namespace mv2dsim
 {
-	class WorldElementBase : public VisualObject, public Simulable
+	class Simulable
 	{
-	public:
-		WorldElementBase(World*parent) : VisualObject(parent) { }
-		virtual ~WorldElementBase() { }
+		/** Process right before the integration of dynamic equations for each timestep: set action forces from motors, update friction models, etc. */
+		virtual void simul_pre_timestep(const TSimulContext &context) = 0;
 
-		/** Class factory: Creates a world element from XML description of type "<world:*>...</world:*>".  */
-		static WorldElementBase* factory(World* parent, const rapidxml::xml_node<char> *xml_node);
-
-		virtual void loadConfigFrom(const rapidxml::xml_node<char> *root) = 0;
-
-	protected:
-
+		/** Override to do any required process right after the integration of dynamic equations for each timestep */
+		virtual void simul_post_timestep(const TSimulContext &context) = 0;
 	};
-
 }

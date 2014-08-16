@@ -10,6 +10,7 @@
 
 #include <mv2dsim/basic_types.h>
 #include <mv2dsim/VisualObject.h>
+#include <mv2dsim/Simulable.h>
 #include <mv2dsim/FrictionModels/FrictionBase.h>
 
 #include <Box2D/Dynamics/b2World.h>
@@ -24,7 +25,7 @@ namespace mv2dsim
 	/** Virtual base class for each vehicle "actor" in the simulation.
 	  * Derived classes implements different dynamical models (Differential, Ackermann,...)
 	  */
-	class VehicleBase : public VisualObject
+	class VehicleBase : public VisualObject, public Simulable
 	{
 	public:
 		/** Class factory: Creates a vehicle from XML description of type "<vehicle>...</vehicle>".  */
@@ -44,7 +45,7 @@ namespace mv2dsim
 
 		// ------- Interface with "World" ------
 		/** Process right before the integration of dynamic equations for each timestep: set action forces from motors, update friction models, etc. */
-		void simul_pre_timestep(const TSimulContext &context);
+		virtual void simul_pre_timestep(const TSimulContext &context);
 
 		/** Override to do any required process right after the integration of dynamic equations for each timestep */
 		virtual void simul_post_timestep(const TSimulContext &context) {
