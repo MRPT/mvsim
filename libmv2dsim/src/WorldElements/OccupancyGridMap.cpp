@@ -89,3 +89,13 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 		m_gui_uptodate=true;
 	}
 }
+
+void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
+{
+
+}
+
+void OccupancyGridMap::simul_post_timestep(const TSimulContext &context)
+{
+
+}
