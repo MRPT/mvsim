@@ -21,10 +21,26 @@ namespace mv2dsim
      	void * ptr;
      };
 
+	struct TParamEntry
+	{
+		const char* frmt;
+		void *val;
+
+		TParamEntry() : frmt(NULL),val(NULL) {}
+		TParamEntry(const char* frmt_,void *val_) : frmt(frmt_),val(val_) {}
+	};
+
+
 	void parse_xmlnode_attribs(
 		const rapidxml::xml_node<char> &xml_node,
 		const TXMLAttribs * attribs,
 		const size_t nAttribs,
 		const char* function_name_context = "");
+
+	/** Return false if none found */
+	bool parse_xmlnode_children(
+		const rapidxml::xml_node<char> &xml_node,
+		const std::map<std::string,TParamEntry> &params);
+
 
 }

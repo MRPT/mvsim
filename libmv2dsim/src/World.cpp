@@ -8,7 +8,7 @@
 #include <mv2dsim/World.h>
 
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
-#include <mrpt/opengl.h>
+#include <mrpt/opengl/COpenGLScene.h>
 
 #include <iostream> // for debugging
 #include <algorithm> // count()

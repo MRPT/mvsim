@@ -18,17 +18,10 @@
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 
+#include "xml_utils.h"
+
 using namespace mv2dsim;
 using namespace std;
-
-struct TParamEntry
-{
-	const char* frmt;
-	void *val;
-
-	TParamEntry() : frmt(NULL),val(NULL) {}
-	TParamEntry(const char* frmt_,void *val_) : frmt(frmt_),val(val_) {}
-};
 
 /** Load an entire world description into this object from a specification in XML format.
 	* \exception std::exception On any error, with what() giving a descriptive error message
@@ -99,21 +92,7 @@ void World::load_from_XML(const std::string &xml_text)
 		else
 		{
 			// Default: Check if it's a parameter:
-			std::map<std::string,TParamEntry>::const_iterator it_param = other_world_params.find(node->name());
-
-			if (it_param != other_world_params.end() )
-			{
-				// parse parameter:
-				if (1 != ::sscanf(node->value(),it_param->second.frmt, it_param->second.val ) )
-				{
-					throw std::runtime_error(
-						mrpt::format(
-							"Error parsing entry '%s' with expected format '%s' and content '%s'",
-							node->name(), it_param->second.frmt, node->value()
-							) );
-				}
-			}
-			else
+			if (!parse_xmlnode_children(*node,other_world_params) )
 			{
 				// Unknown element!!
 				std::cerr << "[World::load_from_XML] *Warning* Ignoring unknown XML node type '"<< node->name() <<"'\n";

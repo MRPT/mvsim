@@ -7,10 +7,11 @@
   +-------------------------------------------------------------------------+  */
 
 #include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
-#include <mrpt/opengl.h>
-
-#include <rapidxml.hpp>
 #include "xml_utils.h"
+
+#include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CPolyhedron.h>
+#include <rapidxml.hpp>
 
 using namespace mv2dsim;
 using namespace std;
