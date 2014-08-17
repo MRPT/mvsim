@@ -9,7 +9,7 @@
 		<file>mv2dsim_demo_world1.png</file>
 		
 		<!-- The rest of params are ignored if file is an MRPT gridmap -->
-		<resolution>0.25</resolution>
+		<resolution>0.15</resolution>
 	</world:gridmap>
 		 
 	<!-- =============================
@@ -61,7 +61,7 @@
 	</vehicle>
 
 	<vehicle name="r2" class="small-car">
-		<init_pose>20.0 0.2 -176</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>9 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 

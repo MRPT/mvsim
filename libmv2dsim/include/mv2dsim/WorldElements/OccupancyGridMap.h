@@ -10,7 +10,10 @@
 
 #include <mv2dsim/WorldElements/WorldElementBase.h>
 #include <mrpt/slam/COccupancyGridMap2D.h>
+#include <mrpt/slam/CSinCosLookUpTableFor2DScans.h>
 #include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/poses/CPose2D.h>
+#include <mrpt/slam/CObservation2DRangeScan.h>
 
 namespace mv2dsim
 {
@@ -31,6 +34,28 @@ namespace mv2dsim
 
 		bool m_gui_uptodate; //!< Whether m_gl_grid has to be updated upon next call of gui_update()
 		mrpt::opengl::CSetOfObjectsPtr m_gl_grid;
+
+		struct TFixturePtr 
+		{
+			b2Fixture* fixture;
+			TFixturePtr() : fixture(NULL) {}
+		};
+
+		struct TInfoPerVeh
+		{
+			mrpt::poses::CPose2D pose;
+			mrpt::slam::CObservation2DRangeScanPtr scan;
+			b2Body* collide_body;
+			std::vector<TFixturePtr> collide_fixtures;
+
+			TInfoPerVeh() : collide_body(NULL) {}
+		};
+
+		std::vector<TInfoPerVeh>  m_obstacles_for_each_veh; 
+		std::vector<mrpt::opengl::CSetOfObjectsPtr> m_gl_obs_clouds;
+		mrpt::slam::CSinCosLookUpTableFor2DScans m_sincos_lut;
+
+		bool m_show_grid_collision_points;
 
 	};
 }
