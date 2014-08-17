@@ -26,7 +26,7 @@ using namespace std;
 OccupancyGridMap::OccupancyGridMap(World*parent,const rapidxml::xml_node<char> *root) :
 	WorldElementBase(parent),
 	m_gui_uptodate(false),
-	m_show_grid_collision_points(false)
+	m_show_grid_collision_points(true)
 {
 	loadConfigFrom(root);
 }
@@ -100,15 +100,15 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 	// Update obstacles:
 	for (size_t i=0;i<m_gl_obs_clouds.size();i++)
 	{
-		// 1st usage? 
+		// 1st usage?
 		mrpt::opengl::CSetOfObjectsPtr &gl_objs = m_gl_obs_clouds[i];
-		if (!gl_objs) 
+		if (!gl_objs)
 		{
 			gl_objs=mrpt::opengl::CSetOfObjects::Create();
 			MRPT_TODO("Add a name, and remove old ones in scene, etc.")
 			scene.insert(gl_objs);
 		}
-		
+
 		mrpt::opengl::CPointCloudPtr gl_pts = gl_objs->getByClass<mrpt::opengl::CPointCloud>();
 		if (!gl_pts)
 		{
@@ -124,7 +124,7 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 		gl_pts->setVisibility( m_show_grid_collision_points );
 		if (m_show_grid_collision_points)
 		{
-			gl_pts->loadFromPointsMap(&ptsmap);		
+			gl_pts->loadFromPointsMap(&ptsmap);
 			gl_pts->setPose( mrpt::poses::CPose2D( m_obstacles_for_each_veh[i].pose ) );
 		}
 	}
@@ -150,7 +150,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 
 		const float veh_max_obstacles_ranges = (*itVeh)->getMaxVehicleRadius() * 1.75f;
 		const float occup_threshold = 0.5f;
-		const size_t nRays = 50;
+		const size_t nRays = 120;
 
 		const vec3 &pose = (*itVeh)->getPose();
 		scan->aperture = 2.0*M_PI; // 360 field of view
@@ -170,9 +170,9 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 
 		// 2) Create a Box2D "ground body" with square "fixtures" so the vehicle can collide with the occ. grid:
 		b2World * b2world = m_world->getBox2DWorld();
-		
+
 		// Create Box2D objects upon first usage:
-		if (!ipv.collide_body) 
+		if (!ipv.collide_body)
 		{
 			b2BodyDef bdef;
 			ipv.collide_body = b2world->CreateBody(&bdef);
@@ -210,14 +210,14 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 
 				b2PolygonShape *poly = dynamic_cast<b2PolygonShape*>( ipv.collide_fixtures[k].fixture->GetShape() );
 				ASSERT_(poly!=NULL)
-					
+
 				const float lx = sincos_tab.ccos[k] * scan->scan[k];
 				const float ly = sincos_tab.csin[k] * scan->scan[k];
 				poly->SetAsBox(occCellSemiWidth,occCellSemiWidth, b2Vec2(lx,ly), .0f /*angle*/);
 			}
-		}		
+		}
 
-	}	
+	}
 
 }
 

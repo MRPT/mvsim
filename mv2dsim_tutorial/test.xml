@@ -1,5 +1,5 @@
 <mv2dsim_world version="1.0">
-	<simul_timestep>0.050</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<simul_timestep>0.010</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
 
 	<!-- ========================
 		   Scenario definition
