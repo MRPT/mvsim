@@ -193,8 +193,8 @@ void DynamicsDifferential::apply_motor_forces(const TSimulContext &context)
 	// Apply one force on each wheel:
 	b2Vec2 net_wheels_forces[2]; // In local (x,y) coordinates (Newtons)
 
-	net_wheels_forces[0]= b2Vec2( context.simul_time<3.0 ? 25.0 : 7.0,0.0);
-	net_wheels_forces[1]= b2Vec2( context.simul_time<3.0 ? 5.0 : 6.0 ,0.0);
+	net_wheels_forces[0]= b2Vec2_zero; // ( context.simul_time<3.0 ? 25.0 : 7.0,0.0);
+	net_wheels_forces[1]= b2Vec2_zero; // ( context.simul_time<3.0 ? 5.0 : 6.0 ,0.0);
 
 	for (int wheel=0;wheel<2;wheel++)
 	{

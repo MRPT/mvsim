@@ -9,6 +9,7 @@
 
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CGridPlaneXY.h>
 
 #include <iostream> // for debugging
 #include <algorithm> // count()
@@ -94,10 +95,10 @@ void World::run_simulation(double dt)
 /** Runs one individual time step */
 void World::internal_one_timestep(double dt)
 {
-	m_timlogger.enter("timestep");
+	mrpt::utils::CTimeLoggerEntry tlegl(m_timlogger,"timestep");
 
 	// 1) Pre-step
-	m_timlogger.enter("timestep.prestep");
+	m_timlogger.enter("timestep.0.prestep");
 	TSimulContext context;
 	context.b2_world   = m_box2d_world;
 	context.simul_time = m_simul_time;
@@ -105,32 +106,34 @@ void World::internal_one_timestep(double dt)
 	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 		(*it)->simul_pre_timestep(context);
 
-	m_timlogger.leave("timestep.prestep");
+	m_timlogger.leave("timestep.0.prestep");
 
 	// 2) Run dynamics
-	m_timlogger.enter("timestep.dynamics_integrator");
+	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.1.dynamics_integrator");
 
-	m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
-	m_simul_time+= dt;  // Avance time
-
-	m_timlogger.leave("timestep.dynamics_integrator");
+		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
+		m_simul_time+= dt;  // Avance time
+	}
 
 
 	// 3) Simulate sensors
-	m_timlogger.enter("timestep.sensors");
-	m_timlogger.leave("timestep.sensors");
-
-	// 4) Save dynamical state into vehicles classes
-	m_timlogger.enter("timestep.save_dynstate");
-
-	context.simul_time = m_simul_time;
-	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 	{
-		(*it)->simul_post_timestep_common(context);
-		(*it)->simul_post_timestep(context);
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.2.sensors");
+
 	}
 
-	m_timlogger.leave("timestep.save_dynstate");
+	// 4) Save dynamical state into vehicles classes
+	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.3.save_dynstate");
+
+		context.simul_time = m_simul_time;
+		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
+		{
+			(*it)->simul_post_timestep_common(context);
+			(*it)->simul_post_timestep(context);
+		}
+	}
 
 	m_timlogger.leave("timestep");
 }
@@ -146,35 +149,58 @@ void World::update_GUI()
 	// -----------------------
 	if (!m_gui_win)
 	{
+		m_timlogger.enter("update_GUI_init");
+
 		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",800,600);
 		mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock();
 
 		gl_scene->insert( mrpt::opengl::CGridPlaneXY::Create() );
 
 		m_gui_win->unlockAccess3DScene();
+		m_timlogger.leave("update_GUI_init");
 	}
 
+	m_timlogger.enter("update_GUI"); // Don't count initialization, since that is a total outlier and lacks interest!
+
+	m_timlogger.enter("update_GUI.1.get-lock");
 	mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock(); // ** LOCK **
+	m_timlogger.leave("update_GUI.1.get-lock");
 
 	// Update view of map elements
 	// -----------------------------
+	m_timlogger.enter("update_GUI.2.map-elements");
+	
 	for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
 		(*it)->gui_update(*gl_scene);
 
+	m_timlogger.leave("update_GUI.2.map-elements");
+
 	// Update view of vehicles
 	// -----------------------------
+	m_timlogger.enter("update_GUI.3.vehicles");
+
 	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 		(*it)->gui_update(*gl_scene);
 
+	m_timlogger.leave("update_GUI.3.vehicles");
+
 	// Update view of sensors
 	// -----------------------------
+	m_timlogger.enter("update_GUI.4.sensors");
+	m_timlogger.leave("update_GUI.4.sensors");
 
 	// Other messages
 	// -----------------------------
+	m_timlogger.enter("update_GUI.5.text-msgs");
+
 	m_gui_win->addTextMessage(2,2, mrpt::format("Time: %s", mrpt::system::formatTimeInterval(this->m_simul_time).c_str()), mrpt::utils::TColorf(1,1,1,0.5), "serif", 10, mrpt::opengl::NICE, ID_GLTEXT_CLOCK );
+
+	m_timlogger.leave("update_GUI.5.text-msgs");
 
 	// Force refresh view
 	// -----------------------
 	m_gui_win->unlockAccess3DScene(); // ** UNLOCK **
 	m_gui_win->repaint();
+
+	m_timlogger.leave("update_GUI");
 }
