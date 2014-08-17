@@ -79,6 +79,11 @@ namespace mv2dsim
 		virtual size_t getNumWheels() const = 0;
 		virtual const VehicleBase::TInfoPerWheel & getWheelInfo(const size_t idx) const = 0;
 
+		/** Last time-step pose (of the ref. point, in global coords) */
+		const vec3 & getPose() { return m_q; } 
+		/** Last time-step velocity (of the ref. point, in global coords) */
+		const vec3 & getVelocity() { return m_dq; }
+
 	protected:
 		// Protected ctor for class factory
 		VehicleBase(World *parent);

@@ -14,6 +14,7 @@ namespace mv2dsim
 {
 	class Simulable
 	{
+	public:
 		/** Process right before the integration of dynamic equations for each timestep: set action forces from motors, update friction models, etc. */
 		virtual void simul_pre_timestep(const TSimulContext &context) = 0;
 

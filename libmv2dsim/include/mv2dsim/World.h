@@ -60,10 +60,16 @@ namespace mv2dsim
 		/** @} */
 
 
+		/** \name Access inner working objects
+		  @{*/
+
 		b2World* getBox2DWorld() { return m_box2d_world; }
 		const b2World* getBox2DWorld() const { return m_box2d_world; }
 
 		b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
+
+		const std::list<VehicleBase*> & getListOfVehicle() const { return m_vehicles; }
+		/** @} */
 
 	private:
 		// -------- World Params ----------
@@ -75,7 +81,7 @@ namespace mv2dsim
 		mrpt::synch::CCriticalSection m_world_cs; //!< The main semaphore to protect simulation objects from multithreading access.
 
 		b2World* m_box2d_world; //!< Box2D dynamic simulator instance
-		b2Body*  m_b2_ground_body;
+		b2Body*  m_b2_ground_body;  //!< Used to declare friction between vehicles-ground
 
 
 		std::list<VehicleBase*> m_vehicles;

@@ -54,7 +54,6 @@ void World::clear_all(bool acquire_mt_lock)
 
 		// Define the ground body.
 		b2BodyDef groundBodyDef;
-		groundBodyDef.position.Set(5.0f, 0.0f);
 		m_b2_ground_body = m_box2d_world->CreateBody(&groundBodyDef);
 
 		// Clear m_vehicles & other lists of objs:
@@ -97,16 +96,22 @@ void World::internal_one_timestep(double dt)
 {
 	mrpt::utils::CTimeLoggerEntry tlegl(m_timlogger,"timestep");
 
-	// 1) Pre-step
-	m_timlogger.enter("timestep.0.prestep");
 	TSimulContext context;
 	context.b2_world   = m_box2d_world;
 	context.simul_time = m_simul_time;
 
-	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
-		(*it)->simul_pre_timestep(context);
+	// 1) Pre-step
+	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.veh");
+		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
+			(*it)->simul_pre_timestep(context);
+	}
+	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.world");
+		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
+			(*it)->simul_pre_timestep(context);
+	}
 
-	m_timlogger.leave("timestep.0.prestep");
 
 	// 2) Run dynamics
 	{
