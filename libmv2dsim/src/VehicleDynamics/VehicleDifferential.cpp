@@ -34,6 +34,7 @@ DynamicsDifferential::DynamicsDifferential(World *parent) :
 	m_chassis_poly.push_back( TPoint2D( 0.6,  0.3) );
 	m_chassis_poly.push_back( TPoint2D( 0.6, -0.3) );
 	m_chassis_poly.push_back( TPoint2D( 0.4, -0.5) );
+	updateMaxRadiusFromPoly();
 
 	m_fixture_chassis = NULL;
 	for (int i=0;i<2;i++) m_fixture_wheels[i]=NULL;
@@ -204,4 +205,16 @@ void DynamicsDifferential::apply_motor_forces(const TSimulContext &context)
 			true /* wake up */
 			);
 	}
+}
+
+void DynamicsDifferential::updateMaxRadiusFromPoly()
+{
+	using namespace mrpt::math;
+
+	m_max_radius=0.001f;
+	for (TPolygon2D::const_iterator it=m_chassis_poly.begin();it!=m_chassis_poly.end();++it)
+	{
+		const float n=it->norm();
+		mrpt::utils::keep_max(m_max_radius,n);
+	}	
 }
