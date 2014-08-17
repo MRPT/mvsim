@@ -77,6 +77,8 @@ void World::clear_all(bool acquire_mt_lock)
 /** Runs the simulation for a given time interval (in seconds) */
 void World::run_simulation(double dt)
 {
+	m_timlogger.registerUserMeasure("run_simulation.dt",dt);
+
 	// sanity checks:
 	ASSERT_(dt>0)
 	ASSERT_(m_simul_timestep>0)
@@ -174,7 +176,7 @@ void World::update_GUI()
 	// Update view of map elements
 	// -----------------------------
 	m_timlogger.enter("update_GUI.2.map-elements");
-	
+
 	for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
 		(*it)->gui_update(*gl_scene);
 
