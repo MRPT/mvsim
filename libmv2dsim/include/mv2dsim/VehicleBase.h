@@ -58,6 +58,8 @@ namespace mv2dsim
 		/** Create bodies, fixtures, etc. for the dynamical simulation */
 		virtual void create_multibody_system(b2World* world) = 0;
 
+		/** Get (an approximation of) the max radius of the vehicle, from its point of reference (in meters) */
+		virtual float getMaxVehicleRadius() const = 0;
 
 		b2Body * getBox2DChassisBody() { return m_b2d_vehicle_body; }
 

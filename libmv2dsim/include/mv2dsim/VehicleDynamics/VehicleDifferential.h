@@ -29,6 +29,9 @@ namespace mv2dsim
 		/** Create bodies, fixtures, etc. for the dynamical simulation */
 		virtual void create_multibody_system(b2World* world);
 
+		// See docs in base class:
+		virtual float getMaxVehicleRadius() const { return m_max_radius; }
+
 	protected:
 		// See base class docs
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
@@ -40,9 +43,12 @@ namespace mv2dsim
 		mrpt::opengl::CSetOfObjectsPtr m_gl_wheels[2]; //!< [0]:left, [1]:right
 
 		// Chassis info:
-          double m_chassis_mass;
-          mrpt::math::TPolygon2D m_chassis_poly;
-          double m_chassis_z_min,m_chassis_z_max;
+		double m_chassis_mass;
+		mrpt::math::TPolygon2D m_chassis_poly;
+		double m_max_radius; //!< Automatically computed from m_chassis_poly upon each change via updateMaxRadiusFromPoly()
+		double m_chassis_z_min,m_chassis_z_max;
+
+		void updateMaxRadiusFromPoly();
 
 		VehicleBase::TInfoPerWheel m_wheels_info[2]; //!< [0]:left, [1]:right wheel info
 
