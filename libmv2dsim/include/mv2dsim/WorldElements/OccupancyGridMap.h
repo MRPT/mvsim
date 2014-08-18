@@ -12,6 +12,8 @@
 #include <mrpt/slam/COccupancyGridMap2D.h>
 #include <mrpt/slam/CSinCosLookUpTableFor2DScans.h>
 #include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/opengl/CPointCloud.h>
+#include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/slam/CObservation2DRangeScan.h>
 
@@ -19,7 +21,10 @@ namespace mv2dsim
 {
 	class OccupancyGridMap : public WorldElementBase
 	{
+		DECLARES_REGISTER_WORLD_ELEMENT2(OccupancyGridMap)
+
 	public:
+
 		OccupancyGridMap(World*parent,const rapidxml::xml_node<char> *root);
 		virtual ~OccupancyGridMap();
 
@@ -53,6 +58,10 @@ namespace mv2dsim
 
 		std::vector<TInfoPerVeh>  m_obstacles_for_each_veh; 
 		std::vector<mrpt::opengl::CSetOfObjectsPtr> m_gl_obs_clouds;
+		
+		mrpt::synch::CCriticalSection m_gl_obs_clouds_buffer_cs;
+		std::vector<mrpt::opengl::CPointCloudPtr> m_gl_obs_clouds_buffer;
+
 		mrpt::slam::CSinCosLookUpTableFor2DScans m_sincos_lut;
 
 		bool m_show_grid_collision_points;

@@ -22,9 +22,19 @@ using namespace mv2dsim;
 
 TClassFactory_worldElements mv2dsim::classFactory_worldElements;
 
+// Explicit registration calls seem to be one (the unique?) way to assure registration takes place:
+void register_all()
+{
+	static bool done = false;
+	if (done) return; else done=true;
+
+	REGISTER_WORLD_ELEMENT2("gridmap",OccupancyGridMap)
+}
+
 
 WorldElementBase* WorldElementBase::factory(World* parent, const rapidxml::xml_node<char> *root)
 {
+	register_all();
 	//classFactory_worldElements.create("",parent,root);
 
 	using namespace std;
@@ -33,15 +43,11 @@ WorldElementBase* WorldElementBase::factory(World* parent, const rapidxml::xml_n
 	if (!root) throw runtime_error("[WorldElementBase::factory] XML node is NULL");
 	if (0!=strncmp(root->name(),"world:",strlen("world:"))) throw runtime_error(mrpt::format("[WorldElementBase::factory] XML root element is '%s' ('world:*' expected)",root->name()));
 
-	WorldElementBase* we = NULL;
-	if (!strcmp(root->name(),"world:gridmap"))
-	{
-		we = new mv2dsim::OccupancyGridMap(parent,root);
-	}
+	// Get the world:* final part as the name of the class (e.g. "world:gridmap"  -> "gridmap"):
+	const string sName  = string(root->name()).substr(strlen("world:"));
+	WorldElementBase* we = classFactory_worldElements.create(sName, parent, root);
 
-	if (!we)
-		throw runtime_error(mrpt::format("[WorldElementBase::factory] Unknown world element type '%s'",root->name()));
-
-
+	if (!we) throw runtime_error(mrpt::format("[WorldElementBase::factory] Unknown world element type '%s'",root->name()));
+	
 	return we;
 }

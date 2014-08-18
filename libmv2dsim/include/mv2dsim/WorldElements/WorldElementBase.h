@@ -33,4 +33,13 @@ namespace mv2dsim
 	typedef ClassFactory<WorldElementBase,World*,const rapidxml::xml_node<char>*> TClassFactory_worldElements;
 	extern TClassFactory_worldElements classFactory_worldElements;
 
+
+	#define DECLARES_REGISTER_WORLD_ELEMENT2(CLASS_NAME) \
+		DECLARES_REGISTER_CLASS2(CLASS_NAME,WorldElementBase,World*,const rapidxml::xml_node<char> *)
+
+	#define REGISTER_WORLD_ELEMENT2(TEXTUAL_NAME,CLASS_NAME) \
+		REGISTER_CLASS2(TClassFactory_worldElements,classFactory_worldElements,TEXTUAL_NAME,CLASS_NAME) 
+	
+
+
 }
