@@ -18,16 +18,14 @@ namespace mv2dsim
 	template <class CLASS,typename ARG1, typename ARG2>
 	class ClassFactory
 	{
-	private:
+	public:
 		struct TClassData
 		{
 			CLASS* (*ptr_factory1)(ARG1);
 			CLASS* (*ptr_factory2)(ARG1,ARG2);
 			TClassData() : ptr_factory1(NULL), ptr_factory2(NULL) {}
 		};
-		std::map<std::string,TClassData> m_classes;
 
-	public:
 		void do_register(const std::string &class_name, const TClassData &data ) {
 			m_classes[class_name] = data;
 		}
@@ -44,6 +42,22 @@ namespace mv2dsim
 			if (!it->second.ptr_factory2) throw std::runtime_error( (std::string("ClassFactory: factory(2) pointer is NULL for ")+class_name).c_str() );
 			return (*it->second.ptr_factory2)(a1,a2);
 		}
-
+	private:
+		std::map<std::string,TClassData> m_classes;
 	}; // end class
+
+
+	#define DECLARES_REGISTER_CLASS1(CLASS_NAME,BASE_CLASS,ARG1) \
+		public: static BASE_CLASS * Create(ARG1 a1) { return new CLASS_NAME(a1); }
+
+	#define DECLARES_REGISTER_CLASS2(CLASS_NAME,BASE_CLASS,ARG1,ARG2) \
+		public: static BASE_CLASS * Create(ARG1 a1,ARG2 a2) { return new CLASS_NAME(a1,a2); }
+
+	#define REGISTER_CLASS2(FACTORY_TYPE,FACTORY_OBJ,TEXTUAL_NAME,CLASS_NAME) \
+			{ \
+				FACTORY_TYPE::TClassData data; \
+				data.ptr_factory2 = &CLASS_NAME::Create; \
+				FACTORY_OBJ.do_register(TEXTUAL_NAME,data); \
+			}
+
 }
