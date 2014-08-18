@@ -14,6 +14,8 @@
 using namespace mv2dsim;
 using namespace std;
 
+
+
 const rapidxml::xml_node<char>* VehicleClassesRegistry::get(const std::string &xml_node_vehicle_class) const
 {
 	map<string,TXMLData>::const_iterator it=m_classes.find(xml_node_vehicle_class);

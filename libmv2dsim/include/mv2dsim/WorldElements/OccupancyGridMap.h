@@ -21,8 +21,7 @@ namespace mv2dsim
 {
 	class OccupancyGridMap : public WorldElementBase
 	{
-		DECLARES_REGISTER_WORLD_ELEMENT2(OccupancyGridMap)
-
+		DECLARES_REGISTER_WORLD_ELEMENT(OccupancyGridMap)
 	public:
 
 		OccupancyGridMap(World*parent,const rapidxml::xml_node<char> *root);

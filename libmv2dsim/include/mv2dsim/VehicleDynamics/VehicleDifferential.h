@@ -20,6 +20,7 @@ namespace mv2dsim
 	  */
 	class DynamicsDifferential : public VehicleBase
 	{
+		DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential)
 	public:
 		DynamicsDifferential(World *parent);
 

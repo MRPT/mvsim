@@ -11,6 +11,7 @@
 #include <mv2dsim/basic_types.h>
 #include <mv2dsim/VisualObject.h>
 #include <mv2dsim/Simulable.h>
+#include <mv2dsim/ClassFactory.h>
 #include <mv2dsim/FrictionModels/FrictionBase.h>
 
 #include <Box2D/Dynamics/b2World.h>
@@ -109,6 +110,17 @@ namespace mv2dsim
 		vec3 m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)
 
+	}; // end VehicleBase
 
-	};
+	// Class factory:
+	typedef ClassFactory<VehicleBase,World*> TClassFactory_vehicleDynamics;
+	extern TClassFactory_vehicleDynamics classFactory_vehicleDynamics;
+	
+	#define DECLARES_REGISTER_VEHICLE_DYNAMICS(CLASS_NAME) \
+		DECLARES_REGISTER_CLASS1(CLASS_NAME,VehicleBase,World*)
+
+	#define REGISTER_VEHICLE_DYNAMICS(TEXTUAL_NAME,CLASS_NAME) \
+		REGISTER_CLASS1(TClassFactory_vehicleDynamics,classFactory_vehicleDynamics,TEXTUAL_NAME,CLASS_NAME) 
+	
+
 }
