@@ -10,6 +10,7 @@
 
 #include <mv2dsim/VisualObject.h>
 #include <mv2dsim/Simulable.h>
+#include <mv2dsim/ClassFactory.h>
 
 namespace mv2dsim
 {
@@ -27,5 +28,9 @@ namespace mv2dsim
 	protected:
 
 	};
+
+	// Class factory:
+	typedef ClassFactory<WorldElementBase,World*,const rapidxml::xml_node<char>*> TClassFactory_worldElements;
+	extern TClassFactory_worldElements classFactory_worldElements;
 
 }
