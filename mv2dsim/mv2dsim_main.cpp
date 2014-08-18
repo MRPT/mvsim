@@ -15,9 +15,11 @@
 #include <rapidxml_utils.hpp>
 #include <iostream>
 
+using namespace mv2dsim;
+
 struct TThreadParams
 {
-	mv2dsim::World *world;
+	World *world;
 	volatile bool closing;
 	TThreadParams(): world(NULL), closing(false) {}
 };
@@ -29,7 +31,7 @@ int main(int argc, char **argv)
 	{
 		if (argc!=2) return -1;
 
-		mv2dsim::World  world;
+		World  world;
 		
 		// Load from XML:
 		rapidxml::file<> fil_xml(argv[1]);
@@ -53,6 +55,15 @@ int main(int argc, char **argv)
 			
 			world.run_simulation(incr_tim);
 			mrpt::system::sleep(10);
+
+#if 0
+			{ // Test: Get vehicles speed:
+				const World::TListVehicles & vehs = world.getListOfVehicles();
+				const vec3 &vel = (*vehs.begin())->getVelocityLocal();
+				printf("vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
+			}
+#endif
+
 		}
 
 		thread_params.closing = true;

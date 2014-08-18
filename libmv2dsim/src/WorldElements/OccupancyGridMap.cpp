@@ -122,7 +122,7 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 {
 	// For each vehicle, create a ground body with fixtures at each scanned point around the vehicle, so it can collide with the environment:
-	const list<VehicleBase*> & lstVehs =  this->m_world->getListOfVehicle();
+	const list<VehicleBase*> & lstVehs =  this->m_world->getListOfVehicles();
 
 	// Upon first usage, reserve mem:
 	m_obstacles_for_each_veh.resize( lstVehs.size() );
@@ -189,9 +189,9 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
  		sqrPoly.m_radius = 1e-3;  // The "skin" depth of the body
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &sqrPoly;
-		fixtureDef.restitution = 0.05;
+		fixtureDef.restitution = 0.01;
 		fixtureDef.density = 0; // Fixed (inf. mass)
-		fixtureDef.friction = 0.3f;
+		fixtureDef.friction = 0.5f;
 
 		// Create fixtures at their place (or disable it if no obstacle has been sensed):
 		const mrpt::slam::CSinCosLookUpTableFor2DScans::TSinCosValues & sincos_tab = m_sincos_lut.getSinCosForScan(*scan);

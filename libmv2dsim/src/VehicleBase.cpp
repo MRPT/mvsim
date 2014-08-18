@@ -289,3 +289,21 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	m_friction->update_step(context);
 
 }
+
+/** Last time-step velocity (of the ref. point, in local coords) */
+vec3 VehicleBase::getVelocityLocal() const
+{
+	vec3 local_vel;
+	local_vel.vals[2] = m_dq.vals[2]; // omega remains the same.
+
+	const mrpt::poses::CPose2D p(0,0, m_q.vals[2]); // "-" means inverse pose
+	p.composePoint( 
+		m_dq.vals[0],m_dq.vals[1],
+		local_vel.vals[0],local_vel.vals[1]);
+	return local_vel;
+}
+
+mrpt::poses::CPose2D VehicleBase::getCPose2D() const 
+{
+	return mrpt::poses::CPose2D(m_q.vals[0],m_q.vals[1],m_q.vals[2]);
+}
