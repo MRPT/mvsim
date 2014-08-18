@@ -178,10 +178,12 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	// Vehicle controller:
 	// -------------------------------------------------
 
+
 	// Friction model:
 	// -------------------------------------------------
 	veh->m_friction = stlplus::smart_ptr<FrictionBase>( new LinearFriction() );
 	veh->m_friction->init(parent,veh);
+
 
 	// Sensors:
 	// -------------------------------------------------

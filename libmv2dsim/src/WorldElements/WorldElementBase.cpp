@@ -13,14 +13,20 @@
 #include <rapidxml_print.hpp>
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 
+
 #include <sstream>      // std::stringstream
 #include <map>
 #include <string>
 
 using namespace mv2dsim;
 
+TClassFactory_worldElements mv2dsim::classFactory_worldElements;
+
+
 WorldElementBase* WorldElementBase::factory(World* parent, const rapidxml::xml_node<char> *root)
 {
+	//classFactory_worldElements.create("",parent,root);
+
 	using namespace std;
 	using namespace rapidxml;
 
