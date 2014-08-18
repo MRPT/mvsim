@@ -56,19 +56,21 @@ namespace mv2dsim
 		  * \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
 		  */
 		void update_GUI();
-
 		/** @} */
 
+		/** \name Public types
+		  @{*/
+		typedef std::list<VehicleBase*> TListVehicles; //!< See getListOfVehicles()
+		/** @} */
 
 		/** \name Access inner working objects
 		  @{*/
-
 		b2World* getBox2DWorld() { return m_box2d_world; }
 		const b2World* getBox2DWorld() const { return m_box2d_world; }
 
 		b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
 
-		const std::list<VehicleBase*> & getListOfVehicle() const { return m_vehicles; }
+		const TListVehicles & getListOfVehicles() const { return m_vehicles; }
 		/** @} */
 
 	private:
@@ -84,7 +86,7 @@ namespace mv2dsim
 		b2Body*  m_b2_ground_body;  //!< Used to declare friction between vehicles-ground
 
 
-		std::list<VehicleBase*> m_vehicles;
+		TListVehicles m_vehicles;
 		std::list<WorldElementBase*> m_world_elements;
 
 		/** Runs one individual time step */

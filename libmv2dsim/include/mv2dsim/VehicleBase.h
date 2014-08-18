@@ -19,6 +19,7 @@
 #include <Box2D/Dynamics/b2Fixture.h>
 
 #include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
+#include <mrpt/poses/CPose2D.h>
 
 namespace mv2dsim
 {
@@ -82,9 +83,12 @@ namespace mv2dsim
 		virtual const VehicleBase::TInfoPerWheel & getWheelInfo(const size_t idx) const = 0;
 
 		/** Last time-step pose (of the ref. point, in global coords) */
-		const vec3 & getPose() { return m_q; } 
+		const vec3 & getPose() const { return m_q; } 
+		mrpt::poses::CPose2D getCPose2D() const; //!< \overload 
 		/** Last time-step velocity (of the ref. point, in global coords) */
-		const vec3 & getVelocity() { return m_dq; }
+		const vec3 & getVelocity() const { return m_dq; }
+		/** Last time-step velocity (of the ref. point, in local coords) */
+		vec3 getVelocityLocal() const ;
 
 	protected:
 		// Protected ctor for class factory

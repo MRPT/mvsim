@@ -58,7 +58,7 @@ void World::clear_all(bool acquire_mt_lock)
 
 		// Clear m_vehicles & other lists of objs:
 		// ---------------------------------------------
-		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) delete *it;
+		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) delete *it;
 		m_vehicles.clear();
 
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it) delete *it;
@@ -105,7 +105,7 @@ void World::internal_one_timestep(double dt)
 	// 1) Pre-step
 	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.veh");
-		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
+		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 			(*it)->simul_pre_timestep(context);
 	}
 	{
@@ -135,7 +135,7 @@ void World::internal_one_timestep(double dt)
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.3.save_dynstate");
 
 		context.simul_time = m_simul_time;
-		for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
+		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 		{
 			(*it)->simul_post_timestep_common(context);
 			(*it)->simul_post_timestep(context);
@@ -159,6 +159,7 @@ void World::update_GUI()
 		m_timlogger.enter("update_GUI_init");
 
 		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",800,600);
+		m_gui_win->setCameraZoom(80);
 		mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock();
 
 		gl_scene->insert( mrpt::opengl::CGridPlaneXY::Create() );
@@ -186,7 +187,7 @@ void World::update_GUI()
 	// -----------------------------
 	m_timlogger.enter("update_GUI.3.vehicles");
 
-	for(std::list<VehicleBase*>::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
+	for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 		(*it)->gui_update(*gl_scene);
 
 	m_timlogger.leave("update_GUI.3.vehicles");
