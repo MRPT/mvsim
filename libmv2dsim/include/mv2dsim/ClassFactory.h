@@ -15,7 +15,7 @@
 namespace mv2dsim
 {
 	/** Templatized-class factory for mv2dsim objects. Does not explicitly handle multi-threading. */
-	template <class CLASS,typename ARG1, typename ARG2>
+	template <class CLASS,typename ARG1=void, typename ARG2=int>
 	class ClassFactory
 	{
 	public:
@@ -53,6 +53,13 @@ namespace mv2dsim
 	#define DECLARES_REGISTER_CLASS2(CLASS_NAME,BASE_CLASS,ARG1,ARG2) \
 		public: static BASE_CLASS * Create(ARG1 a1,ARG2 a2) { return new CLASS_NAME(a1,a2); }
 
+	#define REGISTER_CLASS1(FACTORY_TYPE,FACTORY_OBJ,TEXTUAL_NAME,CLASS_NAME) \
+			{ \
+				FACTORY_TYPE::TClassData data; \
+				data.ptr_factory1 = &CLASS_NAME::Create; \
+				FACTORY_OBJ.do_register(TEXTUAL_NAME,data); \
+			}
+	
 	#define REGISTER_CLASS2(FACTORY_TYPE,FACTORY_OBJ,TEXTUAL_NAME,CLASS_NAME) \
 			{ \
 				FACTORY_TYPE::TClassData data; \

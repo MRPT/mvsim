@@ -23,19 +23,18 @@ using namespace mv2dsim;
 TClassFactory_worldElements mv2dsim::classFactory_worldElements;
 
 // Explicit registration calls seem to be one (the unique?) way to assure registration takes place:
-void register_all()
+void register_all_world_elements()
 {
 	static bool done = false;
 	if (done) return; else done=true;
 
-	REGISTER_WORLD_ELEMENT2("gridmap",OccupancyGridMap)
+	REGISTER_WORLD_ELEMENT("gridmap",OccupancyGridMap)
 }
 
 
 WorldElementBase* WorldElementBase::factory(World* parent, const rapidxml::xml_node<char> *root)
 {
-	register_all();
-	//classFactory_worldElements.create("",parent,root);
+	register_all_world_elements();
 
 	using namespace std;
 	using namespace rapidxml;

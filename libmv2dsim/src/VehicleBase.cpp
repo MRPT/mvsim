@@ -29,9 +29,19 @@
 using namespace mv2dsim;
 using namespace std;
 
-
 VehicleClassesRegistry veh_classes_registry;
 
+
+TClassFactory_vehicleDynamics mv2dsim::classFactory_vehicleDynamics;
+
+// Explicit registration calls seem to be one (the unique?) way to assure registration takes place:
+void register_all_veh_dynamics()
+{
+	static bool done = false;
+	if (done) return; else done=true;
+
+	REGISTER_VEHICLE_DYNAMICS("differential",DynamicsDifferential)
+}
 
 // Protected ctor:
 VehicleBase::VehicleBase(World *parent) :
@@ -82,6 +92,8 @@ void VehicleBase::register_vehicle_class(const rapidxml::xml_node<char> *xml_nod
 /** Class factory: Creates a vehicle from XML description of type "<vehicle>...</vehicle>".  */
 VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> *root)
 {
+	register_all_veh_dynamics();
+
 	using namespace std;
 	using namespace rapidxml;
 
@@ -110,21 +122,15 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	// Class factory according to: <dynamics class="XXX">
 	// -------------------------------------------------
-	VehicleBase *veh = NULL;
 	const xml_node<> *dyn_node = veh_root_node.first_node("dynamics");
 	if (!dyn_node) throw runtime_error("[VehicleBase::factory] Missing XML node <dynamics>");
 
 	const xml_attribute<> *dyn_class = dyn_node->first_attribute("class");
 	if (!dyn_class || !dyn_class->value() ) throw runtime_error("[VehicleBase::factory] Missing mandatory attribute 'class' in node <dynamics>");
 
-	if (!strcmp("differential",dyn_class->value()))
-	{
-		veh = new DynamicsDifferential(parent);
-	}
-	else
-	{
+	VehicleBase *veh = classFactory_vehicleDynamics.create(dyn_class->value(),parent);
+	if (!veh)
 		throw runtime_error(mrpt::format("[VehicleBase::factory] Unknown vehicle dynamics class '%s'",dyn_class->value()));
-	}
 
 	// Initialize here all common params shared by any polymorphic class:
 	// -------------------------------------------------
