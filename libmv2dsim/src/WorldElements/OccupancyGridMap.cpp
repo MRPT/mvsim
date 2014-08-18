@@ -100,7 +100,6 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 	// Update obstacles:
 	for (size_t i=0;i<m_gl_obs_clouds.size();i++)
 	{
-		// 1st usage?
 		mrpt::opengl::CSetOfObjectsPtr &gl_objs = m_gl_obs_clouds[i];
 		if (!gl_objs)
 		{
@@ -108,7 +107,6 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 			MRPT_TODO("Add a name, and remove old ones in scene, etc.")
 			scene.insert(gl_objs);
 		}
-
 		mrpt::opengl::CPointCloudPtr gl_pts = gl_objs->getByClass<mrpt::opengl::CPointCloud>();
 		if (!gl_pts)
 		{
@@ -116,16 +114,6 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 			gl_pts->setPointSize(4.0f);
 			gl_pts->setColor(0,0,1);
 			gl_objs->insert(gl_pts);
-		}
-
-		mrpt::slam::CSimplePointsMap ptsmap;
-		ptsmap.insertionOptions.minDistBetweenLaserPoints = 0;
-		ptsmap.insertObservationPtr( m_obstacles_for_each_veh[i].scan );
-		gl_pts->setVisibility( m_show_grid_collision_points );
-		if (m_show_grid_collision_points)
-		{
-			gl_pts->loadFromPointsMap(&ptsmap);
-			gl_pts->setPose( mrpt::poses::CPose2D( m_obstacles_for_each_veh[i].pose ) );
 		}
 	}
 
@@ -150,7 +138,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 
 		const float veh_max_obstacles_ranges = (*itVeh)->getMaxVehicleRadius() * 1.75f;
 		const float occup_threshold = 0.5f;
-		const size_t nRays = 120;
+		const size_t nRays = 60;
 
 		const vec3 &pose = (*itVeh)->getPose();
 		scan->aperture = 2.0*M_PI; // 360 field of view
@@ -164,7 +152,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 			occup_threshold, nRays, 0.0f /*noise*/ );
 
 		// Since we'll dilate obstacle points, let's give a bit more space as compensation:
-		const float range_enlarge = 0.5f*m_grid.getResolution();
+		const float range_enlarge = 0.25f*m_grid.getResolution();
 		for (size_t k=0;k<scan->scan.size();k++)
 			scan->scan[k]+=range_enlarge;
 
@@ -180,6 +168,20 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 		// Force move the body to the vehicle origins (to use obstacles in local coords):
 		ipv.collide_body->SetTransform( b2Vec2(ipv.pose.x(),ipv.pose.y()), .0f);
 
+		// GL:
+		// 1st usage?
+		mrpt::opengl::CSetOfObjectsPtr gl_objs;
+		if (m_gl_obs_clouds.size()>veh_idx) gl_objs = m_gl_obs_clouds[veh_idx];
+		mrpt::opengl::CPointCloudPtr gl_pts;
+		if (gl_objs) gl_pts = gl_objs->getByClass<mrpt::opengl::CPointCloud>();
+
+		if (gl_pts)
+		{
+			gl_pts->setVisibility( m_show_grid_collision_points );
+			gl_pts->setPose( mrpt::poses::CPose2D( ipv.pose ) );
+			gl_pts->clear();
+		}
+
 		// Physical properties of each "occupied cell":
 		const float occCellSemiWidth = m_grid.getResolution()*0.4f;
 		b2PolygonShape sqrPoly;
@@ -192,7 +194,6 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 		fixtureDef.friction = 0.3f;
 
 		// Create fixtures at their place (or disable it if no obstacle has been sensed):
-
 		const mrpt::slam::CSinCosLookUpTableFor2DScans::TSinCosValues & sincos_tab = m_sincos_lut.getSinCosForScan(*scan);
 		ipv.collide_fixtures.resize(nRays);
 		for (size_t k=0;k<nRays;k++)
@@ -211,9 +212,24 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 				b2PolygonShape *poly = dynamic_cast<b2PolygonShape*>( ipv.collide_fixtures[k].fixture->GetShape() );
 				ASSERT_(poly!=NULL)
 
-				const float lx = sincos_tab.ccos[k] * scan->scan[k];
-				const float ly = sincos_tab.csin[k] * scan->scan[k];
+				const float llx = sincos_tab.ccos[k] * scan->scan[k];
+				const float lly = sincos_tab.csin[k] * scan->scan[k];
+
+				const float ggx = ipv.pose.x()+llx;
+				const float ggy = ipv.pose.y()+lly;
+
+				const float gx = m_grid.idx2x( m_grid.x2idx(ggx) );
+				const float gy = m_grid.idx2y( m_grid.y2idx(ggy) );
+
+				const float lx = gx - ipv.pose.x();
+				const float ly = gy - ipv.pose.y();
+
 				poly->SetAsBox(occCellSemiWidth,occCellSemiWidth, b2Vec2(lx,ly), .0f /*angle*/);
+
+				if (gl_pts && m_show_grid_collision_points)
+				{
+					gl_pts->mrpt::opengl::CPointCloud::insertPoint(lx,ly,.0);
+				}
 			}
 		}
 
