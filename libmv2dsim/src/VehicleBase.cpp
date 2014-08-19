@@ -181,9 +181,6 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		veh->m_b2d_vehicle_body->SetAngularVelocity(veh->m_dq.vals[2] );
 	}
 
-	// Vehicle controller:
-	// -------------------------------------------------
-
 
 	// Friction model:
 	// -------------------------------------------------
@@ -193,7 +190,21 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	// Sensors:
 	// -------------------------------------------------
-
+	MRPT_TODO("JointXMLnode<> veh_root_node ==> ITERATE OVER N XML NODES")
+	{
+		xml_node<> *node = root->first_node();
+		while (node)
+		{
+			// <sensor:*> entries:
+			if (!strncmp(node->name(),"sensor:",strlen("sensor:")))
+			{
+				SensorBase *se = SensorBase::factory(*veh,node);
+				veh->m_sensors.push_back( SensorBasePtr(se));
+			}
+			// Move on to next node:
+			node = node->next_sibling(NULL);
+		}
+	}
 
 	return veh;
 }
@@ -258,18 +269,17 @@ void VehicleBase::TInfoPerWheel::loadFromXML(const rapidxml::xml_node<char> *xml
 {
 	ASSERT_(xml_node)
 	// Parse attributes:
-	// <l_wheel pos="0.0 -0.5" mass="2.0" width="0.10" diameter="0.30" />
+	// <l_wheel pos="0.0 -0.5 [OPTIONAL_ANG]" mass="2.0" width="0.10" diameter="0.30" />
 	// pos:
      {
      	const rapidxml::xml_attribute<char> * attr = xml_node->first_attribute("pos");
 		if (attr && attr->value())
 		{
 			const std::string sAttr = attr->value();
-			mrpt::math::TPose2D p(0,0,0);
-			::sscanf(sAttr.c_str(),"%lf %lf %lf",&p.x,&p.y,&p.phi);
-               this->x = p.x;
-               this->y = p.y;
-               this->yaw = p.phi;
+			vec3 v = parseXYPHI(sAttr, true);
+			this->x =v.vals[0];
+			this->y =v.vals[1];
+			this->yaw =v.vals[2];
 		}
      }
 

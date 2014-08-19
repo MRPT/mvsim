@@ -44,4 +44,12 @@ namespace mv2dsim
 		const std::map<std::string,TParamEntry> &params);
 
 
+	// Bits:
+	
+	/** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and returns 
+	  * a vec3 with [x,y,phi] with angle in radians. Raises an exception upon malformed string.
+	  */
+	vec3 parseXYPHI(const std::string &s, bool allow_missing_angle = false, double default_angle=0.0);
+
+
 }

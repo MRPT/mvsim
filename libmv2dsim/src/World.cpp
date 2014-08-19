@@ -19,6 +19,8 @@
 using namespace mv2dsim;
 using namespace std;
 
+MRPT_TODO("Create global obj for params registry; export them to ROS, etc.")
+
 // Default ctor: inits empty world.
 World::World() :
 	m_simul_time(0.0),
