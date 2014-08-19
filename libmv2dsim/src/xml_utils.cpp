@@ -6,6 +6,7 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+  */
 
+#include <mv2dsim/basic_types.h>
 #include "xml_utils.h"
 
 #include <cstdio>
@@ -53,4 +54,19 @@ bool mv2dsim::parse_xmlnode_as_param(
 		return true;
 	}
 	return false;
+}
+
+/** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and returns 
+	* a vec3 with [x,y,phi] with angle in radians. Raises an exception upon malformed string.
+	*/
+vec3 mv2dsim::parseXYPHI(const std::string &s, bool allow_missing_angle, double default_angle)
+{
+	vec3 v;  v.vals[2]=default_angle;// Default ang.
+
+	int na = ::sscanf(s.c_str(),"%lf %lf %lf",&v.vals[0],&v.vals[1],&v.vals[2] );
+
+	if ( (na!=3 && !allow_missing_angle) || (na!=2 && na!=3 && allow_missing_angle))
+		throw std::runtime_error(mrpt::format("Malformed pose string: '%s'",s.c_str()));
+
+	return v;
 }

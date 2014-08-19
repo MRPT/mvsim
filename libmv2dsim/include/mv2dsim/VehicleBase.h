@@ -13,6 +13,7 @@
 #include <mv2dsim/Simulable.h>
 #include <mv2dsim/ClassFactory.h>
 #include <mv2dsim/FrictionModels/FrictionBase.h>
+#include <mv2dsim/Sensors/SensorBase.h>
 
 #include <Box2D/Dynamics/b2World.h>
 #include <Box2D/Dynamics/b2Body.h>
@@ -95,7 +96,7 @@ namespace mv2dsim
 		// Protected ctor for class factory
 		VehicleBase(World *parent);
 
-		/** Parse node <dynamics>: The derived-class part of load_params_from_xml(), also called in factory() */
+		/** Parse node <dynamics>: The derived-class part of load_params_from_xml(), also called in factory(). Includes parsing the <controller></controller> block. */
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node) = 0;
 
 		virtual void apply_motor_forces(const TSimulContext &context) = 0;
@@ -105,7 +106,9 @@ namespace mv2dsim
 		  */
 		b2Body *m_b2d_vehicle_body;
 
-		stlplus::smart_ptr<FrictionBase> m_friction; //!< Instance of friction model for the vehicle-to-ground interaction.
+		FrictionBasePtr m_friction; //!< Instance of friction model for the vehicle-to-ground interaction.
+
+		std::vector<SensorBasePtr> m_sensors; //!< Sensors aboard
 
 		vec3 m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)

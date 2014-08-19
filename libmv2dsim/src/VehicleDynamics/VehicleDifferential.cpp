@@ -80,6 +80,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 		}
      }
 
+	// Vehicle controller:
+	// -------------------------------------------------
+	MRPT_TODO("Load controller from XML")
+
 }
 
 /** Create bodies, fixtures, etc. for the dynamical simulation */
