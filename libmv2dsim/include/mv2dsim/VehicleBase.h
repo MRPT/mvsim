@@ -92,6 +92,11 @@ namespace mv2dsim
 		/** Last time-step velocity (of the ref. point, in local coords) */
 		vec3 getVelocityLocal() const ;
 
+		typedef std::vector<SensorBasePtr> TListSensors;
+
+		const TListSensors & getSensors() const { return m_sensors; }
+		TListSensors & getSensors() { return m_sensors; }
+
 	protected:
 		// Protected ctor for class factory
 		VehicleBase(World *parent);
@@ -101,6 +106,9 @@ namespace mv2dsim
 
 		virtual void apply_motor_forces(const TSimulContext &context) = 0;
 
+		/** To be called at derived classes' gui_update() */
+		void gui_update_sensors( mrpt::opengl::COpenGLScene &scene);
+
 		/** Derived classes must store here the body of the vehicle main body (chassis).
 		  * This is used by \a simul_post_timestep() to extract the vehicle dynamical coords (q,\dot{q}) after each simulation step.
 		  */
@@ -108,7 +116,7 @@ namespace mv2dsim
 
 		FrictionBasePtr m_friction; //!< Instance of friction model for the vehicle-to-ground interaction.
 
-		std::vector<SensorBasePtr> m_sensors; //!< Sensors aboard
+		TListSensors m_sensors; //!< Sensors aboard
 
 		vec3 m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)

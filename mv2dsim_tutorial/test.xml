@@ -1,5 +1,7 @@
 <mv2dsim_world version="1.0">
-	<simul_timestep>0.010</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<simul_timestep>0.0025</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<b2d_vel_iters>6</b2d_vel_iters>
+	<b2d_pos_iters>3</b2d_pos_iters>
 
 	<!-- ========================
 		   Scenario definition
@@ -9,13 +11,14 @@
 		<file>mv2dsim_demo_world1.png</file>
 		
 		<!-- The rest of params are ignored if file is an MRPT gridmap -->
-		<resolution>0.15</resolution>
+		<resolution>0.25</resolution>
 	</world:gridmap>
 		 
 	<!-- =============================
 		   Vehicle classes definition 
 	     ============================= -->
 	<vehicle:class name="small-car">
+		
 		<!--  Dynamical model -->
 		<dynamics class="differential">
 			<!-- Params -->
@@ -31,22 +34,23 @@
 					<pt>-0.4 -0.5</pt> 
 				</shape>
 			</chassis>
+			
+			<!--   Motor controller -->
+			<controller class="PID">
+				<!-- Params -->
+			</controller>
+			
 		</dynamics>
-		
-		<!--   Motor controller -->
-		<controller class="default">
-			<!-- Params -->
-		</controller>
-		
+				
 		<!-- Friction force simulation -->
-		<friction class="default">
+		<friction class="linear">
 			<!-- Params -->
 		</friction>
 
-		<!-- Sensors: -->
 		
+		<!-- Sensors: -->
 		<sensor:laser name="laser1">
-			<pose> 0.5  0.0  0.0 </pose>
+			<pose> 0.65  0.0  0.0 </pose>
 			<fov_degrees>180</fov_degrees>
 			<nrays>181</nrays>
 		</sensor:laser>
@@ -56,7 +60,7 @@
 		   Vehicle(s) definition 
 	     ======================== -->
 	<vehicle name="r1" class="small-car">
-		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>2 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>8 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
@@ -66,7 +70,7 @@
 	</vehicle>
 
 	<vehicle name="r3" class="small-car">
-		<init_pose>10 -10 87</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>8 -6 87</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>8 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 	

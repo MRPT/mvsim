@@ -319,3 +319,10 @@ mrpt::poses::CPose2D VehicleBase::getCPose2D() const
 {
 	return mrpt::poses::CPose2D(m_q.vals[0],m_q.vals[1],m_q.vals[2]);
 }
+
+/** To be called at derived classes' gui_update() */
+void VehicleBase::gui_update_sensors( mrpt::opengl::COpenGLScene &scene)
+{
+	for (TListSensors::iterator it=m_sensors.begin();it!=m_sensors.end();++it)
+		(*it)->gui_update(scene);
+}

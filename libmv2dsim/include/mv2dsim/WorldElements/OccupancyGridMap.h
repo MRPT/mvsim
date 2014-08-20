@@ -33,6 +33,9 @@ namespace mv2dsim
 		virtual void simul_pre_timestep(const TSimulContext &context); //!< See docs in base class
 		virtual void simul_post_timestep(const TSimulContext &context); //!< See docs in base class
 
+		const mrpt::slam::COccupancyGridMap2D & getOccGrid() const { return m_grid; }
+		mrpt::slam::COccupancyGridMap2D & getOccGrid() { return m_grid; }
+
 	protected:
 		mrpt::slam::COccupancyGridMap2D  m_grid;
 

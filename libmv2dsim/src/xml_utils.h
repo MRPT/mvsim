@@ -23,7 +23,7 @@ namespace mv2dsim
 
 	struct TParamEntry
 	{
-		const char* frmt;
+		const char* frmt;  // Special case: if frmt="%s", "val" is assumed to be a pointer to a std::string
 		void *val;
 
 		TParamEntry() : frmt(NULL),val(NULL) {}
