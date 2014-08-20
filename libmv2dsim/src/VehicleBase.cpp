@@ -190,19 +190,13 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	// Sensors:
 	// -------------------------------------------------
-	MRPT_TODO("JointXMLnode<> veh_root_node ==> ITERATE OVER N XML NODES")
+	for (JointXMLnode<>::iterator it=veh_root_node.begin(); it!=veh_root_node.end();++it)
 	{
-		xml_node<> *node = root->first_node();
-		while (node)
+		// <sensor:*> entries:
+		if (!strncmp(it->name(),"sensor:",strlen("sensor:")))
 		{
-			// <sensor:*> entries:
-			if (!strncmp(node->name(),"sensor:",strlen("sensor:")))
-			{
-				SensorBase *se = SensorBase::factory(*veh,node);
-				veh->m_sensors.push_back( SensorBasePtr(se));
-			}
-			// Move on to next node:
-			node = node->next_sibling(NULL);
+			SensorBase *se = SensorBase::factory(*veh,*it);
+			veh->m_sensors.push_back( SensorBasePtr(se));
 		}
 	}
 
