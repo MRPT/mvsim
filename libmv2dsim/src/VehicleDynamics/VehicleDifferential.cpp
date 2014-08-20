@@ -156,6 +156,8 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 {
 	using namespace mrpt::math;
 
+	VehicleBase::gui_update_sensors(scene); // Common part: update sensors
+
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	if (!m_gl_chassis)

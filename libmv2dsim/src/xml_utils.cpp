@@ -21,16 +21,28 @@ void mv2dsim::parse_xmlnode_attribs(
 	const size_t nAttribs,
 	const char* function_name_context)
 {
-	for (size_t i=0;i<sizeof(attribs)/sizeof(attribs[0]) ;i++)
+	for (size_t i=0;i<nAttribs;i++)
 	{
 		const rapidxml::xml_attribute<char> * attr = xml_node.first_attribute( attribs[i].name );
 		if (attr && attr->value())
 		{
 			const std::string sAttr = attr->value();
-			if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,attribs[i].ptr))
+			void *ptr = attribs[i].ptr;
+
+			const bool specialCaseString = std::string(attribs[i].frmt)==std::string("%s");
+			char auxStr[512];
+			if (specialCaseString)
+				ptr = auxStr;
+
+			if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,ptr))
 				throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,attr->name(),attr->value(),attribs[i].frmt ));
+
+			if (specialCaseString) {
+				std::string & str = *reinterpret_cast<std::string*>(attribs[i].ptr);
+				str = auxStr;
+			}				
 		}
-	}
+	} // end for
 }
 
 

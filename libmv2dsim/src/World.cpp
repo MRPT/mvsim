@@ -111,6 +111,15 @@ void World::internal_one_timestep(double dt)
 			(*it)->simul_pre_timestep(context);
 	}
 	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.sensors");
+		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) {
+			VehicleBase::TListSensors &sensors = (*it)->getSensors();
+			for (VehicleBase::TListSensors::iterator itSen=sensors.begin();itSen!=sensors.end();++itSen) {
+				(*itSen)->simul_pre_timestep(context);
+			}
+		}
+	}
+	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.world");
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
 			(*it)->simul_pre_timestep(context);
@@ -126,13 +135,7 @@ void World::internal_one_timestep(double dt)
 	}
 
 
-	// 3) Simulate sensors
-	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.2.sensors");
-
-	}
-
-	// 4) Save dynamical state into vehicles classes
+	// 3) Save dynamical state into vehicles classes
 	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.3.save_dynstate");
 
@@ -143,6 +146,28 @@ void World::internal_one_timestep(double dt)
 			(*it)->simul_post_timestep(context);
 		}
 	}
+
+	// 4) Post-step:
+	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.veh");
+		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
+			(*it)->simul_post_timestep(context);
+	}
+	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.sensors");
+		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) {
+			VehicleBase::TListSensors &sensors = (*it)->getSensors();
+			for (VehicleBase::TListSensors::iterator itSen=sensors.begin();itSen!=sensors.end();++itSen) {
+				(*itSen)->simul_post_timestep(context);
+			}
+		}
+	}
+	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.world");
+		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
+			(*it)->simul_post_timestep(context);
+	}
+
 
 	m_timlogger.leave("timestep");
 }

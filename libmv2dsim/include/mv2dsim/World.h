@@ -65,6 +65,7 @@ namespace mv2dsim
 		/** \name Public types
 		  @{*/
 		typedef std::list<VehicleBase*> TListVehicles; //!< See getListOfVehicles()
+		typedef std::list<WorldElementBase*> TListWorldElements; //!< See getListOfWorldElements()
 		/** @} */
 
 		/** \name Access inner working objects
@@ -75,6 +76,7 @@ namespace mv2dsim
 		b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
 
 		const TListVehicles & getListOfVehicles() const { return m_vehicles; }
+		const TListWorldElements & getListOfWorldElements() const { return m_world_elements; }
 		/** @} */
 
 	private:
@@ -90,8 +92,8 @@ namespace mv2dsim
 		b2Body*  m_b2_ground_body;  //!< Used to declare friction between vehicles-ground
 
 
-		TListVehicles m_vehicles;
-		std::list<WorldElementBase*> m_world_elements;
+		TListVehicles      m_vehicles;
+		TListWorldElements m_world_elements;
 
 		/** Runs one individual time step */
 		void internal_one_timestep(double dt);
