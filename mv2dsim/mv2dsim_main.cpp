@@ -24,19 +24,19 @@ struct TThreadParams
 	TThreadParams(): world(NULL), closing(false) {}
 };
 void thread_update_GUI(TThreadParams &thread_params);
-	
-int main(int argc, char **argv) 
+
+int main(int argc, char **argv)
 {
-    try 
+    try
 	{
 		if (argc!=2) return -1;
 
 		World  world;
-		
+
 		// Load from XML:
 		rapidxml::file<> fil_xml(argv[1]);
 		world.load_from_XML( fil_xml.data() );
-	
+
 		// Launch GUI thread:
 		TThreadParams thread_params;
 		thread_params.world = &world;
@@ -52,8 +52,9 @@ int main(int argc, char **argv)
 			const double cur_tim = timer.Tac();
 			const double incr_tim = cur_tim - last_tim;
 			last_tim=cur_tim;
-			
-			world.run_simulation(incr_tim);
+
+			if (incr_tim>=world.get_simul_timestep())
+				world.run_simulation(incr_tim);
 			mrpt::system::sleep(10);
 
 #if 0
@@ -69,7 +70,7 @@ int main(int argc, char **argv)
 		thread_params.closing = true;
 		mrpt::system::joinThread( thGUI );
 
-    } catch (const std::exception& e) 
+    } catch (const std::exception& e)
 	{
         std::cerr << "ERROR: " << e.what() << std::endl;
         return 1;

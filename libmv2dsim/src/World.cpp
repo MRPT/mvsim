@@ -90,8 +90,8 @@ void World::run_simulation(double dt)
 	const double timetol = 1e-6; // tolerance for rounding errors summing time steps
 	while (m_simul_time<(end_time-timetol))
 	{
-		const double step = std::min(end_time-m_simul_time, this->m_simul_timestep);
-		internal_one_timestep(step);
+		// Timestep: always "simul_step" for the sake of repeatibility
+		internal_one_timestep(m_simul_timestep);
 	}
 }
 
