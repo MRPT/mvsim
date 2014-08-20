@@ -46,6 +46,8 @@ namespace mv2dsim
 		/** \name Simulation execution
 		  @{*/
 
+		double get_simul_time() const { return m_simul_time; } //!< Simulation wall-clock time 
+
 		double get_simul_timestep() const { return m_simul_timestep; } //!< Simulation fixed-time interval for numerical integration
 		void   set_simul_timestep(double timestep) { m_simul_timestep=timestep; } //!< Simulation fixed-time interval for numerical integration
 

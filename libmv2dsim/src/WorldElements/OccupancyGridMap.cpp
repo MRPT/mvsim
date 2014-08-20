@@ -145,9 +145,9 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 			// Upon first time, reserve mem:
 			if (!scan) scan = mrpt::slam::CObservation2DRangeScan::Create();
 
-			const float veh_max_obstacles_ranges = (*itVeh)->getMaxVehicleRadius() * 1.75f;
+			const float veh_max_obstacles_ranges = (*itVeh)->getMaxVehicleRadius() * 1.50f;
 			const float occup_threshold = 0.5f;
-			const size_t nRays = 60;
+			const size_t nRays = 50;
 
 			const vec3 &pose = (*itVeh)->getPose();
 			scan->aperture = 2.0*M_PI; // 360 field of view

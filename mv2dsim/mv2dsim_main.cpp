@@ -44,14 +44,13 @@ int main(int argc, char **argv)
 
 		// Run simulation:
 		mrpt::utils::CTicTac timer;
-		double last_tim = timer.Tac();
+		timer.Tac(); // Reset clock
 
 		while (!mrpt::system::os::kbhit())
 		{
 			// Compute how much time has passed to simulate in real-time:
 			const double cur_tim = timer.Tac();
-			const double incr_tim = cur_tim - last_tim;
-			last_tim=cur_tim;
+			const double incr_tim = cur_tim - world.get_simul_time();
 
 			if (incr_tim>=world.get_simul_timestep())
 				world.run_simulation(incr_tim);
