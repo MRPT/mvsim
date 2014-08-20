@@ -31,13 +31,13 @@ namespace mv2dsim
 		}
 
 		CLASS* create(const std::string &class_name, ARG1 a1) const  {
-			std::map<std::string,TClassData>::const_iterator it=m_classes.find(class_name);
+			typename std::map<std::string,TClassData>::const_iterator it=m_classes.find(class_name);
 			if (it==m_classes.end()) throw std::runtime_error( (std::string("ClassFactory: Unknown class ")+class_name).c_str() );
 			if (!it->second.ptr_factory1) throw std::runtime_error( (std::string("ClassFactory: factory(1) pointer is NULL for ")+class_name).c_str() );
 			return (*it->second.ptr_factory1)(a1);
 		}
 		CLASS* create(const std::string &class_name, ARG1 a1, ARG2 a2) const  {
-			std::map<std::string,TClassData>::const_iterator it=m_classes.find(class_name);
+			typename std::map<std::string,TClassData>::const_iterator it=m_classes.find(class_name);
 			if (it==m_classes.end()) throw std::runtime_error( (std::string("ClassFactory: Unknown class ")+class_name).c_str() );
 			if (!it->second.ptr_factory2) throw std::runtime_error( (std::string("ClassFactory: factory(2) pointer is NULL for ")+class_name).c_str() );
 			return (*it->second.ptr_factory2)(a1,a2);
@@ -59,7 +59,7 @@ namespace mv2dsim
 				data.ptr_factory1 = &CLASS_NAME::Create; \
 				FACTORY_OBJ.do_register(TEXTUAL_NAME,data); \
 			}
-	
+
 	#define REGISTER_CLASS2(FACTORY_TYPE,FACTORY_OBJ,TEXTUAL_NAME,CLASS_NAME) \
 			{ \
 				FACTORY_TYPE::TClassData data; \

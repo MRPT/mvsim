@@ -49,7 +49,9 @@ namespace mv2dsim
 		double get_simul_timestep() const { return m_simul_timestep; } //!< Simulation fixed-time interval for numerical integration
 		void   set_simul_timestep(double timestep) { m_simul_timestep=timestep; } //!< Simulation fixed-time interval for numerical integration
 
-		/** Runs the simulation for a given time interval (in seconds) */
+		/** Runs the simulation for a given time interval (in seconds)
+		  * \note The minimum simulation time is the timestep set (e.g. via set_simul_timestep()), even if time advanced further than the provided "dt".
+		  */
 		void run_simulation(double dt);
 
 		/** Updates (or sets-up upon first call) the GUI visualization of the scene.
