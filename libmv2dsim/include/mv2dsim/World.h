@@ -77,6 +77,8 @@ namespace mv2dsim
 
 		const TListVehicles & getListOfVehicles() const { return m_vehicles; }
 		const TListWorldElements & getListOfWorldElements() const { return m_world_elements; }
+
+		mrpt::utils::CTimeLogger & getTimeLogger() { return m_timlogger; }
 		/** @} */
 
 	private:

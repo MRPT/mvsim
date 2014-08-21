@@ -1,5 +1,5 @@
 <mv2dsim_world version="1.0">
-	<simul_timestep>0.0025</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
 	<b2d_vel_iters>6</b2d_vel_iters>
 	<b2d_pos_iters>3</b2d_pos_iters>
 
@@ -50,8 +50,8 @@
 		
 		<!-- Sensors: -->
 		<sensor:laser name="laser1">
-			<pose> 0.65  0.0  0.0 </pose>
-			<fov_degrees>180</fov_degrees>
+			<pose> 0.  0.0  0.0 </pose>
+			<fov_degrees>30</fov_degrees>
 			<nrays>181</nrays>
 		</sensor:laser>
 	</vehicle:class>
@@ -60,18 +60,18 @@
 		   Vehicle(s) definition 
 	     ======================== -->
 	<vehicle name="r1" class="small-car">
-		<init_pose>2 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>8 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 500</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
 	<vehicle name="r2" class="small-car">
 		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>9 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
-	<vehicle name="r3" class="small-car">
-		<init_pose>8 -6 87</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>8 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+	<!--<vehicle name="r3" class="small-car">
+		<init_pose>8 -6 87</init_pose>  <!-- In global coords: x,y, yaw(deg) -- > 
+		<init_vel>0.08 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -- >
 	</vehicle>
-	
+	-->
 </mv2dsim_world>
