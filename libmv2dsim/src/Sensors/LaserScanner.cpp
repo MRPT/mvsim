@@ -61,17 +61,8 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	params["fov_degrees"] = TParamEntry("%lf",&fov_deg);
 	params["nrays"] = TParamEntry("%i",&nRays);
 
-	// Parse XML:
-	{
-		xml_node<> *node = root->first_node();
-		while (node)
-		{
-			parse_xmlnode_as_param(*node,params);
-
-			// Move on to next node:
-			node = node->next_sibling(NULL);
-		}
-	}
+	// Parse XML params:
+	parse_xmlnode_children_as_param(*root,params);
 
 	// Pass params to the scan2D obj:
 	m_scan_model.aperture = mrpt::utils::DEG2RAD(fov_deg);

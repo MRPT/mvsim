@@ -10,40 +10,53 @@
 #include <mv2dsim/VehicleBase.h>
 #include <mv2dsim/FrictionModels/LinearFriction.h>
 
+#include <rapidxml.hpp>
 #include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
+#include "xml_utils.h"
 
 using namespace mv2dsim;
 
-LinearFriction::LinearFriction() :
-	m_world(NULL),
-	m_vehicle(NULL)
-{
-}
 
-void LinearFriction::init(World* world, VehicleBase * my_vehicle)
+LinearFriction::LinearFriction(VehicleBase & my_vehicle, const rapidxml::xml_node<char> *node) :
+	FrictionBase(my_vehicle),
+	m_max_torque(5), 
+	m_max_force(2)
 {
-	m_world   = world;
-	m_vehicle = my_vehicle;
+	// Sanity: we can tolerate node==NULL (=> means use default params).
+	if (node && 0!=strcmp(node->name(),"friction"))
+		throw std::runtime_error("<friction>...</friction> XML node was expected!!");
 
+	if (node)
+	{
+		// Parse params:
+		std::map<std::string,TParamEntry> params;
+		params["max_torque"] = TParamEntry("%lf",&m_max_torque);
+		params["max_force"] = TParamEntry("%lf",&m_max_force);
+
+		// Parse XML params:
+		parse_xmlnode_children_as_param(*node,params);
+	}	
+
+	// Create a "friction joint" for each wheel:
 	b2FrictionJointDef fjd;
 
-	b2Body * veh = my_vehicle->getBox2DChassisBody();
+	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
 
-	fjd.bodyA = world->getBox2DGroundBody();
+	fjd.bodyA = m_world->getBox2DGroundBody();
 	fjd.bodyB = veh;
 
-	for (size_t i=0;i<my_vehicle->getNumWheels();i++)
+	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
 	{
-		const VehicleBase::TInfoPerWheel & ipw = my_vehicle->getWheelInfo(i);
+		const VehicleBase::TInfoPerWheel & ipw = m_my_vehicle.getWheelInfo(i);
 
 		const b2Vec2 local_pt = b2Vec2( ipw.x,ipw.y );
 
 		fjd.localAnchorA = veh->GetWorldPoint( local_pt );
 		fjd.localAnchorB = local_pt;
-		fjd.maxForce = 0;
-		fjd.maxTorque = 0;
+		fjd.maxForce = m_max_torque;
+		fjd.maxTorque = m_max_force;
 
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( world->getBox2DWorld()->CreateJoint( &fjd ) );
+		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
 		m_joints.push_back(b2_friction);
 	}
 }
@@ -51,13 +64,14 @@ void LinearFriction::init(World* world, VehicleBase * my_vehicle)
 void LinearFriction::update_step(const TSimulContext &context)
 {
 	// Update them:
-	b2Body * veh = m_vehicle->getBox2DChassisBody();
-	for (size_t i=0;i<m_vehicle->getNumWheels();i++)
+	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
+	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
 	{
 		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_joints[i] );
 		b2_friction->ShiftOrigin( veh->GetWorldPoint( b2Vec2_zero ) );
-		b2_friction->SetMaxForce(5);
-		b2_friction->SetMaxTorque(2);
+
+		b2_friction->SetMaxForce(m_max_torque);
+		b2_friction->SetMaxTorque(m_max_force);
 	}
 
 }

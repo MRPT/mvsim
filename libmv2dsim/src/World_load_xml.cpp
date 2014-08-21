@@ -56,7 +56,10 @@ void World::load_from_XML(const std::string &xml_text)
 	const xml_attribute<> *attrb_version = root->first_attribute("version");
 	int version_major = 1, version_min = 0;
 	if (attrb_version)
-		sscanf(attrb_version->value(),"%i.%i",&version_major, &version_min);
+	{
+		int ret = sscanf(attrb_version->value(),"%i.%i",&version_major, &version_min);
+		if (ret!=2) throw runtime_error(mrpt::format("Error parsing version attribute: '%s' ('%%i.%%i' expected)",attrb_version->value()));
+	}
 
 	// load general parameters:
 	// ------------------------------------------------

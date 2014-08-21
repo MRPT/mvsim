@@ -14,23 +14,19 @@
 
 namespace mv2dsim
 {
-	/**
+	/** "Linear" friction model for interaction between each wheel-ground contact point
 	  */
 	class LinearFriction : public FrictionBase
 	{
+		DECLARES_REGISTER_FRICTION(LinearFriction)
 	public:
-		LinearFriction();
+		LinearFriction(VehicleBase &my_vehicle, const rapidxml::xml_node<char> *node);
 
-		virtual void init(World* world, VehicleBase * my_vehicle);
 		virtual void update_step(const TSimulContext &context);
-
-	protected:
-		World       * m_world;
-		VehicleBase * m_vehicle;
-
 
 	private:
 		std::vector<b2FrictionJoint*> m_joints;
+		double m_max_torque, m_max_force;  //!< Forces at each wheel-ground contact point
 
 	};
 }
