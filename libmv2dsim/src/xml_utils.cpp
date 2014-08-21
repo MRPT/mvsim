@@ -11,6 +11,7 @@
 
 #include <cstdio>
 #include <mrpt/utils/utils_defs.h>
+#include <mrpt/utils/TColor.h>
 
 using namespace rapidxml;
 using namespace mv2dsim;
@@ -29,18 +30,39 @@ void mv2dsim::parse_xmlnode_attribs(
 			const std::string sAttr = attr->value();
 			void *ptr = attribs[i].ptr;
 
-			const bool specialCaseString = std::string(attribs[i].frmt)==std::string("%s");
-			char auxStr[512];
-			if (specialCaseString)
-				ptr = auxStr;
-
-			if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,ptr))
-				throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,attr->name(),attr->value(),attribs[i].frmt ));
-
-			if (specialCaseString) {
+			// Special cases:
+			// "%s" ==> std::strings
+			if (std::string(attribs[i].frmt)==std::string("%s"))
+			{
+				char auxStr[512];
+				if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,auxStr))
+					throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,attr->name(),attr->value(),attribs[i].frmt ));
 				std::string & str = *reinterpret_cast<std::string*>(attribs[i].ptr);
 				str = auxStr;
-			}				
+			}
+			else
+			// "%color" ==> TColor
+			if (std::string(attribs[i].frmt)==std::string("%color"))
+			{
+				// HTML-like format:
+				if (!(sAttr.size()>1 && sAttr[0]=='#'))
+					throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'#RRGGBB')",function_name_context,attr->name(),attr->value() ));
+
+				unsigned int r,g,b;
+				if (3!=::sscanf(sAttr.c_str()+1, "%2x%2x%2x", &r, &g, &b))
+					throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'#RRGGBB')",function_name_context,attr->name(),attr->value() ));
+				mrpt::utils::TColor & col= *reinterpret_cast<mrpt::utils::TColor*>(attribs[i].ptr);
+				col.R = r;
+				col.G = g;
+				col.B = b;
+			}
+			else
+			{
+				// Generic parse:
+				if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,ptr))
+					throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,attr->name(),attr->value(),attribs[i].frmt ));
+			}
+
 		}
 	} // end for
 }

@@ -23,7 +23,8 @@ DynamicsDifferential::DynamicsDifferential(World *parent) :
 	VehicleBase(parent),
 	m_chassis_mass(15.0),
 	m_chassis_z_min(0.05),
-	m_chassis_z_max(0.6)
+	m_chassis_z_max(0.6),
+	m_chassis_color(0xff,0x00,0x00)
 {
 	using namespace mrpt::math;
 
@@ -50,7 +51,8 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 		TXMLAttribs attribs[] = {
 			{ "mass","%lf", &this->m_chassis_mass },
 			{ "zmin","%lf", &this->m_chassis_z_min },
-			{ "zmax","%lf", &this->m_chassis_z_max }
+			{ "zmax","%lf", &this->m_chassis_z_max },
+			{ "color","%color", &this->m_chassis_color }
 		};
 		parse_xmlnode_attribs(*xml_chassis, attribs, sizeof(attribs)/sizeof(attribs[0]),"[DynamicsDifferential::dynamics_load_params_from_xml]" );
 
@@ -175,7 +177,7 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 		//m_gl_chassis->insert( mrpt::opengl::stock_objects::RobotPioneer() );
 		mrpt::opengl::CPolyhedronPtr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_chassis_poly, m_chassis_z_max-m_chassis_z_min);
 		gl_poly->setLocation(0,0, m_chassis_z_min);
-		gl_poly->setColor(1.0,0.0,0.0,1.0);
+		gl_poly->setColor( mrpt::utils::TColorf(m_chassis_color) );
 		m_gl_chassis->insert(gl_poly);
 
 		scene.insert(m_gl_chassis);

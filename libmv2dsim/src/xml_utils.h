@@ -23,7 +23,12 @@ namespace mv2dsim
 
 	struct TParamEntry
 	{
-		const char* frmt;  // Special case: if frmt="%s", "val" is assumed to be a pointer to a std::string
+		/** Normal case: sscanf()-like specifiers, and "void*" pointing to corresponding variable type.
+		  * Special cases: 
+		  *  - "%s" => "val" is assumed to be a pointer to a std::string
+		  *  - "%color" => Expected values: "#RRGGBB" ([00-FF] each). "val" is assumed to be a pointer to a mrpt::utils::TColor
+		  */
+		const char* frmt;  
 		void *val;
 
 		TParamEntry() : frmt(NULL),val(NULL) {}
