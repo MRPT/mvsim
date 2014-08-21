@@ -37,7 +37,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 {
 	m_gui_uptodate=false;
 
-	// Attribs:	
+	// Attribs:
 	std::map<std::string,TParamEntry> attribs;
 	attribs["name"] = TParamEntry("%s", &this->m_name);
 
@@ -87,7 +87,7 @@ void LaserScanner::gui_update( mrpt::opengl::COpenGLScene &scene)
 	}
 
 	const double z_incrs  = 10e-3; //for m_z_order
-	const double z_offset = 10e-2; 
+	const double z_offset = 10e-2;
 	const mrpt::poses::CPose2D &p = m_vehicle.getCPose2D();
 	m_gl_scan->setPose( mrpt::poses::CPose3D(p.x(),p.y(), z_offset+z_incrs*m_z_order, p.phi(), 0.0, 0.0 ) );
 }
@@ -99,7 +99,7 @@ void LaserScanner::simul_pre_timestep(const TSimulContext &context)
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void LaserScanner::simul_post_timestep(const TSimulContext &context)
 {
-	// Create an array of scans, each reflecting ranges to one kind of world objects. 
+	// Create an array of scans, each reflecting ranges to one kind of world objects.
 	// Finally, we'll take the shortest range in each direction:
 	std::list<mrpt::slam::CObservation2DRangeScan> lstScans;
 
@@ -108,7 +108,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 
 	// Get pose of the robot:
 	const mrpt::poses::CPose2D &vehPose = m_vehicle.getCPose2D();
-	
+
 	// grid maps:
 	// -------------
 	m_world->getTimeLogger().enter("LaserScanner.scan.1.gridmap");
@@ -129,7 +129,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		occGrid.laserScanSimulator(scan,vehPose,0.5f, m_scan_model.scan.size(), m_rangeStdNoise, 1, m_angleStdNoise);
 	}
 	m_world->getTimeLogger().leave("LaserScanner.scan.1.gridmap");
-	
+
 	// ray trace on Box2D polygons:
 	// ------------------------------
 	m_world->getTimeLogger().enter("LaserScanner.scan.2.polygons");
@@ -166,7 +166,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 				// are reported in order. However, by clipping, we can always get the closest fixture.
 				return fraction;
 			}
-	
+
 			bool m_hit;
 			b2Vec2 m_point;
 			b2Vec2 m_normal;
@@ -187,16 +187,16 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		for (size_t i=0;i<nRays;i++,A+=AA)
 		{
 			const b2Vec2 endPt = b2Vec2(sensorPt.x + cos(A)*maxRange,sensorPt.y + sin(A)*maxRange);
-			
+
 			callback.m_hit=false;
 			m_world->getBox2DWorld()->RayCast(&callback, sensorPt, endPt);
 			scan.validRange[i] = callback.m_hit ? 1:0;
-			
+
 			float &range = scan.scan[i];
 			if (callback.m_hit)
 			{
 				// Hit:
-				range = std::hypotf( callback.m_point.x - sensorPt.x, callback.m_point.y - sensorPt.y );
+				range = ::hypotf( callback.m_point.x - sensorPt.x, callback.m_point.y - sensorPt.y );
 				range += mrpt::random::randomGenerator.drawGaussian1D_normalized() * m_rangeStdNoise;
 			}
 			else
@@ -205,7 +205,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 				range = maxRange;
 			}
 		} // end for (raycast scan)
-	}	
+	}
 	m_world->getTimeLogger().leave("LaserScanner.scan.2.polygons");
 
 	// Summarize all scans in one single scan:
@@ -214,7 +214,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 
 	mrpt::slam::CObservation2DRangeScan *lastScan = new mrpt::slam::CObservation2DRangeScan(m_scan_model);
 	lastScan->timestamp = mrpt::system::now();
-	
+
 	lastScan->scan.assign(nRays,maxRange);
 	lastScan->validRange.assign(nRays, 0);
 

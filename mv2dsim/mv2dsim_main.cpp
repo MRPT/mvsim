@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 
 		// Load from XML:
 		rapidxml::file<> fil_xml(argv[1]);
-		world.load_from_XML( fil_xml.data() );
+		world.load_from_XML( fil_xml.data(), argv[1] );
 
 		// Launch GUI thread:
 		TThreadParams thread_params;

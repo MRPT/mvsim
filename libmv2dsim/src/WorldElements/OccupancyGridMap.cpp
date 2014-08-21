@@ -45,7 +45,7 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	if (!xml_file || !xml_file->value())
 		throw std::runtime_error("Error: <file></file> XML entry not found inside gridmap node!");
 
-	const string sFile = xml_file->value();
+	const string sFile = m_world->resolvePath( xml_file->value() );
 	const string sFileExt = mrpt::system::extractFileExtension(sFile, true /*ignore gz*/);
 
 	// MRPT gridmaps format:
@@ -72,7 +72,8 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 			child = child->next_sibling();
 		}
 
-		m_grid.loadFromBitmapFile(sFile,resolution,xcenterpixel,ycenterpixel);
+		if (!m_grid.loadFromBitmapFile(sFile,resolution,xcenterpixel,ycenterpixel))
+			throw std::runtime_error(mrpt::format("[OccupancyGridMap] ERROR: File not found '%s'",sFile.c_str()));
 	}
 
 }
@@ -98,7 +99,7 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 		m_grid.getAs3DObject(m_gl_grid);
 		m_gui_uptodate=true;
 	}
-	
+
 	// Update obstacles:
 	{
 		mrpt::synch::CCriticalSectionLocker csl(&m_gl_obs_clouds_buffer_cs);
@@ -132,7 +133,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 	// Upon first usage, reserve mem:
 	m_obstacles_for_each_veh.resize( lstVehs.size() );
 
-	{ // lock 
+	{ // lock
 		mrpt::synch::CCriticalSectionLocker csl( &m_gl_obs_clouds_buffer_cs );
 		m_gl_obs_clouds_buffer.resize(lstVehs.size());
 
