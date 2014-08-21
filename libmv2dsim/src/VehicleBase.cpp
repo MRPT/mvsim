@@ -205,7 +205,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 	// Sensors:
 	// -------------------------------------------------
-	MRPT_TODO("Consistency: use class XML attrib!!")
+	MRPT_TODO("Consistency: use <sensor class='XXX'> !!")
 	for (JointXMLnode<>::iterator it=veh_root_node.begin(); it!=veh_root_node.end();++it)
 	{
 		// <sensor:*> entries:
@@ -254,7 +254,7 @@ VehicleBase::TInfoPerWheel::TInfoPerWheel() :
 	x(.0),y(-.5),yaw(.0),
 	diameter(.4),width(.2),
 	mass(2.0),
-	color_r(0.2),color_g(0.2),color_b(0.2),color_a(1.0)
+	color(0xff323232)
 {
 }
 
@@ -263,7 +263,7 @@ void VehicleBase::TInfoPerWheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
 	obj.clear();
 
 	mrpt::opengl::CCylinderPtr gl_wheel = mrpt::opengl::CCylinder::Create( 0.5*diameter,0.5*diameter,this->width, 15, 1);
-	gl_wheel->setColor(color_r,color_g,color_b,color_a);
+	gl_wheel->setColor(mrpt::utils::TColorf(color));
 	gl_wheel->setPose(mrpt::poses::CPose3D(0,0.5*width,0,  0,0,mrpt::utils::DEG2RAD(90) ));
 
 	mrpt::opengl::CSetOfObjectsPtr gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
@@ -293,17 +293,13 @@ void VehicleBase::TInfoPerWheel::loadFromXML(const rapidxml::xml_node<char> *xml
 		}
      }
 
-     TXMLAttribs attribs[] = {
-     	{ "mass","%lf", &this->mass },
-     	{ "width","%lf", &this->width },
-     	{ "diameter","%lf", &this->diameter },
-     	{ "color_r","%lf", &this->color_r },
-     	{ "color_g","%lf", &this->color_g },
-     	{ "color_b","%lf", &this->color_b },
-     	{ "color_a","%lf", &this->color_a }
-	};
-
-	parse_xmlnode_attribs(*xml_node, attribs, sizeof(attribs)/sizeof(attribs[0]),"[VehicleBase::TInfoPerWheel]" );
+	std::map<std::string,TParamEntry> attribs;
+	attribs["mass"] = TParamEntry("%lf", &this->mass);
+	attribs["width"] = TParamEntry("%lf", &this->width);
+	attribs["diameter"] = TParamEntry("%lf", &this->diameter);
+	attribs["color"] = TParamEntry("%color", &this->color);
+	
+	parse_xmlnode_attribs(*xml_node, attribs,"[VehicleBase::TInfoPerWheel]" );
 
 }
 

@@ -15,6 +15,8 @@ class b2World;
 class b2Body;
 class b2Fixture;
 
+#define INVISIBLE_FIXTURE_USER_DATA (reinterpret_cast<void*>(-1))  //!< Used to signal a Box2D fixture as "invisible" to sensors.
+
 namespace rapidxml
 {
     // Forward declarations
