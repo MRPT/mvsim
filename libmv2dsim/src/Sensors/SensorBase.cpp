@@ -48,10 +48,15 @@ SensorBase* SensorBase::factory(VehicleBase& parent, const rapidxml::xml_node<ch
 	using namespace rapidxml;
 
 	if (!root) throw runtime_error("[SensorBase::factory] XML node is NULL");
-	if (0!=strncmp(root->name(),"sensor:",strlen("sensor:"))) throw runtime_error(mrpt::format("[SensorBase::factory] XML root element is '%s' ('sensor:*' expected)",root->name()));
+	if (0!=strcmp(root->name(),"sensor")) throw runtime_error(mrpt::format("[SensorBase::factory] XML root element is '%s' ('sensor' expected)",root->name()));
 
-	// Get the sensor:* final part as the name of the class (e.g. "sensor:laser"  -> "laser"):
-	const string sName  = string(root->name()).substr(strlen("sensor:"));
+	// Get "class" attrib:
+	const xml_attribute<> *sensor_class = root->first_attribute("class");
+	if (!sensor_class || !sensor_class->value() ) throw runtime_error("[VehicleBase::factory] Missing mandatory attribute 'class' in node <sensor>");
+
+	const string sName  = string(sensor_class->value());
+
+	// Class factory:
 	SensorBase* we = classFactory_sensors.create(sName, parent, root);
 
 	if (!we) throw runtime_error(mrpt::format("[SensorBase::factory] Unknown sensor type '%s'",root->name()));

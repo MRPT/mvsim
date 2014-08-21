@@ -23,7 +23,7 @@ namespace mv2dsim
 		SensorBase(VehicleBase& vehicle); //!< Ctor takes a ref to the vehicle to which the sensor is attached.
 		virtual ~SensorBase();
 
-		/** Class factory: Creates a sensor from XML description of type "<sensor:*>...</sensor:*>".  */
+		/** Class factory: Creates a sensor from XML description of type "<sensor class='CLASS_NAME'>...</sensor>".  */
 		static SensorBase* factory(VehicleBase & parent, const rapidxml::xml_node<char> *xml_node);
 
 		virtual void loadConfigFrom(const rapidxml::xml_node<char> *root) = 0;

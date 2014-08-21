@@ -33,6 +33,8 @@ namespace mv2dsim
 		int m_z_order; //!< to help rendering multiple scans
 		mrpt::poses::CPose2D m_sensor_pose_on_veh;
 		std::string m_name; //!< sensor label/name
+		double m_rangeStdNoise;
+		double m_angleStdNoise;
 
 		mrpt::slam::CObservation2DRangeScan m_scan_model; //!< Store here all scan parameters. This obj will be copied as a "pattern" to fill it with actual scan data.
 
