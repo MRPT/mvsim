@@ -33,6 +33,14 @@ void TParamEntry::parse(const std::string & str,const std::string & varName,cons
 		std::string & str = *reinterpret_cast<std::string*>(val);
 		str = auxStr;
 	}
+	// "%lf_deg" ==> DEG2RAD()
+	else if (std::string(frmt)==std::string("%lf_deg"))
+	{
+		if (1!=::sscanf(str.c_str(), frmt,val))
+			throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,varName.c_str(),str.c_str(),frmt ));
+		double &ang = *reinterpret_cast<double*>(val);
+		ang = mrpt::utils::DEG2RAD(ang);
+	}
 	// "%color" ==> TColor
 	else if (std::string(frmt)==std::string("%color"))
 	{

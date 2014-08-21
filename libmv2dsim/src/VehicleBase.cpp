@@ -203,13 +203,11 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 
 
 
-	// Sensors:
+	// Sensors: <sensor class='XXX'> entries
 	// -------------------------------------------------
-	MRPT_TODO("Consistency: use <sensor class='XXX'> !!")
 	for (JointXMLnode<>::iterator it=veh_root_node.begin(); it!=veh_root_node.end();++it)
 	{
-		// <sensor:*> entries:
-		if (!strncmp(it->name(),"sensor:",strlen("sensor:")))
+		if (!strcmp(it->name(),"sensor"))
 		{
 			SensorBase *se = SensorBase::factory(*veh,*it);
 			veh->m_sensors.push_back( SensorBasePtr(se));

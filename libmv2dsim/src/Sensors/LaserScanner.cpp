@@ -21,8 +21,10 @@ using namespace rapidxml;
 int z_order_cnt = 0;
 
 LaserScanner::LaserScanner(VehicleBase&parent,const rapidxml::xml_node<char> *root) :
+	SensorBase(parent),
 	m_z_order(++z_order_cnt),
-	SensorBase(parent)
+	m_rangeStdNoise(0.01),
+	m_angleStdNoise( mrpt::utils::DEG2RAD(0.01) )
 {
 	this->loadConfigFrom(root);
 }
@@ -49,6 +51,8 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	params["fov_degrees"] = TParamEntry("%lf",&fov_deg);
 	params["nrays"] = TParamEntry("%i",&nRays);
 	params["pose"] = TParamEntry("%pose2d_ptr3d",&m_scan_model.sensorPose);
+	params["range_std_noise"] = TParamEntry("%lf",&m_rangeStdNoise);
+	params["angle_std_noise_deg"] = TParamEntry("%lf_deg",&m_angleStdNoise);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root,params);
@@ -66,6 +70,7 @@ void LaserScanner::gui_update( mrpt::opengl::COpenGLScene &scene)
 	if (!m_gl_scan)
 	{
 		m_gl_scan = mrpt::opengl::CPlanarLaserScan::Create();
+		m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.05f);
 		scene.insert(m_gl_scan);
 	}
 
@@ -104,9 +109,6 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 	// Get pose of the robot:
 	const mrpt::poses::CPose2D &vehPose = m_vehicle.getCPose2D();
 	
-	const double rangeStdNoise = 0.01;
-	const double angleStdNoise = mrpt::utils::DEG2RAD(0.01);
-	
 	// grid maps:
 	// -------------
 	m_world->getTimeLogger().enter("LaserScanner.scan.1.gridmap");
@@ -124,7 +126,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		mrpt::slam::CObservation2DRangeScan &scan = lstScans.back();
 
 		// Ray tracing over the gridmap:
-		occGrid.laserScanSimulator(scan,vehPose,0.5f, m_scan_model.scan.size(), rangeStdNoise, 1, angleStdNoise);
+		occGrid.laserScanSimulator(scan,vehPose,0.5f, m_scan_model.scan.size(), m_rangeStdNoise, 1, m_angleStdNoise);
 	}
 	m_world->getTimeLogger().leave("LaserScanner.scan.1.gridmap");
 	
@@ -195,7 +197,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 			{
 				// Hit:
 				range = std::hypotf( callback.m_point.x - sensorPt.x, callback.m_point.y - sensorPt.y );
-				range += mrpt::random::randomGenerator.drawGaussian1D_normalized() * rangeStdNoise;
+				range += mrpt::random::randomGenerator.drawGaussian1D_normalized() * m_rangeStdNoise;
 			}
 			else
 			{

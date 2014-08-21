@@ -1,7 +1,7 @@
 <mv2dsim_world version="1.0">
 	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
-	<b2d_vel_iters>6</b2d_vel_iters>
-	<b2d_pos_iters>3</b2d_pos_iters>
+	<b2d_vel_iters>7</b2d_vel_iters>
+	<b2d_pos_iters>5</b2d_pos_iters>
 
 	<!-- ========================
 		   Scenario definition
@@ -36,7 +36,7 @@
 			</chassis>
 			
 			<!--   Motor controller -->
-			<controller class="PID">
+			<controller class="twist_PID">
 				<!-- Params -->
 			</controller>
 			
@@ -44,22 +44,19 @@
 				
 		<!-- Friction force simulation -->
 		<friction class="linear">
-			<max_torque>2</max_torque>
+			<max_torque>6</max_torque>
 			<max_force>3</max_force>
 		</friction>
 		
 		
 		<!-- Sensors: -->
-		<sensor:laser name="laser1">
+		<sensor class="laser" name="laser1">
 			<pose> 0.65  0.0  0.0 </pose>
-			<fov_degrees>270</fov_degrees>
+			<fov_degrees>180</fov_degrees>
 			<nrays>181</nrays>
-		</sensor:laser>
-		<sensor:laser name="laser2">
-			<pose> -0.45  0.0  180 </pose>
-			<fov_degrees>270</fov_degrees>
-			<nrays>181</nrays>
-		</sensor:laser>
+			<range_std_noise>0.01</range_std_noise>
+			<angle_std_noise_deg>0.05</angle_std_noise_deg>
+		</sensor>
 	</vehicle:class>
 		 
 	<!-- ========================
@@ -70,10 +67,10 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
-	<!--<vehicle name="r2" class="small-car">
-		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -- >
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -- >
-	</vehicle>-->
+	<vehicle name="r2" class="small-car">
+		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>10 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+	</vehicle>
 
 	<!--<vehicle name="r3" class="small-car">
 		<init_pose>8 -6 87</init_pose>  <!-- In global coords: x,y, yaw(deg) -- > 
