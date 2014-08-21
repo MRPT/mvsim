@@ -44,14 +44,20 @@
 				
 		<!-- Friction force simulation -->
 		<friction class="linear">
-			<!-- Params -->
+			<max_torque>2</max_torque>
+			<max_force>3</max_force>
 		</friction>
-
+		
 		
 		<!-- Sensors: -->
 		<sensor:laser name="laser1">
 			<pose> 0.65  0.0  0.0 </pose>
-			<fov_degrees>30</fov_degrees>
+			<fov_degrees>270</fov_degrees>
+			<nrays>181</nrays>
+		</sensor:laser>
+		<sensor:laser name="laser2">
+			<pose> -0.45  0.0  180 </pose>
+			<fov_degrees>270</fov_degrees>
 			<nrays>181</nrays>
 		</sensor:laser>
 	</vehicle:class>
@@ -61,13 +67,13 @@
 	     ======================== -->
 	<vehicle name="r1" class="small-car">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 0 500</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+		<init_vel>10 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
-	<vehicle name="r2" class="small-car">
-		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
-	</vehicle>
+	<!--<vehicle name="r2" class="small-car">
+		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -- >
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -- >
+	</vehicle>-->
 
 	<!--<vehicle name="r3" class="small-car">
 		<init_pose>8 -6 87</init_pose>  <!-- In global coords: x,y, yaw(deg) -- > 

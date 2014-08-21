@@ -9,7 +9,8 @@
 #include <mv2dsim/World.h>
 #include <mv2dsim/VehicleBase.h>
 #include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
-#include <mv2dsim/FrictionModels/LinearFriction.h>
+#include <mv2dsim/FrictionModels/FrictionBase.h>
+#include <mv2dsim/FrictionModels/LinearFriction.h> // For use as default model
 
 #include "JointXMLnode.h"
 #include "VehicleClassesRegistry.h"
@@ -31,8 +32,8 @@ using namespace std;
 
 VehicleClassesRegistry veh_classes_registry;
 
-
 TClassFactory_vehicleDynamics mv2dsim::classFactory_vehicleDynamics;
+
 
 // Explicit registration calls seem to be one (the unique?) way to assure registration takes place:
 void register_all_veh_dynamics()
@@ -182,14 +183,29 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	}
 
 
-	// Friction model:
-	// -------------------------------------------------
-	veh->m_friction = stlplus::smart_ptr<FrictionBase>( new LinearFriction() );
-	veh->m_friction->init(parent,veh);
+	// Friction model: 
+	// Parse <friction> node, or assume default linear model:
+	// -----------------------------------------------------------
+	{
+		const xml_node<> *frict_node = veh_root_node.first_node("friction");
+		if (!frict_node)
+		{
+			// Default:
+			veh->m_friction = stlplus::smart_ptr<FrictionBase>( new LinearFriction(*veh, NULL /*default params*/) );
+		}
+		else
+		{
+			// Parse:
+			veh->m_friction = stlplus::smart_ptr<FrictionBase>(  FrictionBase::factory(*veh,frict_node) );
+			ASSERT_(veh->m_friction)
+		}		
+	}
+
 
 
 	// Sensors:
 	// -------------------------------------------------
+	MRPT_TODO("Consistency: use class XML attrib!!")
 	for (JointXMLnode<>::iterator it=veh_root_node.begin(); it!=veh_root_node.end();++it)
 	{
 		// <sensor:*> entries:

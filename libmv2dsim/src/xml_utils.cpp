@@ -90,6 +90,19 @@ bool mv2dsim::parse_xmlnode_as_param(
 	return false;
 }
 
+/** Call \a parse_xmlnode_as_param() for all children nodes of the given node. */
+void mv2dsim::parse_xmlnode_children_as_param(
+	const rapidxml::xml_node<char> &root,
+	const std::map<std::string,TParamEntry> &params)
+{
+	rapidxml::xml_node<> *node = root.first_node();
+	while (node)
+	{
+		parse_xmlnode_as_param(*node,params);
+		node = node->next_sibling(NULL); // Move on to next node
+	}
+}
+
 /** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and returns 
 	* a vec3 with [x,y,phi] with angle in radians. Raises an exception upon malformed string.
 	*/

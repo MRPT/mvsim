@@ -173,6 +173,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 			{
 				b2BodyDef bdef;
 				ipv.collide_body = b2world->CreateBody(&bdef);
+				ASSERT_(ipv.collide_body)
 			}
 			// Force move the body to the vehicle origins (to use obstacles in local coords):
 			ipv.collide_body->SetTransform( b2Vec2(ipv.pose.x(),ipv.pose.y()), .0f);
