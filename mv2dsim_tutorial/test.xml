@@ -24,7 +24,7 @@
 			<!-- Params -->
 			<l_wheel pos="0.0  0.5" mass="2.0" width="0.20" diameter="0.40" />
 			<r_wheel pos="0.0 -0.5" mass="2.0" width="0.20" diameter="0.40" />
-			<chassis mass="10.0" zmin="0.05" zmax="0.6">
+			<chassis mass="10.0" zmin="0.05" zmax="0.6" color="#C7C7D4">
 				<shape>
 					<pt>-0.4 -0.5</pt> 
 					<pt>-0.4  0.5</pt> 
@@ -50,7 +50,7 @@
 		
 		<!-- Sensors: -->
 		<sensor:laser name="laser1">
-			<pose> 0.  0.0  0.0 </pose>
+			<pose> 0.65  0.0  0.0 </pose>
 			<fov_degrees>30</fov_degrees>
 			<nrays>181</nrays>
 		</sensor:laser>

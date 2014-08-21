@@ -12,6 +12,7 @@
 
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/math/lightweight_geom_data.h>
+#include <mrpt/utils/TColor.h>
 
 namespace mv2dsim
 {
@@ -48,6 +49,7 @@ namespace mv2dsim
 		mrpt::math::TPolygon2D m_chassis_poly;
 		double m_max_radius; //!< Automatically computed from m_chassis_poly upon each change via updateMaxRadiusFromPoly()
 		double m_chassis_z_min,m_chassis_z_max;
+		mrpt::utils::TColor   m_chassis_color;
 
 		void updateMaxRadiusFromPoly();
 
