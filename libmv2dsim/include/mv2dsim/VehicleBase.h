@@ -22,6 +22,7 @@
 
 #include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/utils/TColor.h>
 
 namespace mv2dsim
 {
@@ -73,8 +74,8 @@ namespace mv2dsim
 		{
 			double x,y,yaw; //!< Location of the wheel wrt the chassis ref point [m,rad] (in local coords)
 			double diameter,width; //!< Length(diameter) and width of the wheel rectangle [m]
-               double mass; //!< [kg]
-			double color_r,color_g,color_b,color_a; //!< Color for OpenGL rendering (in range [0,1])
+			double mass; //!< [kg]
+			mrpt::utils::TColor color; //!< Color for OpenGL rendering
 
 			TInfoPerWheel();
 			void getAs3DObject(mrpt::opengl::CSetOfObjects &obj);

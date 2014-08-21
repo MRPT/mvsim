@@ -12,79 +12,102 @@
 #include <cstdio>
 #include <mrpt/utils/utils_defs.h>
 #include <mrpt/utils/TColor.h>
+#include <mrpt/poses/CPose2D.h>
+#include <mrpt/poses/CPose3D.h>
 
 using namespace rapidxml;
 using namespace mv2dsim;
 
-void mv2dsim::parse_xmlnode_attribs(
-	const rapidxml::xml_node<char> &xml_node,
-	const TXMLAttribs * attribs,
-	const size_t nAttribs,
-	const char* function_name_context)
+/** Tries to parse the given input string according to the expected format, then store the result in "*val" 
+	* \exception std::runtime_error On format errors.
+	*/
+void TParamEntry::parse(const std::string & str,const std::string & varName,const char* function_name_context) const
 {
-	for (size_t i=0;i<nAttribs;i++)
+	// Special cases:
+	// "%s" ==> std::strings
+	if (std::string(frmt)==std::string("%s"))
 	{
-		const rapidxml::xml_attribute<char> * attr = xml_node.first_attribute( attribs[i].name );
-		if (attr && attr->value())
+		char auxStr[512];
+		if (1!=::sscanf(str.c_str(), frmt,auxStr))
+			throw std::runtime_error(mrpt::format("%s Error parsing '%s'='%s' (Expected format:'%s')",function_name_context,varName.c_str(),str.c_str(),frmt ));
+		std::string & str = *reinterpret_cast<std::string*>(val);
+		str = auxStr;
+	}
+	// "%color" ==> TColor
+	else if (std::string(frmt)==std::string("%color"))
+	{
+		// HTML-like format:
+		if (!(str.size()>1 && str[0]=='#'))
+			throw std::runtime_error(mrpt::format("%s Error parsing '%s'='%s' (Expected format:'#RRGGBB[AA]')",function_name_context,varName.c_str(),str.c_str() ));
+
+		unsigned int r,g,b,a=0xff;
+		int ret = ::sscanf(str.c_str()+1, "%2x%2x%2x%2x", &r, &g, &b,&a);
+		if (ret!=3 && ret!=4)
+			throw std::runtime_error(mrpt::format("%s Error parsing '%s'='%s' (Expected format:'#RRGGBB[AA]')",function_name_context,varName.c_str(),str.c_str() ));
+		mrpt::utils::TColor & col= *reinterpret_cast<mrpt::utils::TColor*>(val);
+		col=mrpt::utils::TColor(r,g,b,a);
+	}
+	// "%pose2d"
+	// "%pose2d_ptr3d"
+	else if ( !strncmp(frmt,"%pose2d",strlen("%pose2d")))
+	{
+		double x,y,yaw;
+		int ret = ::sscanf(str.c_str(), "%lf %lf %lf", &x,&y,&yaw);
+		if (ret!=3)
+			throw std::runtime_error(mrpt::format("%s Error parsing '%s'='%s' (Expected format:'X Y YAW_DEG')",function_name_context,varName.c_str(),str.c_str() ));
+
+		// User provides angles in deg:
+		yaw = mrpt::utils::DEG2RAD(yaw);
+
+		const mrpt::poses::CPose2D p(x,y,yaw);
+
+		// Sub-cases:
+		if (!strcmp(frmt,"%pose2d"))
 		{
-			const std::string sAttr = attr->value();
-			void *ptr = attribs[i].ptr;
-
-			// Special cases:
-			// "%s" ==> std::strings
-			if (std::string(attribs[i].frmt)==std::string("%s"))
-			{
-				char auxStr[512];
-				if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,auxStr))
-					throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,attr->name(),attr->value(),attribs[i].frmt ));
-				std::string & str = *reinterpret_cast<std::string*>(attribs[i].ptr);
-				str = auxStr;
-			}
-			else
-			// "%color" ==> TColor
-			if (std::string(attribs[i].frmt)==std::string("%color"))
-			{
-				// HTML-like format:
-				if (!(sAttr.size()>1 && sAttr[0]=='#'))
-					throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'#RRGGBB')",function_name_context,attr->name(),attr->value() ));
-
-				unsigned int r,g,b;
-				if (3!=::sscanf(sAttr.c_str()+1, "%2x%2x%2x", &r, &g, &b))
-					throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'#RRGGBB')",function_name_context,attr->name(),attr->value() ));
-				mrpt::utils::TColor & col= *reinterpret_cast<mrpt::utils::TColor*>(attribs[i].ptr);
-				col.R = r;
-				col.G = g;
-				col.B = b;
-			}
-			else
-			{
-				// Generic parse:
-				if (1!=::sscanf(sAttr.c_str(), attribs[i].frmt,ptr))
-					throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,attr->name(),attr->value(),attribs[i].frmt ));
-			}
-
+			mrpt::poses::CPose2D & pp= *reinterpret_cast<mrpt::poses::CPose2D*>(val);
+			pp = p;
 		}
-	} // end for
+		else if (!strcmp(frmt,"%pose2d_ptr3d"))
+		{
+			mrpt::poses::CPose3D & pp= *reinterpret_cast<mrpt::poses::CPose3D*>(val);
+			pp = mrpt::poses::CPose3D(p);
+		}
+		else
+			throw std::runtime_error( mrpt::format("%s Error: Unknown format specifier '%s'",function_name_context,frmt) );
+	}
+	else
+	{
+		// Generic parse:
+		if (1!=::sscanf(str.c_str(), frmt,val))
+			throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,varName.c_str(),str.c_str(),frmt ));
+	}
 }
 
 
+void mv2dsim::parse_xmlnode_attribs(
+	const rapidxml::xml_node<char> &xml_node,
+	const std::map<std::string,TParamEntry> &params,
+	const char* function_name_context)
+{
+	for (std::map<std::string,TParamEntry>::const_iterator it=params.begin();it!=params.end();++it)
+	{
+		const rapidxml::xml_attribute<char> * attr = xml_node.first_attribute( it->first.c_str() );
+		if (attr && attr->value())
+			it->second.parse( attr->value(), attr->name(), function_name_context );
+	}
+}
+
 bool mv2dsim::parse_xmlnode_as_param(
 	const rapidxml::xml_node<char> &xml_node,
-	const std::map<std::string,TParamEntry> &params)
+	const std::map<std::string,TParamEntry> &params,
+	const char* function_name_context)
 {
 	std::map<std::string,TParamEntry>::const_iterator it_param = params.find(xml_node.name());
 
 	if (it_param != params.end() )
 	{
 		// parse parameter:
-		if (1 != ::sscanf(xml_node.value(),it_param->second.frmt, it_param->second.val ) )
-		{
-			throw std::runtime_error(
-				mrpt::format(
-					"Error parsing entry '%s' with expected format '%s' and content '%s'",
-					xml_node.name(), it_param->second.frmt, xml_node.value()
-					) );
-		}
+		it_param->second.parse( xml_node.value(), xml_node.name(), function_name_context );
 		return true;
 	}
 	return false;
@@ -93,12 +116,13 @@ bool mv2dsim::parse_xmlnode_as_param(
 /** Call \a parse_xmlnode_as_param() for all children nodes of the given node. */
 void mv2dsim::parse_xmlnode_children_as_param(
 	const rapidxml::xml_node<char> &root,
-	const std::map<std::string,TParamEntry> &params)
+	const std::map<std::string,TParamEntry> &params,
+	const char* function_name_context)
 {
 	rapidxml::xml_node<> *node = root.first_node();
 	while (node)
 	{
-		parse_xmlnode_as_param(*node,params);
+		parse_xmlnode_as_param(*node,params,function_name_context);
 		node = node->next_sibling(NULL); // Move on to next node
 	}
 }
@@ -106,11 +130,15 @@ void mv2dsim::parse_xmlnode_children_as_param(
 /** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and returns 
 	* a vec3 with [x,y,phi] with angle in radians. Raises an exception upon malformed string.
 	*/
-vec3 mv2dsim::parseXYPHI(const std::string &s, bool allow_missing_angle, double default_angle)
+vec3 mv2dsim::parseXYPHI(const std::string &s, bool allow_missing_angle, double default_angle_radians)
 {
-	vec3 v;  v.vals[2]=default_angle;// Default ang.
+	vec3 v;  
+	v.vals[2]= mrpt::utils::RAD2DEG(default_angle_radians);// Default ang.
 
 	int na = ::sscanf(s.c_str(),"%lf %lf %lf",&v.vals[0],&v.vals[1],&v.vals[2] );
+	
+	// User provides numbers as degrees:
+	v.vals[2] = mrpt::utils::DEG2RAD( v.vals[2] );
 
 	if ( (na!=3 && !allow_missing_angle) || (na!=2 && na!=3 && allow_missing_angle))
 		throw std::runtime_error(mrpt::format("Malformed pose string: '%s'",s.c_str()));

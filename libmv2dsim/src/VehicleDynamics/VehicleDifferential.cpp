@@ -48,13 +48,14 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 	const rapidxml::xml_node<char> * xml_chassis = xml_node->first_node("chassis");
 	if (xml_chassis)
 	{
-		TXMLAttribs attribs[] = {
-			{ "mass","%lf", &this->m_chassis_mass },
-			{ "zmin","%lf", &this->m_chassis_z_min },
-			{ "zmax","%lf", &this->m_chassis_z_max },
-			{ "color","%color", &this->m_chassis_color }
-		};
-		parse_xmlnode_attribs(*xml_chassis, attribs, sizeof(attribs)/sizeof(attribs[0]),"[DynamicsDifferential::dynamics_load_params_from_xml]" );
+		// Attribs:	
+		std::map<std::string,TParamEntry> attribs;
+		attribs["mass"] = TParamEntry("%lf", &this->m_chassis_mass);
+		attribs["zmin"] = TParamEntry("%lf", &this->m_chassis_z_min );
+		attribs["zmax"] = TParamEntry("%lf", &this->m_chassis_z_max );
+		attribs["color"] = TParamEntry("%color", &this->m_chassis_color );
+
+		parse_xmlnode_attribs(*xml_chassis, attribs,"[DynamicsDifferential::dynamics_load_params_from_xml]" );
 
 		MRPT_TODO("XML->Shape")
 	}

@@ -35,23 +35,11 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 {
 	m_gui_uptodate=false;
 
-	// <pose>X Y YAW</pose>
-	{
-		xml_node<> *node = root->first_node("pose");
-		if (node && node->value())
-		{
-			vec3 v=parseXYPHI( node->value() );
-			const mrpt::poses::CPose2D p( v.vals[0],v.vals[1],v.vals[2] );
-			m_scan_model.sensorPose = mrpt::poses::CPose3D(p);
-		}
-	}
-
 	// Attribs:	
-	TXMLAttribs attribs[] = {
-     	{ "name","%s", &this->m_name }
-	};
-	parse_xmlnode_attribs(*root, attribs, sizeof(attribs)/sizeof(attribs[0]),"[LaserScanner]" );
+	std::map<std::string,TParamEntry> attribs;
+	attribs["name"] = TParamEntry("%s", &this->m_name);
 
+	parse_xmlnode_attribs(*root, attribs,"[LaserScanner]");
 
 	// Other scalar params:
 	int nRays = 181;
@@ -60,6 +48,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	std::map<std::string,TParamEntry> params;
 	params["fov_degrees"] = TParamEntry("%lf",&fov_deg);
 	params["nrays"] = TParamEntry("%i",&nRays);
+	params["pose"] = TParamEntry("%pose2d_ptr3d",&m_scan_model.sensorPose);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root,params);
@@ -160,6 +149,13 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 
 			float32 ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float32 fraction)
 			{
+				if (fixture->GetUserData()==INVISIBLE_FIXTURE_USER_DATA)
+				{
+					// By returning -1, we instruct the calling code to ignore this fixture and
+					// continue the ray-cast to the next fixture.
+					return -1.0f;
+				}
+
 				m_hit = true;
 				m_point = point;
 				m_normal = normal;
