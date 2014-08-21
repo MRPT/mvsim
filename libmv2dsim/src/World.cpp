@@ -10,6 +10,7 @@
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CGridPlaneXY.h>
+#include <mrpt/system/filesystem.h> // filePathSeparatorsToNative()
 
 #include <iostream> // for debugging
 #include <algorithm> // count()
@@ -27,6 +28,7 @@ World::World() :
 	m_simul_timestep(0.010),
 	m_b2d_vel_iters(6),
 	m_b2d_pos_iters(3),
+	m_base_path("."),
 	m_box2d_world( NULL )
 {
 	this->clear_all();
@@ -238,4 +240,28 @@ void World::update_GUI()
 	m_gui_win->repaint();
 
 	m_timlogger.leave("update_GUI");
+}
+
+/** Replace macros, prefix the base_path if input filename is relative, etc.
+  */
+std::string World::resolvePath(const std::string &s_in) const
+{
+	std::string ret;
+	const std::string s = mrpt::system::trim(s_in);
+
+	// Relative path? It's not if:
+	// "X:\*", "/*"
+	// -------------------
+	bool is_relative = true;
+	if (s.size()>2 && s[1]==':' && (s[2]=='/' || s[2]=='\\') ) is_relative=false;
+	if (s.size()>0 && (s[0]=='/' || s[0]=='\\') ) is_relative=false;
+	if (is_relative)
+		ret = m_base_path + string("/") + s;
+	else
+		ret = s;
+
+	// Expand macros: (TODO)
+	// -------------------
+
+	return mrpt::system::filePathSeparatorsToNative(ret);
 }

@@ -18,7 +18,7 @@ namespace mv2dsim
 	{
 	public:
 		typedef std::vector<const rapidxml::xml_node<Ch>*> TListNodes;
-	
+
 	private:
 		TListNodes m_nodes;
 
@@ -36,12 +36,12 @@ namespace mv2dsim
 		}
 
 		TListNodes & getListOfNodes() { return m_nodes; }
-		
+
 		// Iterators-like interface ----------------------
 		class iterator
 		{
 		public:
-			template <typename Ch>
+			template <typename Ch_>
 			friend class JointXMLnode;
 
 			// ++it
@@ -50,26 +50,26 @@ namespace mv2dsim
 				if (!current) throw std::runtime_error("++ called on end() iterator!?");
 				current = current->next_sibling();
 				JointXMLnode<Ch>::TListNodes &lst = parent.getListOfNodes();
-				while (!current && lst_idx<lst.size()) 
+				while (!current && lst_idx<lst.size())
 				{
 					lst_idx++;
-					if (lst_idx<lst.size()) 
+					if (lst_idx<lst.size())
 						current=lst[lst_idx]->first_node();
 					else current=NULL;
 				}
 				return *this;
 			}
 
-			rapidxml::xml_node<Ch> * operator->() const 
-			{ 
+			rapidxml::xml_node<Ch> * operator->() const
+			{
 				if (!current) throw std::runtime_error("-> called on end() iterator!?");
-				return current; 
+				return current;
 			}
 
-			rapidxml::xml_node<Ch> * operator*() const 
-			{ 
+			rapidxml::xml_node<Ch> * operator*() const
+			{
 				if (!current) throw std::runtime_error("* called on end() iterator!?");
-				return current; 
+				return current;
 			}
 
 			bool operator ==(const iterator &it) const {
@@ -81,7 +81,7 @@ namespace mv2dsim
 
 		private:
 			// begin():
-			iterator(JointXMLnode<Ch>&pa) : parent(pa),lst_idx(0),current(NULL) 
+			iterator(JointXMLnode<Ch>&pa) : parent(pa),lst_idx(0),current(NULL)
 			{
 				JointXMLnode<Ch>::TListNodes &lst = parent.getListOfNodes();
 				while (!current && lst_idx<lst.size())
@@ -91,13 +91,13 @@ namespace mv2dsim
 				}
 			}
 			// end()
-			iterator(JointXMLnode<Ch>&pa, size_t idx) : parent(pa),lst_idx(idx),current(NULL)  
+			iterator(JointXMLnode<Ch>&pa, size_t idx) : parent(pa),lst_idx(idx),current(NULL)
 			{
 			}
 
 			JointXMLnode<Ch> &parent;
 			size_t lst_idx;  // => lst.size() means this is "end()"
-			rapidxml::xml_node<Ch> *current; 
+			rapidxml::xml_node<Ch> *current;
 
 		}; // end class iterator
 

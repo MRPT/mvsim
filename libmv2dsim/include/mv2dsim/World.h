@@ -38,15 +38,16 @@ namespace mv2dsim
 		void clear_all(bool acquire_mt_lock=true); //!< Resets the entire simulation environment to an empty world. \a acquire_mt_lock determines whether to lock the multithreading semaphore before (set to false only if it's already acquired).
 
 		/** Load an entire world description into this object from a specification in XML format.
+		  * \param[in] fileNameForPath Optionally, provide the full path to an XML file from which to take relative paths.
 		  * \exception std::exception On any error, with what() giving a descriptive error message
 		  */
-		void load_from_XML(const std::string &xml_text);
+		void load_from_XML(const std::string &xml_text, const std::string &fileNameForPath=std::string("."));
 		/** @} */
 
 		/** \name Simulation execution
 		  @{*/
 
-		double get_simul_time() const { return m_simul_time; } //!< Simulation wall-clock time 
+		double get_simul_time() const { return m_simul_time; } //!< Simulation wall-clock time
 
 		double get_simul_timestep() const { return m_simul_timestep; } //!< Simulation fixed-time interval for numerical integration
 		void   set_simul_timestep(double timestep) { m_simul_timestep=timestep; } //!< Simulation fixed-time interval for numerical integration
@@ -79,6 +80,11 @@ namespace mv2dsim
 		const TListWorldElements & getListOfWorldElements() const { return m_world_elements; }
 
 		mrpt::utils::CTimeLogger & getTimeLogger() { return m_timlogger; }
+
+		/** Replace macros, prefix the base_path if input filename is relative, etc.
+		  */
+		std::string resolvePath(const std::string &in_path) const;
+
 		/** @} */
 
 	private:
@@ -86,6 +92,7 @@ namespace mv2dsim
 		double m_simul_time;    //!< In seconds, real simulation time since beginning (may be different than wall-clock time because of time warp, etc.)
 		double m_simul_timestep; //!< Simulation fixed-time interval for numerical integration.
 		int m_b2d_vel_iters, m_b2d_pos_iters; //!< Velocity and position iteration count (Box2D)
+		std::string m_base_path; //!< Path from which to take relative directories.
 
 		// -------- World contents ----------
 		mrpt::synch::CCriticalSection m_world_cs; //!< The main semaphore to protect simulation objects from multithreading access.

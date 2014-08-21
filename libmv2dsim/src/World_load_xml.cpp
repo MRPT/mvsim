@@ -8,6 +8,7 @@
 #include <mv2dsim/World.h>
 
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
+#include <mrpt/system/filesystem.h> // extractFileDirectory()
 
 #include <iostream> // for debugging
 #include <algorithm> // count()
@@ -26,10 +27,14 @@ using namespace std;
 /** Load an entire world description into this object from a specification in XML format.
 	* \exception std::exception On any error, with what() giving a descriptive error message
 	*/
-void World::load_from_XML(const std::string &xml_text)
+void World::load_from_XML(const std::string &xml_text, const std::string &fileNameForPath)
 {
 	using namespace std;
 	using namespace rapidxml;
+
+	// Extract base path of file:
+	m_base_path = mrpt::system::trim( mrpt::system::extractFileDirectory(fileNameForPath) );
+	printf("[World] INFO: Using base path='%s'\n",m_base_path.c_str());
 
 	mrpt::synch::CCriticalSectionLocker csl( &m_world_cs ); // Protect multithread access
 
