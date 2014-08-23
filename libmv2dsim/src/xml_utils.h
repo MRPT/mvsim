@@ -12,13 +12,18 @@
 #include <map>
 #include <string>
 
+// Fwd decl:
+namespace mrpt { namespace math {
+	class TPolygon2D;
+}}
+
 namespace mv2dsim
 {
 	/** Normal case: sscanf()-like specifiers, and "void*" pointing to corresponding variable type.
 		* Special cases: 
 		*  - "%lf_deg" => "val" is a "double*". The read number will be converted from degrees to radians.
 		*  - "%s" => "val" is assumed to be a pointer to a std::string
-		*  - "%color" => Expected values: "#RRGGBB" ([00-FF] each). "val" is assumed to be a pointer to a mrpt::utils::TColor
+		*  - "%color" => Expected values: "#RRGGBB[AA]" ([00-FF] each). "val" is assumed to be a pointer to a mrpt::utils::TColor
 		*  - "%pose2d" => Expects "X Y YAW_DEG". "Val" is a pointer to mrpt::poses::CPose2D
 		*  - "%pose2d_ptr3d" => Expects "X Y YAW_DEG". "Val" is a pointer to mrpt::poses::CPose3D
 		*/
@@ -63,6 +68,14 @@ namespace mv2dsim
 	  * a vec3 with [x,y,phi] with angle in radians. Raises an exception upon malformed string.
 	  */
 	vec3 parseXYPHI(const std::string &s, bool allow_missing_angle = false, double default_angle_radians=0.0);
+
+	/** Parses a <shape><pt>X Y</pt>...</shape> XML node into a mrpt::math::TPolygon2D
+	  * \exception std::exception On syntax errors, etc.
+	  */
+	void parse_xmlnode_shape(
+		const rapidxml::xml_node<char> &xml_node,
+		mrpt::math::TPolygon2D &out_poly,
+		const char* function_name_context="");
 
 
 }

@@ -57,9 +57,11 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 
 		parse_xmlnode_attribs(*xml_chassis, attribs,"[DynamicsDifferential::dynamics_load_params_from_xml]" );
 
-		MRPT_TODO("XML->Shape")
+		// Shape node (optional, fallback to default shape if none found)
+		const rapidxml::xml_node<char> * xml_shape = xml_chassis->first_node("shape");
+		if (xml_shape)
+			mv2dsim::parse_xmlnode_shape(*xml_shape, m_chassis_poly, "[DynamicsDifferential::dynamics_load_params_from_xml]");
 	}
-
 
      // <l_wheel ...>, <r_wheel ...>
      {
@@ -109,6 +111,7 @@ void DynamicsDifferential::create_multibody_system(b2World* world)
 
 		b2PolygonShape chassisPoly;
 		chassisPoly.Set(&pts[0],nPts);
+		//chassisPoly.m_radius = 1e-3;  // The "skin" depth of the body
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;
