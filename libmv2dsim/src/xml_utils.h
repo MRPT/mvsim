@@ -26,6 +26,7 @@ namespace mv2dsim
 		*  - "%color" => Expected values: "#RRGGBB[AA]" ([00-FF] each). "val" is assumed to be a pointer to a mrpt::utils::TColor
 		*  - "%pose2d" => Expects "X Y YAW_DEG". "Val" is a pointer to mrpt::poses::CPose2D
 		*  - "%pose2d_ptr3d" => Expects "X Y YAW_DEG". "Val" is a pointer to mrpt::poses::CPose3D
+		*  - "%bool" ==> bool*. Values: 'true'/'false' or '1'/'0'
 		*/
 	struct TParamEntry
 	{

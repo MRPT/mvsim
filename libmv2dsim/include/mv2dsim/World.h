@@ -93,6 +93,11 @@ namespace mv2dsim
 		double m_simul_timestep; //!< Simulation fixed-time interval for numerical integration.
 		int m_b2d_vel_iters, m_b2d_pos_iters; //!< Velocity and position iteration count (Box2D)
 		std::string m_base_path; //!< Path from which to take relative directories.
+		
+		// ------- GUI options -----
+		bool   m_gui_ortho;
+		double m_gui_camera_distance;
+
 
 		// -------- World contents ----------
 		mrpt::synch::CCriticalSection m_world_cs; //!< The main semaphore to protect simulation objects from multithreading access.
