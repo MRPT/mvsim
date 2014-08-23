@@ -15,6 +15,7 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mrpt/math/lightweight_geom_data.h>
+#include <mrpt/system/string_utils.h>
 
 using namespace rapidxml;
 using namespace mv2dsim;
@@ -41,6 +42,16 @@ void TParamEntry::parse(const std::string & str,const std::string & varName,cons
 			throw std::runtime_error(mrpt::format("%s Error parsing attribute '%s'='%s' (Expected format:'%s')",function_name_context,varName.c_str(),str.c_str(),frmt ));
 		double &ang = *reinterpret_cast<double*>(val);
 		ang = mrpt::utils::DEG2RAD(ang);
+	}
+	// "%bool" ==> bool*
+	else if (std::string(frmt)==std::string("%bool"))
+	{
+		bool &bool_val = *reinterpret_cast<bool*>(val);
+
+		const std::string sStr = mrpt::system::lowerCase( mrpt::system::trim(std::string(str)) );
+		if (sStr=="1" ||  sStr=="true") bool_val=true;
+		else if (sStr=="0" ||  sStr=="false") bool_val=false;
+		else throw std::runtime_error(mrpt::format("%s Error parsing 'bool' attribute '%s'='%s' (Expected 'true' or 'false')",function_name_context,varName.c_str(),str.c_str()));
 	}
 	// "%color" ==> TColor
 	else if (std::string(frmt)==std::string("%color"))

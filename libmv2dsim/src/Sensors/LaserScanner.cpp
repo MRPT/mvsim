@@ -178,11 +178,12 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		RayCastClosestCallback callback;
 
 		// Scan size:
+		ASSERT_(nRays>=2)
 		scan.scan.resize(nRays);
 		scan.validRange.resize(nRays);
 
 		double  A = sensorPose.phi() + (scan.rightToLeft ? -0.5:+0.5) *scan.aperture;
-		const double AA = (scan.rightToLeft ? 1.0:-1.0) * (scan.aperture / nRays);
+		const double AA = (scan.rightToLeft ? 1.0:-1.0) * (scan.aperture / (nRays-1));
 
 		for (size_t i=0;i<nRays;i++,A+=AA)
 		{

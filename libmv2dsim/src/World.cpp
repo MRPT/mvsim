@@ -29,6 +29,8 @@ World::World() :
 	m_b2d_vel_iters(6),
 	m_b2d_pos_iters(3),
 	m_base_path("."),
+	m_gui_ortho(false),
+	m_gui_camera_distance(80),
 	m_box2d_world( NULL )
 {
 	this->clear_all();
@@ -188,7 +190,8 @@ void World::update_GUI()
 		m_timlogger.enter("update_GUI_init");
 
 		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",800,600);
-		m_gui_win->setCameraZoom(80);
+		m_gui_win->setCameraZoom(m_gui_camera_distance);
+		m_gui_win->setCameraProjective(!m_gui_ortho);
 		mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock();
 
 		gl_scene->insert( mrpt::opengl::CGridPlaneXY::Create() );

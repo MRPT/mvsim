@@ -116,7 +116,7 @@ void DynamicsDifferential::create_multibody_system(b2World* world)
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &chassisPoly;
-		fixtureDef.restitution = 0.05;
+		fixtureDef.restitution = 0.01;
 
 		// Set the box density to be non-zero, so it will be dynamic.
 		b2MassData mass;
