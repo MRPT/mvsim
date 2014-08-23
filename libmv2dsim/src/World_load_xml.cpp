@@ -72,8 +72,6 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 	other_world_params["simul_timestep"] = TParamEntry("%lf", &this->m_simul_timestep);
 	other_world_params["b2d_vel_iters"] = TParamEntry("%i", &this->m_b2d_vel_iters);
 	other_world_params["b2d_pos_iters"] = TParamEntry("%i", &this->m_b2d_pos_iters);
-	other_world_params["gui:ortho"] = TParamEntry("%bool", &this->m_gui_ortho);
-	other_world_params["gui:cam_distance"]  = TParamEntry("%lf",&this->m_gui_camera_distance);
 
 	MRPT_TODO("Export this list of params to ROS dynamic reconfigure")
 
@@ -98,6 +96,11 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 		else if (!strcmp(node->name(),"vehicle:class"))
 		{
 			VehicleBase::register_vehicle_class(node);
+		}
+		// <gui> </gui> params:
+		else if (!strcmp(node->name(),"gui"))
+		{
+			m_gui_options.parse_from(*node);
 		}
 		else
 		{

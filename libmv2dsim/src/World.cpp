@@ -8,8 +8,6 @@
 #include <mv2dsim/World.h>
 
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
-#include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/CGridPlaneXY.h>
 #include <mrpt/system/filesystem.h> // filePathSeparatorsToNative()
 
 #include <iostream> // for debugging
@@ -29,8 +27,6 @@ World::World() :
 	m_b2d_vel_iters(6),
 	m_b2d_pos_iters(3),
 	m_base_path("."),
-	m_gui_ortho(false),
-	m_gui_camera_distance(80),
 	m_box2d_world( NULL )
 {
 	this->clear_all();
@@ -174,75 +170,6 @@ void World::internal_one_timestep(double dt)
 
 
 	m_timlogger.leave("timestep");
-}
-
-/** Updates (or sets-up upon first call) the GUI visualization of the scene.
-	* \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
-	*/
-size_t ID_GLTEXT_CLOCK = 0;
-
-void World::update_GUI()
-{
-	// First call?
-	// -----------------------
-	if (!m_gui_win)
-	{
-		m_timlogger.enter("update_GUI_init");
-
-		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",800,600);
-		m_gui_win->setCameraZoom(m_gui_camera_distance);
-		m_gui_win->setCameraProjective(!m_gui_ortho);
-		mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock();
-
-		gl_scene->insert( mrpt::opengl::CGridPlaneXY::Create() );
-
-		m_gui_win->unlockAccess3DScene();
-		m_timlogger.leave("update_GUI_init");
-	}
-
-	m_timlogger.enter("update_GUI"); // Don't count initialization, since that is a total outlier and lacks interest!
-
-	m_timlogger.enter("update_GUI.1.get-lock");
-	mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock(); // ** LOCK **
-	m_timlogger.leave("update_GUI.1.get-lock");
-
-	// Update view of map elements
-	// -----------------------------
-	m_timlogger.enter("update_GUI.2.map-elements");
-
-	for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
-		(*it)->gui_update(*gl_scene);
-
-	m_timlogger.leave("update_GUI.2.map-elements");
-
-	// Update view of vehicles
-	// -----------------------------
-	m_timlogger.enter("update_GUI.3.vehicles");
-
-	for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
-		(*it)->gui_update(*gl_scene);
-
-	m_timlogger.leave("update_GUI.3.vehicles");
-
-	// Update view of sensors
-	// -----------------------------
-	m_timlogger.enter("update_GUI.4.sensors");
-	m_timlogger.leave("update_GUI.4.sensors");
-
-	// Other messages
-	// -----------------------------
-	m_timlogger.enter("update_GUI.5.text-msgs");
-
-	m_gui_win->addTextMessage(2,2, mrpt::format("Time: %s", mrpt::system::formatTimeInterval(this->m_simul_time).c_str()), mrpt::utils::TColorf(1,1,1,0.5), "serif", 10, mrpt::opengl::NICE, ID_GLTEXT_CLOCK );
-
-	m_timlogger.leave("update_GUI.5.text-msgs");
-
-	// Force refresh view
-	// -----------------------
-	m_gui_win->unlockAccess3DScene(); // ** UNLOCK **
-	m_gui_win->repaint();
-
-	m_timlogger.leave("update_GUI");
 }
 
 /** Replace macros, prefix the base_path if input filename is relative, etc.

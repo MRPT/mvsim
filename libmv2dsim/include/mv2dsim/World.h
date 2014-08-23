@@ -95,8 +95,16 @@ namespace mv2dsim
 		std::string m_base_path; //!< Path from which to take relative directories.
 		
 		// ------- GUI options -----
-		bool   m_gui_ortho;
-		double m_gui_camera_distance;
+		struct TGUI_Options
+		{
+			bool   ortho;
+			double camera_distance;
+
+			TGUI_Options(); 
+			void parse_from(const rapidxml::xml_node<char> &node);
+		};
+
+		TGUI_Options m_gui_options;  //!< Some of these options are only used the first time the GUI window is created.
 
 
 		// -------- World contents ----------
