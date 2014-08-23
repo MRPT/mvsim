@@ -5,8 +5,10 @@
 	<b2d_pos_iters>5</b2d_pos_iters>
 	
 	<!-- GUI options -->
-	<gui:ortho>true</gui:ortho>
-	<gui:cam_distance>100</gui:cam_distance>
+	<gui>
+		<ortho>false</ortho>
+		<cam_distance>100</cam_distance>
+	</gui>
 
 	
 	<!-- ========================
@@ -52,8 +54,8 @@
 			<pose> 0.65  0.0  0.0 </pose>
 			<fov_degrees>180</fov_degrees>
 			<nrays>181</nrays>
-			<range_std_noise>0.001</range_std_noise>
-			<angle_std_noise_deg>0.00</angle_std_noise_deg>
+			<range_std_noise>0.01</range_std_noise>
+			<angle_std_noise_deg>0.01</angle_std_noise_deg>
 		</sensor>
 	</vehicle:class>
 		 
@@ -67,7 +69,7 @@
 
 	<vehicle name="r2" class="small-car">
 		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+		<init_vel>10 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
 	<!--<vehicle name="r3" class="small-car">
