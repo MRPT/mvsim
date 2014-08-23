@@ -21,7 +21,8 @@ using namespace std;
 // Default ctor: inits empty world.
 World::TGUI_Options::TGUI_Options() :
 	ortho(false),
-	camera_distance(80)
+	camera_distance(80),
+	fov_deg(60)
 {
 }
 
@@ -30,6 +31,7 @@ void World::TGUI_Options::parse_from(const rapidxml::xml_node<char> &node)
 	std::map<std::string,TParamEntry> gui_params;
 	gui_params["ortho"] = TParamEntry("%bool", &ortho);
 	gui_params["cam_distance"]  = TParamEntry("%lf",&camera_distance);
+	gui_params["fov_deg"] = TParamEntry("%lf",&fov_deg); 
 
 	parse_xmlnode_children_as_param(node,gui_params,"[World::TGUI_Options]");
 }
@@ -52,6 +54,7 @@ void World::update_GUI()
 		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",800,600);
 		m_gui_win->setCameraZoom(m_gui_options.camera_distance);
 		m_gui_win->setCameraProjective(!m_gui_options.ortho);
+		m_gui_win->setFOV(m_gui_options.fov_deg);
 		mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock();
 
 		gl_scene->insert( mrpt::opengl::CGridPlaneXY::Create() );
