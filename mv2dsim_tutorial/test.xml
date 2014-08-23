@@ -25,14 +25,6 @@
 			<l_wheel pos="0.0  0.5" mass="2.0" width="0.20" diameter="0.40" />
 			<r_wheel pos="0.0 -0.5" mass="2.0" width="0.20" diameter="0.40" />
 			<chassis mass="10.0" zmin="0.05" zmax="0.6">
-				<shape>
-					<pt>-0.4 -0.5</pt> 
-					<pt>-0.4  0.5</pt> 
-					<pt> 0.4  0.5</pt> 
-					<pt> 0.6  0.3</pt> 
-					<pt> 0.6 -0.3</pt> 
-					<pt>-0.4 -0.5</pt> 
-				</shape>
 			</chassis>
 			
 			<!--   Motor controller -->
@@ -51,11 +43,11 @@
 		
 		<!-- Sensors: -->
 		<sensor class="laser" name="laser1">
-			<pose> 0.65  0.0  0.0 </pose>
+			<pose> 0  0.0  0.0 </pose>
 			<fov_degrees>180</fov_degrees>
 			<nrays>181</nrays>
-			<range_std_noise>0.01</range_std_noise>
-			<angle_std_noise_deg>0.05</angle_std_noise_deg>
+			<range_std_noise>0.00</range_std_noise>
+			<angle_std_noise_deg>0.00</angle_std_noise_deg>
 		</sensor>
 	</vehicle:class>
 		 

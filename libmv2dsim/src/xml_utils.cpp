@@ -14,6 +14,7 @@
 #include <mrpt/utils/TColor.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/math/lightweight_geom_data.h>
 
 using namespace rapidxml;
 using namespace mv2dsim;
@@ -152,4 +153,32 @@ vec3 mv2dsim::parseXYPHI(const std::string &s, bool allow_missing_angle, double 
 		throw std::runtime_error(mrpt::format("Malformed pose string: '%s'",s.c_str()));
 
 	return v;
+}
+
+
+/** Parses a <shape><pt>X Y</pt>...</shape> XML node into a mrpt::math::TPolygon2D
+	* \exception std::exception On syntax errors, etc.
+	*/
+void mv2dsim::parse_xmlnode_shape(
+	const rapidxml::xml_node<char> &xml_node,
+	mrpt::math::TPolygon2D &out_poly,
+	const char* function_name_context)
+{
+	out_poly.clear();
+
+	for (rapidxml::xml_node<char> *pt_node=xml_node.first_node("pt"); pt_node ; pt_node = pt_node->next_sibling("pt") )
+	{
+		if (!pt_node->value())
+			throw std::runtime_error(mrpt::format("%s Error: <pt> node seems empty.",function_name_context));
+
+		mrpt::math::TPoint2D pt;
+		const char* str_val = pt_node->value();
+		if (2!=::sscanf(str_val, "%lf %lf",&pt.x,&pt.y))
+			throw std::runtime_error(mrpt::format("%s Error parsing <pt> node: '%s' (Expected format:'<pt>X Y</pt>')",function_name_context,str_val));
+		
+		out_poly.push_back(pt);
+	}
+
+	if (out_poly.size()<3)
+		throw std::runtime_error(mrpt::format("%s Error: <shape> node requires 3 or more <pt>X Y</pt> entries.",function_name_context));
 }
