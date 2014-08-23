@@ -99,6 +99,7 @@ namespace mv2dsim
 		{
 			bool   ortho;
 			double camera_distance;
+			double fov_deg;
 
 			TGUI_Options(); 
 			void parse_from(const rapidxml::xml_node<char> &node);
