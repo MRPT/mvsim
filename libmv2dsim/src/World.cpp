@@ -256,7 +256,12 @@ std::string World::resolvePath(const std::string &s_in) const
 	if (s.size()>2 && s[1]==':' && (s[2]=='/' || s[2]=='\\') ) is_relative=false;
 	if (s.size()>0 && (s[0]=='/' || s[0]=='\\') ) is_relative=false;
 	if (is_relative)
-		ret = m_base_path + string("/") + s;
+	{
+		ret = m_base_path;
+		if (!ret.empty() && ret.back()!='/' && ret.back()!='\\') 
+			ret+= string("/");
+		ret += s;
+	}
 	else
 		ret = s;
 
