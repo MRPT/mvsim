@@ -37,7 +37,7 @@
 			</chassis>
 			
 			<!--   Motor controller -->
-			<controller class="twist_PID">
+			<controller class="raw">
 				<!-- Params -->
 			</controller>
 			
@@ -70,7 +70,7 @@
 
 	<vehicle name="r2" class="small-car">
 		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>10 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
 	<!--<vehicle name="r3" class="small-car">

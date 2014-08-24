@@ -48,7 +48,7 @@ void VehicleClassesRegistry::add(const std::string &input_xml_node_vehicle_class
 		TXMLData & d=m_classes[sClassName]; 
 		d.xml_doc  = xml;
 		d.xml_data = xml_node_vehicle_class;
-		std::cout << "[VehicleClassesRegistry] INFO: Registered vehicle type '"<<sClassName<<"'\n";
+		//std::cout << "[VehicleClassesRegistry] INFO: Registered vehicle type '"<<sClassName<<"'\n";
 	}
 	catch (rapidxml::parse_error &e) 
 	{

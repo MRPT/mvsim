@@ -34,6 +34,55 @@ namespace mv2dsim
 		// See docs in base class:
 		virtual float getMaxVehicleRadius() const { return m_max_radius; }
 
+		/** @name Controllers 
+		    @{ */
+
+		struct TControllerInput
+		{
+			TSimulContext context;
+		};
+		struct TControllerOutput
+		{
+			double wheel_force_l,wheel_force_r;
+
+			TControllerOutput() : wheel_force_l(0),wheel_force_r(0) {}
+		};
+
+		/** Virtual base for controllers of vehicles of type DynamicsDifferential */
+		class ControllerBase
+		{
+		public:
+			ControllerBase(DynamicsDifferential &veh) : m_veh(veh) {}
+			virtual ~ControllerBase() {}
+
+			/** The core of the controller: will be called at each timestep before the numeric integration of dynamical eqs */
+			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co) =0;
+
+			/** Override to load class-specific options from the <controller> node */
+			virtual void load_config(const rapidxml::xml_node<char>&node ) {  /*default: do nothing*/ }
+
+		protected:
+			DynamicsDifferential &m_veh;
+		};
+		typedef stlplus::smart_ptr<ControllerBase> ControllerBasePtr;
+
+		class ControllerRawForces : public ControllerBase
+		{
+		public:
+			ControllerRawForces(DynamicsDifferential &veh) : ControllerBase(veh),setpoint_wheel_force_l(0), setpoint_wheel_force_r(0) {}
+			static const char* class_name() { return "raw"; }
+			//!< Directly set these values to tell the controller the desired setpoints
+			double setpoint_wheel_force_l, setpoint_wheel_force_r; 
+			// See base class docs
+			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
+		};
+
+
+		const ControllerBasePtr & getController() const {return m_controller;}
+		ControllerBasePtr & getController() {return m_controller;}
+
+		/** @} */  // end controllers
+
 	protected:
 		// See base class docs
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
@@ -43,6 +92,7 @@ namespace mv2dsim
 	private:
 		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
 		mrpt::opengl::CSetOfObjectsPtr m_gl_wheels[2]; //!< [0]:left, [1]:right
+		ControllerBasePtr  m_controller; //!< The installed controller
 
 		// Chassis info:
 		double m_chassis_mass;

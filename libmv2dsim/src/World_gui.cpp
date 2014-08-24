@@ -43,7 +43,7 @@ size_t ID_GLTEXT_CLOCK = 0;
 /** Updates (or sets-up upon first call) the GUI visualization of the scene.
 	* \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
 	*/
-void World::update_GUI()
+void World::update_GUI( TGUIKeyEvent *out_keyevent )
 {
 	// First call?
 	// -----------------------
@@ -106,5 +106,11 @@ void World::update_GUI()
 	m_gui_win->repaint();
 
 	m_timlogger.leave("update_GUI");
+
+	// Key-strokes:
+	// -----------------------
+	if (out_keyevent && m_gui_win->keyHit())
+		out_keyevent->keycode = m_gui_win->getPushedKey( &out_keyevent->key_modifier );		
+
 }
 

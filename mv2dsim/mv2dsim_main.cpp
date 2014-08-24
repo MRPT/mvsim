@@ -24,6 +24,7 @@ struct TThreadParams
 	TThreadParams(): world(NULL), closing(false) {}
 };
 void thread_update_GUI(TThreadParams &thread_params);
+World::TGUIKeyEvent gui_key_events;
 
 int main(int argc, char **argv)
 {
@@ -63,6 +64,27 @@ int main(int argc, char **argv)
 				printf("vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
 			}
 #endif
+#if 1
+			{ // Test: Differential drive: Control raw forces
+				const World::TListVehicles & vehs = world.getListOfVehicles();
+				ASSERT_(!vehs.empty())
+				DynamicsDifferential *veh = dynamic_cast<DynamicsDifferential*>(*vehs.begin());
+				ASSERT_(veh)
+				DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh->getController();
+				DynamicsDifferential::ControllerRawForces*cntrl = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
+				ASSERT_(cntrl)
+
+				switch (gui_key_events.keycode)
+				{
+				case 'q': case 'Q':  cntrl->setpoint_wheel_force_l += 5.0;  break;
+				case 'w': case 'W':  cntrl->setpoint_wheel_force_r += 5.0;  break;
+				case 'a': case 'A':  cntrl->setpoint_wheel_force_l -= 5.0;  break;
+				case 's': case 'S':  cntrl->setpoint_wheel_force_r -= 5.0;  break;
+				case ' ':cntrl->setpoint_wheel_force_r = 0.0; cntrl->setpoint_wheel_force_l=0.0;  break;
+				};
+				gui_key_events = World::TGUIKeyEvent(); // Reset key-stroke
+			}
+#endif
 
 		}
 
@@ -82,7 +104,13 @@ void thread_update_GUI(TThreadParams &thread_params)
 {
 	while (!thread_params.closing)
 	{
-		thread_params.world->update_GUI();
+		World::TGUIKeyEvent key;
+		thread_params.world->update_GUI(&key);
+
+		// Send key-strokes to the main thread:
+		if(key.keycode!=0)
+			gui_key_events = key;
+
 		mrpt::system::sleep(25);
 	}
 }
