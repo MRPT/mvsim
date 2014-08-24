@@ -90,7 +90,8 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 		else if (!strcmp(node->name(),"vehicle"))
 		{
 			VehicleBase* veh = VehicleBase::factory(this,node);
-			this->m_vehicles.push_back( veh );
+			// make sure the name is not duplicated:
+			m_vehicles.insert( TListVehicles::value_type(veh->getName(),veh));
 		}
 		// <vehicle:class> entries:
 		else if (!strcmp(node->name(),"vehicle:class"))

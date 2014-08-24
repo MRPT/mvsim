@@ -75,7 +75,7 @@ namespace mv2dsim
 
 		/** \name Public types
 		  @{*/
-		typedef std::list<VehicleBase*> TListVehicles; //!< See getListOfVehicles()
+		typedef std::multimap<std::string,VehicleBase*> TListVehicles; //!< Map 'vehicle-name' => vehicle object. See getListOfVehicles()
 		typedef std::list<WorldElementBase*> TListWorldElements; //!< See getListOfWorldElements()
 		/** @} */
 
@@ -110,6 +110,7 @@ namespace mv2dsim
 			bool   ortho;
 			double camera_distance;
 			double fov_deg;
+			std::string follow_vehicle; //!< Name of the vehicle to follow (empty=none)
 
 			TGUI_Options(); 
 			void parse_from(const rapidxml::xml_node<char> &node);

@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 			{ // Test: Differential drive: Control raw forces
 				const World::TListVehicles & vehs = world.getListOfVehicles();
 				ASSERT_(!vehs.empty())
-				DynamicsDifferential *veh = dynamic_cast<DynamicsDifferential*>(*vehs.begin());
+				DynamicsDifferential *veh = dynamic_cast<DynamicsDifferential*>(vehs.begin()->second);
 				ASSERT_(veh)
 				DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh->getController();
 				DynamicsDifferential::ControllerRawForces*cntrl = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
