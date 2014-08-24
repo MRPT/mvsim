@@ -65,12 +65,7 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 		other_params["centerpixel_x"] = TParamEntry("%lf", &xcenterpixel);
 		other_params["centerpixel_y"] = TParamEntry("%lf", &ycenterpixel);
 
-		xml_node<> *child = root->first_node();
-		while (child)
-		{
-			parse_xmlnode_as_param(*child,other_params);
-			child = child->next_sibling();
-		}
+		parse_xmlnode_children_as_param(*root,other_params);
 
 		if (!m_grid.loadFromBitmapFile(sFile,resolution,xcenterpixel,ycenterpixel))
 			throw std::runtime_error(mrpt::format("[OccupancyGridMap] ERROR: File not found '%s'",sFile.c_str()));

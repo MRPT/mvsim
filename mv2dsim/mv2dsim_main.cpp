@@ -71,18 +71,19 @@ int main(int argc, char **argv)
 				DynamicsDifferential *veh = dynamic_cast<DynamicsDifferential*>(vehs.begin()->second);
 				ASSERT_(veh)
 				DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh->getController();
-				DynamicsDifferential::ControllerRawForces*cntrl = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
+				DynamicsDifferential::ControllerTwistPI *cntrl = dynamic_cast<DynamicsDifferential::ControllerTwistPI*>(cntrl_ptr.pointer());
 				ASSERT_(cntrl)
 
 				switch (gui_key_events.keycode)
 				{
-				case 'q': case 'Q':  cntrl->setpoint_wheel_force_l += 5.0;  break;
-				case 'w': case 'W':  cntrl->setpoint_wheel_force_r += 5.0;  break;
-				case 'a': case 'A':  cntrl->setpoint_wheel_force_l -= 5.0;  break;
-				case 's': case 'S':  cntrl->setpoint_wheel_force_r -= 5.0;  break;
-				case ' ':cntrl->setpoint_wheel_force_r = 0.0; cntrl->setpoint_wheel_force_l=0.0;  break;
+				case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
+				case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
+				case 'a':  cntrl->setpoint_ang_speed += 0.1;  break;
+				case 'd':  cntrl->setpoint_ang_speed -= 0.1;  break;
+				case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
 				};
 				gui_key_events = World::TGUIKeyEvent(); // Reset key-stroke
+				//printf("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
 			}
 #endif
 

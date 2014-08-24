@@ -18,6 +18,8 @@
 using namespace mv2dsim;
 using namespace std;
 
+MRPT_TODO("Rewrite such that the wheels rotational velocities are an independent part of the dynamical model!!")
+
 // Ctor:
 DynamicsDifferential::DynamicsDifferential(World *parent) :
 	VehicleBase(parent),
@@ -87,7 +89,6 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 
 	// Vehicle controller:
 	// -------------------------------------------------
-	MRPT_TODO("Load controller from XML")
 	{
 		const rapidxml::xml_node<char> * xml_control = xml_node->first_node("controller");
 		if (xml_control)
@@ -96,13 +97,11 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			if (!control_class || !control_class->value()) throw runtime_error("[DynamicsDifferential] Missing 'class' attribute in <controller> XML node");
 
 			const std::string sCtrlClass = std::string(control_class->value());
-			if (sCtrlClass==ControllerRawForces::class_name())
-			{
-				m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
-				m_controller->load_config(*xml_control);
-			}
-			else 
-				throw runtime_error(mrpt::format("[DynamicsDifferential] Unknown 'class'='%s' in <controller> XML node",sCtrlClass.c_str()));
+			if (sCtrlClass==ControllerRawForces::class_name())    m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
+			else if (sCtrlClass==ControllerTwistPI::class_name()) m_controller = ControllerBasePtr(new ControllerTwistPI(*this) );
+			else throw runtime_error(mrpt::format("[DynamicsDifferential] Unknown 'class'='%s' in <controller> XML node",sCtrlClass.c_str()));
+
+			m_controller->load_config(*xml_control);
 		}
 	}
 

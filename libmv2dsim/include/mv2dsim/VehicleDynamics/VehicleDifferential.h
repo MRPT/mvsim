@@ -9,6 +9,7 @@
 #pragma once
 
 #include <mv2dsim/VehicleBase.h>
+#include <mv2dsim/PID_Controller.h>
 
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/math/lightweight_geom_data.h>
@@ -76,6 +77,26 @@ namespace mv2dsim
 			// See base class docs
 			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
 		};
+
+		/** PI controller that controls the vehicle twist: linear & angular velocities */
+		class ControllerTwistPI : public ControllerBase
+		{
+		public:
+			ControllerTwistPI(DynamicsDifferential &veh);
+			static const char* class_name() { return "twist_pi"; }
+			//!< Directly set these values to tell the controller the desired setpoints
+			double setpoint_lin_speed, setpoint_ang_speed; 
+			// See base class docs
+			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
+			// See base class docs
+			virtual void load_config(const rapidxml::xml_node<char>&node );
+			double KP,KI; //!< PI controller parameters
+			double I_MAX; //!< I part maximum value (absolute value for clamp)
+		private:
+			double m_distWheels;
+			PID_Controller m_PID[2];
+		};
+		
 
 
 		const ControllerBasePtr & getController() const {return m_controller;}
