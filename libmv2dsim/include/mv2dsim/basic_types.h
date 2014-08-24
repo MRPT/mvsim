@@ -42,6 +42,7 @@ namespace mv2dsim
 	{
 		b2World * b2_world;
 		double    simul_time; //!< Current time in the simulated world
+		double    dt; //!< timestep
 	};
 
 

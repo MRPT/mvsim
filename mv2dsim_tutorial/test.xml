@@ -38,8 +38,10 @@
 			</chassis>
 			
 			<!--   Motor controller -->
-			<controller class="raw">
+			<controller class="twist_pi">
 				<!-- Params -->
+				<KP>15</KP>  <KI>30</KI> <I_MAX>10</I_MAX>
+				<V>0.0</V><W>30</W>
 			</controller>
 			
 		</dynamics>
@@ -69,9 +71,9 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
-	<vehicle name="r2" class="small-car">
-		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+	<!-- <vehicle name="r2" class="small-car">
+		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -- >
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -- >
 	</vehicle>
 
 	<!--<vehicle name="r3" class="small-car">

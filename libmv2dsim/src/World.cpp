@@ -103,6 +103,7 @@ void World::internal_one_timestep(double dt)
 	TSimulContext context;
 	context.b2_world   = m_box2d_world;
 	context.simul_time = m_simul_time;
+	context.dt = dt;
 
 	// 1) Pre-step
 	{
