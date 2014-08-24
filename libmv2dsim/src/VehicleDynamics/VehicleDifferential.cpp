@@ -63,9 +63,9 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			mv2dsim::parse_xmlnode_shape(*xml_shape, m_chassis_poly, "[DynamicsDifferential::dynamics_load_params_from_xml]");
 	}
 
-     // <l_wheel ...>, <r_wheel ...>
-     {
-     	const rapidxml::xml_node<char> * xml_wheel_l = xml_node->first_node("l_wheel");
+	// <l_wheel ...>, <r_wheel ...>
+	{
+		const rapidxml::xml_node<char> * xml_wheel_l = xml_node->first_node("l_wheel");
 		if (xml_wheel_l)
 			m_wheels_info[0].loadFromXML(xml_wheel_l);
 		else
@@ -73,9 +73,9 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			m_wheels_info[0] = VehicleBase::TInfoPerWheel();
 			m_wheels_info[0].y = 0.5;
 		}
-     }
-     {
-     	const rapidxml::xml_node<char> * xml_wheel_r = xml_node->first_node("r_wheel");
+	}
+	{
+		const rapidxml::xml_node<char> * xml_wheel_r = xml_node->first_node("r_wheel");
 		if (xml_wheel_r)
 			m_wheels_info[1].loadFromXML(xml_wheel_r);
 		else
@@ -83,11 +83,33 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			m_wheels_info[1] = VehicleBase::TInfoPerWheel();
 			m_wheels_info[1].y = -0.5;
 		}
-     }
+	}
 
 	// Vehicle controller:
 	// -------------------------------------------------
 	MRPT_TODO("Load controller from XML")
+	{
+		const rapidxml::xml_node<char> * xml_control = xml_node->first_node("controller");
+		if (xml_control)
+		{
+			rapidxml::xml_attribute<char> *control_class = xml_control->first_attribute("class");
+			if (!control_class || !control_class->value()) throw runtime_error("[DynamicsDifferential] Missing 'class' attribute in <controller> XML node");
+
+			const std::string sCtrlClass = std::string(control_class->value());
+			if (sCtrlClass==ControllerRawForces::class_name())
+			{
+				m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
+				m_controller->load_config(*xml_control);
+			}
+			else 
+				throw runtime_error(mrpt::format("[DynamicsDifferential] Unknown 'class'='%s' in <controller> XML node",sCtrlClass.c_str()));
+		}
+	}
+
+	// Default controller: 
+	if (!m_controller)
+		m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
+
 
 }
 
@@ -203,16 +225,30 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 // See docs in base class:
 void DynamicsDifferential::apply_motor_forces(const TSimulContext &context)
 {
+	// Longitudinal forces at each wheel:
+	double forces[2];  // [0]:left, [1]:right wheel info
+	if (m_controller)
+	{
+		// Invoke controller:
+		TControllerInput ci;
+		ci.context = context;
+		TControllerOutput co;
+		m_controller->control_step(ci,co);
+		// Take its output:
+		forces[0] = co.wheel_force_l;
+		forces[1] = co.wheel_force_r;
+	}
+	else {
+		forces[0] = forces[1] = 0.0;
+	}
+
 	// Apply one force on each wheel:
-	b2Vec2 net_wheels_forces[2]; // In local (x,y) coordinates (Newtons)
-
-	net_wheels_forces[0]= b2Vec2_zero; // ( context.simul_time<3.0 ? 25.0 : 7.0,0.0);
-	net_wheels_forces[1]= b2Vec2_zero; // ( context.simul_time<3.0 ? 5.0 : 6.0 ,0.0);
-
 	for (int wheel=0;wheel<2;wheel++)
 	{
+		const b2Vec2 net_wheels_force= b2Vec2( forces[wheel],0.0); // In local (x,y) coordinates (Newtons)
+
 		m_b2d_vehicle_body->ApplyForce(
-			m_b2d_vehicle_body->GetWorldVector(net_wheels_forces[wheel]), /* force */
+			m_b2d_vehicle_body->GetWorldVector(net_wheels_force), /* force */
 			m_b2d_vehicle_body->GetWorldPoint( b2Vec2( m_wheels_info[wheel].x,m_wheels_info[wheel].y) ), /* point */
 			true /* wake up */
 			);

@@ -35,8 +35,15 @@ namespace mrpt {
 namespace mv2dsim
 {
 	class World;
-	struct TSimulContext;
 	class VehicleBase;
+
+	/** XX */
+	struct TSimulContext
+	{
+		b2World * b2_world;
+		double    simul_time; //!< Current time in the simulated world
+	};
+
 
 	/** Vector to store a pose (x,y,yaw), vel (dx,dy,omega) or acc (ddx,ddy,alpha) */
 	struct vec3

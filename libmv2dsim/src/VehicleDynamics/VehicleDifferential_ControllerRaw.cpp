@@ -6,15 +6,18 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+  */
 
+#include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
+//#include <mv2dsim/World.h>
+//#include <rapidxml.hpp>
 
-#pragma once
+using namespace mv2dsim;
+using namespace std;
 
-// Version of the library
-#include "mv2dsim_version.h"
-
-// Generic classes ------------------
-#include "World.h"
-
-// Vehicles  ------------------
-#include "VehicleDynamics/VehicleDifferential.h"
-
+// See base class docs
+void DynamicsDifferential::ControllerRawForces::control_step(
+	const DynamicsDifferential::TControllerInput &ci, 
+	DynamicsDifferential::TControllerOutput &co)
+{
+	co.wheel_force_l = this->setpoint_wheel_force_l;
+	co.wheel_force_r = this->setpoint_wheel_force_r;
+}

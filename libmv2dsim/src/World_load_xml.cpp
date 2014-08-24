@@ -34,7 +34,7 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 
 	// Extract base path of file:
 	m_base_path = mrpt::system::trim( mrpt::system::extractFileDirectory(fileNameForPath) );
-	printf("[World] INFO: Using base path='%s'\n",m_base_path.c_str());
+	//printf("[World] INFO: Using base path='%s'\n",m_base_path.c_str());
 
 	mrpt::synch::CCriticalSectionLocker csl( &m_world_cs ); // Protect multithread access
 

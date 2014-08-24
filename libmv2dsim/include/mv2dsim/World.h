@@ -57,10 +57,20 @@ namespace mv2dsim
 		  */
 		void run_simulation(double dt);
 
+
+		struct TGUIKeyEvent
+		{
+			int keycode; //!< 0=no Key. Otherwise, ASCII code.
+			mrpt::gui::mrptKeyModifier key_modifier;
+
+			TGUIKeyEvent() : keycode(0) {}
+		};
+
 		/** Updates (or sets-up upon first call) the GUI visualization of the scene.
+		  * \param[out] out_keyevent Optionally (if !=NULL), keystrokes in the window are returned here.
 		  * \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
 		  */
-		void update_GUI();
+		void update_GUI( TGUIKeyEvent *out_keyevent = NULL );
 		/** @} */
 
 		/** \name Public types
@@ -128,13 +138,6 @@ namespace mv2dsim
 
 		mrpt::utils::CTimeLogger m_timlogger;
 
-	};
-
-	/** XX */
-	struct TSimulContext
-	{
-		b2World * b2_world;
-		double    simul_time; //!< Current time in the simulated world
 	};
 
 }
