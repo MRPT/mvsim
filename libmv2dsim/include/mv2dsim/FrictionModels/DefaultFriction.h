@@ -14,13 +14,13 @@
 
 namespace mv2dsim
 {
-	/** "Linear" friction model for interaction between each wheel-ground contact point
+	/** The default friction model for interaction between each wheel-ground contact point
 	  */
-	class LinearFriction : public FrictionBase
+	class DefaultFriction : public FrictionBase
 	{
-		DECLARES_REGISTER_FRICTION(LinearFriction)
+		DECLARES_REGISTER_FRICTION(DefaultFriction)
 	public:
-		LinearFriction(VehicleBase &my_vehicle, const rapidxml::xml_node<char> *node);
+		DefaultFriction(VehicleBase &my_vehicle, const rapidxml::xml_node<char> *node);
 
 		virtual void update_step(const TSimulContext &context);
 

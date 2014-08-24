@@ -7,17 +7,9 @@
   +-------------------------------------------------------------------------+  */
 
 #include <mv2dsim/FrictionModels/FrictionBase.h>
-#include <mv2dsim/FrictionModels/LinearFriction.h>
+#include <mv2dsim/FrictionModels/DefaultFriction.h>
 #include <mv2dsim/VehicleBase.h>
-
 #include <rapidxml.hpp>
-//#include <rapidxml_utils.hpp>
-//#include <rapidxml_print.hpp>
-//#include <mrpt/utils/utils_defs.h>  // mrpt::format()
-
-//#include <sstream>      // std::stringstream
-//#include <map>
-//#include <string>
 
 using namespace mv2dsim;
 
@@ -29,7 +21,7 @@ void register_all_friction()
 	static bool done = false;
 	if (done) return; else done=true;
 
-	REGISTER_FRICTION("linear",LinearFriction)
+	REGISTER_FRICTION("default",DefaultFriction)
 }
 
 FrictionBase::FrictionBase(VehicleBase & my_vehicle) :

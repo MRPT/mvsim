@@ -124,10 +124,10 @@ namespace mv2dsim
 
 		void updateMaxRadiusFromPoly();
 
-		VehicleBase::TInfoPerWheel m_wheels_info[2]; //!< [0]:left, [1]:right wheel info
+		Wheel m_wheels_info[2]; //!< [0]:left, [1]:right wheel info
 
 		virtual size_t getNumWheels() const { return 2; }
-		virtual const VehicleBase::TInfoPerWheel & getWheelInfo(const size_t idx) const { return m_wheels_info[idx]; }
+		virtual const Wheel & getWheelInfo(const size_t idx) const { return m_wheels_info[idx]; }
 
 		b2Fixture* m_fixture_chassis;
 		b2Fixture* m_fixture_wheels[2]; //!< [0]:left, [1]:right

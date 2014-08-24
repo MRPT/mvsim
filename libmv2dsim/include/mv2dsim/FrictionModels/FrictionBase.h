@@ -8,13 +8,13 @@
 
 #pragma once
 
-#include <mv2dsim/basic_types.h>
-#include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
+#include <mv2dsim/basic_types.h>  // fwrd decls.
 #include <mv2dsim/ClassFactory.h>
 #include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 
 namespace mv2dsim
 {
+
 	/** Virtual base class for all friction models */
 	class FrictionBase
 	{
