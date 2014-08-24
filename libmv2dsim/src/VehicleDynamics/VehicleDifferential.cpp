@@ -72,7 +72,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			m_wheels_info[0].loadFromXML(xml_wheel_l);
 		else
 		{
-			m_wheels_info[0] = VehicleBase::TInfoPerWheel();
+			m_wheels_info[0] = Wheel();
 			m_wheels_info[0].y = 0.5;
 		}
 	}
@@ -82,7 +82,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			m_wheels_info[1].loadFromXML(xml_wheel_r);
 		else
 		{
-			m_wheels_info[1] = VehicleBase::TInfoPerWheel();
+			m_wheels_info[1] = Wheel();
 			m_wheels_info[1].y = -0.5;
 		}
 	}
@@ -215,7 +215,7 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 
 	for (int i=0;i<2;i++)
 	{
-		const VehicleBase::TInfoPerWheel & w = m_wheels_info[i];
+		const Wheel & w = m_wheels_info[i];
 		m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.diameter, w.yaw, 0.0, 0.0) );
 	}
 

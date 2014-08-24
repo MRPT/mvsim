@@ -47,7 +47,7 @@
 		</dynamics>
 				
 		<!-- Friction force simulation -->
-		<friction class="linear">
+		<friction class="default">
 			<max_torque>6</max_torque>
 			<max_force>3</max_force>
 		</friction>

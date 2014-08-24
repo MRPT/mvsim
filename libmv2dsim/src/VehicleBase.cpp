@@ -10,7 +10,7 @@
 #include <mv2dsim/VehicleBase.h>
 #include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
 #include <mv2dsim/FrictionModels/FrictionBase.h>
-#include <mv2dsim/FrictionModels/LinearFriction.h> // For use as default model
+#include <mv2dsim/FrictionModels/DefaultFriction.h> // For use as default model
 
 #include "JointXMLnode.h"
 #include "VehicleClassesRegistry.h"
@@ -21,7 +21,6 @@
 #include <rapidxml_print.hpp>
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/poses/CPose2D.h>
-#include <mrpt/opengl/CCylinder.h>
 
 #include <sstream>      // std::stringstream
 #include <map>
@@ -205,7 +204,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		if (!frict_node)
 		{
 			// Default:
-			veh->m_friction = stlplus::smart_ptr<FrictionBase>( new LinearFriction(*veh, NULL /*default params*/) );
+			veh->m_friction = stlplus::smart_ptr<FrictionBase>( new DefaultFriction(*veh, NULL /*default params*/) );
 		}
 		else
 		{
@@ -261,60 +260,6 @@ void VehicleBase::load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
 void VehicleBase::load_params_from_xml(const std::string &xml_text)
 {
 }
-
-VehicleBase::TInfoPerWheel::TInfoPerWheel() :
-	x(.0),y(-.5),yaw(.0),
-	diameter(.4),width(.2),
-	mass(2.0),
-	color(0xff323232)
-{
-}
-
-void VehicleBase::TInfoPerWheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
-{
-	obj.clear();
-
-	mrpt::opengl::CCylinderPtr gl_wheel = mrpt::opengl::CCylinder::Create( 0.5*diameter,0.5*diameter,this->width, 15, 1);
-	gl_wheel->setColor(mrpt::utils::TColorf(color));
-	gl_wheel->setPose(mrpt::poses::CPose3D(0,0.5*width,0,  0,0,mrpt::utils::DEG2RAD(90) ));
-
-	mrpt::opengl::CSetOfObjectsPtr gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
-	gl_wheel_frame->insert(gl_wheel);
-	//gl_wheel_frame->insert( mrpt::opengl::stock_objects::CornerXYZSimple() );
-
-	obj.setPose( mrpt::math::TPose3D( x,y, 0.5*diameter, yaw, 0.0, 0.0) );
-
-     obj.insert(gl_wheel_frame);
-}
-
-void VehicleBase::TInfoPerWheel::loadFromXML(const rapidxml::xml_node<char> *xml_node)
-{
-	ASSERT_(xml_node)
-	// Parse attributes:
-	// <l_wheel pos="0.0 -0.5 [OPTIONAL_ANG]" mass="2.0" width="0.10" diameter="0.30" />
-	// pos:
-     {
-     	const rapidxml::xml_attribute<char> * attr = xml_node->first_attribute("pos");
-		if (attr && attr->value())
-		{
-			const std::string sAttr = attr->value();
-			vec3 v = parseXYPHI(sAttr, true);
-			this->x =v.vals[0];
-			this->y =v.vals[1];
-			this->yaw =v.vals[2];
-		}
-     }
-
-	std::map<std::string,TParamEntry> attribs;
-	attribs["mass"] = TParamEntry("%lf", &this->mass);
-	attribs["width"] = TParamEntry("%lf", &this->width);
-	attribs["diameter"] = TParamEntry("%lf", &this->diameter);
-	attribs["color"] = TParamEntry("%color", &this->color);
-	
-	parse_xmlnode_attribs(*xml_node, attribs,"[VehicleBase::TInfoPerWheel]" );
-
-}
-
 
 void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 {

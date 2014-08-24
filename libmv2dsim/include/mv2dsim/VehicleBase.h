@@ -11,6 +11,7 @@
 #include <mv2dsim/basic_types.h>
 #include <mv2dsim/VisualObject.h>
 #include <mv2dsim/Simulable.h>
+#include <mv2dsim/Wheel.h>
 #include <mv2dsim/ClassFactory.h>
 #include <mv2dsim/FrictionModels/FrictionBase.h>
 #include <mv2dsim/Sensors/SensorBase.h>
@@ -67,23 +68,8 @@ namespace mv2dsim
 
 		b2Body * getBox2DChassisBody() { return m_b2d_vehicle_body; }
 
-		/** Common info for 2D wheels, for usage in derived classes.
-		  * Wheels are modeled as a mass with a rectangular shape.
-		  */
-		struct TInfoPerWheel
-		{
-			double x,y,yaw; //!< Location of the wheel wrt the chassis ref point [m,rad] (in local coords)
-			double diameter,width; //!< Length(diameter) and width of the wheel rectangle [m]
-			double mass; //!< [kg]
-			mrpt::utils::TColor color; //!< Color for OpenGL rendering
-
-			TInfoPerWheel();
-			void getAs3DObject(mrpt::opengl::CSetOfObjects &obj);
-			void loadFromXML(const rapidxml::xml_node<char> *xml_node);
-		};
-
 		virtual size_t getNumWheels() const = 0;
-		virtual const VehicleBase::TInfoPerWheel & getWheelInfo(const size_t idx) const = 0;
+		virtual const Wheel & getWheelInfo(const size_t idx) const = 0;
 
 		/** Last time-step pose (of the ref. point, in global coords) */
 		const vec3 & getPose() const { return m_q; } 

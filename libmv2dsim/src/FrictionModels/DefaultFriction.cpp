@@ -8,7 +8,7 @@
 
 #include <mv2dsim/World.h>
 #include <mv2dsim/VehicleBase.h>
-#include <mv2dsim/FrictionModels/LinearFriction.h>
+#include <mv2dsim/FrictionModels/DefaultFriction.h>
 
 #include <rapidxml.hpp>
 #include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
@@ -17,7 +17,7 @@
 using namespace mv2dsim;
 
 
-LinearFriction::LinearFriction(VehicleBase & my_vehicle, const rapidxml::xml_node<char> *node) :
+DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_node<char> *node) :
 	FrictionBase(my_vehicle),
 	m_max_torque(5), 
 	m_max_force(2)
@@ -47,7 +47,7 @@ LinearFriction::LinearFriction(VehicleBase & my_vehicle, const rapidxml::xml_nod
 
 	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
 	{
-		const VehicleBase::TInfoPerWheel & ipw = m_my_vehicle.getWheelInfo(i);
+		const Wheel & ipw = m_my_vehicle.getWheelInfo(i);
 
 		const b2Vec2 local_pt = b2Vec2( ipw.x,ipw.y );
 
@@ -61,7 +61,7 @@ LinearFriction::LinearFriction(VehicleBase & my_vehicle, const rapidxml::xml_nod
 	}
 }
 
-void LinearFriction::update_step(const TSimulContext &context)
+void DefaultFriction::update_step(const TSimulContext &context)
 {
 	// Update them:
 	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
