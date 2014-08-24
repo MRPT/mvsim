@@ -264,12 +264,64 @@ void VehicleBase::load_params_from_xml(const std::string &xml_text)
 void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 {
 	// Apply motor forces/torques:
-	this->apply_motor_forces(context);
+	std::vector<double> force_per_wheel;
+	this->apply_motor_forces(context,force_per_wheel);
 
 	// Apply friction model at each wheel:
-	m_friction->update_step(context);
+	const size_t nW = getNumWheels();
+	ASSERT_EQUAL_(force_per_wheel.size(),nW);
 
+	const vector<vec2> wheels_vels = this->getWheelsVelocityLocal();
+	ASSERT_EQUAL_(wheels_vels.size(),nW);
+	
+	for (size_t i=0;i<nW;i++)
+	{
+		// prepare data:
+		const Wheel &w = getWheelInfo(i);
+		
+		FrictionBase::TFrictionInput fi(context,w);
+		fi.motor_force = -force_per_wheel[i];  // "-" => Forwards is negative
+		fi.weight = .0; MRPT_TODO("wEIGHT")
+		fi.wheel_speed = mrpt::math::TPoint2D( wheels_vels[i].vals[0],wheels_vels[i].vals[1] );
+
+		// eval friction:
+		mv2dsim::vec2 net_force_;
+		m_friction->evaluate_friction(fi,net_force_);
+
+		const b2Vec2 net_force = b2Vec2(net_force_.vals[0],net_force_.vals[1]);
+
+		// Apply force:
+		m_b2d_vehicle_body->ApplyForce(
+			m_b2d_vehicle_body->GetWorldVector(net_force), /* force */
+			m_b2d_vehicle_body->GetWorldPoint( b2Vec2( w.x, w.y) ), /* point */
+			true /* wake up */
+			);
+	}
 }
+
+/** Last time-step velocity of each wheel's center point (in local coords) */
+std::vector<vec2> VehicleBase::getWheelsVelocityLocal() const
+{
+	const vec3 veh_vel_local = this->getVelocityLocal();
+
+	// Each wheel velocity is: 
+	// v_w = v_veh + \omega \times wheel_pos
+	// => 
+	// v_w = v_veh + ( -w*y, w*x )
+
+	const size_t nW = this->getNumWheels();
+	std::vector<vec2> vels(nW);
+	for (size_t i=0;i<nW;i++)
+	{
+		const Wheel &wheel = getWheelInfo(i);
+
+		vels[i].vals[0] = veh_vel_local.vals[0] - veh_vel_local.vals[2] * wheel.y;
+		vels[i].vals[1] = veh_vel_local.vals[1] + veh_vel_local.vals[2] * wheel.x;
+	}
+
+	return vels;
+}
+
 
 /** Last time-step velocity (of the ref. point, in local coords) */
 vec3 VehicleBase::getVelocityLocal() const

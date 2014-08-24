@@ -18,9 +18,7 @@ using namespace mv2dsim;
 
 
 DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_node<char> *node) :
-	FrictionBase(my_vehicle),
-	m_max_torque(5), 
-	m_max_force(2)
+	FrictionBase(my_vehicle)
 {
 	// Sanity: we can tolerate node==NULL (=> means use default params).
 	if (node && 0!=strcmp(node->name(),"friction"))
@@ -29,51 +27,32 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 	if (node)
 	{
 		// Parse params:
-		std::map<std::string,TParamEntry> params;
-		params["max_torque"] = TParamEntry("%lf",&m_max_torque);
-		params["max_force"] = TParamEntry("%lf",&m_max_force);
+		//std::map<std::string,TParamEntry> params;
+		//XXX
 
-		// Parse XML params:
-		parse_xmlnode_children_as_param(*node,params);
+		//// Parse XML params:
+		//parse_xmlnode_children_as_param(*node,params);
 	}	
 
-	// Create a "friction joint" for each wheel:
-	b2FrictionJointDef fjd;
-
-	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
-
-	fjd.bodyA = m_world->getBox2DGroundBody();
-	fjd.bodyB = veh;
-
-	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
-	{
-		const Wheel & ipw = m_my_vehicle.getWheelInfo(i);
-
-		const b2Vec2 local_pt = b2Vec2( ipw.x,ipw.y );
-
-		fjd.localAnchorA = veh->GetWorldPoint( local_pt );
-		fjd.localAnchorB = local_pt;
-		fjd.maxForce = m_max_torque;
-		fjd.maxTorque = m_max_force;
-
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
-		m_joints.push_back(b2_friction);
-	}
 }
 
-void DefaultFriction::update_step(const TSimulContext &context)
+// See docs in base class.
+void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &input, mv2dsim::vec2 &out_result_force_local) const
 {
-	// Update them:
-	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
-	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
+	b2Body *b2Veh = m_my_vehicle.getBox2DChassisBody();
+
+	for (int wheel=0;wheel<2;wheel++)
 	{
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_joints[i] );
-		b2_friction->ShiftOrigin( veh->GetWorldPoint( b2Vec2_zero ) );
+		// Action/Reaction, slippage, etc:
+		// --------------------------------------
+		const double C_damping = 5.0;
+		double net_g2v_force = -input.motor_force - C_damping * input.wheel_speed.x;
 
-		b2_friction->SetMaxForce(m_max_torque);
-		b2_friction->SetMaxTorque(m_max_force);
+		// Apply force: In local (x,y) coordinates (Newtons)
+		// --------------------------------------
+		out_result_force_local.vals[0] = net_g2v_force;
+		out_result_force_local.vals[1] = 0.0;
 	}
-
 }
 
 

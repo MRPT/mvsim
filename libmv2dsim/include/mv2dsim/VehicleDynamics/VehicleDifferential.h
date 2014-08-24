@@ -85,13 +85,14 @@ namespace mv2dsim
 			ControllerTwistPI(DynamicsDifferential &veh);
 			static const char* class_name() { return "twist_pi"; }
 			//!< Directly set these values to tell the controller the desired setpoints
-			double setpoint_lin_speed, setpoint_ang_speed; 
+			double setpoint_lin_speed, setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
 			// See base class docs
 			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
 			// See base class docs
 			virtual void load_config(const rapidxml::xml_node<char>&node );
 			double KP,KI; //!< PI controller parameters
 			double I_MAX; //!< I part maximum value (absolute value for clamp)
+			double max_force; //!< Maximum abs. value force (for clamp)
 		private:
 			double m_distWheels;
 			PID_Controller m_PID[2];
@@ -108,7 +109,7 @@ namespace mv2dsim
 		// See base class docs
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
 		// See base class docs
-		virtual void apply_motor_forces(const TSimulContext &context);
+		virtual void apply_motor_forces(const TSimulContext &context, std::vector<double> &out_force_per_wheel);
 
 	private:
 		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;

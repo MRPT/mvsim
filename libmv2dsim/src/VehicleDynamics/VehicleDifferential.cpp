@@ -18,8 +18,6 @@
 using namespace mv2dsim;
 using namespace std;
 
-MRPT_TODO("Rewrite such that the wheels rotational velocities are an independent part of the dynamical model!!")
-
 // Ctor:
 DynamicsDifferential::DynamicsDifferential(World *parent) :
 	VehicleBase(parent),
@@ -222,10 +220,11 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 }
 
 // See docs in base class:
-void DynamicsDifferential::apply_motor_forces(const TSimulContext &context)
+void DynamicsDifferential::apply_motor_forces(const TSimulContext &context, std::vector<double> &out_force_per_wheel)
 {
 	// Longitudinal forces at each wheel:
-	double forces[2];  // [0]:left, [1]:right wheel info
+	out_force_per_wheel.assign(2, 0.0);
+
 	if (m_controller)
 	{
 		// Invoke controller:
@@ -234,24 +233,10 @@ void DynamicsDifferential::apply_motor_forces(const TSimulContext &context)
 		TControllerOutput co;
 		m_controller->control_step(ci,co);
 		// Take its output:
-		forces[0] = co.wheel_force_l;
-		forces[1] = co.wheel_force_r;
-	}
-	else {
-		forces[0] = forces[1] = 0.0;
+		out_force_per_wheel[0] = co.wheel_force_l;
+		out_force_per_wheel[1] = co.wheel_force_r;
 	}
 
-	// Apply one force on each wheel:
-	for (int wheel=0;wheel<2;wheel++)
-	{
-		const b2Vec2 net_wheels_force= b2Vec2( forces[wheel],0.0); // In local (x,y) coordinates (Newtons)
-
-		m_b2d_vehicle_body->ApplyForce(
-			m_b2d_vehicle_body->GetWorldVector(net_wheels_force), /* force */
-			m_b2d_vehicle_body->GetWorldPoint( b2Vec2( m_wheels_info[wheel].x,m_wheels_info[wheel].y) ), /* point */
-			true /* wake up */
-			);
-	}
 }
 
 void DynamicsDifferential::updateMaxRadiusFromPoly()

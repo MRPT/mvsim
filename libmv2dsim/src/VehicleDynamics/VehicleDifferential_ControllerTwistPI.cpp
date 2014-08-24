@@ -19,7 +19,8 @@ DynamicsDifferential::ControllerTwistPI::ControllerTwistPI(DynamicsDifferential 
 	setpoint_ang_speed(0),
 	KP(100),
 	KI(0),
-	I_MAX(10)
+	I_MAX(10),
+	max_force(20.0)
 {
 	// Get distance between wheels:
 	// Warning: the controller *assumes* that both wheels are parallel (as it's a rule in differential robots!!)
@@ -47,6 +48,7 @@ void DynamicsDifferential::ControllerTwistPI::control_step(
 		m_PID[i].I_MAX_ABS = I_MAX;
 		m_PID[i].KP = KP;
 		m_PID[i].KI = KI;
+		m_PID[i].max_out = max_force;
 	}
 
 	co.wheel_force_l = m_PID[0].compute(vel_l-act_vel_l,ci.context.dt);
@@ -59,6 +61,9 @@ void DynamicsDifferential::ControllerTwistPI::load_config(const rapidxml::xml_no
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["I_MAX"] = TParamEntry("%lf", &I_MAX);
+	params["max_force"] = TParamEntry("%lf", &max_force);
+
+
 
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);

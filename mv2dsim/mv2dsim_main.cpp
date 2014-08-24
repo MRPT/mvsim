@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 #if 0
 			{ // Test: Get vehicles speed:
 				const World::TListVehicles & vehs = world.getListOfVehicles();
-				const vec3 &vel = (*vehs.begin())->getVelocityLocal();
+				const vec3 &vel = vehs.begin()->second->getVelocityLocal();
 				printf("vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
 			}
 #endif
@@ -78,8 +78,8 @@ int main(int argc, char **argv)
 				{
 				case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
 				case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
-				case 'a':  cntrl->setpoint_ang_speed += 0.1;  break;
-				case 'd':  cntrl->setpoint_ang_speed -= 0.1;  break;
+				case 'a':  cntrl->setpoint_ang_speed += 5.0*M_PI/180;  break;
+				case 'd':  cntrl->setpoint_ang_speed -= 5.0*M_PI/180;  break;
 				case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
 				};
 				gui_key_events = World::TGUIKeyEvent(); // Reset key-stroke
