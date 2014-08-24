@@ -9,6 +9,7 @@
 		<ortho>false</ortho>
 		<cam_distance>100</cam_distance>
 		<fov_deg>40</fov_deg>
+		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
 	

@@ -32,6 +32,7 @@ void World::TGUI_Options::parse_from(const rapidxml::xml_node<char> &node)
 	gui_params["ortho"] = TParamEntry("%bool", &ortho);
 	gui_params["cam_distance"]  = TParamEntry("%lf",&camera_distance);
 	gui_params["fov_deg"] = TParamEntry("%lf",&fov_deg); 
+	gui_params["follow_vehicle"] = TParamEntry("%s",&follow_vehicle); 
 
 	parse_xmlnode_children_as_param(node,gui_params,"[World::TGUI_Options]");
 }
@@ -83,7 +84,7 @@ void World::update_GUI( TGUIKeyEvent *out_keyevent )
 	m_timlogger.enter("update_GUI.3.vehicles");
 
 	for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
-		(*it)->gui_update(*gl_scene);
+		it->second->gui_update(*gl_scene);
 
 	m_timlogger.leave("update_GUI.3.vehicles");
 
@@ -99,6 +100,24 @@ void World::update_GUI( TGUIKeyEvent *out_keyevent )
 	m_gui_win->addTextMessage(2,2, mrpt::format("Time: %s", mrpt::system::formatTimeInterval(this->m_simul_time).c_str()), mrpt::utils::TColorf(1,1,1,0.5), "serif", 10, mrpt::opengl::NICE, ID_GLTEXT_CLOCK );
 
 	m_timlogger.leave("update_GUI.5.text-msgs");
+
+	// Camera follow modes:
+	// -----------------------
+	if (!m_gui_options.follow_vehicle.empty())
+	{
+		TListVehicles::const_iterator it = m_vehicles.find(m_gui_options.follow_vehicle);
+		if (it == m_vehicles.end()) {
+			static bool warn1st = true;
+			if (warn1st) {
+				std::cerr << mrpt::format("GUI: Camera set to follow vehicle named '%s' which can't be found!\n",m_gui_options.follow_vehicle.c_str());
+				warn1st=true;
+			}
+		}
+		else {
+			const mrpt::poses::CPose2D pose = it->second->getCPose2D();
+			m_gui_win->setCameraPointingToPoint( pose.x(), pose.y(), 0.0f);
+		}
+	}
 
 	// Force refresh view
 	// -----------------------

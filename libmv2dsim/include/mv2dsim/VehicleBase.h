@@ -98,6 +98,9 @@ namespace mv2dsim
 		const TListSensors & getSensors() const { return m_sensors; }
 		TListSensors & getSensors() { return m_sensors; }
 
+		/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
+		const std::string & getName() const { return m_name;} 
+
 	protected:
 		// Protected ctor for class factory
 		VehicleBase(World *parent);
@@ -109,6 +112,8 @@ namespace mv2dsim
 
 		/** To be called at derived classes' gui_update() */
 		void gui_update_sensors( mrpt::opengl::COpenGLScene &scene);
+
+		std::string m_name; //!< User-supplied name of the vehicle (e.g. "r1", "veh1")
 
 		/** Derived classes must store here the body of the vehicle main body (chassis).
 		  * This is used by \a simul_post_timestep() to extract the vehicle dynamical coords (q,\dot{q}) after each simulation step.

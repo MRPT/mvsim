@@ -136,6 +136,20 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	// Initialize here all common params shared by any polymorphic class:
 	// -------------------------------------------------
 	// attrib: name
+	{
+		const xml_attribute<> *attrib_name = root->first_attribute("name");
+		if (attrib_name && attrib_name->value()) 
+		{
+			veh->m_name = attrib_name->value();
+		}
+		else
+		{
+			// Default name:
+			static int cnt =0;
+			veh->m_name = mrpt::format("veh%i",++cnt);
+		}
+	}
+
 
 	// (Mandatory) initial pose:
 	{

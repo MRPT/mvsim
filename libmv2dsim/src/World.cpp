@@ -60,7 +60,7 @@ void World::clear_all(bool acquire_mt_lock)
 
 		// Clear m_vehicles & other lists of objs:
 		// ---------------------------------------------
-		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) delete *it;
+		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) delete it->second;
 		m_vehicles.clear();
 
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it) delete *it;
@@ -108,12 +108,12 @@ void World::internal_one_timestep(double dt)
 	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.veh");
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
-			(*it)->simul_pre_timestep(context);
+			it->second->simul_pre_timestep(context);
 	}
 	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.sensors");
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) {
-			VehicleBase::TListSensors &sensors = (*it)->getSensors();
+			VehicleBase::TListSensors &sensors = it->second->getSensors();
 			for (VehicleBase::TListSensors::iterator itSen=sensors.begin();itSen!=sensors.end();++itSen) {
 				(*itSen)->simul_pre_timestep(context);
 			}
@@ -142,8 +142,8 @@ void World::internal_one_timestep(double dt)
 		context.simul_time = m_simul_time;
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 		{
-			(*it)->simul_post_timestep_common(context);
-			(*it)->simul_post_timestep(context);
+			it->second->simul_post_timestep_common(context);
+			it->second->simul_post_timestep(context);
 		}
 	}
 
@@ -151,12 +151,12 @@ void World::internal_one_timestep(double dt)
 	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.veh");
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
-			(*it)->simul_post_timestep(context);
+			it->second->simul_post_timestep(context);
 	}
 	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.sensors");
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) {
-			VehicleBase::TListSensors &sensors = (*it)->getSensors();
+			VehicleBase::TListSensors &sensors = it->second->getSensors();
 			for (VehicleBase::TListSensors::iterator itSen=sensors.begin();itSen!=sensors.end();++itSen) {
 				(*itSen)->simul_post_timestep(context);
 			}

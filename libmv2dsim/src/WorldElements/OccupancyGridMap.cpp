@@ -128,7 +128,7 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 {
 	// For each vehicle, create a ground body with fixtures at each scanned point around the vehicle, so it can collide with the environment:
-	const list<VehicleBase*> & lstVehs =  this->m_world->getListOfVehicles();
+	const World::TListVehicles & lstVehs =  this->m_world->getListOfVehicles();
 
 	// Upon first usage, reserve mem:
 	m_obstacles_for_each_veh.resize( lstVehs.size() );
@@ -138,7 +138,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 		m_gl_obs_clouds_buffer.resize(lstVehs.size());
 
 		size_t veh_idx=0;
-		for (list<VehicleBase*>::const_iterator itVeh=lstVehs.begin();itVeh!=lstVehs.end();++itVeh, ++veh_idx)
+		for (World::TListVehicles::const_iterator itVeh=lstVehs.begin();itVeh!=lstVehs.end();++itVeh, ++veh_idx)
 		{
 			// 1) Simulate scan to get obstacles around the vehicle:
 			TInfoPerVeh &ipv = m_obstacles_for_each_veh[veh_idx];
@@ -146,11 +146,11 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 			// Upon first time, reserve mem:
 			if (!scan) scan = mrpt::slam::CObservation2DRangeScan::Create();
 
-			const float veh_max_obstacles_ranges = (*itVeh)->getMaxVehicleRadius() * 1.50f;
+			const float veh_max_obstacles_ranges = itVeh->second->getMaxVehicleRadius() * 1.50f;
 			const float occup_threshold = 0.5f;
 			const size_t nRays = 50;
 
-			const vec3 &pose = (*itVeh)->getPose();
+			const vec3 &pose = itVeh->second->getPose();
 			scan->aperture = 2.0*M_PI; // 360 field of view
 			scan->maxRange = veh_max_obstacles_ranges;
 
