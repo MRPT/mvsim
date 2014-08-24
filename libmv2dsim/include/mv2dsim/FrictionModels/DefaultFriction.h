@@ -22,11 +22,10 @@ namespace mv2dsim
 	public:
 		DefaultFriction(VehicleBase &my_vehicle, const rapidxml::xml_node<char> *node);
 
-		virtual void update_step(const TSimulContext &context);
+		// See docs in base class.
+		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mv2dsim::vec2 &out_result_force_local) const;
 
 	private:
-		std::vector<b2FrictionJoint*> m_joints;
-		double m_max_torque, m_max_force;  //!< Forces at each wheel-ground contact point
 
 	};
 }

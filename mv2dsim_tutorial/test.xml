@@ -40,16 +40,15 @@
 			<!--   Motor controller -->
 			<controller class="twist_pi">
 				<!-- Params -->
-				<KP>15</KP>  <KI>30</KI> <I_MAX>10</I_MAX>
-				<V>0.0</V><W>30</W>
+				<KP>1</KP>  <KI>1000</KI> <I_MAX>5</I_MAX>
+				<V>0.0</V><W>0</W>
+				<max_force>20</max_force>
 			</controller>
 			
 		</dynamics>
 				
 		<!-- Friction force simulation -->
 		<friction class="default">
-			<max_torque>6</max_torque>
-			<max_force>3</max_force>
 		</friction>
 		
 		

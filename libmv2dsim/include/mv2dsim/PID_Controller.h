@@ -15,6 +15,7 @@ namespace mv2dsim
 
 		double KP,KI,KD;
 		double I_MAX_ABS; //!< Max abs value for I part.
+		double max_out; //!< For clamping (0=no clamp)
 
 		/** err = desired-actual, dt=ellapsed time in secs */
 		double compute(double err, double dt);

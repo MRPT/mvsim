@@ -78,6 +78,9 @@ namespace mv2dsim
 		const vec3 & getVelocity() const { return m_dq; }
 		/** Last time-step velocity (of the ref. point, in local coords) */
 		vec3 getVelocityLocal() const ;
+		/** Last time-step velocity of each wheel's center point (in local coords) */
+		std::vector<vec2> VehicleBase::getWheelsVelocityLocal() const;
+
 
 		typedef std::vector<SensorBasePtr> TListSensors;
 
@@ -94,7 +97,7 @@ namespace mv2dsim
 		/** Parse node <dynamics>: The derived-class part of load_params_from_xml(), also called in factory(). Includes parsing the <controller></controller> block. */
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node) = 0;
 
-		virtual void apply_motor_forces(const TSimulContext &context) = 0;
+		virtual void apply_motor_forces(const TSimulContext &context, std::vector<double> &out_force_per_wheel) = 0;
 
 		/** To be called at derived classes' gui_update() */
 		void gui_update_sensors( mrpt::opengl::COpenGLScene &scene);
