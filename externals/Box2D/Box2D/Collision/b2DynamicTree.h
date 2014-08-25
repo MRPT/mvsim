@@ -206,7 +206,7 @@ inline void b2DynamicTree::RayCast(T* callback, const b2RayCastInput& input) con
 	b2Vec2 p1 = input.p1;
 	b2Vec2 p2 = input.p2;
 	b2Vec2 r = p2 - p1;
-	b2Assert(r.LengthSquared() > 0.0f);
+	b2Assert(r.LengthSquared() > 0.0);
 	r.Normalize();
 
 	// v is perpendicular to the segment.
@@ -249,7 +249,7 @@ inline void b2DynamicTree::RayCast(T* callback, const b2RayCastInput& input) con
 		b2Vec2 c = node->aabb.GetCenter();
 		b2Vec2 h = node->aabb.GetExtents();
 		float32 separation = b2Abs(b2Dot(v, p1 - c)) - b2Dot(abs_v, h);
-		if (separation > 0.0f)
+		if (separation > 0.0)
 		{
 			continue;
 		}
@@ -263,13 +263,13 @@ inline void b2DynamicTree::RayCast(T* callback, const b2RayCastInput& input) con
 
 			float32 value = callback->RayCastCallback(subInput, nodeId);
 
-			if (value == 0.0f)
+			if (value == 0.0)
 			{
 				// The client has terminated the ray cast.
 				return;
 			}
 
-			if (value > 0.0f)
+			if (value > 0.0)
 			{
 				// Update segment bounding box.
 				maxFraction = value;

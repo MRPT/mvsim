@@ -125,7 +125,7 @@ b2GearJoint::b2GearJoint(const b2GearJointDef* def)
 
 	m_constant = coordinateA + m_ratio * coordinateB;
 
-	m_impulse = 0.0f;
+	m_impulse = 0.0;
 }
 
 void b2GearJoint::InitVelocityConstraints(const b2SolverData& data)
@@ -165,7 +165,7 @@ void b2GearJoint::InitVelocityConstraints(const b2SolverData& data)
 
 	b2Rot qA(aA), qB(aB), qC(aC), qD(aD);
 
-	m_mass = 0.0f;
+	m_mass = 0.0;
 
 	if (m_typeA == e_revoluteJoint)
 	{
@@ -204,7 +204,7 @@ void b2GearJoint::InitVelocityConstraints(const b2SolverData& data)
 	}
 
 	// Compute effective mass.
-	m_mass = m_mass > 0.0f ? 1.0f / m_mass : 0.0f;
+	m_mass = m_mass > 0.0 ? 1.0f / m_mass : 0.0;
 
 	if (data.step.warmStarting)
 	{
@@ -219,7 +219,7 @@ void b2GearJoint::InitVelocityConstraints(const b2SolverData& data)
 	}
 	else
 	{
-		m_impulse = 0.0f;
+		m_impulse = 0.0;
 	}
 
 	data.velocities[m_indexA].v = vA;
@@ -281,13 +281,13 @@ bool b2GearJoint::SolvePositionConstraints(const b2SolverData& data)
 
 	b2Rot qA(aA), qB(aB), qC(aC), qD(aD);
 
-	float32 linearError = 0.0f;
+	float32 linearError = 0.0;
 
 	float32 coordinateA, coordinateB;
 
 	b2Vec2 JvAC, JvBD;
 	float32 JwA, JwB, JwC, JwD;
-	float32 mass = 0.0f;
+	float32 mass = 0.0;
 
 	if (m_typeA == e_revoluteJoint)
 	{
@@ -339,8 +339,8 @@ bool b2GearJoint::SolvePositionConstraints(const b2SolverData& data)
 
 	float32 C = (coordinateA + m_ratio * coordinateB) - m_constant;
 
-	float32 impulse = 0.0f;
-	if (mass > 0.0f)
+	float32 impulse = 0.0;
+	if (mass > 0.0)
 	{
 		impulse = -C / mass;
 	}

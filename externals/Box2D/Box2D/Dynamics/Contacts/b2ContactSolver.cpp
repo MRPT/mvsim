@@ -115,15 +115,15 @@ b2ContactSolver::b2ContactSolver(b2ContactSolverDef* def)
 			}
 			else
 			{
-				vcp->normalImpulse = 0.0f;
-				vcp->tangentImpulse = 0.0f;
+				vcp->normalImpulse = 0.0;
+				vcp->tangentImpulse = 0.0;
 			}
 
 			vcp->rA.SetZero();
 			vcp->rB.SetZero();
-			vcp->normalMass = 0.0f;
-			vcp->tangentMass = 0.0f;
-			vcp->velocityBias = 0.0f;
+			vcp->normalMass = 0.0;
+			vcp->tangentMass = 0.0;
+			vcp->velocityBias = 0.0;
 
 			pc->localPoints[j] = cp->localPoint;
 		}
@@ -194,7 +194,7 @@ void b2ContactSolver::InitializeVelocityConstraints()
 
 			float32 kNormal = mA + mB + iA * rnA * rnA + iB * rnB * rnB;
 
-			vcp->normalMass = kNormal > 0.0f ? 1.0f / kNormal : 0.0f;
+			vcp->normalMass = kNormal > 0.0 ? 1.0f / kNormal : 0.0;
 
 			b2Vec2 tangent = b2Cross(vc->normal, 1.0f);
 
@@ -203,10 +203,10 @@ void b2ContactSolver::InitializeVelocityConstraints()
 
 			float32 kTangent = mA + mB + iA * rtA * rtA + iB * rtB * rtB;
 
-			vcp->tangentMass = kTangent > 0.0f ? 1.0f /  kTangent : 0.0f;
+			vcp->tangentMass = kTangent > 0.0 ? 1.0f /  kTangent : 0.0;
 
 			// Setup a velocity bias for restitution.
-			vcp->velocityBias = 0.0f;
+			vcp->velocityBias = 0.0;
 			float32 vRel = b2Dot(vc->normal, vB + b2Cross(wB, vcp->rB) - vA - b2Cross(wA, vcp->rA));
 			if (vRel < -b2_velocityThreshold)
 			{
@@ -357,7 +357,7 @@ void b2ContactSolver::SolveVelocityConstraints()
 				float32 lambda = -vcp->normalMass * (vn - vcp->velocityBias);
 
 				// b2Clamp the accumulated impulse
-				float32 newImpulse = b2Max(vcp->normalImpulse + lambda, 0.0f);
+				float32 newImpulse = b2Max(vcp->normalImpulse + lambda, 0.0);
 				lambda = newImpulse - vcp->normalImpulse;
 				vcp->normalImpulse = newImpulse;
 
@@ -409,7 +409,7 @@ void b2ContactSolver::SolveVelocityConstraints()
 			b2VelocityConstraintPoint* cp2 = vc->points + 1;
 
 			b2Vec2 a(cp1->normalImpulse, cp2->normalImpulse);
-			b2Assert(a.x >= 0.0f && a.y >= 0.0f);
+			b2Assert(a.x >= 0.0 && a.y >= 0.0);
 
 			// Relative velocity at contact
 			b2Vec2 dv1 = vB + b2Cross(wB, cp1->rB) - vA - b2Cross(wA, cp1->rA);
@@ -442,7 +442,7 @@ void b2ContactSolver::SolveVelocityConstraints()
 				//
 				b2Vec2 x = - b2Mul(vc->normalMass, b);
 
-				if (x.x >= 0.0f && x.y >= 0.0f)
+				if (x.x >= 0.0 && x.y >= 0.0)
 				{
 					// Get the incremental impulse
 					b2Vec2 d = x - a;
@@ -482,11 +482,11 @@ void b2ContactSolver::SolveVelocityConstraints()
 				// vn2 = a21 * x1 + a22 * 0 + b2'
 				//
 				x.x = - cp1->normalMass * b.x;
-				x.y = 0.0f;
-				vn1 = 0.0f;
+				x.y = 0.0;
+				vn1 = 0.0;
 				vn2 = vc->K.ex.y * x.x + b.y;
 
-				if (x.x >= 0.0f && vn2 >= 0.0f)
+				if (x.x >= 0.0 && vn2 >= 0.0)
 				{
 					// Get the incremental impulse
 					b2Vec2 d = x - a;
@@ -523,12 +523,12 @@ void b2ContactSolver::SolveVelocityConstraints()
 				// vn1 = a11 * 0 + a12 * x2 + b1' 
 				//   0 = a21 * 0 + a22 * x2 + b2'
 				//
-				x.x = 0.0f;
+				x.x = 0.0;
 				x.y = - cp2->normalMass * b.y;
 				vn1 = vc->K.ey.x * x.y + b.x;
-				vn2 = 0.0f;
+				vn2 = 0.0;
 
-				if (x.y >= 0.0f && vn1 >= 0.0f)
+				if (x.y >= 0.0 && vn1 >= 0.0)
 				{
 					// Resubstitute for the incremental impulse
 					b2Vec2 d = x - a;
@@ -563,12 +563,12 @@ void b2ContactSolver::SolveVelocityConstraints()
 				// 
 				// vn1 = b1
 				// vn2 = b2;
-				x.x = 0.0f;
-				x.y = 0.0f;
+				x.x = 0.0;
+				x.y = 0.0;
 				vn1 = b.x;
 				vn2 = b.y;
 
-				if (vn1 >= 0.0f && vn2 >= 0.0f )
+				if (vn1 >= 0.0 && vn2 >= 0.0 )
 				{
 					// Resubstitute for the incremental impulse
 					b2Vec2 d = x - a;
@@ -670,7 +670,7 @@ struct b2PositionSolverManifold
 // Sequential solver.
 bool b2ContactSolver::SolvePositionConstraints()
 {
-	float32 minSeparation = 0.0f;
+	float32 minSeparation = 0.0;
 
 	for (int32 i = 0; i < m_count; ++i)
 	{
@@ -715,7 +715,7 @@ bool b2ContactSolver::SolvePositionConstraints()
 			minSeparation = b2Min(minSeparation, separation);
 
 			// Prevent large corrections and allow slop.
-			float32 C = b2Clamp(b2_baumgarte * (separation + b2_linearSlop), -b2_maxLinearCorrection, 0.0f);
+			float32 C = b2Clamp(b2_baumgarte * (separation + b2_linearSlop), -b2_maxLinearCorrection, 0.0);  // JLBC
 
 			// Compute the effective mass.
 			float32 rnA = b2Cross(rA, normal);
@@ -723,7 +723,7 @@ bool b2ContactSolver::SolvePositionConstraints()
 			float32 K = mA + mB + iA * rnA * rnA + iB * rnB * rnB;
 
 			// Compute normal impulse
-			float32 impulse = K > 0.0f ? - C / K : 0.0f;
+			float32 impulse = K > 0.0 ? - C / K : 0.0;
 
 			b2Vec2 P = impulse * normal;
 
@@ -749,7 +749,7 @@ bool b2ContactSolver::SolvePositionConstraints()
 // Sequential position solver for position constraints.
 bool b2ContactSolver::SolveTOIPositionConstraints(int32 toiIndexA, int32 toiIndexB)
 {
-	float32 minSeparation = 0.0f;
+	float32 minSeparation = 0.0;
 
 	for (int32 i = 0; i < m_count; ++i)
 	{
@@ -761,15 +761,15 @@ bool b2ContactSolver::SolveTOIPositionConstraints(int32 toiIndexA, int32 toiInde
 		b2Vec2 localCenterB = pc->localCenterB;
 		int32 pointCount = pc->pointCount;
 
-		float32 mA = 0.0f;
-		float32 iA = 0.0f;
+		float32 mA = 0.0;
+		float32 iA = 0.0;
 		if (indexA == toiIndexA || indexA == toiIndexB)
 		{
 			mA = pc->invMassA;
 			iA = pc->invIA;
 		}
 
-		float32 mB = 0.0f;
+		float32 mB = 0.0;
 		float32 iB = 0.;
 		if (indexB == toiIndexA || indexB == toiIndexB)
 		{
@@ -806,7 +806,7 @@ bool b2ContactSolver::SolveTOIPositionConstraints(int32 toiIndexA, int32 toiInde
 			minSeparation = b2Min(minSeparation, separation);
 
 			// Prevent large corrections and allow slop.
-			float32 C = b2Clamp(b2_toiBaugarte * (separation + b2_linearSlop), -b2_maxLinearCorrection, 0.0f);
+			float32 C = b2Clamp(b2_toiBaugarte * (separation + b2_linearSlop), -b2_maxLinearCorrection, 0.0);
 
 			// Compute the effective mass.
 			float32 rnA = b2Cross(rA, normal);
@@ -814,7 +814,7 @@ bool b2ContactSolver::SolveTOIPositionConstraints(int32 toiIndexA, int32 toiInde
 			float32 K = mA + mB + iA * rnA * rnA + iB * rnB * rnB;
 
 			// Compute normal impulse
-			float32 impulse = K > 0.0f ? - C / K : 0.0f;
+			float32 impulse = K > 0.0 ? - C / K : 0.0;
 
 			b2Vec2 P = impulse * normal;
 

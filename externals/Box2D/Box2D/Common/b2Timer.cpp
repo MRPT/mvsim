@@ -20,7 +20,7 @@
 
 #if defined(_WIN32)
 
-float64 b2Timer::s_invFrequency = 0.0f;
+float64 b2Timer::s_invFrequency = 0.0;
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -29,11 +29,11 @@ b2Timer::b2Timer()
 {
 	LARGE_INTEGER largeInteger;
 
-	if (s_invFrequency == 0.0f)
+	if (s_invFrequency == 0.0)
 	{
 		QueryPerformanceFrequency(&largeInteger);
 		s_invFrequency = float64(largeInteger.QuadPart);
-		if (s_invFrequency > 0.0f)
+		if (s_invFrequency > 0.0)
 		{
 			s_invFrequency = 1000.0f / s_invFrequency;
 		}
@@ -95,7 +95,7 @@ void b2Timer::Reset()
 
 float32 b2Timer::GetMilliseconds() const
 {
-	return 0.0f;
+	return 0.0;
 }
 
 #endif

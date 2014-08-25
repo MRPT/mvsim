@@ -59,13 +59,13 @@ void b2Rope::Initialize(const b2RopeDef* def)
 		m_vs[i].SetZero();
 
 		float32 m = def->masses[i];
-		if (m > 0.0f)
+		if (m > 0.0)
 		{
 			m_ims[i] = 1.0f / m;
 		}
 		else
 		{
-			m_ims[i] = 0.0f;
+			m_ims[i] = 0.0;
 		}
 	}
 
@@ -109,12 +109,12 @@ void b2Rope::Step(float32 h, int32 iterations)
 		return;
 	}
 
-	float32 d = expf(- h * m_damping);
+	float32 d = exp(- h * m_damping);
 
 	for (int32 i = 0; i < m_count; ++i)
 	{
 		m_p0s[i] = m_ps[i];
-		if (m_ims[i] > 0.0f)
+		if (m_ims[i] > 0.0)
 		{
 			m_vs[i] += h * m_gravity;
 		}
@@ -152,7 +152,7 @@ void b2Rope::SolveC2()
 		float32 im1 = m_ims[i];
 		float32 im2 = m_ims[i + 1];
 
-		if (im1 + im2 == 0.0f)
+		if (im1 + im2 == 0.0)
 		{
 			continue;
 		}
@@ -197,7 +197,7 @@ void b2Rope::SolveC3()
 		float32 L1sqr = d1.LengthSquared();
 		float32 L2sqr = d2.LengthSquared();
 
-		if (L1sqr * L2sqr == 0.0f)
+		if (L1sqr * L2sqr == 0.0)
 		{
 			continue;
 		}
@@ -215,7 +215,7 @@ void b2Rope::SolveC3()
 		b2Vec2 J3 = Jd2;
 
 		float32 mass = m1 * b2Dot(J1, J1) + m2 * b2Dot(J2, J2) + m3 * b2Dot(J3, J3);
-		if (mass == 0.0f)
+		if (mass == 0.0)
 		{
 			continue;
 		}
