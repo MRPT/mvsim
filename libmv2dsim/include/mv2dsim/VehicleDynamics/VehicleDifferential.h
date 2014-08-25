@@ -46,9 +46,8 @@ namespace mv2dsim
 		};
 		struct TControllerOutput
 		{
-			double wheel_force_l,wheel_force_r;
-
-			TControllerOutput() : wheel_force_l(0),wheel_force_r(0) {}
+			double wheel_torque_l,wheel_torque_r;
+			TControllerOutput() : wheel_torque_l(0),wheel_torque_r(0) {}
 		};
 
 		/** Virtual base for controllers of vehicles of type DynamicsDifferential */
@@ -72,10 +71,10 @@ namespace mv2dsim
 		class ControllerRawForces : public ControllerBase
 		{
 		public:
-			ControllerRawForces(DynamicsDifferential &veh) : ControllerBase(veh),setpoint_wheel_force_l(0), setpoint_wheel_force_r(0) {}
+			ControllerRawForces(DynamicsDifferential &veh) : ControllerBase(veh),setpoint_wheel_torque_l(0), setpoint_wheel_torque_r(0) {}
 			static const char* class_name() { return "raw"; }
 			//!< Directly set these values to tell the controller the desired setpoints
-			double setpoint_wheel_force_l, setpoint_wheel_force_r; 
+			double setpoint_wheel_torque_l, setpoint_wheel_torque_r; 
 			// See base class docs
 			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
 		};

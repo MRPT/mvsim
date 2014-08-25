@@ -18,6 +18,6 @@ void DynamicsDifferential::ControllerRawForces::control_step(
 	const DynamicsDifferential::TControllerInput &ci, 
 	DynamicsDifferential::TControllerOutput &co)
 {
-	co.wheel_force_l = this->setpoint_wheel_force_l;
-	co.wheel_force_r = this->setpoint_wheel_force_r;
+	co.wheel_torque_l = this->setpoint_wheel_torque_l;
+	co.wheel_torque_r = this->setpoint_wheel_torque_r;
 }

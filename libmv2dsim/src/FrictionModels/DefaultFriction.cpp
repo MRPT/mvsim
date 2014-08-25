@@ -11,7 +11,6 @@
 #include <mv2dsim/FrictionModels/DefaultFriction.h>
 
 #include <rapidxml.hpp>
-#include <Box2D/Dynamics/Joints/b2WheelJoint.h>
 #include "xml_utils.h"
 
 using namespace mv2dsim;
@@ -85,7 +84,7 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	const double max_friction = mu * input.weight;
 
 	// Contribution from motors:
-	const mrpt::math::TPoint2D propulsion(-input.motor_force, 0.0);
+	const mrpt::math::TPoint2D propulsion(0,0); // (-input.motor_force, 0.0);
 	// TODO: Clamp motor propulsion according to max_friction!!
 
 	// "Damping" / internal friction of the wheel's shaft, etc.

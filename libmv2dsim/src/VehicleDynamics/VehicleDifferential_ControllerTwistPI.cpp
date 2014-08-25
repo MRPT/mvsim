@@ -51,8 +51,8 @@ void DynamicsDifferential::ControllerTwistPI::control_step(
 		m_PID[i].max_out = max_force;
 	}
 
-	co.wheel_force_l = m_PID[0].compute(vel_l-act_vel_l,ci.context.dt);
-	co.wheel_force_r = m_PID[1].compute(vel_r-act_vel_r,ci.context.dt);
+	co.wheel_torque_l = m_PID[0].compute(vel_l-act_vel_l,ci.context.dt);
+	co.wheel_torque_r = m_PID[1].compute(vel_r-act_vel_r,ci.context.dt);
 }
 
 void DynamicsDifferential::ControllerTwistPI::load_config(const rapidxml::xml_node<char>&node )

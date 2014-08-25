@@ -98,13 +98,13 @@ int main(int argc, char **argv)
 				{
 					switch (gui_key_events.keycode)
 					{
-					case 'q':  cntrl2->setpoint_wheel_force_l += 0.5; break;
-					case 'a':  cntrl2->setpoint_wheel_force_l -= 0.5; break;
-					case 'e':  cntrl2->setpoint_wheel_force_r += 0.5; break;
-					case 'd':  cntrl2->setpoint_wheel_force_r -= 0.5; break;
-					case ' ': cntrl2->setpoint_wheel_force_l = cntrl2->setpoint_wheel_force_r = 0.0; break;
+					case 'q':  cntrl2->setpoint_wheel_torque_l += 0.5; break;
+					case 'a':  cntrl2->setpoint_wheel_torque_l -= 0.5; break;
+					case 'e':  cntrl2->setpoint_wheel_torque_r += 0.5; break;
+					case 'd':  cntrl2->setpoint_wheel_torque_r -= 0.5; break;
+					case ' ': cntrl2->setpoint_wheel_torque_l = cntrl2->setpoint_wheel_torque_r = 0.0; break;
 					};
-					printf("setpoint: fl=%.03f fr=%.03f deg\n", cntrl2->setpoint_wheel_force_l, cntrl2->setpoint_wheel_force_r);
+					printf("setpoint: tl=%.03f tr=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_wheel_torque_r);
 				}
 				gui_key_events = World::TGUIKeyEvent(); // Reset key-stroke
 

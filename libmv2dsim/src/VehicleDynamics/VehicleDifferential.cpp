@@ -220,10 +220,10 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 }
 
 // See docs in base class:
-void DynamicsDifferential::apply_motor_forces(const TSimulContext &context, std::vector<double> &out_force_per_wheel)
+void DynamicsDifferential::apply_motor_forces(const TSimulContext &context, std::vector<double> &out_torque_per_wheel)
 {
 	// Longitudinal forces at each wheel:
-	out_force_per_wheel.assign(2, 0.0);
+	out_torque_per_wheel.assign(2, 0.0);
 
 	if (m_controller)
 	{
@@ -233,8 +233,8 @@ void DynamicsDifferential::apply_motor_forces(const TSimulContext &context, std:
 		TControllerOutput co;
 		m_controller->control_step(ci,co);
 		// Take its output:
-		out_force_per_wheel[0] = co.wheel_force_l;
-		out_force_per_wheel[1] = co.wheel_force_r;
+		out_torque_per_wheel[0] = co.wheel_torque_l;
+		out_torque_per_wheel[1] = co.wheel_torque_r;
 	}
 
 }

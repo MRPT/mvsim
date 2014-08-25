@@ -94,7 +94,7 @@ void b2FrictionWheel::InitVelocityConstraints(const b2SolverData& data)
 		m_angularMass = 1.0f / m_angularMass;
 	}
 
-	if (data.step.warmStarting)
+	if (false) //data.step.warmStarting)
 	{
 		// Scale impulses to support a variable time step.
 		m_linearImpulse *= data.step.dtRatio;
