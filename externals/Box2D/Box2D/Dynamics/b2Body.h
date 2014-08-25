@@ -390,7 +390,7 @@ private:
 	friend class b2ContactManager;
 	friend class b2ContactSolver;
 	friend class b2Contact;
-	
+
 	friend class b2DistanceJoint;
 	friend class b2FrictionJoint;
 	friend class b2GearJoint;
@@ -402,6 +402,7 @@ private:
 	friend class b2RopeJoint;
 	friend class b2WeldJoint;
 	friend class b2WheelJoint;
+	friend class b2FrictionWheel; // JLBC
 
 	// m_flags
 	enum

@@ -9,8 +9,8 @@
 #pragma once
 
 #include <mv2dsim/FrictionModels/FrictionBase.h>
+#include <Box2D/Dynamics/Joints/b2FrictionWheel.h>
 #include <vector>
-#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 
 namespace mv2dsim
 {
@@ -26,7 +26,7 @@ namespace mv2dsim
 		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const;
 
 	private:
-		std::vector<b2FrictionJoint*> m_joints;
+		std::vector<b2FrictionWheel*> m_joints;
 		double m_max_torque, m_max_force;  //!< Forces at each wheel-ground contact point
 
 	};
