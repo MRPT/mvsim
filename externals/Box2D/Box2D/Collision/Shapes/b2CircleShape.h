@@ -65,7 +65,7 @@ public:
 inline b2CircleShape::b2CircleShape()
 {
 	m_type = e_circle;
-	m_radius = 0.0f;
+	m_radius = 0.0;
 	m_p.SetZero();
 }
 

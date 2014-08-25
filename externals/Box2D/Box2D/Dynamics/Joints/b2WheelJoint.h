@@ -34,10 +34,10 @@ struct b2WheelJointDef : public b2JointDef
 		type = e_wheelJoint;
 		localAnchorA.SetZero();
 		localAnchorB.SetZero();
-		localAxisA.Set(1.0f, 0.0f);
+		localAxisA.Set(1.0f, 0.0);
 		enableMotor = false;
-		maxMotorTorque = 0.0f;
-		motorSpeed = 0.0f;
+		maxMotorTorque = 0.0;
+		motorSpeed = 0.0;
 		frequencyHz = 2.0f;
 		dampingRatio = 0.7f;
 	}

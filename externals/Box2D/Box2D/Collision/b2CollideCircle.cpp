@@ -105,7 +105,7 @@ void b2CollidePolygonAndCircle(
 	// Compute barycentric coordinates
 	float32 u1 = b2Dot(cLocal - v1, v2 - v1);
 	float32 u2 = b2Dot(cLocal - v2, v1 - v2);
-	if (u1 <= 0.0f)
+	if (u1 <= 0.0)
 	{
 		if (b2DistanceSquared(cLocal, v1) > radius * radius)
 		{
@@ -120,7 +120,7 @@ void b2CollidePolygonAndCircle(
 		manifold->points[0].localPoint = circleB->m_p;
 		manifold->points[0].id.key = 0;
 	}
-	else if (u2 <= 0.0f)
+	else if (u2 <= 0.0)
 	{
 		if (b2DistanceSquared(cLocal, v2) > radius * radius)
 		{

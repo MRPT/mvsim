@@ -61,8 +61,8 @@ struct b2FixtureDef
 		shape = NULL;
 		userData = NULL;
 		friction = 0.2f;
-		restitution = 0.0f;
-		density = 0.0f;
+		restitution = 0.0;
+		density = 0.0;
 		isSensor = false;
 	}
 
@@ -292,7 +292,7 @@ inline const b2Fixture* b2Fixture::GetNext() const
 
 inline void b2Fixture::SetDensity(float32 density)
 {
-	b2Assert(b2IsValid(density) && density >= 0.0f);
+	b2Assert(b2IsValid(density) && density >= 0.0);
 	m_density = density;
 }
 
