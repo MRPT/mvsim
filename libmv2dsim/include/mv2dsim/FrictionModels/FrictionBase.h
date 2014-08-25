@@ -38,7 +38,7 @@ namespace mv2dsim
 		};
 
 		/** Evaluates the net force on this wheel (in local coordinates). Refer to the manual for the theorical model. */
-		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mv2dsim::vec2 &out_result_force_local) const = 0;
+		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const = 0;
 
 	protected:
 		World* m_world;

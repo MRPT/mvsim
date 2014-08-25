@@ -37,22 +37,31 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 }
 
 // See docs in base class.
-void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &input, mv2dsim::vec2 &out_result_force_local) const
+void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const
 {
 	b2Body *b2Veh = m_my_vehicle.getBox2DChassisBody();
 
-	for (int wheel=0;wheel<2;wheel++)
+	// Action/Reaction, slippage, etc:
+	// --------------------------------------
+	// Contribution from motors:
+	const mrpt::math::TPoint2D propulsion(-input.motor_force, 0.0);
+		
+	// "Damping" / internal friction of the wheel's shaft, etc.
+	const double C_damping = 5.0;
+	const mrpt::math::TPoint2D wheel_damping(- C_damping * input.wheel_speed.x, 0.0);
+		
+	// Lateral friction
+	mrpt::math::TPoint2D wheel_lat_friction(0.0, 0.0);
 	{
-		// Action/Reaction, slippage, etc:
-		// --------------------------------------
-		const double C_damping = 5.0;
-		double net_g2v_force = -input.motor_force - C_damping * input.wheel_speed.x;
-
-		// Apply force: In local (x,y) coordinates (Newtons)
-		// --------------------------------------
-		out_result_force_local.vals[0] = net_g2v_force;
-		out_result_force_local.vals[1] = 0.0;
+		const double clamp_norm = 3.0;
+		const double f = std::max( std::min(input.wheel_speed.y,clamp_norm), -clamp_norm);
+		const double mu = 0.65;
+		wheel_lat_friction.y = -f * mu * input.weight * 9.81;
 	}
+
+	// Apply force: In local (x,y) coordinates (Newtons)
+	// --------------------------------------
+	out_result_force_local = propulsion; // + wheel_damping + wheel_lat_friction;
 }
 
 
