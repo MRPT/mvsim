@@ -26,7 +26,9 @@ namespace mv2dsim
 		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const;
 
 	private:
+#if 0
 		std::vector<b2FrictionWheel*> m_joints;
+#endif
 		double m_max_torque, m_max_force;  //!< Forces at each wheel-ground contact point
 
 	};

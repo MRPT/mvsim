@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 		mrpt::utils::CTicTac tictac;
 		double t_old = tictac.Tac();
 		double t_old_simul = t_old;
-		double REALTIME_FACTOR = 1.0;
+		double REALTIME_FACTOR = 0.1;
 
 		while (!mrpt::system::os::kbhit())
 		{
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
 			mrpt::system::sleep(10);
 
-#if 0
+#if 1
 			{ // Test: Get vehicles speed:
 				const World::TListVehicles & vehs = world.getListOfVehicles();
 				const vec3 &vel = vehs.begin()->second->getVelocityLocal();

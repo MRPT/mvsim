@@ -264,12 +264,11 @@ void VehicleBase::load_params_from_xml(const std::string &xml_text)
 void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 {
 	// Apply motor forces/torques:
-	std::vector<double> torque_per_wheel;
-	this->apply_motor_forces(context,torque_per_wheel);
+	this->apply_motor_forces(context,m_torque_per_wheel);
 
 	// Apply friction model at each wheel:
 	const size_t nW = getNumWheels();
-	ASSERT_EQUAL_(torque_per_wheel.size(),nW);
+	ASSERT_EQUAL_(m_torque_per_wheel.size(),nW);
 
 	const double massPerWheel = getChassisMass()/nW; // Part of the vehicle weight on each wheel.
 	const double weightPerWheel = massPerWheel* 9.81;
@@ -282,10 +281,10 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	for (size_t i=0;i<nW;i++)
 	{
 		// prepare data:
-		const Wheel &w = getWheelInfo(i);
+		Wheel &w = getWheelInfo(i);
 		
 		FrictionBase::TFrictionInput fi(context,w);
-		fi.motor_torque = -torque_per_wheel[i];  // "-" => Forwards is negative
+		fi.motor_torque = -m_torque_per_wheel[i];  // "-" => Forwards is negative
 		fi.weight = weightPerWheel; 
 		fi.wheel_speed = wheels_vels[i];
 
@@ -296,7 +295,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		// Apply force:
 		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(net_force_.x,net_force_.y));
 
-		printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%6.3f Gy=%6.3f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
+		//printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
 		m_b2d_vehicle_body->ApplyForce(
 			wForce, /* force */
@@ -305,6 +304,23 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 			);
 	}
 }
+
+/** Override to do any required process right after the integration of dynamic equations for each timestep */
+void VehicleBase::simul_post_timestep(const TSimulContext &context)
+{
+	// Integrate wheels' rotation:
+	const size_t nW = getNumWheels();
+
+	for (size_t i=0;i<nW;i++)
+	{
+		// prepare data:
+		Wheel &w = getWheelInfo(i);
+
+		// Explicit Euler:
+		w.phi += w.w * context.dt;
+	}
+}
+
 
 /** Last time-step velocity of each wheel's center point (in local coords) */
 void VehicleBase::getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels) const
@@ -316,14 +332,16 @@ void VehicleBase::getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels
 	// => 
 	// v_w = v_veh + ( -w*y, w*x )
 
+	const double w = veh_vel_local.vals[2]; // vehicle w
+
 	const size_t nW = this->getNumWheels();
 	vels.resize(nW);
 	for (size_t i=0;i<nW;i++)
 	{
 		const Wheel &wheel = getWheelInfo(i);
 
-		vels[i].x = veh_vel_local.vals[0] - veh_vel_local.vals[2] * wheel.y;
-		vels[i].y = veh_vel_local.vals[1] + veh_vel_local.vals[2] * wheel.x;
+		vels[i].x = veh_vel_local.vals[0] - w * wheel.y;
+		vels[i].y = veh_vel_local.vals[1] + w * wheel.x;
 	}
 }
 
@@ -334,7 +352,7 @@ vec3 VehicleBase::getVelocityLocal() const
 	vec3 local_vel;
 	local_vel.vals[2] = m_dq.vals[2]; // omega remains the same.
 
-	const mrpt::poses::CPose2D p(0,0, m_q.vals[2]); // "-" means inverse pose
+	const mrpt::poses::CPose2D p(0,0, -m_q.vals[2]); // "-" means inverse pose
 	p.composePoint( 
 		m_dq.vals[0],m_dq.vals[1],
 		local_vel.vals[0],local_vel.vals[1]);

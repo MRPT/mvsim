@@ -9,6 +9,7 @@
 #include <mv2dsim/Wheel.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/CCylinder.h>
+#include <mrpt/opengl/stock_objects.h>
 #include <rapidxml.hpp>
 
 #include "xml_utils.h"
@@ -20,7 +21,8 @@ Wheel::Wheel() :
 	x(.0),y(-.5),yaw(.0),
 	diameter(.4),width(.2),
 	mass(2.0),
-	color(0xff323232)
+	color(0xff323232),
+	phi(.0), w(.0)
 {
 }
 
@@ -34,7 +36,7 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
 
 	mrpt::opengl::CSetOfObjectsPtr gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
 	gl_wheel_frame->insert(gl_wheel);
-	//gl_wheel_frame->insert( mrpt::opengl::stock_objects::CornerXYZSimple() );
+	gl_wheel_frame->insert( mrpt::opengl::stock_objects::CornerXYZSimple() );
 
 	obj.setPose( mrpt::math::TPose3D( x,y, 0.5*diameter, yaw, 0.0, 0.0) );
 

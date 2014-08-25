@@ -53,9 +53,7 @@ namespace mv2dsim
 		virtual void simul_pre_timestep(const TSimulContext &context);
 
 		/** Override to do any required process right after the integration of dynamic equations for each timestep */
-		virtual void simul_post_timestep(const TSimulContext &context) {
-			/* Default: do nothing. */
-		}
+		virtual void simul_post_timestep(const TSimulContext &context);
 
 		/** Gets the body dynamical state into q, dot{q} */
 		void simul_post_timestep_common(const TSimulContext &context);
@@ -72,6 +70,7 @@ namespace mv2dsim
 
 		virtual size_t getNumWheels() const = 0;
 		virtual const Wheel & getWheelInfo(const size_t idx) const = 0;
+		virtual Wheel & getWheelInfo(const size_t idx) = 0;
 
 		/** Last time-step pose (of the ref. point, in global coords) */
 		const vec3 & getPose() const { return m_q; } 
@@ -117,6 +116,8 @@ namespace mv2dsim
 
 		vec3 m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)
+
+		std::vector<double> m_torque_per_wheel; //!< Updated in simul_pre_timestep()
 
 	}; // end VehicleBase
 
