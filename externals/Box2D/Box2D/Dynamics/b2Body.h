@@ -54,12 +54,12 @@ struct b2BodyDef
 	b2BodyDef()
 	{
 		userData = NULL;
-		position.Set(0.0f, 0.0f);
-		angle = 0.0f;
-		linearVelocity.Set(0.0f, 0.0f);
-		angularVelocity = 0.0f;
-		linearDamping = 0.0f;
-		angularDamping = 0.0f;
+		position.Set(0.0, 0.0);
+		angle = 0.0;
+		linearVelocity.Set(0.0, 0.0);
+		angularVelocity = 0.0;
+		linearDamping = 0.0;
+		angularDamping = 0.0;
 		allowSleep = true;
 		awake = true;
 		fixedRotation = false;
@@ -503,7 +503,7 @@ inline void b2Body::SetLinearVelocity(const b2Vec2& v)
 		return;
 	}
 
-	if (b2Dot(v,v) > 0.0f)
+	if (b2Dot(v,v) > 0.0)
 	{
 		SetAwake(true);
 	}
@@ -523,7 +523,7 @@ inline void b2Body::SetAngularVelocity(float32 w)
 		return;
 	}
 
-	if (w * w > 0.0f)
+	if (w * w > 0.0)
 	{
 		SetAwake(true);
 	}
@@ -637,17 +637,17 @@ inline void b2Body::SetAwake(bool flag)
 		if ((m_flags & e_awakeFlag) == 0)
 		{
 			m_flags |= e_awakeFlag;
-			m_sleepTime = 0.0f;
+			m_sleepTime = 0.0;
 		}
 	}
 	else
 	{
 		m_flags &= ~e_awakeFlag;
-		m_sleepTime = 0.0f;
+		m_sleepTime = 0.0;
 		m_linearVelocity.SetZero();
-		m_angularVelocity = 0.0f;
+		m_angularVelocity = 0.0;
 		m_force.SetZero();
-		m_torque = 0.0f;
+		m_torque = 0.0;
 	}
 }
 

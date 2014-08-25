@@ -56,7 +56,7 @@ b2World::b2World(const b2Vec2& gravity)
 
 	m_flags = e_clearForces;
 
-	m_inv_dt0 = 0.0f;
+	m_inv_dt0 = 0.0;
 
 	m_contactManager.m_allocator = &m_blockAllocator;
 
@@ -385,9 +385,9 @@ void b2World::SetAllowSleeping(bool flag)
 // Find islands, integrate and solve constraints, solve position constraints
 void b2World::Solve(const b2TimeStep& step)
 {
-	m_profile.solveInit = 0.0f;
-	m_profile.solveVelocity = 0.0f;
-	m_profile.solvePosition = 0.0f;
+	m_profile.solveInit = 0.0;
+	m_profile.solveVelocity = 0.0;
+	m_profile.solvePosition = 0.0;
 
 	// Size the island for the worst case.
 	b2Island island(m_bodyCount,
@@ -583,7 +583,7 @@ void b2World::SolveTOI(const b2TimeStep& step)
 		for (b2Body* b = m_bodyList; b; b = b->m_next)
 		{
 			b->m_flags &= ~b2Body::e_islandFlag;
-			b->m_sweep.alpha0 = 0.0f;
+			b->m_sweep.alpha0 = 0.0;
 		}
 
 		for (b2Contact* c = m_contactManager.m_contactList; c; c = c->m_next)
@@ -693,7 +693,7 @@ void b2World::SolveTOI(const b2TimeStep& step)
 				float32 beta = output.t;
 				if (output.state == b2TOIOutput::e_touching)
 				{
-					alpha = b2Min(alpha0 + (1.0f - alpha0) * beta, 1.0f);
+					alpha = b2Min(alpha0 + (1.0f - alpha0) * beta, 1.0);
 				}
 				else
 				{
@@ -911,13 +911,13 @@ void b2World::Step(float32 dt, int32 velocityIterations, int32 positionIteration
 	step.dt = dt;
 	step.velocityIterations	= velocityIterations;
 	step.positionIterations = positionIterations;
-	if (dt > 0.0f)
+	if (dt > 0.0)
 	{
 		step.inv_dt = 1.0f / dt;
 	}
 	else
 	{
-		step.inv_dt = 0.0f;
+		step.inv_dt = 0.0;
 	}
 
 	step.dtRatio = m_inv_dt0 * dt;
@@ -932,7 +932,7 @@ void b2World::Step(float32 dt, int32 velocityIterations, int32 positionIteration
 	}
 
 	// Integrate velocities, solve velocity constraints, and integrate positions.
-	if (m_stepComplete && step.dt > 0.0f)
+	if (m_stepComplete && step.dt > 0.0)
 	{
 		b2Timer timer;
 		Solve(step);
@@ -940,14 +940,14 @@ void b2World::Step(float32 dt, int32 velocityIterations, int32 positionIteration
 	}
 
 	// Handle TOI events.
-	if (m_continuousPhysics && step.dt > 0.0f)
+	if (m_continuousPhysics && step.dt > 0.0)
 	{
 		b2Timer timer;
 		SolveTOI(step);
 		m_profile.solveTOI = timer.GetMilliseconds();
 	}
 
-	if (step.dt > 0.0f)
+	if (step.dt > 0.0)
 	{
 		m_inv_dt0 = step.inv_dt;
 	}
@@ -967,7 +967,7 @@ void b2World::ClearForces()
 	for (b2Body* body = m_bodyList; body; body = body->GetNext())
 	{
 		body->m_force.SetZero();
-		body->m_torque = 0.0f;
+		body->m_torque = 0.0;
 	}
 }
 
@@ -1038,7 +1038,7 @@ void b2World::DrawShape(b2Fixture* fixture, const b2Transform& xf, const b2Color
 
 			b2Vec2 center = b2Mul(xf, circle->m_p);
 			float32 radius = circle->m_radius;
-			b2Vec2 axis = b2Mul(xf.q, b2Vec2(1.0f, 0.0f));
+			b2Vec2 axis = b2Mul(xf.q, b2Vec2(1.0f, 0.0));
 
 			g_debugDraw->DrawSolidCircle(center, radius, axis, color);
 		}

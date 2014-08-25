@@ -30,9 +30,9 @@ struct b2RopeJointDef : public b2JointDef
 	b2RopeJointDef()
 	{
 		type = e_ropeJoint;
-		localAnchorA.Set(-1.0f, 0.0f);
-		localAnchorB.Set(1.0f, 0.0f);
-		maxLength = 0.0f;
+		localAnchorA.Set(-1.0f, 0.0);
+		localAnchorB.Set(1.0f, 0.0);
+		maxLength = 0.0;
 	}
 
 	/// The local anchor point relative to bodyA's origin.

@@ -149,7 +149,7 @@ bool b2DynamicTree::MoveProxy(int32 proxyId, const b2AABB& aabb, const b2Vec2& d
 	// Predict AABB displacement.
 	b2Vec2 d = b2_aabbMultiplier * displacement;
 
-	if (d.x < 0.0f)
+	if (d.x < 0.0)
 	{
 		b.lowerBound.x += d.x;
 	}
@@ -158,7 +158,7 @@ bool b2DynamicTree::MoveProxy(int32 proxyId, const b2AABB& aabb, const b2Vec2& d
 		b.upperBound.x += d.x;
 	}
 
-	if (d.y < 0.0f)
+	if (d.y < 0.0)
 	{
 		b.lowerBound.y += d.y;
 	}
@@ -532,13 +532,13 @@ float32 b2DynamicTree::GetAreaRatio() const
 {
 	if (m_root == b2_nullNode)
 	{
-		return 0.0f;
+		return 0.0;
 	}
 
 	const b2TreeNode* root = m_nodes + m_root;
 	float32 rootArea = root->aabb.GetPerimeter();
 
-	float32 totalArea = 0.0f;
+	float32 totalArea = 0.0;
 	for (int32 i = 0; i < m_nodeCapacity; ++i)
 	{
 		const b2TreeNode* node = m_nodes + i;

@@ -37,10 +37,10 @@ b2RopeJoint::b2RopeJoint(const b2RopeJointDef* def)
 
 	m_maxLength = def->maxLength;
 
-	m_mass = 0.0f;
-	m_impulse = 0.0f;
+	m_mass = 0.0;
+	m_impulse = 0.0;
 	m_state = e_inactiveLimit;
-	m_length = 0.0f;
+	m_length = 0.0;
 }
 
 void b2RopeJoint::InitVelocityConstraints(const b2SolverData& data)
@@ -73,7 +73,7 @@ void b2RopeJoint::InitVelocityConstraints(const b2SolverData& data)
 	m_length = m_u.Length();
 
 	float32 C = m_length - m_maxLength;
-	if (C > 0.0f)
+	if (C > 0.0)
 	{
 		m_state = e_atUpperLimit;
 	}
@@ -89,8 +89,8 @@ void b2RopeJoint::InitVelocityConstraints(const b2SolverData& data)
 	else
 	{
 		m_u.SetZero();
-		m_mass = 0.0f;
-		m_impulse = 0.0f;
+		m_mass = 0.0;
+		m_impulse = 0.0;
 		return;
 	}
 
@@ -99,7 +99,7 @@ void b2RopeJoint::InitVelocityConstraints(const b2SolverData& data)
 	float32 crB = b2Cross(m_rB, m_u);
 	float32 invMass = m_invMassA + m_invIA * crA * crA + m_invMassB + m_invIB * crB * crB;
 
-	m_mass = invMass != 0.0f ? 1.0f / invMass : 0.0f;
+	m_mass = invMass != 0.0 ? 1.0f / invMass : 0.0;
 
 	if (data.step.warmStarting)
 	{
@@ -114,7 +114,7 @@ void b2RopeJoint::InitVelocityConstraints(const b2SolverData& data)
 	}
 	else
 	{
-		m_impulse = 0.0f;
+		m_impulse = 0.0;
 	}
 
 	data.velocities[m_indexA].v = vA;
@@ -137,14 +137,14 @@ void b2RopeJoint::SolveVelocityConstraints(const b2SolverData& data)
 	float32 Cdot = b2Dot(m_u, vpB - vpA);
 
 	// Predictive constraint.
-	if (C < 0.0f)
+	if (C < 0.0)
 	{
 		Cdot += data.step.inv_dt * C;
 	}
 
 	float32 impulse = -m_mass * Cdot;
 	float32 oldImpulse = m_impulse;
-	m_impulse = b2Min(0.0f, m_impulse + impulse);
+	m_impulse = b2Min(0.0, m_impulse + impulse);
 	impulse = m_impulse - oldImpulse;
 
 	b2Vec2 P = impulse * m_u;
@@ -175,7 +175,7 @@ bool b2RopeJoint::SolvePositionConstraints(const b2SolverData& data)
 	float32 length = u.Normalize();
 	float32 C = length - m_maxLength;
 
-	C = b2Clamp(C, 0.0f, b2_maxLinearCorrection);
+	C = b2Clamp(C, 0.0, b2_maxLinearCorrection);
 
 	float32 impulse = -m_mass * C;
 	b2Vec2 P = impulse * u;
@@ -212,7 +212,7 @@ b2Vec2 b2RopeJoint::GetReactionForce(float32 inv_dt) const
 float32 b2RopeJoint::GetReactionTorque(float32 inv_dt) const
 {
 	B2_NOT_USED(inv_dt);
-	return 0.0f;
+	return 0.0;
 }
 
 float32 b2RopeJoint::GetMaxLength() const

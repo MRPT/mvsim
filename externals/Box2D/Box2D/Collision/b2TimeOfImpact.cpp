@@ -87,7 +87,7 @@ struct b2SeparationFunction
 			b2Vec2 pointA = b2Mul(xfA, localPointA);
 
 			float32 s = b2Dot(pointA - pointB, normal);
-			if (s < 0.0f)
+			if (s < 0.0)
 			{
 				m_axis = -m_axis;
 				s = -s;
@@ -112,7 +112,7 @@ struct b2SeparationFunction
 			b2Vec2 pointB = b2Mul(xfB, localPointB);
 
 			float32 s = b2Dot(pointB - pointA, normal);
-			if (s < 0.0f)
+			if (s < 0.0)
 			{
 				m_axis = -m_axis;
 				s = -s;
@@ -186,7 +186,7 @@ struct b2SeparationFunction
 			b2Assert(false);
 			*indexA = -1;
 			*indexB = -1;
-			return 0.0f;
+			return 0.0;
 		}
 	}
 
@@ -237,7 +237,7 @@ struct b2SeparationFunction
 
 		default:
 			b2Assert(false);
-			return 0.0f;
+			return 0.0;
 		}
 	}
 
@@ -278,7 +278,7 @@ void b2TimeOfImpact(b2TOIOutput* output, const b2TOIInput* input)
 	float32 tolerance = 0.25f * b2_linearSlop;
 	b2Assert(target > tolerance);
 
-	float32 t1 = 0.0f;
+	float32 t1 = 0.0;
 	const int32 k_maxIterations = 20;	// TODO_ERIN b2Settings
 	int32 iter = 0;
 
@@ -306,11 +306,11 @@ void b2TimeOfImpact(b2TOIOutput* output, const b2TOIInput* input)
 		b2Distance(&distanceOutput, &cache, &distanceInput);
 
 		// If the shapes are overlapped, we give up on continuous collision.
-		if (distanceOutput.distance <= 0.0f)
+		if (distanceOutput.distance <= 0.0)
 		{
 			// Failure!
 			output->state = b2TOIOutput::e_overlapped;
-			output->t = 0.0f;
+			output->t = 0.0;
 			break;
 		}
 
@@ -333,7 +333,7 @@ void b2TimeOfImpact(b2TOIOutput* output, const b2TOIInput* input)
 			float32 xs[N+1];
 			float32 fs[N+1];
 
-			float32 x = 0.0f;
+			float32 x = 0.0;
 
 			for (int32 i = 0; i <= N; ++i)
 			{
