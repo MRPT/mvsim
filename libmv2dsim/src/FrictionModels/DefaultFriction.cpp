@@ -33,11 +33,11 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 
 		//// Parse XML params:
 		//parse_xmlnode_children_as_param(*node,params);
-	}
+	}	
 
 #if 0
 	// Create a "friction joint" for each wheel:
-	b2FrictionWheelDef fjd;
+	b2FrictionJointDef fjd;
 
 	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
 
@@ -55,8 +55,7 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 		fjd.maxForce = m_max_torque;
 		fjd.maxTorque = m_max_force;
 
-		b2FrictionWheel* b2_friction = dynamic_cast<b2FrictionWheel*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
-		ASSERT_(b2_friction)
+		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
 		m_joints.push_back(b2_friction);
 	}
 #endif
@@ -72,8 +71,7 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 #if 0
 	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
 	{
-		b2FrictionWheel* b2_friction = dynamic_cast<b2FrictionWheel*>( m_joints[i] );
-		ASSERT_(b2_friction)
+		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_joints[i] );
 		b2_friction->ShiftOrigin( b2Veh->GetWorldPoint( b2Vec2_zero ) );
 
 		b2_friction->SetMaxForce(m_max_torque);
