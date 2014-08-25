@@ -54,9 +54,9 @@ b2DistanceJoint::b2DistanceJoint(const b2DistanceJointDef* def)
 	m_length = def->length;
 	m_frequencyHz = def->frequencyHz;
 	m_dampingRatio = def->dampingRatio;
-	m_impulse = 0.0f;
-	m_gamma = 0.0f;
-	m_bias = 0.0f;
+	m_impulse = 0.0;
+	m_gamma = 0.0;
+	m_bias = 0.0;
 }
 
 void b2DistanceJoint::InitVelocityConstraints(const b2SolverData& data)
@@ -94,7 +94,7 @@ void b2DistanceJoint::InitVelocityConstraints(const b2SolverData& data)
 	}
 	else
 	{
-		m_u.Set(0.0f, 0.0f);
+		m_u.Set(0.0, 0.0);
 	}
 
 	float32 crAu = b2Cross(m_rA, m_u);
@@ -102,9 +102,9 @@ void b2DistanceJoint::InitVelocityConstraints(const b2SolverData& data)
 	float32 invMass = m_invMassA + m_invIA * crAu * crAu + m_invMassB + m_invIB * crBu * crBu;
 
 	// Compute the effective mass matrix.
-	m_mass = invMass != 0.0f ? 1.0f / invMass : 0.0f;
+	m_mass = invMass != 0.0 ? 1.0f / invMass : 0.0;
 
-	if (m_frequencyHz > 0.0f)
+	if (m_frequencyHz > 0.0)
 	{
 		float32 C = length - m_length;
 
@@ -120,16 +120,16 @@ void b2DistanceJoint::InitVelocityConstraints(const b2SolverData& data)
 		// magic formulas
 		float32 h = data.step.dt;
 		m_gamma = h * (d + h * k);
-		m_gamma = m_gamma != 0.0f ? 1.0f / m_gamma : 0.0f;
+		m_gamma = m_gamma != 0.0 ? 1.0f / m_gamma : 0.0;
 		m_bias = C * h * k * m_gamma;
 
 		invMass += m_gamma;
-		m_mass = invMass != 0.0f ? 1.0f / invMass : 0.0f;
+		m_mass = invMass != 0.0 ? 1.0f / invMass : 0.0;
 	}
 	else
 	{
-		m_gamma = 0.0f;
-		m_bias = 0.0f;
+		m_gamma = 0.0;
+		m_bias = 0.0;
 	}
 
 	if (data.step.warmStarting)
@@ -145,7 +145,7 @@ void b2DistanceJoint::InitVelocityConstraints(const b2SolverData& data)
 	}
 	else
 	{
-		m_impulse = 0.0f;
+		m_impulse = 0.0;
 	}
 
 	data.velocities[m_indexA].v = vA;
@@ -183,7 +183,7 @@ void b2DistanceJoint::SolveVelocityConstraints(const b2SolverData& data)
 
 bool b2DistanceJoint::SolvePositionConstraints(const b2SolverData& data)
 {
-	if (m_frequencyHz > 0.0f)
+	if (m_frequencyHz > 0.0)
 	{
 		// There is no position correction for soft distance constraints.
 		return true;
@@ -239,7 +239,7 @@ b2Vec2 b2DistanceJoint::GetReactionForce(float32 inv_dt) const
 float32 b2DistanceJoint::GetReactionTorque(float32 inv_dt) const
 {
 	B2_NOT_USED(inv_dt);
-	return 0.0f;
+	return 0.0;
 }
 
 void b2DistanceJoint::Dump()
