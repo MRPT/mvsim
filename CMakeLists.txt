@@ -63,6 +63,7 @@ FIND_PACKAGE( MRPT REQUIRED COMPONENTS base opengl obs maps gui)
 SET(EMBEDDED_Box2D_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/Box2D/Box2D")
 
 # 1st) Try to locate it via CMake (installed in the system or precompiled somewhere)
+SET(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
 FIND_PACKAGE(Box2D QUIET) # Quiet in a 1st try...
 # Defines: 
 
@@ -81,9 +82,6 @@ IF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 	MARK_AS_ADVANCED(BOX2D_BUILD_EXAMPLES)
 
 	add_subdirectory(externals/Box2D)
-
-	SET(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
-	MESSAGE(STATUS "[Info] Box2D not found in the system. Using embedded version in: ${Box2D_DIR}")
 
 	# 2nd attempt: Fatal error if not found:
 	FIND_PACKAGE(Box2D REQUIRED)
