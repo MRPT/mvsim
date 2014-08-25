@@ -59,7 +59,7 @@ bool b2CircleShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& input
 	float32 sigma = c * c - rr * b;
 
 	// Check for negative discriminant and short segment.
-	if (sigma < 0.0 || rr < b2_epsilon)
+	if (sigma < 0.0f || rr < b2_epsilon)
 	{
 		return false;
 	}
@@ -68,7 +68,7 @@ bool b2CircleShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& input
 	float32 a = -(c + b2Sqrt(sigma));
 
 	// Is the intersection point on the segment?
-	if (0.0 <= a && a <= input.maxFraction * rr)
+	if (0.0f <= a && a <= input.maxFraction * rr)
 	{
 		a /= rr;
 		output->fraction = a;

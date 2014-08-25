@@ -20,24 +20,17 @@
 #define B2_MATH_H
 
 #include <Box2D/Common/b2Settings.h>
-#include <cmath>
+#include <math.h>
 
 /// This function is used to ensure that a floating point number is not a NaN or infinity.
 inline bool b2IsValid(float32 x)
 {
-	//int32 ix = *reinterpret_cast<int32*>(&x);
-	//return (ix & 0x7f800000) != 0x7f800000;
-#if defined(__BORLANDC__) || defined(_MSC_VER)  // JLBC
-		return 0==_isnan(x);
-#elif defined(__GNUC__)
-		return !std::isnan(x);
-#else
-        return true;
-#endif
+	int32 ix = *reinterpret_cast<int32*>(&x);
+	return (ix & 0x7f800000) != 0x7f800000;
 }
 
 /// This is a approximate yet fast inverse square-root.
-/*inline float32 b2InvSqrt(float32 x)  // JLBC
+inline float32 b2InvSqrt(float32 x)
 {
 	union
 	{
@@ -51,10 +44,10 @@ inline bool b2IsValid(float32 x)
 	x = convert.x;
 	x = x * (1.5f - xhalf * x * x);
 	return x;
-}*/
+}
 
-#define	b2Sqrt(x)	sqrt(x)  // JLBC
-#define	b2Atan2(y, x)	atan2(y, x) // JLBC
+#define	b2Sqrt(x)	sqrtf(x)
+#define	b2Atan2(y, x)	atan2f(y, x)
 
 /// A 2D column vector.
 struct b2Vec2
@@ -66,7 +59,7 @@ struct b2Vec2
 	b2Vec2(float32 x, float32 y) : x(x), y(y) {}
 
 	/// Set this vector to all zeros.
-	void SetZero() { x = 0.0; y = 0.0; }
+	void SetZero() { x = 0.0f; y = 0.0f; }
 
 	/// Set this vector to some specified coordinates.
 	void Set(float32 x_, float32 y_) { x = x_; y = y_; }
@@ -123,7 +116,7 @@ struct b2Vec2
 		float32 length = Length();
 		if (length < b2_epsilon)
 		{
-			return 0.0;
+			return 0.0f;
 		}
 		float32 invLength = 1.0f / length;
 		x *= invLength;
@@ -157,7 +150,7 @@ struct b2Vec3
 	b2Vec3(float32 x, float32 y, float32 z) : x(x), y(y), z(z) {}
 
 	/// Set this vector to all zeros.
-	void SetZero() { x = 0.0; y = 0.0; z = 0.0; }
+	void SetZero() { x = 0.0f; y = 0.0f; z = 0.0f; }
 
 	/// Set this vector to some specified coordinates.
 	void Set(float32 x_, float32 y_, float32 z_) { x = x_; y = y_; z = z_; }
@@ -216,15 +209,15 @@ struct b2Mat22
 	/// Set this to the identity matrix.
 	void SetIdentity()
 	{
-		ex.x = 1.0f; ey.x = 0.0;
-		ex.y = 0.0; ey.y = 1.0f;
+		ex.x = 1.0f; ey.x = 0.0f;
+		ex.y = 0.0f; ey.y = 1.0f;
 	}
 
 	/// Set this matrix to all zeros.
 	void SetZero()
 	{
-		ex.x = 0.0; ey.x = 0.0;
-		ex.y = 0.0; ey.y = 0.0;
+		ex.x = 0.0f; ey.x = 0.0f;
+		ex.y = 0.0f; ey.y = 0.0f;
 	}
 
 	b2Mat22 GetInverse() const
@@ -232,7 +225,7 @@ struct b2Mat22
 		float32 a = ex.x, b = ey.x, c = ex.y, d = ey.y;
 		b2Mat22 B;
 		float32 det = a * d - b * c;
-		if (det != 0.0)
+		if (det != 0.0f)
 		{
 			det = 1.0f / det;
 		}
@@ -247,7 +240,7 @@ struct b2Mat22
 	{
 		float32 a11 = ex.x, a12 = ey.x, a21 = ex.y, a22 = ey.y;
 		float32 det = a11 * a22 - a12 * a21;
-		if (det != 0.0)
+		if (det != 0.0f)
 		{
 			det = 1.0f / det;
 		}
@@ -311,23 +304,23 @@ struct b2Rot
 	explicit b2Rot(float32 angle)
 	{
 		/// TODO_ERIN optimize
-		s = sin(angle); // JLBC: Was sinf()
-		c = cos(angle); // JLBC: Was cosf()
+		s = sinf(angle);
+		c = cosf(angle);
 	}
 
 	/// Set using an angle in radians.
 	void Set(float32 angle)
 	{
 		/// TODO_ERIN optimize
-		s = sin(angle); // JLBC: Was sinf()
-		c = cos(angle); // JLBC: Was cosf()
+		s = sinf(angle);
+		c = cosf(angle);
 	}
 
 	/// Set to the identity rotation
 	void SetIdentity()
 	{
-		s = 0.0;
-		c = 1.0;
+		s = 0.0f;
+		c = 1.0f;
 	}
 
 	/// Get the angle in radians
@@ -719,7 +712,7 @@ inline void b2Sweep::Advance(float32 alpha)
 inline void b2Sweep::Normalize()
 {
 	float32 twoPi = 2.0f * b2_pi;
-	float32 d =  twoPi * floor(a0 / twoPi); // JLBC
+	float32 d =  twoPi * floorf(a0 / twoPi);
 	a0 -= d;
 	a -= d;
 }

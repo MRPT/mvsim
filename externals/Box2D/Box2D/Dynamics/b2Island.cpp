@@ -360,8 +360,8 @@ void b2Island::Solve(b2Profile* profile, const b2TimeStep& step, const b2Vec2& g
 				b->m_angularVelocity * b->m_angularVelocity > angTolSqr ||
 				b2Dot(b->m_linearVelocity, b->m_linearVelocity) > linTolSqr)
 			{
-				b->m_sleepTime = 0.0;
-				minSleepTime = 0.0;
+				b->m_sleepTime = 0.0f;
+				minSleepTime = 0.0f;
 			}
 			else
 			{

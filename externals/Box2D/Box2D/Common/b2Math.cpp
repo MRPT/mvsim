@@ -18,14 +18,14 @@
 
 #include <Box2D/Common/b2Math.h>
 
-const b2Vec2 b2Vec2_zero(0.0, 0.0);
+const b2Vec2 b2Vec2_zero(0.0f, 0.0f);
 
 /// Solve A * x = b, where b is a column vector. This is more efficient
 /// than computing the inverse in one-shot cases.
 b2Vec3 b2Mat33::Solve33(const b2Vec3& b) const
 {
 	float32 det = b2Dot(ex, b2Cross(ey, ez));
-	if (det != 0.0)
+	if (det != 0.0f)
 	{
 		det = 1.0f / det;
 	}
@@ -42,7 +42,7 @@ b2Vec2 b2Mat33::Solve22(const b2Vec2& b) const
 {
 	float32 a11 = ex.x, a12 = ey.x, a21 = ex.y, a22 = ey.y;
 	float32 det = a11 * a22 - a12 * a21;
-	if (det != 0.0)
+	if (det != 0.0f)
 	{
 		det = 1.0f / det;
 	}
@@ -57,21 +57,21 @@ void b2Mat33::GetInverse22(b2Mat33* M) const
 {
 	float32 a = ex.x, b = ey.x, c = ex.y, d = ey.y;
 	float32 det = a * d - b * c;
-	if (det != 0.0)
+	if (det != 0.0f)
 	{
 		det = 1.0f / det;
 	}
 
-	M->ex.x =  det * d;	M->ey.x = -det * b; M->ex.z = 0.0;
-	M->ex.y = -det * c;	M->ey.y =  det * a; M->ey.z = 0.0;
-	M->ez.x = 0.0; M->ez.y = 0.0; M->ez.z = 0.0;
+	M->ex.x =  det * d;	M->ey.x = -det * b; M->ex.z = 0.0f;
+	M->ex.y = -det * c;	M->ey.y =  det * a; M->ey.z = 0.0f;
+	M->ez.x = 0.0f; M->ez.y = 0.0f; M->ez.z = 0.0f;
 }
 
 /// Returns the zero matrix if singular.
 void b2Mat33::GetSymInverse33(b2Mat33* M) const
 {
 	float32 det = b2Dot(ex, b2Cross(ey, ez));
-	if (det != 0.0)
+	if (det != 0.0f)
 	{
 		det = 1.0f / det;
 	}

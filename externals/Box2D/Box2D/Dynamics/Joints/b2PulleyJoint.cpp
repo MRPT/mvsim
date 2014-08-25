@@ -62,12 +62,12 @@ b2PulleyJoint::b2PulleyJoint(const b2PulleyJointDef* def)
 	m_lengthA = def->lengthA;
 	m_lengthB = def->lengthB;
 
-	b2Assert(def->ratio != 0.0);
+	b2Assert(def->ratio != 0.0f);
 	m_ratio = def->ratio;
 
 	m_constant = def->lengthA + m_ratio * def->lengthB;
 
-	m_impulse = 0.0;
+	m_impulse = 0.0f;
 }
 
 void b2PulleyJoint::InitVelocityConstraints(const b2SolverData& data)
@@ -130,7 +130,7 @@ void b2PulleyJoint::InitVelocityConstraints(const b2SolverData& data)
 
 	m_mass = mA + m_ratio * m_ratio * mB;
 
-	if (m_mass > 0.0)
+	if (m_mass > 0.0f)
 	{
 		m_mass = 1.0f / m_mass;
 	}
@@ -151,7 +151,7 @@ void b2PulleyJoint::InitVelocityConstraints(const b2SolverData& data)
 	}
 	else
 	{
-		m_impulse = 0.0;
+		m_impulse = 0.0f;
 	}
 
 	data.velocities[m_indexA].v = vA;
@@ -233,7 +233,7 @@ bool b2PulleyJoint::SolvePositionConstraints(const b2SolverData& data)
 
 	float32 mass = mA + m_ratio * m_ratio * mB;
 
-	if (mass > 0.0)
+	if (mass > 0.0f)
 	{
 		mass = 1.0f / mass;
 	}
@@ -278,7 +278,7 @@ b2Vec2 b2PulleyJoint::GetReactionForce(float32 inv_dt) const
 float32 b2PulleyJoint::GetReactionTorque(float32 inv_dt) const
 {
 	B2_NOT_USED(inv_dt);
-	return 0.0;
+	return 0.0f;
 }
 
 b2Vec2 b2PulleyJoint::GetGroundAnchorA() const

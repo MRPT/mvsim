@@ -51,7 +51,7 @@ b2MotorJoint::b2MotorJoint(const b2MotorJointDef* def)
 	m_angularOffset = def->angularOffset;
 
 	m_linearImpulse.SetZero();
-	m_angularImpulse = 0.0;
+	m_angularImpulse = 0.0f;
 
 	m_maxForce = def->maxForce;
 	m_maxTorque = def->maxTorque;
@@ -106,7 +106,7 @@ void b2MotorJoint::InitVelocityConstraints(const b2SolverData& data)
 	m_linearMass = K.GetInverse();
 
 	m_angularMass = iA + iB;
-	if (m_angularMass > 0.0)
+	if (m_angularMass > 0.0f)
 	{
 		m_angularMass = 1.0f / m_angularMass;
 	}
@@ -129,7 +129,7 @@ void b2MotorJoint::InitVelocityConstraints(const b2SolverData& data)
 	else
 	{
 		m_linearImpulse.SetZero();
-		m_angularImpulse = 0.0;
+		m_angularImpulse = 0.0f;
 	}
 
 	data.velocities[m_indexA].v = vA;
@@ -225,7 +225,7 @@ float32 b2MotorJoint::GetReactionTorque(float32 inv_dt) const
 
 void b2MotorJoint::SetMaxForce(float32 force)
 {
-	b2Assert(b2IsValid(force) && force >= 0.0);
+	b2Assert(b2IsValid(force) && force >= 0.0f);
 	m_maxForce = force;
 }
 
@@ -236,7 +236,7 @@ float32 b2MotorJoint::GetMaxForce() const
 
 void b2MotorJoint::SetMaxTorque(float32 torque)
 {
-	b2Assert(b2IsValid(torque) && torque >= 0.0);
+	b2Assert(b2IsValid(torque) && torque >= 0.0f);
 	m_maxTorque = torque;
 }
 
@@ -247,7 +247,7 @@ float32 b2MotorJoint::GetMaxTorque() const
 
 void b2MotorJoint::SetCorrectionFactor(float32 factor)
 {
-	b2Assert(b2IsValid(factor) && 0.0 <= factor && factor <= 1.0f);
+	b2Assert(b2IsValid(factor) && 0.0f <= factor && factor <= 1.0f);
 	m_correctionFactor = factor;
 }
 

@@ -34,10 +34,10 @@ void b2PolygonShape::SetAsBox(float32 hx, float32 hy)
 	m_vertices[1].Set( hx, -hy);
 	m_vertices[2].Set( hx,  hy);
 	m_vertices[3].Set(-hx,  hy);
-	m_normals[0].Set(0.0, -1.0f);
-	m_normals[1].Set(1.0f, 0.0);
-	m_normals[2].Set(0.0, 1.0f);
-	m_normals[3].Set(-1.0f, 0.0);
+	m_normals[0].Set(0.0f, -1.0f);
+	m_normals[1].Set(1.0f, 0.0f);
+	m_normals[2].Set(0.0f, 1.0f);
+	m_normals[3].Set(-1.0f, 0.0f);
 	m_centroid.SetZero();
 }
 
@@ -48,10 +48,10 @@ void b2PolygonShape::SetAsBox(float32 hx, float32 hy, const b2Vec2& center, floa
 	m_vertices[1].Set( hx, -hy);
 	m_vertices[2].Set( hx,  hy);
 	m_vertices[3].Set(-hx,  hy);
-	m_normals[0].Set(0.0, -1.0f);
-	m_normals[1].Set(1.0f, 0.0);
-	m_normals[2].Set(0.0, 1.0f);
-	m_normals[3].Set(-1.0f, 0.0);
+	m_normals[0].Set(0.0f, -1.0f);
+	m_normals[1].Set(1.0f, 0.0f);
+	m_normals[2].Set(0.0f, 1.0f);
+	m_normals[3].Set(-1.0f, 0.0f);
 	m_centroid = center;
 
 	b2Transform xf;
@@ -75,12 +75,12 @@ static b2Vec2 ComputeCentroid(const b2Vec2* vs, int32 count)
 {
 	b2Assert(count >= 3);
 
-	b2Vec2 c; c.Set(0.0, 0.0);
-	float32 area = 0.0;
+	b2Vec2 c; c.Set(0.0f, 0.0f);
+	float32 area = 0.0f;
 
 	// pRef is the reference point for forming triangles.
 	// It's location doesn't change the result (except for rounding error).
-	b2Vec2 pRef(0.0, 0.0);
+	b2Vec2 pRef(0.0f, 0.0f);
 #if 0
 	// This code would put the reference point inside the polygon.
 	for (int32 i = 0; i < count; ++i)
@@ -196,13 +196,13 @@ void b2PolygonShape::Set(const b2Vec2* vertices, int32 count)
 			b2Vec2 r = ps[ie] - ps[hull[m]];
 			b2Vec2 v = ps[j] - ps[hull[m]];
 			float32 c = b2Cross(r, v);
-			if (c < 0.0)
+			if (c < 0.0f)
 			{
 				ie = j;
 			}
 
 			// Collinearity check
-			if (c == 0.0 && v.LengthSquared() > r.LengthSquared())
+			if (c == 0.0f && v.LengthSquared() > r.LengthSquared())
 			{
 				ie = j;
 			}
@@ -255,7 +255,7 @@ bool b2PolygonShape::TestPoint(const b2Transform& xf, const b2Vec2& p) const
 	for (int32 i = 0; i < m_count; ++i)
 	{
 		float32 dot = b2Dot(m_normals[i], pLocal - m_vertices[i]);
-		if (dot > 0.0)
+		if (dot > 0.0f)
 		{
 			return false;
 		}
@@ -274,7 +274,7 @@ bool b2PolygonShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& inpu
 	b2Vec2 p2 = b2MulT(xf.q, input.p2 - xf.p);
 	b2Vec2 d = p2 - p1;
 
-	float32 lower = 0.0, upper = input.maxFraction;
+	float32 lower = 0.0f, upper = input.maxFraction;
 
 	int32 index = -1;
 
@@ -286,9 +286,9 @@ bool b2PolygonShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& inpu
 		float32 numerator = b2Dot(m_normals[i], m_vertices[i] - p1);
 		float32 denominator = b2Dot(m_normals[i], d);
 
-		if (denominator == 0.0)
+		if (denominator == 0.0f)
 		{	
-			if (numerator < 0.0)
+			if (numerator < 0.0f)
 			{
 				return false;
 			}
@@ -299,14 +299,14 @@ bool b2PolygonShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& inpu
 			// lower < numerator / denominator, where denominator < 0
 			// Since denominator < 0, we have to flip the inequality:
 			// lower < numerator / denominator <==> denominator * lower > numerator.
-			if (denominator < 0.0 && numerator < lower * denominator)
+			if (denominator < 0.0f && numerator < lower * denominator)
 			{
 				// Increase lower.
 				// The segment enters this half-space.
 				lower = numerator / denominator;
 				index = i;
 			}
-			else if (denominator > 0.0 && numerator < upper * denominator)
+			else if (denominator > 0.0f && numerator < upper * denominator)
 			{
 				// Decrease upper.
 				// The segment exits this half-space.
@@ -324,7 +324,7 @@ bool b2PolygonShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& inpu
 		}
 	}
 
-	b2Assert(0.0 <= lower && lower <= input.maxFraction);
+	b2Assert(0.0f <= lower && lower <= input.maxFraction);
 
 	if (index >= 0)
 	{
@@ -383,13 +383,13 @@ void b2PolygonShape::ComputeMass(b2MassData* massData, float32 density) const
 
 	b2Assert(m_count >= 3);
 
-	b2Vec2 center; center.Set(0.0, 0.0);
-	float32 area = 0.0;
-	float32 I = 0.0;
+	b2Vec2 center; center.Set(0.0f, 0.0f);
+	float32 area = 0.0f;
+	float32 I = 0.0f;
 
 	// s is the reference point for forming triangles.
 	// It's location doesn't change the result (except for rounding error).
-	b2Vec2 s(0.0, 0.0);
+	b2Vec2 s(0.0f, 0.0f);
 
 	// This code would put the reference point inside the polygon.
 	for (int32 i = 0; i < m_count; ++i)
@@ -456,7 +456,7 @@ bool b2PolygonShape::Validate() const
 
 			b2Vec2 v = m_vertices[j] - p;
 			float32 c = b2Cross(e, v);
-			if (c < 0.0)
+			if (c < 0.0f)
 			{
 				return false;
 			}

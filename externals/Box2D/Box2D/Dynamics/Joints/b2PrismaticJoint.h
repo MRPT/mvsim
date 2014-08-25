@@ -34,14 +34,14 @@ struct b2PrismaticJointDef : public b2JointDef
 		type = e_prismaticJoint;
 		localAnchorA.SetZero();
 		localAnchorB.SetZero();
-		localAxisA.Set(1.0f, 0.0);
-		referenceAngle = 0.0;
+		localAxisA.Set(1.0f, 0.0f);
+		referenceAngle = 0.0f;
 		enableLimit = false;
-		lowerTranslation = 0.0;
-		upperTranslation = 0.0;
+		lowerTranslation = 0.0f;
+		upperTranslation = 0.0f;
 		enableMotor = false;
-		maxMotorForce = 0.0;
-		motorSpeed = 0.0;
+		maxMotorForce = 0.0f;
+		motorSpeed = 0.0f;
 	}
 
 	/// Initialize the bodies, anchors, axis, and reference angle using the world

@@ -102,12 +102,12 @@ void b2WeldJoint::InitVelocityConstraints(const b2SolverData& data)
 	K.ey.z = K.ez.y;
 	K.ez.z = iA + iB;
 
-	if (m_frequencyHz > 0.0)
+	if (m_frequencyHz > 0.0f)
 	{
 		K.GetInverse22(&m_mass);
 
 		float32 invM = iA + iB;
-		float32 m = invM > 0.0 ? 1.0f / invM : 0.0;
+		float32 m = invM > 0.0f ? 1.0f / invM : 0.0f;
 
 		float32 C = aB - aA - m_referenceAngle;
 
@@ -123,23 +123,23 @@ void b2WeldJoint::InitVelocityConstraints(const b2SolverData& data)
 		// magic formulas
 		float32 h = data.step.dt;
 		m_gamma = h * (d + h * k);
-		m_gamma = m_gamma != 0.0 ? 1.0f / m_gamma : 0.0;
+		m_gamma = m_gamma != 0.0f ? 1.0f / m_gamma : 0.0f;
 		m_bias = C * h * k * m_gamma;
 
 		invM += m_gamma;
-		m_mass.ez.z = invM != 0.0 ? 1.0f / invM : 0.0;
+		m_mass.ez.z = invM != 0.0f ? 1.0f / invM : 0.0f;
 	}
-	else if (K.ez.z == 0.0)
+	else if (K.ez.z == 0.0f)
 	{
 		K.GetInverse22(&m_mass);
-		m_gamma = 0.0;
-		m_bias = 0.0;
+		m_gamma = 0.0f;
+		m_bias = 0.0f;
 	}
 	else
 	{
 		K.GetSymInverse33(&m_mass);
-		m_gamma = 0.0;
-		m_bias = 0.0;
+		m_gamma = 0.0f;
+		m_bias = 0.0f;
 	}
 
 	if (data.step.warmStarting)
@@ -176,7 +176,7 @@ void b2WeldJoint::SolveVelocityConstraints(const b2SolverData& data)
 	float32 mA = m_invMassA, mB = m_invMassB;
 	float32 iA = m_invIA, iB = m_invIB;
 
-	if (m_frequencyHz > 0.0)
+	if (m_frequencyHz > 0.0f)
 	{
 		float32 Cdot2 = wB - wA;
 
@@ -252,12 +252,12 @@ bool b2WeldJoint::SolvePositionConstraints(const b2SolverData& data)
 	K.ey.z = K.ez.y;
 	K.ez.z = iA + iB;
 
-	if (m_frequencyHz > 0.0)
+	if (m_frequencyHz > 0.0f)
 	{
 		b2Vec2 C1 =  cB + rB - cA - rA;
 
 		positionError = C1.Length();
-		angularError = 0.0;
+		angularError = 0.0f;
 
 		b2Vec2 P = -K.Solve22(C1);
 
@@ -278,14 +278,14 @@ bool b2WeldJoint::SolvePositionConstraints(const b2SolverData& data)
 		b2Vec3 C(C1.x, C1.y, C2);
 	
 		b2Vec3 impulse;
-		if (K.ez.z > 0.0)
+		if (K.ez.z > 0.0f)
 		{
 			impulse = -K.Solve33(C);
 		}
 		else
 		{
 			b2Vec2 impulse2 = -K.Solve22(C1);
-			impulse.Set(impulse2.x, impulse2.y, 0.0);
+			impulse.Set(impulse2.x, impulse2.y, 0.0f);
 		}
 
 		b2Vec2 P(impulse.x, impulse.y);

@@ -73,13 +73,13 @@ bool b2EdgeShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& input,
 	float32 numerator = b2Dot(normal, v1 - p1);
 	float32 denominator = b2Dot(normal, d);
 
-	if (denominator == 0.0)
+	if (denominator == 0.0f)
 	{
 		return false;
 	}
 
 	float32 t = numerator / denominator;
-	if (t < 0.0 || input.maxFraction < t)
+	if (t < 0.0f || input.maxFraction < t)
 	{
 		return false;
 	}
@@ -90,19 +90,19 @@ bool b2EdgeShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& input,
 	// s = dot(q - v1, r) / dot(r, r)
 	b2Vec2 r = v2 - v1;
 	float32 rr = b2Dot(r, r);
-	if (rr == 0.0)
+	if (rr == 0.0f)
 	{
 		return false;
 	}
 
 	float32 s = b2Dot(q - v1, r) / rr;
-	if (s < 0.0 || 1.0f < s)
+	if (s < 0.0f || 1.0f < s)
 	{
 		return false;
 	}
 
 	output->fraction = t;
-	if (numerator > 0.0)
+	if (numerator > 0.0f)
 	{
 		output->normal = -b2Mul(xf.q, normal);
 	}
@@ -132,7 +132,7 @@ void b2EdgeShape::ComputeMass(b2MassData* massData, float32 density) const
 {
 	B2_NOT_USED(density);
 
-	massData->mass = 0.0;
+	massData->mass = 0.0f;
 	massData->center = 0.5f * (m_vertex1 + m_vertex2);
-	massData->I = 0.0;
+	massData->I = 0.0f;
 }

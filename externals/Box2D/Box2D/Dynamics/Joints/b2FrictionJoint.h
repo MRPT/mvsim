@@ -29,8 +29,8 @@ struct b2FrictionJointDef : public b2JointDef
 		type = e_frictionJoint;
 		localAnchorA.SetZero();
 		localAnchorB.SetZero();
-		maxForce = 0.0;
-		maxTorque = 0.0;
+		maxForce = 0.0f;
+		maxTorque = 0.0f;
 	}
 
 	/// Initialize the bodies, anchors, axis, and reference angle using the world

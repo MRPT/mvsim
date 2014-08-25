@@ -37,13 +37,13 @@ struct b2RevoluteJointDef : public b2JointDef
 	b2RevoluteJointDef()
 	{
 		type = e_revoluteJoint;
-		localAnchorA.Set(0.0, 0.0);
-		localAnchorB.Set(0.0, 0.0);
-		referenceAngle = 0.0;
-		lowerAngle = 0.0;
-		upperAngle = 0.0;
-		maxMotorTorque = 0.0;
-		motorSpeed = 0.0;
+		localAnchorA.Set(0.0f, 0.0f);
+		localAnchorB.Set(0.0f, 0.0f);
+		referenceAngle = 0.0f;
+		lowerAngle = 0.0f;
+		upperAngle = 0.0f;
+		maxMotorTorque = 0.0f;
+		motorSpeed = 0.0f;
 		enableLimit = false;
 		enableMotor = false;
 	}

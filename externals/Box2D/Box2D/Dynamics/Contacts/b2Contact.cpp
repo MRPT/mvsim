@@ -153,7 +153,7 @@ b2Contact::b2Contact(b2Fixture* fA, int32 indexA, b2Fixture* fB, int32 indexB)
 	m_friction = b2MixFriction(m_fixtureA->m_friction, m_fixtureB->m_friction);
 	m_restitution = b2MixRestitution(m_fixtureA->m_restitution, m_fixtureB->m_restitution);
 
-	m_tangentSpeed = 0.0;
+	m_tangentSpeed = 0.0f;
 }
 
 // Update the contact manifold and touching status.
@@ -197,8 +197,8 @@ void b2Contact::Update(b2ContactListener* listener)
 		for (int32 i = 0; i < m_manifold.pointCount; ++i)
 		{
 			b2ManifoldPoint* mp2 = m_manifold.points + i;
-			mp2->normalImpulse = 0.0;
-			mp2->tangentImpulse = 0.0;
+			mp2->normalImpulse = 0.0f;
+			mp2->tangentImpulse = 0.0f;
 			b2ContactID id2 = mp2->id;
 
 			for (int32 j = 0; j < oldManifold.pointCount; ++j)
