@@ -12,6 +12,7 @@
 using namespace mv2dsim;
 using namespace std;
 
+MRPT_TODO("The controller can't know the ACTUAL velocities: rely on odometry?")
 
 DynamicsDifferential::ControllerTwistPI::ControllerTwistPI(DynamicsDifferential &veh) : 
 	ControllerBase(veh),
@@ -20,7 +21,7 @@ DynamicsDifferential::ControllerTwistPI::ControllerTwistPI(DynamicsDifferential 
 	KP(100),
 	KI(0),
 	I_MAX(10),
-	max_force(20.0)
+	max_torque(100.0)
 {
 	// Get distance between wheels:
 	// Warning: the controller *assumes* that both wheels are parallel (as it's a rule in differential robots!!)
@@ -48,11 +49,11 @@ void DynamicsDifferential::ControllerTwistPI::control_step(
 		m_PID[i].I_MAX_ABS = I_MAX;
 		m_PID[i].KP = KP;
 		m_PID[i].KI = KI;
-		m_PID[i].max_out = max_force;
+		m_PID[i].max_out = max_torque;
 	}
 
-	co.wheel_torque_l = m_PID[0].compute(vel_l-act_vel_l,ci.context.dt);
-	co.wheel_torque_r = m_PID[1].compute(vel_r-act_vel_r,ci.context.dt);
+	co.wheel_torque_l = -m_PID[0].compute(vel_l-act_vel_l,ci.context.dt);  // "-" because \tau<0 makes robot moves forwards.
+	co.wheel_torque_r = -m_PID[1].compute(vel_r-act_vel_r,ci.context.dt);
 }
 
 void DynamicsDifferential::ControllerTwistPI::load_config(const rapidxml::xml_node<char>&node )
@@ -61,7 +62,7 @@ void DynamicsDifferential::ControllerTwistPI::load_config(const rapidxml::xml_no
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["I_MAX"] = TParamEntry("%lf", &I_MAX);
-	params["max_force"] = TParamEntry("%lf", &max_force);
+	params["max_torque"] = TParamEntry("%lf", &max_torque);
 
 
 

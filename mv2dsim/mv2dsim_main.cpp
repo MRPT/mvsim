@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
 			mrpt::system::sleep(10);
 
-#if 1
+#if 0
 			{ // Test: Get vehicles speed:
 				const World::TListVehicles & vehs = world.getListOfVehicles();
 				const vec3 &vel = vehs.begin()->second->getVelocityLocal();
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 					case 'd':  cntrl->setpoint_ang_speed -= 5.0*M_PI/180;  break;
 					case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
 					};
-					printf("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
+					//printf("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
 				}
 				DynamicsDifferential::ControllerRawForces *cntrl2 = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
 				if (cntrl2)
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 					case 'd':  cntrl2->setpoint_wheel_torque_r -= 0.5; break;
 					case ' ': cntrl2->setpoint_wheel_torque_l = cntrl2->setpoint_wheel_torque_r = 0.0; break;
 					};
-					printf("setpoint: tl=%.03f tr=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_wheel_torque_r);
+					//printf("setpoint: tl=%.03f tr=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_wheel_torque_r);
 				}
 				gui_key_events = World::TGUIKeyEvent(); // Reset key-stroke
 

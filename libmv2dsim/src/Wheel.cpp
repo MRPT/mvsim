@@ -24,6 +24,8 @@ Wheel::Wheel() :
 	color(0xff323232),
 	phi(.0), w(.0)
 {
+	MRPT_TODO("Inertia of cylinder");
+	Iyy = 1.0;
 }
 
 void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
@@ -36,7 +38,10 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
 
 	mrpt::opengl::CSetOfObjectsPtr gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
 	gl_wheel_frame->insert(gl_wheel);
-	gl_wheel_frame->insert( mrpt::opengl::stock_objects::CornerXYZSimple() );
+	{
+		mrpt::opengl::CSetOfObjectsPtr gl_xyz = mrpt::opengl::stock_objects::CornerXYZSimple( 0.75*diameter );
+		gl_wheel_frame->insert( gl_xyz );
+	}
 
 	obj.setPose( mrpt::math::TPose3D( x,y, 0.5*diameter, yaw, 0.0, 0.0) );
 
