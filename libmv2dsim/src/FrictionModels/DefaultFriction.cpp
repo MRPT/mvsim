@@ -17,7 +17,9 @@ using namespace mv2dsim;
 
 
 DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_node<char> *node) :
-	FrictionBase(my_vehicle)
+	FrictionBase(my_vehicle),
+	m_mu(0.8),
+	m_C_damping(1.0)
 {
 	// Sanity: we can tolerate node==NULL (=> means use default params).
 	if (node && 0!=strcmp(node->name(),"friction"))
@@ -26,67 +28,26 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 	if (node)
 	{
 		// Parse params:
-		m_max_torque = 0.0;
-		m_max_force = 30;
-		//std::map<std::string,TParamEntry> params;
-		//XXX
+		std::map<std::string,TParamEntry> params;
+		params["mu"] = TParamEntry("%lf",&m_mu);
+		params["C_damping"] = TParamEntry("%lf",&m_C_damping);
 
-		//// Parse XML params:
-		//parse_xmlnode_children_as_param(*node,params);
+		// Parse XML params:
+		parse_xmlnode_children_as_param(*node,params);
 	}	
 
-#if 0
-	// Create a "friction joint" for each wheel:
-	b2FrictionJointDef fjd;
-
-	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
-
-	fjd.bodyA = veh;
-	fjd.bodyB = m_world->getBox2DGroundBody();
-
-	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
-	{
-		const Wheel & ipw = m_my_vehicle.getWheelInfo(i);
-
-		const b2Vec2 local_pt = b2Vec2( ipw.x,ipw.y );
-
-		fjd.localWheelPt = local_pt;
-		fjd.localWheelAngle = ipw.yaw;
-		fjd.maxForce = m_max_torque;
-		fjd.maxTorque = m_max_force;
-
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
-		m_joints.push_back(b2_friction);
-	}
-#endif
 }
 
 // See docs in base class.
 void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const
 {
-	b2Body *b2Veh = m_my_vehicle.getBox2DChassisBody();
-
-	// Update the friction "joints":
-	// ---------------------------------
-#if 0
-	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
-	{
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_joints[i] );
-		b2_friction->ShiftOrigin( b2Veh->GetWorldPoint( b2Vec2_zero ) );
-
-		b2_friction->SetMaxForce(m_max_torque);
-		b2_friction->SetMaxTorque(m_max_force);
-	}
-#endif
-
 	// Rotate wheel velocity vector from veh. frame => wheel frame
 	mrpt::math::TPoint2D vel_w( input.wheel_speed );
 
-
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
-	const double mu = 0.65;
-	const double max_friction = mu * input.weight;
+	const double mu = m_mu;
+	const double max_friction = mu * (input.weight + input.wheel.mass*9.81 );
 
 	// 1) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
@@ -114,10 +75,10 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	// (eq. 3)==> Find out F_r
 	// Iyy_w * \Delta\omega_w = dt*\tau-  R*dt*Fri    -C_damp * \omega_w * dt
 	// "Damping" / internal friction of the wheel's shaft, etc.
-	const double C_damping = 1.0;
+	const double C_damping = m_C_damping;
 	//const mrpt::math::TPoint2D wheel_damping(- C_damping * input.wheel_speed.x, 0.0);
 
-	const double I_yy = 0.1;
+	const double I_yy = input.wheel.Iyy;
 	double F_friction_lon = ( input.motor_torque - I_yy*desired_wheel_alpha - C_damping*input.wheel.w )/R;
 
 	// Slippage: The friction with the ground is not infinite:
@@ -128,8 +89,6 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	
 	// Apply impulse to wheel's spinning:
 	input.wheel.w += actual_wheel_alpha * input.context.dt;
-
-	// Slippage??
 
 	wheel_long_friction = F_friction_lon;
 

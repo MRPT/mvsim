@@ -7,7 +7,7 @@
 	<!-- GUI options -->
 	<gui>
 		<ortho>false</ortho>
-		<cam_distance>100</cam_distance>
+		<cam_distance>35</cam_distance>
 		<fov_deg>40</fov_deg>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
@@ -32,26 +32,27 @@
 		<!--  Dynamical model -->
 		<dynamics class="differential">
 			<!-- Params -->
-			<l_wheel pos="0.0  0.5" mass="2.0" width="0.20" diameter="0.40" />
-			<r_wheel pos="0.0 -0.5" mass="2.0" width="0.20" diameter="0.40" />
-			<chassis mass="10.0" zmin="0.05" zmax="0.6">
+			<l_wheel pos="0.0  0.5" mass="4.0" width="0.20" diameter="0.40" />
+			<r_wheel pos="0.0 -0.5" mass="4.0" width="0.20" diameter="0.40" />
+			<chassis mass="15.0" zmin="0.05" zmax="0.6">
 			</chassis>
 			
 			<!--   Motor controller -->
-			<controller class="raw">
+			<controller class="twist_pi">
 				<!-- Params -->
-				<KP>100</KP>  <KI>0</KI> <I_MAX>0</I_MAX>
+				<KP>1000</KP>  <KI>0</KI> <I_MAX>0</I_MAX>
 				<V>0.0</V><W>0</W>
-				<max_force>30</max_force>
+				<max_torque>500</max_torque>
 			</controller>
 			
 		</dynamics>
 				
 		<!-- Friction force simulation -->
 		<friction class="default">
+			<mu>5.7</mu>
+			<C_damping>0.2</C_damping>
 		</friction>
-		
-		
+				
 		<!-- Sensors: -->
 		<sensor class="laser" name="laser1">
 			<pose> 0.65  0.0  0.0 </pose>
@@ -70,9 +71,9 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
-	<!-- <vehicle name="r2" class="small-car">
-		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -- >
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -- >
+	<vehicle name="r2" class="small-car">
+		<init_pose>-10.0 0.2 2</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
 	<!--<vehicle name="r3" class="small-car">

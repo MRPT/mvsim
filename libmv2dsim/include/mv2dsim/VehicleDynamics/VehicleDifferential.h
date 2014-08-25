@@ -93,7 +93,7 @@ namespace mv2dsim
 			virtual void load_config(const rapidxml::xml_node<char>&node );
 			double KP,KI; //!< PI controller parameters
 			double I_MAX; //!< I part maximum value (absolute value for clamp)
-			double max_force; //!< Maximum abs. value force (for clamp)
+			double max_torque; //!< Maximum abs. value torque (for clamp) [N·m]
 		private:
 			double m_distWheels;
 			PID_Controller m_PID[2];

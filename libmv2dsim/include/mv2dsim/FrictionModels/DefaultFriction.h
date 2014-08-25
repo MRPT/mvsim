@@ -26,7 +26,8 @@ namespace mv2dsim
 		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const;
 
 	private:
-		double m_max_torque, m_max_force;  //!< Forces at each wheel-ground contact point
+		double m_mu;  //!< friction coeficient (non-dimensional)
+		double m_C_damping; //!< For wheels "internal friction" (N·m·s/rad)
 
 	};
 }
