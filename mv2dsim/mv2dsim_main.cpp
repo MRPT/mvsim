@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 		mrpt::utils::CTicTac tictac;
 		double t_old = tictac.Tac();
 		double t_old_simul = t_old;
-		double REALTIME_FACTOR = 0.10;
+		double REALTIME_FACTOR = 1.0;
 
 		while (!mrpt::system::os::kbhit())
 		{
@@ -81,16 +81,29 @@ int main(int argc, char **argv)
 				ASSERT_(veh)
 				DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh->getController();
 				DynamicsDifferential::ControllerTwistPI *cntrl = dynamic_cast<DynamicsDifferential::ControllerTwistPI*>(cntrl_ptr.pointer());
-				ASSERT_(cntrl)
-
-				switch (gui_key_events.keycode)
+				if (cntrl)
 				{
-				case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
-				case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
-				case 'a':  cntrl->setpoint_ang_speed += 5.0*M_PI/180;  break;
-				case 'd':  cntrl->setpoint_ang_speed -= 5.0*M_PI/180;  break;
-				case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
-				};
+					switch (gui_key_events.keycode)
+					{
+					case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
+					case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
+					case 'a':  cntrl->setpoint_ang_speed += 5.0*M_PI/180;  break;
+					case 'd':  cntrl->setpoint_ang_speed -= 5.0*M_PI/180;  break;
+					case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
+					};
+				}
+				DynamicsDifferential::ControllerRawForces *cntrl2 = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
+				if (cntrl2)
+				{
+					switch (gui_key_events.keycode)
+					{
+					case 'q':  cntrl2->setpoint_wheel_force_l += 0.5; break;
+					case 'a':  cntrl2->setpoint_wheel_force_l -= 0.5; break;
+					case 'e':  cntrl2->setpoint_wheel_force_r += 0.5; break;
+					case 'd':  cntrl2->setpoint_wheel_force_r -= 0.5; break;
+					case ' ': cntrl2->setpoint_wheel_force_l = cntrl2->setpoint_wheel_force_r = 0.0; break;
+					};
+				}
 				gui_key_events = World::TGUIKeyEvent(); // Reset key-stroke
 				//printf("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
 			}

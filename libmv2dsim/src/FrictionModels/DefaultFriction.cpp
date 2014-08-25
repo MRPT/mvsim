@@ -27,12 +27,37 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 	if (node)
 	{
 		// Parse params:
+		m_max_torque = 1.0;
+		m_max_force = 30;
 		//std::map<std::string,TParamEntry> params;
 		//XXX
 
 		//// Parse XML params:
 		//parse_xmlnode_children_as_param(*node,params);
 	}	
+
+	// Create a "friction joint" for each wheel:
+	b2FrictionJointDef fjd;
+
+	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
+
+	fjd.bodyA = m_world->getBox2DGroundBody();
+	fjd.bodyB = veh;
+
+	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
+	{
+		const Wheel & ipw = m_my_vehicle.getWheelInfo(i);
+
+		const b2Vec2 local_pt = b2Vec2( ipw.x,ipw.y );
+
+		fjd.localAnchorA = veh->GetWorldPoint( local_pt );
+		fjd.localAnchorB = local_pt;
+		fjd.maxForce = m_max_torque;
+		fjd.maxTorque = m_max_force;
+
+		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
+		m_joints.push_back(b2_friction);
+	}
 
 }
 
@@ -41,27 +66,43 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 {
 	b2Body *b2Veh = m_my_vehicle.getBox2DChassisBody();
 
+	// Update the friction "joints":
+	// ---------------------------------
+	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
+	{
+		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_joints[i] );
+		b2_friction->ShiftOrigin( b2Veh->GetWorldPoint( b2Vec2_zero ) );
+
+		b2_friction->SetMaxForce(m_max_torque);
+		b2_friction->SetMaxTorque(m_max_force);
+	}
+
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
+	const double mu = 0.65;
+	const double max_friction = mu * input.weight;
+
 	// Contribution from motors:
 	const mrpt::math::TPoint2D propulsion(-input.motor_force, 0.0);
+	// TODO: Clamp motor propulsion according to max_friction!!
 		
 	// "Damping" / internal friction of the wheel's shaft, etc.
-	const double C_damping = 5.0;
-	const mrpt::math::TPoint2D wheel_damping(- C_damping * input.wheel_speed.x, 0.0);
+	//const double C_damping = 5.0;
+	//const mrpt::math::TPoint2D wheel_damping(- C_damping * input.wheel_speed.x, 0.0);
 		
-	// Lateral friction
-	mrpt::math::TPoint2D wheel_lat_friction(0.0, 0.0);
-	{
-		const double clamp_norm = 3.0;
-		const double f = std::max( std::min(input.wheel_speed.y,clamp_norm), -clamp_norm);
-		const double mu = 0.65;
-		wheel_lat_friction.y = -f * mu * input.weight * 9.81;
-	}
+	//// Lateral friction
+	//mrpt::math::TPoint2D wheel_lat_friction(0.0, 0.0);
+	//{
+
+	//	// Impulse required to step the lateral slippage:
+	//	wheel_lat_friction.y = -input.wheel_speed.y / input.context.dt;
+
+	//	wheel_lat_friction.y = b2Clamp(wheel_lat_friction.y, -max_friction,max_friction);
+	//}
 
 	// Apply force: In local (x,y) coordinates (Newtons)
 	// --------------------------------------
-	out_result_force_local = propulsion; // + wheel_damping + wheel_lat_friction;
+	out_result_force_local = propulsion;
 }
 
 

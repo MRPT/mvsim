@@ -272,6 +272,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	ASSERT_EQUAL_(force_per_wheel.size(),nW);
 
 	const double massPerWheel = getChassisMass()/nW; // Part of the vehicle weight on each wheel.
+	const double weightPerWheel = massPerWheel* 9.81;
 
 	std::vector<mrpt::math::TPoint2D> wheels_vels;
 	getWheelsVelocityLocal(wheels_vels);
@@ -285,7 +286,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		
 		FrictionBase::TFrictionInput fi(context,w);
 		fi.motor_force = -force_per_wheel[i];  // "-" => Forwards is negative
-		fi.weight = massPerWheel; 
+		fi.weight = weightPerWheel; 
 		fi.wheel_speed = wheels_vels[i];
 
 		// eval friction:
@@ -295,7 +296,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		// Apply force:
 		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(net_force_.x,net_force_.y));
 
-		printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%6.3f Gy=%6.3f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
+		//printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%6.3f Gy=%6.3f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
 		m_b2d_vehicle_body->ApplyForce(
 			wForce, /* force */
