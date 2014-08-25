@@ -1,8 +1,8 @@
 <mv2dsim_world version="1.0">
 	<!-- General simulation options -->
 	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
-	<b2d_vel_iters>7</b2d_vel_iters>
-	<b2d_pos_iters>5</b2d_pos_iters>
+	<b2d_vel_iters>3</b2d_vel_iters>
+	<b2d_pos_iters>3</b2d_pos_iters>
 	
 	<!-- GUI options -->
 	<gui>
@@ -67,7 +67,7 @@
 	     ======================== -->
 	<vehicle name="r1" class="small-car">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 1 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
 	<!-- <vehicle name="r2" class="small-car">

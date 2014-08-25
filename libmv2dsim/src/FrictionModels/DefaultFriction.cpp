@@ -27,7 +27,7 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 	if (node)
 	{
 		// Parse params:
-		m_max_torque = 1.0;
+		m_max_torque = 0.0;
 		m_max_force = 30;
 		//std::map<std::string,TParamEntry> params;
 		//XXX
@@ -41,8 +41,8 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 
 	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
 
-	fjd.bodyA = m_world->getBox2DGroundBody();
-	fjd.bodyB = veh;
+	fjd.bodyA = veh;
+	fjd.bodyB = m_world->getBox2DGroundBody();
 
 	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
 	{
@@ -50,8 +50,8 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 
 		const b2Vec2 local_pt = b2Vec2( ipw.x,ipw.y );
 
-		fjd.localAnchorA = veh->GetWorldPoint( local_pt );
-		fjd.localAnchorB = local_pt;
+		fjd.localWheelPt = local_pt;
+		fjd.localWheelAngle = ipw.yaw;
 		fjd.maxForce = m_max_torque;
 		fjd.maxTorque = m_max_force;
 

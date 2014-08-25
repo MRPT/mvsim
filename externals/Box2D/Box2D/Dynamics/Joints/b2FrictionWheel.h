@@ -1,5 +1,6 @@
 /*
 * Copyright (c) 2006-2007 Erin Catto http://www.box2d.org
+* Copyright (c) 2014 Jose-Luis Blanco
 *
 * This software is provided 'as-is', without any express or implied
 * warranty.  In no event will the authors be held liable for any damages
@@ -27,21 +28,19 @@ struct b2FrictionWheelDef : public b2JointDef
 	b2FrictionWheelDef()
 	{
 		type = e_wheelGroundJoint;
-		localAnchorA.SetZero();
-		localAnchorB.SetZero();
+		localWheelPt.SetZero();
+		localWheelAngle = 0.0;
 		maxForce = 0.0;
 		maxTorque = 0.0;
 	}
 
 	/// Initialize the bodies, anchors, axis, and reference angle using the world
 	/// anchor and world axis.
-	void Initialize(b2Body* bodyA, b2Body* bodyB, const b2Vec2& anchor);
+	void Initialize(b2Body* bodyWheel, const b2Vec2& anchor, float32 localWheelAngle);
 
-	/// The local anchor point relative to bodyA's origin.
-	b2Vec2 localAnchorA;
-
-	/// The local anchor point relative to bodyB's origin.
-	b2Vec2 localAnchorB;
+	/// The local anchor point relative to bodyWheel's origin.
+	b2Vec2  localWheelPt;
+	float32 localWheelAngle;
 
 	/// The maximum friction force in N.
 	float32 maxForce;
@@ -61,11 +60,8 @@ public:
 	b2Vec2 GetReactionForce(float32 inv_dt) const;
 	float32 GetReactionTorque(float32 inv_dt) const;
 
-	/// The local anchor point relative to bodyA's origin.
-	const b2Vec2& GetLocalAnchorA() const { return m_localAnchorA; }
-
-	/// The local anchor point relative to bodyB's origin.
-	const b2Vec2& GetLocalAnchorB() const  { return m_localAnchorB; }
+	/// The local anchor point relative to bodyWheel's origin.
+	const b2Vec2& GetLocalAnchorA() const { return m_localWheelPt; }
 
 	/// Set the maximum friction force in N.
 	void SetMaxForce(float32 force);
@@ -92,8 +88,7 @@ protected:
 	void SolveVelocityConstraints(const b2SolverData& data);
 	bool SolvePositionConstraints(const b2SolverData& data);
 
-	b2Vec2 m_localAnchorA;
-	b2Vec2 m_localAnchorB;
+	b2Vec2 m_localWheelPt;
 
 	// Solver shared
 	b2Vec2 m_linearImpulse;
@@ -103,15 +98,9 @@ protected:
 
 	// Solver temp
 	int32 m_indexA;
-	int32 m_indexB;
 	b2Vec2 m_rA;
-	b2Vec2 m_rB;
-	b2Vec2 m_localCenterA;
-	b2Vec2 m_localCenterB;
 	float32 m_invMassA;
-	float32 m_invMassB;
 	float32 m_invIA;
-	float32 m_invIB;
 	b2Mat22 m_linearMass;
 	float32 m_angularMass;
 };
