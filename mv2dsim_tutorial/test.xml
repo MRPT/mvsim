@@ -40,9 +40,9 @@
 			<!--   Motor controller -->
 			<controller class="twist_pi">
 				<!-- Params -->
-				<KP>1</KP>  <KI>1000</KI> <I_MAX>5</I_MAX>
+				<KP>100</KP>  <KI>0</KI> <I_MAX>0</I_MAX>
 				<V>0.0</V><W>0</W>
-				<max_force>20</max_force>
+				<max_force>30</max_force>
 			</controller>
 			
 		</dynamics>

@@ -34,6 +34,8 @@ namespace mv2dsim
 
 		// See docs in base class:
 		virtual float getMaxVehicleRadius() const { return m_max_radius; }
+		// See docs in base class:
+		virtual double getChassisMass() const { return m_chassis_mass; }
 
 		/** @name Controllers 
 		    @{ */

@@ -65,6 +65,8 @@ namespace mv2dsim
 
 		/** Get (an approximation of) the max radius of the vehicle, from its point of reference (in meters) */
 		virtual float getMaxVehicleRadius() const = 0;
+		/** Get the overall vehicle mass, excluding wheels. */
+		virtual double getChassisMass() const =0;
 
 		b2Body * getBox2DChassisBody() { return m_b2d_vehicle_body; }
 
@@ -79,7 +81,7 @@ namespace mv2dsim
 		/** Last time-step velocity (of the ref. point, in local coords) */
 		vec3 getVelocityLocal() const ;
 		/** Last time-step velocity of each wheel's center point (in local coords) */
-		std::vector<vec2> VehicleBase::getWheelsVelocityLocal() const;
+		void getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels) const;
 
 
 		typedef std::vector<SensorBasePtr> TListSensors;

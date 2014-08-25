@@ -271,7 +271,11 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	const size_t nW = getNumWheels();
 	ASSERT_EQUAL_(force_per_wheel.size(),nW);
 
-	const vector<vec2> wheels_vels = this->getWheelsVelocityLocal();
+	const double massPerWheel = getChassisMass()/nW; // Part of the vehicle weight on each wheel.
+
+	std::vector<mrpt::math::TPoint2D> wheels_vels;
+	getWheelsVelocityLocal(wheels_vels);
+
 	ASSERT_EQUAL_(wheels_vels.size(),nW);
 	
 	for (size_t i=0;i<nW;i++)
@@ -281,18 +285,20 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		
 		FrictionBase::TFrictionInput fi(context,w);
 		fi.motor_force = -force_per_wheel[i];  // "-" => Forwards is negative
-		fi.weight = .0; MRPT_TODO("wEIGHT")
-		fi.wheel_speed = mrpt::math::TPoint2D( wheels_vels[i].vals[0],wheels_vels[i].vals[1] );
+		fi.weight = massPerWheel; 
+		fi.wheel_speed = wheels_vels[i];
 
 		// eval friction:
-		mv2dsim::vec2 net_force_;
+		mrpt::math::TPoint2D net_force_;
 		m_friction->evaluate_friction(fi,net_force_);
 
-		const b2Vec2 net_force = b2Vec2(net_force_.vals[0],net_force_.vals[1]);
-
 		// Apply force:
+		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(net_force_.x,net_force_.y));
+
+		printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%6.3f Gy=%6.3f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
+
 		m_b2d_vehicle_body->ApplyForce(
-			m_b2d_vehicle_body->GetWorldVector(net_force), /* force */
+			wForce, /* force */
 			m_b2d_vehicle_body->GetWorldPoint( b2Vec2( w.x, w.y) ), /* point */
 			true /* wake up */
 			);
@@ -300,7 +306,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 }
 
 /** Last time-step velocity of each wheel's center point (in local coords) */
-std::vector<vec2> VehicleBase::getWheelsVelocityLocal() const
+void VehicleBase::getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels) const
 {
 	const vec3 veh_vel_local = this->getVelocityLocal();
 
@@ -310,16 +316,14 @@ std::vector<vec2> VehicleBase::getWheelsVelocityLocal() const
 	// v_w = v_veh + ( -w*y, w*x )
 
 	const size_t nW = this->getNumWheels();
-	std::vector<vec2> vels(nW);
+	vels.resize(nW);
 	for (size_t i=0;i<nW;i++)
 	{
 		const Wheel &wheel = getWheelInfo(i);
 
-		vels[i].vals[0] = veh_vel_local.vals[0] - veh_vel_local.vals[2] * wheel.y;
-		vels[i].vals[1] = veh_vel_local.vals[1] + veh_vel_local.vals[2] * wheel.x;
+		vels[i].x = veh_vel_local.vals[0] - veh_vel_local.vals[2] * wheel.y;
+		vels[i].y = veh_vel_local.vals[1] + veh_vel_local.vals[2] * wheel.x;
 	}
-
-	return vels;
 }
 
 

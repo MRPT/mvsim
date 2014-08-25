@@ -44,17 +44,26 @@ int main(int argc, char **argv)
 		mrpt::system::TThreadHandle thGUI = mrpt::system::createThreadRef( thread_update_GUI, thread_params);
 
 		// Run simulation:
-		mrpt::utils::CTicTac timer;
-		timer.Tac(); // Reset clock
+		mrpt::utils::CTicTac tictac;
+		double t_old = tictac.Tac();
+		double t_old_simul = t_old;
+		double REALTIME_FACTOR = 0.10;
 
 		while (!mrpt::system::os::kbhit())
 		{
 			// Compute how much time has passed to simulate in real-time:
-			const double cur_tim = timer.Tac();
-			const double incr_tim = cur_tim - world.get_simul_time();
+			double t_new = tictac.Tac();
+			double incr_time = REALTIME_FACTOR * (t_new-t_old);
 
-			if (incr_tim>=world.get_simul_timestep())
-				world.run_simulation(incr_tim);
+			if (incr_time >= world.get_simul_timestep())  // Just in case the computer is *really fast*...
+			{
+				// Simulate:
+				world.run_simulation(incr_time);
+
+				t_old_simul = world.get_simul_time();
+				t_old = t_new;
+			}
+				
 			mrpt::system::sleep(10);
 
 #if 0

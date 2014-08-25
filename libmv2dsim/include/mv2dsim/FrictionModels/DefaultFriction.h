@@ -23,7 +23,7 @@ namespace mv2dsim
 		DefaultFriction(VehicleBase &my_vehicle, const rapidxml::xml_node<char> *node);
 
 		// See docs in base class.
-		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mv2dsim::vec2 &out_result_force_local) const;
+		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const;
 
 	private:
 

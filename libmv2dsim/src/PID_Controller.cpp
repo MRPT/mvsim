@@ -29,6 +29,6 @@ double PID_Controller::compute(double err, double dt)
 	// Clamp:
 	if (ret>max_out) ret = max_out; else if (ret<-max_out) ret = -max_out; 
 
-	printf("I=%.04f err=%.03f => ret:%.02f\n",m_i_term, err, ret);
+	//printf("I=%.04f err=%.03f => ret:%.02f\n",m_i_term, err, ret);
 	return ret;
 }
