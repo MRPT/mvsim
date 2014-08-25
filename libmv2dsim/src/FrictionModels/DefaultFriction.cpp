@@ -11,7 +11,7 @@
 #include <mv2dsim/FrictionModels/DefaultFriction.h>
 
 #include <rapidxml.hpp>
-#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
+#include <Box2D/Dynamics/Joints/b2WheelJoint.h>
 #include "xml_utils.h"
 
 using namespace mv2dsim;
@@ -34,10 +34,10 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 
 		//// Parse XML params:
 		//parse_xmlnode_children_as_param(*node,params);
-	}	
+	}
 
 	// Create a "friction joint" for each wheel:
-	b2FrictionJointDef fjd;
+	b2FrictionWheelDef fjd;
 
 	b2Body * veh = m_my_vehicle.getBox2DChassisBody();
 
@@ -55,7 +55,8 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 		fjd.maxForce = m_max_torque;
 		fjd.maxTorque = m_max_force;
 
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
+		b2FrictionWheel* b2_friction = dynamic_cast<b2FrictionWheel*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
+		ASSERT_(b2_friction)
 		m_joints.push_back(b2_friction);
 	}
 
@@ -70,7 +71,8 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	// ---------------------------------
 	for (size_t i=0;i<m_my_vehicle.getNumWheels();i++)
 	{
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_joints[i] );
+		b2FrictionWheel* b2_friction = dynamic_cast<b2FrictionWheel*>( m_joints[i] );
+		ASSERT_(b2_friction)
 		b2_friction->ShiftOrigin( b2Veh->GetWorldPoint( b2Vec2_zero ) );
 
 		b2_friction->SetMaxForce(m_max_torque);
@@ -85,11 +87,11 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	// Contribution from motors:
 	const mrpt::math::TPoint2D propulsion(-input.motor_force, 0.0);
 	// TODO: Clamp motor propulsion according to max_friction!!
-		
+
 	// "Damping" / internal friction of the wheel's shaft, etc.
 	//const double C_damping = 5.0;
 	//const mrpt::math::TPoint2D wheel_damping(- C_damping * input.wheel_speed.x, 0.0);
-		
+
 	//// Lateral friction
 	//mrpt::math::TPoint2D wheel_lat_friction(0.0, 0.0);
 	//{

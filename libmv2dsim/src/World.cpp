@@ -189,7 +189,7 @@ std::string World::resolvePath(const std::string &s_in) const
 	if (is_relative)
 	{
 		ret = m_base_path;
-		if (!ret.empty() && ret.back()!='/' && ret.back()!='\\') 
+		if (!ret.empty() && ret[ret.size()-1]!='/' && ret[ret.size()-1]!='\\')
 			ret+= string("/");
 		ret += s;
 	}

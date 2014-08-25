@@ -97,6 +97,7 @@ set(BOX2D_Joints_SRCS
 	Dynamics/Joints/b2RopeJoint.cpp
 	Dynamics/Joints/b2WeldJoint.cpp
 	Dynamics/Joints/b2WheelJoint.cpp
+	Dynamics/Joints/b2FrictionWheel.cpp
 )
 set(BOX2D_Joints_HDRS
 	Dynamics/Joints/b2DistanceJoint.h
@@ -111,6 +112,7 @@ set(BOX2D_Joints_HDRS
 	Dynamics/Joints/b2RopeJoint.h
 	Dynamics/Joints/b2WeldJoint.h
 	Dynamics/Joints/b2WheelJoint.h
+	Dynamics/Joints/b2FrictionWheel.h
 )
 set(BOX2D_Rope_SRCS
 	Rope/b2Rope.cpp
