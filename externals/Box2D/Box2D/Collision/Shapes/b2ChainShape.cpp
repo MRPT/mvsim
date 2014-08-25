@@ -187,7 +187,7 @@ void b2ChainShape::ComputeMass(b2MassData* massData, float32 density) const
 {
 	B2_NOT_USED(density);
 
-	massData->mass = 0.0;
+	massData->mass = 0.0f;
 	massData->center.SetZero();
-	massData->I = 0.0;
+	massData->I = 0.0f;
 }

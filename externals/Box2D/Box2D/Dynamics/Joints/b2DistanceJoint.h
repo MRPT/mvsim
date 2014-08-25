@@ -32,11 +32,11 @@ struct b2DistanceJointDef : public b2JointDef
 	b2DistanceJointDef()
 	{
 		type = e_distanceJoint;
-		localAnchorA.Set(0.0, 0.0);
-		localAnchorB.Set(0.0, 0.0);
+		localAnchorA.Set(0.0f, 0.0f);
+		localAnchorB.Set(0.0f, 0.0f);
 		length = 1.0f;
-		frequencyHz = 0.0;
-		dampingRatio = 0.0;
+		frequencyHz = 0.0f;
+		dampingRatio = 0.0f;
 	}
 
 	/// Initialize the bodies, anchors, and length using the world

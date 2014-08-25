@@ -32,7 +32,7 @@ void b2WorldManifold::Initialize(const b2Manifold* manifold,
 	{
 	case b2Manifold::e_circles:
 		{
-			normal.Set(1.0f, 0.0);
+			normal.Set(1.0f, 0.0f);
 			b2Vec2 pointA = b2Mul(xfA, manifold->localPoint);
 			b2Vec2 pointB = b2Mul(xfB, manifold->points[0].localPoint);
 			if (b2DistanceSquared(pointA, pointB) > b2_epsilon * b2_epsilon)
@@ -186,7 +186,7 @@ bool b2AABB::RayCast(b2RayCastOutput* output, const b2RayCastInput& input) const
 
 	// Does the ray start inside the box?
 	// Does the ray intersect beyond the max fraction?
-	if (tmin < 0.0 || input.maxFraction < tmin)
+	if (tmin < 0.0f || input.maxFraction < tmin)
 	{
 		return false;
 	}
@@ -209,11 +209,11 @@ int32 b2ClipSegmentToLine(b2ClipVertex vOut[2], const b2ClipVertex vIn[2],
 	float32 distance1 = b2Dot(normal, vIn[1].v) - offset;
 
 	// If the points are behind the plane
-	if (distance0 <= 0.0) vOut[numOut++] = vIn[0];
-	if (distance1 <= 0.0) vOut[numOut++] = vIn[1];
+	if (distance0 <= 0.0f) vOut[numOut++] = vIn[0];
+	if (distance1 <= 0.0f) vOut[numOut++] = vIn[1];
 
 	// If the points are on different sides of the plane
-	if (distance0 * distance1 < 0.0)
+	if (distance0 * distance1 < 0.0f)
 	{
 		// Find intersection point of edge and plane
 		float32 interp = distance0 / (distance0 - distance1);

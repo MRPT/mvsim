@@ -114,7 +114,7 @@ struct b2Simplex
 			v->wA = b2Mul(transformA, wALocal);
 			v->wB = b2Mul(transformB, wBLocal);
 			v->w = v->wB - v->wA;
-			v->a = 0.0;
+			v->a = 0.0f;
 		}
 
 		// Compute the new simplex metric, if it is substantially different than
@@ -169,7 +169,7 @@ struct b2Simplex
 			{
 				b2Vec2 e12 = m_v2.w - m_v1.w;
 				float32 sgn = b2Cross(e12, -m_v1.w);
-				if (sgn > 0.0)
+				if (sgn > 0.0f)
 				{
 					// Origin is left of e12.
 					return b2Cross(1.0f, e12);
@@ -245,10 +245,10 @@ struct b2Simplex
 		{
 		case 0:
 			b2Assert(false);
-			return 0.0;
+			return 0.0f;
 
 		case 1:
-			return 0.0;
+			return 0.0f;
 
 		case 2:
 			return b2Distance(m_v1.w, m_v2.w);
@@ -258,7 +258,7 @@ struct b2Simplex
 
 		default:
 			b2Assert(false);
-			return 0.0;
+			return 0.0f;
 		}
 	}
 
@@ -301,7 +301,7 @@ void b2Simplex::Solve2()
 
 	// w1 region
 	float32 d12_2 = -b2Dot(w1, e12);
-	if (d12_2 <= 0.0)
+	if (d12_2 <= 0.0f)
 	{
 		// a2 <= 0, so we clamp it to 0
 		m_v1.a = 1.0f;
@@ -311,7 +311,7 @@ void b2Simplex::Solve2()
 
 	// w2 region
 	float32 d12_1 = b2Dot(w2, e12);
-	if (d12_1 <= 0.0)
+	if (d12_1 <= 0.0f)
 	{
 		// a1 <= 0, so we clamp it to 0
 		m_v2.a = 1.0f;
@@ -376,7 +376,7 @@ void b2Simplex::Solve3()
 	float32 d123_3 = n123 * b2Cross(w1, w2);
 
 	// w1 region
-	if (d12_2 <= 0.0 && d13_2 <= 0.0)
+	if (d12_2 <= 0.0f && d13_2 <= 0.0f)
 	{
 		m_v1.a = 1.0f;
 		m_count = 1;
@@ -384,7 +384,7 @@ void b2Simplex::Solve3()
 	}
 
 	// e12
-	if (d12_1 > 0.0 && d12_2 > 0.0 && d123_3 <= 0.0)
+	if (d12_1 > 0.0f && d12_2 > 0.0f && d123_3 <= 0.0f)
 	{
 		float32 inv_d12 = 1.0f / (d12_1 + d12_2);
 		m_v1.a = d12_1 * inv_d12;
@@ -394,7 +394,7 @@ void b2Simplex::Solve3()
 	}
 
 	// e13
-	if (d13_1 > 0.0 && d13_2 > 0.0 && d123_2 <= 0.0)
+	if (d13_1 > 0.0f && d13_2 > 0.0f && d123_2 <= 0.0f)
 	{
 		float32 inv_d13 = 1.0f / (d13_1 + d13_2);
 		m_v1.a = d13_1 * inv_d13;
@@ -405,7 +405,7 @@ void b2Simplex::Solve3()
 	}
 
 	// w2 region
-	if (d12_1 <= 0.0 && d23_2 <= 0.0)
+	if (d12_1 <= 0.0f && d23_2 <= 0.0f)
 	{
 		m_v2.a = 1.0f;
 		m_count = 1;
@@ -414,7 +414,7 @@ void b2Simplex::Solve3()
 	}
 
 	// w3 region
-	if (d13_1 <= 0.0 && d23_1 <= 0.0)
+	if (d13_1 <= 0.0f && d23_1 <= 0.0f)
 	{
 		m_v3.a = 1.0f;
 		m_count = 1;
@@ -423,7 +423,7 @@ void b2Simplex::Solve3()
 	}
 
 	// e23
-	if (d23_1 > 0.0 && d23_2 > 0.0 && d123_1 <= 0.0)
+	if (d23_1 > 0.0f && d23_2 > 0.0f && d123_1 <= 0.0f)
 	{
 		float32 inv_d23 = 1.0f / (d23_1 + d23_2);
 		m_v2.a = d23_1 * inv_d23;
@@ -597,7 +597,7 @@ void b2Distance(b2DistanceOutput* output,
 			b2Vec2 p = 0.5f * (output->pointA + output->pointB);
 			output->pointA = p;
 			output->pointB = p;
-			output->distance = 0.0;
+			output->distance = 0.0f;
 		}
 	}
 }
