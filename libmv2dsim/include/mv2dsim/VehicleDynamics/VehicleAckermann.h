@@ -18,14 +18,14 @@
 
 namespace mv2dsim
 {
-	/** Implementation of differential-driven vehicles.
+	/** Implementation of 4 wheels Ackermann-driven vehicles.
 	  * \sa class factory in VehicleBase::factory
 	  */
-	class DynamicsDifferential : public VehicleBase
+	class DynamicsAckermann : public VehicleBase
 	{
-		DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential)
+		DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsAckermann)
 	public:
-		DynamicsDifferential(World *parent);
+		DynamicsAckermann(World *parent);
 
 		/** Must create a new object in the scene and/or update it according to the current state */
 		virtual void gui_update( mrpt::opengl::COpenGLScene &scene);
@@ -47,46 +47,27 @@ namespace mv2dsim
 		};
 		struct TControllerOutput
 		{
-			double wheel_torque_l,wheel_torque_r;
-			TControllerOutput() : wheel_torque_l(0),wheel_torque_r(0) {}
+			double fl_torque,fr_torque,rl_torque,rr_torque;
+			double steer_ang; //!< Equivalent ackerman steering angle
+			TControllerOutput() : fl_torque(0),fr_torque(0),rl_torque(0),rr_torque(0),steer_ang(0) {}
 		};
 
-		/** Virtual base for controllers of vehicles of type DynamicsDifferential */
-		typedef ControllerBaseTempl<DynamicsDifferential> ControllerBase;
+		/** Virtual base for controllers of vehicles of type DynamicsAckermann */
+		typedef ControllerBaseTempl<DynamicsAckermann> ControllerBase;
 		typedef stlplus::smart_ptr<ControllerBase> ControllerBasePtr;
 
 		class ControllerRawForces : public ControllerBase
 		{
 		public:
-			ControllerRawForces(DynamicsDifferential &veh) : ControllerBase(veh),setpoint_wheel_torque_l(0), setpoint_wheel_torque_r(0) {}
+			ControllerRawForces(DynamicsAckermann &veh) : ControllerBase(veh),setpoint_wheel_torque_l(0), setpoint_wheel_torque_r(0) {}
 			static const char* class_name() { return "raw"; }
 			//!< Directly set these values to tell the controller the desired setpoints
-			double setpoint_wheel_torque_l, setpoint_wheel_torque_r; 
+			double setpoint_wheel_torque_l, setpoint_wheel_torque_r, setpoint_steer_ang; 
 			// See base class docs
-			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
-		};
-
-		/** PID controller that controls the vehicle twist: linear & angular velocities */
-		class ControllerTwistPID : public ControllerBase
-		{
-		public:
-			ControllerTwistPID(DynamicsDifferential &veh);
-			static const char* class_name() { return "twist_pid"; }
-			//!< Directly set these values to tell the controller the desired setpoints
-			double setpoint_lin_speed, setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
-			// See base class docs
-			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
+			virtual void control_step(const DynamicsAckermann::TControllerInput &ci, DynamicsAckermann::TControllerOutput &co);
 			// See base class docs
 			virtual void load_config(const rapidxml::xml_node<char>&node );
-			double KP,KI,KD; //!< PID controller parameters
-			double I_MAX; //!< I part maximum value (absolute value for clamp)
-			double max_torque; //!< Maximum abs. value torque (for clamp) [N·m]
-		private:
-			double m_distWheels;
-			PID_Controller m_PID[2];
 		};
-		
-
 
 		const ControllerBasePtr & getController() const {return m_controller;}
 		ControllerBasePtr & getController() {return m_controller;}
@@ -101,7 +82,7 @@ namespace mv2dsim
 
 	private:
 		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
-		mrpt::opengl::CSetOfObjectsPtr m_gl_wheels[2]; //!< [0]:left, [1]:right
+		mrpt::opengl::CSetOfObjectsPtr m_gl_wheels[4]; //!< [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 		ControllerBasePtr  m_controller; //!< The installed controller
 
 		// Chassis info:
@@ -113,14 +94,14 @@ namespace mv2dsim
 
 		void updateMaxRadiusFromPoly();
 
-		Wheel m_wheels_info[2]; //!< [0]:left, [1]:right wheel info
+		Wheel m_wheels_info[4]; //!< [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 
-		virtual size_t getNumWheels() const { return 2; }
+		virtual size_t getNumWheels() const { return 4; }
 		virtual const Wheel & getWheelInfo(const size_t idx) const { return m_wheels_info[idx]; }
 		virtual Wheel & getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
 
 		b2Fixture* m_fixture_chassis;
-		b2Fixture* m_fixture_wheels[2]; //!< [0]:left, [1]:right
+		b2Fixture* m_fixture_wheels[4]; //!< Indices as in m_wheels_info
 
 	};
 

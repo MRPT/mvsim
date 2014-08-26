@@ -42,7 +42,7 @@ void register_all_veh_dynamics()
 	if (done) return; else done=true;
 
 	REGISTER_VEHICLE_DYNAMICS("differential",DynamicsDifferential)
-	REGISTER_VEHICLE_DYNAMICS("car_ackermann",DynamicsAckermann)
+	REGISTER_VEHICLE_DYNAMICS("ackermann",DynamicsAckermann)
 }
 
 // Protected ctor:
