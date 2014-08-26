@@ -14,6 +14,7 @@
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CPolyhedron.h>
 #include <rapidxml.hpp>
+#include <cmath>
 
 using namespace mv2dsim;
 using namespace std;
@@ -40,9 +41,19 @@ DynamicsAckermann::DynamicsAckermann(World *parent) :
 	m_fixture_chassis = NULL;
 	for (int i=0;i<4;i++) m_fixture_wheels[i]=NULL;
 
-	MRPT_TODO("Init with real values")
-	//m_wheels_info[0] = Wheel();
-	//m_wheels_info[0].y = 0.5;
+	// Default values:
+	// rear-left:
+	m_wheels_info[0].x = 0;
+	m_wheels_info[0].y = -0.9;
+	// rear-right:
+	m_wheels_info[1].x = 0;
+	m_wheels_info[1].y = 0.9;
+	// Front-left:
+	m_wheels_info[2].x = 1.3;
+	m_wheels_info[2].y = -0.9;
+	// Front-right:
+	m_wheels_info[3].x = 1.3;
+	m_wheels_info[3].y = 0.9;
 }
 
 /** The derived-class part of load_params_from_xml() */
@@ -71,7 +82,6 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 	//<rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
 	//<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
 	//<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
-
 	const char*w_names[4] = {
 		"rl_wheel", // 0
 		"rr_wheel", // 1
@@ -119,10 +129,8 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 			m_controller->load_config(*xml_control);
 		}
 	}
-
 	// Default controller: 
-	if (!m_controller)
-		m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
+	if (!m_controller) m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
 
 
 }
@@ -256,9 +264,25 @@ void DynamicsAckermann::apply_motor_forces(const TSimulContext &context, std::ve
 		out_torque_per_wheel[3] = co.fr_torque;
 
 		// Kinematically-driven steering wheels: 
-		MRPT_TODO("Ackermann angles formula!")
-		m_wheels_info[2].yaw = co.steer_ang;
-		m_wheels_info[3].yaw = co.steer_ang;
+		// Ackermann formulas for inner&outer weels turning angles wrt the equivalent (central) one:
+		{
+			// EQ1: cot(d)+0.5*w/l = cot(do)
+			// EQ2: cot(di)=cot(do)-w/l
+			const double w = m_wheels_info[2].y - m_wheels_info[3].y;
+			const double l = m_wheels_info[2].x - m_wheels_info[0].x;
+			ASSERT_(l>0)
+			const double w_l=w/l;
+			const double delta= std::abs(co.steer_ang);
+			const bool delta_neg = (co.steer_ang<0);
+			ASSERT_BELOW_(delta,0.5*M_PI-0.01)
+			const double cot_do = 1.0/tan(delta)+ 0.5*w_l;
+			const double cot_di = cot_do - w_l;
+			// delta>0: do->right, di->left wheel
+			// delta<0: do->left , di->right wheel
+			m_wheels_info[delta_neg ? 3:2].yaw = atan(1.0/cot_di);
+			m_wheels_info[delta_neg ? 2:3].yaw = atan(1.0/cot_do);
+		}
+
 	}
 
 }
