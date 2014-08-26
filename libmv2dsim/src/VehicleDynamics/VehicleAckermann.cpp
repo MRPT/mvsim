@@ -25,7 +25,8 @@ DynamicsAckermann::DynamicsAckermann(World *parent) :
 	m_chassis_mass(500.0),
 	m_chassis_z_min(0.20),
 	m_chassis_z_max(1.40),
-	m_chassis_color(0xa0,0x00,0x00)
+	m_chassis_color(0xe8,0x30,0x00),
+	m_max_steer_ang(mrpt::utils::DEG2RAD(30))
 {
 	using namespace mrpt::math;
 
@@ -97,13 +98,18 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 
 	//<f_wheels_x>1.3</f_wheels_x>
 	//<f_wheels_d>2.0</f_wheels_d>
-	// Load front ackermann wheels params:
+	// Load front ackermann wheels and other params:
 	{
 		double front_x = 1.3; 
 		double front_d = 2.0;
 		std::map<std::string,TParamEntry> ack_ps;
+		// Front wheels:
 		ack_ps["f_wheels_x"] = TParamEntry("%lf", &front_x);
 		ack_ps["f_wheels_d"] = TParamEntry("%lf", &front_d);
+		// other params:
+		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &m_max_steer_ang);
+
+		parse_xmlnode_attribs(*xml_chassis, ack_ps,"[DynamicsAckermann::dynamics_load_params_from_xml]" );
 
 		// Front-left:
 		m_wheels_info[2].x = front_x;
@@ -245,7 +251,7 @@ void DynamicsAckermann::gui_update( mrpt::opengl::COpenGLScene &scene)
 }
 
 // See docs in base class:
-void DynamicsAckermann::apply_motor_forces(const TSimulContext &context, std::vector<double> &out_torque_per_wheel)
+void DynamicsAckermann::invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_torque_per_wheel)
 {
 	// Longitudinal forces at each wheel:
 	out_torque_per_wheel.assign(4, 0.0);
@@ -272,15 +278,16 @@ void DynamicsAckermann::apply_motor_forces(const TSimulContext &context, std::ve
 			const double l = m_wheels_info[2].x - m_wheels_info[0].x;
 			ASSERT_(l>0)
 			const double w_l=w/l;
-			const double delta= std::abs(co.steer_ang);
+			const double delta= b2Clamp( std::abs(co.steer_ang), 0.0, m_max_steer_ang);			
+
 			const bool delta_neg = (co.steer_ang<0);
 			ASSERT_BELOW_(delta,0.5*M_PI-0.01)
 			const double cot_do = 1.0/tan(delta)+ 0.5*w_l;
 			const double cot_di = cot_do - w_l;
 			// delta>0: do->right, di->left wheel
 			// delta<0: do->left , di->right wheel
-			m_wheels_info[delta_neg ? 3:2].yaw = atan(1.0/cot_di);
-			m_wheels_info[delta_neg ? 2:3].yaw = atan(1.0/cot_do);
+			m_wheels_info[delta_neg ? 3:2].yaw = atan(1.0/cot_di) * (delta_neg ? -1.0:1.0);
+			m_wheels_info[delta_neg ? 2:3].yaw = atan(1.0/cot_do) * (delta_neg ? -1.0:1.0);
 		}
 
 	}
