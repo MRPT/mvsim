@@ -25,6 +25,7 @@ struct TThreadParams
 };
 void thread_update_GUI(TThreadParams &thread_params);
 World::TGUIKeyEvent gui_key_events;
+std::string msg2gui;
 
 int main(int argc, char **argv)
 {
@@ -46,7 +47,6 @@ int main(int argc, char **argv)
 		// Run simulation:
 		mrpt::utils::CTicTac tictac;
 		double t_old = tictac.Tac();
-		double t_old_simul = t_old;
 		double REALTIME_FACTOR = 1.0;
 
 		while (!mrpt::system::os::kbhit())
@@ -60,19 +60,22 @@ int main(int argc, char **argv)
 				// Simulate:
 				world.run_simulation(incr_time);
 
-				t_old_simul = world.get_simul_time();
+				//t_old_simul = world.get_simul_time();
 				t_old = t_new;
 			}
 
 			mrpt::system::sleep(10);
 
-#if 0
-			{ // Test: Get vehicles speed:
+			std::string txt2gui_tmp;
+			{ // Get vehicles speed:
 				const World::TListVehicles & vehs = world.getListOfVehicles();
-				const vec3 &vel = vehs.begin()->second->getVelocityLocal();
-				printf("vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
+				if (!vehs.empty())
+				{
+					const vec3 &vel = vehs.begin()->second->getVelocityLocal();
+					txt2gui_tmp+=mrpt::format("vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
+				}
 			}
-#endif
+
 #if 1
 			{ // Test: Differential drive: Control raw forces
 				const World::TListVehicles & vehs = world.getListOfVehicles();
@@ -91,7 +94,8 @@ int main(int argc, char **argv)
 					case 'd':  cntrl->setpoint_ang_speed -= 5.0*M_PI/180;  break;
 					case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
 					};
-					//printf("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
+					txt2gui_tmp+="[Controller=twist_pid] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
+					txt2gui_tmp+=mrpt::format("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
 				}
 				DynamicsDifferential::ControllerRawForces *cntrl2 = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
 				if (cntrl2)
@@ -104,14 +108,16 @@ int main(int argc, char **argv)
 					case 'd':  cntrl2->setpoint_wheel_torque_r -= 0.5; break;
 					case ' ': cntrl2->setpoint_wheel_torque_l = cntrl2->setpoint_wheel_torque_r = 0.0; break;
 					};
-					//printf("setpoint: tl=%.03f tr=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_wheel_torque_r);
+					txt2gui_tmp+="[Controller=raw] Teleop keys: q/a=incr/decr left torque. e/d=incr/decr right torque. spacebar=stop.\n";
+					txt2gui_tmp+=mrpt::format("setpoint: tl=%.03f tr=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_wheel_torque_r);
 				}
 				gui_key_events = World::TGUIKeyEvent(); // Reset key-stroke
-
 			}
 #endif
 
-		}
+			msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
+
+		} // end while()
 
 		thread_params.closing = true;
 		mrpt::system::joinThread( thGUI );
@@ -129,12 +135,14 @@ void thread_update_GUI(TThreadParams &thread_params)
 {
 	while (!thread_params.closing)
 	{
-		World::TGUIKeyEvent key;
-		thread_params.world->update_GUI(&key);
+		World::TUpdateGUIParams guiparams;
+		guiparams.msg_lines = msg2gui;
+
+		thread_params.world->update_GUI(&guiparams);
 
 		// Send key-strokes to the main thread:
-		if(key.keycode!=0)
-			gui_key_events = key;
+		if(guiparams.keyevent.keycode!=0)
+			gui_key_events = guiparams.keyevent;
 
 		mrpt::system::sleep(25);
 	}

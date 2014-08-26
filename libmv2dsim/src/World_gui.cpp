@@ -31,20 +31,23 @@ void World::TGUI_Options::parse_from(const rapidxml::xml_node<char> &node)
 	std::map<std::string,TParamEntry> gui_params;
 	gui_params["ortho"] = TParamEntry("%bool", &ortho);
 	gui_params["cam_distance"]  = TParamEntry("%lf",&camera_distance);
-	gui_params["fov_deg"] = TParamEntry("%lf",&fov_deg); 
-	gui_params["follow_vehicle"] = TParamEntry("%s",&follow_vehicle); 
+	gui_params["fov_deg"] = TParamEntry("%lf",&fov_deg);
+	gui_params["follow_vehicle"] = TParamEntry("%s",&follow_vehicle);
 
 	parse_xmlnode_children_as_param(node,gui_params,"[World::TGUI_Options]");
 }
 
+World::TUpdateGUIParams::TUpdateGUIParams()
+{
+}
 
 // Text labels unique IDs:
 size_t ID_GLTEXT_CLOCK = 0;
 
 /** Updates (or sets-up upon first call) the GUI visualization of the scene.
-	* \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
-	*/
-void World::update_GUI( TGUIKeyEvent *out_keyevent )
+* \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
+*/
+void World::update_GUI( TUpdateGUIParams *guiparams )
 {
 	// First call?
 	// -----------------------
@@ -96,8 +99,22 @@ void World::update_GUI( TGUIKeyEvent *out_keyevent )
 	// Other messages
 	// -----------------------------
 	m_timlogger.enter("update_GUI.5.text-msgs");
+	{
+		const int txt_h = 12, space_h=2; // font height
+		int txt_y = 4;
 
-	m_gui_win->addTextMessage(2,2, mrpt::format("Time: %s", mrpt::system::formatTimeInterval(this->m_simul_time).c_str()), mrpt::utils::TColorf(1,1,1,0.5), "serif", 10, mrpt::opengl::NICE, ID_GLTEXT_CLOCK );
+		// 1st line: time
+		m_gui_win->addTextMessage(2,2, mrpt::format("Time: %s", mrpt::system::formatTimeInterval(this->m_simul_time).c_str()), mrpt::utils::TColorf(1,1,1,0.5), "serif", txt_h, mrpt::opengl::NICE, ID_GLTEXT_CLOCK );
+		txt_y+=txt_h+space_h;
+
+		// User supplied-lines:
+		if (guiparams)
+		{
+			const size_t nLines = std::count(guiparams->msg_lines.begin(),guiparams->msg_lines.end(),'\n');
+			txt_y+= nLines*(txt_h+space_h);
+			m_gui_win->addTextMessage(2,txt_y,guiparams->msg_lines, mrpt::utils::TColorf(1,1,1,0.5), "serif", txt_h, mrpt::opengl::NICE, ID_GLTEXT_CLOCK+1 );
+		}
+	}
 
 	m_timlogger.leave("update_GUI.5.text-msgs");
 
@@ -128,8 +145,8 @@ void World::update_GUI( TGUIKeyEvent *out_keyevent )
 
 	// Key-strokes:
 	// -----------------------
-	if (out_keyevent && m_gui_win->keyHit())
-		out_keyevent->keycode = m_gui_win->getPushedKey( &out_keyevent->key_modifier );		
+	if (guiparams && m_gui_win->keyHit())
+		guiparams->keyevent.keycode = m_gui_win->getPushedKey( &guiparams->keyevent.key_modifier );
 
 }
 
