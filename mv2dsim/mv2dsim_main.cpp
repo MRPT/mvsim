@@ -29,7 +29,7 @@ std::string msg2gui;
 
 int main(int argc, char **argv)
 {
-    try
+	try
 	{
 		if (argc!=2) return -1;
 
@@ -48,8 +48,9 @@ int main(int argc, char **argv)
 		mrpt::utils::CTicTac tictac;
 		double t_old = tictac.Tac();
 		double REALTIME_FACTOR = 1.0;
+		bool do_exit = false;
 
-		while (!mrpt::system::os::kbhit())
+		while (!do_exit)
 		{
 			// Compute how much time has passed to simulate in real-time:
 			double t_new = tictac.Tac();
@@ -75,18 +76,25 @@ int main(int argc, char **argv)
 					txt2gui_tmp+=mrpt::format("vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
 				}
 			}
+			World::TGUIKeyEvent keyevent = gui_key_events;
 
 #if 1
+			// Global keys:
+			switch (keyevent.keycode)
+			{
+			case 27: do_exit=true; break;
+			};
+
 			{ // Test: Differential drive: Control raw forces
 				const World::TListVehicles & vehs = world.getListOfVehicles();
 				ASSERT_(!vehs.empty())
-				DynamicsDifferential *veh = dynamic_cast<DynamicsDifferential*>(vehs.begin()->second);
+						DynamicsDifferential *veh = dynamic_cast<DynamicsDifferential*>(vehs.begin()->second);
 				ASSERT_(veh)
-				DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh->getController();
+						DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh->getController();
 				DynamicsDifferential::ControllerTwistPID *cntrl = dynamic_cast<DynamicsDifferential::ControllerTwistPID*>(cntrl_ptr.pointer());
 				if (cntrl)
 				{
-					switch (gui_key_events.keycode)
+					switch (keyevent.keycode)
 					{
 					case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
 					case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
@@ -111,9 +119,12 @@ int main(int argc, char **argv)
 					txt2gui_tmp+="[Controller=raw] Teleop keys: q/a=incr/decr left torque. e/d=incr/decr right torque. spacebar=stop.\n";
 					txt2gui_tmp+=mrpt::format("setpoint: tl=%.03f tr=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_wheel_torque_r);
 				}
-				gui_key_events = World::TGUIKeyEvent(); // Reset key-stroke
+
 			}
 #endif
+			// Clear the keystroke buffer
+			if (keyevent.keycode!=0)
+				gui_key_events = World::TGUIKeyEvent();
 
 			msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
 
@@ -122,12 +133,12 @@ int main(int argc, char **argv)
 		thread_params.closing = true;
 		mrpt::system::joinThread( thGUI );
 
-    } catch (const std::exception& e)
+	} catch (const std::exception& e)
 	{
-        std::cerr << "ERROR: " << e.what() << std::endl;
-        return 1;
-    }
-    return 0;
+		std::cerr << "ERROR: " << e.what() << std::endl;
+		return 1;
+	}
+	return 0;
 }
 
 
