@@ -57,7 +57,7 @@ namespace mv2dsim
 		  */
 		void run_simulation(double dt);
 
-
+		/** For usage in TUpdateGUIParams and \a update_GUI() */
 		struct TGUIKeyEvent
 		{
 			int keycode; //!< 0=no Key. Otherwise, ASCII code.
@@ -66,11 +66,19 @@ namespace mv2dsim
 			TGUIKeyEvent() : keycode(0) {}
 		};
 
+		struct TUpdateGUIParams
+		{
+			TGUIKeyEvent keyevent; //!< Keystrokes in the window are returned here.
+			std::string msg_lines; //!< Messages to show
+
+			TUpdateGUIParams();
+		};
+
 		/** Updates (or sets-up upon first call) the GUI visualization of the scene.
-		  * \param[out] out_keyevent Optionally (if !=NULL), keystrokes in the window are returned here.
+		  * \param[inout] params Optional inputs/outputs to the GUI update process. See struct for details.
 		  * \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
 		  */
-		void update_GUI( TGUIKeyEvent *out_keyevent = NULL );
+		void update_GUI( TUpdateGUIParams *params=NULL );
 		/** @} */
 
 		/** \name Public types
@@ -103,7 +111,7 @@ namespace mv2dsim
 		double m_simul_timestep; //!< Simulation fixed-time interval for numerical integration.
 		int m_b2d_vel_iters, m_b2d_pos_iters; //!< Velocity and position iteration count (Box2D)
 		std::string m_base_path; //!< Path from which to take relative directories.
-		
+
 		// ------- GUI options -----
 		struct TGUI_Options
 		{
@@ -112,7 +120,7 @@ namespace mv2dsim
 			double fov_deg;
 			std::string follow_vehicle; //!< Name of the vehicle to follow (empty=none)
 
-			TGUI_Options(); 
+			TGUI_Options();
 			void parse_from(const rapidxml::xml_node<char> &node);
 		};
 
