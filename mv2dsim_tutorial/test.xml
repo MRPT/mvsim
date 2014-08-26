@@ -42,15 +42,15 @@
 				<!-- Params -->
 				<KP>1000</KP>  <KI>0</KI> <I_MAX>0</I_MAX>
 				<V>0.0</V><W>0</W>
-				<max_torque>500</max_torque>
+				<max_torque>100</max_torque>
 			</controller>
 			
 		</dynamics>
 				
 		<!-- Friction force simulation -->
 		<friction class="default">
-			<mu>5.7</mu>
-			<C_damping>0.2</C_damping>
+			<mu>0.7</mu>
+			<C_damping>0.4</C_damping>
 		</friction>
 				
 		<!-- Sensors: -->
