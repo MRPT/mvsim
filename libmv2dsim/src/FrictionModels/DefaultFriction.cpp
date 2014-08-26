@@ -72,7 +72,7 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	// It should be = 0 for no slippage (nonholonomic constraint): find out required wheel \omega:
 	const double R = 0.5*input.wheel.diameter; // Wheel radius
 	const double lon_constraint_desired_wheel_w = vel_w.x / R;
-	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w-input.wheel.w);
+	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w-input.wheel.getW());
 	const double desired_wheel_alpha = desired_wheel_w_impulse / input.context.dt;
 	
 	// (eq. 3)==> Find out F_r
@@ -82,16 +82,16 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	//const mrpt::math::TPoint2D wheel_damping(- C_damping * input.wheel_speed.x, 0.0);
 
 	const double I_yy = input.wheel.Iyy;
-	double F_friction_lon = ( input.motor_torque - I_yy*desired_wheel_alpha - C_damping*input.wheel.w )/R;
+	double F_friction_lon = ( input.motor_torque - I_yy*desired_wheel_alpha - C_damping*input.wheel.getW() )/R;
 
 	// Slippage: The friction with the ground is not infinite:
 	F_friction_lon = b2Clamp(F_friction_lon, -max_friction,max_friction);
 	
 	// Recalc wheel ang. velocity impulse with this reduced force:
-	const double actual_wheel_alpha = ( input.motor_torque - R * F_friction_lon - C_damping*input.wheel.w )/I_yy;
+	const double actual_wheel_alpha = ( input.motor_torque - R * F_friction_lon - C_damping*input.wheel.getW() )/I_yy;
 	
 	// Apply impulse to wheel's spinning:
-	input.wheel.w += actual_wheel_alpha * input.context.dt;
+	input.wheel.setW( input.wheel.getW() + actual_wheel_alpha * input.context.dt );
 
 	wheel_long_friction = F_friction_lon;
 

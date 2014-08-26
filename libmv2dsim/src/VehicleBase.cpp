@@ -8,6 +8,7 @@
 
 #include <mv2dsim/World.h>
 #include <mv2dsim/VehicleBase.h>
+#include <mv2dsim/VehicleDynamics/VehicleAckermann.h>
 #include <mv2dsim/VehicleDynamics/VehicleDifferential.h>
 #include <mv2dsim/FrictionModels/FrictionBase.h>
 #include <mv2dsim/FrictionModels/DefaultFriction.h> // For use as default model
@@ -41,6 +42,7 @@ void register_all_veh_dynamics()
 	if (done) return; else done=true;
 
 	REGISTER_VEHICLE_DYNAMICS("differential",DynamicsDifferential)
+	REGISTER_VEHICLE_DYNAMICS("car_ackermann",DynamicsAckermann)
 }
 
 // Protected ctor:
@@ -317,7 +319,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext &context)
 		Wheel &w = getWheelInfo(i);
 
 		// Explicit Euler:
-		w.phi += w.w * context.dt;
+		w.setPhi( w.getPhi() + w.getW() * context.dt);
 	}
 }
 
