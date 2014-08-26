@@ -41,7 +41,7 @@
 			<controller class="twist_pid">
 				<!-- Params -->
 				<KP>1000</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>5</KD>
-				<V>0.0</V><W>0</W>
+                                <V>1.0</V><W>0</W>
 				<max_torque>100</max_torque>
 			</controller>
 			
@@ -82,9 +82,7 @@
 			<controller class="raw">
 				<!-- Params -->
 				<!-- Init state -->
-				<steer_ang_deg>30</steer_ang_deg>
-				<fl_torque>10</fl_torque>
-				<fr_torque>10</fr_torque>
+                                <steer_ang_deg>20</steer_ang_deg>
 			</controller>
 			
 		</dynamics>
@@ -92,7 +90,7 @@
 		<!-- Friction force simulation -->
 		<friction class="default">
 			<mu>0.7</mu>
-			<C_damping>1.1</C_damping>
+                        <C_damping>10</C_damping>
 		</friction>
 		
 	</vehicle:class>
