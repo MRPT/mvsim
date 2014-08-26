@@ -21,6 +21,6 @@ namespace mv2dsim
 		double compute(double err, double dt);
 
 	private:
-		double m_i_term; 
+		double m_i_term, m_last_err;
 	};
 }

@@ -13,18 +13,24 @@ using namespace mv2dsim;
 
 
 PID_Controller::PID_Controller() : 
-	I_MAX_ABS(1e3), m_i_term(0), max_out(0)
+	I_MAX_ABS(1e3), m_i_term(0), max_out(0),m_last_err(0)
 { 
 }
 
 /** err = desired-actual, dt=ellapsed time in secs */
 double PID_Controller::compute(double err, double dt)
 {
-	if (dt<=0.0) return 0.0;
+	// P:
 	const double p_term = KP * err;
+	// I:
 	m_i_term += dt*KI*err;
 	m_i_term = std::max( -I_MAX_ABS, std::min(I_MAX_ABS,m_i_term) );
-	double ret = p_term + m_i_term;
+	// D:
+	const double d_term = dt>0 ? KD * (err-m_last_err)/dt : 0.0;
+	m_last_err = err;
+
+	// PID:
+	double ret = p_term + m_i_term + d_term;
 
 	// Clamp:
 	if (ret>max_out) ret = max_out; else if (ret<-max_out) ret = -max_out; 

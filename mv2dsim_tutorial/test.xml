@@ -38,9 +38,9 @@
 			</chassis>
 			
 			<!--   Motor controller -->
-			<controller class="twist_pi">
+			<controller class="twist_pid">
 				<!-- Params -->
-				<KP>1000</KP>  <KI>0</KI> <I_MAX>0</I_MAX>
+				<KP>1000</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>5</KD>
 				<V>0.0</V><W>0</W>
 				<max_torque>100</max_torque>
 			</controller>
@@ -55,7 +55,7 @@
 				
 		<!-- Sensors: -->
 		<sensor class="laser" name="laser1">
-			<pose> 0.65  0.0  0.0 </pose>
+			<pose> 0.60  0.0  0.0 </pose>
 			<fov_degrees>180</fov_degrees>
 			<nrays>181</nrays>
 			<range_std_noise>0.01</range_std_noise>

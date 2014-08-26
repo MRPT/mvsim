@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 				DynamicsDifferential *veh = dynamic_cast<DynamicsDifferential*>(vehs.begin()->second);
 				ASSERT_(veh)
 				DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh->getController();
-				DynamicsDifferential::ControllerTwistPI *cntrl = dynamic_cast<DynamicsDifferential::ControllerTwistPI*>(cntrl_ptr.pointer());
+				DynamicsDifferential::ControllerTwistPID *cntrl = dynamic_cast<DynamicsDifferential::ControllerTwistPID*>(cntrl_ptr.pointer());
 				if (cntrl)
 				{
 					switch (gui_key_events.keycode)
