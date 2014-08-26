@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 		mrpt::utils::CTicTac tictac;
 		double t_old = tictac.Tac();
 		double t_old_simul = t_old;
-		double REALTIME_FACTOR = 0.1;
+		double REALTIME_FACTOR = 1.0;
 
 		while (!mrpt::system::os::kbhit())
 		{
