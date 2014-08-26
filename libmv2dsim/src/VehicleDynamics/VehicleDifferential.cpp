@@ -96,7 +96,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass==ControllerRawForces::class_name())    m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
-			else if (sCtrlClass==ControllerTwistPI::class_name()) m_controller = ControllerBasePtr(new ControllerTwistPI(*this) );
+			else if (sCtrlClass==ControllerTwistPID::class_name()) m_controller = ControllerBasePtr(new ControllerTwistPID(*this) );
 			else throw runtime_error(mrpt::format("[DynamicsDifferential] Unknown 'class'='%s' in <controller> XML node",sCtrlClass.c_str()));
 
 			m_controller->load_config(*xml_control);

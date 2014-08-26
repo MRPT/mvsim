@@ -79,19 +79,19 @@ namespace mv2dsim
 			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
 		};
 
-		/** PI controller that controls the vehicle twist: linear & angular velocities */
-		class ControllerTwistPI : public ControllerBase
+		/** PID controller that controls the vehicle twist: linear & angular velocities */
+		class ControllerTwistPID : public ControllerBase
 		{
 		public:
-			ControllerTwistPI(DynamicsDifferential &veh);
-			static const char* class_name() { return "twist_pi"; }
+			ControllerTwistPID(DynamicsDifferential &veh);
+			static const char* class_name() { return "twist_pid"; }
 			//!< Directly set these values to tell the controller the desired setpoints
 			double setpoint_lin_speed, setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
 			// See base class docs
 			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
 			// See base class docs
 			virtual void load_config(const rapidxml::xml_node<char>&node );
-			double KP,KI; //!< PI controller parameters
+			double KP,KI,KD; //!< PID controller parameters
 			double I_MAX; //!< I part maximum value (absolute value for clamp)
 			double max_torque; //!< Maximum abs. value torque (for clamp) [N·m]
 		private:
