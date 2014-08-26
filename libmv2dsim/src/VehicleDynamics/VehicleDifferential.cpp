@@ -214,7 +214,7 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 	for (int i=0;i<2;i++)
 	{
 		const Wheel & w = m_wheels_info[i];
-		m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.diameter, w.yaw, w.phi, 0.0) );
+		m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.diameter, w.yaw, w.getPhi(), 0.0) );
 	}
 
 }
