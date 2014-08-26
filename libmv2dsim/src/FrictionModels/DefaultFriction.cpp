@@ -42,7 +42,10 @@ DefaultFriction::DefaultFriction(VehicleBase & my_vehicle, const rapidxml::xml_n
 void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const
 {
 	// Rotate wheel velocity vector from veh. frame => wheel frame
-	mrpt::math::TPoint2D vel_w( input.wheel_speed );
+	const mrpt::poses::CPose2D wRot(0,0,input.wheel.yaw);
+	const mrpt::poses::CPose2D wRotInv(0,0,-input.wheel.yaw);
+	mrpt::math::TPoint2D vel_w; 
+	wRotInv.composePoint(input.wheel_speed,vel_w);
 
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
@@ -64,7 +67,7 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	double wheel_long_friction=0.0; // direction: +x local wrt the wheel
 	
 	// (eq. 1)==> desired impulse in wheel spinning speed.
-	//double wheel_C_lon_vel = vel_w.x - input.wheel.w * 0.5*input.wheel.diameter;
+	// wheel_C_lon_vel = vel_w.x - input.wheel.w * 0.5*input.wheel.diameter
 
 	// It should be = 0 for no slippage (nonholonomic constraint): find out required wheel \omega:
 	const double R = 0.5*input.wheel.diameter; // Wheel radius
@@ -97,12 +100,8 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	// -----------------------------------------------------------------------
 	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction ,wheel_lat_friction);
 
-	// Rotate to put in vehicle local framework:
-	MRPT_TODO("rotate! (for ackermann,etc.)")
-	const mrpt::math::TPoint2D result_force_wrt_veh = result_force_wrt_wheel;
-
-
-	out_result_force_local = result_force_wrt_veh;
+	// Rotate to put: Wheel frame ==> vehicle local framework:
+	wRot.composePoint(result_force_wrt_wheel, out_result_force_local);
 }
 
 
