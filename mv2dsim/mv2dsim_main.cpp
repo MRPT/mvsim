@@ -78,7 +78,6 @@ int main(int argc, char **argv)
 			}
 			World::TGUIKeyEvent keyevent = gui_key_events;
 
-#if 1
 			// Global keys:
 			switch (keyevent.keycode)
 			{
@@ -88,40 +87,61 @@ int main(int argc, char **argv)
 			{ // Test: Differential drive: Control raw forces
 				const World::TListVehicles & vehs = world.getListOfVehicles();
 				ASSERT_(!vehs.empty())
-						DynamicsDifferential *veh = dynamic_cast<DynamicsDifferential*>(vehs.begin()->second);
-				ASSERT_(veh)
-						DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh->getController();
-				DynamicsDifferential::ControllerTwistPID *cntrl = dynamic_cast<DynamicsDifferential::ControllerTwistPID*>(cntrl_ptr.pointer());
-				if (cntrl)
+				DynamicsDifferential *veh_diff = dynamic_cast<DynamicsDifferential*>(vehs.begin()->second);
+				if (veh_diff)
 				{
-					switch (keyevent.keycode)
+					DynamicsDifferential::ControllerBasePtr &cntrl_ptr = veh_diff->getController();
+					DynamicsDifferential::ControllerTwistPID *cntrl = dynamic_cast<DynamicsDifferential::ControllerTwistPID*>(cntrl_ptr.pointer());
+					if (cntrl)
 					{
-					case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
-					case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
-					case 'a':  cntrl->setpoint_ang_speed += 5.0*M_PI/180;  break;
-					case 'd':  cntrl->setpoint_ang_speed -= 5.0*M_PI/180;  break;
-					case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
-					};
-					txt2gui_tmp+="[Controller=twist_pid] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
-					txt2gui_tmp+=mrpt::format("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
+						switch (keyevent.keycode)
+						{
+						case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
+						case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
+						case 'a':  cntrl->setpoint_ang_speed += 5.0*M_PI/180;  break;
+						case 'd':  cntrl->setpoint_ang_speed -= 5.0*M_PI/180;  break;
+						case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
+						};
+						txt2gui_tmp+="[Controller=twist_pid] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
+						txt2gui_tmp+=mrpt::format("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
+					}
+					DynamicsDifferential::ControllerRawForces *cntrl2 = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
+					if (cntrl2)
+					{
+						switch (gui_key_events.keycode)
+						{
+						case 'q':  cntrl2->setpoint_wheel_torque_l += 0.5; break;
+						case 'a':  cntrl2->setpoint_wheel_torque_l -= 0.5; break;
+						case 'e':  cntrl2->setpoint_wheel_torque_r += 0.5; break;
+						case 'd':  cntrl2->setpoint_wheel_torque_r -= 0.5; break;
+						case ' ': cntrl2->setpoint_wheel_torque_l = cntrl2->setpoint_wheel_torque_r = 0.0; break;
+						};
+						txt2gui_tmp+="[Controller=raw] Teleop keys: q/a=incr/decr left torque. e/d=incr/decr right torque. spacebar=stop.\n";
+						txt2gui_tmp+=mrpt::format("setpoint: tl=%.03f tr=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_wheel_torque_r);
+					}
 				}
-				DynamicsDifferential::ControllerRawForces *cntrl2 = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
-				if (cntrl2)
+				DynamicsAckermann *veh_ack = dynamic_cast<DynamicsAckermann*>(vehs.begin()->second);
+				if (veh_ack)
 				{
-					switch (gui_key_events.keycode)
+					DynamicsAckermann::ControllerBasePtr &cntrl_ptr = veh_ack->getController();
+					DynamicsAckermann::ControllerRawForces *cntrl2 = dynamic_cast<DynamicsAckermann::ControllerRawForces*>(cntrl_ptr.pointer());
+					if (cntrl2)
 					{
-					case 'q':  cntrl2->setpoint_wheel_torque_l += 0.5; break;
-					case 'a':  cntrl2->setpoint_wheel_torque_l -= 0.5; break;
-					case 'e':  cntrl2->setpoint_wheel_torque_r += 0.5; break;
-					case 'd':  cntrl2->setpoint_wheel_torque_r -= 0.5; break;
-					case ' ': cntrl2->setpoint_wheel_torque_l = cntrl2->setpoint_wheel_torque_r = 0.0; break;
-					};
-					txt2gui_tmp+="[Controller=raw] Teleop keys: q/a=incr/decr left torque. e/d=incr/decr right torque. spacebar=stop.\n";
-					txt2gui_tmp+=mrpt::format("setpoint: tl=%.03f tr=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_wheel_torque_r);
+						switch (gui_key_events.keycode)
+						{
+						case 'w':  cntrl2->setpoint_wheel_torque_l+= 1.0; cntrl2->setpoint_wheel_torque_r+=1.0; break;
+						case 's':  cntrl2->setpoint_wheel_torque_l-= 1.0; cntrl2->setpoint_wheel_torque_r-=1.0; break;
+						case 'a':  cntrl2->setpoint_steer_ang += 1.0*M_PI/180.0; break;
+						case 'd':  cntrl2->setpoint_steer_ang -= 1.0*M_PI/180.0; break;
+						case ' ':  cntrl2->setpoint_wheel_torque_l= .0; cntrl2->setpoint_wheel_torque_r=.0; break;
+						};
+						txt2gui_tmp+="[Controller=raw] Teleop keys: w/s=incr/decr torques. a/d=left/right steering. spacebar=stop.\n";
+						txt2gui_tmp+=mrpt::format("setpoint: t=%.03f steer=%.03f deg\n", cntrl2->setpoint_wheel_torque_l, cntrl2->setpoint_steer_ang*180.0/M_PI);
+					}
 				}
 
 			}
-#endif
+
 			// Clear the keystroke buffer
 			if (keyevent.keycode!=0)
 				gui_key_events = World::TGUIKeyEvent();

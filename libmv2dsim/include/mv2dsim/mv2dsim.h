@@ -17,4 +17,5 @@
 
 // Vehicles  ------------------
 #include "VehicleDynamics/VehicleDifferential.h"
+#include "VehicleDynamics/VehicleAckermann.h"
 
