@@ -266,7 +266,7 @@ void VehicleBase::load_params_from_xml(const std::string &xml_text)
 void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 {
 	// Apply motor forces/torques:
-	this->apply_motor_forces(context,m_torque_per_wheel);
+	this->invoke_motor_controllers(context,m_torque_per_wheel);
 
 	// Apply friction model at each wheel:
 	const size_t nW = getNumWheels();

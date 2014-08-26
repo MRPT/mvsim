@@ -220,7 +220,7 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 }
 
 // See docs in base class:
-void DynamicsDifferential::apply_motor_forces(const TSimulContext &context, std::vector<double> &out_torque_per_wheel)
+void DynamicsDifferential::invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_torque_per_wheel)
 {
 	// Longitudinal forces at each wheel:
 	out_torque_per_wheel.assign(2, 0.0);

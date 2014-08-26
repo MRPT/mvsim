@@ -97,7 +97,7 @@ namespace mv2dsim
 		// See base class docs
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
 		// See base class docs
-		virtual void apply_motor_forces(const TSimulContext &context, std::vector<double> &out_force_per_wheel);
+		virtual void invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_force_per_wheel);
 
 	private:
 		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;

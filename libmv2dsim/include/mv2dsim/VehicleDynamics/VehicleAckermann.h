@@ -38,6 +38,10 @@ namespace mv2dsim
 		// See docs in base class:
 		virtual double getChassisMass() const { return m_chassis_mass; }
 
+		/** The maximum steering angle (rad). Determines min turning radius */
+		double getMaxSteeringAngle() const {return m_max_steer_ang;} 
+		void setMaxSteeringAngle(double val) {m_max_steer_ang=val;} 
+
 		/** @name Controllers 
 		    @{ */
 
@@ -78,7 +82,7 @@ namespace mv2dsim
 		// See base class docs
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
 		// See base class docs
-		virtual void apply_motor_forces(const TSimulContext &context, std::vector<double> &out_force_per_wheel);
+		virtual void invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_force_per_wheel);
 
 	private:
 		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
@@ -91,6 +95,8 @@ namespace mv2dsim
 		double m_max_radius; //!< Automatically computed from m_chassis_poly upon each change via updateMaxRadiusFromPoly()
 		double m_chassis_z_min,m_chassis_z_max;
 		mrpt::utils::TColor   m_chassis_color;
+
+		double m_max_steer_ang; //!< The maximum steering angle (rad). Determines min turning radius
 
 		void updateMaxRadiusFromPoly();
 
