@@ -85,26 +85,11 @@ namespace mv2dsim
 		virtual void invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_force_per_wheel);
 
 	private:
-		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
-		mrpt::opengl::CSetOfObjectsPtr m_gl_wheels[4]; //!< [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 		ControllerBasePtr  m_controller; //!< The installed controller
-
-		// Chassis info:
-		double m_chassis_mass;
-		mrpt::math::TPolygon2D m_chassis_poly;
-		double m_max_radius; //!< Automatically computed from m_chassis_poly upon each change via updateMaxRadiusFromPoly()
-		double m_chassis_z_min,m_chassis_z_max;
-		mrpt::utils::TColor   m_chassis_color;
 
 		double m_max_steer_ang; //!< The maximum steering angle (rad). Determines min turning radius
 
-		void updateMaxRadiusFromPoly();
-
-		Wheel m_wheels_info[4]; //!< [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
-
-		virtual size_t getNumWheels() const { return 4; }
-		virtual const Wheel & getWheelInfo(const size_t idx) const { return m_wheels_info[idx]; }
-		virtual Wheel & getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
+		// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 
 		b2Fixture* m_fixture_chassis;
 		b2Fixture* m_fixture_wheels[4]; //!< Indices as in m_wheels_info

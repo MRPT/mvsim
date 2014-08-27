@@ -51,8 +51,9 @@ int main(int argc, char **argv)
 		bool do_exit = false;
 		size_t teleop_idx_veh = 0; // Index of the vehicle to teleop
 
-		while (!do_exit)
+		while (!do_exit && !mrpt::system::os::kbhit())
 		{
+			// Simulation ============================================================
 			// Compute how much time has passed to simulate in real-time:
 			double t_new = tictac.Tac();
 			double incr_time = REALTIME_FACTOR * (t_new-t_old);
@@ -68,32 +69,36 @@ int main(int argc, char **argv)
 
 			mrpt::system::sleep(10);
 
+
+			// GUI msgs, teleop, etc. ====================================================
+
 			std::string txt2gui_tmp;
-			{ // Get vehicles speed:
-				const World::TListVehicles & vehs = world.getListOfVehicles();
-				if (!vehs.empty())
-				{
-					const vec3 &vel = vehs.begin()->second->getVelocityLocal();
-					txt2gui_tmp+=mrpt::format("vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
-				}
-			}
 			World::TGUIKeyEvent keyevent = gui_key_events;
 
 			// Global keys:
 			switch (keyevent.keycode)
 			{
 			case 27: do_exit=true; break;
-			case '0': case '1': case '2': case '3': case '4':
-				teleop_idx_veh = keyevent.keycode-'0';
+			case '1': case '2': case '3': case '4': case '5': case '6':
+				teleop_idx_veh = keyevent.keycode-'1';
 				break;
 			};
 
 			{ // Test: Differential drive: Control raw forces
 				const World::TListVehicles & vehs = world.getListOfVehicles();
+				txt2gui_tmp+=mrpt::format("Selected vehicle: %u/%u\n", static_cast<unsigned>(teleop_idx_veh+1),static_cast<unsigned>(vehs.size()) );
 				if (vehs.size()>teleop_idx_veh)
 				{
+					// Get iterator to selected vehicle:
 					World::TListVehicles::const_iterator it_veh = vehs.begin();
 					std::advance(it_veh, teleop_idx_veh);
+
+					// Get speed:
+					{
+						const vec3 &vel = it_veh->second->getVelocityLocal();
+						txt2gui_tmp+=mrpt::format("vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
+					}
+
 					DynamicsDifferential *veh_diff = dynamic_cast<DynamicsDifferential*>(it_veh->second);
 					if (veh_diff)
 					{

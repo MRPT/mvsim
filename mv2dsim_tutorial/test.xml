@@ -27,7 +27,7 @@
 	<!-- =============================
 		   Vehicle classes definition 
 	     ============================= -->
-	<vehicle:class name="small-robot">
+	<vehicle:class name="small_robot">
 		
 		<!--  Dynamical model -->
 		<dynamics class="differential">
@@ -42,7 +42,7 @@
 				<!-- Params -->
 				<KP>1000</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>5</KD>
 				<V>0.0</V><W>0</W>
-				<max_torque>100</max_torque>
+				<max_torque>50</max_torque>
 			</controller>
 			
 		</dynamics>
@@ -98,7 +98,7 @@
 	<!-- ========================
 		   Vehicle(s) definition 
 	     ======================== -->
-	<vehicle name="r1" class="small-robot">
+	<vehicle name="r1" class="small_robot">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>

@@ -22,6 +22,7 @@
 #include <rapidxml_print.hpp>
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/opengl/CPolyhedron.h>
 
 #include <sstream>      // std::stringstream
 #include <map>
@@ -46,12 +47,27 @@ void register_all_veh_dynamics()
 }
 
 // Protected ctor:
-VehicleBase::VehicleBase(World *parent) :
+VehicleBase::VehicleBase(World *parent, size_t nWheels) :
 	VisualObject(parent),
 	m_b2d_vehicle_body(NULL),
 	m_q(0,0,0),
-	m_dq(0,0,0)
+	m_dq(0,0,0),
+	m_chassis_mass(15.0),
+	m_chassis_z_min(0.05),
+	m_chassis_z_max(0.6),
+	m_chassis_color(0xff,0x00,0x00),
+	m_wheels_info(nWheels)
 {
+	using namespace mrpt::math;
+	// Default shape:
+	m_chassis_poly.push_back( TPoint2D(-0.4, -0.5) );
+	m_chassis_poly.push_back( TPoint2D(-0.4,  0.5) );
+	m_chassis_poly.push_back( TPoint2D( 0.4,  0.5) );
+	m_chassis_poly.push_back( TPoint2D( 0.6,  0.3) );
+	m_chassis_poly.push_back( TPoint2D( 0.6, -0.3) );
+	m_chassis_poly.push_back( TPoint2D( 0.4, -0.5) );
+	updateMaxRadiusFromPoly();
+
 }
 
 void VehicleBase::simul_post_timestep_common(const TSimulContext &context)
@@ -367,8 +383,73 @@ mrpt::poses::CPose2D VehicleBase::getCPose2D() const
 }
 
 /** To be called at derived classes' gui_update() */
-void VehicleBase::gui_update_sensors( mrpt::opengl::COpenGLScene &scene)
+void VehicleBase::gui_update_common( mrpt::opengl::COpenGLScene &scene, bool defaultVehicleBody )
+{
+	// 1st time call?? -> Create objects
+	// ----------------------------------
+	if (defaultVehicleBody)
+	{
+		const size_t nWs = this->getNumWheels();
+		if (!m_gl_chassis)
+		{
+			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
+
+			// Wheels shape:
+			m_gl_wheels.resize(nWs);
+			for (size_t i=0;i<nWs;i++)
+			{
+				m_gl_wheels[i]= mrpt::opengl::CSetOfObjects::Create();
+				this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
+				m_gl_chassis->insert(m_gl_wheels[i]);
+			}
+			// Robot shape:
+			//m_gl_chassis->insert( mrpt::opengl::stock_objects::RobotPioneer() );
+			mrpt::opengl::CPolyhedronPtr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_chassis_poly, m_chassis_z_max-m_chassis_z_min);
+			gl_poly->setLocation(0,0, m_chassis_z_min);
+			gl_poly->setColor( mrpt::utils::TColorf(m_chassis_color) );
+			m_gl_chassis->insert(gl_poly);
+
+			scene.insert(m_gl_chassis);
+		}
+
+
+		// Update them:
+		// ----------------------------------
+		m_gl_chassis->setPose( mrpt::math::TPose3D( m_q.vals[0], m_q.vals[1], 0.01, m_q.vals[2], 0.0, 0.0) );
+
+		for (int i=0;i<nWs;i++)
+		{
+			const Wheel & w = getWheelInfo(i);
+			m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.diameter, w.yaw, w.getPhi(), 0.0) );
+		}
+	}
+
+
+	// Other common stuff:
+	internal_gui_update_sensors(scene);
+	internal_gui_update_forces(scene);
+}
+
+
+void VehicleBase::internal_gui_update_sensors( mrpt::opengl::COpenGLScene &scene)
 {
 	for (TListSensors::iterator it=m_sensors.begin();it!=m_sensors.end();++it)
 		(*it)->gui_update(scene);
+}
+
+void VehicleBase::internal_gui_update_forces( mrpt::opengl::COpenGLScene &scene)
+{
+
+}
+
+void VehicleBase::updateMaxRadiusFromPoly()
+{
+	using namespace mrpt::math;
+
+	m_max_radius=0.001f;
+	for (TPolygon2D::const_iterator it=m_chassis_poly.begin();it!=m_chassis_poly.end();++it)
+	{
+		const float n=it->norm();
+		mrpt::utils::keep_max(m_max_radius,n);
+	}	
 }

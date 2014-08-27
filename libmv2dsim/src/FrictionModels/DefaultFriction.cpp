@@ -69,7 +69,7 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	// (eq. 1)==> desired impulse in wheel spinning speed.
 	// wheel_C_lon_vel = vel_w.x - input.wheel.w * 0.5*input.wheel.diameter
 
-	// It should be = 0 for no slippage (nonholonomic constraint): find out required wheel \omega:
+	// It should be = 0 for no slippage (nonholonomic constraint): find out required wheel \omega:case '4':
 	const double R = 0.5*input.wheel.diameter; // Wheel radius
 	const double lon_constraint_desired_wheel_w = vel_w.x / R;
 	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w-input.wheel.getW());
