@@ -12,7 +12,6 @@
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/CPolyhedron.h>
 #include <rapidxml.hpp>
 #include <cmath>
 
@@ -21,16 +20,18 @@ using namespace std;
 
 // Ctor:
 DynamicsAckermann::DynamicsAckermann(World *parent) :
-	VehicleBase(parent),
-	m_chassis_mass(500.0),
-	m_chassis_z_min(0.20),
-	m_chassis_z_max(1.40),
-	m_chassis_color(0xe8,0x30,0x00),
+	VehicleBase(parent, 4 /*num wheels*/),
 	m_max_steer_ang(mrpt::utils::DEG2RAD(30))
 {
 	using namespace mrpt::math;
 
+	m_chassis_mass=500.0;
+	m_chassis_z_min=0.20;
+	m_chassis_z_max=1.40;
+	m_chassis_color= mrpt::utils::TColor(0xe8,0x30,0x00);
+	
 	// Default shape:
+	m_chassis_poly.clear();
 	m_chassis_poly.push_back( TPoint2D(-0.8, -1.0) );
 	m_chassis_poly.push_back( TPoint2D(-0.8,  1.0) );
 	m_chassis_poly.push_back( TPoint2D( 1.5,  0.9) );
@@ -156,6 +157,7 @@ void DynamicsAckermann::create_multibody_system(b2World* world)
 		// Convert shape into Box2D format:
 		const size_t nPts = m_chassis_poly.size();
 		ASSERT_(nPts>=3)
+		ASSERT_BELOWEQ_(nPts, (size_t)b2_maxPolygonVertices)
 		std::vector<b2Vec2> pts(nPts);
 		for (size_t i=0;i<nPts;i++) pts[i] = b2Vec2( m_chassis_poly[i].x, m_chassis_poly[i].y );
 
@@ -212,42 +214,7 @@ void DynamicsAckermann::gui_update( mrpt::opengl::COpenGLScene &scene)
 {
 	using namespace mrpt::math;
 
-	VehicleBase::gui_update_sensors(scene); // Common part: update sensors
-
-	// 1st time call?? -> Create objects
-	// ----------------------------------
-	if (!m_gl_chassis)
-	{
-		m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
-
-		// Wheels shape:
-		for (int i=0;i<4;i++)
-		{
-			m_gl_wheels[i]= mrpt::opengl::CSetOfObjects::Create();
-			m_wheels_info[i].getAs3DObject(*m_gl_wheels[i]);
-			m_gl_chassis->insert(m_gl_wheels[i]);
-		}
-		// Robot shape:
-		//m_gl_chassis->insert( mrpt::opengl::stock_objects::RobotPioneer() );
-		mrpt::opengl::CPolyhedronPtr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_chassis_poly, m_chassis_z_max-m_chassis_z_min);
-		gl_poly->setLocation(0,0, m_chassis_z_min);
-		gl_poly->setColor( mrpt::utils::TColorf(m_chassis_color) );
-		m_gl_chassis->insert(gl_poly);
-
-		scene.insert(m_gl_chassis);
-	}
-
-
-	// Update them:
-	// ----------------------------------
-	m_gl_chassis->setPose( mrpt::math::TPose3D( m_q.vals[0], m_q.vals[1], 0.01, m_q.vals[2], 0.0, 0.0) );
-
-	for (int i=0;i<4;i++)
-	{
-		const Wheel & w = m_wheels_info[i];
-		m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.diameter, w.yaw, w.getPhi(), 0.0) );
-	}
-
+	VehicleBase::gui_update_common(scene); // Common part: update sensors, etc.
 }
 
 // See docs in base class:
@@ -294,14 +261,3 @@ void DynamicsAckermann::invoke_motor_controllers(const TSimulContext &context, s
 
 }
 
-void DynamicsAckermann::updateMaxRadiusFromPoly()
-{
-	using namespace mrpt::math;
-
-	m_max_radius=0.001f;
-	for (TPolygon2D::const_iterator it=m_chassis_poly.begin();it!=m_chassis_poly.end();++it)
-	{
-		const float n=it->norm();
-		mrpt::utils::keep_max(m_max_radius,n);
-	}	
-}

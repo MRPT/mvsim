@@ -23,6 +23,7 @@
 
 #include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/utils/TColor.h>
 
 namespace mv2dsim
@@ -68,9 +69,9 @@ namespace mv2dsim
 
 		b2Body * getBox2DChassisBody() { return m_b2d_vehicle_body; }
 
-		virtual size_t getNumWheels() const = 0;
-		virtual const Wheel & getWheelInfo(const size_t idx) const = 0;
-		virtual Wheel & getWheelInfo(const size_t idx) = 0;
+		size_t getNumWheels() const { return m_wheels_info.size(); }
+		const Wheel & getWheelInfo(const size_t idx) const { return m_wheels_info[idx]; }
+		Wheel & getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
 
 		/** Last time-step pose (of the ref. point, in global coords) */
 		const vec3 & getPose() const { return m_q; } 
@@ -93,15 +94,18 @@ namespace mv2dsim
 
 	protected:
 		// Protected ctor for class factory
-		VehicleBase(World *parent);
+		VehicleBase(World *parent, size_t nWheels);
 
 		/** Parse node <dynamics>: The derived-class part of load_params_from_xml(), also called in factory(). Includes parsing the <controller></controller> block. */
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node) = 0;
 
 		virtual void invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_force_per_wheel) = 0;
 
-		/** To be called at derived classes' gui_update() */
-		void gui_update_sensors( mrpt::opengl::COpenGLScene &scene);
+		/** To be called at derived classes' gui_update(), updates all stuff common to any vehicle type. 
+		  * Calls: internal_gui_update_sensors(), internal_gui_update_forces()
+		  * \param[in] defaultVehicleBody If true, will draw default wheels & vehicle chassis.
+		  */
+		void gui_update_common( mrpt::opengl::COpenGLScene &scene, bool defaultVehicleBody = true);
 
 		std::string m_name; //!< User-supplied name of the vehicle (e.g. "r1", "veh1")
 
@@ -118,6 +122,27 @@ namespace mv2dsim
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)
 
 		std::vector<double> m_torque_per_wheel; //!< Updated in simul_pre_timestep()
+
+		// Chassis info:
+		double m_chassis_mass;
+		mrpt::math::TPolygon2D m_chassis_poly;
+		double m_max_radius; //!< Automatically computed from m_chassis_poly upon each change via updateMaxRadiusFromPoly()
+		double m_chassis_z_min,m_chassis_z_max;
+		mrpt::utils::TColor   m_chassis_color;
+
+		void updateMaxRadiusFromPoly();
+
+		// Wheels info:
+		std::vector<Wheel> m_wheels_info; //!< The fixed size of this vector is set upon construction. Derived classes must define the order of the wheels, e.g. [0]=rear left, etc.
+
+
+	private:
+		void internal_gui_update_sensors( mrpt::opengl::COpenGLScene &scene); //!< Called from gui_update_common()
+		void internal_gui_update_forces( mrpt::opengl::COpenGLScene &scene); //!< Called from gui_update_common()
+
+		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
+		std::vector<mrpt::opengl::CSetOfObjectsPtr> m_gl_wheels;
+
 
 	}; // end VehicleBase
 

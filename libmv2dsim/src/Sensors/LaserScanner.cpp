@@ -69,6 +69,7 @@ void LaserScanner::gui_update( mrpt::opengl::COpenGLScene &scene)
 	// 1st time?
 	if (!m_gl_scan)
 	{
+		MRPT_TODO("Create all scans in a transparent high-level object")
 		m_gl_scan = mrpt::opengl::CPlanarLaserScan::Create();
 		m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.05f);
 		scene.insert(m_gl_scan);

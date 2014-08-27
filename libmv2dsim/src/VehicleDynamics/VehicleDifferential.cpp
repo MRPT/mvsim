@@ -12,7 +12,6 @@
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/CPolyhedron.h>
 #include <rapidxml.hpp>
 
 using namespace mv2dsim;
@@ -20,15 +19,17 @@ using namespace std;
 
 // Ctor:
 DynamicsDifferential::DynamicsDifferential(World *parent) :
-	VehicleBase(parent),
-	m_chassis_mass(15.0),
-	m_chassis_z_min(0.05),
-	m_chassis_z_max(0.6),
-	m_chassis_color(0xff,0x00,0x00)
+	VehicleBase(parent, 2 /*num wheels*/)
 {
 	using namespace mrpt::math;
+	
+	m_chassis_mass=15.0;
+	m_chassis_z_min=0.05;
+	m_chassis_z_max=0.6;
+	m_chassis_color=mrpt::utils::TColor(0xff,0x00,0x00);
 
 	// Default shape:
+	m_chassis_poly.clear();
 	m_chassis_poly.push_back( TPoint2D(-0.4, -0.5) );
 	m_chassis_poly.push_back( TPoint2D(-0.4,  0.5) );
 	m_chassis_poly.push_back( TPoint2D( 0.4,  0.5) );
@@ -125,6 +126,7 @@ void DynamicsDifferential::create_multibody_system(b2World* world)
 		// Convert shape into Box2D format:
 		const size_t nPts = m_chassis_poly.size();
 		ASSERT_(nPts>=3)
+		ASSERT_BELOWEQ_(nPts, (size_t)b2_maxPolygonVertices)
 		std::vector<b2Vec2> pts(nPts);
 		for (size_t i=0;i<nPts;i++) pts[i] = b2Vec2( m_chassis_poly[i].x, m_chassis_poly[i].y );
 
@@ -181,42 +183,7 @@ void DynamicsDifferential::gui_update( mrpt::opengl::COpenGLScene &scene)
 {
 	using namespace mrpt::math;
 
-	VehicleBase::gui_update_sensors(scene); // Common part: update sensors
-
-	// 1st time call?? -> Create objects
-	// ----------------------------------
-	if (!m_gl_chassis)
-	{
-		m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
-
-		// Wheels shape:
-		for (int i=0;i<2;i++)
-		{
-			m_gl_wheels[i]= mrpt::opengl::CSetOfObjects::Create();
-			m_wheels_info[i].getAs3DObject(*m_gl_wheels[i]);
-			m_gl_chassis->insert(m_gl_wheels[i]);
-		}
-		// Robot shape:
-		//m_gl_chassis->insert( mrpt::opengl::stock_objects::RobotPioneer() );
-		mrpt::opengl::CPolyhedronPtr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_chassis_poly, m_chassis_z_max-m_chassis_z_min);
-		gl_poly->setLocation(0,0, m_chassis_z_min);
-		gl_poly->setColor( mrpt::utils::TColorf(m_chassis_color) );
-		m_gl_chassis->insert(gl_poly);
-
-		scene.insert(m_gl_chassis);
-	}
-
-
-	// Update them:
-	// ----------------------------------
-	m_gl_chassis->setPose( mrpt::math::TPose3D( m_q.vals[0], m_q.vals[1], 0.01, m_q.vals[2], 0.0, 0.0) );
-
-	for (int i=0;i<2;i++)
-	{
-		const Wheel & w = m_wheels_info[i];
-		m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.diameter, w.yaw, w.getPhi(), 0.0) );
-	}
-
+	VehicleBase::gui_update_common(scene); // Common part: update sensors, etc.
 }
 
 // See docs in base class:
@@ -237,16 +204,4 @@ void DynamicsDifferential::invoke_motor_controllers(const TSimulContext &context
 		out_torque_per_wheel[1] = co.wheel_torque_r;
 	}
 
-}
-
-void DynamicsDifferential::updateMaxRadiusFromPoly()
-{
-	using namespace mrpt::math;
-
-	m_max_radius=0.001f;
-	for (TPolygon2D::const_iterator it=m_chassis_poly.begin();it!=m_chassis_poly.end();++it)
-	{
-		const float n=it->norm();
-		mrpt::utils::keep_max(m_max_radius,n);
-	}	
 }
