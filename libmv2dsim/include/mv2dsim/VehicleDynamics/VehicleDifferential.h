@@ -25,17 +25,6 @@ namespace mv2dsim
 	public:
 		DynamicsDifferential(World *parent);
 
-		/** Must create a new object in the scene and/or update it according to the current state */
-		virtual void gui_update( mrpt::opengl::COpenGLScene &scene);
-
-		/** Create bodies, fixtures, etc. for the dynamical simulation */
-		virtual void create_multibody_system(b2World* world);
-
-		// See docs in base class:
-		virtual float getMaxVehicleRadius() const { return m_max_radius; }
-		// See docs in base class:
-		virtual double getChassisMass() const { return m_chassis_mass; }
-
 		/** @name Controllers 
 		    @{ */
 
@@ -99,9 +88,6 @@ namespace mv2dsim
 
 	private:
 		ControllerBasePtr  m_controller; //!< The installed controller
-
-		b2Fixture* m_fixture_chassis;
-		b2Fixture* m_fixture_wheels[2]; //!< [0]:left, [1]:right
 
 	};
 

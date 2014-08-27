@@ -27,17 +27,6 @@ namespace mv2dsim
 	public:
 		DynamicsAckermann(World *parent);
 
-		/** Must create a new object in the scene and/or update it according to the current state */
-		virtual void gui_update( mrpt::opengl::COpenGLScene &scene);
-
-		/** Create bodies, fixtures, etc. for the dynamical simulation */
-		virtual void create_multibody_system(b2World* world);
-
-		// See docs in base class:
-		virtual float getMaxVehicleRadius() const { return m_max_radius; }
-		// See docs in base class:
-		virtual double getChassisMass() const { return m_chassis_mass; }
-
 		/** The maximum steering angle (rad). Determines min turning radius */
 		double getMaxSteeringAngle() const {return m_max_steer_ang;} 
 		void setMaxSteeringAngle(double val) {m_max_steer_ang=val;} 
@@ -90,9 +79,6 @@ namespace mv2dsim
 		double m_max_steer_ang; //!< The maximum steering angle (rad). Determines min turning radius
 
 		// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
-
-		b2Fixture* m_fixture_chassis;
-		b2Fixture* m_fixture_wheels[4]; //!< Indices as in m_wheels_info
 
 	};
 

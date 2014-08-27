@@ -56,7 +56,8 @@ VehicleBase::VehicleBase(World *parent, size_t nWheels) :
 	m_chassis_z_min(0.05),
 	m_chassis_z_max(0.6),
 	m_chassis_color(0xff,0x00,0x00),
-	m_wheels_info(nWheels)
+	m_wheels_info(nWheels),
+	m_fixture_wheels(nWheels, NULL)
 {
 	using namespace mrpt::math;
 	// Default shape:
@@ -452,4 +453,75 @@ void VehicleBase::updateMaxRadiusFromPoly()
 		const float n=it->norm();
 		mrpt::utils::keep_max(m_max_radius,n);
 	}	
+}
+
+/** Create bodies, fixtures, etc. for the dynamical simulation */
+void VehicleBase::create_multibody_system(b2World* world)
+{
+	// Define the dynamic body. We set its position and call the body factory.
+	b2BodyDef bodyDef;
+	bodyDef.type = b2_dynamicBody;
+
+	m_b2d_vehicle_body = world->CreateBody(&bodyDef);
+
+	// Define shape of chassis:
+	// ------------------------------
+	{
+		// Convert shape into Box2D format:
+		const size_t nPts = m_chassis_poly.size();
+		ASSERT_(nPts>=3)
+		ASSERT_BELOWEQ_(nPts, (size_t)b2_maxPolygonVertices)
+		std::vector<b2Vec2> pts(nPts);
+		for (size_t i=0;i<nPts;i++) pts[i] = b2Vec2( m_chassis_poly[i].x, m_chassis_poly[i].y );
+
+		b2PolygonShape chassisPoly;
+		chassisPoly.Set(&pts[0],nPts);
+		//chassisPoly.m_radius = 1e-3;  // The "skin" depth of the body
+
+		// Define the dynamic body fixture.
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &chassisPoly;
+		fixtureDef.restitution = 0.01;
+
+		// Set the box density to be non-zero, so it will be dynamic.
+		b2MassData mass;
+		chassisPoly.ComputeMass(&mass,1);  // Mass with density=1 => compute area
+		fixtureDef.density = m_chassis_mass / mass.mass;
+
+		// Override the default friction.
+		fixtureDef.friction = 0.3f;
+
+		// Add the shape to the body.
+		m_fixture_chassis = m_b2d_vehicle_body->CreateFixture(&fixtureDef);
+	}
+
+	// Define shape of wheels:
+	// ------------------------------
+	for (int i=0;i<m_wheels_info.size();i++)
+	{
+		b2PolygonShape wheelShape;
+		wheelShape.SetAsBox(
+			m_wheels_info[i].diameter*0.5, m_wheels_info[i].width*0.5,
+			b2Vec2(m_wheels_info[i].x,m_wheels_info[i].y), 0 );
+
+		// Define the dynamic body fixture.
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &wheelShape;
+		fixtureDef.restitution = 0.05;
+
+		// Set the box density to be non-zero, so it will be dynamic.
+		b2MassData mass;
+		wheelShape.ComputeMass(&mass,1);  // Mass with density=1 => compute area
+		fixtureDef.density = m_wheels_info[i].mass / mass.mass;
+
+		// Override the default friction.
+		fixtureDef.friction = 0.5f;
+
+		m_fixture_wheels[i] = m_b2d_vehicle_body->CreateFixture(&fixtureDef);
+	}
+}
+
+void VehicleBase::gui_update( mrpt::opengl::COpenGLScene &scene)
+{
+	this->gui_update_common(scene); // Common part: update sensors, etc.
 }
