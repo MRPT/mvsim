@@ -39,7 +39,7 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
 	mrpt::opengl::CSetOfObjectsPtr gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
 	gl_wheel_frame->insert(gl_wheel);
 	{
-		mrpt::opengl::CSetOfObjectsPtr gl_xyz = mrpt::opengl::stock_objects::CornerXYZSimple( 0.75*diameter );
+		mrpt::opengl::CSetOfObjectsPtr gl_xyz = mrpt::opengl::stock_objects::CornerXYZSimple( 0.9*diameter, 2.0 );
 		gl_wheel_frame->insert( gl_xyz );
 	}
 

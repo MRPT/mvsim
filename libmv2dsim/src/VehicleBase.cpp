@@ -282,6 +282,16 @@ void VehicleBase::load_params_from_xml(const std::string &xml_text)
 
 void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 {
+	// Update wheels position (they may turn, etc. as in an Ackermann configuration)
+	for (size_t i=0;i<m_fixture_wheels.size();i++)
+	{
+		b2PolygonShape *wheelShape = dynamic_cast<b2PolygonShape*>( m_fixture_wheels[i]->GetShape() );
+		wheelShape->SetAsBox(
+			m_wheels_info[i].diameter*0.5, m_wheels_info[i].width*0.5,
+			b2Vec2(m_wheels_info[i].x,m_wheels_info[i].y), m_wheels_info[i].yaw );
+	}
+
+
 	// Apply motor forces/torques:
 	this->invoke_motor_controllers(context,m_torque_per_wheel);
 
@@ -526,12 +536,14 @@ void VehicleBase::create_multibody_system(b2World* world)
 
 	// Define shape of wheels:
 	// ------------------------------
-	for (int i=0;i<m_wheels_info.size();i++)
+	ASSERT_EQUAL_(m_fixture_wheels.size(),m_wheels_info.size())
+
+	for (size_t i=0;i<m_wheels_info.size();i++)
 	{
 		b2PolygonShape wheelShape;
 		wheelShape.SetAsBox(
 			m_wheels_info[i].diameter*0.5, m_wheels_info[i].width*0.5,
-			b2Vec2(m_wheels_info[i].x,m_wheels_info[i].y), 0 );
+			b2Vec2(m_wheels_info[i].x,m_wheels_info[i].y), m_wheels_info[i].yaw );
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;

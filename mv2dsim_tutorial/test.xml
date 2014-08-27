@@ -43,7 +43,7 @@
 				<!-- Params -->
 				<KP>100</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
 				<V>0.0</V><W>0</W>
-				<max_torque>10</max_torque>
+				<max_torque>25</max_torque>
 			</controller>
 			
 		</dynamics>
