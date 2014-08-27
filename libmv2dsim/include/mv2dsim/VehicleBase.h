@@ -59,13 +59,13 @@ namespace mv2dsim
 		/** Gets the body dynamical state into q, dot{q} */
 		void simul_post_timestep_common(const TSimulContext &context);
 
-		/** Create bodies, fixtures, etc. for the dynamical simulation */
-		virtual void create_multibody_system(b2World* world) = 0;
+		/** Create bodies, fixtures, etc. for the dynamical simulation. May be overrided by derived classes */
+		virtual void create_multibody_system(b2World* world);
 
 		/** Get (an approximation of) the max radius of the vehicle, from its point of reference (in meters) */
-		virtual float getMaxVehicleRadius() const = 0;
+		virtual float getMaxVehicleRadius() const { return m_max_radius; }
 		/** Get the overall vehicle mass, excluding wheels. */
-		virtual double getChassisMass() const =0;
+		virtual double getChassisMass() const { return m_chassis_mass; }
 
 		b2Body * getBox2DChassisBody() { return m_b2d_vehicle_body; }
 
@@ -91,6 +91,11 @@ namespace mv2dsim
 
 		/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 		const std::string & getName() const { return m_name;} 
+
+		/** Must create a new object in the scene and/or update it according to the current state. 
+		  * If overrided in derived classes, it may be time-saving to call \a gui_update_common() and associated methods for 3D elements common to any vehicle.
+		  */
+		virtual void gui_update( mrpt::opengl::COpenGLScene &scene);
 
 	protected:
 		// Protected ctor for class factory
@@ -134,6 +139,10 @@ namespace mv2dsim
 
 		// Wheels info:
 		std::vector<Wheel> m_wheels_info; //!< The fixed size of this vector is set upon construction. Derived classes must define the order of the wheels, e.g. [0]=rear left, etc.
+
+		// Box2D elements:
+		b2Fixture* m_fixture_chassis; //!< Created at 
+		std::vector<b2Fixture*> m_fixture_wheels; //!< [0]:rear-left, etc. (depending on derived class). Size set at constructor.
 
 
 	private:
