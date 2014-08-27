@@ -106,6 +106,8 @@ namespace mv2dsim
 		/** @} */
 
 	private:
+		friend class VehicleBase;
+
 		// -------- World Params ----------
 		double m_simul_time;    //!< In seconds, real simulation time since beginning (may be different than wall-clock time because of time warp, etc.)
 		double m_simul_timestep; //!< Simulation fixed-time interval for numerical integration.
@@ -116,6 +118,8 @@ namespace mv2dsim
 		struct TGUI_Options
 		{
 			bool   ortho;
+			bool   show_forces;
+			double force_scale; //!< In meters/Newton
 			double camera_distance;
 			double fov_deg;
 			std::string follow_vehicle; //!< Name of the vehicle to follow (empty=none)

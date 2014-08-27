@@ -23,7 +23,9 @@
 
 #include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/utils/TColor.h>
 
 namespace mv2dsim
@@ -151,6 +153,9 @@ namespace mv2dsim
 
 		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
 		std::vector<mrpt::opengl::CSetOfObjectsPtr> m_gl_wheels;
+		mrpt::opengl::CSetOfLinesPtr        m_gl_forces;
+		mrpt::synch::CCriticalSection       m_force_segments_for_rendering_cs;
+		std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
 
 	}; // end VehicleBase
