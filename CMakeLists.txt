@@ -8,21 +8,49 @@
 # |   See <http://www.gnu.org/licenses/>                                    |
 # +-------------------------------------------------------------------------+ 
 
-PROJECT(multivehicle_2d_simulator)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.3)
+SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
+PROJECT(mv2dsim)  # Must match the ROS package name.
 
 if(COMMAND cmake_policy)
       cmake_policy(SET CMP0003 NEW)
-endif(COMMAND cmake_policy)
+endif()
+
+# ------------------------------------------------------------------
+#                              IMPORTANT NOTE
+#
+#  This package can be built as:
+#  1) Standalone lib+app
+#  2) ROS node(s)
+#  3) MOOS module for OpenMORA
+# Depending on what packages are found, this script will instruct 
+# CMake to configure the project accordingly.
+# ------------------------------------------------------------------
+
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin 
+	QUIET  # **IMPORTANT**: Notice the "QUIET" instead of the usual "REQUIRED". It's not a mistake.
+	COMPONENTS 
+	roscpp sensor_msgs mrpt_bridge dynamic_reconfigure
+	)
+
+SET(BUILD_FOR_ROS FALSE)
+IF (${catkin_FOUND})
+	SET(BUILD_FOR_ROS TRUE)
+	MESSAGE(STATUS " ==== multivehicle_2d_simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
+ENDIF()
+
 
 # --------------------------
 # Build options
 # --------------------------
 IF (UNIX)
 	SET(DEFAULT_SHARED_LIBS ON)
-ELSE(UNIX)
+ELSE()
 	SET(DEFAULT_SHARED_LIBS OFF)
-ENDIF(UNIX)
+ENDIF()
 SET(BUILD_SHARED_LIBS ${DEFAULT_SHARED_LIBS} CACHE BOOL "Build shared libraries (.dll/.so) instead of static ones (.lib/.a)")
 
 # Save all libs and executables in the same place
@@ -37,7 +65,7 @@ IF(MSVC)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3") 
 	# Force usage of UNICODE projects, which is not the default in MSVC:
 	add_definitions(-DUNICODE -D_UNICODE)
-ENDIF(MSVC)
+ENDIF()
 
 IF(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	# Warnings level
@@ -45,8 +73,8 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	# Set optimized building:
 	IF(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-	ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
-ENDIF(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	ENDIF()
+ENDIF()
 
 
 set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals/")
@@ -84,12 +112,13 @@ IF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 	add_subdirectory(externals/Box2D)
 
 	# 2nd attempt: Fatal error if not found:
+	SET(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
 	FIND_PACKAGE(Box2D REQUIRED)
 	
 	# It seems BOX2D doesn't return the correct #include dir (???):
 	SET(BOX2D_INCLUDE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/externals/Box2D/")
 	
-ENDIF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
+ENDIF()
 
 IF (Box2D_FOUND)
 	#MESSAGE(STATUS "BOX2D_INCLUDE_DIR: ${BOX2D_INCLUDE_DIR}")
@@ -105,7 +134,7 @@ IF (Box2D_FOUND)
 	IF ("" STREQUAL "${BOX2D_LIBRARIES}")
 		SET(BOX2D_LIBRARIES Box2D)
 	ENDIF ("" STREQUAL "${BOX2D_LIBRARIES}")
-ENDIF (Box2D_FOUND)
+ENDIF()
 
 
 # --------------------------
@@ -125,6 +154,108 @@ add_subdirectory(libmv2dsim)
 # --------------------------
 #       Apps
 # --------------------------
-add_subdirectory(mv2dsim) # Standalone app
-#add_subdirectory(mv2dsim_ros)   # ROS node
+add_subdirectory(mv2dsim_app) # Standalone app
+
+# -----------------------------------------------------------------------------
+#                                   ROS SEGMENT
+# -----------------------------------------------------------------------------
+IF (BUILD_FOR_ROS)
+	#add dynamic reconfigure api
+	#generate_dynamic_reconfigure_options( cfg/XXX.cfg )
+
+	###################################
+	## catkin specific configuration ##
+	###################################
+	## The catkin_package macro generates cmake config files for your package
+	## Declare things to be passed to dependent projects
+	## INCLUDE_DIRS: uncomment this if you package contains header files
+	## LIBRARIES: libraries you create in this project that dependent projects also need
+	## CATKIN_DEPENDS: catkin_packages dependent projects also need
+	## DEPENDS: system dependencies of this project that dependent projects also need
+	catkin_package(
+	#  INCLUDE_DIRS 
+	#  LIBRARIES XXX
+	  CATKIN_DEPENDS mrpt_bridge
+	  DEPENDS mrpt  # box2d (Add??)
+	)
+
+	include_directories(${catkin_INCLUDE_DIRS})
+
+	###########
+	## Build ##
+	###########
+
+	## Declare a cpp executable
+	add_executable(mv2dsim_node 
+	    mv2dsim_node_src/mv2dsim_node.cpp 
+	#    mv2dsim_node_src/mv2dsim_node_parameters.cpp
+	)
+
+	## Add cmake target dependencies of the executable/library
+	## as an example, message headers may need to be generated before nodes
+	# add_dependencies(mrpt_localization_node mrpt_localization_generate_messages_cpp)
+	add_dependencies(mv2dsim_node
+	  mv2dsim_gencfg) 
+
+	# make sure configure headers are built before any node using them
+	IF (${PROJECT_NAME}_EXPORTED_TARGETS})
+		add_dependencies(mv2dsim_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+	ENDIF()
+
+	## Specify libraries to link a library or executable target against
+	target_link_libraries(mv2dsim_node
+		${MRPT_LIBS}
+		${catkin_LIBRARIES}
+		)
+
+
+	#############
+	## Install ##
+	#############
+
+	# all install targets should use catkin DESTINATION variables
+	# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
+
+	## Mark executable scripts (Python etc.) for installation
+	## in contrast to setup.py, you can choose the destination
+	# install(PROGRAMS
+	#   scripts/my_python_script
+	#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+	# )
+
+	# Mark executables and/or libraries for installation
+	install(TARGETS mv2dsim_node 
+	  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+	)
+
+	## Mark other files for installation (e.g. launch and bag files, etc.)
+	# install(FILES
+	#   # myfile1
+	#   # myfile2
+	#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+	# )
+
+	#############
+	## Testing ##
+	#############
+
+	## Add gtest based cpp test target and link libraries
+	# catkin_add_gtest(${PROJECT_NAME}-test test/test_kinect_2d_scanner.cpp)
+	# if(TARGET ${PROJECT_NAME}-test)
+	#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+	# endif()
+
+	## Add folders to be run by python nosetests
+	# catkin_add_nosetests(test)
+
+ENDIF() # BUILD_FOR_ROS
+
+
+# -----------------------------------------------------------------------------
+#                                MOOS/OpenMORA SEGMENT
+# -----------------------------------------------------------------------------
+#IF(xxx)
+#ENDIF() # 
 
