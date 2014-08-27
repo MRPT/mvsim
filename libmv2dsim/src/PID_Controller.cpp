@@ -12,9 +12,10 @@
 using namespace mv2dsim;
 
 
-PID_Controller::PID_Controller() : 
-	I_MAX_ABS(1e3), m_i_term(0), max_out(0),m_last_err(0)
-{ 
+PID_Controller::PID_Controller() :
+	KP(1.0),KI(.0),KD(.0),
+	I_MAX_ABS(10.), max_out(0),m_i_term(0),m_last_err(0)
+{
 }
 
 /** err = desired-actual, dt=ellapsed time in secs */
@@ -33,7 +34,7 @@ double PID_Controller::compute(double err, double dt)
 	double ret = p_term + m_i_term + d_term;
 
 	// Clamp:
-	if (ret>max_out) ret = max_out; else if (ret<-max_out) ret = -max_out; 
+	if (ret>max_out) ret = max_out; else if (ret<-max_out) ret = -max_out;
 
 	//printf("I=%.04f err=%.03f => ret:%.02f\n",m_i_term, err, ret);
 	return ret;

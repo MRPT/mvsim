@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package>
+  <name>mv2dsim</name>
+  <version>0.1.0</version>
+  <description>Node for the "multivehicle 2D simulator" framework.</description>
+
+  <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
+  <license>BSD</license>
+  <url type="website">http://wiki.ros.org/mv2dsim</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend> 
+  <build_depend>mrpt_bridge</build_depend>
+  <build_depend>driver_base</build_depend>
+
+  <run_depend>mrpt_bridge</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend> 
+
+  <build_depend>mrpt</build_depend> <!-- Depend on mrpt system pkgs -->
+  <run_depend>mrpt</run_depend> <!-- Depend on mrpt system pkgs -->
+
+
+</package>

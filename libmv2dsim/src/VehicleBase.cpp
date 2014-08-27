@@ -156,7 +156,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	// attrib: name
 	{
 		const xml_attribute<> *attrib_name = root->first_attribute("name");
-		if (attrib_name && attrib_name->value()) 
+		if (attrib_name && attrib_name->value())
 		{
 			veh->m_name = attrib_name->value();
 		}
@@ -215,7 +215,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	}
 
 
-	// Friction model: 
+	// Friction model:
 	// Parse <friction> node, or assume default linear model:
 	// -----------------------------------------------------------
 	{
@@ -230,7 +230,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 			// Parse:
 			veh->m_friction = stlplus::smart_ptr<FrictionBase>(  FrictionBase::factory(*veh,frict_node) );
 			ASSERT_(veh->m_friction)
-		}		
+		}
 	}
 
 
@@ -308,15 +308,15 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	ASSERT_EQUAL_(wheels_vels.size(),nW);
 
 	std::vector<mrpt::math::TSegment3D> force_vectors; // For visualization only
-	
+
 	for (size_t i=0;i<nW;i++)
 	{
 		// prepare data:
 		Wheel &w = getWheelInfo(i);
-		
+
 		FrictionBase::TFrictionInput fi(context,w);
 		fi.motor_torque = -m_torque_per_wheel[i];  // "-" => Forwards is negative
-		fi.weight = weightPerWheel; 
+		fi.weight = weightPerWheel;
 		fi.wheel_speed = wheels_vels[i];
 
 		// eval friction:
@@ -370,9 +370,9 @@ void VehicleBase::getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels
 {
 	const vec3 veh_vel_local = this->getVelocityLocal();
 
-	// Each wheel velocity is: 
+	// Each wheel velocity is:
 	// v_w = v_veh + \omega \times wheel_pos
-	// => 
+	// =>
 	// v_w = v_veh + ( -w*y, w*x )
 
 	const double w = veh_vel_local.vals[2]; // vehicle w
@@ -396,13 +396,13 @@ vec3 VehicleBase::getVelocityLocal() const
 	local_vel.vals[2] = m_dq.vals[2]; // omega remains the same.
 
 	const mrpt::poses::CPose2D p(0,0, -m_q.vals[2]); // "-" means inverse pose
-	p.composePoint( 
+	p.composePoint(
 		m_dq.vals[0],m_dq.vals[1],
 		local_vel.vals[0],local_vel.vals[1]);
 	return local_vel;
 }
 
-mrpt::poses::CPose2D VehicleBase::getCPose2D() const 
+mrpt::poses::CPose2D VehicleBase::getCPose2D() const
 {
 	return mrpt::poses::CPose2D(m_q.vals[0],m_q.vals[1],m_q.vals[2]);
 }
@@ -447,7 +447,7 @@ void VehicleBase::gui_update_common( mrpt::opengl::COpenGLScene &scene, bool def
 		// ----------------------------------
 		m_gl_chassis->setPose( mrpt::math::TPose3D( m_q.vals[0], m_q.vals[1], 0.01, m_q.vals[2], 0.0, 0.0) );
 
-		for (int i=0;i<nWs;i++)
+		for (size_t i=0;i<nWs;i++)
 		{
 			const Wheel & w = getWheelInfo(i);
 			m_gl_wheels[i]->setPose( mrpt::math::TPose3D( w.x,w.y, 0.5*w.diameter, w.yaw, w.getPhi(), 0.0) );
@@ -491,7 +491,7 @@ void VehicleBase::updateMaxRadiusFromPoly()
 	{
 		const float n=it->norm();
 		mrpt::utils::keep_max(m_max_radius,n);
-	}	
+	}
 }
 
 /** Create bodies, fixtures, etc. for the dynamical simulation */
