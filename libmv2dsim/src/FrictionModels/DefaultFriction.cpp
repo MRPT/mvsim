@@ -50,14 +50,15 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
 	const double mu = m_mu;
-	const double max_friction = mu * (input.weight + input.wheel.mass*9.81 );
+	const double partial_mass = input.weight/9.81 + input.wheel.mass;
+	const double max_friction = mu * partial_mass * 9.81;
 
 	// 1) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
 	double wheel_lat_friction=0.0;  // direction: +y local wrt the wheel
 	{
 		// Impulse required to step the lateral slippage:
-		wheel_lat_friction = -vel_w.y/ input.context.dt;
+		wheel_lat_friction = -vel_w.y * partial_mass/ input.context.dt;
 
 		wheel_lat_friction = b2Clamp(wheel_lat_friction, -max_friction,max_friction);
 	}
