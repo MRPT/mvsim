@@ -21,6 +21,8 @@ using namespace std;
 // Default ctor: inits empty world.
 World::TGUI_Options::TGUI_Options() :
 	ortho(false),
+	show_forces(false),
+	force_scale(0.01),
 	camera_distance(80),
 	fov_deg(60)
 {
@@ -30,6 +32,8 @@ void World::TGUI_Options::parse_from(const rapidxml::xml_node<char> &node)
 {
 	std::map<std::string,TParamEntry> gui_params;
 	gui_params["ortho"] = TParamEntry("%bool", &ortho);
+	gui_params["show_forces"] = TParamEntry("%bool", &show_forces);
+	gui_params["force_scale"]  = TParamEntry("%lf",&force_scale);
 	gui_params["cam_distance"]  = TParamEntry("%lf",&camera_distance);
 	gui_params["fov_deg"] = TParamEntry("%lf",&fov_deg);
 	gui_params["follow_vehicle"] = TParamEntry("%s",&follow_vehicle);

@@ -6,7 +6,8 @@
 	
 	<!-- GUI options -->
 	<gui>
-		<ortho>false</ortho>
+		<ortho>true</ortho>
+		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
 		<cam_distance>35</cam_distance>
 		<fov_deg>40</fov_deg>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
@@ -40,9 +41,9 @@
 			<!--   Motor controller -->
 			<controller class="twist_pid">
 				<!-- Params -->
-				<KP>1000</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>5</KD>
+				<KP>100</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
 				<V>0.0</V><W>0</W>
-				<max_torque>50</max_torque>
+				<max_torque>10</max_torque>
 			</controller>
 			
 		</dynamics>
@@ -90,7 +91,7 @@
 		<!-- Friction force simulation -->
 		<friction class="default">
 			<mu>0.7</mu>
-                        <C_damping>10</C_damping>
+			<C_damping>10</C_damping>
 		</friction>
 		
 	</vehicle:class>

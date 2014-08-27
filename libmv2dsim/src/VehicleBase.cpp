@@ -296,6 +296,8 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	getWheelsVelocityLocal(wheels_vels);
 
 	ASSERT_EQUAL_(wheels_vels.size(),nW);
+
+	std::vector<mrpt::math::TSegment3D> force_vectors; // For visualization only
 	
 	for (size_t i=0;i<nW;i++)
 	{
@@ -312,15 +314,27 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		m_friction->evaluate_friction(fi,net_force_);
 
 		// Apply force:
-		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(net_force_.x,net_force_.y));
-
+		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(net_force_.x,net_force_.y)); // Force vector -> world coords
+		const b2Vec2 wPt    = m_b2d_vehicle_body->GetWorldPoint( b2Vec2( w.x, w.y) ); // Application point -> world coords
 		//printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
-		m_b2d_vehicle_body->ApplyForce(
-			wForce, /* force */
-			m_b2d_vehicle_body->GetWorldPoint( b2Vec2( w.x, w.y) ), /* point */
-			true /* wake up */
-			);
+		m_b2d_vehicle_body->ApplyForce( wForce,wPt, true/*wake up*/);
+
+		// save it for optional rendering:
+		if (m_world->m_gui_options.show_forces)
+		{
+			const double forceScale =  m_world->m_gui_options.force_scale; // [meters/N]
+			const mrpt::math::TPoint3D pt1(wPt.x,wPt.y, m_chassis_z_max*1.1 );
+			const mrpt::math::TPoint3D pt2 = pt1 + mrpt::math::TPoint3D(wForce.x,wForce.y, 0)*forceScale;
+			force_vectors.push_back( mrpt::math::TSegment3D( pt1,pt2 ));
+		}
+	}
+
+	// Save forces for optional rendering:
+	if (m_world->m_gui_options.show_forces)
+	{
+		mrpt::synch::CCriticalSectionLocker csl( &m_force_segments_for_rendering_cs );
+		m_force_segments_for_rendering = force_vectors;
 	}
 }
 
@@ -404,11 +418,16 @@ void VehicleBase::gui_update_common( mrpt::opengl::COpenGLScene &scene, bool def
 				m_gl_chassis->insert(m_gl_wheels[i]);
 			}
 			// Robot shape:
-			//m_gl_chassis->insert( mrpt::opengl::stock_objects::RobotPioneer() );
 			mrpt::opengl::CPolyhedronPtr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_chassis_poly, m_chassis_z_max-m_chassis_z_min);
 			gl_poly->setLocation(0,0, m_chassis_z_min);
 			gl_poly->setColor( mrpt::utils::TColorf(m_chassis_color) );
 			m_gl_chassis->insert(gl_poly);
+
+			// Visualization of forces:
+			m_gl_forces = mrpt::opengl::CSetOfLines::Create();
+			m_gl_forces->setLineWidth(3.0);
+			m_gl_forces->setColor_u8(mrpt::utils::TColor(0xff,0xff,0xff));
+			scene.insert(m_gl_forces);  // forces are in global coords
 
 			scene.insert(m_gl_chassis);
 		}
@@ -440,7 +459,17 @@ void VehicleBase::internal_gui_update_sensors( mrpt::opengl::COpenGLScene &scene
 
 void VehicleBase::internal_gui_update_forces( mrpt::opengl::COpenGLScene &scene)
 {
-
+	if (m_world->m_gui_options.show_forces)
+	{
+		mrpt::synch::CCriticalSectionLocker csl( &m_force_segments_for_rendering_cs );
+		m_gl_forces->clear();
+		m_gl_forces->appendLines(m_force_segments_for_rendering);
+		m_gl_forces->setVisibility(true);
+	}
+	else
+	{
+		m_gl_forces->setVisibility(false);
+	}
 }
 
 void VehicleBase::updateMaxRadiusFromPoly()
