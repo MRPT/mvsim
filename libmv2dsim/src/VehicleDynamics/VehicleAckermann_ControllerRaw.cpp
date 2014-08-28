@@ -12,6 +12,15 @@
 using namespace mv2dsim;
 using namespace std;
 
+
+DynamicsAckermann::ControllerRawForces::ControllerRawForces(DynamicsAckermann &veh) : 
+	ControllerBase(veh),
+	setpoint_wheel_torque_l(0), 
+	setpoint_wheel_torque_r(0),
+	setpoint_steer_ang(0)
+{
+}
+
 // See base class docs
 void DynamicsAckermann::ControllerRawForces::control_step(
 	const DynamicsAckermann::TControllerInput &ci, 

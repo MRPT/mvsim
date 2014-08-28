@@ -1,6 +1,6 @@
 <mv2dsim_world version="1.0">
 	<!-- General simulation options -->
-	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<simul_timestep>0.05</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
 	<b2d_vel_iters>3</b2d_vel_iters>
 	<b2d_pos_iters>3</b2d_pos_iters>
 	
@@ -89,10 +89,18 @@
 			</chassis>
 			
 			<!--   Motor controller -->
-			<controller class="raw">
+			<!--<controller class="raw">
+				<!-- Params -- >
+				<!-- Init state -- >
+			</controller>-->
+			
+			<controller class="front_steer_pid">
 				<!-- Params -->
-				<!-- Init state -->
-			</controller>
+				<KP>100</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+				<V>0.0</V><W>0</W>
+				<max_torque>300</max_torque>
+			</controller>			
+			
 		</dynamics>
 				
 		<!-- Friction force simulation -->
@@ -115,14 +123,14 @@
 	<!-- ========================
 		   Vehicle(s) definition 
 	     ======================== -->
-	<!--<vehicle name="r1" class="small_robot">
-		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -- >
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -- >
-	</vehicle>-->
+	<vehicle name="r1" class="small_robot">
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+	</vehicle>
 
 	<vehicle name="r2" class="car_ackermann">
 		<init_pose>-10.0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>1 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
 	<!-- <vehicle name="r3" class="small_robot">

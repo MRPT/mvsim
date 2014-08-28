@@ -23,6 +23,11 @@ namespace mv2dsim
 	{
 		DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential)
 	public:
+		enum {
+			WHEEL_L = 0, 
+			WHEEL_R = 1
+		};
+
 		DynamicsDifferential(World *parent);
 
 		/** @name Controllers 

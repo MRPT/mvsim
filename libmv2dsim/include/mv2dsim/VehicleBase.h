@@ -83,8 +83,10 @@ namespace mv2dsim
 		/** Last time-step velocity (of the ref. point, in local coords) (ground-truth) 
 		  * \sa getVelocityLocalOdoEstimate() */
 		vec3 getVelocityLocal() const ;
-		/** Last time-step velocity of each wheel's center point (in local coords) (ground-truth) */
-		void getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels) const;
+		/** Current velocity of each wheel's center point (in local coords). Call with veh_vel_local=getVelocityLocal() for ground-truth.  */
+		void getWheelsVelocityLocal(
+			std::vector<mrpt::math::TPoint2D> &vels, 
+			const vec3 &veh_vel_local ) const;
 
 		/** Gets the current estimation of odometry-based velocity as reconstructed solely from wheels spinning velocities and geometry. 
 		  * This is the input of any realistic low-level controller onboard.

@@ -118,8 +118,8 @@ void DynamicsDifferential::invoke_motor_controllers(const TSimulContext &context
 		TControllerOutput co;
 		m_controller->control_step(ci,co);
 		// Take its output:
-		out_torque_per_wheel[0] = co.wheel_torque_l;
-		out_torque_per_wheel[1] = co.wheel_torque_r;
+		out_torque_per_wheel[WHEEL_L] = co.wheel_torque_l;
+		out_torque_per_wheel[WHEEL_R] = co.wheel_torque_r;
 	}
 
 }
@@ -133,12 +133,12 @@ vec3 DynamicsDifferential::getVelocityLocalOdoEstimate() const
 	// Velocities in local +X at each wheel i={0,1}:
 	// v_i = vx - w_veh * wheel_{i,y}  =  w_i * R_i
 	// Re-arranging:
-	const double w0 = m_wheels_info[0].getW();
-	const double w1 = m_wheels_info[1].getW();
-	const double R0 = m_wheels_info[0].diameter*0.5;
-	const double R1 = m_wheels_info[1].diameter*0.5;
+	const double w0 = m_wheels_info[WHEEL_L].getW();
+	const double w1 = m_wheels_info[WHEEL_R].getW();
+	const double R0 = m_wheels_info[WHEEL_L].diameter*0.5;
+	const double R1 = m_wheels_info[WHEEL_R].diameter*0.5;
 
-	const double Ay = m_wheels_info[1].y-m_wheels_info[0].y;
+	const double Ay = m_wheels_info[WHEEL_R].y-m_wheels_info[WHEEL_L].y;
 	ASSERTMSG_(Ay!=0.0, "The two wheels of a differential vehicle CAN'T by at the same Y coordinate!")
 
 	const double w_veh  = (w0*R0-w1*R1)/Ay;
