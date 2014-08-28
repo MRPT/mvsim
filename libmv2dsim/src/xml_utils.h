@@ -22,7 +22,7 @@ namespace mv2dsim
 	/** Normal case: sscanf()-like specifiers, and "void*" pointing to corresponding variable type.
 		* Special cases: 
 		*  - "%lf_deg" => "val" is a "double*". The read number will be converted from degrees to radians.
-		*  - "%s" => "val" is assumed to be a pointer to a std::string
+		*  - "%s" => "val" is assumed to be a pointer to a std::string. Strings are trimmed of whitespaces.
 		*  - "%color" => Expected values: "#RRGGBB[AA]" ([00-FF] each). "val" is assumed to be a pointer to a mrpt::utils::TColor
 		*  - "%pose2d" => Expects "X Y YAW_DEG". "Val" is a pointer to mrpt::poses::CPose2D
 		*  - "%pose2d_ptr3d" => Expects "X Y YAW_DEG". "Val" is a pointer to mrpt::poses::CPose3D

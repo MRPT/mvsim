@@ -26,6 +26,9 @@ namespace mv2dsim
 	protected:
 		bool m_is_floating;
 		std::string m_float_center_at_vehicle_name;
+		double m_x_min,m_x_max,m_y_min,m_y_max, m_interval;
+		mrpt::utils::TColor m_color;
+		double m_line_width;
 
 		mrpt::opengl::CGridPlaneXYPtr m_gl_groundgrid;
 
