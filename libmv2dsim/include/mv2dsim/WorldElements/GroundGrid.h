@@ -8,17 +8,26 @@
 
 #pragma once
 
-#include <mv2dsim/basic_types.h>
+#include <mv2dsim/WorldElements/WorldElementBase.h>
+#include <mrpt/opengl/CGridPlaneXY.h>
 
 namespace mv2dsim
 {
-	class Simulable
+	class GroundGrid : public WorldElementBase
 	{
+		DECLARES_REGISTER_WORLD_ELEMENT(GroundGrid)
 	public:
-		/** Process right before the integration of dynamic equations for each timestep: set action forces from motors, update friction models, etc. */
-		virtual void simul_pre_timestep(const TSimulContext &context)  { /* default: do nothing*/ }
+		GroundGrid(World*parent,const rapidxml::xml_node<char> *root);
+		virtual ~GroundGrid();
 
-		/** Override to do any required process right after the integration of dynamic equations for each timestep */
-		virtual void simul_post_timestep(const TSimulContext &context)  { /* default: do nothing*/ }
+		virtual void loadConfigFrom(const rapidxml::xml_node<char> *root) ; //!< See docs in base class
+		virtual void gui_update( mrpt::opengl::COpenGLScene &scene); //!< See docs in base class
+
+	protected:
+		bool m_is_floating;
+		std::string m_float_center_at_vehicle_name;
+
+		mrpt::opengl::CGridPlaneXYPtr m_gl_groundgrid;
+
 	};
 }

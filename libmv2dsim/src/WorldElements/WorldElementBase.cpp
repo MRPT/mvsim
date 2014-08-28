@@ -7,7 +7,7 @@
   +-------------------------------------------------------------------------+  */
 
 #include <mv2dsim/WorldElements/OccupancyGridMap.h>
-//#include <mv2dsim/WorldElements/GroundGrid.h>
+#include <mv2dsim/WorldElements/GroundGrid.h>
 
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
@@ -29,23 +29,29 @@ void register_all_world_elements()
 	static bool done = false;
 	if (done) return; else done=true;
 
-//	REGISTER_WORLD_ELEMENT("groundgrid",GroundGrid)		
+	REGISTER_WORLD_ELEMENT("groundgrid",GroundGrid)		
 	REGISTER_WORLD_ELEMENT("gridmap",OccupancyGridMap)
 }
 
 
-WorldElementBase* WorldElementBase::factory(World* parent, const rapidxml::xml_node<char> *root)
+WorldElementBase* WorldElementBase::factory(World* parent, const rapidxml::xml_node<char> *root, const char * class_name)
 {
 	register_all_world_elements();
 
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[WorldElementBase::factory] XML node is NULL");
-	if (0!=strncmp(root->name(),"world:",strlen("world:"))) throw runtime_error(mrpt::format("[WorldElementBase::factory] XML root element is '%s' ('world:*' expected)",root->name()));
+	string sName;
+	if (!root) {
+		sName = string(class_name);
+	}
+	else 
+	{
+		if (0!=strncmp(root->name(),"world:",strlen("world:"))) throw runtime_error(mrpt::format("[WorldElementBase::factory] XML root element is '%s' ('world:*' expected)",root->name()));
 
-	// Get the world:* final part as the name of the class (e.g. "world:gridmap"  -> "gridmap"):
-	const string sName  = string(root->name()).substr(strlen("world:"));
+		// Get the world:* final part as the name of the class (e.g. "world:gridmap"  -> "gridmap"):
+		sName  = string(root->name()).substr(strlen("world:"));
+	}
 	WorldElementBase* we = classFactory_worldElements.create(sName, parent, root);
 
 	if (!we) throw runtime_error(mrpt::format("[WorldElementBase::factory] Unknown world element type '%s'",root->name()));
