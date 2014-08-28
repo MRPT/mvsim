@@ -15,6 +15,7 @@
 #include <mv2dsim/ClassFactory.h>
 #include <mv2dsim/FrictionModels/FrictionBase.h>
 #include <mv2dsim/Sensors/SensorBase.h>
+#include <mv2dsim/ControllerBase.h>
 
 #include <Box2D/Dynamics/b2World.h>
 #include <Box2D/Dynamics/b2Body.h>
@@ -76,19 +77,19 @@ namespace mv2dsim
 		Wheel & getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
 
 		/** Last time-step pose (of the ref. point, in global coords) (ground-truth) */
-		const vec3 & getPose() const { return m_q; } 
-		mrpt::poses::CPose2D getCPose2D() const; //!< \overload 
+		const vec3 & getPose() const { return m_q; }
+		mrpt::poses::CPose2D getCPose2D() const; //!< \overload
 		/** Last time-step velocity (of the ref. point, in global coords) (ground-truth) */
 		const vec3 & getVelocity() const { return m_dq; }
-		/** Last time-step velocity (of the ref. point, in local coords) (ground-truth) 
+		/** Last time-step velocity (of the ref. point, in local coords) (ground-truth)
 		  * \sa getVelocityLocalOdoEstimate() */
 		vec3 getVelocityLocal() const ;
 		/** Current velocity of each wheel's center point (in local coords). Call with veh_vel_local=getVelocityLocal() for ground-truth.  */
 		void getWheelsVelocityLocal(
-			std::vector<mrpt::math::TPoint2D> &vels, 
+			std::vector<mrpt::math::TPoint2D> &vels,
 			const vec3 &veh_vel_local ) const;
 
-		/** Gets the current estimation of odometry-based velocity as reconstructed solely from wheels spinning velocities and geometry. 
+		/** Gets the current estimation of odometry-based velocity as reconstructed solely from wheels spinning velocities and geometry.
 		  * This is the input of any realistic low-level controller onboard.
 		  * \sa getVelocityLocal() */
 		virtual vec3 getVelocityLocalOdoEstimate() const = 0;
@@ -99,12 +100,14 @@ namespace mv2dsim
 		TListSensors & getSensors() { return m_sensors; }
 
 		/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
-		const std::string & getName() const { return m_name;} 
+		const std::string & getName() const { return m_name;}
 
-		/** Must create a new object in the scene and/or update it according to the current state. 
+		/** Must create a new object in the scene and/or update it according to the current state.
 		  * If overrided in derived classes, it may be time-saving to call \a gui_update_common() and associated methods for 3D elements common to any vehicle.
 		  */
 		virtual void gui_update( mrpt::opengl::COpenGLScene &scene);
+
+		virtual ControllerBaseInterface * getControllerInterface() = 0;
 
 	protected:
 		// Protected ctor for class factory
@@ -115,7 +118,7 @@ namespace mv2dsim
 
 		virtual void invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_force_per_wheel) = 0;
 
-		/** To be called at derived classes' gui_update(), updates all stuff common to any vehicle type. 
+		/** To be called at derived classes' gui_update(), updates all stuff common to any vehicle type.
 		  * Calls: internal_gui_update_sensors(), internal_gui_update_forces()
 		  * \param[in] defaultVehicleBody If true, will draw default wheels & vehicle chassis.
 		  */
@@ -150,7 +153,7 @@ namespace mv2dsim
 		std::vector<Wheel> m_wheels_info; //!< The fixed size of this vector is set upon construction. Derived classes must define the order of the wheels, e.g. [0]=rear left, etc.
 
 		// Box2D elements:
-		b2Fixture* m_fixture_chassis; //!< Created at 
+		b2Fixture* m_fixture_chassis; //!< Created at
 		std::vector<b2Fixture*> m_fixture_wheels; //!< [0]:rear-left, etc. (depending on derived class). Size set at constructor.
 
 
@@ -170,12 +173,12 @@ namespace mv2dsim
 	// Class factory:
 	typedef ClassFactory<VehicleBase,World*> TClassFactory_vehicleDynamics;
 	extern TClassFactory_vehicleDynamics classFactory_vehicleDynamics;
-	
+
 	#define DECLARES_REGISTER_VEHICLE_DYNAMICS(CLASS_NAME) \
 		DECLARES_REGISTER_CLASS1(CLASS_NAME,VehicleBase,World*)
 
 	#define REGISTER_VEHICLE_DYNAMICS(TEXTUAL_NAME,CLASS_NAME) \
-		REGISTER_CLASS1(TClassFactory_vehicleDynamics,classFactory_vehicleDynamics,TEXTUAL_NAME,CLASS_NAME) 
-	
+		REGISTER_CLASS1(TClassFactory_vehicleDynamics,classFactory_vehicleDynamics,TEXTUAL_NAME,CLASS_NAME)
+
 
 }
