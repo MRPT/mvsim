@@ -28,7 +28,7 @@ namespace mv2dsim
 		double x,y,yaw; //!< Location of the wheel wrt the chassis ref point [m,rad] (in local coords)
 		double diameter,width; //!< Length(diameter) and width of the wheel rectangle [m]
 		double mass; //!< [kg]
-		double Iyy;  //!< Inertia (Computed automatically from geometry at constructor)
+		double Iyy;  //!< Inertia: computed automatically from geometry at constructor and at \a loadFromXML(), but can be overrided.
 		mrpt::utils::TColor color; //!< Color for OpenGL rendering
 
 		Wheel();
@@ -39,6 +39,8 @@ namespace mv2dsim
 		void setPhi(double val) {phi=val;}  //!< Orientation (rad) wrt vehicle local frame
 		double getW() const {return w;}  //!< Spinning velocity (rad/s) wrt shaft
 		void setW(double val) {w=val;} //!< Spinning velocity (rad/s) wrt shaft
+
+		void recalcInertia(); //!< Recompute Iyy from mass, diameter and height. 
 	protected:
 		double phi, w; //!< Angular position and velocity of the wheel as it spins over its shaft (rad, rad/s)
 

@@ -20,12 +20,11 @@ using namespace std;
 Wheel::Wheel() :
 	x(.0),y(-.5),yaw(.0),
 	diameter(.4),width(.2),
-	mass(2.0),
+	mass(2.0), Iyy(1.0),
 	color(0xff323232),
 	phi(.0), w(.0)
 {
-	MRPT_TODO("Inertia of cylinder");
-	Iyy = 1.0;
+	recalcInertia();
 }
 
 void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
@@ -66,13 +65,26 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char> *xml_node)
 		}
      }
 
+	// Detect if inertia is manually set:
+	const double INERTIA_NOT_SET = -1.;
+	this->Iyy=INERTIA_NOT_SET;
+
 	std::map<std::string,TParamEntry> attribs;
 	attribs["mass"] = TParamEntry("%lf", &this->mass);
 	attribs["width"] = TParamEntry("%lf", &this->width);
 	attribs["diameter"] = TParamEntry("%lf", &this->diameter);
 	attribs["color"] = TParamEntry("%color", &this->color);
+	attribs["inertia"] = TParamEntry("%lf", &this->Iyy);
 	
 	parse_xmlnode_attribs(*xml_node, attribs,"[Wheel]" );
 
+	// If not manually overrided, calc automatically:
+	if (Iyy==INERTIA_NOT_SET) this->recalcInertia();
 }
 
+// Recompute Iyy from mass, diameter and height. 
+void Wheel::recalcInertia()
+{
+	// Iyy = m*r^2 / 2
+	Iyy = mass * (0.25*diameter*diameter) * 0.5;
+}
