@@ -69,7 +69,7 @@ void GroundGrid::gui_update( mrpt::opengl::COpenGLScene &scene)
 		m_gl_groundgrid->setColor(mrpt::utils::TColorf(m_color));
 		m_gl_groundgrid->setLineWidth(m_line_width);
 
-		scene.insert(m_gl_groundgrid);
+		SCENE_INSERT_Z_ORDER(scene,0, m_gl_groundgrid);
 	}
 
 	// Update:

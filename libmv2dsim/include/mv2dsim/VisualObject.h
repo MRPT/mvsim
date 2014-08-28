@@ -30,3 +30,9 @@ namespace mv2dsim
 		World * m_world;
 	};
 }
+
+
+/** Example usage: SCENE_INSERT_Z_ORDER(scene, 0, my_gl_obj );  */
+#define SCENE_INSERT_Z_ORDER(_SCENE,_ZORDER_INDEX, _OBJ_TO_INSERT) \
+	mrpt::opengl::CSetOfObjectsPtr(_SCENE.getByName("level_" #_ZORDER_INDEX))->insert(_OBJ_TO_INSERT)
+
