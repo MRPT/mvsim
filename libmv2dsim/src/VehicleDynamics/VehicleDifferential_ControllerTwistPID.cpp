@@ -12,8 +12,6 @@
 using namespace mv2dsim;
 using namespace std;
 
-MRPT_TODO("The controller can't know the ACTUAL velocities: rely on odometry?")
-
 DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(DynamicsDifferential &veh) : 
 	ControllerBase(veh),
 	setpoint_lin_speed(0), 
@@ -40,10 +38,10 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	const double vel_l = setpoint_lin_speed - 0.5* setpoint_ang_speed * m_distWheels;
 	const double vel_r = setpoint_lin_speed + 0.5* setpoint_ang_speed * m_distWheels;
 
-	// Compute each wheel actual velocity:
-	const vec3 vehVel = m_veh.getVelocityLocal();
-	const double act_vel_l = vehVel.vals[0] - 0.5* vehVel.vals[2] * m_distWheels;
-	const double act_vel_r = vehVel.vals[0] + 0.5* vehVel.vals[2] * m_distWheels;
+	// Compute each wheel actual velocity (from an "odometry" estimation of velocity, not ground-truth!):
+	const vec3 vehVelOdo = m_veh.getVelocityLocalOdoEstimate();
+	const double act_vel_l = vehVelOdo.vals[0] - 0.5* vehVelOdo.vals[2] * m_distWheels;
+	const double act_vel_r = vehVelOdo.vals[0] + 0.5* vehVelOdo.vals[2] * m_distWheels;
 
 	// Apply controller:
 	for (int i=0;i<2;i++) {

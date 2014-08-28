@@ -80,6 +80,8 @@ namespace mv2dsim
 
 		/** @} */  // end controllers
 
+		virtual vec3 getVelocityLocalOdoEstimate() const; // See docs of base class
+
 	protected:
 		// See base class docs
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
