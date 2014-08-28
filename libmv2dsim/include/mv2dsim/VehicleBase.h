@@ -75,16 +75,21 @@ namespace mv2dsim
 		const Wheel & getWheelInfo(const size_t idx) const { return m_wheels_info[idx]; }
 		Wheel & getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
 
-		/** Last time-step pose (of the ref. point, in global coords) */
+		/** Last time-step pose (of the ref. point, in global coords) (ground-truth) */
 		const vec3 & getPose() const { return m_q; } 
 		mrpt::poses::CPose2D getCPose2D() const; //!< \overload 
-		/** Last time-step velocity (of the ref. point, in global coords) */
+		/** Last time-step velocity (of the ref. point, in global coords) (ground-truth) */
 		const vec3 & getVelocity() const { return m_dq; }
-		/** Last time-step velocity (of the ref. point, in local coords) */
+		/** Last time-step velocity (of the ref. point, in local coords) (ground-truth) 
+		  * \sa getVelocityLocalOdoEstimate() */
 		vec3 getVelocityLocal() const ;
-		/** Last time-step velocity of each wheel's center point (in local coords) */
+		/** Last time-step velocity of each wheel's center point (in local coords) (ground-truth) */
 		void getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels) const;
 
+		/** Gets the current estimation of odometry-based velocity as reconstructed solely from wheels spinning velocities and geometry. 
+		  * This is the input of any realistic low-level controller onboard.
+		  * \sa getVelocityLocal() */
+		virtual vec3 getVelocityLocalOdoEstimate() const = 0;
 
 		typedef std::vector<SensorBasePtr> TListSensors;
 

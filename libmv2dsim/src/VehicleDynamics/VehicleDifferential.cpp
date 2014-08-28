@@ -65,24 +65,17 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 	}
 
 	// <l_wheel ...>, <r_wheel ...>
+	const char*   w_names[2]     = { "l_wheel", "r_wheel" };
+	const double  w_default_y[2] = { 0.5,    -0.5 };
+	// Load common params:
+	for (size_t i=0;i<2;i++)
 	{
-		const rapidxml::xml_node<char> * xml_wheel_l = xml_node->first_node("l_wheel");
-		if (xml_wheel_l)
-			m_wheels_info[0].loadFromXML(xml_wheel_l);
-		else
-		{
-			m_wheels_info[0] = Wheel();
-			m_wheels_info[0].y = 0.5;
-		}
-	}
-	{
-		const rapidxml::xml_node<char> * xml_wheel_r = xml_node->first_node("r_wheel");
-		if (xml_wheel_r)
-			m_wheels_info[1].loadFromXML(xml_wheel_r);
-		else
-		{
-			m_wheels_info[1] = Wheel();
-			m_wheels_info[1].y = -0.5;
+		const rapidxml::xml_node<char> * xml_wheel = xml_node->first_node(w_names[i]);
+		if (xml_wheel) 
+			m_wheels_info[i].loadFromXML(xml_wheel);		
+		else {
+			m_wheels_info[i] = Wheel();
+			m_wheels_info[i].y = w_default_y[i];
 		}
 	}
 
@@ -129,4 +122,40 @@ void DynamicsDifferential::invoke_motor_controllers(const TSimulContext &context
 		out_torque_per_wheel[1] = co.wheel_torque_r;
 	}
 
+}
+
+// See docs in base class:
+vec3 DynamicsDifferential::getVelocityLocalOdoEstimate() const
+{
+	vec3 odo_vel;
+	// Equations:
+
+	// Velocities in local +X at each wheel i={0,1}:
+	// v_i = vx - w_veh * wheel_{i,y}  =  w_i * R_i
+	// Re-arranging:
+	const double w0 = m_wheels_info[0].getW();
+	const double w1 = m_wheels_info[1].getW();
+	const double R0 = m_wheels_info[0].diameter*0.5;
+	const double R1 = m_wheels_info[1].diameter*0.5;
+
+	const double Ay = m_wheels_info[1].y-m_wheels_info[0].y;
+	ASSERTMSG_(Ay!=0.0, "The two wheels of a differential vehicle CAN'T by at the same Y coordinate!")
+
+	const double w_veh  = (w0*R0-w1*R1)/Ay;
+	const double vx_veh = w0*R0+w_veh*m_wheels_info[0].y;
+	
+	odo_vel.vals[0] = vx_veh;
+	odo_vel.vals[2] = w_veh;
+
+	// v_y = 0 
+	odo_vel.vals[1] = 0.0;
+	
+#if 0 // Debug
+	{
+		vec3 gt_vel = this->getVelocityLocal();
+		printf("\n gt: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", gt_vel.vals[0], gt_vel.vals[1], mrpt::utils::RAD2DEG(gt_vel.vals[2]));
+		printf("odo: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", odo_vel.vals[0], odo_vel.vals[1], mrpt::utils::RAD2DEG(odo_vel.vals[2]));
+	}
+#endif
+	return odo_vel;
 }
