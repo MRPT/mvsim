@@ -117,6 +117,7 @@ namespace mv2dsim
 		// ------- GUI options -----
 		struct TGUI_Options
 		{
+			unsigned int win_w,win_h;
 			bool   ortho;
 			bool   show_forces;
 			double force_scale; //!< In meters/Newton

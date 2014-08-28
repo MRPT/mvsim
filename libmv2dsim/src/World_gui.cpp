@@ -20,6 +20,7 @@ using namespace std;
 
 // Default ctor: inits empty world.
 World::TGUI_Options::TGUI_Options() :
+	win_w(800), win_h(600),
 	ortho(false),
 	show_forces(false),
 	force_scale(0.01),
@@ -31,6 +32,8 @@ World::TGUI_Options::TGUI_Options() :
 void World::TGUI_Options::parse_from(const rapidxml::xml_node<char> &node)
 {
 	std::map<std::string,TParamEntry> gui_params;
+	gui_params["win_w"] = TParamEntry("%u", &win_w);
+	gui_params["win_h"] = TParamEntry("%u", &win_h);
 	gui_params["ortho"] = TParamEntry("%bool", &ortho);
 	gui_params["show_forces"] = TParamEntry("%bool", &show_forces);
 	gui_params["force_scale"]  = TParamEntry("%lf",&force_scale);
@@ -59,7 +62,7 @@ void World::update_GUI( TUpdateGUIParams *guiparams )
 	{
 		m_timlogger.enter("update_GUI_init");
 
-		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",800,600);
+		m_gui_win = mrpt::gui::CDisplayWindow3D::Create("mv2dsim",m_gui_options.win_w,m_gui_options.win_h);
 		m_gui_win->setCameraZoom(m_gui_options.camera_distance);
 		m_gui_win->setCameraProjective(!m_gui_options.ortho);
 		m_gui_win->setFOV(m_gui_options.fov_deg);
