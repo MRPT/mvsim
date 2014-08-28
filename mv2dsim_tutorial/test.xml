@@ -23,6 +23,8 @@
 		
 		<!-- The rest of params are ignored if file is an MRPT gridmap -->
 		<resolution>0.25</resolution>
+		
+		<!--<show_collisions>true</show_collisions>-->
 	</world:gridmap>
 		 
 	<!-- =============================

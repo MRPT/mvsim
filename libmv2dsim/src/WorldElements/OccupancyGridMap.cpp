@@ -71,6 +71,14 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 			throw std::runtime_error(mrpt::format("[OccupancyGridMap] ERROR: File not found '%s'",sFile.c_str()));
 	}
 
+	{
+		// Other general params:
+		std::map<std::string,TParamEntry> ps;
+		ps["show_collisions"] = TParamEntry("%bool", &m_show_grid_collision_points);
+
+		parse_xmlnode_children_as_param(*root,ps);
+	}
+
 }
 
 void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
