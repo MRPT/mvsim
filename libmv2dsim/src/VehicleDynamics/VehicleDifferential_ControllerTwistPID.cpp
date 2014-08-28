@@ -12,9 +12,9 @@
 using namespace mv2dsim;
 using namespace std;
 
-DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(DynamicsDifferential &veh) : 
+DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(DynamicsDifferential &veh) :
 	ControllerBase(veh),
-	setpoint_lin_speed(0), 
+	setpoint_lin_speed(0),
 	setpoint_ang_speed(0),
 	KP(100),
 	KI(0),
@@ -29,10 +29,10 @@ DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(DynamicsDifferentia
 
 // See base class docs
 void DynamicsDifferential::ControllerTwistPID::control_step(
-	const DynamicsDifferential::TControllerInput &ci, 
+	const DynamicsDifferential::TControllerInput &ci,
 	DynamicsDifferential::TControllerOutput &co)
 {
-	// For each wheel: 
+	// For each wheel:
 	// 1) Compute desired velocity set-point (in m/s)
 	// 2) Run the PI/PID for that wheel independently (in newtons)
 	const double vel_l = setpoint_lin_speed - 0.5* setpoint_ang_speed * m_distWheels;
@@ -72,5 +72,19 @@ void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_n
 	params["W"] = TParamEntry("%lf_deg", &this->setpoint_ang_speed);
 
 	parse_xmlnode_children_as_param(node,params);
+}
+
+void DynamicsDifferential::ControllerTwistPID::teleop_interface(const TeleopInput &in, TeleopOutput &out)
+{
+	switch (in.keycode)
+	{
+	case 'w':  setpoint_lin_speed += 0.1;  break;
+	case 's':  setpoint_lin_speed -= 0.1;  break;
+	case 'a':  setpoint_ang_speed += 2.0*M_PI/180;  break;
+	case 'd':  setpoint_ang_speed -= 2.0*M_PI/180;  break;
+	case ' ':  setpoint_lin_speed = 0.0; setpoint_ang_speed=0.0;  break;
+	};
+	out.append_gui_lines+="[Controller="+ string(class_name()) +"] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
+	out.append_gui_lines+=mrpt::format("setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_lin_speed, 180.0/M_PI*setpoint_ang_speed);
 }
 

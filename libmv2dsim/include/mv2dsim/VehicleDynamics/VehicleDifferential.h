@@ -9,7 +9,6 @@
 #pragma once
 
 #include <mv2dsim/VehicleBase.h>
-#include <mv2dsim/ControllerBase.h>
 #include <mv2dsim/PID_Controller.h>
 
 #include <mrpt/math/lightweight_geom_data.h>
@@ -24,13 +23,13 @@ namespace mv2dsim
 		DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential)
 	public:
 		enum {
-			WHEEL_L = 0, 
+			WHEEL_L = 0,
 			WHEEL_R = 1
 		};
 
 		DynamicsDifferential(World *parent);
 
-		/** @name Controllers 
+		/** @name Controllers
 		    @{ */
 
 		struct TControllerInput
@@ -53,9 +52,9 @@ namespace mv2dsim
 			ControllerRawForces(DynamicsDifferential &veh) : ControllerBase(veh),setpoint_wheel_torque_l(0), setpoint_wheel_torque_r(0) {}
 			static const char* class_name() { return "raw"; }
 			//!< Directly set these values to tell the controller the desired setpoints
-			double setpoint_wheel_torque_l, setpoint_wheel_torque_r; 
-			// See base class docs
-			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
+			double setpoint_wheel_torque_l, setpoint_wheel_torque_r;
+			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co); // See base class docs
+			virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out);  // See base class docs
 		};
 
 		/** PID controller that controls the vehicle twist: linear & angular velocities */
@@ -66,10 +65,10 @@ namespace mv2dsim
 			static const char* class_name() { return "twist_pid"; }
 			//!< Directly set these values to tell the controller the desired setpoints
 			double setpoint_lin_speed, setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
-			// See base class docs
-			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co);
-			// See base class docs
-			virtual void load_config(const rapidxml::xml_node<char>&node );
+			virtual void control_step(const DynamicsDifferential::TControllerInput &ci, DynamicsDifferential::TControllerOutput &co); // See base class docs
+			virtual void load_config(const rapidxml::xml_node<char>&node ); // See base class docs
+			virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out);  // See base class docs
+
 			double KP,KI,KD; //!< PID controller parameters
 			double I_MAX; //!< I part maximum value (absolute value for clamp)
 			double max_torque; //!< Maximum abs. value torque (for clamp) [N·m]
@@ -77,11 +76,12 @@ namespace mv2dsim
 			double m_distWheels;
 			PID_Controller m_PID[2];
 		};
-		
+
 
 
 		const ControllerBasePtr & getController() const {return m_controller;}
 		ControllerBasePtr & getController() {return m_controller;}
+		virtual ControllerBaseInterface * getControllerInterface() { return m_controller.pointer(); }
 
 		/** @} */  // end controllers
 

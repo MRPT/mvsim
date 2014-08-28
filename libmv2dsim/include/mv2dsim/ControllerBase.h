@@ -12,9 +12,28 @@
 
 namespace mv2dsim
 {
+	/** Interface of ControllerBaseTempl<> for teleoperation, etc.
+	  * Abstract interface common to any vehicle type & any controller.
+	  */
+	class ControllerBaseInterface
+	{
+	public:
+		struct TeleopInput
+		{
+			int keycode;
+			TeleopInput() : keycode(0)  { }
+		};
+		struct TeleopOutput
+		{
+			std::string append_gui_lines;
+		};
+
+		virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out) { /*default: do nothing*/ }
+	};
+
 	/** Virtual base for controllers of vehicles of any type (template) */
 	template <class VEH_DYNAMICS>
-	class ControllerBaseTempl
+	class ControllerBaseTempl : public ControllerBaseInterface
 	{
 	public:
 		ControllerBaseTempl(VEH_DYNAMICS &veh) : m_veh(veh) {}
