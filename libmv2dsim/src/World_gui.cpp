@@ -80,6 +80,21 @@ void World::update_GUI( TUpdateGUIParams *guiparams )
 	mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock(); // ** LOCK **
 	m_timlogger.leave("update_GUI.1.get-lock");
 
+	// 1st time only:
+	// Build different "stacks" or "z-order levels" for 
+	// rendering with transparencies to work nicely
+	// --------------------------------------------------------
+	if (!gl_scene->getByName("level_0"))
+	{
+		for (unsigned int i=0;i<5;i++)
+		{
+			mrpt::opengl::CSetOfObjectsPtr gl_obj = mrpt::opengl::CSetOfObjects::Create();
+			gl_obj->setName(mrpt::format("level_%u",i));
+			gl_scene->insert(gl_obj);
+		}
+	}
+
+
 	// Update view of map elements
 	// -----------------------------
 	m_timlogger.enter("update_GUI.2.map-elements");
