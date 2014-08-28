@@ -111,8 +111,8 @@ int main(int argc, char **argv)
 							{
 							case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
 							case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
-							case 'a':  cntrl->setpoint_ang_speed += 1.0*M_PI/180;  break;
-							case 'd':  cntrl->setpoint_ang_speed -= 1.0*M_PI/180;  break;
+							case 'a':  cntrl->setpoint_ang_speed += 2.0*M_PI/180;  break;
+							case 'd':  cntrl->setpoint_ang_speed -= 2.0*M_PI/180;  break;
 							case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
 							};
 							txt2gui_tmp+="[Controller=twist_pid] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
