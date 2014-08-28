@@ -33,7 +33,7 @@ void TParamEntry::parse(const std::string & str,const std::string & varName,cons
 		if (1!=::sscanf(str.c_str(), frmt,auxStr))
 			throw std::runtime_error(mrpt::format("%s Error parsing '%s'='%s' (Expected format:'%s')",function_name_context,varName.c_str(),str.c_str(),frmt ));
 		std::string & str = *reinterpret_cast<std::string*>(val);
-		str = auxStr;
+		str = mrpt::system::trim(auxStr);
 	}
 	// "%lf_deg" ==> DEG2RAD()
 	else if (std::string(frmt)==std::string("%lf_deg"))

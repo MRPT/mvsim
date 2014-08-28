@@ -29,6 +29,7 @@
 		
 	<!-- ground grid (for visual reference) -->
 	<world:groundgrid>
+		<!--<floating>true</floating>-->
 	</world:groundgrid>
 	
 	<!-- =============================
