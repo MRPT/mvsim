@@ -8,7 +8,6 @@ Author: Jose Luis Blanco <jlblanco@ual.es> (University of Almeria)
 
 ![screenshot](https://raw.githubusercontent.com/ual-arm-ros-pkg/multivehicle_2d_simulator/master/docs/imgs/screenshot_scans_see_each_other.png "Screenshot 1")
 
-
 Main features
 --------------
   * Fully configurable via `.xml` "world" files and (TODO) extensible via user Python scripts.
@@ -24,15 +23,27 @@ Main features
     * Twist commands (use internal controller).
   * Lightweight in memory, CPU and library requirements.
 
-Compiling
+Docs
 ----------
+  * **The mv2dsim manual** is the main reference document. (Write me!!)
+  * ROS tutorials (Write me!!)
+
+Compiling: standalone
+-----------------------
 Requisites:
  * A decent C++ compiler!
- * MRPT (>=1.0.0): In Windows, build from sources or install precompiled binaries. 
+ * MRPT (>=1.0.0 required; >=1.2.2 recommended): In Windows, build from sources or install precompiled binaries. 
  * Box2D: Will use an embedded copy if no system version is found.
 
 In Ubuntu, this will install all requirements:
 
      sudo apt-get install libmrpt-dev libbox2d-dev
 
+Compiling: ROS & catkin
+------------------------
+ * Clone this project into your catkin's workspace src folder.
+ * Run catkin_make
 
+Compiling: MOOS / OpenMORA
+---------------------------
+This package is already included in [OpenMORA](https://github.com/OpenMORA).
