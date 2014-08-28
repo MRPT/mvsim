@@ -23,6 +23,7 @@ struct TThreadParams
 	volatile bool closing;
 	TThreadParams(): world(NULL), closing(false) {}
 };
+void usage(const char*argv0);
 void thread_update_GUI(TThreadParams &thread_params);
 World::TGUIKeyEvent gui_key_events;
 std::string msg2gui;
@@ -31,7 +32,7 @@ int main(int argc, char **argv)
 {
 	try
 	{
-		if (argc!=2) return -1;
+		if (argc!=2) { usage( argv[0] ); return -1; }
 
 		World  world;
 
@@ -189,4 +190,11 @@ void thread_update_GUI(TThreadParams &thread_params)
 
 		mrpt::system::sleep(25);
 	}
+}
+
+void usage(const char*argv0)
+{
+	std::cerr << 
+		"Usage:\n"
+		" " << argv0 << " [WORLD_MODEL.xml]\n";
 }

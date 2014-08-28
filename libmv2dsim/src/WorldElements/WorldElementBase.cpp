@@ -7,6 +7,7 @@
   +-------------------------------------------------------------------------+  */
 
 #include <mv2dsim/WorldElements/OccupancyGridMap.h>
+//#include <mv2dsim/WorldElements/GroundGrid.h>
 
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
@@ -28,6 +29,7 @@ void register_all_world_elements()
 	static bool done = false;
 	if (done) return; else done=true;
 
+//	REGISTER_WORLD_ELEMENT("groundgrid",GroundGrid)		
 	REGISTER_WORLD_ELEMENT("gridmap",OccupancyGridMap)
 }
 
