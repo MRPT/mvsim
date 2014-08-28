@@ -1,6 +1,6 @@
 <mv2dsim_world version="1.0">
 	<!-- General simulation options -->
-	<simul_timestep>0.05</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
 	<b2d_vel_iters>3</b2d_vel_iters>
 	<b2d_pos_iters>3</b2d_pos_iters>
 	
@@ -48,7 +48,7 @@
 			<!--   Motor controller -->
 			<controller class="twist_pid">
 				<!-- Params -->
-				<KP>100</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+				<KP>100</KP>  <KI>5</KI> <I_MAX>10</I_MAX> <KD>0</KD>
 				<V>0.0</V><W>0</W>
 				<max_torque>25</max_torque>
 			</controller>
@@ -96,9 +96,9 @@
 			
 			<controller class="front_steer_pid">
 				<!-- Params -->
-				<KP>100</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+				<KP>500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
 				<V>0.0</V><W>0</W>
-				<max_torque>300</max_torque>
+				<max_torque>600</max_torque>
 			</controller>			
 			
 		</dynamics>

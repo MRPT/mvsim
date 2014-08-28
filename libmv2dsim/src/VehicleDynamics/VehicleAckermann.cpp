@@ -202,11 +202,11 @@ vec3 DynamicsAckermann::getVelocityLocalOdoEstimate() const
 	const double R0 = m_wheels_info[WHEEL_RL].diameter*0.5;
 	const double R1 = m_wheels_info[WHEEL_RR].diameter*0.5;
 
-	const double Ay = m_wheels_info[WHEEL_RR].y-m_wheels_info[WHEEL_RL].y;
+	const double Ay = m_wheels_info[WHEEL_RL].y-m_wheels_info[WHEEL_RR].y;
 	ASSERTMSG_(Ay!=0.0, "The two wheels of a differential vehicle CAN'T by at the same Y coordinate!")
 
-	const double w_veh  = (w0*R0-w1*R1)/Ay;
-	const double vx_veh = w0*R0+w_veh*m_wheels_info[0].y;
+	const double w_veh  = (w1*R1-w0*R0)/Ay;
+	const double vx_veh = w0*R0+w_veh*m_wheels_info[WHEEL_RL].y;
 	
 	odo_vel.vals[0] = vx_veh;
 	odo_vel.vals[2] = w_veh;
