@@ -97,11 +97,11 @@ int main(int argc, char **argv)
 					// Get speed:
 					{
 						const vec3 &vel = it_veh->second->getVelocityLocal();
-						txt2gui_tmp+=mrpt::format("gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
+						txt2gui_tmp+=mrpt::format("gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
 					}
 					{
 						const vec3 &vel = it_veh->second->getVelocityLocalOdoEstimate();
-						txt2gui_tmp+=mrpt::format("odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
+						txt2gui_tmp+=mrpt::format("odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
 					}
 					
 
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 							case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
 							};
 							txt2gui_tmp+="[Controller=twist_pid] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
-							txt2gui_tmp+=mrpt::format("setpoint: lin=%.03f ang=%.03f deg\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
+							txt2gui_tmp+=mrpt::format("setpoint: lin=%.03f ang=%.03f deg/s\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
 						}
 						DynamicsDifferential::ControllerRawForces *cntrl2 = dynamic_cast<DynamicsDifferential::ControllerRawForces*>(cntrl_ptr.pointer());
 						if (cntrl2)
@@ -142,6 +142,20 @@ int main(int argc, char **argv)
 					if (veh_ack)
 					{
 						DynamicsAckermann::ControllerBasePtr &cntrl_ptr = veh_ack->getController();
+						DynamicsAckermann::ControllerFrontSteerPID *cntrl = dynamic_cast<DynamicsAckermann::ControllerFrontSteerPID*>(cntrl_ptr.pointer());
+						if (cntrl)
+						{
+							switch (keyevent.keycode)
+							{
+							case 'w':  cntrl->setpoint_lin_speed += 0.1;  break;
+							case 's':  cntrl->setpoint_lin_speed -= 0.1;  break;
+							case 'a':  cntrl->setpoint_ang_speed += 2.0*M_PI/180;  break;
+							case 'd':  cntrl->setpoint_ang_speed -= 2.0*M_PI/180;  break;
+							case ' ':  cntrl->setpoint_lin_speed = 0.0; cntrl->setpoint_ang_speed=0.0;  break;
+							};
+							txt2gui_tmp+="[Controller=twist_pid] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
+							txt2gui_tmp+=mrpt::format("setpoint: lin=%.03f ang=%.03f deg/s\n", cntrl->setpoint_lin_speed, 180.0/M_PI*cntrl->setpoint_ang_speed);
+						}
 						DynamicsAckermann::ControllerRawForces *cntrl2 = dynamic_cast<DynamicsAckermann::ControllerRawForces*>(cntrl_ptr.pointer());
 						if (cntrl2)
 						{

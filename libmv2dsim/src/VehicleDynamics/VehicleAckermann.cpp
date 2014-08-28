@@ -45,17 +45,17 @@ DynamicsAckermann::DynamicsAckermann(World *parent) :
 
 	// Default values:
 	// rear-left:
-	m_wheels_info[0].x = 0;
-	m_wheels_info[0].y = -0.9;
+	m_wheels_info[WHEEL_RL].x = 0;
+	m_wheels_info[WHEEL_RL].y = 0.9;
 	// rear-right:
-	m_wheels_info[1].x = 0;
-	m_wheels_info[1].y = 0.9;
+	m_wheels_info[WHEEL_RR].x = 0;
+	m_wheels_info[WHEEL_RR].y = -0.9;
 	// Front-left:
-	m_wheels_info[2].x = 1.3;
-	m_wheels_info[2].y = -0.9;
+	m_wheels_info[WHEEL_FL].x = 1.3;
+	m_wheels_info[WHEEL_FL].y = 0.9;
 	// Front-right:
-	m_wheels_info[3].x = 1.3;
-	m_wheels_info[3].y = 0.9;
+	m_wheels_info[WHEEL_FR].x = 1.3;
+	m_wheels_info[WHEEL_FR].y = -0.9;
 }
 
 /** The derived-class part of load_params_from_xml() */
@@ -113,11 +113,11 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 		parse_xmlnode_children_as_param(*xml_node, ack_ps,"[DynamicsAckermann::dynamics_load_params_from_xml]" );
 
 		// Front-left:
-		m_wheels_info[2].x = front_x;
-		m_wheels_info[2].y = -0.5*front_d;
+		m_wheels_info[WHEEL_FL].x = front_x;
+		m_wheels_info[WHEEL_FL].y = 0.5*front_d;
 		// Front-right:
-		m_wheels_info[3].x = front_x;
-		m_wheels_info[3].y = 0.5*front_d;
+		m_wheels_info[WHEEL_FR].x = front_x;
+		m_wheels_info[WHEEL_FR].y = -0.5*front_d;
 	}
 
 	// Vehicle controller:
@@ -131,6 +131,7 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass==ControllerRawForces::class_name())    m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
+			else if (sCtrlClass==ControllerFrontSteerPID::class_name())    m_controller = ControllerBasePtr(new ControllerFrontSteerPID(*this) );			
 			else throw runtime_error(mrpt::format("[DynamicsAckermann] Unknown 'class'='%s' in <controller> XML node",sCtrlClass.c_str()));
 
 			m_controller->load_config(*xml_control);
@@ -156,18 +157,18 @@ void DynamicsAckermann::invoke_motor_controllers(const TSimulContext &context, s
 		TControllerOutput co;
 		m_controller->control_step(ci,co);
 		// Take its output:
-		out_torque_per_wheel[0] = co.rl_torque;
-		out_torque_per_wheel[1] = co.rr_torque;
-		out_torque_per_wheel[2] = co.fl_torque;
-		out_torque_per_wheel[3] = co.fr_torque;
+		out_torque_per_wheel[WHEEL_RL] = co.rl_torque;
+		out_torque_per_wheel[WHEEL_RR] = co.rr_torque;
+		out_torque_per_wheel[WHEEL_FL] = co.fl_torque;
+		out_torque_per_wheel[WHEEL_FR] = co.fr_torque;
 
 		// Kinematically-driven steering wheels: 
 		// Ackermann formulas for inner&outer weels turning angles wrt the equivalent (central) one:
 		{
 			// EQ1: cot(d)+0.5*w/l = cot(do)
 			// EQ2: cot(di)=cot(do)-w/l
-			const double w = m_wheels_info[2].y - m_wheels_info[3].y;
-			const double l = m_wheels_info[2].x - m_wheels_info[0].x;
+			const double w = m_wheels_info[WHEEL_FL].y - m_wheels_info[WHEEL_FR].y;
+			const double l = m_wheels_info[WHEEL_FL].x - m_wheels_info[WHEEL_RL].x;
 			ASSERT_(l>0)
 			const double w_l=w/l;
 			const double delta= b2Clamp( std::abs(co.steer_ang), 0.0, m_max_steer_ang);			
@@ -178,8 +179,8 @@ void DynamicsAckermann::invoke_motor_controllers(const TSimulContext &context, s
 			const double cot_di = cot_do - w_l;
 			// delta>0: do->right, di->left wheel
 			// delta<0: do->left , di->right wheel
-			m_wheels_info[delta_neg ? 3:2].yaw = atan(1.0/cot_di) * (delta_neg ? -1.0:1.0);
-			m_wheels_info[delta_neg ? 2:3].yaw = atan(1.0/cot_do) * (delta_neg ? -1.0:1.0);
+			m_wheels_info[delta_neg ? WHEEL_FR:WHEEL_FL].yaw = atan(1.0/cot_di) * (delta_neg ? -1.0:1.0);
+			m_wheels_info[delta_neg ? WHEEL_FL:WHEEL_FR].yaw = atan(1.0/cot_do) * (delta_neg ? -1.0:1.0);
 		}
 
 	}
@@ -196,12 +197,12 @@ vec3 DynamicsAckermann::getVelocityLocalOdoEstimate() const
 	// Velocities in local +X at each wheel i={0,1}:
 	// v_i = vx - w_veh * wheel_{i,y}  =  w_i * R_i
 	// Re-arranging:
-	const double w0 = m_wheels_info[0].getW();
-	const double w1 = m_wheels_info[1].getW();
-	const double R0 = m_wheels_info[0].diameter*0.5;
-	const double R1 = m_wheels_info[1].diameter*0.5;
+	const double w0 = m_wheels_info[WHEEL_RL].getW();
+	const double w1 = m_wheels_info[WHEEL_RR].getW();
+	const double R0 = m_wheels_info[WHEEL_RL].diameter*0.5;
+	const double R1 = m_wheels_info[WHEEL_RR].diameter*0.5;
 
-	const double Ay = m_wheels_info[1].y-m_wheels_info[0].y;
+	const double Ay = m_wheels_info[WHEEL_RR].y-m_wheels_info[WHEEL_RL].y;
 	ASSERTMSG_(Ay!=0.0, "The two wheels of a differential vehicle CAN'T by at the same Y coordinate!")
 
 	const double w_veh  = (w0*R0-w1*R1)/Ay;

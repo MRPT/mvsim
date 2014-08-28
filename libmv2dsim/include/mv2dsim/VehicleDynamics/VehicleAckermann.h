@@ -25,6 +25,14 @@ namespace mv2dsim
 	{
 		DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsAckermann)
 	public:
+		// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
+		enum {
+			WHEEL_RL = 0, 
+			WHEEL_RR = 1, 
+			WHEEL_FL = 2, 
+			WHEEL_FR = 3
+		};
+
 		DynamicsAckermann(World *parent);
 
 		/** The maximum steering angle (rad). Determines min turning radius */
@@ -52,7 +60,7 @@ namespace mv2dsim
 		class ControllerRawForces : public ControllerBase
 		{
 		public:
-			ControllerRawForces(DynamicsAckermann &veh) : ControllerBase(veh),setpoint_wheel_torque_l(0), setpoint_wheel_torque_r(0) {}
+			ControllerRawForces(DynamicsAckermann &veh);
 			static const char* class_name() { return "raw"; }
 			//!< Directly set these values to tell the controller the desired setpoints
 			double setpoint_wheel_torque_l, setpoint_wheel_torque_r, setpoint_steer_ang; 
@@ -61,6 +69,27 @@ namespace mv2dsim
 			// See base class docs
 			virtual void load_config(const rapidxml::xml_node<char>&node );
 		};
+				
+		/** PID controller that controls the vehicle with front traction & steering */
+		class ControllerFrontSteerPID : public ControllerBase
+		{
+		public:
+			ControllerFrontSteerPID(DynamicsAckermann &veh);
+			static const char* class_name() { return "front_steer_pid"; }
+			//!< Directly set these values to tell the controller the desired setpoints
+			double setpoint_lin_speed, setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
+			// See base class docs
+			virtual void control_step(const DynamicsAckermann::TControllerInput &ci, DynamicsAckermann::TControllerOutput &co);
+			// See base class docs
+			virtual void load_config(const rapidxml::xml_node<char>&node );
+			double KP,KI,KD; //!< PID controller parameters
+			double I_MAX; //!< I part maximum value (absolute value for clamp)
+			double max_torque; //!< Maximum abs. value torque (for clamp) [N·m]
+		private:
+			double m_dist_fWheels, m_r2f_L;
+			PID_Controller m_PID[2]; //<! [0]:fl, [1]: fr
+		};
+		
 
 		const ControllerBasePtr & getController() const {return m_controller;}
 		ControllerBasePtr & getController() {return m_controller;}
@@ -80,7 +109,7 @@ namespace mv2dsim
 
 		double m_max_steer_ang; //!< The maximum steering angle (rad). Determines min turning radius
 
-		// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
+		
 
 	};
 

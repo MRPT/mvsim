@@ -303,7 +303,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	const double weightPerWheel = massPerWheel* 9.81;
 
 	std::vector<mrpt::math::TPoint2D> wheels_vels;
-	getWheelsVelocityLocal(wheels_vels);
+	getWheelsVelocityLocal(wheels_vels,getVelocityLocal());
 
 	ASSERT_EQUAL_(wheels_vels.size(),nW);
 
@@ -372,10 +372,8 @@ void VehicleBase::simul_post_timestep(const TSimulContext &context)
 
 
 /** Last time-step velocity of each wheel's center point (in local coords) */
-void VehicleBase::getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels) const
+void VehicleBase::getWheelsVelocityLocal(std::vector<mrpt::math::TPoint2D> &vels, const vec3 &veh_vel_local ) const
 {
-	const vec3 veh_vel_local = this->getVelocityLocal();
-
 	// Each wheel velocity is:
 	// v_w = v_veh + \omega \times wheel_pos
 	// =>
