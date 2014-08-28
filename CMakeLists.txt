@@ -114,6 +114,7 @@ IF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 	add_subdirectory(externals/Box2D)
 
 	# 2nd attempt: Fatal error if not found:
+	MESSAGE(STATUS "INFO: Box2D library not found in the system. Using embedded copy.")
 	SET(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
 	FIND_PACKAGE(Box2D REQUIRED)
 	

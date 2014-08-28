@@ -253,8 +253,3 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 	} // end lock
 
 }
-
-void OccupancyGridMap::simul_post_timestep(const TSimulContext &context)
-{
-
-}

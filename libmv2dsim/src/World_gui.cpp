@@ -63,11 +63,14 @@ void World::update_GUI( TUpdateGUIParams *guiparams )
 		m_gui_win->setCameraZoom(m_gui_options.camera_distance);
 		m_gui_win->setCameraProjective(!m_gui_options.ortho);
 		m_gui_win->setFOV(m_gui_options.fov_deg);
-		mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock();
+		
+		// Only if the world is empty: at least introduce a ground grid:
+		if (m_world_elements.empty())
+		{
+			WorldElementBase* we = WorldElementBase::factory(this,NULL,"groundgrid");
+			this->m_world_elements.push_back(we);
+		}
 
-		gl_scene->insert( mrpt::opengl::CGridPlaneXY::Create() );
-
-		m_gui_win->unlockAccess3DScene();
 		m_timlogger.leave("update_GUI_init");
 	}
 

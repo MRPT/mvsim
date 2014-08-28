@@ -31,7 +31,6 @@ namespace mv2dsim
 		virtual void gui_update( mrpt::opengl::COpenGLScene &scene); //!< See docs in base class
 
 		virtual void simul_pre_timestep(const TSimulContext &context); //!< See docs in base class
-		virtual void simul_post_timestep(const TSimulContext &context); //!< See docs in base class
 
 		const mrpt::slam::COccupancyGridMap2D & getOccGrid() const { return m_grid; }
 		mrpt::slam::COccupancyGridMap2D & getOccGrid() { return m_grid; }

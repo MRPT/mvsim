@@ -110,7 +110,7 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 		// other params:
 		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &m_max_steer_ang);
 
-		parse_xmlnode_attribs(*xml_chassis, ack_ps,"[DynamicsAckermann::dynamics_load_params_from_xml]" );
+		parse_xmlnode_children_as_param(*xml_node, ack_ps,"[DynamicsAckermann::dynamics_load_params_from_xml]" );
 
 		// Front-left:
 		m_wheels_info[2].x = front_x;

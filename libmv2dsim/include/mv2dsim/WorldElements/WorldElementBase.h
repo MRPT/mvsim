@@ -20,8 +20,10 @@ namespace mv2dsim
 		WorldElementBase(World*parent) : VisualObject(parent) { }
 		virtual ~WorldElementBase() { }
 
-		/** Class factory: Creates a world element from XML description of type "<world:*>...</world:*>".  */
-		static WorldElementBase* factory(World* parent, const rapidxml::xml_node<char> *xml_node);
+		/** Class factory: Creates a world element from XML description of type "<world:*>...</world:*>".  
+		  * Only if xml_node==NULL, the world element name (the "*" in "<world:*>") can be passed in class_name. Otherwise, class_name is ignored.
+		  */
+		static WorldElementBase* factory(World* parent, const rapidxml::xml_node<char> *xml_node, const char * class_name = NULL);
 
 		virtual void loadConfigFrom(const rapidxml::xml_node<char> *root) = 0;
 
