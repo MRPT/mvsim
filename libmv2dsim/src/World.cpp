@@ -98,7 +98,7 @@ void World::run_simulation(double dt)
 /** Runs one individual time step */
 void World::internal_one_timestep(double dt)
 {
-	mrpt::utils::CTimeLoggerEntry tlegl(m_timlogger,"timestep");
+	m_timer_iteration.Tic();
 
 	TSimulContext context;
 	context.b2_world   = m_box2d_world;
@@ -170,7 +170,8 @@ void World::internal_one_timestep(double dt)
 	}
 
 
-	m_timlogger.leave("timestep");
+	const double ts = m_timer_iteration.Tac();
+	m_timlogger.registerUserMeasure( (ts > dt ? "timestep_too_slow_alert" : "timestep"),ts);
 }
 
 /** Replace macros, prefix the base_path if input filename is relative, etc.

@@ -13,6 +13,7 @@
 
 #include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/utils/CTimeLogger.h>
+#include <mrpt/utils/CTicTac.h>
 #include <mrpt/gui/CDisplayWindow3D.h>
 
 #include <Box2D/Dynamics/b2World.h>
@@ -151,6 +152,7 @@ namespace mv2dsim
 
 
 		mrpt::utils::CTimeLogger m_timlogger;
+		mrpt::utils::CTicTac     m_timer_iteration;
 
 	};
 
