@@ -12,8 +12,7 @@
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
-//#include <mrpt/system/filesystem.h>
-//#include <mrpt/utils/CObject.h>
+#include <mrpt/scanmatching/scan_matching.h>  // least-squares methods
 #include <rapidxml.hpp>
 
 using namespace rapidxml;
@@ -137,23 +136,82 @@ void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 	const World::TListVehicles & lstVehs =  this->m_world->getListOfVehicles();
 	for (World::TListVehicles::const_iterator itVeh=lstVehs.begin();itVeh!=lstVehs.end();++itVeh)
 	{
+		m_world->getTimeLogger().enter("elevationmap.handle_vehicle");
+
 		// 1) Compute its 3D pose according to the mesh tilt angle.
+		// Idea: run a least-squares method to find the best 
+		// SE(3) transformation that map the wheels contact point, 
+		// as seen in local & global coordinates. 
+		// (For large tilt angles, may have to run it iteratively...)
 		// -------------------------------------------------------------
-		const mrpt::math::TPose3D &cur_pose = itVeh->second->getPose();
+		for (int iter=0;iter<3;iter++)
+		{
+			const mrpt::math::TPose3D &cur_pose = itVeh->second->getPose();
+			const mrpt::poses::CPose3D cur_cpose(cur_pose); // This object is faster for repeated point projections
 
-		mrpt::math::TPose3D new_pose = cur_pose;
+			mrpt::math::TPose3D new_pose = cur_pose;
 		
-		float z;
-		if (!getElevationAt(cur_pose.x,cur_pose.y,z))
-			continue; // vehicle is out of bounds!
+			const size_t nWheels = itVeh->second->getNumWheels();
+		
+		
+			// See mrpt::scanmatching::leastSquareErrorRigidTransformation6D() docs
+			mrpt::utils::TMatchingPairList corrs;
+		
+			bool out_of_area = false;
+			for (size_t iW=0;!out_of_area && iW<nWheels;iW++)
+			{
+				const Wheel &wheel = itVeh->second->getWheelInfo(iW);
 
-		new_pose.z = z;
+				// Local frame
+				mrpt::utils::TMatchingPair corr;
 
-		itVeh->second->setPose(new_pose);
+				corr.other_idx = iW;
+				corr.other_x = wheel.x;
+				corr.other_y = wheel.y;
+				corr.other_z = 0;
+
+				// Global frame
+				mrpt::math::TPoint3D gPt;
+				cur_cpose.composePoint(
+					wheel.x,wheel.y,0.0,
+					gPt.x,gPt.y,gPt.z);
+				float z;
+				if (!getElevationAt(gPt.x /*in*/,gPt.y/*in*/,z /*out*/))
+				{
+					out_of_area = true;
+					continue; // vehicle is out of bounds!
+				}
+
+				corr.this_idx = iW;
+				corr.this_x = gPt.x;
+				corr.this_y = gPt.y;
+				corr.this_z = z;
+
+				corrs.push_back(corr);
+			}
+			if (out_of_area)
+				continue;
+
+			// Register:
+			mrpt::poses::CPose3D optimal_transf;
+			double transf_scale;
+			mrpt::scanmatching::leastSquareErrorRigidTransformation6D(corrs,optimal_transf,transf_scale, true /*force scale unity*/);
+
+			new_pose.z = optimal_transf.z();
+			new_pose.yaw = optimal_transf.yaw();
+			new_pose.pitch = optimal_transf.pitch();
+			new_pose.roll = optimal_transf.roll();
+
+			//cout << new_pose << endl;
+
+			itVeh->second->setPose(new_pose);
+		} // end iters
 
 		// 2) Apply gravity force
 		// -------------------------------------------------------------
 		//it_Veh->apply_force(double fx, double fy, double local_ptx, double local_pty)
+
+		m_world->getTimeLogger().leave("elevationmap.handle_vehicle");
 	}
 }
 
@@ -213,8 +271,8 @@ bool ElevationMap::getElevationAt(double x,double y, float &z) const
 	const float ly = y-(y0+cy00*m_resolution);
 
 	if (ly>=lx)
-	     z = calcz(p00,p01,p11, ly,ly);
-	else z = calcz(p00,p10,p11, ly,ly);
+	     z = calcz(p00,p01,p11, lx,ly);
+	else z = calcz(p00,p10,p11, lx,ly);
 
 	return true; 
 }
