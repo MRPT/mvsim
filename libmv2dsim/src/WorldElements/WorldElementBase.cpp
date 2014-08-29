@@ -8,6 +8,7 @@
 
 #include <mv2dsim/WorldElements/OccupancyGridMap.h>
 #include <mv2dsim/WorldElements/GroundGrid.h>
+#include <mv2dsim/WorldElements/ElevationMap.h>
 
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
@@ -29,8 +30,9 @@ void register_all_world_elements()
 	static bool done = false;
 	if (done) return; else done=true;
 
-	REGISTER_WORLD_ELEMENT("groundgrid",GroundGrid)		
-	REGISTER_WORLD_ELEMENT("gridmap",OccupancyGridMap)
+	REGISTER_WORLD_ELEMENT("ground_grid",GroundGrid)		
+	REGISTER_WORLD_ELEMENT("occupancy_grid",OccupancyGridMap)
+	REGISTER_WORLD_ELEMENT("elevation_map",ElevationMap)
 }
 
 
