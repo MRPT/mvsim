@@ -8,6 +8,7 @@
 
 #include <mv2dsim/WorldElements/ElevationMap.h>
 #include <mv2dsim/World.h>
+#include <mv2dsim/VehicleBase.h>
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
@@ -36,8 +37,12 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 {
 	// Other general params:
 	std::map<std::string,TParamEntry> params;
+	
 	std::string sElevationImgFile;
 	params["elevation_image"] = TParamEntry("%s", &sElevationImgFile);
+	std::string sTextureImgFile;
+	params["texture_image"] = TParamEntry("%s", &sTextureImgFile);	
+
 	double img_min_z=0.0, img_max_z=5.0;
 	params["elevation_image_min_z"] = TParamEntry("%lf", &img_min_z);
 	params["elevation_image_max_z"] = TParamEntry("%lf", &img_max_z);
@@ -50,23 +55,16 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	parse_xmlnode_children_as_param(*root,params);
 
 
-	// Load elevation & color data:
-	mrpt::utils::CImage mesh_image;
-	bool has_mesh_image = false;
-
+	// Load elevation data:
 	mrpt::math::CMatrixFloat elevation_data;
 	if (!sElevationImgFile.empty())
 	{
-		if (!mesh_image.loadFromFile(sElevationImgFile))
-			throw std::runtime_error(mrpt::format("[ElevationMap] ERROR: Cannot read image '%s'",sElevationImgFile.c_str()));
+		mrpt::utils::CImage imgElev;
+		if (!imgElev.loadFromFile(sElevationImgFile,0 /*force load grayscale*/))
+			throw std::runtime_error(mrpt::format("[ElevationMap] ERROR: Cannot read elevation image '%s'",sElevationImgFile.c_str()));
 
-		//has_mesh_image = true;
-
-		// Convert to grayscale img for elevation:
-		mrpt::utils::CImage imgElev(mesh_image, mrpt::utils::FAST_REF_OR_CONVERT_TO_GRAY);
-		imgElev.getAsMatrix(elevation_data);  // Get image normalized in range [0,1]
-		
 		// Scale: [0,1] => [min_z,max_z]
+		imgElev.getAsMatrix(elevation_data);  // Get image normalized in range [0,1]
 		ASSERT_(img_min_z!=img_max_z)
 		elevation_data.adjustRange(img_min_z,img_max_z);
 	}
@@ -75,6 +73,15 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 		MRPT_TODO("Imgs or txt matrix")
 	}
 
+	// Load texture (optional):
+	mrpt::utils::CImage mesh_image;
+	bool has_mesh_image = false;
+	if (!sTextureImgFile.empty())
+	{
+		if (!mesh_image.loadFromFile(sTextureImgFile))
+			throw std::runtime_error(mrpt::format("[ElevationMap] ERROR: Cannot read texture image '%s'",sTextureImgFile.c_str()));
+		has_mesh_image=true;
+	}
 
 	// Build mesh:
 	m_gl_mesh = mrpt::opengl::CMesh::Create();
@@ -92,6 +99,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 		m_gl_mesh->setZ(elevation_data);
 		m_gl_mesh->setColor_u8(mesh_color);
 	}
+
+	// Save copy for calcs:
+	m_mesh_z_cache = elevation_data;
 	
 	// Extension: X,Y
 	const double LX = elevation_data.cols() * m_resolution;
@@ -117,11 +127,94 @@ void ElevationMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 
 void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 {
+	// For each vehicle:
+	// 1) Compute its 3D pose according to the mesh tilt angle.
+	// 2) Apply gravity force
 
+	ASSERT_(m_gl_mesh)
+	const mrpt::opengl::CMesh * mesh = m_gl_mesh.pointer();
+
+	const World::TListVehicles & lstVehs =  this->m_world->getListOfVehicles();
+	for (World::TListVehicles::const_iterator itVeh=lstVehs.begin();itVeh!=lstVehs.end();++itVeh)
+	{
+		// 1) Compute its 3D pose according to the mesh tilt angle.
+		// -------------------------------------------------------------
+		const mrpt::math::TPose3D &cur_pose = itVeh->second->getPose();
+
+		mrpt::math::TPose3D new_pose = cur_pose;
+		
+		float z;
+		if (!getElevationAt(cur_pose.x,cur_pose.y,z))
+			continue; // vehicle is out of bounds!
+
+		new_pose.z = z;
+
+		itVeh->second->setPose(new_pose);
+
+		// 2) Apply gravity force
+		// -------------------------------------------------------------
+		//it_Veh->apply_force(double fx, double fy, double local_ptx, double local_pty)
+	}
 }
 
 void ElevationMap::simul_post_timestep(const TSimulContext &context)
 {
 	MRPT_TODO("Save all elements positions in prestep, then here scale their movements * cos(angle)")
 
+}
+float calcz(
+	const mrpt::math::TPoint3Df &p1, 
+	const mrpt::math::TPoint3Df &p2,
+	const mrpt::math::TPoint3Df &p3, 
+	float x, float y) 
+{
+	const float det = (p2.x - p3.x) * (p1.y - p3.y) + (p3.y - p2.y) * (p1.x - p3.x);
+	ASSERT_(det!=0.0f)
+	
+	const float l1 = ((p2.x - p3.x) * (y - p3.y) + (p3.y - p2.y) * (x - p3.x)) / det;
+	const float l2 = ((p3.x - p1.x) * (y - p3.y) + (p1.y - p3.y) * (x - p3.x)) / det;
+	const float l3 = 1.0f - l1 - l2;
+	
+	return l1 * p1.z + l2 * p2.z + l3 * p3.z;
+}
+
+
+bool ElevationMap::getElevationAt(double x,double y, float &z) const
+{
+	const mrpt::opengl::CMesh * mesh = m_gl_mesh.pointer();
+	const float x0 = mesh->getXMin();
+	const float y0 = mesh->getYMin();
+	const size_t nCellsX = m_mesh_z_cache.rows();
+	const size_t nCellsY = m_mesh_z_cache.cols();
+	
+	// Discretize:
+	const int cx00 = ::floor((x-x0)/m_resolution);
+	const int cy00 = ::floor((y-y0)/m_resolution);
+	if (cx00<1 || cx00>=nCellsX-1 || cy00<1 || cy00>=nCellsY-1) 
+		return false;
+	
+	// Linear interpolation:
+	const float z00 = m_mesh_z_cache(cx00,cy00);
+	const float z01 = m_mesh_z_cache(cx00,cy00+1);
+	const float z10 = m_mesh_z_cache(cx00+1,cy00);
+	const float z11 = m_mesh_z_cache(cx00+1,cy00+1);
+
+	// 
+	//   p01 ---- p11
+	//    |        |
+	//   p00 ---- p10
+	//
+	const mrpt::math::TPoint3Df p00(.0f, .0f, z00);
+	const mrpt::math::TPoint3Df p01(.0f, m_resolution, z01);
+	const mrpt::math::TPoint3Df p10(m_resolution, .0f, z10);
+	const mrpt::math::TPoint3Df p11(m_resolution, m_resolution, z11);
+
+	const float lx = x-(x0+cx00*m_resolution);
+	const float ly = y-(y0+cy00*m_resolution);
+
+	if (ly>=lx)
+	     z = calcz(p00,p01,p11, ly,ly);
+	else z = calcz(p00,p10,p11, ly,ly);
+
+	return true; 
 }

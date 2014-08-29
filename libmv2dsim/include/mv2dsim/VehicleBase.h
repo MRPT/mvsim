@@ -53,11 +53,9 @@ namespace mv2dsim
 		void load_params_from_xml(const std::string &xml_text);
 
 		// ------- Interface with "World" ------
-		/** Process right before the integration of dynamic equations for each timestep: set action forces from motors, update friction models, etc. */
-		virtual void simul_pre_timestep(const TSimulContext &context);
-
-		/** Override to do any required process right after the integration of dynamic equations for each timestep */
-		virtual void simul_post_timestep(const TSimulContext &context);
+		virtual void simul_pre_timestep(const TSimulContext &context); // See derived class docs
+		virtual void simul_post_timestep(const TSimulContext &context); // See derived class docs
+		virtual void apply_force(double fx, double fy, double local_ptx = 0.0, double local_pty = 0.0);  // See derived class docs
 
 		/** Gets the body dynamical state into q, dot{q} */
 		void simul_post_timestep_common(const TSimulContext &context);
@@ -77,7 +75,7 @@ namespace mv2dsim
 		Wheel & getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
 
 		const mrpt::math::TPose3D & getPose() const { return m_q; } //!< Last time-step pose (of the ref. point, in global coords) (ground-truth)
-		void setPose(const mrpt::math::TPose3D &p) { m_q=p; } //!< Manually override vehicle pose (Use with caution!)
+		void setPose(const mrpt::math::TPose3D &p) const { const_cast<mrpt::math::TPose3D&>(m_q)=p; } //!< Manually override vehicle pose (Use with caution!) (purposely set as "const")
 
 		mrpt::poses::CPose2D getCPose2D() const; //!< \overload
 		/** Last time-step velocity (of the ref. point, in global coords) (ground-truth) */

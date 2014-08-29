@@ -27,11 +27,15 @@ namespace mv2dsim
 		virtual void simul_pre_timestep(const TSimulContext &context); //!< See docs in base class
 		virtual void simul_post_timestep(const TSimulContext &context); //!< See docs in base class
 
+
+		bool getElevationAt(double x,double y, float &z) const; //!< return false if out of bounds
+
 	protected:
 		/** This object holds both, the mesh data, and is in charge of 3D rendering. */
 		mrpt::opengl::CMeshPtr  m_gl_mesh;
 		bool  m_first_scene_rendering;
 		double m_resolution;
+		mrpt::math::CMatrixFloat  m_mesh_z_cache; //!< A copy of elevation data in m_gl_mesh. Coordinate order is (x,y)
 
 	};
 }
