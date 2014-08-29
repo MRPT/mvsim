@@ -333,7 +333,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		if (m_world->m_gui_options.show_forces)
 		{
 			const double forceScale =  m_world->m_gui_options.force_scale; // [meters/N]
-			const mrpt::math::TPoint3D pt1(wPt.x,wPt.y, m_chassis_z_max*1.1 );
+			const mrpt::math::TPoint3D pt1(wPt.x,wPt.y, m_chassis_z_max*1.1 + m_q.z );
 			const mrpt::math::TPoint3D pt2 = pt1 + mrpt::math::TPoint3D(wForce.x,wForce.y, 0)*forceScale;
 			force_vectors.push_back( mrpt::math::TSegment3D( pt1,pt2 ));
 		}
@@ -570,4 +570,11 @@ void VehicleBase::create_multibody_system(b2World* world)
 void VehicleBase::gui_update( mrpt::opengl::COpenGLScene &scene)
 {
 	this->gui_update_common(scene); // Common part: update sensors, etc.
+}
+
+void VehicleBase::apply_force(double fx, double fy, double local_ptx, double local_pty)
+{
+	ASSERT_(m_b2d_vehicle_body)
+	const b2Vec2 wPt = m_b2d_vehicle_body->GetWorldPoint( b2Vec2( local_ptx, local_pty) ); // Application point -> world coords
+	m_b2d_vehicle_body->ApplyForce( b2Vec2(fx,fy), wPt, true/*wake up*/);
 }

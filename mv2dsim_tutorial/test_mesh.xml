@@ -8,7 +8,7 @@
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>35</cam_distance>
+		<cam_distance>50</cam_distance>
 		<fov_deg>35</fov_deg>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
@@ -22,8 +22,9 @@
 		<elevation_image>elevation_mesh1.png</elevation_image>
 		<elevation_image_min_z>0</elevation_image_min_z>
 		<elevation_image_max_z>10</elevation_image_max_z>
+		<!-- <texture_image>elevation_mesh1.png</texture_image> -->
 		
-		<mesh_color>#a0a0a0</mesh_color> <!-- Used only if mesh_image is not provided -->
+		<mesh_color>#a0e0a0</mesh_color> <!-- Used only if mesh_image is not provided -->
 		
 		<resolution>1.0</resolution>
 		
