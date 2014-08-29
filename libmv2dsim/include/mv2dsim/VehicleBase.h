@@ -76,8 +76,9 @@ namespace mv2dsim
 		const Wheel & getWheelInfo(const size_t idx) const { return m_wheels_info[idx]; }
 		Wheel & getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
 
-		/** Last time-step pose (of the ref. point, in global coords) (ground-truth) */
-		const vec3 & getPose() const { return m_q; }
+		const mrpt::math::TPose3D & getPose() const { return m_q; } //!< Last time-step pose (of the ref. point, in global coords) (ground-truth)
+		void setPose(const mrpt::math::TPose3D &p) { m_q=p; } //!< Manually override vehicle pose (Use with caution!)
+
 		mrpt::poses::CPose2D getCPose2D() const; //!< \overload
 		/** Last time-step velocity (of the ref. point, in global coords) (ground-truth) */
 		const vec3 & getVelocity() const { return m_dq; }
@@ -135,7 +136,7 @@ namespace mv2dsim
 
 		TListSensors m_sensors; //!< Sensors aboard
 
-		vec3 m_q;   //!< Last time-step pose (of the ref. point, in global coords)
+		mrpt::math::TPose3D  m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)
 
 		std::vector<double> m_torque_per_wheel; //!< Updated in simul_pre_timestep()

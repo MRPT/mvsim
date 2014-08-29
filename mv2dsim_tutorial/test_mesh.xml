@@ -22,7 +22,8 @@
 		<elevation_image>elevation_mesh1.png</elevation_image>
 		<elevation_image_min_z>0</elevation_image_min_z>
 		<elevation_image_max_z>10</elevation_image_max_z>
-		<mesh_color>#a0a0a0</mesh_color>
+		
+		<mesh_color>#a0a0a0</mesh_color> <!-- Used only if mesh_image is not provided -->
 		
 		<resolution>1.0</resolution>
 		

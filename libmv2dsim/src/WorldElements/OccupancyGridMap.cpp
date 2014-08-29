@@ -153,11 +153,11 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 			const float occup_threshold = 0.5f;
 			const size_t nRays = 50;
 
-			const vec3 &pose = itVeh->second->getPose();
+			const mrpt::math::TPose3D &pose = itVeh->second->getPose();
 			scan->aperture = 2.0*M_PI; // 360 field of view
 			scan->maxRange = veh_max_obstacles_ranges;
 
-			ipv.pose =  mrpt::poses::CPose2D(pose.vals[0],pose.vals[1], 0 /* angle=0, no need to rotate everything to latter rotate back again! */);
+			ipv.pose =  mrpt::poses::CPose2D(pose.x,pose.y, 0 /* angle=0, no need to rotate everything to latter rotate back again! */);
 
 			m_grid.laserScanSimulator(
 				*scan,

@@ -90,9 +90,9 @@ void GroundGrid::gui_update( mrpt::opengl::COpenGLScene &scene)
 
 		if (it_veh!=vehs.end())
 		{
-			const vec3 &pos = it_veh->second->getPose();
-			center_offset.x = pos.vals[0];
-			center_offset.y = pos.vals[1];
+			const mrpt::math::TPose3D &pose = it_veh->second->getPose();
+			center_offset.x = pose.x;
+			center_offset.y = pose.y;
 		}
 	}
 

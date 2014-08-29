@@ -50,7 +50,7 @@ void register_all_veh_dynamics()
 VehicleBase::VehicleBase(World *parent, size_t nWheels) :
 	VisualObject(parent),
 	m_b2d_vehicle_body(NULL),
-	m_q(0,0,0),
+	m_q(0,0,0,0,0,0),
 	m_dq(0,0,0),
 	m_chassis_mass(15.0),
 	m_chassis_z_min(0.05),
@@ -78,9 +78,10 @@ void VehicleBase::simul_post_timestep_common(const TSimulContext &context)
 		// Pos:
 		const b2Vec2 &pos = m_b2d_vehicle_body->GetPosition();
 		const float32 angle = m_b2d_vehicle_body->GetAngle();
-		m_q.vals[0]=pos(0);
-		m_q.vals[1]=pos(1);
-		m_q.vals[2]=angle;
+		m_q.x=pos(0);
+		m_q.y=pos(1);
+		m_q.yaw=angle;
+		// The rest (z,pitch,roll) will be always 0, unless other world-element modifies them! (e.g. elevation map)
 
 		// Vel:
 		const b2Vec2 &vel = m_b2d_vehicle_body->GetLinearVelocity();
@@ -174,9 +175,8 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		const xml_node<> *node = veh_root_node.first_node("init_pose");
 		if (!node) throw runtime_error("[VehicleBase::factory] Missing XML node <init_pose>");
 
-		if (3!= ::sscanf(node->value(),"%lf %lf %lf",&veh->m_q.vals[0],&veh->m_q.vals[1],&veh->m_q.vals[2]))
+		if (3!= ::sscanf(node->value(),"%lf %lf %lf_deg",&veh->m_q.x,&veh->m_q.y,&veh->m_q.yaw))
 			throw runtime_error("[VehicleBase::factory] Error parsing <init_pose>...</init_pose>");
-		veh->m_q.vals[2] *= M_PI/180.0;
 	}
 
 	// (Optional) initial vel:
@@ -184,12 +184,11 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		const xml_node<> *node = veh_root_node.first_node("init_vel");
 		if (node)
 		{
-			if (3!= ::sscanf(node->value(),"%lf %lf %lf",&veh->m_dq.vals[0],&veh->m_dq.vals[1],&veh->m_dq.vals[2]))
+			if (3!= ::sscanf(node->value(),"%lf %lf %lf_deg",&veh->m_dq.vals[0],&veh->m_dq.vals[1],&veh->m_dq.vals[2]))
 				throw runtime_error("[VehicleBase::factory] Error parsing <init_vel>...</init_vel>");
-			veh->m_dq.vals[2] *= M_PI/180.0;
 
 			// Convert twist (velocity) from local -> global coords:
-			const mrpt::poses::CPose2D pose(0,0,veh->m_q.vals[2]); // Only the rotation
+			const mrpt::poses::CPose2D pose(0,0,veh->m_q.yaw); // Only the rotation
 			pose.composePoint(
 				veh->m_dq.vals[0], veh->m_dq.vals[1],
 				veh->m_dq.vals[0], veh->m_dq.vals[1] );
@@ -208,7 +207,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	if (veh->m_b2d_vehicle_body)
 	{
 		// Init pos:
-		veh->m_b2d_vehicle_body->SetTransform( b2Vec2( veh->m_q.vals[0], veh->m_q.vals[1] ),  veh->m_q.vals[2] );
+		veh->m_b2d_vehicle_body->SetTransform( b2Vec2( veh->m_q.x, veh->m_q.y ),  veh->m_q.yaw );
 		// Init vel:
 		veh->m_b2d_vehicle_body->SetLinearVelocity( b2Vec2(veh->m_dq.vals[0], veh->m_dq.vals[1] ) );
 		veh->m_b2d_vehicle_body->SetAngularVelocity(veh->m_dq.vals[2] );
@@ -399,7 +398,7 @@ vec3 VehicleBase::getVelocityLocal() const
 	vec3 local_vel;
 	local_vel.vals[2] = m_dq.vals[2]; // omega remains the same.
 
-	const mrpt::poses::CPose2D p(0,0, -m_q.vals[2]); // "-" means inverse pose
+	const mrpt::poses::CPose2D p(0,0, -m_q.yaw); // "-" means inverse pose
 	p.composePoint(
 		m_dq.vals[0],m_dq.vals[1],
 		local_vel.vals[0],local_vel.vals[1]);
@@ -408,7 +407,7 @@ vec3 VehicleBase::getVelocityLocal() const
 
 mrpt::poses::CPose2D VehicleBase::getCPose2D() const
 {
-	return mrpt::poses::CPose2D(m_q.vals[0],m_q.vals[1],m_q.vals[2]);
+	return mrpt::poses::CPose2D(m_q);
 }
 
 /** To be called at derived classes' gui_update() */
@@ -451,7 +450,7 @@ void VehicleBase::gui_update_common( mrpt::opengl::COpenGLScene &scene, bool def
 
 		// Update them:
 		// ----------------------------------
-		m_gl_chassis->setPose( mrpt::math::TPose3D( m_q.vals[0], m_q.vals[1], 0.01, m_q.vals[2], 0.0, 0.0) );
+		m_gl_chassis->setPose(m_q);
 
 		for (size_t i=0;i<nWs;i++)
 		{
