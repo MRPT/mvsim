@@ -1,7 +1,7 @@
 #*+-------------------------------------------------------------------------+
-# |                       MultiVehicle 2D simulator (libmv2dsim)            |
+# |                       MultiVehicle simulator (libmvsim)                 |
 # |                                                                         |
-# |  https://github.com/ual-arm-ros-pkg/multivehicle_2d_simulator           |
+# |  https://github.com/ual-arm-ros-pkg/multivehicle-simulator              |
 # |                                                                         |
 # | Copyright (C) 2014  Jose Luis Blanco Claraco (University of Almeria)    |
 # | Distributed under GNU General Public License version 3                  |
@@ -10,7 +10,7 @@
 
 cmake_minimum_required(VERSION 2.8.3)
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
-PROJECT(mv2dsim)  # Must match the ROS package name.
+PROJECT(mvsim)  # Must match the ROS package name.
 
 if(COMMAND cmake_policy)
       cmake_policy(SET CMP0003 NEW)
@@ -39,7 +39,7 @@ find_package(catkin
 SET(BUILD_FOR_ROS FALSE)
 IF (${catkin_FOUND})
 	SET(BUILD_FOR_ROS TRUE)
-	MESSAGE(STATUS " ==== multivehicle_2d_simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
+	MESSAGE(STATUS " ==== multivehicle-simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
 ENDIF()
 
 
@@ -150,14 +150,14 @@ INCLUDE_DIRECTORIES("${EXTERNALS_DIR}/rapidxml")
 # --------------------------
 #       The Library 
 # --------------------------
-INCLUDE_DIRECTORIES("${${PROJECT_NAME}_SOURCE_DIR}/libmv2dsim/include/")
+INCLUDE_DIRECTORIES("${${PROJECT_NAME}_SOURCE_DIR}/libmvsim/include/")
 
-add_subdirectory(libmv2dsim)
+add_subdirectory(libmvsim)
 
 # --------------------------
 #       Apps
 # --------------------------
-add_subdirectory(mv2dsim_app) # Standalone app
+add_subdirectory(mvsim_app) # Standalone app
 
 # -----------------------------------------------------------------------------
 #                                   ROS SEGMENT
@@ -189,24 +189,24 @@ IF (BUILD_FOR_ROS)
 	###########
 
 	## Declare a cpp executable
-	add_executable(mv2dsim_node 
-	    mv2dsim_node_src/mv2dsim_node.cpp 
-	#    mv2dsim_node_src/mv2dsim_node_parameters.cpp
+	add_executable(mvsim_node 
+	    mvsim_node_src/mvsim_node.cpp 
+	#    mvsim_node_src/mvsim_node_parameters.cpp
 	)
 
 	## Add cmake target dependencies of the executable/library
 	## as an example, message headers may need to be generated before nodes
 	# add_dependencies(mrpt_localization_node mrpt_localization_generate_messages_cpp)
-	add_dependencies(mv2dsim_node
-	  mv2dsim_gencfg) 
+	add_dependencies(mvsim_node
+	  mvsim_gencfg) 
 
 	# make sure configure headers are built before any node using them
 	IF (${PROJECT_NAME}_EXPORTED_TARGETS})
-		add_dependencies(mv2dsim_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+		add_dependencies(mvsim_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 	ENDIF()
 
 	## Specify libraries to link a library or executable target against
-	target_link_libraries(mv2dsim_node
+	target_link_libraries(mvsim_node
 		${MRPT_LIBS}
 		${catkin_LIBRARIES}
 		)
@@ -227,7 +227,7 @@ IF (BUILD_FOR_ROS)
 	# )
 
 	# Mark executables and/or libraries for installation
-	install(TARGETS mv2dsim_node 
+	install(TARGETS mvsim_node 
 	  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
