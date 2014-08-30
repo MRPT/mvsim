@@ -1,12 +1,12 @@
-MultiVehicle 2D simulator (libmv2dsim) 
+MultiVehicle simulator (libmvsim) 
 ======================================
-Lightweight, realistic dynamical simulator for 2D vehicles/robots. 
+Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots. 
 Includes C++ library, standalone app and ROS node.
 
 License: GNU General Public License version 3
-Author: Jose Luis Blanco <jlblanco@ual.es> (University of Almeria)
+Copyright (C) 2014 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
-![screenshot](https://raw.githubusercontent.com/ual-arm-ros-pkg/multivehicle_2d_simulator/master/docs/imgs/screenshot_scans_see_each_other.png "Screenshot 1")
+![screenshot](https://raw.githubusercontent.com/ual-arm-ros-pkg/multivehicle-simulator/master/docs/imgs/screenshot_scans_see_each_other.png "Screenshot 1")
 
 Main features
 --------------
@@ -25,7 +25,7 @@ Main features
 
 Docs
 ----------
-  * **The mv2dsim manual** is the main reference document. (Write me!!)
+  * **The mvsim manual** is the main reference document. (Write me!!)
   * ROS tutorials (Write me!!)
 
 Compiling: standalone
