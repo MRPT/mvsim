@@ -17,7 +17,7 @@
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->
-	<world:elevation_map>
+	<element class='elevation_map'>
 		<!-- File can be an image or a .txt matrix -->
 		<elevation_image>elevation_mesh1.png</elevation_image>
 		<elevation_image_min_z>0</elevation_image_min_z>
@@ -28,7 +28,7 @@
 		
 		<resolution>1.0</resolution>
 		
-	</world:elevation_map>
+	</element>
 	
 	
 	<!-- =============================

@@ -49,10 +49,13 @@ WorldElementBase* WorldElementBase::factory(World* parent, const rapidxml::xml_n
 	}
 	else 
 	{
-		if (0!=strncmp(root->name(),"world:",strlen("world:"))) throw runtime_error(mrpt::format("[WorldElementBase::factory] XML root element is '%s' ('world:*' expected)",root->name()));
+		if (0!=strcmp(root->name(),"element")) throw runtime_error(mrpt::format("[WorldElementBase::factory] XML root element is '%s' ('<element>' expected)",root->name()));
 
-		// Get the world:* final part as the name of the class (e.g. "world:gridmap"  -> "gridmap"):
-		sName  = string(root->name()).substr(strlen("world:"));
+		// Get class name:
+		const xml_attribute<> *attrib_class = root->first_attribute("class");
+		if (!attrib_class || !attrib_class->value() ) throw runtime_error("[WorldElementBase::factory] Missing mandatory attribute 'class' in node <element>");
+
+		sName  = string(attrib_class->value());
 	}
 	WorldElementBase* we = classFactory_worldElements.create(sName, parent, root);
 

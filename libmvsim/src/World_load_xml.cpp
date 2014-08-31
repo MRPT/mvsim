@@ -81,8 +81,8 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 	xml_node<> *node = root->first_node();
 	while (node)
 	{
-		// <world:*> entries:
-		if (!strncmp(node->name(),"world:",strlen("world:")))
+		// <element class='*'> entries:
+		if (!strcmp(node->name(),"element"))
 		{
 			WorldElementBase *we = WorldElementBase::factory(this,node);
 			this->m_world_elements.push_back(we);
