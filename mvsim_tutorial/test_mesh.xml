@@ -88,7 +88,7 @@
 			</chassis>
 			
 			<!--   Motor controller -->
-			<controller class="raw"> <!-- twist_front_steer_pid -->
+			<controller class="twist_front_steer_pid"> <!-- twist_front_steer_pid -->
 				<!-- Params -->
 				<KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
 				<V>0.0</V><W>0</W>
