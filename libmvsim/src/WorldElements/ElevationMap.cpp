@@ -12,13 +12,13 @@
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CPointCloud.h>
 #include <mrpt/scanmatching/scan_matching.h>  // least-squares methods
 #include <rapidxml.hpp>
 
 using namespace rapidxml;
 using namespace mvsim;
 using namespace std;
-
 
 ElevationMap::ElevationMap(World*parent,const rapidxml::xml_node<char> *root) :
 	WorldElementBase(parent),
@@ -103,11 +103,11 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	m_mesh_z_cache = elevation_data;
 	
 	// Extension: X,Y
-	const double LX = elevation_data.cols() * m_resolution;
-	const double LY = elevation_data.rows() * m_resolution;
+	const double LX = (elevation_data.cols()-1) * m_resolution;
+	const double LY = (elevation_data.rows()-1) * m_resolution;
 	m_gl_mesh->setGridLimits(-0.5*LX, 0.5*LX, -0.5*LY, 0.5*LY);
-		
 }
+
 
 void ElevationMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 {
@@ -123,6 +123,7 @@ void ElevationMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 	}
 
 }
+
 
 void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 {
