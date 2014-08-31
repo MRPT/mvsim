@@ -46,7 +46,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	params["elevation_image_min_z"] = TParamEntry("%lf", &img_min_z);
 	params["elevation_image_max_z"] = TParamEntry("%lf", &img_max_z);
 	
-	mrpt::utils::TColor mesh_color;
+	mrpt::utils::TColor mesh_color(0xa0,0xe0,0xa0);
 	params["mesh_color"] = TParamEntry("%color", &mesh_color);
 
 	params["resolution"] = TParamEntry("%lf", &m_resolution);
@@ -129,6 +129,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 	// For each vehicle:
 	// 1) Compute its 3D pose according to the mesh tilt angle.
 	// 2) Apply gravity force
+	const double gravity = getWorldObject()->get_gravity();
 
 	ASSERT_(m_gl_mesh)
 	const mrpt::opengl::CMesh * mesh = m_gl_mesh.pointer();
@@ -138,12 +139,15 @@ void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 	{
 		m_world->getTimeLogger().enter("elevationmap.handle_vehicle");
 
+		const size_t nWheels = itVeh->second->getNumWheels();
+
 		// 1) Compute its 3D pose according to the mesh tilt angle.
 		// Idea: run a least-squares method to find the best 
 		// SE(3) transformation that map the wheels contact point, 
 		// as seen in local & global coordinates. 
 		// (For large tilt angles, may have to run it iteratively...)
 		// -------------------------------------------------------------
+		mrpt::math::TPoint3D dir_down; // the final downwards direction (unit vector (0,0,-1)) as seen in vehicle local frame.
 		for (int iter=0;iter<3;iter++)
 		{
 			const mrpt::math::TPose3D &cur_pose = itVeh->second->getPose();
@@ -151,11 +155,8 @@ void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 
 			mrpt::math::TPose3D new_pose = cur_pose;
 		
-			const size_t nWheels = itVeh->second->getNumWheels();
-		
-		
 			// See mrpt::scanmatching::leastSquareErrorRigidTransformation6D() docs
-			mrpt::utils::TMatchingPairList corrs;
+			corrs.clear();
 		
 			bool out_of_area = false;
 			for (size_t iW=0;!out_of_area && iW<nWheels;iW++)
@@ -193,23 +194,43 @@ void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 				continue;
 
 			// Register:
-			mrpt::poses::CPose3D optimal_transf;
 			double transf_scale;
-			mrpt::scanmatching::leastSquareErrorRigidTransformation6D(corrs,optimal_transf,transf_scale, true /*force scale unity*/);
+			mrpt::scanmatching::leastSquareErrorRigidTransformation6D(corrs,m_optimal_transf,transf_scale, true /*force scale unity*/);
 
-			new_pose.z = optimal_transf.z();
-			new_pose.yaw = optimal_transf.yaw();
-			new_pose.pitch = optimal_transf.pitch();
-			new_pose.roll = optimal_transf.roll();
+			new_pose.z = m_optimal_transf.z();
+			new_pose.yaw = m_optimal_transf.yaw();
+			new_pose.pitch = m_optimal_transf.pitch();
+			new_pose.roll = m_optimal_transf.roll();
 
 			//cout << new_pose << endl;
 
 			itVeh->second->setPose(new_pose);
+
 		} // end iters
+
+		{
+			mrpt::poses::CPose3D rot_only;
+			rot_only.setRotationMatrix( m_optimal_transf.getRotationMatrix() );
+			rot_only.inverseComposePoint(.0,.0,-1.0,  dir_down.x,dir_down.y,dir_down.z);
+		}
+		
 
 		// 2) Apply gravity force
 		// -------------------------------------------------------------
-		//it_Veh->apply_force(double fx, double fy, double local_ptx, double local_pty)
+		{
+			// To chassis:
+			const double chassis_weight = itVeh->second->getChassisMass() * gravity;
+			const mrpt::math::TPoint2D chassis_com = itVeh->second->getChassisCenterOfMass();
+			itVeh->second->apply_force(dir_down.x*chassis_weight,dir_down.y*chassis_weight,  chassis_com.x,chassis_com.y);
+
+			// To wheels:
+			for (size_t iW=0;iW<nWheels;iW++)
+			{
+				const Wheel &wheel = itVeh->second->getWheelInfo(iW);
+				const double wheel_weight = wheel.mass * gravity;
+				itVeh->second->apply_force(dir_down.x*wheel_weight,dir_down.y*wheel_weight,  wheel.x,wheel.y);
+			}
+		}
 
 		m_world->getTimeLogger().leave("elevationmap.handle_vehicle");
 	}

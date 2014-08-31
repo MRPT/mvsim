@@ -22,6 +22,7 @@ MRPT_TODO("Create global obj for params registry; export them to ROS, etc.")
 
 // Default ctor: inits empty world.
 World::World() :
+	m_gravity(9.81),
 	m_simul_time(0.0),
 	m_simul_timestep(0.010),
 	m_b2d_vel_iters(6),

@@ -53,6 +53,9 @@ namespace mvsim
 		double get_simul_timestep() const { return m_simul_timestep; } //!< Simulation fixed-time interval for numerical integration
 		void   set_simul_timestep(double timestep) { m_simul_timestep=timestep; } //!< Simulation fixed-time interval for numerical integration
 
+		double get_gravity() const { return m_gravity; } //!< Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for friction, etc.
+		void set_gravity(double accel) { m_gravity=accel; } //!< Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for friction, etc.
+
 		/** Runs the simulation for a given time interval (in seconds)
 		  * \note The minimum simulation time is the timestep set (e.g. via set_simul_timestep()), even if time advanced further than the provided "dt".
 		  */
@@ -110,6 +113,7 @@ namespace mvsim
 		friend class VehicleBase;
 
 		// -------- World Params ----------
+		double m_gravity; //!< Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for friction, etc.
 		double m_simul_time;    //!< In seconds, real simulation time since beginning (may be different than wall-clock time because of time warp, etc.)
 		double m_simul_timestep; //!< Simulation fixed-time interval for numerical integration.
 		int m_b2d_vel_iters, m_b2d_pos_iters; //!< Velocity and position iteration count (Box2D)

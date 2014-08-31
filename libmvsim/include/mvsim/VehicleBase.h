@@ -70,6 +70,8 @@ namespace mvsim
 
 		b2Body * getBox2DChassisBody() { return m_b2d_vehicle_body; }
 
+		mrpt::math::TPoint2D getChassisCenterOfMass() const { return m_chassis_com; } //!< In local coordinates (this excludes the mass of wheels)
+
 		size_t getNumWheels() const { return m_wheels_info.size(); }
 		const Wheel & getWheelInfo(const size_t idx) const { return m_wheels_info[idx]; }
 		Wheel & getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
@@ -145,6 +147,8 @@ namespace mvsim
 		double m_max_radius; //!< Automatically computed from m_chassis_poly upon each change via updateMaxRadiusFromPoly()
 		double m_chassis_z_min,m_chassis_z_max;
 		mrpt::utils::TColor   m_chassis_color;
+
+		mrpt::math::TPoint2D m_chassis_com; //!< In local coordinates (this excludes the mass of wheels)
 
 		void updateMaxRadiusFromPoly();
 

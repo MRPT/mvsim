@@ -69,6 +69,7 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 	// load general parameters:
 	// ------------------------------------------------
 	std::map<std::string,TParamEntry> other_world_params;
+	other_world_params["gravity"] = TParamEntry("%lf", &this->m_gravity);
 	other_world_params["simul_timestep"] = TParamEntry("%lf", &this->m_simul_timestep);
 	other_world_params["b2d_vel_iters"] = TParamEntry("%i", &this->m_b2d_vel_iters);
 	other_world_params["b2d_pos_iters"] = TParamEntry("%i", &this->m_b2d_pos_iters);

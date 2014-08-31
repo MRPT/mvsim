@@ -56,6 +56,7 @@ VehicleBase::VehicleBase(World *parent, size_t nWheels) :
 	m_chassis_z_min(0.05),
 	m_chassis_z_max(0.6),
 	m_chassis_color(0xff,0x00,0x00),
+	m_chassis_com(.0,.0),
 	m_wheels_info(nWheels),
 	m_fixture_wheels(nWheels, NULL)
 {
@@ -298,8 +299,9 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	const size_t nW = getNumWheels();
 	ASSERT_EQUAL_(m_torque_per_wheel.size(),nW);
 
+	const double gravity = getWorldObject()->get_gravity();
 	const double massPerWheel = getChassisMass()/nW; // Part of the vehicle weight on each wheel.
-	const double weightPerWheel = massPerWheel* 9.81;
+	const double weightPerWheel = massPerWheel* gravity;
 
 	std::vector<mrpt::math::TPoint2D> wheels_vels;
 	getWheelsVelocityLocal(wheels_vels,getVelocityLocal());
@@ -537,6 +539,12 @@ void VehicleBase::create_multibody_system(b2World* world)
 
 		// Add the shape to the body.
 		m_fixture_chassis = m_b2d_vehicle_body->CreateFixture(&fixtureDef);
+
+		// Compute center of mass:
+		b2MassData vehMass;
+		m_fixture_chassis->GetMassData(&vehMass);
+		m_chassis_com.x = vehMass.center.x;
+		m_chassis_com.y = vehMass.center.y;
 	}
 
 	// Define shape of wheels:
