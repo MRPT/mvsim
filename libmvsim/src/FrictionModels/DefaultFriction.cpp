@@ -50,8 +50,9 @@ void DefaultFriction::evaluate_friction(const FrictionBase::TFrictionInput &inpu
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
 	const double mu = m_mu;
-	const double partial_mass = input.weight/9.81 + input.wheel.mass;
-	const double max_friction = mu * partial_mass * 9.81;
+	const double gravity = m_my_vehicle.getWorldObject()->get_gravity();
+	const double partial_mass = input.weight/gravity  + input.wheel.mass;
+	const double max_friction = mu * partial_mass * gravity;
 
 	// 1) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------

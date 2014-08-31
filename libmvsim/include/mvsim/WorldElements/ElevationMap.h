@@ -11,6 +11,8 @@
 #include <mvsim/WorldElements/WorldElementBase.h>
 #include <mrpt/opengl/CMesh.h>
 #include <mrpt/synch/CCriticalSection.h>
+#include <mrpt/utils/TMatchingPair.h>
+#include <mrpt/poses/CPose3D.h>
 
 namespace mvsim
 {
@@ -36,6 +38,11 @@ namespace mvsim
 		bool  m_first_scene_rendering;
 		double m_resolution;
 		mrpt::math::CMatrixFloat  m_mesh_z_cache; //!< A copy of elevation data in m_gl_mesh. Coordinate order is (x,y)
+
+	private: 
+		// temp vars (declared here to avoid reallocs):
+		mrpt::utils::TMatchingPairList corrs;
+		mrpt::poses::CPose3D m_optimal_transf;
 
 	};
 }
