@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <package>
-  <name>mv2dsim</name>
+  <name>mvsim</name>
   <version>0.1.0</version>
-  <description>Node for the "multivehicle 2D simulator" framework.</description>
+  <description>Node for the "multivehicle simulator" framework.</description>
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
   <license>BSD</license>
-  <url type="website">http://wiki.ros.org/mv2dsim</url>
+  <url type="website">http://wiki.ros.org/mvsim</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
