@@ -33,7 +33,7 @@ endif()
 find_package(catkin 
 	QUIET  # **IMPORTANT**: Notice the "QUIET" instead of the usual "REQUIRED". It's not a mistake.
 	COMPONENTS 
-	roscpp sensor_msgs mrpt_bridge dynamic_reconfigure
+	roscpp tf mrpt_bridge dynamic_reconfigure std_msgs nav_msgs sensor_msgs dynamic_reconfigure message_generation
 	)
 
 SET(BUILD_FOR_ROS FALSE)
@@ -163,8 +163,39 @@ add_subdirectory(mvsim_app) # Standalone app
 #                                   ROS SEGMENT
 # -----------------------------------------------------------------------------
 IF (BUILD_FOR_ROS)
+	################################################
+	## Declare ROS messages, services and actions ##
+	################################################
+
+	## Generate messages in the 'msg' folder
+	add_message_files(
+	  FILES
+	  NodeExampleData.msg
+	)
+
+	## Generate services in the 'srv' folder
+	# add_service_files(
+	#   FILES
+	#   Service1.srv
+	#   Service2.srv
+	# )
+
+	## Generate actions in the 'action' folder
+	# add_action_files(
+	#   FILES
+	#   Action1.action
+	#   Action2.action
+	# )
+
+	generate_messages(
+	  DEPENDENCIES
+	  std_msgs
+	)
+
 	#add dynamic reconfigure api
-	#generate_dynamic_reconfigure_options( cfg/XXX.cfg )
+	generate_dynamic_reconfigure_options(
+	  cfg/mvsimNode.cfg
+	)
 
 	###################################
 	## catkin specific configuration ##
@@ -175,14 +206,21 @@ IF (BUILD_FOR_ROS)
 	## LIBRARIES: libraries you create in this project that dependent projects also need
 	## CATKIN_DEPENDS: catkin_packages dependent projects also need
 	## DEPENDS: system dependencies of this project that dependent projects also need
+
 	catkin_package(
-	#  INCLUDE_DIRS 
-	#  LIBRARIES XXX
-	  CATKIN_DEPENDS mrpt_bridge
-	  DEPENDS mrpt  # box2d (Add??)
+	  CATKIN_DEPENDS dynamic_reconfigure message_runtime roscpp std_msgs
+	#  INCLUDE_DIRS include
+	#  LIBRARIES mrpt_localization
+	  DEPENDS mrpt
 	)
 
-	include_directories(${catkin_INCLUDE_DIRS})
+	###########
+	## Build ##
+	###########
+
+	## Specify additional locations of header files
+	## Your package locations should be listed before other locations
+	include_directories("mvsim_node_src/include" ${catkin_INCLUDE_DIRS})
 
 	###########
 	## Build ##
@@ -190,8 +228,8 @@ IF (BUILD_FOR_ROS)
 
 	## Declare a cpp executable
 	add_executable(mvsim_node 
-	    mvsim_node_src/mvsim_node.cpp 
-	#    mvsim_node_src/mvsim_node_parameters.cpp
+	    mvsim_node_src/mvsim_node.cpp
+	    mvsim_node_src/mvsim_node_main.cpp
 	)
 
 	## Add cmake target dependencies of the executable/library
@@ -239,19 +277,6 @@ IF (BUILD_FOR_ROS)
 	#   # myfile2
 	#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 	# )
-
-	#############
-	## Testing ##
-	#############
-
-	## Add gtest based cpp test target and link libraries
-	# catkin_add_gtest(${PROJECT_NAME}-test test/test_kinect_2d_scanner.cpp)
-	# if(TARGET ${PROJECT_NAME}-test)
-	#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-	# endif()
-
-	## Add folders to be run by python nosetests
-	# catkin_add_nosetests(test)
 
 ENDIF() # BUILD_FOR_ROS
 
