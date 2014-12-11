@@ -221,6 +221,7 @@ IF (BUILD_FOR_ROS)
 	## Specify additional locations of header files
 	## Your package locations should be listed before other locations
 	include_directories("mvsim_node_src/include" ${catkin_INCLUDE_DIRS})
+	include_directories(${BOX2D_INCLUDE_DIR}) # Required by mvsim lib
 
 	###########
 	## Build ##
@@ -236,7 +237,9 @@ IF (BUILD_FOR_ROS)
 	## as an example, message headers may need to be generated before nodes
 	# add_dependencies(mrpt_localization_node mrpt_localization_generate_messages_cpp)
 	add_dependencies(mvsim_node
-	  mvsim_gencfg) 
+		mvsim_gencfg
+		mvsim # the simulator lib
+		) 
 
 	# make sure configure headers are built before any node using them
 	IF (${PROJECT_NAME}_EXPORTED_TARGETS})
@@ -245,6 +248,8 @@ IF (BUILD_FOR_ROS)
 
 	## Specify libraries to link a library or executable target against
 	target_link_libraries(mvsim_node
+		mvsim  # the simulator lib
+		${BOX2D_LIBRARIES}  # Box2D libs
 		${MRPT_LIBS}
 		${catkin_LIBRARIES}
 		)
