@@ -14,6 +14,8 @@
 // Dynamic reconfigure includes.
 #include <dynamic_reconfigure/server.h>
 
+#include <tf/transform_broadcaster.h>
+
 // Auto-generated from cfg/ directory.
 #include <mvsim/mvsimNodeConfig.h>
 
@@ -63,8 +65,31 @@ protected:
 	double t_old_; // = realtime_tictac_.Tac();
 	bool   world_init_ok_; //!< will be true after a success call to loadWorldModel()
 
+	size_t m_teleop_idx_veh;  //!< for teleoperation from the GUI (selects the "focused" vehicle)
+	mvsim::World::TGUIKeyEvent m_gui_key_events;
+	std::string m_msg2gui;
+
 	mrpt::system::TThreadHandle thGUI_;
 	static void thread_update_GUI(TThreadParams &thread_params);
+
+	tf::TransformBroadcaster tf_br_; //!< Use to send data to TF
+
+
+	/** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_link */
+	void broadcastTF_GTPose(
+		const mrpt::math::TPose3D &pose,
+		const std::string &robotName = std::string("r1"));
+
+	/** Publish "odometry" for a robot to tf as: odom -> <ROBOT>/base_link */
+	void broadcastTF_Odom(
+		const mrpt::math::TPose3D &pose,
+		const std::string &robotName = std::string("r1"));
+
+	/** Publish pose to tf: parentFrame -> <ROBOT>/base_link */
+	void broadcastTF(
+		const mrpt::math::TPose3D &pose,
+		const std::string &parentFrame,
+		const std::string &childFrame);
 
 }; // end class
 
