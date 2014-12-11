@@ -14,8 +14,26 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "mvsim");
 	ros::NodeHandle n;
 
-	// Create a new NodeExample object.
+	// Create a "Node" object.
 	MVSimNode node;
+
+	// Declare variables that can be modified by launch file or command line.
+	int rate;
+	std::string world_file;
+
+	// Initialize node parameters from launch file or command line.
+	// Use a private node handle so that multiple instances of the node can be run simultaneously
+	// while using different parameters.
+	ros::NodeHandle private_node_handle_("~");
+	private_node_handle_.param("simul_rate", rate, 100);
+	private_node_handle_.param("world_file", world_file, std::string(""));
+	private_node_handle_.param("realtime_factor", node.realtime_factor_, 1.0);
+	private_node_handle_.param("gui_refresh_period", node.gui_refresh_period_ms_, node.gui_refresh_period_ms_);
+
+	// Init world model:
+	if (!world_file.empty())
+		node.loadWorldModel(world_file);
+
 
 	// Set up a dynamic reconfigure server.
 	// Do this before parameter server, else some of the parameter server
@@ -24,17 +42,6 @@ int main(int argc, char **argv)
 	dynamic_reconfigure::Server<mvsim::mvsimNodeConfig>::CallbackType cb;
 	cb = boost::bind(&MVSimNode::configCallback, &node, _1, _2);
 	dr_srv.setCallback(cb);
-
-	// Declare variables that can be modified by launch file or command line.
-	int a;
-	int rate;
-
-	// Initialize node parameters from launch file or command line.
-	// Use a private node handle so that multiple instances of the node can be run simultaneously
-	// while using different parameters.
-	ros::NodeHandle private_node_handle_("~");
-	private_node_handle_.param("a", a, 1);
-	private_node_handle_.param("rate", rate, 40);
 
 	// Create a publisher and name the topic.
 	//ros::Publisher pub_message = n.advertise<node_example::NodeExampleData>("example", 10);
@@ -47,9 +54,7 @@ int main(int argc, char **argv)
 	// Main loop.
 	while (n.ok())
 	{
-		// Publish the message.
-		//node.publishMessage(&pub_message);
-
+		node.spin();
 		ros::spinOnce();
 		r.sleep();
 	}
