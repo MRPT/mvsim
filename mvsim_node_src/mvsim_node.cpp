@@ -8,6 +8,7 @@
 #include <mrpt/system/os.h> // kbhit()
 
 #include <mrpt_bridge/laser_scan.h>
+#include <nav_msgs/Odometry.h>
 
 /*------------------------------------------------------------------------------
  * MVSimNode()
@@ -18,6 +19,8 @@ MVSimNode::MVSimNode() :
 	gui_refresh_period_ms_ (25),
 	t_old_           (-1),
 	world_init_ok_   (false),
+	m_period_ms_publish_tf (20),
+	m_period_ms_teleop_refresh(100),
 	m_teleop_idx_veh (0)
 {
 	// Launch GUI thread:
@@ -119,68 +122,89 @@ void MVSimNode::spin()
 	// House-keeping to be done at each iteration
 	// ========================================================================
 	const World::TListVehicles &vehs = mvsim_world_.getListOfVehicles();
-	for (World::TListVehicles::const_iterator it = vehs.begin(); it!=vehs.end();++it)
+
+	if (m_tim_publish_tf.Tac()>m_period_ms_publish_tf*1e-3)
 	{
-		const std::string &sVehName = it->first;
-		const VehicleBase * veh = it->second;
+		m_tim_publish_tf.Tic();
 
-		// get and broadcast the ground-truth vehicle pose:
-		const mrpt::math::TPose3D & gh_veh_pose = veh->getPose();
+		for (World::TListVehicles::const_iterator it = vehs.begin(); it!=vehs.end();++it)
+		{
+			const std::string &sVehName = it->first;
+			const VehicleBase * veh = it->second;
 
-		this->broadcastTF_GTPose(gh_veh_pose,sVehName);
-	}
+			// get and broadcast the ground-truth vehicle pose:
+			const mrpt::math::TPose3D & gh_veh_pose = veh->getPose();
+
+			if (1)
+			{
+				this->broadcastTF_GTPose(gh_veh_pose,sVehName);
+			}
+			else
+			{
+				this->broadcastTF_Odom(gh_veh_pose,sVehName);
+			}
+		}
+	} // end publish tf
 
 	// GUI msgs, teleop, etc.
 	// ========================================================================
-	std::string txt2gui_tmp;
-	World::TGUIKeyEvent keyevent = m_gui_key_events;
-
-	// Global keys:
-	switch (keyevent.keycode)
+	if (m_tim_teleop_refresh.Tac()>m_period_ms_teleop_refresh*1e-3)
 	{
-	//case 27: do_exit=true; break;
-	case '1': case '2': case '3': case '4': case '5': case '6':
-		m_teleop_idx_veh = keyevent.keycode-'1';
-		break;
-	};
+		m_tim_teleop_refresh.Tic();
 
-	{ // Test: Differential drive: Control raw forces
-		txt2gui_tmp+=mrpt::format("Selected vehicle: %u/%u\n", static_cast<unsigned>(m_teleop_idx_veh+1),static_cast<unsigned>(vehs.size()) );
-		if (vehs.size()>m_teleop_idx_veh)
+		std::string txt2gui_tmp;
+		World::TGUIKeyEvent keyevent = m_gui_key_events;
+
+		// Global keys:
+		switch (keyevent.keycode)
 		{
-			// Get iterator to selected vehicle:
-			World::TListVehicles::const_iterator it_veh = vehs.begin();
-			std::advance(it_veh, m_teleop_idx_veh);
+		//case 27: do_exit=true; break;
+		case '1': case '2': case '3': case '4': case '5': case '6':
+			m_teleop_idx_veh = keyevent.keycode-'1';
+			break;
+		};
 
-			// Get speed: ground truth
+		{ // Test: Differential drive: Control raw forces
+			txt2gui_tmp+=mrpt::format("Selected vehicle: %u/%u\n", static_cast<unsigned>(m_teleop_idx_veh+1),static_cast<unsigned>(vehs.size()) );
+			if (vehs.size()>m_teleop_idx_veh)
 			{
-				const vec3 &vel = it_veh->second->getVelocityLocal();
-				txt2gui_tmp+=mrpt::format("gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
-			}
-			// Get speed: ground truth
-			{
-				const vec3 &vel = it_veh->second->getVelocityLocalOdoEstimate();
-				txt2gui_tmp+=mrpt::format("odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
-			}
+				// Get iterator to selected vehicle:
+				World::TListVehicles::const_iterator it_veh = vehs.begin();
+				std::advance(it_veh, m_teleop_idx_veh);
 
-			// Generic teleoperation interface for any controller that supports it:
-			{
-				ControllerBaseInterface *controller = it_veh->second->getControllerInterface();
-				ControllerBaseInterface::TeleopInput teleop_in;
-				ControllerBaseInterface::TeleopOutput teleop_out;
-				teleop_in.keycode = keyevent.keycode;
-				controller->teleop_interface(teleop_in,teleop_out);
-				txt2gui_tmp+=teleop_out.append_gui_lines;
-			}
+				// Get speed: ground truth
+				{
+					const vec3 &vel = it_veh->second->getVelocityLocal();
+					txt2gui_tmp+=mrpt::format("gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
+				}
+				// Get speed: ground truth
+				{
+					const vec3 &vel = it_veh->second->getVelocityLocalOdoEstimate();
+					txt2gui_tmp+=mrpt::format("odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vals[0], vel.vals[1], mrpt::utils::RAD2DEG(vel.vals[2]) );
+				}
 
+				// Generic teleoperation interface for any controller that supports it:
+				{
+					ControllerBaseInterface *controller = it_veh->second->getControllerInterface();
+					ControllerBaseInterface::TeleopInput teleop_in;
+					ControllerBaseInterface::TeleopOutput teleop_out;
+					teleop_in.keycode = keyevent.keycode;
+					controller->teleop_interface(teleop_in,teleop_out);
+					txt2gui_tmp+=teleop_out.append_gui_lines;
+				}
+
+			}
 		}
-	}
 
-	// Clear the keystroke buffer
-	if (keyevent.keycode!=0)
-		m_gui_key_events = World::TGUIKeyEvent();
+		m_msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
 
-	m_msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
+		// Clear the keystroke buffer
+		if (keyevent.keycode!=0)
+			m_gui_key_events = World::TGUIKeyEvent();
+
+	} // end refresh teleop stuff
+
+
 
 }
 
@@ -220,7 +244,39 @@ void MVSimNode::broadcastTF_GTPose(const mrpt::math::TPose3D &pose, const std::s
 /** Publish "odometry" for a robot to tf as: odom -> <ROBOT>/base_link */
 void MVSimNode::broadcastTF_Odom(const mrpt::math::TPose3D &pose,const std::string &robotName)
 {
-	broadcastTF(pose,"/odom/"+robotName, "/"+robotName+"/base_link" );
+	const std::string sOdomName      ="/"+robotName+"/odom";
+	const std::string sChildrenFrame ="/"+robotName+"/base_link";
+
+	broadcastTF(pose,sOdomName, sChildrenFrame);
+
+	// Apart from TF, publish to the "odom" topic as well
+	if (!m_odo_publisher)  // 1st usage: Create publisher
+	{
+		ros::NodeHandle nh;
+		m_odo_publisher = nh.advertise<nav_msgs::Odometry>("/"+robotName+"/odom", 10);
+	}
+
+
+	nav_msgs::Odometry odoMsg;
+
+	odoMsg.pose.pose.position.x = pose.x;
+	odoMsg.pose.pose.position.y = pose.y;
+	odoMsg.pose.pose.position.z = pose.z;
+
+	tf::Quaternion quat;
+	quat.setEuler( pose.roll, pose.pitch, pose.yaw );
+
+	odoMsg.pose.pose.orientation.x = quat.x();
+	odoMsg.pose.pose.orientation.y = quat.y();
+	odoMsg.pose.pose.orientation.z = quat.z();
+	odoMsg.pose.pose.orientation.w = quat.w();
+
+	// first, we'll populate the header for the odometry msg
+	odoMsg.header.frame_id = sOdomName;
+	odoMsg.child_frame_id  = sChildrenFrame;
+
+	// publish:
+	m_odo_publisher.publish(odoMsg);
 }
 
 /** Publish pose to tf: parentFrame -> <ROBOT>/base_link */

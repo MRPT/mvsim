@@ -65,6 +65,12 @@ protected:
 	double t_old_; // = realtime_tictac_.Tac();
 	bool   world_init_ok_; //!< will be true after a success call to loadWorldModel()
 
+	double m_period_ms_publish_tf;    //!< Minimum period between publication of TF transforms & /*/odom topics (In ms)
+	mrpt::utils::CTicTac   m_tim_publish_tf;
+
+	double m_period_ms_teleop_refresh; //!< Minimum period between update of live info & read of teleop key strokes in GUI (In ms)
+	mrpt::utils::CTicTac   m_tim_teleop_refresh;
+
 	size_t m_teleop_idx_veh;  //!< for teleoperation from the GUI (selects the "focused" vehicle)
 	mvsim::World::TGUIKeyEvent m_gui_key_events;
 	std::string m_msg2gui;
@@ -73,6 +79,7 @@ protected:
 	static void thread_update_GUI(TThreadParams &thread_params);
 
 	tf::TransformBroadcaster tf_br_; //!< Use to send data to TF
+	ros::Publisher m_odo_publisher;
 
 
 	/** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_link */
