@@ -227,7 +227,7 @@ void MVSimNode::thread_update_GUI(TThreadParams &thread_params)
 
 	while (!thread_params.closing)
 	{
-		if (obj->world_init_ok_ && obj->configCallback(m_show_gui)
+		if (obj->world_init_ok_ && obj->m_show_gui)
 		{
 			World::TUpdateGUIParams guiparams;
 			guiparams.msg_lines = obj->m_msg2gui;
