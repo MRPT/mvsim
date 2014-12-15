@@ -133,7 +133,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 	const double gravity = getWorldObject()->get_gravity();
 
 	ASSERT_(m_gl_mesh)
-	const mrpt::opengl::CMesh * mesh = m_gl_mesh.pointer();
+	//const mrpt::opengl::CMesh * mesh = m_gl_mesh.pointer();
 
 	const World::TListVehicles & lstVehs =  this->m_world->getListOfVehicles();
 	for (World::TListVehicles::const_iterator itVeh=lstVehs.begin();itVeh!=lstVehs.end();++itVeh)
@@ -270,7 +270,7 @@ bool ElevationMap::getElevationAt(double x,double y, float &z) const
 	// Discretize:
 	const int cx00 = ::floor((x-x0)/m_resolution);
 	const int cy00 = ::floor((y-y0)/m_resolution);
-	if (cx00<1 || cx00>=nCellsX-1 || cy00<1 || cy00>=nCellsY-1) 
+	if (cx00<1 || cx00>=int(nCellsX-1) || cy00<1 || cy00>=int(nCellsY-1))
 		return false;
 	
 	// Linear interpolation:

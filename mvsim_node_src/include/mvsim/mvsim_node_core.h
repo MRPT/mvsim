@@ -29,7 +29,7 @@ class MVSimNode
 {
 public:
 	/** Constructor. */
-	MVSimNode();
+	MVSimNode(ros::NodeHandle &n);
 	/** Destructor. */
 	~MVSimNode();
 
@@ -53,6 +53,7 @@ public:
 	bool   m_show_gui;   //!< Default= true
 
 protected:
+	ros::NodeHandle &m_n;
 
 	struct TThreadParams
 	{

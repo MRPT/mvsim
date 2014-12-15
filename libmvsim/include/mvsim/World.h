@@ -114,6 +114,27 @@ namespace mvsim
 
 		/** @} */
 
+		/** \name Visitors API
+		  @{*/
+		/** Derive from this class to call runVisitorOnVehicles() */
+		struct VehicleVisitorBase
+		{
+			virtual void visit(VehicleBase *veh) = 0;
+		};
+		/** Derive from this class to call runVisitorOnWorldElements() */
+		struct WorldElementVisitorBase
+		{
+			virtual void visit(WorldElementBase *veh) = 0;
+		};
+
+		/** Run the user-provided visitor on each vehicle */
+		void runVisitorOnVehicles(VehicleVisitorBase &v);
+
+		/** Run the user-provided visitor on each world element */
+		void runVisitorOnWorldElements(WorldElementVisitorBase &v);
+
+		/** @} */
+
 	private:
 		friend class VehicleBase;
 
