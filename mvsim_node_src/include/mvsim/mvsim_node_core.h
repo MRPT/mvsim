@@ -40,11 +40,6 @@ public:
 	/** Callback function for dynamic reconfigure server */
 	void configCallback(mvsim::mvsimNodeConfig &config, uint32_t level);
 
-	/** Publish the message */
-	void publishMessage(ros::Publisher *pub_message);
-
-	/** Callback function for subscriber */
-	//  void messageCallback(const mvsim_node::NodeExampleData::ConstPtr &msg);
 
 	mvsim::World  mvsim_world_; //!< The mvsim library simulated world (includes everything: vehicles, obstacles, etc.)
 
@@ -54,6 +49,14 @@ public:
 
 protected:
 	ros::NodeHandle &m_n;
+
+	// === ROS Publishers ====
+	ros::Publisher m_pub_map_ros, m_pub_map_metadata; //!< used for simul_map publication
+
+	tf::TransformBroadcaster tf_br_; //!< Use to send data to TF
+	ros::Publisher m_odo_publisher;
+	// === End ROS Publishers ====
+
 
 	struct TThreadParams
 	{
@@ -80,11 +83,10 @@ protected:
 	mrpt::system::TThreadHandle thGUI_;
 	static void thread_update_GUI(TThreadParams &thread_params);
 
-	tf::TransformBroadcaster tf_br_; //!< Use to send data to TF
-	ros::Publisher m_odo_publisher;
+	/** Publish relevant stuff whenever a new world model is loaded (grid maps, etc.) */
+	void notifyROSWorldIsUpdated();
 
-
-	/** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_link */
+	/** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_pose_ground_truth */
 	void broadcastTF_GTPose(
 		const mrpt::math::TPose3D &pose,
 		const std::string &robotName = std::string("r1"));
@@ -99,6 +101,18 @@ protected:
 		const mrpt::math::TPose3D &pose,
 		const std::string &parentFrame,
 		const std::string &childFrame);
+
+
+	struct MVSimVisitor_notifyROSWorldIsUpdated :
+			public mvsim::World::VehicleVisitorBase,
+			public mvsim::World::WorldElementVisitorBase
+	{
+		void visit(mvsim::VehicleBase *obj);
+		void visit(mvsim::WorldElementBase *obj);
+
+		MVSimVisitor_notifyROSWorldIsUpdated(MVSimNode &parent) : m_parent(parent) {}
+		MVSimNode &m_parent;
+	};
 
 }; // end class
 

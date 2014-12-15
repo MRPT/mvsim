@@ -119,12 +119,12 @@ namespace mvsim
 		/** Derive from this class to call runVisitorOnVehicles() */
 		struct VehicleVisitorBase
 		{
-			virtual void visit(VehicleBase *veh) = 0;
+			virtual void visit(VehicleBase *obj) = 0;
 		};
 		/** Derive from this class to call runVisitorOnWorldElements() */
 		struct WorldElementVisitorBase
 		{
-			virtual void visit(WorldElementBase *veh) = 0;
+			virtual void visit(WorldElementBase *obj) = 0;
 		};
 
 		/** Run the user-provided visitor on each vehicle */

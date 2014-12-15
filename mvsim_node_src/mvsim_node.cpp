@@ -13,6 +13,7 @@
 #include <nav_msgs/GetMap.h>
 
 #include <nav_msgs/Odometry.h>
+#include <mvsim/WorldElements/OccupancyGridMap.h>
 
 /*------------------------------------------------------------------------------
  * MVSimNode()
@@ -32,7 +33,13 @@ MVSimNode::MVSimNode(ros::NodeHandle &n) :
 	// Launch GUI thread:
 	thread_params_.obj = this;
 	thGUI_ = mrpt::system::createThreadRef( &MVSimNode::thread_update_GUI, thread_params_);
+
+	// Init ROS publishers:
+	m_pub_map_ros  = m_n.advertise<nav_msgs::OccupancyGrid>( "simul_map", 1  /*queue len*/, true /*latch*/);
+	m_pub_map_metadata = m_n.advertise<nav_msgs::MapMetaData>("simul_map_metadata", 1/*queue len*/, true /*latch*/);
+
 }
+
 
 void MVSimNode::loadWorldModel(const std::string &world_xml_file)
 {
@@ -44,14 +51,15 @@ void MVSimNode::loadWorldModel(const std::string &world_xml_file)
 
 	ROS_INFO("[MVSimNode] World file load done.");
 	world_init_ok_	= true;
-}
 
+	// Notify the ROS system about the good news:
+	notifyROSWorldIsUpdated();
+}
 
 /*------------------------------------------------------------------------------
  * ~MVSimNode()
  * Destructor.
  *----------------------------------------------------------------------------*/
-
 MVSimNode::~MVSimNode()
 {
 	thread_params_.closing = true;
@@ -59,42 +67,9 @@ MVSimNode::~MVSimNode()
 }
 
 /*------------------------------------------------------------------------------
- * publishMessage()
- * Publish the message.
- *----------------------------------------------------------------------------*/
-
-void MVSimNode::publishMessage(ros::Publisher *pub_message)
-{
-/*  mvsim::NodeExampleData msg;
-  msg.message = message;
-  msg.a = a;
-  msg.b = b;
-
-  pub_message->publish(msg);*/
-}
-
-/*------------------------------------------------------------------------------
- * messageCallback()
- * Callback function for subscriber.
- *----------------------------------------------------------------------------*/
-
-/*void MVSimNode::messageCallback(const node_example::NodeExampleData::ConstPtr &msg)
-{
-  message = msg->message;
-  a = msg->a;
-  b = msg->b;
-
-  // Note that these are only set to INFO so they will print to a terminal for example purposes.
-  // Typically, they should be DEBUG.
-  ROS_INFO("message is %s", message.c_str());
-  ROS_INFO("sum of a + b = %d", a + b);
-}*/
-
-/*------------------------------------------------------------------------------
  * configCallback()
  * Callback function for dynamic reconfigure server.
  *----------------------------------------------------------------------------*/
-
 void MVSimNode::configCallback(mvsim::mvsimNodeConfig &config, uint32_t level)
 {
 	// Set class variables to new values. They should match what is input at the dynamic reconfigure GUI.
@@ -147,14 +122,8 @@ void MVSimNode::spin()
 			// get and broadcast the ground-truth vehicle pose:
 			const mrpt::math::TPose3D & gh_veh_pose = veh->getPose();
 
-			if (1)
-			{
-				this->broadcastTF_GTPose(gh_veh_pose,sVehName);
-			}
-			else
-			{
-				this->broadcastTF_Odom(gh_veh_pose,sVehName);
-			}
+			this->broadcastTF_GTPose(gh_veh_pose,sVehName);
+			this->broadcastTF_Odom(gh_veh_pose,sVehName);
 		}
 	} // end publish tf
 
@@ -250,7 +219,7 @@ void MVSimNode::thread_update_GUI(TThreadParams &thread_params)
 /** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_link */
 void MVSimNode::broadcastTF_GTPose(const mrpt::math::TPose3D &pose, const std::string &robotName)
 {
-	broadcastTF(pose,"/map","/"+robotName+"/base_link");
+	broadcastTF(pose,"/map","/"+robotName+"/base_pose_ground_truth");
 }
 
 /** Publish "odometry" for a robot to tf as: odom -> <ROBOT>/base_link */
@@ -305,34 +274,43 @@ void MVSimNode::broadcastTF(
 }
 
 
-// ROS: Publish grid map for visualization purposes:
-#if 0
-void onNewWorldElement()
+// Visitor: Vehicles
+// ----------------------------------------
+void MVSimNode::MVSimVisitor_notifyROSWorldIsUpdated::visit(mvsim::VehicleBase *obj)
 {
-	static ros::Publisher pub_map_ros  = n_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
-	static ros::Publisher pub_metadata = n_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
 
-	nav_msgs::GetMap::Response resp_ros;
+} // end visit(Vehicles)
 
-	if(1/*debug_*/) printf("gridMap[0]:  %i x %i @ %4.3fm/p, %4.3f, %4.3f, %4.3f, %4.3f\n",
-					  m_grid.getSizeX(), m_grid.getSizeY(), m_grid.getResolution(),
-					  m_grid.getXMin(), m_grid.getYMin(),
-					  m_grid.getXMax(), m_grid.getYMax());
-
-	mrpt_bridge::convert(m_grid, resp_ros_.map);
-
-	static size_t loop_count = 0;
-	resp_ros.map.header.stamp = ros::Time::now();
-	resp_ros.map.header.seq = loop_count++;
-
-	if(pub_map_ros.getNumSubscribers() > 0)
+// Visitor: World elements
+// ----------------------------------------
+void MVSimNode::MVSimVisitor_notifyROSWorldIsUpdated::visit(mvsim::WorldElementBase *obj)
+{
+	// GridMaps --------------
+	if ( dynamic_cast<mvsim::OccupancyGridMap*>(obj) )
 	{
-		pub_map_ros.publish(resp_ros_.map );
-	}
-	if(pub_metadata.getNumSubscribers() > 0)
-	{
-		pub_metadata.publish( resp_ros_.map.info );
-	}
+		mvsim::OccupancyGridMap* grid = dynamic_cast<mvsim::OccupancyGridMap*>(obj);
+
+		nav_msgs::OccupancyGrid ros_map;
+		mrpt_bridge::convert(grid->getOccGrid(), ros_map);
+
+		static size_t loop_count = 0;
+		ros_map.header.stamp = ros::Time::now();
+		ros_map.header.seq = loop_count++;
+
+		m_parent.m_pub_map_ros.publish(ros_map );
+		m_parent.m_pub_map_metadata.publish( ros_map.info );
+
+	} // end gridmap
+
+} // end visit(World Elements)
+
+// ROS: Publish grid map for visualization purposes:
+void MVSimNode::notifyROSWorldIsUpdated()
+{
+	MVSimVisitor_notifyROSWorldIsUpdated myvisitor(*this);
+
+	mvsim_world_.runVisitorOnWorldElements(myvisitor);
+	mvsim_world_.runVisitorOnVehicles(myvisitor);
+
 }
-#endif
 
