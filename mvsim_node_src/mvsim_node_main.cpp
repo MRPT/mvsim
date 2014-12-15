@@ -14,6 +14,7 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "mvsim");
 	ros::NodeHandle n;
 
+
 	// Create a "Node" object.
 	MVSimNode node;
 
@@ -42,6 +43,7 @@ int main(int argc, char **argv)
 	dynamic_reconfigure::Server<mvsim::mvsimNodeConfig>::CallbackType cb;
 	cb = boost::bind(&MVSimNode::configCallback, &node, _1, _2);
 	dr_srv.setCallback(cb);
+
 
 	// Create a publisher and name the topic.
 	//ros::Publisher pub_message = n.advertise<node_example::NodeExampleData>("example", 10);
