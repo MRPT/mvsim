@@ -30,6 +30,7 @@ int main(int argc, char **argv)
 	private_node_handle_.param("world_file", world_file, std::string(""));
 	private_node_handle_.param("realtime_factor", node.realtime_factor_, 1.0);
 	private_node_handle_.param("gui_refresh_period", node.gui_refresh_period_ms_, node.gui_refresh_period_ms_);
+	private_node_handle_.param("show_gui", node.m_show_gui, node.m_show_gui);
 
 	// Init world model:
 	if (!world_file.empty())

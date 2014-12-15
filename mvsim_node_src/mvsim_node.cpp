@@ -16,7 +16,8 @@
  *----------------------------------------------------------------------------*/
 MVSimNode::MVSimNode() :
 	realtime_factor_ (1.0),
-	gui_refresh_period_ms_ (25),
+	gui_refresh_period_ms_ (75),
+	m_show_gui       (true),
 	t_old_           (-1),
 	world_init_ok_   (false),
 	m_period_ms_publish_tf (20),
@@ -93,7 +94,13 @@ void MVSimNode::configCallback(mvsim::mvsimNodeConfig &config, uint32_t level)
 {
 	// Set class variables to new values. They should match what is input at the dynamic reconfigure GUI.
 	//  message = config.message.c_str();
-	std::cout << "Debug: " << config.debug << std::endl;
+	ROS_INFO("MVSimNode::configCallback() called.");
+
+	mvsim_world_.set_simul_timestep( config.simul_timestep );
+
+	if (mvsim_world_.is_GUI_open() && !config.show_gui)
+		mvsim_world_.close_GUI();
+
 }
 
 // Process pending msgs, run real-time simulation, etc.
@@ -220,7 +227,7 @@ void MVSimNode::thread_update_GUI(TThreadParams &thread_params)
 
 	while (!thread_params.closing)
 	{
-		if (obj->world_init_ok_)
+		if (obj->world_init_ok_ && obj->configCallback(m_show_gui)
 		{
 			World::TUpdateGUIParams guiparams;
 			guiparams.msg_lines = obj->m_msg2gui;
