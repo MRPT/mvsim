@@ -83,6 +83,11 @@ namespace mvsim
 		  * \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
 		  */
 		void update_GUI( TUpdateGUIParams *params=NULL );
+
+		bool is_GUI_open() const; //!< Return true if the GUI window is open, after a previous call to update_GUI()
+
+		void close_GUI(); //!< Forces closing the GUI window, if any.
+
 		/** @} */
 
 		/** \name Public types

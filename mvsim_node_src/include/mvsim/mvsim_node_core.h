@@ -50,6 +50,7 @@ public:
 
 	double realtime_factor_; //!< (Defaul=1.0) >1: speed-up, <1: slow-down
 	int    gui_refresh_period_ms_; //!< Default:25
+	bool   m_show_gui;   //!< Default= true
 
 protected:
 

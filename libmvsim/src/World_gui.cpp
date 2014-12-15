@@ -51,6 +51,20 @@ World::TUpdateGUIParams::TUpdateGUIParams()
 // Text labels unique IDs:
 size_t ID_GLTEXT_CLOCK = 0;
 
+
+//!< Return true if the GUI window is open, after a previous call to update_GUI()
+bool World::is_GUI_open() const
+{
+	return m_gui_win.present();
+}
+
+//!< Forces closing the GUI window, if any.
+void World::close_GUI()
+{
+	m_gui_win.clear();
+}
+
+
 /** Updates (or sets-up upon first call) the GUI visualization of the scene.
 * \note This method is prepared to be called concurrently with the simulation, and doing so is recommended to assure a smooth multi-threading simulation.
 */
