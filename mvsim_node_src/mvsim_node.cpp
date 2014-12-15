@@ -8,16 +8,21 @@
 #include <mrpt/system/os.h> // kbhit()
 
 #include <mrpt_bridge/laser_scan.h>
+#include <mrpt_bridge/map.h>
+#include <nav_msgs/MapMetaData.h>
+#include <nav_msgs/GetMap.h>
+
 #include <nav_msgs/Odometry.h>
 
 /*------------------------------------------------------------------------------
  * MVSimNode()
  * Constructor.
  *----------------------------------------------------------------------------*/
-MVSimNode::MVSimNode() :
+MVSimNode::MVSimNode(ros::NodeHandle &n) :
 	realtime_factor_ (1.0),
 	gui_refresh_period_ms_ (75),
 	m_show_gui       (true),
+	m_n              (n),
 	t_old_           (-1),
 	world_init_ok_   (false),
 	m_period_ms_publish_tf (20),
@@ -298,3 +303,36 @@ void MVSimNode::broadcastTF(
 
 	tf_br_.sendTransform(tf::StampedTransform(tr, ros::Time::now(), parentFrame, childFrame));
 }
+
+
+// ROS: Publish grid map for visualization purposes:
+#if 0
+void onNewWorldElement()
+{
+	static ros::Publisher pub_map_ros  = n_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+	static ros::Publisher pub_metadata = n_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
+
+	nav_msgs::GetMap::Response resp_ros;
+
+	if(1/*debug_*/) printf("gridMap[0]:  %i x %i @ %4.3fm/p, %4.3f, %4.3f, %4.3f, %4.3f\n",
+					  m_grid.getSizeX(), m_grid.getSizeY(), m_grid.getResolution(),
+					  m_grid.getXMin(), m_grid.getYMin(),
+					  m_grid.getXMax(), m_grid.getYMax());
+
+	mrpt_bridge::convert(m_grid, resp_ros_.map);
+
+	static size_t loop_count = 0;
+	resp_ros.map.header.stamp = ros::Time::now();
+	resp_ros.map.header.seq = loop_count++;
+
+	if(pub_map_ros.getNumSubscribers() > 0)
+	{
+		pub_map_ros.publish(resp_ros_.map );
+	}
+	if(pub_metadata.getNumSubscribers() > 0)
+	{
+		pub_metadata.publish( resp_ros_.map.info );
+	}
+}
+#endif
+

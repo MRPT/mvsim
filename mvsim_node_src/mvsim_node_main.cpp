@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 
 
 	// Create a "Node" object.
-	MVSimNode node;
+	MVSimNode node(n);
 
 	// Declare variables that can be modified by launch file or command line.
 	int rate;

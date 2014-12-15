@@ -40,6 +40,7 @@ SET(BUILD_FOR_ROS FALSE)
 IF (${catkin_FOUND})
 	SET(BUILD_FOR_ROS TRUE)
 	MESSAGE(STATUS " ==== multivehicle-simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
+	ADD_DEFINITIONS(-DMVSIM_HAS_ROS)
 ENDIF()
 
 
