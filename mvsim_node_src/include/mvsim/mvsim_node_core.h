@@ -5,11 +5,9 @@
 #define SR_MVSIM_NODE_CORE_H
 
 // ROS includes.
-#include "ros/ros.h"
-#include "ros/time.h"
-
-// Custom message includes. Auto-generated from msg/ directory.
-//#include "node_example/NodeExampleData.h"
+#include <ros/ros.h>
+#include <ros/time.h>
+#include <rosgraph_msgs/Clock.h>
 
 // Dynamic reconfigure includes.
 #include <dynamic_reconfigure/server.h>
@@ -49,13 +47,20 @@ public:
 
 protected:
 	ros::NodeHandle &m_n;
+	ros::NodeHandle m_localn;
 
 	// === ROS Publishers ====
 	ros::Publisher m_pub_map_ros, m_pub_map_metadata; //!< used for simul_map publication
+	ros::Publisher m_pub_clock;
 
 	tf::TransformBroadcaster tf_br_; //!< Use to send data to TF
 	ros::Publisher m_odo_publisher;
 	// === End ROS Publishers ====
+
+	rosgraph_msgs::Clock m_clockMsg;
+	ros::Time      m_sim_time; //!< Current simulation time
+	ros::Time      m_base_last_cmd;  //!< Last time we received a vel_cmd (for watchdog)
+	ros::Duration  m_base_watchdog_timeout;
 
 
 	struct TThreadParams
@@ -85,6 +90,9 @@ protected:
 
 	/** Publish relevant stuff whenever a new world model is loaded (grid maps, etc.) */
 	void notifyROSWorldIsUpdated();
+
+	/** Publish everything to be published at each simulation iteration */
+	void spinNotifyROS();
 
 	/** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_pose_ground_truth */
 	void broadcastTF_GTPose(
