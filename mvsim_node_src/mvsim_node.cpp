@@ -24,6 +24,7 @@ MVSimNode::MVSimNode(ros::NodeHandle &n) :
 	gui_refresh_period_ms_ (75),
 	m_show_gui       (true),
 	m_n              (n),
+	m_localn         ("~"),
 	t_old_           (-1),
 	world_init_ok_   (false),
 	m_period_ms_publish_tf (20),
@@ -35,8 +36,28 @@ MVSimNode::MVSimNode(ros::NodeHandle &n) :
 	thGUI_ = mrpt::system::createThreadRef( &MVSimNode::thread_update_GUI, thread_params_);
 
 	// Init ROS publishers:
+	m_pub_clock = m_n.advertise<rosgraph_msgs::Clock>("/clock",10);
+
 	m_pub_map_ros  = m_n.advertise<nav_msgs::OccupancyGrid>( "simul_map", 1  /*queue len*/, true /*latch*/);
 	m_pub_map_metadata = m_n.advertise<nav_msgs::MapMetaData>("simul_map_metadata", 1/*queue len*/, true /*latch*/);
+
+	m_sim_time.fromSec(0.0);
+	m_base_last_cmd.fromSec(0.0);
+
+	// Node parameters:
+	double t;
+	if(!m_localn.getParam("base_watchdog_timeout", t))
+	  t = 0.2;
+	m_base_watchdog_timeout.fromSec(t);
+
+	m_localn.param("realtime_factor", realtime_factor_, 1.0);
+	m_localn.param("gui_refresh_period", gui_refresh_period_ms_, gui_refresh_period_ms_);
+	m_localn.param("show_gui", m_show_gui, m_show_gui);
+	m_localn.param("period_ms_publish_tf",m_period_ms_publish_tf,m_period_ms_publish_tf);
+
+
+	// In case the user didn't set it:
+	m_n.setParam("/use_sim_time", true);
 
 }
 
@@ -105,27 +126,11 @@ void MVSimNode::spin()
 	//t_old_simul = world.get_simul_time();
 	t_old_ = t_new;
 
-
-	// House-keeping to be done at each iteration
-	// ========================================================================
 	const World::TListVehicles &vehs = mvsim_world_.getListOfVehicles();
 
-	if (m_tim_publish_tf.Tac()>m_period_ms_publish_tf*1e-3)
-	{
-		m_tim_publish_tf.Tic();
-
-		for (World::TListVehicles::const_iterator it = vehs.begin(); it!=vehs.end();++it)
-		{
-			const std::string &sVehName = it->first;
-			const VehicleBase * veh = it->second;
-
-			// get and broadcast the ground-truth vehicle pose:
-			const mrpt::math::TPose3D & gh_veh_pose = veh->getPose();
-
-			this->broadcastTF_GTPose(gh_veh_pose,sVehName);
-			this->broadcastTF_Odom(gh_veh_pose,sVehName);
-		}
-	} // end publish tf
+	// Publish new state to ROS
+	// ========================================================================
+	this->spinNotifyROS();
 
 	// GUI msgs, teleop, etc.
 	// ========================================================================
@@ -188,7 +193,6 @@ void MVSimNode::spin()
 
 
 }
-
 
 /*------------------------------------------------------------------------------
  * thread_update_GUI()
@@ -312,5 +316,57 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	mvsim_world_.runVisitorOnWorldElements(myvisitor);
 	mvsim_world_.runVisitorOnVehicles(myvisitor);
 
+}
+
+
+/** Publish everything to be published at each simulation iteration */
+void MVSimNode::spinNotifyROS()
+{
+	using namespace mvsim;
+
+	const World::TListVehicles &vehs = mvsim_world_.getListOfVehicles();
+
+	// Publish all TFs for each vehicle:
+	// ---------------------------------------------------------------------
+	if (m_tim_publish_tf.Tac()>m_period_ms_publish_tf*1e-3)
+	{
+		m_tim_publish_tf.Tic();
+
+		for (World::TListVehicles::const_iterator it = vehs.begin(); it!=vehs.end();++it)
+		{
+			const std::string &sVehName = it->first;
+			const VehicleBase * veh = it->second;
+
+			// 1) Ground-truth pose and velocity
+			const mrpt::math::TPose3D & gh_veh_pose = veh->getPose();
+
+			this->broadcastTF_GTPose(gh_veh_pose,sVehName);
+			this->broadcastTF_Odom(gh_veh_pose,sVehName);
+
+			// 2) Sensor placement on vehicles:
+
+
+			// 3) odometry transform
+
+
+			// 4) Identity transform between base_footprint and base_link
+//			tf::Transform txIdentity(tf::createIdentityQuaternion(), tf::Point(0, 0, 0));
+//			tf.sendTransform(tf::StampedTransform(
+//				txIdentity,
+//				sim_time,
+//				mapName("base_footprint", r,static_cast<Stg::Model*>(positionmodels[r])),
+//				mapName("base_link", r,static_cast<Stg::Model*>(positionmodels[r]))));
+
+
+
+		}
+	} // end publish tf
+
+
+	// Publish "/clock"
+	// ----------------------
+	m_sim_time.fromSec(mvsim_world_.get_simul_time());
+	m_clockMsg.clock = m_sim_time;
+	m_pub_clock.publish(m_clockMsg);
 }
 
