@@ -44,10 +44,12 @@ In Ubuntu, this will install all requirements:
 
      sudo apt-get install libmrpt-dev libbox2d-dev
 
-Compiling: ROS & catkin
+ROS: Compiling & usage
 ------------------------
- * Clone this project into your catkin's workspace src folder.
- * Run `catkin_make`
+ * Install: 
+     sudo apt-get install ros-$ROS_DISTRO-mvsim
+
+ * Usage: See docs and tutorials in http://wiki.ros.org/mvsim 
 
 Compiling: MOOS / OpenMORA
 ---------------------------
