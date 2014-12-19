@@ -223,7 +223,6 @@ void MVSimNode::thread_update_GUI(TThreadParams &thread_params)
 /** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_link */
 void MVSimNode::broadcastTF_GTPose(const mrpt::math::TPose3D &pose, const std::string &robotName)
 {
-	broadcastTF(pose,"/map","/"+robotName+"/base_pose_ground_truth");
 }
 
 /** Publish "odometry" for a robot to tf as: odom -> <ROBOT>/base_link */
@@ -316,6 +315,43 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	mvsim_world_.runVisitorOnWorldElements(myvisitor);
 	mvsim_world_.runVisitorOnVehicles(myvisitor);
 
+	// Create one subscriber for each vehicle's stuff:
+	// ----------------------------------------------------
+	mvsim::World::TListVehicles &vehs = mvsim_world_.getListOfVehicles();
+	m_sub_cmdvels.clear();
+	for (mvsim::World::TListVehicles::iterator it = vehs.begin(); it!=vehs.end();++it)
+	{
+		const std::string &sVehName = it->first;
+		mvsim::VehicleBase * veh = it->second;
+
+		m_sub_cmdvels.push_back( m_n.subscribe<geometry_msgs::Twist>(
+			"/"+sVehName+"/cmd_vel", 10,
+			boost::bind(&MVSimNode::onROSMsgCmdVel,this,_1,veh) )
+			);
+	}
+}
+
+void MVSimNode::onROSMsgCmdVel(const geometry_msgs::Twist::ConstPtr &cmd, mvsim::VehicleBase * veh )
+{
+	//ROS_INFO("[onROSMsgCmdVel] Vehicle: '%s' Cmd Vel received: vx=%.03f wz=%.03f", veh->getName().c_str(), cmd->linear.x, cmd->angular.z );
+	mvsim::ControllerBaseInterface *controller = veh->getControllerInterface();
+
+	if (dynamic_cast<mvsim::DynamicsAckermann::ControllerTwistFrontSteerPID*>(controller))
+	{
+		mvsim::DynamicsAckermann::ControllerTwistFrontSteerPID* control = dynamic_cast<mvsim::DynamicsAckermann::ControllerTwistFrontSteerPID*>(controller);
+
+		control->setpoint_lin_speed = cmd->linear.x;
+		control->setpoint_ang_speed = cmd->angular.z;
+	}
+
+	if (dynamic_cast<mvsim::DynamicsDifferential::ControllerTwistPID*>(controller))
+	{
+		mvsim::DynamicsDifferential::ControllerTwistPID* control = dynamic_cast<mvsim::DynamicsDifferential::ControllerTwistPID*>(controller);
+
+		control->setpoint_lin_speed = cmd->linear.x;
+		control->setpoint_ang_speed = cmd->angular.z;
+	}
+
 }
 
 
@@ -323,8 +359,13 @@ void MVSimNode::notifyROSWorldIsUpdated()
 void MVSimNode::spinNotifyROS()
 {
 	using namespace mvsim;
-
 	const World::TListVehicles &vehs = mvsim_world_.getListOfVehicles();
+
+	// Get current simulation time (for messages) and publish "/clock"
+	// ----------------------------------------------------------------
+	m_sim_time.fromSec(mvsim_world_.get_simul_time());
+	m_clockMsg.clock = m_sim_time;
+	m_pub_clock.publish(m_clockMsg);
 
 	// Publish all TFs for each vehicle:
 	// ---------------------------------------------------------------------
@@ -340,13 +381,14 @@ void MVSimNode::spinNotifyROS()
 			// 1) Ground-truth pose and velocity
 			const mrpt::math::TPose3D & gh_veh_pose = veh->getPose();
 
-			this->broadcastTF_GTPose(gh_veh_pose,sVehName);
-			this->broadcastTF_Odom(gh_veh_pose,sVehName);
+			broadcastTF(gh_veh_pose,"/map","/"+sVehName+"/base_pose_ground_truth");
+
 
 			// 2) Sensor placement on vehicles:
 
 
 			// 3) odometry transform
+			//this->broadcastTF_Odom(gh_veh_pose,sVehName);
 
 
 			// 4) Identity transform between base_footprint and base_link
@@ -363,10 +405,5 @@ void MVSimNode::spinNotifyROS()
 	} // end publish tf
 
 
-	// Publish "/clock"
-	// ----------------------
-	m_sim_time.fromSec(mvsim_world_.get_simul_time());
-	m_clockMsg.clock = m_sim_time;
-	m_pub_clock.publish(m_clockMsg);
-}
+} // end spinNotifyROS()
 

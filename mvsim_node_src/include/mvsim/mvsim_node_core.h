@@ -52,10 +52,17 @@ protected:
 	// === ROS Publishers ====
 	ros::Publisher m_pub_map_ros, m_pub_map_metadata; //!< used for simul_map publication
 	ros::Publisher m_pub_clock;
+	std::vector<ros::Subscriber>  m_sub_cmdvels; //!< Subscribers for each vehicle's cmd_vel
 
 	tf::TransformBroadcaster tf_br_; //!< Use to send data to TF
 	ros::Publisher m_odo_publisher;
 	// === End ROS Publishers ====
+
+
+	// === ROS Hooks ====
+	void onROSMsgCmdVel(const geometry_msgs::Twist::ConstPtr &cmd, mvsim::VehicleBase * veh );
+	// === End ROS Hooks====
+
 
 	rosgraph_msgs::Clock m_clockMsg;
 	ros::Time      m_sim_time; //!< Current simulation time

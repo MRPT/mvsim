@@ -71,7 +71,7 @@ namespace mvsim
 
 			double KP,KI,KD; //!< PID controller parameters
 			double I_MAX; //!< I part maximum value (absolute value for clamp)
-			double max_torque; //!< Maximum abs. value torque (for clamp) [N·m]
+			double max_torque; //!< Maximum abs. value torque (for clamp) [Nm]
 		private:
 			double m_distWheels;
 			PID_Controller m_PID[2];

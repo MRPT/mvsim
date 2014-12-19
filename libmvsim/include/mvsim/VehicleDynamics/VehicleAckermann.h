@@ -82,7 +82,7 @@ namespace mvsim
 
 			double KP,KI,KD; //!< PID controller parameters
 			double I_MAX; //!< I part maximum value (absolute value for clamp)
-			double max_torque; //!< Maximum abs. value torque (for clamp) [N·m]
+			double max_torque; //!< Maximum abs. value torque (for clamp) [Nm]
 		private:
 			double m_dist_fWheels, m_r2f_L;
 			PID_Controller m_PID[2]; //<! [0]:fl, [1]: fr
@@ -102,7 +102,7 @@ namespace mvsim
 
 			double KP,KI,KD; //!< PID controller parameters
 			double I_MAX; //!< I part maximum value (absolute value for clamp)
-			double max_torque; //!< Maximum abs. value torque (for clamp) [N·m]
+			double max_torque; //!< Maximum abs. value torque (for clamp) [Nm]
 		private:
 			ControllerTwistFrontSteerPID m_twist_control;
 			double m_r2f_L;
@@ -125,7 +125,7 @@ namespace mvsim
 	protected:
 		// See base class docs
 		virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
-		// See base class docs
+		// See base class doc
 		virtual void invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_force_per_wheel);
 
 	private:
