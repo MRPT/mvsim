@@ -52,10 +52,10 @@ protected:
 	// === ROS Publishers ====
 	ros::Publisher m_pub_map_ros, m_pub_map_metadata; //!< used for simul_map publication
 	ros::Publisher m_pub_clock;
-	std::vector<ros::Subscriber>  m_sub_cmdvels; //!< Subscribers for each vehicle's cmd_vel
+	std::vector<ros::Subscriber>  m_subs_cmdvel; //!< Subscribers for each vehicle's cmd_vel
 
-	tf::TransformBroadcaster tf_br_; //!< Use to send data to TF
-	ros::Publisher m_odo_publisher;
+	tf::TransformBroadcaster      tf_br_; //!< Use to send data to TF
+	std::vector<ros::Publisher>   m_pubs_odom;
 	// === End ROS Publishers ====
 
 
@@ -117,6 +117,8 @@ protected:
 		const std::string &parentFrame,
 		const std::string &childFrame);
 
+	/** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than one vehicle in the World, or "/<VAR_NAME>" otherwise. */
+	std::string vehVarName(const std::string &sVarName, const mvsim::VehicleBase * veh) const;
 
 	struct MVSimVisitor_notifyROSWorldIsUpdated :
 			public mvsim::World::VehicleVisitorBase,

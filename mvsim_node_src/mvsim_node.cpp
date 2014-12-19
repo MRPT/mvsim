@@ -228,39 +228,6 @@ void MVSimNode::broadcastTF_GTPose(const mrpt::math::TPose3D &pose, const std::s
 /** Publish "odometry" for a robot to tf as: odom -> <ROBOT>/base_link */
 void MVSimNode::broadcastTF_Odom(const mrpt::math::TPose3D &pose,const std::string &robotName)
 {
-	const std::string sOdomName      ="/"+robotName+"/odom";
-	const std::string sChildrenFrame ="/"+robotName+"/base_link";
-
-	broadcastTF(pose,sOdomName, sChildrenFrame);
-
-	// Apart from TF, publish to the "odom" topic as well
-	if (!m_odo_publisher)  // 1st usage: Create publisher
-	{
-		ros::NodeHandle nh;
-		m_odo_publisher = nh.advertise<nav_msgs::Odometry>("/"+robotName+"/odom", 10);
-	}
-
-
-	nav_msgs::Odometry odoMsg;
-
-	odoMsg.pose.pose.position.x = pose.x;
-	odoMsg.pose.pose.position.y = pose.y;
-	odoMsg.pose.pose.position.z = pose.z;
-
-	tf::Quaternion quat;
-	quat.setEuler( pose.roll, pose.pitch, pose.yaw );
-
-	odoMsg.pose.pose.orientation.x = quat.x();
-	odoMsg.pose.pose.orientation.y = quat.y();
-	odoMsg.pose.pose.orientation.z = quat.z();
-	odoMsg.pose.pose.orientation.w = quat.w();
-
-	// first, we'll populate the header for the odometry msg
-	odoMsg.header.frame_id = sOdomName;
-	odoMsg.child_frame_id  = sChildrenFrame;
-
-	// publish:
-	m_odo_publisher.publish(odoMsg);
 }
 
 /** Publish pose to tf: parentFrame -> <ROBOT>/base_link */
@@ -315,43 +282,37 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	mvsim_world_.runVisitorOnWorldElements(myvisitor);
 	mvsim_world_.runVisitorOnVehicles(myvisitor);
 
-	// Create one subscriber for each vehicle's stuff:
+	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
 	mvsim::World::TListVehicles &vehs = mvsim_world_.getListOfVehicles();
-	m_sub_cmdvels.clear();
+	m_subs_cmdvel.clear();
+	m_pubs_odom.clear();
 	for (mvsim::World::TListVehicles::iterator it = vehs.begin(); it!=vehs.end();++it)
 	{
 		const std::string &sVehName = it->first;
 		mvsim::VehicleBase * veh = it->second;
 
-		m_sub_cmdvels.push_back( m_n.subscribe<geometry_msgs::Twist>(
+		// sub: /cmd_vel
+		m_subs_cmdvel.push_back( m_n.subscribe<geometry_msgs::Twist>(
 			"/"+sVehName+"/cmd_vel", 10,
 			boost::bind(&MVSimNode::onROSMsgCmdVel,this,_1,veh) )
 			);
+
+		// pub: /odom
+		m_pubs_odom.push_back( m_n.advertise<nav_msgs::Odometry>(vehVarName("odom", veh), 10)  );
+
 	}
 }
 
 void MVSimNode::onROSMsgCmdVel(const geometry_msgs::Twist::ConstPtr &cmd, mvsim::VehicleBase * veh )
 {
-	//ROS_INFO("[onROSMsgCmdVel] Vehicle: '%s' Cmd Vel received: vx=%.03f wz=%.03f", veh->getName().c_str(), cmd->linear.x, cmd->angular.z );
 	mvsim::ControllerBaseInterface *controller = veh->getControllerInterface();
 
-	if (dynamic_cast<mvsim::DynamicsAckermann::ControllerTwistFrontSteerPID*>(controller))
-	{
-		mvsim::DynamicsAckermann::ControllerTwistFrontSteerPID* control = dynamic_cast<mvsim::DynamicsAckermann::ControllerTwistFrontSteerPID*>(controller);
+	const bool ctrlAcceptTwist = controller->setTwistCommand(cmd->linear.x, cmd->angular.z);
 
-		control->setpoint_lin_speed = cmd->linear.x;
-		control->setpoint_ang_speed = cmd->angular.z;
+	if (!ctrlAcceptTwist) {
+		ROS_DEBUG_THROTTLE(5.0, "*Warning* Vehicle's controller ['%s'] refuses Twist commands!", veh->getName().c_str() );
 	}
-
-	if (dynamic_cast<mvsim::DynamicsDifferential::ControllerTwistPID*>(controller))
-	{
-		mvsim::DynamicsDifferential::ControllerTwistPID* control = dynamic_cast<mvsim::DynamicsDifferential::ControllerTwistPID*>(controller);
-
-		control->setpoint_lin_speed = cmd->linear.x;
-		control->setpoint_ang_speed = cmd->angular.z;
-	}
-
 }
 
 
@@ -373,7 +334,11 @@ void MVSimNode::spinNotifyROS()
 	{
 		m_tim_publish_tf.Tic();
 
-		for (World::TListVehicles::const_iterator it = vehs.begin(); it!=vehs.end();++it)
+		size_t i=0;
+		ROS_ASSERT(m_pubs_odom.size()==vehs.size());
+		ROS_ASSERT(m_subs_cmdvel.size()==vehs.size());
+
+		for (World::TListVehicles::const_iterator it = vehs.begin(); it!=vehs.end();++it, ++i)
 		{
 			const std::string &sVehName = it->first;
 			const VehicleBase * veh = it->second;
@@ -388,7 +353,40 @@ void MVSimNode::spinNotifyROS()
 
 
 			// 3) odometry transform
-			//this->broadcastTF_Odom(gh_veh_pose,sVehName);
+			{
+
+				//this->broadcastTF_Odom(gh_veh_pose,sVehName);
+				const mrpt::math::TPose3D pose = gh_veh_pose;
+
+
+				const std::string sOdomName      = vehVarName("odom",veh);
+				const std::string sChildrenFrame = vehVarName("base_link",veh);
+
+				broadcastTF(pose,sOdomName, sChildrenFrame);
+
+				// Apart from TF, publish to the "odom" topic as well
+
+				nav_msgs::Odometry odoMsg;
+
+				odoMsg.pose.pose.position.x = pose.x;
+				odoMsg.pose.pose.position.y = pose.y;
+				odoMsg.pose.pose.position.z = pose.z;
+
+				tf::Quaternion quat;
+				quat.setEuler( pose.roll, pose.pitch, pose.yaw );
+
+				odoMsg.pose.pose.orientation.x = quat.x();
+				odoMsg.pose.pose.orientation.y = quat.y();
+				odoMsg.pose.pose.orientation.z = quat.z();
+				odoMsg.pose.pose.orientation.w = quat.w();
+
+				// first, we'll populate the header for the odometry msg
+				odoMsg.header.frame_id = sOdomName;
+				odoMsg.child_frame_id  = sChildrenFrame;
+
+				// publish:
+				m_pubs_odom[i].publish(odoMsg);
+			}
 
 
 			// 4) Identity transform between base_footprint and base_link
@@ -404,6 +402,19 @@ void MVSimNode::spinNotifyROS()
 		}
 	} // end publish tf
 
-
 } // end spinNotifyROS()
+
+/** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than one vehicle in the World, or "/<VAR_NAME>" otherwise. */
+std::string MVSimNode::vehVarName(const std::string &sVarName, const mvsim::VehicleBase * veh) const
+{
+	if (mvsim_world_.getListOfVehicles().size()==1)
+	{
+		return std::string("/")+sVarName;
+	}
+	else
+	{
+		return std::string("/")+ veh->getName() +std::string("/")+sVarName;
+	}
+}
+
 

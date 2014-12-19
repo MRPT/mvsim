@@ -7,4 +7,6 @@
 		<param name="world_file" value="$(arg world_file)"/>    
 	</node>
 
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find mvsim)/mvsim_tutorial/mvsim_demo_2robots.rviz"/>
+
 </launch>

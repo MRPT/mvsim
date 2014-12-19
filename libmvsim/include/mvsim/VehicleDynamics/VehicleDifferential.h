@@ -72,6 +72,8 @@ namespace mvsim
 			double KP,KI,KD; //!< PID controller parameters
 			double I_MAX; //!< I part maximum value (absolute value for clamp)
 			double max_torque; //!< Maximum abs. value torque (for clamp) [Nm]
+			// See base docs.
+			virtual bool setTwistCommand(const double vx, const double wz) { setpoint_lin_speed=vx; setpoint_ang_speed=wz; return true; }
 		private:
 			double m_distWheels;
 			PID_Controller m_PID[2];
