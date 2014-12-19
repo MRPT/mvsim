@@ -104,7 +104,8 @@ namespace mvsim
 		b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
 
 		const TListVehicles & getListOfVehicles() const { return m_vehicles; }
-		const TListWorldElements & getListOfWorldElements() const { return m_world_elements; }
+        TListVehicles &       getListOfVehicles()       { return m_vehicles; }
+        const TListWorldElements & getListOfWorldElements() const { return m_world_elements; }
 
 		mrpt::utils::CTimeLogger & getTimeLogger() { return m_timlogger; }
 
