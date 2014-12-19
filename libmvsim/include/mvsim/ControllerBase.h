@@ -29,6 +29,9 @@ namespace mvsim
 		};
 
 		virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out) { /*default: do nothing*/ }
+
+		/** Accept a Twist command. \return true if the controller supports this kind of commands, false otherwise */
+		virtual bool setTwistCommand(const double vx, const double wz) { return false; /* default: no */ }
 	};
 
 	/** Virtual base for controllers of vehicles of any type (template) */
