@@ -91,7 +91,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	{
 		ASSERT_EQUAL_(mesh_image.getWidth(),(size_t)elevation_data.cols())
 		ASSERT_EQUAL_(mesh_image.getHeight(),(size_t)elevation_data.rows())
-		m_gl_mesh->assignImageAndZ(mesh_image, elevation_data);
+
+		m_gl_mesh->assignImage(mesh_image);
+		m_gl_mesh->setZ(elevation_data);
 	}
 	else
 	{
