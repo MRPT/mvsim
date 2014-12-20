@@ -54,7 +54,7 @@ protected:
 	ros::Publisher m_pub_clock;
 	std::vector<ros::Subscriber>  m_subs_cmdvel; //!< Subscribers for each vehicle's cmd_vel
 
-	tf::TransformBroadcaster      tf_br_; //!< Use to send data to TF
+	tf::TransformBroadcaster      m_tf_br; //!< Use to send data to TF
 	std::vector<ros::Publisher>   m_pubs_odom;
 	// === End ROS Publishers ====
 
@@ -68,6 +68,7 @@ protected:
 	ros::Time      m_sim_time; //!< Current simulation time
 	ros::Time      m_base_last_cmd;  //!< Last time we received a vel_cmd (for watchdog)
 	ros::Duration  m_base_watchdog_timeout;
+	const tf::Transform  m_tfIdentity;  //!< Unit transform (const, created only once)
 
 
 	struct TThreadParams
@@ -100,22 +101,6 @@ protected:
 
 	/** Publish everything to be published at each simulation iteration */
 	void spinNotifyROS();
-
-	/** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_pose_ground_truth */
-	void broadcastTF_GTPose(
-		const mrpt::math::TPose3D &pose,
-		const std::string &robotName = std::string("r1"));
-
-	/** Publish "odometry" for a robot to tf as: odom -> <ROBOT>/base_link */
-	void broadcastTF_Odom(
-		const mrpt::math::TPose3D &pose,
-		const std::string &robotName = std::string("r1"));
-
-	/** Publish pose to tf: parentFrame -> <ROBOT>/base_link */
-	void broadcastTF(
-		const mrpt::math::TPose3D &pose,
-		const std::string &parentFrame,
-		const std::string &childFrame);
 
 	/** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than one vehicle in the World, or "/<VAR_NAME>" otherwise. */
 	std::string vehVarName(const std::string &sVarName, const mvsim::VehicleBase * veh) const;

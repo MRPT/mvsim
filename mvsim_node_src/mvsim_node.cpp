@@ -25,6 +25,7 @@ MVSimNode::MVSimNode(ros::NodeHandle &n) :
 	m_show_gui       (true),
 	m_n              (n),
 	m_localn         ("~"),
+	m_tfIdentity     (tf::createIdentityQuaternion(), tf::Point(0, 0, 0)),
 	t_old_           (-1),
 	world_init_ok_   (false),
 	m_period_ms_publish_tf (20),
@@ -219,31 +220,6 @@ void MVSimNode::thread_update_GUI(TThreadParams &thread_params)
 	}
 }
 
-
-/** Publish the ground truth pose of a robot to tf as: map -> <ROBOT>/base_link */
-void MVSimNode::broadcastTF_GTPose(const mrpt::math::TPose3D &pose, const std::string &robotName)
-{
-}
-
-/** Publish "odometry" for a robot to tf as: odom -> <ROBOT>/base_link */
-void MVSimNode::broadcastTF_Odom(const mrpt::math::TPose3D &pose,const std::string &robotName)
-{
-}
-
-/** Publish pose to tf: parentFrame -> <ROBOT>/base_link */
-void MVSimNode::broadcastTF(
-	const mrpt::math::TPose3D &pose,
-	const std::string &parentFrame,
-	const std::string &childFrame)
-{
-	tf::Matrix3x3 rot;
-	rot.setEulerYPR(pose.yaw,pose.pitch,pose.roll);
-	const tf::Transform tr(rot, tf::Vector3(pose.x,pose.y,pose.z) );
-
-	tf_br_.sendTransform(tf::StampedTransform(tr, ros::Time::now(), parentFrame, childFrame));
-}
-
-
 // Visitor: Vehicles
 // ----------------------------------------
 void MVSimNode::MVSimVisitor_notifyROSWorldIsUpdated::visit(mvsim::VehicleBase *obj)
@@ -340,67 +316,80 @@ void MVSimNode::spinNotifyROS()
 
 		for (World::TListVehicles::const_iterator it = vehs.begin(); it!=vehs.end();++it, ++i)
 		{
-			const std::string &sVehName = it->first;
 			const VehicleBase * veh = it->second;
 
 			// 1) Ground-truth pose and velocity
 			const mrpt::math::TPose3D & gh_veh_pose = veh->getPose();
 
-			broadcastTF(gh_veh_pose,"/map","/"+sVehName+"/base_pose_ground_truth");
+			{
+				const mrpt::math::TPose3D pose = gh_veh_pose;
+				tf::Matrix3x3 rot;
+				rot.setEulerYPR(pose.yaw,pose.pitch,pose.roll);
+				const tf::Transform tr(rot, tf::Vector3(pose.x,pose.y,pose.z) );
 
+				m_tf_br.sendTransform(tf::StampedTransform(
+					tr,
+					ros::Time::now(),
+					"/map",
+					vehVarName("base_pose_ground_truth",veh))
+					);
+			}
 
 			// 2) Sensor placement on vehicles:
 
-
 			// 3) odometry transform
 			{
-
-				//this->broadcastTF_Odom(gh_veh_pose,sVehName);
 				const mrpt::math::TPose3D pose = gh_veh_pose;
 
 
 				const std::string sOdomName      = vehVarName("odom",veh);
 				const std::string sChildrenFrame = vehVarName("base_link",veh);
 
-				broadcastTF(pose,sOdomName, sChildrenFrame);
+				{
+					const mrpt::math::TPose3D pose = gh_veh_pose;
+					tf::Matrix3x3 rot;
+					rot.setEulerYPR(pose.yaw,pose.pitch,pose.roll);
+					const tf::Transform tr(rot, tf::Vector3(pose.x,pose.y,pose.z) );
+
+					m_tf_br.sendTransform(tf::StampedTransform( tr, ros::Time::now(), sOdomName, sChildrenFrame) );
+				}
 
 				// Apart from TF, publish to the "odom" topic as well
+				{
+					nav_msgs::Odometry odoMsg;
 
-				nav_msgs::Odometry odoMsg;
+					odoMsg.pose.pose.position.x = pose.x;
+					odoMsg.pose.pose.position.y = pose.y;
+					odoMsg.pose.pose.position.z = pose.z;
 
-				odoMsg.pose.pose.position.x = pose.x;
-				odoMsg.pose.pose.position.y = pose.y;
-				odoMsg.pose.pose.position.z = pose.z;
+					tf::Quaternion quat;
+					quat.setEuler( pose.roll, pose.pitch, pose.yaw );
 
-				tf::Quaternion quat;
-				quat.setEuler( pose.roll, pose.pitch, pose.yaw );
+					odoMsg.pose.pose.orientation.x = quat.x();
+					odoMsg.pose.pose.orientation.y = quat.y();
+					odoMsg.pose.pose.orientation.z = quat.z();
+					odoMsg.pose.pose.orientation.w = quat.w();
 
-				odoMsg.pose.pose.orientation.x = quat.x();
-				odoMsg.pose.pose.orientation.y = quat.y();
-				odoMsg.pose.pose.orientation.z = quat.z();
-				odoMsg.pose.pose.orientation.w = quat.w();
+					// first, we'll populate the header for the odometry msg
+					odoMsg.header.frame_id = sOdomName;
+					odoMsg.child_frame_id  = sChildrenFrame;
 
-				// first, we'll populate the header for the odometry msg
-				odoMsg.header.frame_id = sOdomName;
-				odoMsg.child_frame_id  = sChildrenFrame;
-
-				// publish:
-				m_pubs_odom[i].publish(odoMsg);
+					// publish:
+					m_pubs_odom[i].publish(odoMsg);
+				}
 			}
 
 
 			// 4) Identity transform between base_footprint and base_link
-//			tf::Transform txIdentity(tf::createIdentityQuaternion(), tf::Point(0, 0, 0));
-//			tf.sendTransform(tf::StampedTransform(
-//				txIdentity,
-//				sim_time,
-//				mapName("base_footprint", r,static_cast<Stg::Model*>(positionmodels[r])),
-//				mapName("base_link", r,static_cast<Stg::Model*>(positionmodels[r]))));
+			m_tf_br.sendTransform(tf::StampedTransform(m_tfIdentity,m_sim_time,vehVarName("base_footprint", veh),vehVarName("base_link", veh)));
 
+		} // end for each vehicle
 
+		// Publish the static transform /world -> /map
+		m_tf_br.sendTransform(tf::StampedTransform(m_tfIdentity,m_sim_time,"/world","/map" ));
 
-		}
 	} // end publish tf
+
 
 } // end spinNotifyROS()
 
