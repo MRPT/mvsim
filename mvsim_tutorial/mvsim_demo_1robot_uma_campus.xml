@@ -1,8 +1,6 @@
 <mvsim_world version="1.0">
 	<!-- General simulation options -->
 	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
-	<b2d_vel_iters>3</b2d_vel_iters>
-	<b2d_pos_iters>3</b2d_pos_iters>
 	
 	<!-- GUI options -->
 	<gui>
@@ -19,17 +17,14 @@
 	     ======================== -->
 	<element class="occupancy_grid">
 		<!-- File can be an image or an MRPT .gridmap file -->
-		<file>mv2dsim_demo_world1.png</file>
-		
-		<!-- The rest of params are ignored if file is an MRPT gridmap -->
-		<resolution>0.25</resolution>
+		<file>uma_campus.gridmap.gz</file>
 		
 		<!--<show_collisions>true</show_collisions>-->
 	</element>
 		
 	<!-- ground grid (for visual reference) -->
 	<element class="ground_grid">
-		<!--<floating>true</floating>-->
+		<floating>true</floating>
 	</element>
 	
 	<!-- =============================
@@ -71,50 +66,6 @@
 		</sensor>
 	</vehicle:class>
 	
-	
-	<vehicle:class name="car_ackermann">
-		
-		<!--  Dynamical model -->
-		<dynamics class="ackermann">
-			<!-- Params -->
-			<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
-			<rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
-			<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
-			<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
-			<f_wheels_x>1.3</f_wheels_x>
-			<f_wheels_d>2.0</f_wheels_d>
-			<max_steer_ang_deg>30.0</max_steer_ang_deg>
-			
-			<chassis mass="800.0" zmin="0.15" zmax="1.2">
-			</chassis>
-			
-			<!--   Motor controller -->
-			<controller class="front_steer_pid"> <!-- twist_front_steer_pid -->
-				<!-- Params -->
-				<KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
-				<V>0.0</V><W>0</W>
-				<max_torque>600</max_torque>
-			</controller>			
-			
-		</dynamics>
-				
-		<!-- Friction force simulation -->
-		<friction class="default">
-			<mu>0.7</mu>
-			<C_damping>10</C_damping>
-		</friction>
-		
-		<!-- Sensors: -->
-		<sensor class="laser" name="laser1">
-			<pose> 1.60  0.0  0.0 </pose>
-			<fov_degrees>180</fov_degrees>
-			<nrays>181</nrays>
-			<range_std_noise>0.01</range_std_noise>
-			<angle_std_noise_deg>0.01</angle_std_noise_deg>
-		</sensor>
-		
-	</vehicle:class>
-		 
 	<!-- ========================
 		   Vehicle(s) definition 
 	     ======================== -->
@@ -123,14 +74,5 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
 
-	<vehicle name="r2" class="car_ackermann">
-		<init_pose>-10.0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
-	</vehicle>
-
-	<!-- <vehicle name="r3" class="small_robot">
-		<init_pose>8 -6 87</init_pose>  <!-- In global coords: x,y, yaw(deg) -- >
-		<init_vel>0.08 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -- >
-	</vehicle>-->
 	
 </mvsim_world>
