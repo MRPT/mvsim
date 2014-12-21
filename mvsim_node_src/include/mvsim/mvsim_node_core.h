@@ -44,6 +44,8 @@ public:
 	double realtime_factor_; //!< (Defaul=1.0) >1: speed-up, <1: slow-down
 	int    gui_refresh_period_ms_; //!< Default:25
 	bool   m_show_gui;   //!< Default= true
+	bool   m_do_fake_localization;  //!< Default=true. Behaves as navigation/fake_localization for each vehicle without the need to launch additional nodes.
+	double m_transform_tolerance; //!< (Default=0.1) Time tolerance for published TFs
 
 protected:
 	ros::NodeHandle &m_n;
@@ -52,10 +54,21 @@ protected:
 	// === ROS Publishers ====
 	ros::Publisher m_pub_map_ros, m_pub_map_metadata; //!< used for simul_map publication
 	ros::Publisher m_pub_clock;
-	std::vector<ros::Subscriber>  m_subs_cmdvel; //!< Subscribers for each vehicle's cmd_vel
-
 	tf::TransformBroadcaster      m_tf_br; //!< Use to send data to TF
-	std::vector<ros::Publisher>   m_pubs_odom;
+
+	struct TPubSubPerVehicle
+	{
+		ros::Subscriber  sub_cmd_vel;   //!< Subscribers for each vehicle's "cmd_vel" topic
+		ros::Publisher   pub_odom;      //!< Publisher of "odom" topic
+		ros::Publisher   pub_ground_truth; //!< Publisher of "base_pose_ground_truth" topic
+		ros::Publisher   pub_amcl_pose, pub_particlecloud; //!< Publishers for "fake_localization" topics
+	};
+
+	std::vector<TPubSubPerVehicle> m_pubsub_vehicles; //!< Pubs/Subs for each vehicle. Initialized by initPubSubs(), called from notifyROSWorldIsUpdated()
+
+	/** Initialize all pub/subs required for each vehicle, for the specific vehicle \a veh */
+	void initPubSubs(TPubSubPerVehicle &out_pubsubs, mvsim::VehicleBase* veh);
+
 	// === End ROS Publishers ====
 
 
