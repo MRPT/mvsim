@@ -33,9 +33,12 @@ void register_all_sensors()
 
 SensorBase::SensorBase(VehicleBase&vehicle) : 
 	VisualObject( vehicle.getWorldObject() ),
-	m_vehicle(vehicle)
+	m_sensor_period(0.1),
+	m_vehicle(vehicle),
+	m_sensor_last_timestamp(0)
 { 
 }
+
 SensorBase::~SensorBase() 
 { 
 }
