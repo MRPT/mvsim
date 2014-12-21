@@ -30,6 +30,9 @@ namespace mrpt {
 		class COpenGLScene;
 		class CSetOfObjects;
 	}
+	namespace slam {
+		class CObservation;
+	}
 }
 
 namespace mvsim

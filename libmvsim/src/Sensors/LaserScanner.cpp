@@ -63,6 +63,11 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	m_scan_model.scan.resize(nRays);
 	m_scan_model.validRange.resize(nRays);
 
+	// Assign a sensible default name/sensor label if none is provided:
+	if (m_name.empty()) {
+		const size_t nextIdx = m_vehicle.getSensors().size()+1;
+		m_name = mrpt::format("laser%u",static_cast<unsigned int>(nextIdx));
+	}
 }
 
 void LaserScanner::gui_update( mrpt::opengl::COpenGLScene &scene)
@@ -222,6 +227,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 
 	mrpt::slam::CObservation2DRangeScan *lastScan = new mrpt::slam::CObservation2DRangeScan(m_scan_model);
 	lastScan->timestamp = mrpt::system::now();
+	lastScan->sensorLabel = m_name;
 
 	lastScan->scan.assign(nRays,maxRange);
 	lastScan->validRange.assign(nRays, 0);
@@ -246,6 +252,9 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		m_last_scan = mrpt::slam::CObservation2DRangeScanPtr( lastScan );
 		m_last_scan2gui = m_last_scan;
 	}
+
+	m_world->onNewObservation(m_vehicle, m_last_scan.pointer() );
+
 	m_gui_uptodate = false;
 
 }

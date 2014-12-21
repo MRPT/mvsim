@@ -91,6 +91,8 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 		else if (!strcmp(node->name(),"vehicle"))
 		{
 			VehicleBase* veh = VehicleBase::factory(this,node);
+			veh->setVehicleIndex( m_vehicles.size() ); // Assign each vehicle an "index" number
+
 			// make sure the name is not duplicated:
 			m_vehicles.insert( TListVehicles::value_type(veh->getName(),veh));
 		}

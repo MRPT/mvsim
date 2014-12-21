@@ -49,6 +49,7 @@ void register_all_veh_dynamics()
 // Protected ctor:
 VehicleBase::VehicleBase(World *parent, size_t nWheels) :
 	VisualObject(parent),
+	m_vehicle_index(0),
 	m_b2d_vehicle_body(NULL),
 	m_q(0,0,0,0,0,0),
 	m_dq(0,0,0),

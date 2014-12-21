@@ -136,6 +136,11 @@ namespace mvsim
 
 		/** @} */
 
+		/** \name Optional user hooks
+		  @{*/
+		virtual void onNewObservation(const VehicleBase &veh, const mrpt::slam::CObservation* obs) { /* default: do nothing */ }
+		/** @} */
+
 	private:
 		friend class VehicleBase;
 
