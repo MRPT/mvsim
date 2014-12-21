@@ -103,6 +103,11 @@ namespace mvsim
 		/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 		const std::string & getName() const { return m_name;}
 
+		/** Set the vehicle index in the World */
+		void setVehicleIndex(size_t idx) { m_vehicle_index = idx; }
+		/** Get the vehicle index in the World */
+		size_t getVehicleIndex() const { return m_vehicle_index; }
+
 		/** Must create a new object in the scene and/or update it according to the current state.
 		  * If overrided in derived classes, it may be time-saving to call \a gui_update_common() and associated methods for 3D elements common to any vehicle.
 		  */
@@ -126,6 +131,7 @@ namespace mvsim
 		void gui_update_common( mrpt::opengl::COpenGLScene &scene, bool defaultVehicleBody = true);
 
 		std::string m_name; //!< User-supplied name of the vehicle (e.g. "r1", "veh1")
+		size_t      m_vehicle_index; //!< user-supplied index number: must be set/get'ed with setVehicleIndex() getVehicleIndex() (default=0)
 
 		/** Derived classes must store here the body of the vehicle main body (chassis).
 		  * This is used by \a simul_post_timestep() to extract the vehicle dynamical coords (q,\dot{q}) after each simulation step.

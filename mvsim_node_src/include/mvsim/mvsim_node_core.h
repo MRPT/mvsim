@@ -38,8 +38,18 @@ public:
 	/** Callback function for dynamic reconfigure server */
 	void configCallback(mvsim::mvsimNodeConfig &config, uint32_t level);
 
+	/** Derived class so we can install hooks (virtual methods) */
+	class MyWorld : public mvsim::World
+	{
+		MVSimNode &m_parent;
+	public:
+		MyWorld(MVSimNode &node) : m_parent(node) {}
 
-	mvsim::World  mvsim_world_; //!< The mvsim library simulated world (includes everything: vehicles, obstacles, etc.)
+		virtual void onNewObservation(const mvsim::VehicleBase &veh, const mrpt::slam::CObservation* obs);
+
+	}; // End of MyWorld
+
+	MyWorld  mvsim_world_; //!< The mvsim library simulated world (includes everything: vehicles, obstacles, etc.)
 
 	double realtime_factor_; //!< (Defaul=1.0) >1: speed-up, <1: slow-down
 	int    gui_refresh_period_ms_; //!< Default:25
@@ -62,6 +72,7 @@ protected:
 		ros::Publisher   pub_odom;      //!< Publisher of "odom" topic
 		ros::Publisher   pub_ground_truth; //!< Publisher of "base_pose_ground_truth" topic
 		ros::Publisher   pub_amcl_pose, pub_particlecloud; //!< Publishers for "fake_localization" topics
+		std::map<std::string,ros::Publisher> pub_sensors; //!< Map <sensor_label> => publisher
 	};
 
 	std::vector<TPubSubPerVehicle> m_pubsub_vehicles; //!< Pubs/Subs for each vehicle. Initialized by initPubSubs(), called from notifyROSWorldIsUpdated()

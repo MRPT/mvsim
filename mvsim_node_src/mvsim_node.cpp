@@ -9,10 +9,13 @@
 
 #include <mrpt_bridge/laser_scan.h>
 #include <mrpt_bridge/map.h>
+#include <mrpt_bridge/pose.h>
+
 #include <nav_msgs/MapMetaData.h>
 #include <nav_msgs/GetMap.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <sensor_msgs/LaserScan.h>
 
 #include <nav_msgs/Odometry.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
@@ -22,6 +25,7 @@
  * Constructor.
  *----------------------------------------------------------------------------*/
 MVSimNode::MVSimNode(ros::NodeHandle &n) :
+	mvsim_world_     (*this),
 	realtime_factor_ (1.0),
 	gui_refresh_period_ms_ (75),
 	m_show_gui       (true),
@@ -454,8 +458,57 @@ void MVSimNode::spinNotifyROS()
 
 	} // end publish tf
 
-
 } // end spinNotifyROS()
+
+void MVSimNode::MyWorld::onNewObservation(const mvsim::VehicleBase &veh, const mrpt::slam::CObservation* obs)
+{
+	ROS_ASSERT(obs);
+	ROS_ASSERT(!obs->sensorLabel.empty());
+
+	TPubSubPerVehicle & pubs = m_parent.m_pubsub_vehicles[veh.getVehicleIndex()];
+
+	// Create the publisher the first time an observation arrives:
+	const bool is_1st_pub = pubs.pub_sensors.find(obs->sensorLabel)==pubs.pub_sensors.end();
+	ros::Publisher & pub = pubs.pub_sensors[obs->sensorLabel];
+
+	// Observation: 2d laser scans
+	// -----------------------------
+	if ( dynamic_cast<const mrpt::slam::CObservation2DRangeScan*>(obs) )
+	{
+		if (is_1st_pub)
+			pub = m_parent.m_n.advertise<sensor_msgs::LaserScan>( m_parent.vehVarName(obs->sensorLabel,&veh), 10);
+
+		// Convert observation MRPT -> ROS
+		const mrpt::slam::CObservation2DRangeScan* o = dynamic_cast<const mrpt::slam::CObservation2DRangeScan*>(obs);
+		geometry_msgs::Pose msg_pose_laser;
+		sensor_msgs::LaserScan msg_laser;
+		mrpt_bridge::convert(*o, msg_laser, msg_pose_laser);
+
+		// Force usage of simulation time:
+		msg_laser.header.stamp = m_parent.m_sim_time;
+		msg_laser.header.frame_id = m_parent.vehVarName(obs->sensorLabel,&veh);
+
+		mrpt::poses::CPose3D pose_laser;
+		tf::Transform transform;
+		o->getSensorPose(pose_laser);
+		mrpt_bridge::convert(pose_laser, transform);
+
+		m_parent.m_tf_br.sendTransform(tf::StampedTransform(
+			transform,
+			msg_laser.header.stamp,
+			m_parent.vehVarName("base_link",&veh), // parent frame
+			msg_laser.header.frame_id
+			));
+
+		pub.publish(msg_laser);
+	}
+	else {
+		// Don't know how to emit this observation to ROS!
+	}
+
+
+} // end of onNewObservation()
+
 
 /** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than one vehicle in the World, or "/<VAR_NAME>" otherwise. */
 std::string MVSimNode::vehVarName(const std::string &sVarName, const mvsim::VehicleBase * veh) const
@@ -469,5 +522,7 @@ std::string MVSimNode::vehVarName(const std::string &sVarName, const mvsim::Vehi
 		return std::string("/")+ veh->getName() +std::string("/")+sVarName;
 	}
 }
+
+
 
 
