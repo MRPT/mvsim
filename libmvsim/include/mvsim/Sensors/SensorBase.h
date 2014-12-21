@@ -28,8 +28,12 @@ namespace mvsim
 
 		virtual void loadConfigFrom(const rapidxml::xml_node<char> *root) = 0;
 
+		double m_sensor_period; //!< Generate one sensor reading every this period (in seconds) (Default = 0.1)
+
 	protected:
 		VehicleBase & m_vehicle; //!< The vehicle this sensor is attached to
+
+		double m_sensor_last_timestamp; //!< The last sensor reading timestamp. See m_sensor_period
 
 	};
 

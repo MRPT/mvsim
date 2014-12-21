@@ -53,6 +53,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	params["pose"] = TParamEntry("%pose2d_ptr3d",&m_scan_model.sensorPose);
 	params["range_std_noise"] = TParamEntry("%lf",&m_rangeStdNoise);
 	params["angle_std_noise_deg"] = TParamEntry("%lf_deg",&m_angleStdNoise);
+	params["sensor_period"] = TParamEntry("%lf", &this->m_sensor_period);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root,params);
@@ -99,6 +100,12 @@ void LaserScanner::simul_pre_timestep(const TSimulContext &context)
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void LaserScanner::simul_post_timestep(const TSimulContext &context)
 {
+	// Limit sensor rate:
+	if (context.simul_time<m_sensor_last_timestamp+m_sensor_period)
+		return;
+
+	m_sensor_last_timestamp = context.simul_time;
+
 	// Create an array of scans, each reflecting ranges to one kind of world objects.
 	// Finally, we'll take the shortest range in each direction:
 	std::list<mrpt::slam::CObservation2DRangeScan> lstScans;
