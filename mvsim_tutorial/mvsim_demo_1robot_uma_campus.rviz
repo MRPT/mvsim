@@ -6,9 +6,9 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /TF1
         - /TF1/Frames1
         - /TF1/Tree1
+        - /PoseArray1
       Splitter Ratio: 0.59396
     Tree Height: 416
   - Class: rviz/Selection
@@ -130,6 +130,13 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Arrow Length: 1
+      Class: rviz/PoseArray
+      Color: 255; 25; 0
+      Enabled: true
+      Name: PoseArray
+      Topic: /particlecloud
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -154,22 +161,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 20.1239
+      Distance: 10.4755
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 13.5973
-        Y: -8.19518
-        Z: -1.74148
+        X: 0.996772
+        Y: 2.55613
+        Z: 2.88367
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.550398
+      Pitch: 0.754797
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.19858
+      Yaw: 0.880394
     Saved: ~
 Window Geometry:
   Displays:
