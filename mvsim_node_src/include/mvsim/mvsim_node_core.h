@@ -13,6 +13,7 @@
 #include <dynamic_reconfigure/server.h>
 
 #include <tf/transform_broadcaster.h>
+#include <tf2_ros/static_transform_broadcaster.h>
 
 // Auto-generated from cfg/ directory.
 #include <mvsim/mvsimNodeConfig.h>
@@ -65,6 +66,7 @@ protected:
 	ros::Publisher m_pub_map_ros, m_pub_map_metadata; //!< used for simul_map publication
 	ros::Publisher m_pub_clock;
 	tf::TransformBroadcaster      m_tf_br; //!< Use to send data to TF
+	tf2_ros::StaticTransformBroadcaster m_static_tf_br; //!< For sending STATIC tf
 
 	struct TPubSubPerVehicle
 	{
@@ -128,6 +130,9 @@ protected:
 
 	/** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than one vehicle in the World, or "/<VAR_NAME>" otherwise. */
 	std::string vehVarName(const std::string &sVarName, const mvsim::VehicleBase * veh) const;
+
+	void sendStaticTF(const std::string &frame_id, const std::string &child_frame_id, const tf::Transform &tx,const ros::Time &stamp);
+
 
 	struct MVSimVisitor_notifyROSWorldIsUpdated :
 			public mvsim::World::VehicleVisitorBase,

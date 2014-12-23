@@ -278,6 +278,19 @@ void MVSimNode::notifyROSWorldIsUpdated()
 		mvsim::VehicleBase * veh = it->second;
 		initPubSubs(m_pubsub_vehicles[idx],veh);
 	}
+
+	// Publish the static transform /world -> /map
+	sendStaticTF("/world","/map", m_tfIdentity, m_sim_time);
+}
+
+void MVSimNode::sendStaticTF(const std::string &frame_id, const std::string &child_frame_id, const tf::Transform &txf,const ros::Time &stamp)
+{
+	geometry_msgs::TransformStamped tx;
+	tx.header.frame_id = frame_id;
+	tx.child_frame_id  = child_frame_id;
+	tx.header.stamp = stamp;
+	tf::transformTFToMsg(txf,tx.transform);
+	m_static_tf_br.sendTransform(tx);
 }
 
 /** Initialize all pub/subs required for each vehicle, for the specific vehicle \a veh */
@@ -302,6 +315,10 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle &pubsubs, mvsim::VehicleBase* veh)
 		// pub: /particlecloud
 		pubsubs.pub_particlecloud = m_n.advertise<geometry_msgs::PoseArray>(vehVarName("particlecloud", veh), 1);
 	}
+
+	// STATIC Identity transform base_link -> base_footprint
+	//m_static_tf_br.sendTransform(tf::StampedTransform(m_tfIdentity,m_sim_time,vehVarName("base_link", veh),vehVarName("base_footprint", veh)));
+	sendStaticTF(vehVarName("base_link", veh),vehVarName("base_footprint", veh), m_tfIdentity, m_sim_time);
 }
 
 
@@ -447,14 +464,7 @@ void MVSimNode::spinNotifyROS()
 			}
 
 
-			// 4) Identity transform between base_footprint and base_link
-			// ------------------------------------------------------------
-			m_tf_br.sendTransform(tf::StampedTransform(m_tfIdentity,m_sim_time,vehVarName("base_link", veh),vehVarName("base_footprint", veh)));
-
 		} // end for each vehicle
-
-		// Publish the static transform /world -> /map
-		m_tf_br.sendTransform(tf::StampedTransform(m_tfIdentity,m_sim_time,"/world","/map" ));
 
 	} // end publish tf
 
