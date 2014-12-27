@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <mrpt/system/os.h> // kbhit()
+#include <mrpt/system/filesystem.h>
 
 #include <mrpt_bridge/laser_scan.h>
 #include <mrpt_bridge/map.h>
@@ -76,6 +77,7 @@ MVSimNode::MVSimNode(ros::NodeHandle &n) :
 void MVSimNode::loadWorldModel(const std::string &world_xml_file)
 {
 	ROS_INFO("[MVSimNode] Loading world file: %s",world_xml_file.c_str());
+	ROS_ASSERT_MSG( mrpt::system::fileExists(world_xml_file), "[MVSimNode::loadWorldModel] File does not exist!: '%s'", world_xml_file.c_str()  );
 
 	// Load from XML:
 	rapidxml::file<> fil_xml(world_xml_file.c_str());
