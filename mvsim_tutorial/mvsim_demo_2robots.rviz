@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
     Tree Height: 362
   - Class: rviz/Selection
@@ -66,11 +68,11 @@ Visualization Manager:
       Enabled: true
       Frame Timeout: 15
       Frames:
-        All Enabled: true
+        All Enabled: false
         map:
           Value: true
         r1/base_footprint:
-          Value: true
+          Value: false
         r1/base_link:
           Value: true
         r1/laser1:
@@ -78,7 +80,7 @@ Visualization Manager:
         r1/odom:
           Value: true
         r2/base_footprint:
-          Value: true
+          Value: false
         r2/base_link:
           Value: true
         r2/laser1:
@@ -89,7 +91,7 @@ Visualization Manager:
           Value: true
       Marker Scale: 4
       Name: TF
-      Show Arrows: true
+      Show Arrows: false
       Show Axes: true
       Show Names: true
       Tree:
@@ -213,7 +215,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 44.5421
+      Distance: 29.513
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
@@ -228,7 +230,7 @@ Visualization Manager:
       Pitch: 0.789797
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.2104
+      Yaw: 1.6104
     Saved: ~
 Window Geometry:
   Displays:

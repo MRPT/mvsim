@@ -480,16 +480,22 @@ void MVSimNode::spinNotifyROS()
 					geometry_msgs::PoseArray  particleCloud;
 
 					// topic: <Ri>/particlecloud
-					particleCloud.header.stamp = m_sim_time;
-					particleCloud.header.frame_id = "/map";
-					particleCloud.poses.resize(1);
-					particleCloud.poses[0] = gtOdoMsg.pose.pose;
-					m_pubsub_vehicles[i].pub_particlecloud.publish(particleCloud);
+					if (m_pubsub_vehicles[i].pub_particlecloud.getNumSubscribers()>0)
+					{
+						particleCloud.header.stamp = m_sim_time;
+						particleCloud.header.frame_id = "/map";
+						particleCloud.poses.resize(1);
+						particleCloud.poses[0] = gtOdoMsg.pose.pose;
+						m_pubsub_vehicles[i].pub_particlecloud.publish(particleCloud);
+					}
 
 					// topic: <Ri>/amcl_pose
-					currentPos.header = gtOdoMsg.header;
-					currentPos.pose.pose = gtOdoMsg.pose.pose;
-					m_pubsub_vehicles[i].pub_amcl_pose.publish(currentPos);
+					if (m_pubsub_vehicles[i].pub_amcl_pose.getNumSubscribers()>0)
+					{
+						currentPos.header = gtOdoMsg.header;
+						currentPos.pose.pose = gtOdoMsg.pose.pose;
+						m_pubsub_vehicles[i].pub_amcl_pose.publish(currentPos);
+					}
 
 					// TF: /map -> <Ri>/odom
 					{
@@ -504,6 +510,7 @@ void MVSimNode::spinNotifyROS()
 			// 2) Chassis markers (for rviz visualization)
 			// --------------------------------------------
 			// pub: <VEH>/chassis_markers
+			if (m_pubsub_vehicles[i].pub_chassis_markers.getNumSubscribers()>0)
 			{
 				visualization_msgs::MarkerArray & msg_shapes = m_pubsub_vehicles[i].chassis_shape_msg;
 				ROS_ASSERT(msg_shapes.markers.size() == (1 + veh->getNumWheels()));
@@ -539,6 +546,7 @@ void MVSimNode::spinNotifyROS()
 				}
 
 				// Apart from TF, publish to the "odom" topic as well
+				if (m_pubsub_vehicles[i].pub_odom.getNumSubscribers()>0)
 				{
 					nav_msgs::Odometry odoMsg;
 
@@ -589,16 +597,10 @@ void MVSimNode::MyWorld::onNewObservation(const mvsim::VehicleBase &veh, const m
 		if (is_1st_pub)
 			pub = m_parent.m_n.advertise<sensor_msgs::LaserScan>( m_parent.vehVarName(obs->sensorLabel,&veh), 10);
 
-		// Convert observation MRPT -> ROS
 		const mrpt::slam::CObservation2DRangeScan* o = dynamic_cast<const mrpt::slam::CObservation2DRangeScan*>(obs);
-		geometry_msgs::Pose msg_pose_laser;
-		sensor_msgs::LaserScan msg_laser;
-		mrpt_bridge::convert(*o, msg_laser, msg_pose_laser);
+		const std::string sSensorFrameId = m_parent.vehVarName(obs->sensorLabel,&veh);
 
-		// Force usage of simulation time:
-		msg_laser.header.stamp = m_parent.m_sim_time;
-		msg_laser.header.frame_id = m_parent.vehVarName(obs->sensorLabel,&veh);
-
+		// Send TF:
 		mrpt::poses::CPose3D pose_laser;
 		tf::Transform transform;
 		o->getSensorPose(pose_laser);
@@ -606,12 +608,25 @@ void MVSimNode::MyWorld::onNewObservation(const mvsim::VehicleBase &veh, const m
 
 		m_parent.m_tf_br.sendTransform(tf::StampedTransform(
 			transform,
-			msg_laser.header.stamp,
+			m_parent.m_sim_time,
 			m_parent.vehVarName("base_link",&veh), // parent frame
-			msg_laser.header.frame_id
+			sSensorFrameId
 			));
 
-		pub.publish(msg_laser);
+		// Send observation:
+		if (is_1st_pub || pub.getNumSubscribers()>0)
+		{
+			// Convert observation MRPT -> ROS
+			geometry_msgs::Pose msg_pose_laser;
+			sensor_msgs::LaserScan msg_laser;
+			mrpt_bridge::convert(*o, msg_laser, msg_pose_laser);
+
+			// Force usage of simulation time:
+			msg_laser.header.stamp = m_parent.m_sim_time;
+			msg_laser.header.frame_id = sSensorFrameId;
+
+			pub.publish(msg_laser);
+		}
 	}
 	else {
 		// Don't know how to emit this observation to ROS!
