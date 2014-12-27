@@ -106,7 +106,7 @@
 		
 		<!-- Sensors: -->
 		<sensor class="laser" name="laser1">
-			<pose> 1.60  0.0  0.0 </pose>
+			<pose> 1.80  0.0  0.0 </pose>
 			<fov_degrees>180</fov_degrees>
 			<nrays>181</nrays>
 			<range_std_noise>0.01</range_std_noise>

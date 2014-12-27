@@ -30,55 +30,61 @@
 	<!-- =============================
 		   Vehicle classes definition 
 	     ============================= -->
-	<vehicle:class name="small_robot">
+	<vehicle:class name="car_ackermann">
 		
 		<!--  Dynamical model -->
-		<dynamics class="differential">
+		<dynamics class="ackermann">
 			<!-- Params -->
-			<l_wheel pos="0.0  0.5" mass="4.0" width="0.20" diameter="0.40" />
-			<r_wheel pos="0.0 -0.5" mass="4.0" width="0.20" diameter="0.40" />
-			<chassis mass="15.0" zmin="0.05" zmax="0.6">
+			<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
+			<rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
+			<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
+			<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
+			<f_wheels_x>1.3</f_wheels_x>
+			<f_wheels_d>2.0</f_wheels_d>
+			<max_steer_ang_deg>30.0</max_steer_ang_deg>
+			
+			<chassis mass="800.0" zmin="0.15" zmax="1.2">
 			</chassis>
 			
 			<!--   Motor controller -->
-			<controller class="twist_pid">
+			<controller class="twist_front_steer_pid">
 				<!-- Params -->
-				<KP>100</KP>  <KI>5</KI> <I_MAX>10</I_MAX> <KD>0</KD>
+				<KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
 				<V>0.0</V><W>0</W>
-				<max_torque>25</max_torque>
-			</controller>
+				<max_torque>600</max_torque>
+			</controller>			
 			
 		</dynamics>
 				
 		<!-- Friction force simulation -->
 		<friction class="default">
 			<mu>0.7</mu>
-			<C_damping>0.4</C_damping>
+			<C_damping>10</C_damping>
 		</friction>
-				
+		
 		<!-- Sensors: -->
 		<sensor class="laser" name="laser1">
-			<pose> 0.60  0.0  0.0 </pose>
+			<pose> 1.80  0.0  0.0 </pose>
 			<fov_degrees>180</fov_degrees>
-			<sensor_period>0.05</sensor_period>
 			<nrays>181</nrays>
 			<range_std_noise>0.01</range_std_noise>
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
 		</sensor>
 		<sensor class="laser" name="laser2">
-			<pose> -0.50  0.0  180.0 </pose>
+			<pose> -1.0  0.0  180.0 </pose>
 			<fov_degrees>180</fov_degrees>
 			<sensor_period>0.05</sensor_period>
 			<nrays>181</nrays>
 			<range_std_noise>0.01</range_std_noise>
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
 		</sensor>
+		
 	</vehicle:class>
 	
 	<!-- ========================
 		   Vehicle(s) definition 
 	     ======================== -->
-	<vehicle name="r1" class="small_robot">
+	<vehicle name="r1" class="car_ackermann">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 	</vehicle>
