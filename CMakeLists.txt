@@ -33,7 +33,7 @@ endif()
 find_package(catkin 
 	QUIET  # **IMPORTANT**: Notice the "QUIET" instead of the usual "REQUIRED". It's not a mistake.
 	COMPONENTS 
-	roscpp tf mrpt_bridge dynamic_reconfigure std_msgs nav_msgs sensor_msgs dynamic_reconfigure message_generation
+	roscpp tf mrpt_bridge dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs dynamic_reconfigure message_generation
 	)
 
 SET(BUILD_FOR_ROS FALSE)
