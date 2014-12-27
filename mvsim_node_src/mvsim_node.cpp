@@ -373,7 +373,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle &pubsubs, mvsim::VehicleBase* veh)
 		pubsubs.pub_chassis_markers.publish(msg_shapes);
 	}
 
-	// pub: <VEH>/chassis_shape
+	// pub: <VEH>/chassis_polygon
 	{
 		pubsubs.pub_chassis_shape = m_n.advertise<geometry_msgs::Polygon>(vehVarName("chassis_polygon", veh),1, true /*latch*/);
 
