@@ -15,6 +15,7 @@
 #include <nav_msgs/GetMap.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/Polygon.h>
 #include <sensor_msgs/LaserScan.h>
 
 #include <nav_msgs/Odometry.h>
@@ -296,28 +297,109 @@ void MVSimNode::sendStaticTF(const std::string &frame_id, const std::string &chi
 /** Initialize all pub/subs required for each vehicle, for the specific vehicle \a veh */
 void MVSimNode::initPubSubs(TPubSubPerVehicle &pubsubs, mvsim::VehicleBase* veh)
 {
-	// sub: /cmd_vel
+	// sub: <VEH>/cmd_vel
 	pubsubs.sub_cmd_vel = m_n.subscribe<geometry_msgs::Twist>(
 		vehVarName("cmd_vel",veh), 10,
 		boost::bind(&MVSimNode::onROSMsgCmdVel,this,_1,veh)
 		);
 
-	// pub: /odom
+	// pub: <VEH>/odom
 	pubsubs.pub_odom = m_n.advertise<nav_msgs::Odometry>(vehVarName("odom", veh), 10);
 
-	// pub: /base_pose_ground_truth
+	// pub: <VEH>/base_pose_ground_truth
 	pubsubs.pub_ground_truth = m_n.advertise<nav_msgs::Odometry>(vehVarName("base_pose_ground_truth", veh), 10);
+
+	// pub: <VEH>/chassis_markers
+	{
+		pubsubs.pub_chassis_markers = m_n.advertise<visualization_msgs::MarkerArray>(vehVarName("chassis_markers", veh),5, true /*latch*/);
+		const mrpt::math::TPolygon2D & poly = veh->getChassisShape();
+
+		// Create one "ROS marker" for each wheel + 1 for the chassis:
+		visualization_msgs::MarkerArray & msg_shapes = pubsubs.chassis_shape_msg;
+		msg_shapes.markers.resize(1 + veh->getNumWheels());
+
+		// [0] Chassis shape:
+		visualization_msgs::Marker &chassis_shape_msg = msg_shapes.markers[0];
+
+		chassis_shape_msg.action = visualization_msgs::Marker::MODIFY;
+		chassis_shape_msg.type = visualization_msgs::Marker::LINE_STRIP;
+		chassis_shape_msg.header.frame_id = vehVarName("base_link", veh);
+		chassis_shape_msg.ns = "mvsim.chassis_shape";
+		chassis_shape_msg.id = veh->getVehicleIndex();
+		chassis_shape_msg.scale.x = 0.05;
+		chassis_shape_msg.scale.y = 0.05;
+		chassis_shape_msg.scale.z = 0.02;
+		chassis_shape_msg.points.resize(poly.size()+1);
+		for (size_t i=0;i<=poly.size();i++)
+		{
+			size_t k = i % poly.size();
+			chassis_shape_msg.points[i].x = poly[k].x;
+			chassis_shape_msg.points[i].y = poly[k].y;
+			chassis_shape_msg.points[i].z = 0;
+		}
+		chassis_shape_msg.color.a = 0.9;
+		chassis_shape_msg.color.r = 0.9;
+		chassis_shape_msg.color.g = 0.9;
+		chassis_shape_msg.color.b = 0.9;
+		chassis_shape_msg.frame_locked = true;
+
+		// [1:N] Wheel shapes
+		for (size_t i=0;i<veh->getNumWheels();i++)
+		{
+			visualization_msgs::Marker &wheel_shape_msg = msg_shapes.markers[1+i];
+			const mvsim::Wheel &w = veh->getWheelInfo(i);
+
+			const double lx = w.diameter*0.5, ly = w.width*0.5;
+			wheel_shape_msg = chassis_shape_msg; // Init values
+			chassis_shape_msg.ns = mrpt::format("mvsim.chassis_shape.wheel%u",static_cast<unsigned int>(i));
+			wheel_shape_msg.points.resize(5);
+			wheel_shape_msg.points[0].x = lx;  wheel_shape_msg.points[0].y = ly;  wheel_shape_msg.points[0].z = 0;
+			wheel_shape_msg.points[1].x = lx;  wheel_shape_msg.points[1].y =-ly;  wheel_shape_msg.points[1].z = 0;
+			wheel_shape_msg.points[2].x =-lx;  wheel_shape_msg.points[2].y =-ly;  wheel_shape_msg.points[2].z = 0;
+			wheel_shape_msg.points[3].x =-lx;  wheel_shape_msg.points[3].y = ly;  wheel_shape_msg.points[3].z = 0;
+			wheel_shape_msg.points[4] = wheel_shape_msg.points[0];
+
+			wheel_shape_msg.color.r = w.color.R / 255.0;
+			wheel_shape_msg.color.g = w.color.G / 255.0;
+			wheel_shape_msg.color.b = w.color.B / 255.0;
+
+			// Set local pose of the wheel wrt the vehicle:
+			tf::Matrix3x3 rot;
+			rot.setEulerYPR(w.yaw,0,0);
+			tf::poseTFToMsg(tf::Transform(rot, tf::Vector3(w.x,w.y,0) ), wheel_shape_msg.pose);
+		} // end for each wheel
+
+		// Publish Initial pose
+		pubsubs.pub_chassis_markers.publish(msg_shapes);
+	}
+
+	// pub: <VEH>/chassis_shape
+	{
+		pubsubs.pub_chassis_shape = m_n.advertise<geometry_msgs::Polygon>(vehVarName("chassis_polygon", veh),1, true /*latch*/);
+
+		// Do the first (and unique) publish:
+		geometry_msgs::Polygon poly_msg;
+		const mrpt::math::TPolygon2D & poly = veh->getChassisShape();
+		poly_msg.points.resize(poly.size());
+		for (size_t i=0;i<poly.size();i++)
+		{
+			poly_msg.points[i].x = poly[i].x;
+			poly_msg.points[i].y = poly[i].y;
+			poly_msg.points[i].z = 0;
+		}
+		pubsubs.pub_chassis_shape.publish(poly_msg);
+	}
+
 
 	if (m_do_fake_localization)
 	{
-		// pub: /amcl_pose
+		// pub: <VEH>/amcl_pose
 		pubsubs.pub_amcl_pose = m_n.advertise<geometry_msgs::PoseWithCovarianceStamped>(vehVarName("amcl_pose", veh), 1);
-		// pub: /particlecloud
+		// pub: <VEH>/particlecloud
 		pubsubs.pub_particlecloud = m_n.advertise<geometry_msgs::PoseArray>(vehVarName("particlecloud", veh), 1);
 	}
 
-	// STATIC Identity transform base_link -> base_footprint
-	//m_static_tf_br.sendTransform(tf::StampedTransform(m_tfIdentity,m_sim_time,vehVarName("base_link", veh),vehVarName("base_footprint", veh)));
+	// STATIC Identity transform <VEH>/base_link -> <VEH>/base_footprint
 	sendStaticTF(vehVarName("base_link", veh),vehVarName("base_footprint", veh), m_tfIdentity, m_sim_time);
 }
 
@@ -419,10 +501,29 @@ void MVSimNode::spinNotifyROS()
 				}
 			}
 
-
-			// 2) Sensor placement on vehicles:
+			// 2) Chassis markers (for rviz visualization)
 			// --------------------------------------------
-			// ...
+			// pub: <VEH>/chassis_markers
+			{
+				visualization_msgs::MarkerArray & msg_shapes = m_pubsub_vehicles[i].chassis_shape_msg;
+				ROS_ASSERT(msg_shapes.markers.size() == (1 + veh->getNumWheels()));
+
+				// [0] Chassis shape: static no need to update.
+				// [1:N] Wheel shapes: may move
+				for (size_t j=0;j<veh->getNumWheels();j++)
+				{
+					visualization_msgs::Marker &wheel_shape_msg = msg_shapes.markers[1+j];
+					const mvsim::Wheel &w = veh->getWheelInfo(j);
+
+					// Set local pose of the wheel wrt the vehicle:
+					tf::Matrix3x3 rot;
+					rot.setEulerYPR(w.yaw,0,0);
+					tf::poseTFToMsg(tf::Transform(rot, tf::Vector3(w.x,w.y,0) ), wheel_shape_msg.pose);
+				} // end for each wheel
+
+				// Publish Initial pose
+				m_pubsub_vehicles[i].pub_chassis_markers.publish(msg_shapes);
+			}
 
 			// 3) odometry transform
 			// --------------------------------------------

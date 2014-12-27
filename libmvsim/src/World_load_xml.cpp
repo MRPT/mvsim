@@ -74,8 +74,6 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 	other_world_params["b2d_vel_iters"] = TParamEntry("%i", &this->m_b2d_vel_iters);
 	other_world_params["b2d_pos_iters"] = TParamEntry("%i", &this->m_b2d_pos_iters);
 
-	MRPT_TODO("Export this list of params to ROS dynamic reconfigure");
-
 	// Process all nodes:
 	// ------------------------------------------------
 	xml_node<> *node = root->first_node();
