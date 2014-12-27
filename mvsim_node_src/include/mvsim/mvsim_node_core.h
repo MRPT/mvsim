@@ -76,8 +76,8 @@ protected:
 		ros::Publisher   pub_ground_truth; //!< Publisher of "base_pose_ground_truth" topic
 		ros::Publisher   pub_amcl_pose, pub_particlecloud; //!< Publishers for "fake_localization" topics
 		std::map<std::string,ros::Publisher> pub_sensors; //!< Map <sensor_label> => publisher
-		ros::Publisher   pub_chassis_markers;
-		ros::Publisher   pub_chassis_shape;
+		ros::Publisher   pub_chassis_markers; //!< "<VEH>/chassis_markers"
+		ros::Publisher   pub_chassis_shape; //!< "<VEH>/chassis_shape"
 		visualization_msgs::MarkerArray chassis_shape_msg;
 	};
 
