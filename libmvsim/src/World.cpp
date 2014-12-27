@@ -18,8 +18,6 @@
 using namespace mvsim;
 using namespace std;
 
-MRPT_TODO("Create global obj for params registry; export them to ROS, etc.")
-
 // Default ctor: inits empty world.
 World::World() :
 	m_gravity(9.81),

@@ -103,6 +103,9 @@ namespace mvsim
 		/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 		const std::string & getName() const { return m_name;}
 
+		/** Get the 2D shape of the vehicle chassis, as set from the config file (only used for collision detection) */
+		const mrpt::math::TPolygon2D & getChassisShape() const { return m_chassis_poly; }
+
 		/** Set the vehicle index in the World */
 		void setVehicleIndex(size_t idx) { m_vehicle_index = idx; }
 		/** Get the vehicle index in the World */

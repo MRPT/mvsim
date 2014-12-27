@@ -14,6 +14,7 @@
 
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <visualization_msgs/MarkerArray.h>
 
 // Auto-generated from cfg/ directory.
 #include <mvsim/mvsimNodeConfig.h>
@@ -75,6 +76,9 @@ protected:
 		ros::Publisher   pub_ground_truth; //!< Publisher of "base_pose_ground_truth" topic
 		ros::Publisher   pub_amcl_pose, pub_particlecloud; //!< Publishers for "fake_localization" topics
 		std::map<std::string,ros::Publisher> pub_sensors; //!< Map <sensor_label> => publisher
+		ros::Publisher   pub_chassis_markers;
+		ros::Publisher   pub_chassis_shape;
+		visualization_msgs::MarkerArray chassis_shape_msg;
 	};
 
 	std::vector<TPubSubPerVehicle> m_pubsub_vehicles; //!< Pubs/Subs for each vehicle. Initialized by initPubSubs(), called from notifyROSWorldIsUpdated()
