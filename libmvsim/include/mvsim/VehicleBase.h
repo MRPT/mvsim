@@ -45,13 +45,6 @@ namespace mvsim
 		/** Register a new class of vehicles from XML description of type "<vehicle:class name='name'>...</vehicle:class>".  */
 		static void register_vehicle_class(const rapidxml::xml_node<char> *xml_node);
 
-		/** Loads vehicle params from input XML node of type "<vehicle>...</vehicle>".
-		  * See derived classes & documentation for a list of accepted params.
-		  */
-		void load_params_from_xml(const rapidxml::xml_node<char> *xml_node);
-		/// \overload
-		void load_params_from_xml(const std::string &xml_text);
-
 		// ------- Interface with "World" ------
 		virtual void simul_pre_timestep(const TSimulContext &context); // See derived class docs
 		virtual void simul_post_timestep(const TSimulContext &context); // See derived class docs

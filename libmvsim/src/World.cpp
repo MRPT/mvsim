@@ -57,7 +57,7 @@ void World::clear_all(bool acquire_mt_lock)
 		b2BodyDef groundBodyDef;
 		m_b2_ground_body = m_box2d_world->CreateBody(&groundBodyDef);
 
-		// Clear m_vehicles & other lists of objs:
+		// Clear lists of objs:
 		// ---------------------------------------------
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) delete it->second;
 		m_vehicles.clear();
@@ -65,6 +65,8 @@ void World::clear_all(bool acquire_mt_lock)
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it) delete *it;
 		m_world_elements.clear();
 
+		for(TListBlocks::iterator it=m_blocks.begin();it!=m_blocks.end();++it) delete it->second;
+		m_blocks.clear();
 
 		if (acquire_mt_lock) m_world_cs.leave();
 	}
@@ -120,6 +122,11 @@ void World::internal_one_timestep(double dt)
 		}
 	}
 	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.blocks");
+		for(TListBlocks::iterator it=m_blocks.begin();it!=m_blocks.end();++it)
+			it->second->simul_pre_timestep(context);
+	}
+	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.world");
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
 			(*it)->simul_pre_timestep(context);
@@ -145,6 +152,11 @@ void World::internal_one_timestep(double dt)
 			it->second->simul_post_timestep_common(context);
 			it->second->simul_post_timestep(context);
 		}
+		for(TListBlocks::iterator it=m_blocks.begin();it!=m_blocks.end();++it)
+		{
+			it->second->simul_post_timestep_common(context);
+			it->second->simul_post_timestep(context);
+		}
 	}
 
 	// 4) Post-step:
@@ -163,11 +175,15 @@ void World::internal_one_timestep(double dt)
 		}
 	}
 	{
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.blocks");
+		for(TListBlocks::iterator it=m_blocks.begin();it!=m_blocks.end();++it)
+			it->second->simul_post_timestep(context);
+	}
+	{
 		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.world");
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
 			(*it)->simul_post_timestep(context);
 	}
-
 
 	const double ts = m_timer_iteration.Tac();
 	m_timlogger.registerUserMeasure( (ts > dt ? "timestep_too_slow_alert" : "timestep"),ts);

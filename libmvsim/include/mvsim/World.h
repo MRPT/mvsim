@@ -10,6 +10,7 @@
 
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
+#include <mvsim/Block.h>
 
 #include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/utils/CTimeLogger.h>
@@ -94,6 +95,7 @@ namespace mvsim
 		  @{*/
 		typedef std::multimap<std::string,VehicleBase*> TListVehicles; //!< Map 'vehicle-name' => vehicle object. See getListOfVehicles()
 		typedef std::list<WorldElementBase*> TListWorldElements; //!< See getListOfWorldElements()
+		typedef std::multimap<std::string,Block*> TListBlocks; //!< Map 'block-name' => block object. See getListOfBlocks()
 		/** @} */
 
 		/** \name Access inner working objects
@@ -104,8 +106,11 @@ namespace mvsim
 		b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
 
 		const TListVehicles & getListOfVehicles() const { return m_vehicles; }
-        TListVehicles &       getListOfVehicles()       { return m_vehicles; }
-        const TListWorldElements & getListOfWorldElements() const { return m_world_elements; }
+		TListVehicles &       getListOfVehicles()       { return m_vehicles; }
+		const TListBlocks & getListOfBlocks() const { return m_blocks; }
+		TListBlocks &       getListOfBlocks()       { return m_blocks; }
+		const TListWorldElements & getListOfWorldElements() const { return m_world_elements; }
+
 
 		mrpt::utils::CTimeLogger & getTimeLogger() { return m_timlogger; }
 
@@ -143,6 +148,7 @@ namespace mvsim
 
 	private:
 		friend class VehicleBase;
+		friend class Block;
 
 		// -------- World Params ----------
 		double m_gravity; //!< Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for friction, etc.
@@ -175,9 +181,9 @@ namespace mvsim
 		b2World* m_box2d_world; //!< Box2D dynamic simulator instance
 		b2Body*  m_b2_ground_body;  //!< Used to declare friction between vehicles-ground
 
-
 		TListVehicles      m_vehicles;
 		TListWorldElements m_world_elements;
+		TListBlocks        m_blocks;
 
 		/** Runs one individual time step */
 		void internal_one_timestep(double dt);

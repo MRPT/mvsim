@@ -27,7 +27,7 @@ namespace mvsim
 
 	private:
 		double m_mu;  //!< friction coeficient (non-dimensional)
-		double m_C_damping; //!< For wheels "internal friction" (N·m·s/rad)
+		double m_C_damping; //!< For wheels "internal friction" (N*m*s/rad)
 
 	};
 }
