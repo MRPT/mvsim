@@ -90,9 +90,9 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 		m_gl_grid = mrpt::opengl::CSetOfObjects::Create();
 		SCENE_INSERT_Z_ORDER(scene,0, m_gl_grid);
 	}
-	if (m_gl_obs_clouds.size()!=m_obstacles_for_each_veh.size())
+	if (m_gl_obs_clouds.size()!=m_obstacles_for_each_obj.size())
 	{
-		m_gl_obs_clouds.resize( m_obstacles_for_each_veh.size() );
+		m_gl_obs_clouds.resize( m_obstacles_for_each_obj.size() );
 	}
 
 	// 1st call OR gridmap changed?
@@ -124,39 +124,58 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 
 		m_gl_obs_clouds_buffer.clear();
 	} // end lock
-
 }
+
 
 void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 {
-	// For each vehicle, create a ground body with fixtures at each scanned point around the vehicle, so it can collide with the environment:
-	const World::TListVehicles & lstVehs =  this->m_world->getListOfVehicles();
+	// Make a list of objects subject to collide with the occupancy grid:
+	// - Vehicles
+	// - Blocks
+	{
+		const World::TListVehicles & lstVehs   =  this->m_world->getListOfVehicles();
+		const World::TListBlocks   & lstBlocks =  this->m_world->getListOfBlocks();
+		const size_t nObjs = lstVehs.size() + lstBlocks.size();
 
+		m_obstacles_for_each_obj.resize( nObjs );
+		size_t obj_idx=0;
+		for (World::TListVehicles::const_iterator itVeh=lstVehs.begin();itVeh!=lstVehs.end();++itVeh,++obj_idx)
+		{
+			TInfoPerCollidableobj &ipv = m_obstacles_for_each_obj[obj_idx];
+			ipv.max_obstacles_ranges = itVeh->second->getMaxVehicleRadius() * 1.50f;
+			const mrpt::math::TPose3D &pose = itVeh->second->getPose();
+			ipv.pose =  mrpt::poses::CPose2D(pose.x,pose.y, 0 /* angle=0, no need to rotate everything to later rotate back again! */);
+		}
+		for (World::TListBlocks::const_iterator it=lstBlocks.begin();it!=lstBlocks.end();++it,++obj_idx)
+		{
+			TInfoPerCollidableobj &ipv = m_obstacles_for_each_obj[obj_idx];
+			ipv.max_obstacles_ranges = it->second->getMaxBlockRadius() * 1.50f;
+			const mrpt::math::TPose3D &pose = it->second->getPose();
+			ipv.pose =  mrpt::poses::CPose2D(pose.x,pose.y, 0 /* angle=0, no need to rotate everything to later rotate back again! */);
+		}
+	}
+
+	// For each object, create a ground body with fixtures at each scanned point around the vehicle, so it can collide with the environment:
 	// Upon first usage, reserve mem:
-	m_obstacles_for_each_veh.resize( lstVehs.size() );
-
 	{ // lock
 		mrpt::synch::CCriticalSectionLocker csl( &m_gl_obs_clouds_buffer_cs );
-		m_gl_obs_clouds_buffer.resize(lstVehs.size());
+		const size_t nObjs = m_obstacles_for_each_obj.size();
+		m_gl_obs_clouds_buffer.resize(nObjs);
 
-		size_t veh_idx=0;
-		for (World::TListVehicles::const_iterator itVeh=lstVehs.begin();itVeh!=lstVehs.end();++itVeh, ++veh_idx)
+		for (size_t obj_idx=0;obj_idx<nObjs;obj_idx++)
 		{
 			// 1) Simulate scan to get obstacles around the vehicle:
-			TInfoPerVeh &ipv = m_obstacles_for_each_veh[veh_idx];
+			TInfoPerCollidableobj &ipv = m_obstacles_for_each_obj[obj_idx];
 			mrpt::slam::CObservation2DRangeScanPtr &scan = ipv.scan;
 			// Upon first time, reserve mem:
 			if (!scan) scan = mrpt::slam::CObservation2DRangeScan::Create();
 
-			const float veh_max_obstacles_ranges = itVeh->second->getMaxVehicleRadius() * 1.50f;
+			const float veh_max_obstacles_ranges = ipv.max_obstacles_ranges;
 			const float occup_threshold = 0.5f;
 			const size_t nRays = 50;
 
-			const mrpt::math::TPose3D &pose = itVeh->second->getPose();
 			scan->aperture = 2.0*M_PI; // 360 field of view
 			scan->maxRange = veh_max_obstacles_ranges;
-
-			ipv.pose =  mrpt::poses::CPose2D(pose.x,pose.y, 0 /* angle=0, no need to rotate everything to latter rotate back again! */);
 
 			m_grid.laserScanSimulator(
 				*scan,
@@ -183,7 +202,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 
 			// GL:
 			// 1st usage?
-			mrpt::opengl::CPointCloudPtr & gl_pts = m_gl_obs_clouds_buffer[veh_idx];
+			mrpt::opengl::CPointCloudPtr & gl_pts = m_gl_obs_clouds_buffer[obj_idx];
 			if (m_show_grid_collision_points)
 			{
 				gl_pts = mrpt::opengl::CPointCloud::Create();
@@ -247,7 +266,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 					}
 				}
 			}
-		} // end for veh_idx
+		} // end for obj_idx
 
 	} // end lock
 

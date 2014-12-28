@@ -133,6 +133,7 @@ bool mvsim::parse_xmlnode_as_param(
 	return false;
 }
 
+
 /** Call \a parse_xmlnode_as_param() for all children nodes of the given node. */
 void mvsim::parse_xmlnode_children_as_param(
 	const rapidxml::xml_node<char> &root,

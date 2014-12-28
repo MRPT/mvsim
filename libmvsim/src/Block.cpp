@@ -37,8 +37,8 @@ Block::Block(World *parent) :
 	m_q(0,0,0,0,0,0),
 	m_dq(0,0,0),
 	m_mass(30.0),
-	m_block_z_min(0.05),
-	m_block_z_max(0.6),
+	m_block_z_min(0.0),
+	m_block_z_max(1.0),
 	m_block_color(0x00,0x00,0xff),
 	m_block_com(.0,.0),
 	m_lateral_friction(0.5),
@@ -105,13 +105,14 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char> *root)
 	//  in the set of "root" + "class_root" XML nodes:
 	// --------------------------------------------------------------------------------
 	JointXMLnode<> block_root_node;
+	const rapidxml::xml_node<char>* class_root=NULL;
 	{
 		block_root_node.add(root); // Always search in root. Also in the class root, if any:
 		const xml_attribute<> *block_class = root->first_attribute("class");
 		if (block_class)
 		{
 			const string sClassName = block_class->value();
-			const rapidxml::xml_node<char>* class_root= block_classes_registry.get(sClassName);
+			class_root= block_classes_registry.get(sClassName);
 			if (!class_root)
 				throw runtime_error(mrpt::format("[Block::factory] Block class '%s' undefined",sClassName.c_str() ));
 			block_root_node.add(class_root);
@@ -166,6 +167,27 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char> *root)
 		}
 	}
 
+	// Params:
+	std::map<std::string,TParamEntry> params;
+	params["mass"] = TParamEntry("%lf", &block->m_mass);
+	params["zmin"] = TParamEntry("%lf", &block->m_block_z_min );
+	params["zmax"] = TParamEntry("%lf", &block->m_block_z_max );
+	params["ground_friction"]   = TParamEntry("%lf", &block->m_ground_friction);
+	params["lateral_friction"]  = TParamEntry("%lf", &block->m_lateral_friction);
+	params["color"] = TParamEntry("%color", &block->m_block_color );
+
+	parse_xmlnode_children_as_param(*root, params,"[Block::factory]" );
+	if (class_root)
+		parse_xmlnode_children_as_param(*class_root, params,"[Block::factory]" );
+
+	// Shape node (optional, fallback to default shape if none found)
+	const rapidxml::xml_node<char> * xml_shape = block_root_node.first_node("shape");
+	if (xml_shape)
+	{
+		mvsim::parse_xmlnode_shape(*xml_shape, block->m_block_poly, "[Block::factory]");
+		block->updateMaxRadiusFromPoly();
+	}
+
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
 	b2World* b2world = parent->getBox2DWorld();
@@ -206,45 +228,59 @@ void Block::simul_pre_timestep(const TSimulContext &context)
 	// Apply motor forces/torques:
 	//this->invoke_motor_controllers(context,m_torque_per_wheel);
 
-	// Apply friction model:
-	const double weight = m_mass * getWorldObject()->get_gravity();
 
 	std::vector<mrpt::math::TSegment3D> force_vectors; // For visualization only
-#if 0
-	std::vector<mrpt::math::TPoint2D> wheels_vels;
-	getWheelsVelocityLocal(wheels_vels,getVelocityLocal());
 
-	for (size_t i=0;i<nW;i++)
+	// Apply friction model:
+	// Use FOUR contact points between block & ground so there is a torque in the friction force
+	const size_t nContactPoints = 2;
+	const double weight_per_contact_point = m_mass * getWorldObject()->get_gravity() / nContactPoints;
+	const double mu = m_ground_friction;
+	const double max_friction = mu * weight_per_contact_point;
+
+
+	// Location (local coords) of each contact-point:
+	const vec2  pt_loc[nContactPoints] = {
+		vec2( m_max_radius,0),
+		vec2(-m_max_radius,0)
+	};
+	const double block_vx = m_dq.vals[0];
+	const double block_vy = m_dq.vals[1];
+	const double w  = m_dq.vals[2]; // block \omega
+
+	// Each point velocity is:
+	// v_point = v + \omega \times wheel_pos
+	// =>
+	// v_point = v + ( -w*y, w*x )
+	for (size_t i=0;i<nContactPoints;i++)
 	{
-		// prepare data:
-		Wheel &w = getWheelInfo(i);
+		const double vx = block_vx - w * pt_loc[i].vals[1];
+		const double vy = block_vy + w * pt_loc[i].vals[0];
 
-		FrictionBase::TFrictionInput fi(context,w);
-		fi.motor_torque = -m_torque_per_wheel[i];  // "-" => Forwards is negative
-		fi.weight = weightPerWheel;
-		fi.wheel_speed = wheels_vels[i];
+		// X friction
+		double x_friction = -vx * m_mass/ context.dt;  // Impulse required to step the slippage:
+		x_friction = b2Clamp(x_friction, -max_friction,max_friction);
 
-		// eval friction:
-		mrpt::math::TPoint2D net_force_;
-		m_friction->evaluate_friction(fi,net_force_);
+		// Y friction
+		double y_friction = -vy * m_mass/ context.dt;  // Impulse required to step the slippage:
+		y_friction = b2Clamp(y_friction, -max_friction,max_friction);
 
 		// Apply force:
-		const b2Vec2 wForce = m_b2d_block_body->GetWorldVector(b2Vec2(net_force_.x,net_force_.y)); // Force vector -> world coords
-		const b2Vec2 wPt    = m_b2d_block_body->GetWorldPoint( b2Vec2( w.x, w.y) ); // Application point -> world coords
-		//printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
-
+		const b2Vec2 wForce(x_friction,y_friction);
+		const b2Vec2 wPt    = m_b2d_block_body->GetWorldPoint( b2Vec2(pt_loc[i].vals[0], pt_loc[i].vals[1]) ); // Application point -> world coords
 		m_b2d_block_body->ApplyForce( wForce,wPt, true/*wake up*/);
 
 		// save it for optional rendering:
 		if (m_world->m_gui_options.show_forces)
 		{
 			const double forceScale =  m_world->m_gui_options.force_scale; // [meters/N]
-			const mrpt::math::TPoint3D pt1(wPt.x,wPt.y, m_chassis_z_max*1.1 + m_q.z );
+			const mrpt::math::TPoint3D pt1(wPt.x,wPt.y, m_block_z_max*1.1 + m_q.z );
 			const mrpt::math::TPoint3D pt2 = pt1 + mrpt::math::TPoint3D(wForce.x,wForce.y, 0)*forceScale;
 			force_vectors.push_back( mrpt::math::TSegment3D( pt1,pt2 ));
 		}
-	}
-#endif
+
+	} // for each contact point
+
 
 	// Save forces for optional rendering:
 	if (m_world->m_gui_options.show_forces)
