@@ -27,7 +27,9 @@ using namespace std;
 OccupancyGridMap::OccupancyGridMap(World*parent,const rapidxml::xml_node<char> *root) :
 	WorldElementBase(parent),
 	m_gui_uptodate(false),
-	m_show_grid_collision_points(true)
+	m_show_grid_collision_points(true),
+	m_restitution(0.01),
+	m_lateral_friction(0.5)
 {
 	loadConfigFrom(root);
 }
@@ -75,6 +77,8 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 		// Other general params:
 		std::map<std::string,TParamEntry> ps;
 		ps["show_collisions"] = TParamEntry("%bool", &m_show_grid_collision_points);
+		ps["restitution"] = TParamEntry("%lf", &m_restitution);
+		ps["lateral_friction"] = TParamEntry("%lf", &m_lateral_friction);
 
 		parse_xmlnode_children_as_param(*root,ps);
 	}
@@ -221,9 +225,9 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
  			sqrPoly.m_radius = 1e-3;  // The "skin" depth of the body
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &sqrPoly;
-			fixtureDef.restitution = 0.01;
+			fixtureDef.restitution = m_restitution;
 			fixtureDef.density = 0; // Fixed (inf. mass)
-			fixtureDef.friction = 0.5f;
+			fixtureDef.friction = m_lateral_friction; // 0.5f;
 
 			// Create fixtures at their place (or disable it if no obstacle has been sensed):
 			const mrpt::slam::CSinCosLookUpTableFor2DScans::TSinCosValues & sincos_tab = m_sincos_lut.getSinCosForScan(*scan);

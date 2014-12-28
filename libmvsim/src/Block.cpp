@@ -42,7 +42,8 @@ Block::Block(World *parent) :
 	m_block_color(0x00,0x00,0xff),
 	m_block_com(.0,.0),
 	m_lateral_friction(0.5),
-	m_ground_friction(0.5)
+	m_ground_friction(0.5),
+	m_restitution(0.01)
 {
 	using namespace mrpt::math;
 	// Default shape:
@@ -174,6 +175,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char> *root)
 	params["zmax"] = TParamEntry("%lf", &block->m_block_z_max );
 	params["ground_friction"]   = TParamEntry("%lf", &block->m_ground_friction);
 	params["lateral_friction"]  = TParamEntry("%lf", &block->m_lateral_friction);
+	params["restitution"]   = TParamEntry("%lf", &block->m_restitution);
 	params["color"] = TParamEntry("%color", &block->m_block_color );
 
 	parse_xmlnode_children_as_param(*root, params,"[Block::factory]" );
@@ -335,7 +337,7 @@ void Block::create_multibody_system(b2World* world)
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &blockPoly;
-		fixtureDef.restitution = 0.01;
+		fixtureDef.restitution = m_restitution;
 
 		// Set the box density to be non-zero, so it will be dynamic.
 		b2MassData mass;

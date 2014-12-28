@@ -110,6 +110,7 @@ namespace mvsim
 
 		double  m_lateral_friction; //!< Default: 0.5
 		double  m_ground_friction; //!< Default: 0.5
+		double  m_restitution; //!< Deault: 0.01
 
 		void updateMaxRadiusFromPoly();
 
