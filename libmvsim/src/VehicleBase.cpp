@@ -14,7 +14,7 @@
 #include <mvsim/FrictionModels/DefaultFriction.h> // For use as default model
 
 #include "JointXMLnode.h"
-#include "VehicleClassesRegistry.h"
+#include "XMLClassesRegistry.h"
 #include "xml_utils.h"
 
 #include <rapidxml.hpp>
@@ -31,7 +31,7 @@
 using namespace mvsim;
 using namespace std;
 
-VehicleClassesRegistry veh_classes_registry;
+XmlClassesRegistry veh_classes_registry("vehicle:class");
 
 TClassFactory_vehicleDynamics mvsim::classFactory_vehicleDynamics;
 
@@ -177,8 +177,9 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		const xml_node<> *node = veh_root_node.first_node("init_pose");
 		if (!node) throw runtime_error("[VehicleBase::factory] Missing XML node <init_pose>");
 
-		if (3!= ::sscanf(node->value(),"%lf %lf %lf_deg",&veh->m_q.x,&veh->m_q.y,&veh->m_q.yaw))
+		if (3!= ::sscanf(node->value(),"%lf %lf %lf",&veh->m_q.x,&veh->m_q.y,&veh->m_q.yaw))
 			throw runtime_error("[VehicleBase::factory] Error parsing <init_pose>...</init_pose>");
+		veh->m_q.yaw *= M_PI/180.0; // deg->rad
 	}
 
 	// (Optional) initial vel:
@@ -186,8 +187,9 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		const xml_node<> *node = veh_root_node.first_node("init_vel");
 		if (node)
 		{
-			if (3!= ::sscanf(node->value(),"%lf %lf %lf_deg",&veh->m_dq.vals[0],&veh->m_dq.vals[1],&veh->m_dq.vals[2]))
+			if (3!= ::sscanf(node->value(),"%lf %lf %lf",&veh->m_dq.vals[0],&veh->m_dq.vals[1],&veh->m_dq.vals[2]))
 				throw runtime_error("[VehicleBase::factory] Error parsing <init_vel>...</init_vel>");
+			veh->m_dq.vals[2] *= M_PI/180.0; // deg->rad
 
 			// Convert twist (velocity) from local -> global coords:
 			const mrpt::poses::CPose2D pose(0,0,veh->m_q.yaw); // Only the rotation
@@ -256,7 +258,6 @@ VehicleBase* VehicleBase::factory(World* parent, const std::string &xml_text)
 	std::stringstream s;
 	s.str( xml_text );
 
-	rapidxml::file<> fil(s);
 	char* input_str = const_cast<char*>(xml_text.c_str());
 	rapidxml::xml_document<> xml;
 	try {
@@ -267,18 +268,6 @@ VehicleBase* VehicleBase::factory(World* parent, const std::string &xml_text)
 		throw std::runtime_error( mrpt::format("[VehicleBase::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line), e.what() ) );
 	}
 	return VehicleBase::factory(parent,xml.first_node());
-}
-
-/** Loads vehicle params from input XML node of type "<vehicle>...</vehicle>".
-	* See derived classes & documentation for a list of accepted params.
-	*/
-void VehicleBase::load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
-{
-}
-
-/// \overload
-void VehicleBase::load_params_from_xml(const std::string &xml_text)
-{
 }
 
 void VehicleBase::simul_pre_timestep(const TSimulContext &context)

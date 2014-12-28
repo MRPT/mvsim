@@ -6,7 +6,7 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+  */
 
-#include "VehicleClassesRegistry.h"
+#include "XMLClassesRegistry.h"
 
 #include <iostream>
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
@@ -16,7 +16,7 @@ using namespace std;
 
 
 
-const rapidxml::xml_node<char>* VehicleClassesRegistry::get(const std::string &xml_node_vehicle_class) const
+const rapidxml::xml_node<char>* XmlClassesRegistry::get(const std::string &xml_node_vehicle_class) const
 {
 	map<string,TXMLData>::const_iterator it=m_classes.find(xml_node_vehicle_class);
 	if (it==m_classes.end())
@@ -24,7 +24,7 @@ const rapidxml::xml_node<char>* VehicleClassesRegistry::get(const std::string &x
 	else return it->second.xml_doc->first_node();
 }
 
-void VehicleClassesRegistry::add(const std::string &input_xml_node_vehicle_class)
+void XmlClassesRegistry::add(const std::string &input_xml_node_vehicle_class)
 {
 	// Parse the string as if it was an XML file:
 	std::string * xml_node_vehicle_class = new std::string(input_xml_node_vehicle_class);
@@ -36,11 +36,11 @@ void VehicleClassesRegistry::add(const std::string &input_xml_node_vehicle_class
 		xml->parse<0>(input_str);
 
 		// sanity checks:
-		const rapidxml::xml_node<> *root_node = xml->first_node("vehicle:class");
-		if (!root_node) throw runtime_error("[VehicleClassesRegistry] Missing XML node <vehicle:class>");
+		const rapidxml::xml_node<> *root_node = xml->first_node(m_tagname.c_str()); //"vehicle:class"
+		if (!root_node) throw runtime_error(mrpt::format("[XmlClassesRegistry] Missing XML node <%s>",m_tagname.c_str()));
 
 		const rapidxml::xml_attribute<> *att_name = root_node->first_attribute("name");
-		if (!att_name || !att_name->value() ) throw runtime_error("[VehicleClassesRegistry] Missing mandatory attribute 'name' in node <vehicle:class>");
+		if (!att_name || !att_name->value() ) throw runtime_error(mrpt::format("[VehicleClassesRegistry] Missing mandatory attribute 'name' in node <%s>",m_tagname.c_str()));
 
 		const string sClassName = att_name->value();
 
@@ -48,13 +48,12 @@ void VehicleClassesRegistry::add(const std::string &input_xml_node_vehicle_class
 		TXMLData & d=m_classes[sClassName]; 
 		d.xml_doc  = xml;
 		d.xml_data = xml_node_vehicle_class;
-		//std::cout << "[VehicleClassesRegistry] INFO: Registered vehicle type '"<<sClassName<<"'\n";
 	}
 	catch (rapidxml::parse_error &e) 
 	{
 		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
 		delete xml;
-		throw std::runtime_error( mrpt::format("[VehicleClassesRegistry] XML parse error (Line %u): %s", static_cast<unsigned>(line), e.what() ) );
+		throw std::runtime_error( mrpt::format("[XmlClassesRegistry] XML parse error (Line %u): %s", static_cast<unsigned>(line), e.what() ) );
 	}
 	catch (std::exception &) 
 	{

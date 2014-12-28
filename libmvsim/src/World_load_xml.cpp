@@ -91,13 +91,27 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 			VehicleBase* veh = VehicleBase::factory(this,node);
 			veh->setVehicleIndex( m_vehicles.size() ); // Assign each vehicle an "index" number
 
-			// make sure the name is not duplicated:
+			MRPT_TODO("Check for duplicated names")
 			m_vehicles.insert( TListVehicles::value_type(veh->getName(),veh));
 		}
 		// <vehicle:class> entries:
 		else if (!strcmp(node->name(),"vehicle:class"))
 		{
 			VehicleBase::register_vehicle_class(node);
+		}
+		// <block> entries:
+		else if (!strcmp(node->name(),"block"))
+		{
+			Block* block = Block::factory(this,node);
+			block->setBlockIndex( m_blocks.size() ); // Assign each block an "index" number
+
+			// make sure the name is not duplicated:
+			m_blocks.insert( TListBlocks::value_type(block->getName(),block));
+		}
+		// <block:class> entries:
+		else if (!strcmp(node->name(),"block:class"))
+		{
+			Block::register_block_class(node);
 		}
 		// <gui> </gui> params:
 		else if (!strcmp(node->name(),"gui"))

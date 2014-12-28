@@ -130,10 +130,14 @@ void World::update_GUI( TUpdateGUIParams *guiparams )
 
 	m_timlogger.leave("update_GUI.3.vehicles");
 
-	// Update view of sensors
+	// Update view of blocks
 	// -----------------------------
-	m_timlogger.enter("update_GUI.4.sensors");
-	m_timlogger.leave("update_GUI.4.sensors");
+	m_timlogger.enter("update_GUI.4.blocks");
+
+	for(TListBlocks::iterator it=m_blocks.begin();it!=m_blocks.end();++it)
+		it->second->gui_update(*gl_scene);
+
+	m_timlogger.leave("update_GUI.4.blocks");
 
 	// Other messages
 	// -----------------------------

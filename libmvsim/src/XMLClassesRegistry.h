@@ -14,10 +14,11 @@
 
 namespace mvsim
 {
-	/** Storage of <vehicle:class > entries, for usage in the <vehicle> class factory. */
-	class VehicleClassesRegistry
+	/** Storage of XML "class-like" entries used, for example, in the <vehicle> class factory. */
+	class XmlClassesRegistry
 	{
 	private:
+		const std::string m_tagname; //!< xml tag
 		struct TXMLData
 		{
 			rapidxml::xml_document<>* xml_doc;
@@ -33,11 +34,15 @@ namespace mvsim
 		std::map<std::string,TXMLData> m_classes;
 
 	public:
-		/** Return an XML node with the class definition, or NULL if not found */
-		const rapidxml::xml_node<char>* get(const std::string &xml_node_vehicle_class) const;
+		/** Define the xml tag, e.g. "vehicle:class" for "<vehicle:class name='xxx'>...</vehicle:class>" */
+		XmlClassesRegistry(const std::string & xml_class_tag) : m_tagname(xml_class_tag)
+		{}
 
-		/** Register a new vehicle class, given its XML definition as a text block */
-		void add(const std::string &input_xml_node_vehicle_class);
+		/** Return an XML node with the class definition, or NULL if not found */
+		const rapidxml::xml_node<char>* get(const std::string &xml_node_class) const;
+
+		/** Register a new class, given its XML definition as a text block */
+		void add(const std::string &input_xml_node_class);
 
 	}; // end class
 
