@@ -225,69 +225,6 @@ Block* Block::factory(World* parent, const std::string &xml_text)
 
 void Block::simul_pre_timestep(const TSimulContext &context)
 {
-	// Apply motor forces/torques:
-	//this->invoke_motor_controllers(context,m_torque_per_wheel);
-
-
-	std::vector<mrpt::math::TSegment3D> force_vectors; // For visualization only
-
-	// Apply friction model:
-	// Use FOUR contact points between block & ground so there is a torque in the friction force
-	const size_t nContactPoints = 2;
-	const double weight_per_contact_point = m_mass * getWorldObject()->get_gravity() / nContactPoints;
-	const double mu = m_ground_friction;
-	const double max_friction = mu * weight_per_contact_point;
-
-
-	// Location (local coords) of each contact-point:
-	const vec2  pt_loc[nContactPoints] = {
-		vec2( m_max_radius,0),
-		vec2(-m_max_radius,0)
-	};
-	const double block_vx = m_dq.vals[0];
-	const double block_vy = m_dq.vals[1];
-	const double w  = m_dq.vals[2]; // block \omega
-
-	// Each point velocity is:
-	// v_point = v + \omega \times wheel_pos
-	// =>
-	// v_point = v + ( -w*y, w*x )
-	for (size_t i=0;i<nContactPoints;i++)
-	{
-		const double vx = block_vx - w * pt_loc[i].vals[1];
-		const double vy = block_vy + w * pt_loc[i].vals[0];
-
-		// X friction
-		double x_friction = -vx * m_mass/ context.dt;  // Impulse required to step the slippage:
-		x_friction = b2Clamp(x_friction, -max_friction,max_friction);
-
-		// Y friction
-		double y_friction = -vy * m_mass/ context.dt;  // Impulse required to step the slippage:
-		y_friction = b2Clamp(y_friction, -max_friction,max_friction);
-
-		// Apply force:
-		const b2Vec2 wForce(x_friction,y_friction);
-		const b2Vec2 wPt    = m_b2d_block_body->GetWorldPoint( b2Vec2(pt_loc[i].vals[0], pt_loc[i].vals[1]) ); // Application point -> world coords
-		m_b2d_block_body->ApplyForce( wForce,wPt, true/*wake up*/);
-
-		// save it for optional rendering:
-		if (m_world->m_gui_options.show_forces)
-		{
-			const double forceScale =  m_world->m_gui_options.force_scale; // [meters/N]
-			const mrpt::math::TPoint3D pt1(wPt.x,wPt.y, m_block_z_max*1.1 + m_q.z );
-			const mrpt::math::TPoint3D pt2 = pt1 + mrpt::math::TPoint3D(wForce.x,wForce.y, 0)*forceScale;
-			force_vectors.push_back( mrpt::math::TSegment3D( pt1,pt2 ));
-		}
-
-	} // for each contact point
-
-
-	// Save forces for optional rendering:
-	if (m_world->m_gui_options.show_forces)
-	{
-		mrpt::synch::CCriticalSectionLocker csl( &m_force_segments_for_rendering_cs );
-		m_force_segments_for_rendering = force_vectors;
-	}
 }
 
 /** Override to do any required process right after the integration of dynamic equations for each timestep */
@@ -417,6 +354,39 @@ void Block::create_multibody_system(b2World* world)
 		m_block_com.x = vehMass.center.x;
 		m_block_com.y = vehMass.center.y;
 	}
+
+	// Create "archor points" to simulate friction with the ground:
+	// -----------------------------------------------------------------
+	const size_t nContactPoints = 2;
+	const double weight_per_contact_point = m_mass * getWorldObject()->get_gravity() / nContactPoints;
+	const double mu = m_ground_friction;
+	const double max_friction = mu * weight_per_contact_point;
+
+
+	// Location (local coords) of each contact-point:
+	const vec2  pt_loc[nContactPoints] = {
+		vec2( m_max_radius,0),
+		vec2(-m_max_radius,0)
+	};
+
+	b2FrictionJointDef fjd;
+
+	fjd.bodyA = m_world->getBox2DGroundBody();
+	fjd.bodyB = m_b2d_block_body;
+
+	for (size_t i=0;i<nContactPoints;i++)
+	{
+		const b2Vec2 local_pt = b2Vec2( pt_loc[i].vals[0], pt_loc[i].vals[1] );
+
+		fjd.localAnchorA = m_b2d_block_body->GetWorldPoint( local_pt );
+		fjd.localAnchorB = local_pt;
+		fjd.maxForce = max_friction;
+		fjd.maxTorque = 0;
+
+		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>( m_world->getBox2DWorld()->CreateJoint( &fjd ) );
+		m_friction_joints.push_back(b2_friction);
+	}
+
 }
 
 void Block::apply_force(double fx, double fy, double local_ptx, double local_pty)
