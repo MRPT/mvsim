@@ -110,8 +110,6 @@ void MVSimNode::configCallback(mvsim::mvsimNodeConfig &config, uint32_t level)
 	//  message = config.message.c_str();
 	ROS_INFO("MVSimNode::configCallback() called.");
 
-	mvsim_world_.set_simul_timestep( config.simul_timestep );
-
 	if (mvsim_world_.is_GUI_open() && !config.show_gui)
 		mvsim_world_.close_GUI();
 

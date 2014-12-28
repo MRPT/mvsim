@@ -1,6 +1,6 @@
 <mvsim_world version="1.0">
 	<!-- General simulation options -->
-	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<simul_timestep>0.001</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
 	<b2d_vel_iters>3</b2d_vel_iters>
 	<b2d_pos_iters>3</b2d_pos_iters>
 	
@@ -134,6 +134,16 @@
 	      Obstacle blocks classes definition 
 	     ====================================== -->
 	<block:class name="square_obstacle">
+		<mass>1</mass>
+		<color>#0080ff</color>
+		<zmax>2</zmax>
+		<ground_friction>0.5</ground_friction>
+		<shape>
+			<pt>-1.0 -0.6</pt>
+			<pt>-1.0  0.6</pt>
+			<pt> 1.0  0.5</pt>
+			<pt> 1.0 -0.5</pt>
+		</shape>
 	</block:class>
 
 	<!-- ========================

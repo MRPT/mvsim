@@ -63,8 +63,19 @@ namespace mvsim
 		const std::map<std::string,TParamEntry> &params,
 		const char* function_name_context="");
 
+	template <class NODE_LIST>
+	void parse_xmlnodelist_children_as_param(
+		NODE_LIST &lst_nodes,
+		const std::map<std::string,TParamEntry> &params,
+		const char* function_name_context="")
+	{
+		for (typename NODE_LIST::iterator it= lst_nodes.begin();it!=lst_nodes.end();++it)
+			parse_xmlnode_children_as_param(**it, params,function_name_context);
+	}
+
+
 	// Bits:
-	
+
 	/** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and returns 
 	  * a vec3 with [x,y,phi] with angle in radians. Raises an exception upon malformed string.
 	  */

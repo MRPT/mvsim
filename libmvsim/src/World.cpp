@@ -108,26 +108,20 @@ void World::internal_one_timestep(double dt)
 
 	// 1) Pre-step
 	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.veh");
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep");
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 			it->second->simul_pre_timestep(context);
-	}
-	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.sensors");
+
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) {
 			VehicleBase::TListSensors &sensors = it->second->getSensors();
 			for (VehicleBase::TListSensors::iterator itSen=sensors.begin();itSen!=sensors.end();++itSen) {
 				(*itSen)->simul_pre_timestep(context);
 			}
 		}
-	}
-	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.blocks");
+
 		for(TListBlocks::iterator it=m_blocks.begin();it!=m_blocks.end();++it)
 			it->second->simul_pre_timestep(context);
-	}
-	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.prestep.world");
+
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
 			(*it)->simul_pre_timestep(context);
 	}
@@ -161,26 +155,20 @@ void World::internal_one_timestep(double dt)
 
 	// 4) Post-step:
 	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.veh");
+		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.4.poststep");
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it)
 			it->second->simul_post_timestep(context);
-	}
-	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.sensors");
+
 		for(TListVehicles::iterator it=m_vehicles.begin();it!=m_vehicles.end();++it) {
 			VehicleBase::TListSensors &sensors = it->second->getSensors();
 			for (VehicleBase::TListSensors::iterator itSen=sensors.begin();itSen!=sensors.end();++itSen) {
 				(*itSen)->simul_post_timestep(context);
 			}
 		}
-	}
-	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.blocks");
+
 		for(TListBlocks::iterator it=m_blocks.begin();it!=m_blocks.end();++it)
 			it->second->simul_post_timestep(context);
-	}
-	{
-		mrpt::utils::CTimeLoggerEntry tle(m_timlogger,"timestep.0.poststep.world");
+
 		for(std::list<WorldElementBase*>::iterator it=m_world_elements.begin();it!=m_world_elements.end();++it)
 			(*it)->simul_post_timestep(context);
 	}

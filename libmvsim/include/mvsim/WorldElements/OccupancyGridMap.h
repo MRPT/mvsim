@@ -47,17 +47,18 @@ namespace mvsim
 			TFixturePtr() : fixture(NULL) {}
 		};
 
-		struct TInfoPerVeh
+		struct TInfoPerCollidableobj
 		{
+			float max_obstacles_ranges;
 			mrpt::poses::CPose2D pose;
 			mrpt::slam::CObservation2DRangeScanPtr scan;
 			b2Body* collide_body;
 			std::vector<TFixturePtr> collide_fixtures;
 
-			TInfoPerVeh() : collide_body(NULL) {}
+			TInfoPerCollidableobj() : max_obstacles_ranges(0), collide_body(NULL) {}
 		};
 
-		std::vector<TInfoPerVeh>  m_obstacles_for_each_veh; 
+		std::vector<TInfoPerCollidableobj>  m_obstacles_for_each_obj; 
 		std::vector<mrpt::opengl::CSetOfObjectsPtr> m_gl_obs_clouds;
 		
 		mrpt::synch::CCriticalSection m_gl_obs_clouds_buffer_cs;
