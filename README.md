@@ -8,7 +8,7 @@ This package includes the C++ library `mvsim`, a standalone app and a ROS node.
 License: GNU General Public License version 3
 Copyright (C) 2014 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
-![screenshot](https://raw.githubusercontent.com/ual-arm-ros-pkg/multivehicle-simulator/master/docs/imgs/screenshot_scans_see_each_other.png "Screenshot 1")
+![screenshot](https://raw.githubusercontent.com/ual-arm-ros-pkg/mvsim/master/docs/imgs/screenshot_scans_see_each_other.png "Screenshot 1")
 
 Docs
 ----------
