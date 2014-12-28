@@ -212,7 +212,7 @@ IF (BUILD_FOR_ROS)
 	  CATKIN_DEPENDS dynamic_reconfigure message_runtime roscpp std_msgs
 	#  INCLUDE_DIRS include
 	#  LIBRARIES mrpt_localization
-	  DEPENDS mrpt
+	#  DEPENDS mrpt
 	)
 
 	###########
@@ -255,7 +255,6 @@ IF (BUILD_FOR_ROS)
 		${catkin_LIBRARIES}
 		)
 
-
 	#############
 	## Install ##
 	#############
@@ -275,6 +274,12 @@ IF (BUILD_FOR_ROS)
 	  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+	)
+
+	# Mark other files for installation (e.g. launch and bag files, etc.)
+	install(DIRECTORY
+	  mvsim_tutorial
+	  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 	)
 
 	## Mark other files for installation (e.g. launch and bag files, etc.)
