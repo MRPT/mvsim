@@ -17,6 +17,7 @@
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Collision/Shapes/b2PolygonShape.h>
 #include <Box2D/Dynamics/b2Fixture.h>
+#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 
 #include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 #include <mrpt/poses/CPose2D.h>
@@ -94,6 +95,7 @@ namespace mvsim
 		  * This is used by \a simul_post_timestep() to extract the block dynamical coords (q,\dot{q}) after each simulation step.
 		  */
 		b2Body *m_b2d_block_body;
+		std::vector<b2FrictionJoint*> m_friction_joints;
 
 		mrpt::math::TPose3D  m_q;   //!< Last time-step pose (of the ref. point, in global coords)
 		vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global coords)
