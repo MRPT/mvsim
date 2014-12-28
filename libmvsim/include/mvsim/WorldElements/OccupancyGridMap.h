@@ -67,6 +67,8 @@ namespace mvsim
 		mrpt::slam::CSinCosLookUpTableFor2DScans m_sincos_lut;
 
 		bool m_show_grid_collision_points;
+		double m_restitution; //!< Elastic restitution coef (default: 0.01)
+		double m_lateral_friction; //!< (Default: 0.5)
 
 	};
 }
