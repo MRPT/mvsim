@@ -17,6 +17,13 @@
 #include <mrpt/utils/CTicTac.h>
 #include <mrpt/gui/CDisplayWindow3D.h>
 
+#include <mrpt/version.h>
+#if MRPT_VERSION>=0x130
+#	include <mrpt/obs/CObservation.h>
+#else
+#	include <mrpt/slam/CObservation.h>
+#endif
+
 #include <Box2D/Dynamics/b2World.h>
 #include <Box2D/Dynamics/b2Body.h>
 
@@ -143,7 +150,17 @@ namespace mvsim
 
 		/** \name Optional user hooks
 		  @{*/
-		virtual void onNewObservation(const VehicleBase &veh, const mrpt::slam::CObservation* obs) { /* default: do nothing */ }
+		virtual void onNewObservation(
+			const VehicleBase &veh,
+#if MRPT_VERSION>=0x130
+			const mrpt::obs::CObservation* obs
+#else
+			const mrpt::slam::CObservation* obs
+#endif
+			)
+		{
+			/* default: do nothing */
+		}
 		/** @} */
 
 	private:

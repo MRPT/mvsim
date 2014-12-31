@@ -23,6 +23,15 @@
 #include <mrpt/system/threads.h> // sleep(), thread handles
 #include <mrpt/utils/CTicTac.h>
 
+#if MRPT_VERSION>=0x130
+#	include <mrpt/obs/CObservation.h>
+	using mrpt::obs::CObservation;
+#else
+#	include <mrpt/slam/CObservation.h>
+	using mrpt::slam::CObservation;
+#endif
+
+
 /** A class to wrap libmvsim as a ROS node
   */
 class MVSimNode
@@ -47,7 +56,7 @@ public:
 	public:
 		MyWorld(MVSimNode &node) : m_parent(node) {}
 
-		virtual void onNewObservation(const mvsim::VehicleBase &veh, const mrpt::slam::CObservation* obs);
+		virtual void onNewObservation(const mvsim::VehicleBase &veh, const CObservation* obs);
 
 	}; // End of MyWorld
 
