@@ -579,7 +579,14 @@ void MVSimNode::spinNotifyROS()
 
 } // end spinNotifyROS()
 
-void MVSimNode::MyWorld::onNewObservation(const mvsim::VehicleBase &veh, const mrpt::slam::CObservation* obs)
+void MVSimNode::MyWorld::onNewObservation(
+	const mvsim::VehicleBase &veh,
+#if MRPT_VERSION>=0x130
+	const mrpt::obs::CObservation* obs
+#else
+	const mrpt::slam::CObservation* obs
+#endif
+	)
 {
 	ROS_ASSERT(obs);
 	ROS_ASSERT(!obs->sensorLabel.empty());

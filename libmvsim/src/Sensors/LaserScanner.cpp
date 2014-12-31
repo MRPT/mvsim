@@ -113,7 +113,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 
 	// Create an array of scans, each reflecting ranges to one kind of world objects.
 	// Finally, we'll take the shortest range in each direction:
-	std::list<mrpt::slam::CObservation2DRangeScan> lstScans;
+	std::list<CObservation2DRangeScan> lstScans;
 
 	const size_t nRays = m_scan_model.scan.size();
 	const double maxRange = m_scan_model.maxRange;
