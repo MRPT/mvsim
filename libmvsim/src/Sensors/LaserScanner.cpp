@@ -131,11 +131,11 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		// If not a grid map, ignore:
 		const OccupancyGridMap* grid = dynamic_cast<const OccupancyGridMap*>(*it);
 		if (!grid) continue;
-		const mrpt::slam::COccupancyGridMap2D &occGrid = grid->getOccGrid();
+		const COccupancyGridMap2D &occGrid = grid->getOccGrid();
 
 		// Create new scan:
-		lstScans.push_back( mrpt::slam::CObservation2DRangeScan(m_scan_model) );
-		mrpt::slam::CObservation2DRangeScan &scan = lstScans.back();
+		lstScans.push_back( CObservation2DRangeScan(m_scan_model) );
+		CObservation2DRangeScan &scan = lstScans.back();
 
 		// Ray tracing over the gridmap:
 		occGrid.laserScanSimulator(scan,vehPose,0.5f, m_scan_model.scan.size(), m_rangeStdNoise, 1, m_angleStdNoise);
@@ -147,8 +147,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 	m_world->getTimeLogger().enter("LaserScanner.scan.2.polygons");
 	{
 		// Create new scan:
-		lstScans.push_back( mrpt::slam::CObservation2DRangeScan(m_scan_model) );
-		mrpt::slam::CObservation2DRangeScan &scan = lstScans.back();
+		lstScans.push_back( CObservation2DRangeScan(m_scan_model) );
+		CObservation2DRangeScan &scan = lstScans.back();
 
 		// Do Box2D raycasting stuff:
 		// ------------------------------
@@ -225,14 +225,14 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 	// ----------------------------------------
 	m_world->getTimeLogger().enter("LaserScanner.scan.3.merge");
 
-	mrpt::slam::CObservation2DRangeScan *lastScan = new mrpt::slam::CObservation2DRangeScan(m_scan_model);
+	CObservation2DRangeScan *lastScan = new CObservation2DRangeScan(m_scan_model);
 	lastScan->timestamp = mrpt::system::now();
 	lastScan->sensorLabel = m_name;
 
 	lastScan->scan.assign(nRays,maxRange);
 	lastScan->validRange.assign(nRays, 0);
 
-	for (std::list<mrpt::slam::CObservation2DRangeScan>::const_iterator it=lstScans.begin();it!=lstScans.end();++it)
+	for (std::list<CObservation2DRangeScan>::const_iterator it=lstScans.begin();it!=lstScans.end();++it)
 	{
 		ASSERT_(it->scan.size()==nRays && it->validRange.size()==nRays)
 
@@ -249,7 +249,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 
 	{
 		mrpt::synch::CCriticalSectionLocker csl(&m_last_scan_cs);
-		m_last_scan = mrpt::slam::CObservation2DRangeScanPtr( lastScan );
+		m_last_scan = CObservation2DRangeScanPtr( lastScan );
 		m_last_scan2gui = m_last_scan;
 	}
 
