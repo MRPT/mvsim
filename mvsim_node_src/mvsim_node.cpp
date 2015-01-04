@@ -599,12 +599,12 @@ void MVSimNode::MyWorld::onNewObservation(
 
 	// Observation: 2d laser scans
 	// -----------------------------
-	if ( dynamic_cast<const mrpt::slam::CObservation2DRangeScan*>(obs) )
+	if ( dynamic_cast<const CObservation2DRangeScan*>(obs) )
 	{
 		if (is_1st_pub)
 			pub = m_parent.m_n.advertise<sensor_msgs::LaserScan>( m_parent.vehVarName(obs->sensorLabel,&veh), 10);
 
-		const mrpt::slam::CObservation2DRangeScan* o = dynamic_cast<const mrpt::slam::CObservation2DRangeScan*>(obs);
+		const CObservation2DRangeScan* o = dynamic_cast<const CObservation2DRangeScan*>(obs);
 		const std::string sSensorFrameId = m_parent.vehVarName(obs->sensorLabel,&veh);
 
 		// Send TF:
