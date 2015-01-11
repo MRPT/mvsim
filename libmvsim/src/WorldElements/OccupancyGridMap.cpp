@@ -11,16 +11,23 @@
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/slam/CSimplePointsMap.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/utils/CFileGZInputStream.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/utils/CObject.h>
 #include <rapidxml.hpp>
 
+#include <mrpt/version.h>
+#if MRPT_VERSION>=0x130
+#	include <mrpt/maps/CSimplePointsMap.h>
+	using mrpt::maps::CSimplePointsMap;
+#else
+#	include <mrpt/slam/CSimplePointsMap.h>
+	using mrpt::slam::CSimplePointsMap;
+#endif
+
 using namespace rapidxml;
 using namespace mvsim;
-using namespace mrpt::slam;
 using namespace std;
 
 
