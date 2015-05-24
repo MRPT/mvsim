@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>mvsim</name>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <description>Node for the "multivehicle simulator" framework.</description>
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
