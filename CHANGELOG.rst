@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.2 (2015-05-24)
+------------------
 * Cleaner build against mrpt 1.3.0
 * Fix build against mrpt 1.3.0
 * Contributors: Jose Luis Blanco
