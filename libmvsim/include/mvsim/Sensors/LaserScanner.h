@@ -45,6 +45,7 @@ namespace mvsim
 		std::string m_name; //!< sensor label/name
 		double m_rangeStdNoise;
 		double m_angleStdNoise;
+		bool   m_see_fixtures;  //!< Whether all box2d "fixtures" are visible (solid) or not (Default=true)
 
 		CObservation2DRangeScan m_scan_model; //!< Store here all scan parameters. This obj will be copied as a "pattern" to fill it with actual scan data.
 
