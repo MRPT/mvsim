@@ -24,7 +24,8 @@ LaserScanner::LaserScanner(VehicleBase&parent,const rapidxml::xml_node<char> *ro
 	SensorBase(parent),
 	m_z_order(++z_order_cnt),
 	m_rangeStdNoise(0.01),
-	m_angleStdNoise( mrpt::utils::DEG2RAD(0.01) )
+	m_angleStdNoise( mrpt::utils::DEG2RAD(0.01) ),
+	m_see_fixtures(true)
 {
 	this->loadConfigFrom(root);
 }
@@ -54,6 +55,8 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	params["range_std_noise"] = TParamEntry("%lf",&m_rangeStdNoise);
 	params["angle_std_noise_deg"] = TParamEntry("%lf_deg",&m_angleStdNoise);
 	params["sensor_period"] = TParamEntry("%lf", &this->m_sensor_period);
+	params["bodies_visible"] = TParamEntry("%bool", &this->m_see_fixtures);
+
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root,params);
@@ -156,14 +159,14 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		class RayCastClosestCallback : public b2RayCastCallback
 		{
 		public:
-			RayCastClosestCallback()
+			RayCastClosestCallback() : m_see_fixtures (true), m_hit(false)
 			{
-				m_hit = false;
 			}
 
 			float32 ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float32 fraction)
 			{
-				if (fixture->GetUserData()==INVISIBLE_FIXTURE_USER_DATA)
+				if (!m_see_fixtures ||
+				    fixture->GetUserData()==INVISIBLE_FIXTURE_USER_DATA)
 				{
 					// By returning -1, we instruct the calling code to ignore this fixture and
 					// continue the ray-cast to the next fixture.
@@ -179,6 +182,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 				return fraction;
 			}
 
+			bool m_see_fixtures;
 			bool m_hit;
 			b2Vec2 m_point;
 			b2Vec2 m_normal;
@@ -188,6 +192,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		const b2Vec2 sensorPt = b2Vec2(sensorPose.x(),sensorPose.y());
 
 		RayCastClosestCallback callback;
+		callback.m_see_fixtures = m_see_fixtures;
 
 		// Scan size:
 		ASSERT_(nRays>=2)
