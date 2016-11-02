@@ -63,8 +63,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char> *root)
 
 	// Pass params to the scan2D obj:
 	m_scan_model.aperture = mrpt::utils::DEG2RAD(fov_deg);
-	m_scan_model.scan.resize(nRays);
-	m_scan_model.validRange.resize(nRays);
+	m_scan_model.resizeScan(nRays);
 
 	// Assign a sensible default name/sensor label if none is provided:
 	if (m_name.empty()) {
@@ -196,8 +195,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 
 		// Scan size:
 		ASSERT_(nRays>=2)
-		scan.scan.resize(nRays);
-		scan.validRange.resize(nRays);
+		scan.resizeScan(nRays);
 
 		double  A = sensorPose.phi() + (scan.rightToLeft ? -0.5:+0.5) *scan.aperture;
 		const double AA = (scan.rightToLeft ? 1.0:-1.0) * (scan.aperture / (nRays-1));
@@ -208,9 +206,10 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 
 			callback.m_hit=false;
 			m_world->getBox2DWorld()->RayCast(&callback, sensorPt, endPt);
-			scan.validRange[i] = callback.m_hit ? 1:0;
+			scan.setScanRange(i, maxRange);
+			scan.setScanRangeValidity(i, callback.m_hit);
 
-			float &range = scan.scan[i];
+			float range;
 			if (callback.m_hit)
 			{
 				// Hit:
@@ -222,6 +221,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 				// Miss:
 				range = maxRange;
 			}
+			scan.setScanRange(i, range);
 		} // end for (raycast scan)
 	}
 	m_world->getTimeLogger().leave("LaserScanner.scan.2.polygons");
@@ -234,8 +234,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 	lastScan->timestamp = mrpt::system::now();
 	lastScan->sensorLabel = m_name;
 
-	lastScan->scan.assign(nRays,maxRange);
-	lastScan->validRange.assign(nRays, 0);
+	lastScan->resizeScan(nRays);
+	lastScan->resizeScanAndAssign(nRays, maxRange, false);
 
 	for (std::list<CObservation2DRangeScan>::const_iterator it=lstScans.begin();it!=lstScans.end();++it)
 	{
@@ -245,8 +245,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 		{
 			if (it->validRange[i])
 			{
-				lastScan->scan[i] = std::min(lastScan->scan[i], it->scan[i]);
-				lastScan->validRange[i] = 1; // valid
+				lastScan->setScanRange(i, std::min(lastScan->scan[i], it->scan[i]));
+				lastScan->setScanRangeValidity(i, true);; // valid
 			}
 		}
 	}
