@@ -238,7 +238,6 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 #else
 			scan.scan[i] = range;
 #endif
-
 		} // end for (raycast scan)
 	}
 	m_world->getTimeLogger().leave("LaserScanner.scan.2.polygons");
@@ -250,7 +249,6 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 	CObservation2DRangeScan *lastScan = new CObservation2DRangeScan(m_scan_model);
 	lastScan->timestamp = mrpt::system::now();
 	lastScan->sensorLabel = m_name;
-
 
 #if MRPT_VERSION>=0x150
 	lastScan->resizeScanAndAssign(nRays, maxRange, false);
