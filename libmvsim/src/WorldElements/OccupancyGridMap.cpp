@@ -196,8 +196,13 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 			// Since we'll dilate obstacle points, let's give a bit more space as compensation:
 			const float range_enlarge = 0.25f*m_grid.getResolution();
 			for (size_t k=0;k<scan->scan.size();k++)
-				scan->scan[k]+=range_enlarge;
-
+			{
+#if MRPT_VERSION>=0x150
+			    scan->setScanRange(k, scan->getScanRange(k)+range_enlarge);
+#else
+			    scan->scan[k]+=range_enlarge;
+#endif
+			}
 			// 2) Create a Box2D "ground body" with square "fixtures" so the vehicle can collide with the occ. grid:
 			b2World * b2world = m_world->getBox2DWorld();
 
