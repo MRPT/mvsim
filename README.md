@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ual-arm-ros-pkg/mvsim.svg?branch=master)](https://travis-ci.org/ual-arm-ros-pkg/mvsim)
+
 MultiVehicle simulator (libmvsim) 
 ======================================
 Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots. 
@@ -12,8 +14,8 @@ Copyright (C) 2014 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) an
 
 Docs
 ----------
-  * **The mvsim manual** is the main reference document. (Write me!!)
-  * ROS tutorials (Write me!!)
+  * (TO-DO) **The mvsim manual** is the main reference document. (Write me!!)
+  * (TO-DO) ROS tutorials (Write me!!)
   * http://wiki.ros.org/mvsim
 
 Main features
