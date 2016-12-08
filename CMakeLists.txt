@@ -14,6 +14,9 @@ PROJECT(mvsim)  # Must match the ROS package name.
 
 if(COMMAND cmake_policy)
       cmake_policy(SET CMP0003 NEW)
+      if(POLICY CMP0048)
+      	cmake_policy(SET CMP0048 OLD)  # project version
+      endif()
 endif()
 
 # ------------------------------------------------------------------
