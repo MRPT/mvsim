@@ -249,7 +249,7 @@ vec3 Block::getVelocityLocal() const
 
 mrpt::poses::CPose2D Block::getCPose2D() const
 {
-	return mrpt::poses::CPose2D(m_q);
+	return mrpt::poses::CPose2D(mrpt::math::TPose2D(m_q));
 }
 
 /** To be called at derived classes' gui_update() */
