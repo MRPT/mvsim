@@ -1,0 +1,237 @@
+\documentclass[a4paper,11pt]{article}
+  
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{float}
+\usepackage{subfigure}
+\usepackage{color}
+\usepackage{listings}
+\usepackage[utf8x]{inputenc}
+\usepackage{hyperref}
+\usepackage{rotating}
+\usepackage[english]{babel}
+
+\usepackage{amsfonts,amsmath,amsthm,amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+%% --------- Algorithms -------------
+\providecommand{\BeginAlgSize}[0]{\begin{scriptsize}}
+\providecommand{\EndAlgSize}[0]{\end{scriptsize}}
+\providecommand{\ForEach}[1]{\For{\textbf{each} #1}}
+\providecommand{\Or}[0]{O}
+\providecommand{\A}[0]{\mathbf{\alpha}}
+%% --------- End of Algorithms -------------
+
+% C++ listings settings
+\lstset{ %
+language=C++,                % choose the language of the code
+basicstyle=\scriptsize,       % the size of the fonts that are used for the code
+numbers=none,                   % where to put the line-numbers
+numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
+stepnumber=1,                   % the step between two line-numbers. If it is 1 each line will be numbered
+numbersep=5pt,                  % how far the line-numbers are from the code
+backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+commentstyle=\color{blue},
+showspaces=false,               % show spaces adding particular underscores
+showstringspaces=false,         % underline spaces within strings
+showtabs=false,                 % show tabs within strings adding particular underscores
+frame=single,           % adds a frame around the code
+tabsize=2,          % sets default tabsize to 2 spaces
+captionpos=b,           % sets the caption-position to bottom
+breaklines=true,        % sets automatic line breaking
+breakatwhitespace=false,    % sets if automatic breaks should only happen at whitespace
+escapeinside={\%*}{*)}          % if you want to add a comment within your code
+}
+
+\title{Multiple Vehicle Simulator brief description \\ C++ implemetation in mvsim}
+\author{Borys Tymchenko \\ tim4bor@gmail.com}
+\date{Document built: \today}
+
+\begin{document}
+\maketitle
+\vfill
+\begin{center}
+License: GNU General Public License version 3 Copyright (C) 2017 Jose Luis Blanco jlblanco@ual.es (University of Almeria) and collaborators
+\end{center}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+The MVSIM is a lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots. It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and accurate simulation of typical robot sensors (e.g. laser scanners).
+
+This package includes the C++ library mvsim, a standalone app and a ROS node.
+
+\newpage
+
+\section{Features}
+\begin{itemize}
+
+\item Lightweight in memory, CPU and library requirements.
+\item Fully configurable via .xml "world" files.
+\item World maps:
+	\begin{itemize}	
+		\item Occupancy gridmaps: input as images or MRPT binary maps (from icp-slam, rbpf-slam, etc.)
+		\item Elevation meshes.
+	\end{itemize}	 
+\item Vehicle models:
+	\begin{itemize}
+		\item Differential driven (2 \& 4 wheel drive).
+		\item Ackermann steering (kinematic \& dynamic steering, different mechanical drive models).
+	\end{itemize}
+\item Sensors:
+	\begin{itemize}
+		\item Laser scanners: Robots see each other, their own bodies, etc.
+	\end{itemize} 
+\item Interface to vehicles: Choose among:
+	\begin{itemize}
+		\item Raw access to forces and motor torques.
+		\item Twist commands (using internal controllers).
+	\end{itemize}
+
+\end{itemize}
+
+\newpage
+
+\section{World files}
+TODO this
+\newpage
+
+\section{Physics used}
+\subsection{Wheel dynamics}
+
+We intoduce wheels as a mass with rectangular shape (\textsl{why not cylinder?}).
+Each wheel has following properties:
+\begin{itemize}
+\item location of the wheel as to the chassis ref point [m,rad] in local coords $L_w = \{ x_w, y_w, \Phi \}$
+\item diameter $d_w$ [m]
+\item width $w_w$ [m]
+\item mass $m_w$ [kg]
+\item inertia $I_{yy}$ 
+\item spinning angular position $\phi_w$ [rad]
+\item spinning angular velocity $\omega_w$ [rad/s]
+\end{itemize}
+
+Thus, each wheel is represented as $W = \{L_w, d_w, w_w, m_w, I_{yy}, \phi_w, \omega_w\}$
+
+\subsection{Friction models}
+\subsubsection{Friction models base}
+Friction model base introduces \textit{Friction input} structure, that incorporates forces of wheel
+\begin{itemize}
+\item weight on this wheel from the car chassis, excluding the weight of the wheel itself $w$ [N]
+\item motor torque $\tau$ [Nm]
+\item instantenous velocity 
+\[\nu = \begin{bmatrix}
+\nu_x \\
+\nu_y
+\end{bmatrix}\] in local coordinate frame
+\end{itemize}
+
+\subsubsection{Default friction}
+At the moment, there is only one basic friction model available for vehicles.
+Default friction model evaluates ...
+
+Default friction evaluates forces in the wheel coordinate frame:
+
+\begin{center}
+\[
+\nu_w = 
+\begin{bmatrix}
+\nu_{wx} \\
+\nu_{wy}
+\end{bmatrix}
+=R(\Phi_w) \cdot \nu
+\]
+\end{center}
+
+To calculate maximal allowed friction for the wheel, we introduce partial mass:
+\begin{center}
+\[
+m_{wp} = \frac{w_w}{g} + m_w
+\]
+\[
+F_{f, max} = \mu \cdot m_{wp} \cdot g
+\]
+\end{center}
+Where $\mu$ is friction coefficient dor wheel.
+
+Calculating latitudal friction (decoupled sub-problem):
+\begin{center}
+\[
+F_{f,lat} = m_{wp} \cdot a = m_{wp} \cdot \frac{-\nu_{wy}}{\Delta t}
+\]
+\[
+F_{f,lat} = max(-F_{f,max}, min(F_{f,lat}, F_{f,max}))
+\]
+\end{center}
+
+Calculating wheel desired angular velocity:
+
+\begin{center}
+\[
+\omega_{constraint} = \frac{2\nu_{wx}}{d_w}
+\]
+\[
+J_{desired} = \omega_{constraint} - \omega_w
+\]
+\[
+\omega_{desired} = \frac{J_{desired}}{\Delta t}
+\]
+\end{center}
+
+
+Calculating longitudal friction:
+\begin{center}
+\[
+F_{f,lon} = \frac{1}{R} \cdot (\tau - I_{yy}\cdot \omega_{desired} - C_{damp} \cdot \omega_w)
+\]
+\[
+F_{f,lon} = max(-F_{f,max}, min(F_{f,lon}, F_{f,max}))
+\]
+\end{center}
+
+Simply composing friction forces to vector:
+\begin{center}
+\[
+F_f = 
+\begin{bmatrix}
+F_{f,lat} \\
+F_{f,lon}
+\end{bmatrix}
+\]
+\end{center}
+
+With new friction, we evaluate angular acceleration \textit{(code says angular velocity impulse, but the units are for acceleration)}  of the wheel:
+\begin{center}
+\[
+\alpha = \frac{ \tau - R \cdot F_{f,lon} - C_{damp} \cdot \omega_w}{I_{yy}}
+\]
+\end{center}
+
+Using given angular acceleration, we update wheel's angular velocity:
+\begin{center}
+$
+\omega_w = \omega_w + \alpha \cdot \Delta t
+$
+\end{center}
+
+\newpage
+\subsubsection{TODO: Advanced friction}
+\newpage
+
+\subsection{Vehicle models}
+\subsubsection{Vehicle base}
+\subsubsection{Differential driven}
+\subsubsection{Ackermann driven}
+
+
+
+
+\end{document}
