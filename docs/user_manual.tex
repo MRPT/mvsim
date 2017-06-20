@@ -100,8 +100,26 @@ This package includes the C++ library mvsim, a standalone app and a ROS node.
 
 \newpage
 
-\section{World files}
-TODO this
+\section{World simulation}
+Simulation happens inside a World object.
+This is the central class for usage from user code, running the simulation, loading XML models, managing GUI visualization, etc.
+The ROS node acts as a bridge between this class and the ROS subsystem.
+
+World description is loaded using XML files that contain all the informaton about world.
+
+\subsection{World files}
+\textbf{TODO this}
+\newpage
+
+
+\subsection{Simulation execution}
+Simulation executes step-by-step with user-defined $\Delta t$ time between steps.
+Each step has several substeps:
+\begin{itemize}
+\item Before timestep - sets actions, updates models, etc.
+\item Actual timestep - updates dynamics
+\item After timestep - everything needed to be done with updated state
+\end{itemize}
 \newpage
 
 \section{Physics used}
@@ -227,11 +245,152 @@ $
 \newpage
 
 \subsection{Vehicle models}
-\subsubsection{Vehicle base}
+
+Vehicle models are fully configurable with world XML files. 
+
+\subsubsection{Vehicle base class}
+
+Vehicle base incorporates basic functions for every vehicle actor in the scene. It is also responsible for updating state of vehicles.
+
+It has implementation of interaction with world. Derived classes reimplement only work with torques/forees on wheels. 
+
+At the moment, no model takes into account the weight transfer, so weight on wheels is calculated in this base class.
+
+Vehicle base class also provides ground-truth for velocity and position. 
+\begin{center}
+\[
+p_w = \frac{p_{chassis}}{N_w}
+\]
+\end{center}
+
+\begin{itemize}
+	\item Before timestep:
+	\begin{itemize}
+		\item Update wheels position using Box2D
+		\item Invoke motor controllers (reimplemented in derived classes)
+		\item Evaluate friction of wheels with passed friction model
+		\item Apply force to vehicle body using Box2D
+	\end{itemize}
+	\item Timestep - update internal vehicle state variables $q$ and $\dot{q}$
+	\item After timestep - updates wheels rotation		
+\end{itemize}
+
+Center of mass is defined as center of Box2D shape, currently there is no +Z mobility. 
+ 
 \subsubsection{Differential driven}
+
+A differential wheeled robot is a mobile robot whose movement is based on two separately driven wheels placed on either side of the robot body. It can thus change its direction by varying the relative rate of rotation of its wheels and hence does not require an additional steering motion.
+
+\textit{Odometry-based velocity estimation} is implemented via Euler formula (consider revising, it doesn't include side slip):
+\[
+\omega_{veh} = \frac{\omega_r \cdot R_r - \omega_l \cdot R_r}{y_r - y_l}
+\]
+\[
+\nu_x = \omega_l \cdot R_l + \omega \cdot y_l
+\]
+\[
+\nu_y = 0
+\]
+Where $\omega_{veh}$ is angular velocity of the robot, $R_i$ - radius of the wheel, $y_i$ is the y position of the wheel, $\omega_i$ is the angular velocity of the wheel. All calculations in the robot's local frame. 
+
+\textit{Nothing more interesting here.}
 \subsubsection{Ackermann driven}
 
+Ackermann steering geometry is a geometric arrangement of linkages in the steering of a car or other vehicle designed to solve the problem of wheels on the inside and outside of a turn needing to trace out circles of different radii.
+
+\textit{Ackermann wheels' angles }are computed as following:
+\[
+\alpha_{outer} = atan(cot(|\alpha| + \frac{w}{2l})
+\]
+\[
+\alpha_{inner} = atan(cot(|\alpha| - \frac{w}{2l})
+\]
+where $\alpha$ is the desired equivalent steering angle, $w$ is wheels distance and $l$ is wheels base.
+Outer and ineer wheel are defined by the turn direction.
 
 
 
+\textit{Odometry-based velocity estimation} is implemented via Euler formula (consider revising, it doesn't include side slip):
+\[
+\omega_{veh} = \frac{\omega_{rr} \cdot R_{rr} - \omega_{rl} \cdot R_{rr}}{y_{rr} - y_{rl}}
+\]
+\[
+\nu_x = \omega_{rl} \cdot R_{rl} + \omega \cdot y_{rl}
+\]
+\[
+\nu_y = 0
+\]
+Where $\omega_{veh}$ is angular velocity of the robot, $R_{ri}$ - radius of the rear wheel, $y_{ri}$ is the y position of the rear wheel, $\omega_{ri}$ is the angular velocity of the rear wheel. All calculations in the robot's local frame. 
+
+
+\textit{Nothing more interesting here.}
+
+
+\subsection{Controllers}
+
+Different vehicles have different controllers. 
+At the moment, differential and ackermann drives have their own controllers. 
+
+Controllers are divided into several types: 
+\begin{itemize}
+\item Raw forces
+\item Twist
+\end{itemize}
+
+Ackermann has controller, which controls steering angle and speed. 
+
+Controllers' input and output are described by dynamics' classes that they use. 
+
+\subsubsection{Differential raw controller}
+
+This type of controller has simple response to user's input integrating wheel torque with each simulation frame.
+
+\textit{Nothing more interesting here.}
+
+\subsubsection{Differential Twist controller}
+
+Differential twist controller uses PID regulator to control linear and angular speed of the robot. 
+
+Setpoints for $v_r$ and $v_l$ are calculated as folowing:
+\[
+v_l = \nu - \frac{\omega}{2} \cdot w
+\]
+\[
+v_r = \nu + \frac{\omega}{2} \cdot w
+\]
+
+where $\nu$ is desired linear velocity and $\omega$ is desired angular velocity.
+
+
+Inverted formulae are suitable to get actual velocities from odometry estimates.
+
+
+Then, velocity of the wheels is controlled with PID regulator.
+
+\subsection{Ackermann raw controller}
+
+As a raw differential controller, raw Ackermann controller integrates user input and sets wheel torques and steering wheel angle.
+
+\subsection{Ackermann twist controller}
+
+Ackermann twist controller uses PID regulator to control wheel torques responding to angular and linear velocity comands. 
+
+Turn radius and desired steering angle are calculated: 
+\[
+R = \frac{\nu_s}{\omega_s}
+\]
+\[
+\alpha = atan(\frac{w}{r})
+\]
+
+Desired velocities for wheels are computed by rotating desired linear velocity to the steering angle. 
+In the same way, actual velocities from "odometry" are computed.
+
+Then, velocity of the wheels is controlled with PID regulator.
+
+\subsection{Ackermann steering controller}
+
+Ackermann steering controller takes as input linear speed an steering angle. 
+
+Then, it executes Ackermann twist controller to control wheels' velocities. 
 \end{document}
