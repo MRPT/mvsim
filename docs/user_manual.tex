@@ -11,6 +11,7 @@
 \usepackage{hyperref}
 \usepackage{rotating}
 \usepackage[english]{babel}
+\usepackage{hyperref}
 
 \usepackage{amsfonts,amsmath,amsthm,amssymb}
 \usepackage{algorithm}
@@ -393,4 +394,22 @@ Then, velocity of the wheels is controlled with PID regulator.
 Ackermann steering controller takes as input linear speed an steering angle. 
 
 Then, it executes Ackermann twist controller to control wheels' velocities. 
+
+\section{Related works}
+\begin{itemize}
+
+\item \href{http://andresmendes.github.io/Vehicle-Dynamics-Lateral/html/DocTirePacejka.html}{Pacejka tire model reference} 
+\item \href{http://www-cdr.stanford.edu/dynamic/bywire/tires.pdf}{Simplified description of Pacejka model} 
+\item \href{http://www.edy.es/dev/docs/pacejka-94-parameters-explained-a-comprehensive-guide/ }{Pacejka model parameters} 
+\item \href{https://en.wikipedia.org/wiki/Frictional_contact_mechanics}{Frictional contact mechanics} 
+\item \href{http://cats-fs.rpi.edu/~wenj/ECSE446S06/astrom_friction.pdf}{H. Olsson K.J. Åström, Friction Models and Friction Compensation} 
+\item \href{http://www.mate.tue.nl/mate/pdfs/8147.pdf}{R. van der Steen, Tyre/road friction modeling} 
+\item \href{http://www.isir.upmc.fr/files/icra08_lucet_et_al_optimized.pdf}{E. Lucet, Ch. Grand, Stabilization Algorithm for a High Speed Car-Like Robot Achieving Steering Maneuver} 
+\item \href{https://bitbucket.org/osrf/gazebo/src}{Sources of Gazebo simulator} 
+\item \href{http://aspe.net/publications/spring_2010/spr10ab/1010albender.pdf}{Farid Al-Bender, Fundamentals of friction modelling. (Introduces friction lag)} 
+\item \href{http://web.mit.edu/mobility/publications/Iagnemma_TRO_07.pdf}{Chris C. Ward, Karl Iagnemma, A Dynamic-Model-Based Wheel Slip Detector
+for Mobile Robots on Outdoor Terrain} 
+
+\end{itemize}
+
 \end{document}
