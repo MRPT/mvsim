@@ -8,6 +8,7 @@
 
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>
+#include <mvsim/FrictionModels/WardIagnemmaFriction.h>
 #include <mvsim/VehicleBase.h>
 #include <rapidxml.hpp>
 
@@ -21,7 +22,8 @@ void register_all_friction()
 	static bool done = false;
 	if (done) return; else done=true;
 
-	REGISTER_FRICTION("default",DefaultFriction)
+  REGISTER_FRICTION("default", DefaultFriction)
+  REGISTER_FRICTION("wardiagnemma", WardIagnemmaFriction)
 }
 
 FrictionBase::FrictionBase(VehicleBase & my_vehicle) :
