@@ -1,0 +1,96 @@
+<mvsim_world version="1.0">
+	<!-- General simulation options -->
+	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>35</cam_distance>
+		<fov_deg>35</fov_deg>
+		<!-- <follow_vehicle>r1</follow_vehicle> -->
+	</gui>
+
+	
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+	<element class="occupancy_grid">
+		<!-- File can be an image or an MRPT .gridmap file -->
+		<file>uma_campus.gridmap.gz</file>
+		
+		<!--<show_collisions>true</show_collisions>-->
+	</element>
+		
+	<!-- ground grid (for visual reference) -->
+	<element class="ground_grid">
+		<floating>true</floating>
+	</element>
+	
+	<!-- =============================
+		   Vehicle classes definition 
+	     ============================= -->
+	<vehicle:class name="car_ackermann">
+		
+		<!--  Dynamical model -->
+		<dynamics class="ackermann">
+			<!-- Params -->
+			<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
+			<rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
+			<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
+			<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
+			<f_wheels_x>1.3</f_wheels_x>
+			<f_wheels_d>2.0</f_wheels_d>
+			<max_steer_ang_deg>30.0</max_steer_ang_deg>
+			
+			<chassis mass="800.0" zmin="0.15" zmax="1.2">
+			</chassis>
+			
+			<!--   Motor controller -->
+			<controller class="twist_front_steer_pid">
+				<!-- Params -->
+				<KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+				<V>0.0</V><W>0</W>
+				<max_torque>600</max_torque>
+			</controller>			
+			
+		</dynamics>
+				
+		<!-- Friction force simulation -->
+		<friction class="wardiagnemma">
+			<mu>0.7</mu>
+			<C_damping>10</C_damping>
+			<A_roll>50</A_roll>
+			<R1>0.0075</R1>
+			<R2>0.02</R2>
+		</friction>
+		
+		<!-- Sensors: -->
+		<sensor class="laser" name="laser1">
+			<pose> 1.80  0.0  0.0 </pose>
+			<fov_degrees>180</fov_degrees>
+			<nrays>181</nrays>
+			<range_std_noise>0.01</range_std_noise>
+			<angle_std_noise_deg>0.01</angle_std_noise_deg>
+		</sensor>
+		<sensor class="laser" name="laser2">
+			<pose> -1.0  0.0  180.0 </pose>
+			<fov_degrees>180</fov_degrees>
+			<sensor_period>0.05</sensor_period>
+			<nrays>181</nrays>
+			<range_std_noise>0.01</range_std_noise>
+			<angle_std_noise_deg>0.01</angle_std_noise_deg>
+		</sensor>
+		
+	</vehicle:class>
+	
+	<!-- ========================
+		   Vehicle(s) definition 
+	     ======================== -->
+	<vehicle name="r1" class="car_ackermann">
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+	</vehicle>
+
+	
+</mvsim_world>
