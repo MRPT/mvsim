@@ -101,8 +101,6 @@ void WardIagnemmaFriction::evaluate_friction(const FrictionBase::TFrictionInput 
 	const double I_yy = input.wheel.Iyy;
   double F_friction_lon = ( input.motor_torque - I_yy*desired_wheel_alpha - C_damping*input.wheel.getW() )/R;
 
-  printf("%lf, %lf\r\n", F_friction_lon, F_friction_lon - F_rr);
-
 	// Slippage: The friction with the ground is not infinite:
 	F_friction_lon = b2Clamp(F_friction_lon, -max_friction,max_friction);
 	
