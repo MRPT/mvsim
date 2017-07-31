@@ -30,6 +30,10 @@
 #include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/utils/TColor.h>
 
+#include <string>
+#include <map>
+#include "CsvLogger.h"
+
 namespace mvsim
 {
 	/** Virtual base class for each vehicle "actor" in the simulation.
@@ -112,6 +116,13 @@ namespace mvsim
 		virtual void gui_update( mrpt::opengl::COpenGLScene &scene);
 
 		virtual ControllerBaseInterface * getControllerInterface() = 0;
+
+  protected:
+    std::map<std::string, CSVLogger> m_loggers;
+    std::string m_log_path;
+
+    virtual void initLoggers();
+    virtual void writeLogStrings();
 
 	protected:
 		// Protected ctor for class factory
