@@ -106,7 +106,7 @@ Simulation happens inside a World object.
 This is the central class for usage from user code, running the simulation, loading XML models, managing GUI visualization, etc.
 The ROS node acts as a bridge between this class and the ROS subsystem.
 
-World description is loaded using XML files that contain all the informaton about world.
+World description is loaded using XML files that contain all the information about world.
 
 \subsection{World files}
 \textbf{TODO this}
@@ -115,21 +115,21 @@ World description is loaded using XML files that contain all the informaton abou
 
 \subsection{Simulation execution}
 Simulation executes step-by-step with user-defined $\Delta t$ time between steps.
-Each step has several substeps:
+Each step has several sub steps:
 \begin{itemize}
-\item Before timestep - sets actions, updates models, etc.
-\item Actual timestep - updates dynamics
-\item After timestep - everything needed to be done with updated state
+\item Before time step - sets actions, updates models, etc.
+\item Actual time step - updates dynamics
+\item After time step - everything needed to be done with updated state
 \end{itemize}
 \newpage
 
 \section{Physics used}
 \subsection{Wheel dynamics}
 
-We intoduce wheels as a mass with rectangular shape (\textsl{why not cylinder?}).
+We introduce wheels as a mass with rectangular shape (\textsl{why not cylinder?}).
 Each wheel has following properties:
 \begin{itemize}
-\item location of the wheel as to the chassis ref point [m,rad] in local coords $L_w = \{ x_w, y_w, \Phi \}$
+\item location of the wheel as to the chassis ref point [m,rad] in local coordinates $L_w = \{ x_w, y_w, \Phi \}$
 \item diameter $d_w$ [m]
 \item width $w_w$ [m]
 \item mass $m_w$ [kg]
@@ -146,7 +146,7 @@ Friction model base introduces \textit{Friction input} structure, that incorpora
 \begin{itemize}
 \item weight on this wheel from the car chassis, excluding the weight of the wheel itself $w$ [N]
 \item motor torque $\tau$ [Nm]
-\item instantenous velocity 
+\item instantaneous velocity 
 \[\nu = \begin{bmatrix}
 \nu_x \\
 \nu_y
@@ -179,9 +179,9 @@ m_{wp} = \frac{w_w}{g} + m_w
 F_{f, max} = \mu \cdot m_{wp} \cdot g
 \]
 \end{center}
-Where $\mu$ is friction coefficient dor wheel.
+Where $\mu$ is friction coefficient for wheel.
 
-Calculating latitudal friction (decoupled sub-problem):
+Calculating latitudinal friction (decoupled sub-problem):
 \begin{center}
 \[
 F_{f,lat} = m_{wp} \cdot a = m_{wp} \cdot \frac{-\nu_{wy}}{\Delta t}
@@ -206,7 +206,7 @@ J_{desired} = \omega_{constraint} - \omega_w
 \end{center}
 
 
-Calculating longitudal friction:
+Calculating longitudinal friction:
 \begin{center}
 \[
 F_{f,lon} = \frac{1}{R} \cdot (\tau - I_{yy}\cdot \omega_{desired} - C_{damp} \cdot \omega_w)
@@ -253,7 +253,7 @@ Vehicle models are fully configurable with world XML files.
 
 Vehicle base incorporates basic functions for every vehicle actor in the scene. It is also responsible for updating state of vehicles.
 
-It has implementation of interaction with world. Derived classes reimplement only work with torques/forees on wheels. 
+It has implementation of interaction with world. Derived classes re-implement only work with torques/forces on wheels. 
 
 At the moment, no model takes into account the weight transfer, so weight on wheels is calculated in this base class.
 
@@ -265,15 +265,15 @@ p_w = \frac{p_{chassis}}{N_w}
 \end{center}
 
 \begin{itemize}
-	\item Before timestep:
+	\item Before time step:
 	\begin{itemize}
 		\item Update wheels position using Box2D
 		\item Invoke motor controllers (reimplemented in derived classes)
 		\item Evaluate friction of wheels with passed friction model
 		\item Apply force to vehicle body using Box2D
 	\end{itemize}
-	\item Timestep - update internal vehicle state variables $q$ and $\dot{q}$
-	\item After timestep - updates wheels rotation		
+	\item Time step - update internal vehicle state variables $q$ and $\dot{q}$
+	\item After time step - updates wheels rotation		
 \end{itemize}
 
 Center of mass is defined as center of Box2D shape, currently there is no +Z mobility. 
@@ -307,7 +307,7 @@ Ackermann steering geometry is a geometric arrangement of linkages in the steeri
 \alpha_{inner} = atan(cot(|\alpha| - \frac{w}{2l})
 \]
 where $\alpha$ is the desired equivalent steering angle, $w$ is wheels distance and $l$ is wheels base.
-Outer and ineer wheel are defined by the turn direction.
+Outer and inner wheel are defined by the turn direction.
 
 
 
@@ -330,7 +330,7 @@ Where $\omega_{veh}$ is angular velocity of the robot, $R_{ri}$ - radius of the 
 \subsection{Controllers}
 
 Different vehicles have different controllers. 
-At the moment, differential and ackermann drives have their own controllers. 
+At the moment, differential and Ackermann drives have their own controllers. 
 
 Controllers are divided into several types: 
 \begin{itemize}
@@ -352,7 +352,7 @@ This type of controller has simple response to user's input integrating wheel to
 
 Differential twist controller uses PID regulator to control linear and angular speed of the robot. 
 
-Setpoints for $v_r$ and $v_l$ are calculated as folowing:
+Setpoints for $v_r$ and $v_l$ are calculated as following:
 \[
 v_l = \nu - \frac{\omega}{2} \cdot w
 \]
@@ -363,7 +363,7 @@ v_r = \nu + \frac{\omega}{2} \cdot w
 where $\nu$ is desired linear velocity and $\omega$ is desired angular velocity.
 
 
-Inverted formulae are suitable to get actual velocities from odometry estimates.
+Inverted formula are suitable to get actual velocities from odometry estimates.
 
 
 Then, velocity of the wheels is controlled with PID regulator.
@@ -374,7 +374,7 @@ As a raw differential controller, raw Ackermann controller integrates user input
 
 \subsection{Ackermann twist controller}
 
-Ackermann twist controller uses PID regulator to control wheel torques responding to angular and linear velocity comands. 
+Ackermann twist controller uses PID regulator to control wheel torques responding to angular and linear velocity commands. 
 
 Turn radius and desired steering angle are calculated: 
 \[
@@ -406,7 +406,7 @@ Then, it executes Ackermann twist controller to control wheels' velocities.
 \item \href{http://www.mate.tue.nl/mate/pdfs/8147.pdf}{R. van der Steen, Tyre/road friction modeling} 
 \item \href{http://www.isir.upmc.fr/files/icra08_lucet_et_al_optimized.pdf}{E. Lucet, Ch. Grand, Stabilization Algorithm for a High Speed Car-Like Robot Achieving Steering Maneuver} 
 \item \href{https://bitbucket.org/osrf/gazebo/src}{Sources of Gazebo simulator} 
-\item \href{http://aspe.net/publications/spring_2010/spr10ab/1010albender.pdf}{Farid Al-Bender, Fundamentals of friction modelling. (Introduces friction lag)} 
+\item \href{http://aspe.net/publications/spring_2010/spr10ab/1010albender.pdf}{Farid Al-Bender, Fundamentals of friction modeling. (Introduces friction lag)} 
 \item \href{http://web.mit.edu/mobility/publications/Iagnemma_TRO_07.pdf}{Chris C. Ward, Karl Iagnemma, A Dynamic-Model-Based Wheel Slip Detector
 for Mobile Robots on Outdoor Terrain} 
 
