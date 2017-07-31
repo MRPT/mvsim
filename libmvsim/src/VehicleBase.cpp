@@ -31,10 +31,26 @@
 using namespace mvsim;
 using namespace std;
 
+// data logger header entries
+static const char DL_TIMESTAMP[] = "timestamp";
+static const char LOGGER_POSE[] = "logger_pose";
+static const char LOGGER_WHEEL[] = "logger_wheel";
+
+static const char PL_Q_X[] = "Qx";
+static const char PL_Q_Y[] = "Qy";
+static const char PL_Q_Z[] = "Qz";
+static const char PL_Q_YAW[] = "Qyaw";
+static const char PL_Q_PITCH[] = "Qpitch";
+static const char PL_Q_ROLL[] = "Qroll";
+static const char PL_DQ_X[] = "dQx";
+static const char PL_DQ_Y[] = "dQy";
+static const char PL_DQ_Z[] = "dQz";
+
+//static const char
+
 XmlClassesRegistry veh_classes_registry("vehicle:class");
 
 TClassFactory_vehicleDynamics mvsim::classFactory_vehicleDynamics;
-
 
 // Explicit registration calls seem to be one (the unique?) way to assure registration takes place:
 void register_all_veh_dynamics()
@@ -249,6 +265,19 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		}
 	}
 
+  // <Optional> Log path. If not specified, app folder will be used
+  // -----------------------------------------------------------
+  {
+    const xml_node<> *log_path_node = veh_root_node.first_node("log_path");
+    if (log_path_node)
+    {
+      // Parse:
+      veh->m_log_path = log_path_node->value();
+    }
+  }
+
+  veh->initLoggers();
+
 	return veh;
 }
 
@@ -359,6 +388,18 @@ void VehicleBase::simul_post_timestep(const TSimulContext &context)
 		if (cur_abs_phi>1e4)
 			w.setPhi( ::fmod(cur_abs_phi, 2*M_PI) * (w.getPhi()<0.0 ? -1.0 : 1.0) );
 	}
+
+  m_loggers[LOGGER_POSE].updateColumn(DL_TIMESTAMP, context.simul_time);
+  m_loggers[LOGGER_POSE].updateColumn(PL_Q_X, m_q.x);
+  m_loggers[LOGGER_POSE].updateColumn(PL_Q_Y, m_q.y);
+  m_loggers[LOGGER_POSE].updateColumn(PL_Q_Z, m_q.z);
+  m_loggers[LOGGER_POSE].updateColumn(PL_Q_YAW, m_q.yaw);
+  m_loggers[LOGGER_POSE].updateColumn(PL_Q_PITCH, m_q.pitch);
+  m_loggers[LOGGER_POSE].updateColumn(PL_Q_ROLL, m_q.roll);
+  m_loggers[LOGGER_POSE].updateColumn(PL_DQ_X, m_dq.vals[0]);
+  m_loggers[LOGGER_POSE].updateColumn(PL_DQ_Y, m_dq.vals[1]);
+  m_loggers[LOGGER_POSE].updateColumn(PL_DQ_Z, m_dq.vals[2]);
+  m_loggers[LOGGER_POSE].writeRow();
 }
 
 
@@ -567,7 +608,33 @@ void VehicleBase::create_multibody_system(b2World* world)
 
 void VehicleBase::gui_update( mrpt::opengl::COpenGLScene &scene)
 {
-	this->gui_update_common(scene); // Common part: update sensors, etc.
+  this->gui_update_common(scene); // Common part: update sensors, etc.
+}
+
+void VehicleBase::initLoggers()
+{
+  m_loggers[LOGGER_POSE] = CSVLogger();
+  m_loggers[LOGGER_POSE].addColumn(DL_TIMESTAMP);
+  m_loggers[LOGGER_POSE].addColumn(PL_Q_X);
+  m_loggers[LOGGER_POSE].addColumn(PL_Q_Y);
+  m_loggers[LOGGER_POSE].addColumn(PL_Q_Z);
+  m_loggers[LOGGER_POSE].addColumn(PL_Q_YAW);
+  m_loggers[LOGGER_POSE].addColumn(PL_Q_PITCH);
+  m_loggers[LOGGER_POSE].addColumn(PL_Q_ROLL);
+  m_loggers[LOGGER_POSE].addColumn(PL_DQ_X);
+  m_loggers[LOGGER_POSE].addColumn(PL_DQ_Y);
+  m_loggers[LOGGER_POSE].addColumn(PL_DQ_Z);
+  m_loggers[LOGGER_POSE].open(m_log_path + "mvsim_" + m_name + LOGGER_POSE + ".log");
+  m_loggers[LOGGER_POSE].writeHeader();
+}
+
+void VehicleBase::writeLogStrings()
+{
+  std::map<std::string, CSVLogger>::iterator it;
+  for (it = m_loggers.begin(); it != m_loggers.end(); ++it)
+  {
+    it->second.writeRow();
+  }
 }
 
 void VehicleBase::apply_force(double fx, double fy, double local_ptx, double local_pty)
