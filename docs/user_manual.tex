@@ -126,7 +126,7 @@ Each step has several sub steps:
 \section{Physics used}
 \subsection{Wheel dynamics}
 
-We introduce wheels as a mass with rectangular shape (\textsl{why not cylinder?}).
+We introduce wheels as a mass with cylindrical shape.
 Each wheel has following properties:
 \begin{itemize}
 \item location of the wheel as to the chassis ref point [m,rad] in local coordinates $L_w = \{ x_w, y_w, \Phi \}$
@@ -375,7 +375,6 @@ As a raw differential controller, raw Ackermann controller integrates user input
 \subsection{Ackermann twist controller}
 
 Ackermann twist controller uses PID regulator to control wheel torques responding to angular and linear velocity commands. 
-
 Turn radius and desired steering angle are calculated: 
 \[
 R = \frac{\nu_s}{\omega_s}
@@ -395,21 +394,9 @@ Ackermann steering controller takes as input linear speed an steering angle.
 
 Then, it executes Ackermann twist controller to control wheels' velocities. 
 
-\section{Related works}
-\begin{itemize}
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{bibfile}
 
-\item \href{http://andresmendes.github.io/Vehicle-Dynamics-Lateral/html/DocTirePacejka.html}{Pacejka tire model reference} 
-\item \href{http://www-cdr.stanford.edu/dynamic/bywire/tires.pdf}{Simplified description of Pacejka model} 
-\item \href{http://www.edy.es/dev/docs/pacejka-94-parameters-explained-a-comprehensive-guide/ }{Pacejka model parameters} 
-\item \href{https://en.wikipedia.org/wiki/Frictional_contact_mechanics}{Frictional contact mechanics} 
-\item \href{http://cats-fs.rpi.edu/~wenj/ECSE446S06/astrom_friction.pdf}{H. Olsson K.J. Åström, Friction Models and Friction Compensation} 
-\item \href{http://www.mate.tue.nl/mate/pdfs/8147.pdf}{R. van der Steen, Tyre/road friction modeling} 
-\item \href{http://www.isir.upmc.fr/files/icra08_lucet_et_al_optimized.pdf}{E. Lucet, Ch. Grand, Stabilization Algorithm for a High Speed Car-Like Robot Achieving Steering Maneuver} 
-\item \href{https://bitbucket.org/osrf/gazebo/src}{Sources of Gazebo simulator} 
-\item \href{http://aspe.net/publications/spring_2010/spr10ab/1010albender.pdf}{Farid Al-Bender, Fundamentals of friction modeling. (Introduces friction lag)} 
-\item \href{http://web.mit.edu/mobility/publications/Iagnemma_TRO_07.pdf}{Chris C. Ward, Karl Iagnemma, A Dynamic-Model-Based Wheel Slip Detector
-for Mobile Robots on Outdoor Terrain} 
-
-\end{itemize}
 
 \end{document}
