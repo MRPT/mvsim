@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <mvsim/basic_types.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/Simulable.h>
@@ -22,9 +24,8 @@
 #include <Box2D/Collision/Shapes/b2PolygonShape.h>
 #include <Box2D/Dynamics/b2Fixture.h>
 
-#include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 #include <mrpt/poses/CPose2D.h>
-#include <mrpt/synch/CCriticalSection.h>
+
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/utils/TColor.h>
@@ -36,6 +37,7 @@ namespace mvsim
 	  */
 	class VehicleBase : public VisualObject, public Simulable
 	{
+
 	public:
 		/** Class factory: Creates a vehicle from XML description of type "<vehicle>...</vehicle>".  */
 		static VehicleBase* factory(World* parent, const rapidxml::xml_node<char> *xml_node);
@@ -88,7 +90,7 @@ namespace mvsim
 		  * \sa getVelocityLocal() */
 		virtual vec3 getVelocityLocalOdoEstimate() const = 0;
 
-		typedef std::vector<SensorBasePtr> TListSensors;
+    typedef std::vector<SensorBase::Ptr> TListSensors;
 
 		const TListSensors & getSensors() const { return m_sensors; }
 		TListSensors & getSensors() { return m_sensors; }
@@ -166,10 +168,10 @@ namespace mvsim
 		void internal_gui_update_sensors( mrpt::opengl::COpenGLScene &scene); //!< Called from gui_update_common()
 		void internal_gui_update_forces( mrpt::opengl::COpenGLScene &scene); //!< Called from gui_update_common()
 
-		mrpt::opengl::CSetOfObjectsPtr m_gl_chassis;
-		std::vector<mrpt::opengl::CSetOfObjectsPtr> m_gl_wheels;
-		mrpt::opengl::CSetOfLinesPtr        m_gl_forces;
-		mrpt::synch::CCriticalSection       m_force_segments_for_rendering_cs;
+    mrpt::opengl::CSetOfObjects::Ptr m_gl_chassis;
+    std::vector<mrpt::opengl::CSetOfObjects::Ptr> m_gl_wheels;
+    mrpt::opengl::CSetOfLines::Ptr        m_gl_forces;
+    std::mutex       m_force_segments_for_rendering_cs;
 		std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
 

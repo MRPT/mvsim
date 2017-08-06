@@ -82,7 +82,7 @@ void LaserScanner::gui_update( mrpt::opengl::COpenGLScene &scene)
 	// 1st time?
 	if (!m_gl_scan)
 	{
-		m_gl_scan = mrpt::opengl::CPlanarLaserScan::Create();
+    m_gl_scan = mrpt::make_aligned_shared<mrpt::opengl::CPlanarLaserScan>();
 		m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.05f);
 		SCENE_INSERT_Z_ORDER(scene,2, m_gl_scan);
 	}
@@ -90,10 +90,10 @@ void LaserScanner::gui_update( mrpt::opengl::COpenGLScene &scene)
 	if (!m_gui_uptodate)
 	{
 		{
-			mrpt::synch::CCriticalSectionLocker csl(&m_last_scan_cs);
+      std::lock_guard<std::mutex> csl(m_last_scan_cs);
 			if (m_last_scan2gui) {
 				m_gl_scan->setScan( *m_last_scan2gui );
-				m_last_scan2gui.clear_unique();
+        m_last_scan2gui.reset();
 			}
 		}
 		m_gui_uptodate=true;
@@ -278,12 +278,12 @@ void LaserScanner::simul_post_timestep(const TSimulContext &context)
 	m_world->getTimeLogger().leave("LaserScanner.scan.3.merge");
 
 	{
-		mrpt::synch::CCriticalSectionLocker csl(&m_last_scan_cs);
-		m_last_scan = CObservation2DRangeScanPtr( lastScan );
+    std::lock_guard<std::mutex> csl(m_last_scan_cs);
+    m_last_scan = CObservation2DRangeScan::Ptr( lastScan );
 		m_last_scan2gui = m_last_scan;
 	}
 
-	m_world->onNewObservation(m_vehicle, m_last_scan.pointer() );
+  m_world->onNewObservation(m_vehicle, m_last_scan.get() );
 
 	m_gui_uptodate = false;
 

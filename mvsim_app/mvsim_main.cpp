@@ -8,8 +8,10 @@
 
 #include <mvsim/mvsim.h>
 
+#include <chrono>
+#include <thread>
+
 #include <mrpt/system/os.h> // kbhit()
-#include <mrpt/system/threads.h> // sleep()
 #include <mrpt/utils/CTicTac.h>
 
 #include <rapidxml_utils.hpp>
@@ -41,9 +43,9 @@ int main(int argc, char **argv)
 		world.load_from_XML( fil_xml.data(), argv[1] );
 
 		// Launch GUI thread:
-		TThreadParams thread_params;
-		thread_params.world = &world;
-		mrpt::system::TThreadHandle thGUI = mrpt::system::createThreadRef( thread_update_GUI, thread_params);
+    TThreadParams thread_params;
+    thread_params.world = &world;
+    std::thread thGUI = std::thread( thread_update_GUI, std::ref(thread_params));
 
 		// Run simulation:
 		mrpt::utils::CTicTac tictac;
@@ -68,7 +70,8 @@ int main(int argc, char **argv)
 				t_old = t_new;
 			}
 
-			mrpt::system::sleep(10);
+      // I could use 10ms here but chono literals are since gcc 4.9.3
+      std::this_thread::sleep_for( std::chrono::milliseconds(10) );
 
 
 			// GUI msgs, teleop, etc. ====================================================
@@ -126,8 +129,8 @@ int main(int argc, char **argv)
 
 		} // end while()
 
-		thread_params.closing = true;
-		mrpt::system::joinThread( thGUI );
+    thread_params.closing = true;
+    thGUI.join(); //TODO: It could break smth
 
 	} catch (const std::exception& e)
 	{
@@ -151,8 +154,8 @@ void thread_update_GUI(TThreadParams &thread_params)
 		if(guiparams.keyevent.keycode!=0)
 			gui_key_events = guiparams.keyevent;
 
-		mrpt::system::sleep(25);
-	}
+    std::this_thread::sleep_for( std::chrono::milliseconds(25) );
+  }
 }
 
 void usage(const char*argv0)

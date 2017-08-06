@@ -30,7 +30,7 @@ namespace mvsim
 		mrpt::utils::TColor m_color;
 		double m_line_width;
 
-		mrpt::opengl::CGridPlaneXYPtr m_gl_groundgrid;
+    mrpt::opengl::CGridPlaneXY::Ptr m_gl_groundgrid;
 
 	};
 }
