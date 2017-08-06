@@ -10,7 +10,6 @@
 
 #include <mvsim/WorldElements/WorldElementBase.h>
 #include <mrpt/opengl/CMesh.h>
-#include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/utils/TMatchingPair.h>
 #include <mrpt/poses/CPose3D.h>
 
@@ -34,7 +33,7 @@ namespace mvsim
 
 	protected:
 		/** This object holds both, the mesh data, and is in charge of 3D rendering. */
-		mrpt::opengl::CMeshPtr  m_gl_mesh;
+    mrpt::opengl::CMesh::Ptr  m_gl_mesh;
 		bool  m_first_scene_rendering;
 		double m_resolution;
 		mrpt::math::CMatrixFloat  m_mesh_z_cache; //!< A copy of elevation data in m_gl_mesh. Coordinate order is (x,y)
@@ -42,7 +41,8 @@ namespace mvsim
 	private: 
 		// temp vars (declared here to avoid reallocs):
 		mrpt::utils::TMatchingPairList corrs;
-		mrpt::poses::CPose3D m_optimal_transf;
+    mrpt::poses::CPose3D m_optimal_transf;
 
 	};
 }
+

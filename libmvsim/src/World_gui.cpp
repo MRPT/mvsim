@@ -55,13 +55,13 @@ size_t ID_GLTEXT_CLOCK = 0;
 //!< Return true if the GUI window is open, after a previous call to update_GUI()
 bool World::is_GUI_open() const
 {
-	return m_gui_win.present();
+  return !!m_gui_win;
 }
 
 //!< Forces closing the GUI window, if any.
 void World::close_GUI()
 {
-	m_gui_win.clear();
+  m_gui_win.reset();
 }
 
 
@@ -94,7 +94,7 @@ void World::update_GUI( TUpdateGUIParams *guiparams )
 	m_timlogger.enter("update_GUI"); // Don't count initialization, since that is a total outlier and lacks interest!
 
 	m_timlogger.enter("update_GUI.1.get-lock");
-	mrpt::opengl::COpenGLScenePtr gl_scene = m_gui_win->get3DSceneAndLock(); // ** LOCK **
+  mrpt::opengl::COpenGLScene::Ptr gl_scene = m_gui_win->get3DSceneAndLock(); // ** LOCK **
 	m_timlogger.leave("update_GUI.1.get-lock");
 
 	// 1st time only:
@@ -105,7 +105,7 @@ void World::update_GUI( TUpdateGUIParams *guiparams )
 	{
 		for (unsigned int i=0;i<5;i++)
 		{
-			mrpt::opengl::CSetOfObjectsPtr gl_obj = mrpt::opengl::CSetOfObjects::Create();
+      mrpt::opengl::CSetOfObjects::Ptr gl_obj = mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
 			gl_obj->setName(mrpt::format("level_%u",i));
 			gl_scene->insert(gl_obj);
 		}

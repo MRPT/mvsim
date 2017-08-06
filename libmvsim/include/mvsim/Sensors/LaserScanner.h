@@ -8,20 +8,19 @@
 
 #pragma once
 
+#include <mutex>
 #include <mvsim/Sensors/SensorBase.h>
 #include <mrpt/poses/CPose2D.h>
-#include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/opengl/CPlanarLaserScan.h>
 
 #include <mrpt/version.h>
 #if MRPT_VERSION>=0x130
 #	include <mrpt/obs/CObservation2DRangeScan.h>
-	using mrpt::obs::CObservation2DRangeScan;
-	using mrpt::obs::CObservation2DRangeScanPtr;
+	using mrpt::obs::CObservation2DRangeScan;	
 #else
 #	include <mrpt/slam/CObservation2DRangeScan.h>
 	using mrpt::slam::CObservation2DRangeScan;
-	using mrpt::slam::CObservation2DRangeScanPtr;
+  using mrpt::slam::CObservation2DRangeScanPtr;
 #endif
 
 namespace mvsim
@@ -49,13 +48,13 @@ namespace mvsim
 
 		CObservation2DRangeScan m_scan_model; //!< Store here all scan parameters. This obj will be copied as a "pattern" to fill it with actual scan data.
 
-		mrpt::synch::CCriticalSection m_last_scan_cs;
-		CObservation2DRangeScanPtr m_last_scan; //!< Last simulated scan
-		CObservation2DRangeScanPtr m_last_scan2gui;
+		std::mutex m_last_scan_cs;
+    mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan; //!< Last simulated scan
+    mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan2gui;
 
 
 		bool m_gui_uptodate; //!< Whether m_gl_scan has to be updated upon next call of gui_update() from m_last_scan2gui
-		mrpt::opengl::CPlanarLaserScanPtr m_gl_scan;
+    mrpt::opengl::CPlanarLaserScan::Ptr m_gl_scan;
 
 	};
 }

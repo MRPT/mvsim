@@ -98,7 +98,7 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 	// 1st time call?? -> Create objects
 	if (!m_gl_grid)
 	{
-		m_gl_grid = mrpt::opengl::CSetOfObjects::Create();
+    m_gl_grid =  mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
 		SCENE_INSERT_Z_ORDER(scene,0, m_gl_grid);
 	}
 	if (m_gl_obs_clouds.size()!=m_obstacles_for_each_obj.size())
@@ -115,13 +115,13 @@ void OccupancyGridMap::gui_update( mrpt::opengl::COpenGLScene &scene)
 
 	// Update obstacles:
 	{
-		mrpt::synch::CCriticalSectionLocker csl(&m_gl_obs_clouds_buffer_cs);
+    std::lock_guard<std::mutex> csl(m_gl_obs_clouds_buffer_cs);
 		for (size_t i=0;i<m_gl_obs_clouds.size();i++)
 		{
-			mrpt::opengl::CSetOfObjectsPtr &gl_objs = m_gl_obs_clouds[i];
+      mrpt::opengl::CSetOfObjects::Ptr &gl_objs = m_gl_obs_clouds[i];
 			if (!gl_objs)
 			{
-				gl_objs=mrpt::opengl::CSetOfObjects::Create();
+        gl_objs =  mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
 				MRPT_TODO("Add a name, and remove old ones in scene, etc.")
 				SCENE_INSERT_Z_ORDER(scene,1, gl_objs);
 			}
@@ -169,7 +169,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 	// For each object, create a ground body with fixtures at each scanned point around the vehicle, so it can collide with the environment:
 	// Upon first usage, reserve mem:
 	{ // lock
-		mrpt::synch::CCriticalSectionLocker csl( &m_gl_obs_clouds_buffer_cs );
+    std::lock_guard<std::mutex> csl( m_gl_obs_clouds_buffer_cs );
 		const size_t nObjs = m_obstacles_for_each_obj.size();
 		m_gl_obs_clouds_buffer.resize(nObjs);
 
@@ -177,9 +177,9 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 		{
 			// 1) Simulate scan to get obstacles around the vehicle:
 			TInfoPerCollidableobj &ipv = m_obstacles_for_each_obj[obj_idx];
-			CObservation2DRangeScanPtr &scan = ipv.scan;
+      CObservation2DRangeScan::Ptr &scan = ipv.scan;
 			// Upon first time, reserve mem:
-			if (!scan) scan = CObservation2DRangeScan::Create();
+      if (!scan) scan =  mrpt::make_aligned_shared<CObservation2DRangeScan>();
 
 			const float veh_max_obstacles_ranges = ipv.max_obstacles_ranges;
 			const float occup_threshold = 0.5f;
@@ -218,10 +218,10 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext &context)
 
 			// GL:
 			// 1st usage?
-			mrpt::opengl::CPointCloudPtr & gl_pts = m_gl_obs_clouds_buffer[obj_idx];
+      mrpt::opengl::CPointCloud::Ptr & gl_pts = m_gl_obs_clouds_buffer[obj_idx];
 			if (m_show_grid_collision_points)
 			{
-				gl_pts = mrpt::opengl::CPointCloud::Create();
+        gl_pts =  mrpt::make_aligned_shared<mrpt::opengl::CPointCloud>();
 				gl_pts->setPointSize(4.0f);
 				gl_pts->setColor(0,0,1);
 

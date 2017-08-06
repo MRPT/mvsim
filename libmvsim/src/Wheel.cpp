@@ -31,14 +31,14 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects &obj)
 {
 	obj.clear();
 
-	mrpt::opengl::CCylinderPtr gl_wheel = mrpt::opengl::CCylinder::Create( 0.5*diameter,0.5*diameter,this->width, 15, 1);
+  mrpt::opengl::CCylinder::Ptr gl_wheel = mrpt::make_aligned_shared<mrpt::opengl::CCylinder>( 0.5*diameter,0.5*diameter,this->width, 15, 1);
 	gl_wheel->setColor(mrpt::utils::TColorf(color));
 	gl_wheel->setPose(mrpt::poses::CPose3D(0,0.5*width,0,  0,0,mrpt::utils::DEG2RAD(90) ));
 
-	mrpt::opengl::CSetOfObjectsPtr gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
+  mrpt::opengl::CSetOfObjects::Ptr gl_wheel_frame = mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
 	gl_wheel_frame->insert(gl_wheel);
 	{
-		mrpt::opengl::CSetOfObjectsPtr gl_xyz = mrpt::opengl::stock_objects::CornerXYZSimple( 0.9*diameter, 2.0 );
+    mrpt::opengl::CSetOfObjects::Ptr gl_xyz = mrpt::opengl::stock_objects::CornerXYZSimple( 0.9*diameter, 2.0 );
 		gl_wheel_frame->insert( gl_xyz );
 	}
 

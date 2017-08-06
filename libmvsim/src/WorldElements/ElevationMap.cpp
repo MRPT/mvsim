@@ -13,7 +13,7 @@
 
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CPointCloud.h>
-#include <mrpt/scanmatching/scan_matching.h>  // least-squares methods
+#include <mrpt/tfest.h>  // least-squares methods
 #include <rapidxml.hpp>
 
 using namespace rapidxml;
@@ -83,7 +83,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char> *root)
 	}
 
 	// Build mesh:
-	m_gl_mesh = mrpt::opengl::CMesh::Create();
+  m_gl_mesh =  mrpt::make_aligned_shared<mrpt::opengl::CMesh>();
 
 	m_gl_mesh->enableTransparency(false);
 
@@ -198,8 +198,11 @@ void ElevationMap::simul_pre_timestep(const TSimulContext &context)
 
 			// Register:
 			double transf_scale;
-			mrpt::scanmatching::leastSquareErrorRigidTransformation6D(corrs,m_optimal_transf,transf_scale, true /*force scale unity*/);
+      mrpt::poses::CPose3DQuat tmpl;
 
+      mrpt::tfest::se3_l2(corrs,tmpl,transf_scale, true /*force scale unity*/);
+
+      m_optimal_transf = mrpt::poses::CPose3D(tmpl);
 			new_pose.z = m_optimal_transf.z();
 			new_pose.yaw = m_optimal_transf.yaw();
 			new_pose.pitch = m_optimal_transf.pitch();
@@ -263,7 +266,7 @@ float calcz(
 
 bool ElevationMap::getElevationAt(double x,double y, float &z) const
 {
-	const mrpt::opengl::CMesh * mesh = m_gl_mesh.pointer();
+  const mrpt::opengl::CMesh * mesh = m_gl_mesh.get();
 	const float x0 = mesh->getXMin();
 	const float y0 = mesh->getYMin();
 	const size_t nCellsX = m_mesh_z_cache.rows();

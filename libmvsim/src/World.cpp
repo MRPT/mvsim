@@ -43,7 +43,7 @@ void World::clear_all(bool acquire_mt_lock)
 {
 	try
 	{
-		if (acquire_mt_lock) m_world_cs.enter();
+    if (acquire_mt_lock) m_world_cs.lock();
 
 		// Reset params:
 		m_simul_time = 0.0;
@@ -68,11 +68,11 @@ void World::clear_all(bool acquire_mt_lock)
 		for(TListBlocks::iterator it=m_blocks.begin();it!=m_blocks.end();++it) delete it->second;
 		m_blocks.clear();
 
-		if (acquire_mt_lock) m_world_cs.leave();
+    if (acquire_mt_lock) m_world_cs.unlock();
 	}
 	catch (std::exception &)
 	{
-		if (acquire_mt_lock) m_world_cs.leave();
+    if (acquire_mt_lock) m_world_cs.unlock();
 		throw; // re-throw
 	}
 }
