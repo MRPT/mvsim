@@ -78,11 +78,19 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(const TeleopInpu
 {
 	switch (in.keycode)
 	{
+  case 'W':
 	case 'w':  setpoint_lin_speed += 0.1;  break;
+
+  case 'S':
 	case 's':  setpoint_lin_speed -= 0.1;  break;
+
+  case 'A':
 	case 'a':  setpoint_ang_speed += 2.0*M_PI/180;  break;
+
+  case 'D':
 	case 'd':  setpoint_ang_speed -= 2.0*M_PI/180;  break;
-	case ' ':  setpoint_lin_speed = 0.0; setpoint_ang_speed=0.0;  break;
+
+  case ' ':  setpoint_lin_speed = 0.0; setpoint_ang_speed=0.0;  break;
 	};
 	out.append_gui_lines+="[Controller="+ string(class_name()) +"] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
 	out.append_gui_lines+=mrpt::format("setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_lin_speed, 180.0/M_PI*setpoint_ang_speed);
