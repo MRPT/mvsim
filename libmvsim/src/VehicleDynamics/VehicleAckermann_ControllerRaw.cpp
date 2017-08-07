@@ -47,11 +47,19 @@ void DynamicsAckermann::ControllerRawForces::teleop_interface(const TeleopInput 
 {
 	switch (in.keycode)
 	{
+  case 'W':
 	case 'w':  setpoint_wheel_torque_l-= 1.0; setpoint_wheel_torque_r-=1.0; break;
+
+  case 'S':
 	case 's':  setpoint_wheel_torque_l+= 1.0; setpoint_wheel_torque_r+=1.0; break;
+
+  case 'A':
 	case 'a':  setpoint_steer_ang += 1.0*M_PI/180.0; mrpt::utils::keep_min(setpoint_steer_ang, m_veh.getMaxSteeringAngle()); break;
+
+  case 'D':
 	case 'd':  setpoint_steer_ang -= 1.0*M_PI/180.0; mrpt::utils::keep_max(setpoint_steer_ang, -m_veh.getMaxSteeringAngle()); break;
-	case ' ':  setpoint_wheel_torque_l= .0; setpoint_wheel_torque_r=.0; break;
+
+  case ' ':  setpoint_wheel_torque_l= .0; setpoint_wheel_torque_r=.0; break;
 	};
 	out.append_gui_lines+="[Controller="+ string(class_name()) +"] Teleop keys: w/s=incr/decr torques. a/d=left/right steering. spacebar=stop.\n";
 	out.append_gui_lines+=mrpt::format("setpoint: t=%.03f steer=%.03f deg\n", setpoint_wheel_torque_l, setpoint_steer_ang*180.0/M_PI);
