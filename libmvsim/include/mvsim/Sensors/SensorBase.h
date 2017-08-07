@@ -39,8 +39,6 @@ namespace mvsim
 
 	};
 
-  typedef std::shared_ptr<SensorBase> Ptr;
-
 	// Class factory:
 	typedef ClassFactory<SensorBase,VehicleBase&,const rapidxml::xml_node<char>*> TClassFactory_sensors;
 	extern TClassFactory_sensors classFactory_sensors;
