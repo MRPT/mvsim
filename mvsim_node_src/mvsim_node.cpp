@@ -44,8 +44,8 @@ MVSimNode::MVSimNode(ros::NodeHandle &n) :
 	m_teleop_idx_veh (0)
 {
 	// Launch GUI thread:
-	thread_params_.obj = this;
-	thGUI_ = mrpt::system::createThreadRef( &MVSimNode::thread_update_GUI, thread_params_);
+  thread_params_.obj = this;
+  thGUI_ = std::thread( &MVSimNode::thread_update_GUI, std::ref(thread_params_));
 
 	// Init ROS publishers:
 	m_pub_clock = m_n.advertise<rosgraph_msgs::Clock>("/clock",10);
@@ -96,8 +96,8 @@ void MVSimNode::loadWorldModel(const std::string &world_xml_file)
  *----------------------------------------------------------------------------*/
 MVSimNode::~MVSimNode()
 {
-	thread_params_.closing = true;
-	mrpt::system::joinThread( thGUI_ );
+  thread_params_.closing = true;
+  thGUI_.join();
 }
 
 /*------------------------------------------------------------------------------
@@ -226,7 +226,7 @@ void MVSimNode::thread_update_GUI(TThreadParams &thread_params)
 			// Send key-strokes to the main thread:
 			if(guiparams.keyevent.keycode!=0) obj->m_gui_key_events = guiparams.keyevent;
 		}
-		mrpt::system::sleep(obj->gui_refresh_period_ms_);
+    std::this_thread::sleep_for( std::chrono::milliseconds(	obj->gui_refresh_period_ms_));
 	}
 }
 

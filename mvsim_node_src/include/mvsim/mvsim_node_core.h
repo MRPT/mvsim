@@ -20,7 +20,6 @@
 #include <mvsim/mvsimNodeConfig.h>
 
 #include <mvsim/mvsim.h>  // the mvsim library
-#include <mrpt/system/threads.h> // sleep(), thread handles
 #include <mrpt/utils/CTicTac.h>
 
 #if MRPT_VERSION>=0x130
@@ -116,8 +115,8 @@ protected:
 		volatile bool closing;
 		TThreadParams(): obj(NULL), closing(false) {}
 	};
-	TThreadParams thread_params_;
-	mrpt::utils::CTicTac realtime_tictac_;
+  TThreadParams thread_params_;
+  mrpt::utils::CTicTac realtime_tictac_;
 
 	double t_old_; // = realtime_tictac_.Tac();
 	bool   world_init_ok_; //!< will be true after a success call to loadWorldModel()
@@ -132,7 +131,7 @@ protected:
 	mvsim::World::TGUIKeyEvent m_gui_key_events;
 	std::string m_msg2gui;
 
-	mrpt::system::TThreadHandle thGUI_;
+  std::thread thGUI_;
 	static void thread_update_GUI(TThreadParams &thread_params);
 
 	/** Publish relevant stuff whenever a new world model is loaded (grid maps, etc.) */

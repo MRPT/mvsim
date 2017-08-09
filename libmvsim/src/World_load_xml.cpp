@@ -36,7 +36,7 @@ void World::load_from_XML(const std::string &xml_text, const std::string &fileNa
 	m_base_path = mrpt::system::trim( mrpt::system::extractFileDirectory(fileNameForPath) );
 	//printf("[World] INFO: Using base path='%s'\n",m_base_path.c_str());
 
-	mrpt::synch::CCriticalSectionLocker csl( &m_world_cs ); // Protect multithread access
+  std::lock_guard<std::mutex> csl( m_world_cs ); // Protect multithread access
 
 	// Clear the existing world.
 	this->clear_all(false /* critical section is already acquired */);

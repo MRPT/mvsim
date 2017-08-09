@@ -259,10 +259,10 @@ void Block::gui_update( mrpt::opengl::COpenGLScene &scene)
 	// ----------------------------------
 	if (!m_gl_block)
 	{
-		m_gl_block = mrpt::opengl::CSetOfObjects::Create();
+    m_gl_block = mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
 
 		// Block shape:
-		mrpt::opengl::CPolyhedronPtr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_block_poly, m_block_z_max-m_block_z_min);
+    mrpt::opengl::CPolyhedron::Ptr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_block_poly, m_block_z_max-m_block_z_min);
 		gl_poly->setLocation(0,0, m_block_z_min);
 		gl_poly->setColor( mrpt::utils::TColorf(m_block_color) );
 		m_gl_block->insert(gl_poly);
@@ -270,7 +270,7 @@ void Block::gui_update( mrpt::opengl::COpenGLScene &scene)
 		SCENE_INSERT_Z_ORDER(scene,1, m_gl_block);
 
 		// Visualization of forces:
-		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
+    m_gl_forces = mrpt::make_aligned_shared<mrpt::opengl::CSetOfLines>();
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(mrpt::utils::TColor(0xff,0xff,0xff));
 
@@ -288,7 +288,7 @@ void Block::internal_gui_update_forces( mrpt::opengl::COpenGLScene &scene)
 {
 	if (m_world->m_gui_options.show_forces)
 	{
-		mrpt::synch::CCriticalSectionLocker csl( &m_force_segments_for_rendering_cs );
+    std::lock_guard<std::mutex> csl( m_force_segments_for_rendering_cs );
 		m_gl_forces->clear();
 		m_gl_forces->appendLines(m_force_segments_for_rendering);
 		m_gl_forces->setVisibility(true);

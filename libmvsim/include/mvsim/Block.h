@@ -19,9 +19,7 @@
 #include <Box2D/Dynamics/b2Fixture.h>
 #include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 
-#include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 #include <mrpt/poses/CPose2D.h>
-#include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/utils/TColor.h>
@@ -120,9 +118,9 @@ namespace mvsim
 	private:
 		void internal_gui_update_forces( mrpt::opengl::COpenGLScene &scene); //!< Called from gui_update_common()
 
-		mrpt::opengl::CSetOfObjectsPtr m_gl_block;
-		mrpt::opengl::CSetOfLinesPtr        m_gl_forces;
-		mrpt::synch::CCriticalSection       m_force_segments_for_rendering_cs;
+    mrpt::opengl::CSetOfObjects::Ptr m_gl_block;
+    mrpt::opengl::CSetOfLines::Ptr        m_gl_forces;
+		std::mutex       m_force_segments_for_rendering_cs;
 		std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
 	}; // end Block

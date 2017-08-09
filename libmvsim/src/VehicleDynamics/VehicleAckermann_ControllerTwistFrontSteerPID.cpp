@@ -133,11 +133,19 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::teleop_interface(const Tel
 {
 	switch (in.keycode)
 	{
+  case 'W':
 	case 'w':  setpoint_lin_speed += 0.1; break;
+
+  case 'S':
 	case 's':  setpoint_lin_speed -= 0.1; break;
+
+  case 'A':
 	case 'a':  setpoint_ang_speed += 1.0*M_PI/180.0; break;
+
+  case 'D':
 	case 'd':  setpoint_ang_speed -= 1.0*M_PI/180.0;  break;
-	case ' ':  setpoint_lin_speed= .0; setpoint_ang_speed=.0; break;
+
+  case ' ':  setpoint_lin_speed= .0; setpoint_ang_speed=.0; break;
 	};
 	out.append_gui_lines+="[Controller="+ string(class_name()) +"] Teleop keys: w/s=incr/decr lin speed. a/d=left/right steering. spacebar=stop.\n";
 	out.append_gui_lines+=mrpt::format("setpoint: v=%.03f w=%.03f deg/s\n", setpoint_lin_speed, setpoint_ang_speed*180.0/M_PI);

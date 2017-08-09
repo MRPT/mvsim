@@ -11,7 +11,6 @@
 #include <mvsim/basic_types.h>  // fwrd decls.
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Wheel.h>
-#include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 
 namespace mvsim
 {
@@ -31,7 +30,7 @@ namespace mvsim
 			const TSimulContext &context;
 			Wheel  & wheel;
 			double        weight;      //!< Weight on this wheel from the car chassis (Newtons), excluding the weight of the wheel itself.
-			double        motor_torque; //!< The force applied by the motor to the wheel (N·m). Negative means backwards, which makes the vehicle go forwards.
+			double        motor_torque; //!< The force applied by the motor to the wheel (Nm). Negative means backwards, which makes the vehicle go forwards.
 			mrpt::math::TPoint2D  wheel_speed; //!< Instantaneous velocity vector (in local coords) of the wheel center point.
 
 			TFrictionInput(const TSimulContext &_context, Wheel & _wheel) : context(_context), wheel(_wheel),weight(.0), motor_torque(.0),wheel_speed(0,0) {}
@@ -45,7 +44,7 @@ namespace mvsim
 		VehicleBase & m_my_vehicle;
 	};
 
-	typedef stlplus::smart_ptr<FrictionBase> FrictionBasePtr;
+  typedef std::shared_ptr<FrictionBase> FrictionBasePtr;
 
 	// Class factory:
 	typedef ClassFactory<FrictionBase,VehicleBase&,const rapidxml::xml_node<char>*> TClassFactory_friction;

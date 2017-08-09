@@ -12,7 +12,7 @@
 
 namespace mvsim
 {
-	class Simulable
+  class Simulable
 	{
 	public:
 		/** Process right before the integration of dynamic equations for each timestep: set action forces from motors, update friction models, etc. */

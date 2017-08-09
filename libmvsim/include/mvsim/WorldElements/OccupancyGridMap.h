@@ -8,10 +8,10 @@
 
 #pragma once
 
+#include <mutex>
 #include <mvsim/WorldElements/WorldElementBase.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/CPointCloud.h>
-#include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/poses/CPose2D.h>
 
 #include <mrpt/version.h>
@@ -51,7 +51,7 @@ namespace mvsim
 		COccupancyGridMap2D  m_grid;
 
 		bool m_gui_uptodate; //!< Whether m_gl_grid has to be updated upon next call of gui_update()
-		mrpt::opengl::CSetOfObjectsPtr m_gl_grid;
+    mrpt::opengl::CSetOfObjects::Ptr m_gl_grid;
 
 		struct TFixturePtr 
 		{
@@ -63,7 +63,7 @@ namespace mvsim
 		{
 			float max_obstacles_ranges;
 			mrpt::poses::CPose2D pose;
-			CObservation2DRangeScanPtr scan;
+      CObservation2DRangeScan::Ptr scan;
 			b2Body* collide_body;
 			std::vector<TFixturePtr> collide_fixtures;
 
@@ -71,10 +71,10 @@ namespace mvsim
 		};
 
 		std::vector<TInfoPerCollidableobj>  m_obstacles_for_each_obj; 
-		std::vector<mrpt::opengl::CSetOfObjectsPtr> m_gl_obs_clouds;
+    std::vector<mrpt::opengl::CSetOfObjects::Ptr> m_gl_obs_clouds;
 		
-		mrpt::synch::CCriticalSection m_gl_obs_clouds_buffer_cs;
-		std::vector<mrpt::opengl::CPointCloudPtr> m_gl_obs_clouds_buffer;
+		std::mutex m_gl_obs_clouds_buffer_cs;
+    std::vector<mrpt::opengl::CPointCloud::Ptr> m_gl_obs_clouds_buffer;
 
 		CSinCosLookUpTableFor2DScans m_sincos_lut;
 
