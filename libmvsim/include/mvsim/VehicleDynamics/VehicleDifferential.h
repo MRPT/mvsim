@@ -44,7 +44,7 @@ namespace mvsim
 
 		/** Virtual base for controllers of vehicles of type DynamicsDifferential */
 		typedef ControllerBaseTempl<DynamicsDifferential> ControllerBase;
-		typedef stlplus::smart_ptr<ControllerBase> ControllerBasePtr;
+		typedef std::shared_ptr<ControllerBase> ControllerBasePtr;
 
 		class ControllerRawForces : public ControllerBase
 		{
@@ -83,7 +83,7 @@ namespace mvsim
 
 		const ControllerBasePtr & getController() const {return m_controller;}
 		ControllerBasePtr & getController() {return m_controller;}
-		virtual ControllerBaseInterface * getControllerInterface() { return m_controller.pointer(); }
+    virtual ControllerBaseInterface * getControllerInterface() { return m_controller.get(); }
 
 		/** @} */  // end controllers
 

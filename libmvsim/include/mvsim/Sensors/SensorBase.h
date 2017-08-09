@@ -11,15 +11,17 @@
 #include <mvsim/VisualObject.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/ClassFactory.h>
-#include <mrpt/otherlibs/stlplus/smart_ptr.hpp>
 
 namespace mvsim
 {
 	class VehicleBase;
 
 	class SensorBase : public VisualObject, public Simulable
-	{
+  {
+
 	public:
+    using Ptr = std::shared_ptr<SensorBase>;
+
 		SensorBase(VehicleBase& vehicle); //!< Ctor takes a ref to the vehicle to which the sensor is attached.
 		virtual ~SensorBase();
 
@@ -36,8 +38,6 @@ namespace mvsim
 		double m_sensor_last_timestamp; //!< The last sensor reading timestamp. See m_sensor_period
 
 	};
-
-	typedef stlplus::smart_ptr<SensorBase> SensorBasePtr;
 
 	// Class factory:
 	typedef ClassFactory<SensorBase,VehicleBase&,const rapidxml::xml_node<char>*> TClassFactory_sensors;

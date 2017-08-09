@@ -15,8 +15,8 @@ namespace mvsim
 	class World;
 
 	/** Virtual base class for any entity that can be shown in the 3D viewer (or sent out to RViz) */
-	class VisualObject
-	{
+  class VisualObject
+  {
 	public:
 		VisualObject(World * parent) : m_world(parent) {}
 		virtual ~VisualObject() {} 
@@ -34,5 +34,7 @@ namespace mvsim
 
 /** Example usage: SCENE_INSERT_Z_ORDER(scene, 0, my_gl_obj );  */
 #define SCENE_INSERT_Z_ORDER(_SCENE,_ZORDER_INDEX, _OBJ_TO_INSERT) \
-	mrpt::opengl::CSetOfObjectsPtr(_SCENE.getByName("level_" #_ZORDER_INDEX))->insert(_OBJ_TO_INSERT)
+    std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(_SCENE.getByName("level_" #_ZORDER_INDEX))->insert(_OBJ_TO_INSERT)
+
+
 

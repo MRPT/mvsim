@@ -31,6 +31,7 @@ before_install:
   - sudo rosdep init
   - rosdep update -qq
   - sudo apt-get install -y build-essential pkg-config cmake 
+  - if [[ "$TASK" == "build_mrpt_ppa" ]] ; then sudo add-apt-repository ppa:joseluisblancoc/mrpt -y ; sudo apt-get update -qq ; fi
   - sudo apt-get install -y libmrpt-dev
 
 # Create a catkin workspace with the package under integration.

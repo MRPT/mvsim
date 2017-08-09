@@ -26,11 +26,19 @@ void DynamicsDifferential::ControllerRawForces::teleop_interface(const TeleopInp
 {
 	switch (in.keycode)
 	{
+  case 'W':
 	case 'w':  setpoint_wheel_torque_l -= 0.5; setpoint_wheel_torque_r -= 0.5; break;
+
+  case 'S':
 	case 's':  setpoint_wheel_torque_l += 0.5; setpoint_wheel_torque_r += 0.5; break;
+
+  case 'A':
 	case 'a':  setpoint_wheel_torque_l += 0.5; setpoint_wheel_torque_r -= 0.5; break;
+
+  case 'D':
 	case 'd':  setpoint_wheel_torque_l -= 0.5; setpoint_wheel_torque_r += 0.5; break;
-	case ' ': setpoint_wheel_torque_l = setpoint_wheel_torque_r = 0.0; break;
+
+  case ' ': setpoint_wheel_torque_l = setpoint_wheel_torque_r = 0.0; break;
 	};
 	out.append_gui_lines+="[Controller="+ string(class_name()) +"] Teleop keys: w/s=incr/decr both torques. a/d=left/right. spacebar=stop.\n";
 	out.append_gui_lines+=mrpt::format("setpoint: tl=%.03f tr=%.03f deg\n", setpoint_wheel_torque_l, setpoint_wheel_torque_r);

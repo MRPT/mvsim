@@ -12,7 +12,6 @@
 #include <mvsim/WorldElements/WorldElementBase.h>
 #include <mvsim/Block.h>
 
-#include <mrpt/synch/CCriticalSection.h>
 #include <mrpt/utils/CTimeLogger.h>
 #include <mrpt/utils/CTicTac.h>
 #include <mrpt/gui/CDisplayWindow3D.h>
@@ -193,7 +192,7 @@ namespace mvsim
 
 
 		// -------- World contents ----------
-		mrpt::synch::CCriticalSection m_world_cs; //!< The main semaphore to protect simulation objects from multithreading access.
+		std::mutex m_world_cs; //!< The main semaphore to protect simulation objects from multithreading access.
 
 		b2World* m_box2d_world; //!< Box2D dynamic simulator instance
 		b2Body*  m_b2_ground_body;  //!< Used to declare friction between vehicles-ground
@@ -207,7 +206,7 @@ namespace mvsim
 
 
 		// -------- GUI stuff ----------
-		mrpt::gui::CDisplayWindow3DPtr  m_gui_win;
+    mrpt::gui::CDisplayWindow3D::Ptr  m_gui_win;
 
 
 		mrpt::utils::CTimeLogger m_timlogger;

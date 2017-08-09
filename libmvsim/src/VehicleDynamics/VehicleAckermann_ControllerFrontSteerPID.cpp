@@ -81,9 +81,16 @@ void DynamicsAckermann::ControllerFrontSteerPID::teleop_interface(const TeleopIn
 {
 	switch (in.keycode)
 	{
+  case 'W':
 	case 'w':  setpoint_lin_speed+= 0.1;break;
+
+  case 'S':
 	case 's':  setpoint_lin_speed-= 0.1; break;
+
+  case 'A':
 	case 'a':  setpoint_steer_ang += 1.0*M_PI/180.0; mrpt::utils::keep_min(setpoint_steer_ang, m_veh.getMaxSteeringAngle()); break;
+
+  case 'D':
 	case 'd':  setpoint_steer_ang -= 1.0*M_PI/180.0; mrpt::utils::keep_max(setpoint_steer_ang, -m_veh.getMaxSteeringAngle()); break;
 	case ' ':  setpoint_lin_speed=.0; break;
 	};

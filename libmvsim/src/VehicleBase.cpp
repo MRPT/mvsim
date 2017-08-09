@@ -226,12 +226,12 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		if (!frict_node)
 		{
 			// Default:
-			veh->m_friction = stlplus::smart_ptr<FrictionBase>( new DefaultFriction(*veh, NULL /*default params*/) );
+			veh->m_friction = std::shared_ptr<FrictionBase>( new DefaultFriction(*veh, NULL /*default params*/) );
 		}
 		else
 		{
 			// Parse:
-			veh->m_friction = stlplus::smart_ptr<FrictionBase>(  FrictionBase::factory(*veh,frict_node) );
+			veh->m_friction = std::shared_ptr<FrictionBase>(  FrictionBase::factory(*veh,frict_node) );
 			ASSERT_(veh->m_friction)
 		}
 	}
@@ -245,7 +245,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		if (!strcmp(it->name(),"sensor"))
 		{
 			SensorBase *se = SensorBase::factory(*veh,*it);
-			veh->m_sensors.push_back( SensorBasePtr(se));
+      veh->m_sensors.push_back( SensorBase::Ptr(se));
 		}
 	}
 
@@ -334,7 +334,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 	// Save forces for optional rendering:
 	if (m_world->m_gui_options.show_forces)
 	{
-		mrpt::synch::CCriticalSectionLocker csl( &m_force_segments_for_rendering_cs );
+    std::lock_guard<std::mutex> csl( m_force_segments_for_rendering_cs );
 		m_force_segments_for_rendering = force_vectors;
 	}
 }
@@ -412,18 +412,18 @@ void VehicleBase::gui_update_common( mrpt::opengl::COpenGLScene &scene, bool def
 		const size_t nWs = this->getNumWheels();
 		if (!m_gl_chassis)
 		{
-			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
+      m_gl_chassis = mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
 
 			// Wheels shape:
 			m_gl_wheels.resize(nWs);
 			for (size_t i=0;i<nWs;i++)
 			{
-				m_gl_wheels[i]= mrpt::opengl::CSetOfObjects::Create();
+        m_gl_wheels[i]= mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
 				this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
 				m_gl_chassis->insert(m_gl_wheels[i]);
 			}
 			// Robot shape:
-			mrpt::opengl::CPolyhedronPtr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_chassis_poly, m_chassis_z_max-m_chassis_z_min);
+      mrpt::opengl::CPolyhedron::Ptr gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism( m_chassis_poly, m_chassis_z_max-m_chassis_z_min);
 			gl_poly->setLocation(0,0, m_chassis_z_min);
 			gl_poly->setColor( mrpt::utils::TColorf(m_chassis_color) );
 			m_gl_chassis->insert(gl_poly);
@@ -431,7 +431,7 @@ void VehicleBase::gui_update_common( mrpt::opengl::COpenGLScene &scene, bool def
 			SCENE_INSERT_Z_ORDER(scene,1, m_gl_chassis);
 
 			// Visualization of forces:
-			m_gl_forces = mrpt::opengl::CSetOfLines::Create();
+      m_gl_forces = mrpt::make_aligned_shared<mrpt::opengl::CSetOfLines>();
 			m_gl_forces->setLineWidth(3.0);
 			m_gl_forces->setColor_u8(mrpt::utils::TColor(0xff,0xff,0xff));
 
@@ -468,7 +468,7 @@ void VehicleBase::internal_gui_update_forces( mrpt::opengl::COpenGLScene &scene)
 {
 	if (m_world->m_gui_options.show_forces)
 	{
-		mrpt::synch::CCriticalSectionLocker csl( &m_force_segments_for_rendering_cs );
+    std::lock_guard<std::mutex> csl( m_force_segments_for_rendering_cs );
 		m_gl_forces->clear();
 		m_gl_forces->appendLines(m_force_segments_for_rendering);
 		m_gl_forces->setVisibility(true);

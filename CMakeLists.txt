@@ -8,9 +8,11 @@
 # |   See <http://www.gnu.org/licenses/>                                    |
 # +-------------------------------------------------------------------------+
 
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.1)
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
 PROJECT(mvsim)  # Must match the ROS package name.
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
 if(COMMAND cmake_policy)
       cmake_policy(SET CMP0003 NEW)
@@ -248,11 +250,12 @@ IF (BUILD_FOR_ROS)
 	ENDIF()
 
 	## Specify libraries to link a library or executable target against
-	target_link_libraries(mvsim_node
-		mvsim  # the simulator lib
-		${BOX2D_LIBRARIES}  # Box2D libs
+        target_link_libraries(
+                mvsim_node
+                mvsim  # the simulator lib
+                ${BOX2D_LIBRARIES}  # Box2D libs
 		${MRPT_LIBS}
-		${catkin_LIBRARIES}
+                ${catkin_LIBRARIES}
 		)
 
 	#############
