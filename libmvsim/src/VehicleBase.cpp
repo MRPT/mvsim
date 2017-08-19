@@ -46,6 +46,12 @@ static const char PL_DQ_X[] = "dQx";
 static const char PL_DQ_Y[] = "dQy";
 static const char PL_DQ_Z[] = "dQz";
 
+static const char WL_TORQUE[] = "torque";
+static const char WL_WEIGHT[] = "weight";
+static const char WL_VEL_X[] = "velocity_x";
+static const char WL_VEL_Y[] = "velocity_y";
+static const char WL_FRIC_X[] = "friction_x";
+static const char WL_FRIC_Y[] = "friction_y";
 //static const char
 
 XmlClassesRegistry veh_classes_registry("vehicle:class");
@@ -341,7 +347,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 
 		// eval friction:
 		mrpt::math::TPoint2D net_force_;
-		m_friction->evaluate_friction(fi,net_force_);
+    m_friction->evaluate_friction(fi, net_force_);
 
 		// Apply force:
 		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(net_force_.x,net_force_.y)); // Force vector -> world coords
@@ -349,6 +355,17 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		//printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
 		m_b2d_vehicle_body->ApplyForce( wForce,wPt, true/*wake up*/);
+
+    // log
+    {
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(DL_TIMESTAMP, context.simul_time);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_TORQUE, fi.motor_torque);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_WEIGHT, fi.weight);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_VEL_X,  fi.wheel_speed.x);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_VEL_Y,  fi.wheel_speed.y);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_FRIC_X, net_force_.x);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_FRIC_Y, net_force_.y);
+    }
 
 		// save it for optional rendering:
 		if (m_world->m_gui_options.show_forces)
@@ -399,7 +416,12 @@ void VehicleBase::simul_post_timestep(const TSimulContext &context)
   m_loggers[LOGGER_POSE].updateColumn(PL_DQ_X, m_dq.vals[0]);
   m_loggers[LOGGER_POSE].updateColumn(PL_DQ_Y, m_dq.vals[1]);
   m_loggers[LOGGER_POSE].updateColumn(PL_DQ_Z, m_dq.vals[2]);
-  m_loggers[LOGGER_POSE].writeRow();
+
+
+
+  {
+    writeLogStrings();
+  }
 }
 
 
@@ -624,8 +646,20 @@ void VehicleBase::initLoggers()
   m_loggers[LOGGER_POSE].addColumn(PL_DQ_X);
   m_loggers[LOGGER_POSE].addColumn(PL_DQ_Y);
   m_loggers[LOGGER_POSE].addColumn(PL_DQ_Z);
-  m_loggers[LOGGER_POSE].open(m_log_path + "mvsim_" + m_name + LOGGER_POSE + ".log");
-  m_loggers[LOGGER_POSE].writeHeader();
+  m_loggers[LOGGER_POSE].setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_POSE + ".log");
+
+  for(size_t i = 0; i < getNumWheels(); i++)
+  {
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)] = CSVLogger();
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(DL_TIMESTAMP);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_TORQUE);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_WEIGHT);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_VEL_X);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_VEL_Y);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_FRIC_X);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_FRIC_Y);
+    m_loggers[LOGGER_WHEEL  + std::to_string(i + 1)].setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
+  }
 }
 
 void VehicleBase::writeLogStrings()

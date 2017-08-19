@@ -76,6 +76,8 @@ void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_n
 
 void DynamicsDifferential::ControllerTwistPID::teleop_interface(const TeleopInput &in, TeleopOutput &out)
 {
+  ControllerBase::teleop_interface(in, out);
+
 	switch (in.keycode)
 	{
   case 'W':

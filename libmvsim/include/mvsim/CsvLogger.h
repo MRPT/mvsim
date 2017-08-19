@@ -3,6 +3,7 @@
 #include <map>
 #include <fstream>
 #include <string>
+#include <memory>
 
 class CSVLogger
 {
@@ -18,10 +19,19 @@ public:
   bool writeHeader();
   bool writeRow();
 
-  bool open(std::string path);
+  void setFilepath(std::string path) {m_filepath = path; }
+  bool open();
+  bool isOpen();
   bool close();
+  bool clear();
+
+  void setRecording(bool recording) { isRecording = recording; }
+  void newSession();
 
 private:
   columns_type m_columns;
-  std::ofstream *m_file;
+  std::shared_ptr<std::ofstream> m_file;
+  std::string m_filepath;
+  bool isRecording            = false;
+  unsigned int currentSession = 1;
 };

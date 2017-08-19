@@ -110,6 +110,10 @@ namespace mvsim
 		/** Get the vehicle index in the World */
 		size_t getVehicleIndex() const { return m_vehicle_index; }
 
+    void setRecording(bool record) { for(auto &logger : m_loggers) logger.second.setRecording(record); }
+    void clearLogs() { for(auto &logger : m_loggers) logger.second.clear(); }
+    void newLogSession() { for(auto &logger : m_loggers) logger.second.newSession(); }
+
 		/** Must create a new object in the scene and/or update it according to the current state.
 		  * If overrided in derived classes, it may be time-saving to call \a gui_update_common() and associated methods for 3D elements common to any vehicle.
 		  */
