@@ -106,5 +106,6 @@ bool CSVLogger::clear()
 
 void CSVLogger::newSession()
 {
+  currentSession++;
   close();
 }
