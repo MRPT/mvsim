@@ -358,13 +358,13 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 
     // log
     {
-        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(DL_TIMESTAMP, context.simul_time);
-        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_TORQUE, fi.motor_torque);
-        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_WEIGHT, fi.weight);
-        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_VEL_X,  fi.wheel_speed.x);
-        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_VEL_Y,  fi.wheel_speed.y);
-        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_FRIC_X, net_force_.x);
-        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].updateColumn(WL_FRIC_Y, net_force_.y);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(DL_TIMESTAMP, context.simul_time);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_TORQUE, fi.motor_torque);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_WEIGHT, fi.weight);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_VEL_X,  fi.wheel_speed.x);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_VEL_Y,  fi.wheel_speed.y);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_FRIC_X, net_force_.x);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_FRIC_Y, net_force_.y);
     }
 
 		// save it for optional rendering:
@@ -406,16 +406,16 @@ void VehicleBase::simul_post_timestep(const TSimulContext &context)
 			w.setPhi( ::fmod(cur_abs_phi, 2*M_PI) * (w.getPhi()<0.0 ? -1.0 : 1.0) );
 	}
 
-  m_loggers[LOGGER_POSE].updateColumn(DL_TIMESTAMP, context.simul_time);
-  m_loggers[LOGGER_POSE].updateColumn(PL_Q_X, m_q.x);
-  m_loggers[LOGGER_POSE].updateColumn(PL_Q_Y, m_q.y);
-  m_loggers[LOGGER_POSE].updateColumn(PL_Q_Z, m_q.z);
-  m_loggers[LOGGER_POSE].updateColumn(PL_Q_YAW, m_q.yaw);
-  m_loggers[LOGGER_POSE].updateColumn(PL_Q_PITCH, m_q.pitch);
-  m_loggers[LOGGER_POSE].updateColumn(PL_Q_ROLL, m_q.roll);
-  m_loggers[LOGGER_POSE].updateColumn(PL_DQ_X, m_dq.vals[0]);
-  m_loggers[LOGGER_POSE].updateColumn(PL_DQ_Y, m_dq.vals[1]);
-  m_loggers[LOGGER_POSE].updateColumn(PL_DQ_Z, m_dq.vals[2]);
+  m_loggers[LOGGER_POSE]->updateColumn(DL_TIMESTAMP, context.simul_time);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_X, m_q.x);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Y, m_q.y);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Z, m_q.z);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_YAW, m_q.yaw);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_PITCH, m_q.pitch);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_ROLL, m_q.roll);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_X, m_dq.vals[0]);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Y, m_dq.vals[1]);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Z, m_dq.vals[2]);
 
 
 
@@ -635,39 +635,39 @@ void VehicleBase::gui_update( mrpt::opengl::COpenGLScene &scene)
 
 void VehicleBase::initLoggers()
 {
-  m_loggers[LOGGER_POSE] = CSVLogger();
-  m_loggers[LOGGER_POSE].addColumn(DL_TIMESTAMP);
-  m_loggers[LOGGER_POSE].addColumn(PL_Q_X);
-  m_loggers[LOGGER_POSE].addColumn(PL_Q_Y);
-  m_loggers[LOGGER_POSE].addColumn(PL_Q_Z);
-  m_loggers[LOGGER_POSE].addColumn(PL_Q_YAW);
-  m_loggers[LOGGER_POSE].addColumn(PL_Q_PITCH);
-  m_loggers[LOGGER_POSE].addColumn(PL_Q_ROLL);
-  m_loggers[LOGGER_POSE].addColumn(PL_DQ_X);
-  m_loggers[LOGGER_POSE].addColumn(PL_DQ_Y);
-  m_loggers[LOGGER_POSE].addColumn(PL_DQ_Z);
-  m_loggers[LOGGER_POSE].setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_POSE + ".log");
+  m_loggers[LOGGER_POSE] = std::make_shared<CSVLogger>();
+  m_loggers[LOGGER_POSE]->addColumn(DL_TIMESTAMP);
+  m_loggers[LOGGER_POSE]->addColumn(PL_Q_X);
+  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Y);
+  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Z);
+  m_loggers[LOGGER_POSE]->addColumn(PL_Q_YAW);
+  m_loggers[LOGGER_POSE]->addColumn(PL_Q_PITCH);
+  m_loggers[LOGGER_POSE]->addColumn(PL_Q_ROLL);
+  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_X);
+  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Y);
+  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Z);
+  m_loggers[LOGGER_POSE]->setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_POSE + ".log");
 
   for(size_t i = 0; i < getNumWheels(); i++)
   {
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)] = CSVLogger();
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(DL_TIMESTAMP);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_TORQUE);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_WEIGHT);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_VEL_X);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_VEL_Y);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_FRIC_X);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)].addColumn(WL_FRIC_Y);
-    m_loggers[LOGGER_WHEEL  + std::to_string(i + 1)].setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)] = std::make_shared<CSVLogger>();
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(DL_TIMESTAMP);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_TORQUE);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_WEIGHT);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_VEL_X);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_VEL_Y);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_FRIC_X);
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_FRIC_Y);
+    m_loggers[LOGGER_WHEEL  + std::to_string(i + 1)]->setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
   }
 }
 
 void VehicleBase::writeLogStrings()
 {
-  std::map<std::string, CSVLogger>::iterator it;
+  std::map<std::string, std::shared_ptr<CSVLogger>>::iterator it;
   for (it = m_loggers.begin(); it != m_loggers.end(); ++it)
   {
-    it->second.writeRow();
+    it->second->writeRow();
   }
 }
 
