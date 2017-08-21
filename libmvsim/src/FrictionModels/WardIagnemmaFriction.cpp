@@ -45,6 +45,7 @@ WardIagnemmaFriction::WardIagnemmaFriction(VehicleBase & my_vehicle, const rapid
 		// Parse XML params:
 		parse_xmlnode_children_as_param(*node,params);
   }
+
   MRPT_UNSCOPED_LOGGER_START;
   MRPT_LOG_DEBUG("WardIagnemma Creates!");
   MRPT_UNSCOPED_LOGGER_END;
@@ -96,10 +97,16 @@ void WardIagnemmaFriction::evaluate_friction(const FrictionBase::TFrictionInput 
 	//const mrpt::math::TPoint2D wheel_damping(- C_damping * input.wheel_speed.x, 0.0);
 
   // Actually, Ward-Iagnemma rolling resistance is here (longitudal one):
-  const double F_rr = sign(vel_w.x) * partial_mass * gravity * (m_R1 * (1 - exp(-m_A_roll * fabs(vel_w.x))) + m_R2 * fabs(vel_w.x));
+  const double F_rr = -sign(vel_w.x) * partial_mass * gravity * (m_R1 * (1 - exp(-m_A_roll * fabs(vel_w.x))) + m_R2 * fabs(vel_w.x));
+
+  if(!m_logger.expired())
+  {
+    m_logger.lock()->updateColumn("F_rr", F_rr);
+  }
 
 	const double I_yy = input.wheel.Iyy;
-  double F_friction_lon = ( input.motor_torque - I_yy*desired_wheel_alpha - C_damping*input.wheel.getW() )/R;
+  //                                  There are torques                                          this is force   v
+  double F_friction_lon = ( input.motor_torque - I_yy*desired_wheel_alpha - C_damping*input.wheel.getW()) / R + F_rr;
 
 	// Slippage: The friction with the ground is not infinite:
 	F_friction_lon = b2Clamp(F_friction_lon, -max_friction,max_friction);

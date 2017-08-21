@@ -31,29 +31,6 @@
 using namespace mvsim;
 using namespace std;
 
-// data logger header entries
-static const char DL_TIMESTAMP[] = "timestamp";
-static const char LOGGER_POSE[] = "logger_pose";
-static const char LOGGER_WHEEL[] = "logger_wheel";
-
-static const char PL_Q_X[] = "Qx";
-static const char PL_Q_Y[] = "Qy";
-static const char PL_Q_Z[] = "Qz";
-static const char PL_Q_YAW[] = "Qyaw";
-static const char PL_Q_PITCH[] = "Qpitch";
-static const char PL_Q_ROLL[] = "Qroll";
-static const char PL_DQ_X[] = "dQx";
-static const char PL_DQ_Y[] = "dQy";
-static const char PL_DQ_Z[] = "dQz";
-
-static const char WL_TORQUE[] = "torque";
-static const char WL_WEIGHT[] = "weight";
-static const char WL_VEL_X[] = "velocity_x";
-static const char WL_VEL_Y[] = "velocity_y";
-static const char WL_FRIC_X[] = "friction_x";
-static const char WL_FRIC_Y[] = "friction_y";
-//static const char
-
 XmlClassesRegistry veh_classes_registry("vehicle:class");
 
 TClassFactory_vehicleDynamics mvsim::classFactory_vehicleDynamics;
@@ -67,6 +44,29 @@ void register_all_veh_dynamics()
 	REGISTER_VEHICLE_DYNAMICS("differential",DynamicsDifferential)
 	REGISTER_VEHICLE_DYNAMICS("ackermann",DynamicsAckermann)
 }
+
+
+constexpr char VehicleBase::DL_TIMESTAMP[];
+constexpr char VehicleBase::LOGGER_POSE[];
+constexpr char VehicleBase::LOGGER_WHEEL[];
+
+constexpr char VehicleBase::PL_Q_X[];
+constexpr char VehicleBase::PL_Q_Y[];
+constexpr char VehicleBase::PL_Q_Z[];
+constexpr char VehicleBase::PL_Q_YAW[];
+constexpr char VehicleBase::PL_Q_PITCH[];
+constexpr char VehicleBase::PL_Q_ROLL[];
+constexpr char VehicleBase::PL_DQ_X[];
+constexpr char VehicleBase::PL_DQ_Y[];
+constexpr char VehicleBase::PL_DQ_Z[];
+
+constexpr char VehicleBase::WL_TORQUE[];
+constexpr char VehicleBase::WL_WEIGHT[];
+constexpr char VehicleBase::WL_VEL_X[];
+constexpr char VehicleBase::WL_VEL_Y[];
+constexpr char VehicleBase::WL_FRIC_X[];
+constexpr char VehicleBase::WL_FRIC_Y[];
+
 
 // Protected ctor:
 VehicleBase::VehicleBase(World *parent, size_t nWheels) :
@@ -193,8 +193,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		}
 	}
 
-
-	// (Mandatory) initial pose:
+  // (Mandatory) initial pose:
 	{
 		const xml_node<> *node = veh_root_node.first_node("init_pose");
 		if (!node) throw runtime_error("[VehicleBase::factory] Missing XML node <init_pose>");
@@ -224,6 +223,19 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	// Initialize class-specific params:
 	// -------------------------------------------------
 	veh->dynamics_load_params_from_xml(dyn_node);
+
+  // <Optional> Log path. If not specified, app folder will be used
+  // -----------------------------------------------------------
+  {
+    const xml_node<> *log_path_node = veh_root_node.first_node("log_path");
+    if (log_path_node)
+    {
+      // Parse:
+      veh->m_log_path = log_path_node->value();
+    }
+  }
+
+  veh->initLoggers();
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
@@ -270,19 +282,6 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
       veh->m_sensors.push_back( SensorBase::Ptr(se));
 		}
 	}
-
-  // <Optional> Log path. If not specified, app folder will be used
-  // -----------------------------------------------------------
-  {
-    const xml_node<> *log_path_node = veh_root_node.first_node("log_path");
-    if (log_path_node)
-    {
-      // Parse:
-      veh->m_log_path = log_path_node->value();
-    }
-  }
-
-  veh->initLoggers();
 
 	return veh;
 }
@@ -345,6 +344,8 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		fi.weight = weightPerWheel;
 		fi.wheel_speed = wheels_vels[i];
 
+
+    m_friction->setLogger(getLoggerPtr(LOGGER_WHEEL + std::to_string(i + 1)));
 		// eval friction:
 		mrpt::math::TPoint2D net_force_;
     m_friction->evaluate_friction(fi, net_force_);
@@ -636,28 +637,28 @@ void VehicleBase::gui_update( mrpt::opengl::COpenGLScene &scene)
 void VehicleBase::initLoggers()
 {
   m_loggers[LOGGER_POSE] = std::make_shared<CSVLogger>();
-  m_loggers[LOGGER_POSE]->addColumn(DL_TIMESTAMP);
-  m_loggers[LOGGER_POSE]->addColumn(PL_Q_X);
-  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Y);
-  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Z);
-  m_loggers[LOGGER_POSE]->addColumn(PL_Q_YAW);
-  m_loggers[LOGGER_POSE]->addColumn(PL_Q_PITCH);
-  m_loggers[LOGGER_POSE]->addColumn(PL_Q_ROLL);
-  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_X);
-  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Y);
-  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Z);
+//  m_loggers[LOGGER_POSE]->addColumn(DL_TIMESTAMP);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_X);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Y);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Z);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_YAW);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_PITCH);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_ROLL);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_X);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Y);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Z);
   m_loggers[LOGGER_POSE]->setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_POSE + ".log");
 
   for(size_t i = 0; i < getNumWheels(); i++)
   {
     m_loggers[LOGGER_WHEEL + std::to_string(i + 1)] = std::make_shared<CSVLogger>();
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(DL_TIMESTAMP);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_TORQUE);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_WEIGHT);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_VEL_X);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_VEL_Y);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_FRIC_X);
-    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_FRIC_Y);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(DL_TIMESTAMP);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_TORQUE);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_WEIGHT);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_VEL_X);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_VEL_Y);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_FRIC_X);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_FRIC_Y);
     m_loggers[LOGGER_WHEEL  + std::to_string(i + 1)]->setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
   }
 }
