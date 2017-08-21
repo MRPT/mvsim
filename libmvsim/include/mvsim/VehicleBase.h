@@ -99,6 +99,8 @@ namespace mvsim
 		const TListSensors & getSensors() const { return m_sensors; }
 		TListSensors & getSensors() { return m_sensors; }
 
+    std::shared_ptr<CSVLogger> getLoggerPtr(std::string logger_name) { return m_loggers[logger_name]; }
+
 		/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 		const std::string & getName() const { return m_name;}
 
@@ -189,7 +191,27 @@ namespace mvsim
     std::mutex       m_force_segments_for_rendering_cs;
 		std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
+  public: // data logger header entries
+    static constexpr char DL_TIMESTAMP[] = "timestamp";
+    static constexpr char LOGGER_POSE[] = "logger_pose";
+    static constexpr char LOGGER_WHEEL[] = "logger_wheel";
 
+    static constexpr char PL_Q_X[] = "Qx";
+    static constexpr char PL_Q_Y[] = "Qy";
+    static constexpr char PL_Q_Z[] = "Qz";
+    static constexpr char PL_Q_YAW[] = "Qyaw";
+    static constexpr char PL_Q_PITCH[] = "Qpitch";
+    static constexpr char PL_Q_ROLL[] = "Qroll";
+    static constexpr char PL_DQ_X[] = "dQx";
+    static constexpr char PL_DQ_Y[] = "dQy";
+    static constexpr char PL_DQ_Z[] = "dQz";
+
+    static constexpr char WL_TORQUE[] = "torque";
+    static constexpr char WL_WEIGHT[] = "weight";
+    static constexpr char WL_VEL_X[] = "velocity_x";
+    static constexpr char WL_VEL_Y[] = "velocity_y";
+    static constexpr char WL_FRIC_X[] = "friction_x";
+    static constexpr char WL_FRIC_Y[] = "friction_y";
 	}; // end VehicleBase
 
 	// Class factory:
