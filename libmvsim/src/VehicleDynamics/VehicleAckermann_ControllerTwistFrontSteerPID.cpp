@@ -18,8 +18,7 @@ DynamicsAckermann::ControllerTwistFrontSteerPID::ControllerTwistFrontSteerPID(Dy
 	setpoint_ang_speed(0),
 	KP(100),
 	KI(0),
-	KD(0),
-	I_MAX(10),
+  KD(0),
 	max_torque(100.0)
 {
 	// Get distance between wheels:
@@ -98,7 +97,6 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 
 	// Apply controller:
 	for (int i=0;i<2;i++) {
-		m_PID[i].I_MAX_ABS = I_MAX;
 		m_PID[i].KP = KP;
 		m_PID[i].KI = KI;
 		m_PID[i].KD = KD;
@@ -116,8 +114,7 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(const rapidxml
 	std::map<std::string,TParamEntry> params;
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
-	params["KD"] = TParamEntry("%lf", &KD);
-	params["I_MAX"] = TParamEntry("%lf", &I_MAX);
+	params["KD"] = TParamEntry("%lf", &KD);	
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
 
 
@@ -131,6 +128,8 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(const rapidxml
 
 void DynamicsAckermann::ControllerTwistFrontSteerPID::teleop_interface(const TeleopInput &in, TeleopOutput &out)
 {
+  ControllerBase::teleop_interface(in, out);
+
 	switch (in.keycode)
 	{
   case 'W':

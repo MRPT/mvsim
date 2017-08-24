@@ -9,6 +9,7 @@
 #include <mvsim/World.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
+#include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/FrictionModels/DefaultFriction.h> // For use as default model
@@ -35,7 +36,6 @@ XmlClassesRegistry veh_classes_registry("vehicle:class");
 
 TClassFactory_vehicleDynamics mvsim::classFactory_vehicleDynamics;
 
-
 // Explicit registration calls seem to be one (the unique?) way to assure registration takes place:
 void register_all_veh_dynamics()
 {
@@ -44,7 +44,31 @@ void register_all_veh_dynamics()
 
 	REGISTER_VEHICLE_DYNAMICS("differential",DynamicsDifferential)
 	REGISTER_VEHICLE_DYNAMICS("ackermann",DynamicsAckermann)
+  REGISTER_VEHICLE_DYNAMICS("ackermann_drivetrain",DynamicsAckermannDrivetrain)
 }
+
+
+constexpr char VehicleBase::DL_TIMESTAMP[];
+constexpr char VehicleBase::LOGGER_POSE[];
+constexpr char VehicleBase::LOGGER_WHEEL[];
+
+constexpr char VehicleBase::PL_Q_X[];
+constexpr char VehicleBase::PL_Q_Y[];
+constexpr char VehicleBase::PL_Q_Z[];
+constexpr char VehicleBase::PL_Q_YAW[];
+constexpr char VehicleBase::PL_Q_PITCH[];
+constexpr char VehicleBase::PL_Q_ROLL[];
+constexpr char VehicleBase::PL_DQ_X[];
+constexpr char VehicleBase::PL_DQ_Y[];
+constexpr char VehicleBase::PL_DQ_Z[];
+
+constexpr char VehicleBase::WL_TORQUE[];
+constexpr char VehicleBase::WL_WEIGHT[];
+constexpr char VehicleBase::WL_VEL_X[];
+constexpr char VehicleBase::WL_VEL_Y[];
+constexpr char VehicleBase::WL_FRIC_X[];
+constexpr char VehicleBase::WL_FRIC_Y[];
+
 
 // Protected ctor:
 VehicleBase::VehicleBase(World *parent, size_t nWheels) :
@@ -171,8 +195,7 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 		}
 	}
 
-
-	// (Mandatory) initial pose:
+  // (Mandatory) initial pose:
 	{
 		const xml_node<> *node = veh_root_node.first_node("init_pose");
 		if (!node) throw runtime_error("[VehicleBase::factory] Missing XML node <init_pose>");
@@ -202,6 +225,19 @@ VehicleBase* VehicleBase::factory(World* parent, const rapidxml::xml_node<char> 
 	// Initialize class-specific params:
 	// -------------------------------------------------
 	veh->dynamics_load_params_from_xml(dyn_node);
+
+  // <Optional> Log path. If not specified, app folder will be used
+  // -----------------------------------------------------------
+  {
+    const xml_node<> *log_path_node = veh_root_node.first_node("log_path");
+    if (log_path_node)
+    {
+      // Parse:
+      veh->m_log_path = log_path_node->value();
+    }
+  }
+
+  veh->initLoggers();
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
@@ -310,9 +346,11 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		fi.weight = weightPerWheel;
 		fi.wheel_speed = wheels_vels[i];
 
+
+    m_friction->setLogger(getLoggerPtr(LOGGER_WHEEL + std::to_string(i + 1)));
 		// eval friction:
 		mrpt::math::TPoint2D net_force_;
-		m_friction->evaluate_friction(fi,net_force_);
+    m_friction->evaluate_friction(fi, net_force_);
 
 		// Apply force:
 		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(net_force_.x,net_force_.y)); // Force vector -> world coords
@@ -320,6 +358,17 @@ void VehicleBase::simul_pre_timestep(const TSimulContext &context)
 		//printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
 		m_b2d_vehicle_body->ApplyForce( wForce,wPt, true/*wake up*/);
+
+    // log
+    {
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(DL_TIMESTAMP, context.simul_time);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_TORQUE, fi.motor_torque);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_WEIGHT, fi.weight);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_VEL_X,  fi.wheel_speed.x);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_VEL_Y,  fi.wheel_speed.y);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_FRIC_X, net_force_.x);
+        m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_FRIC_Y, net_force_.y);
+    }
 
 		// save it for optional rendering:
 		if (m_world->m_gui_options.show_forces)
@@ -359,6 +408,23 @@ void VehicleBase::simul_post_timestep(const TSimulContext &context)
 		if (cur_abs_phi>1e4)
 			w.setPhi( ::fmod(cur_abs_phi, 2*M_PI) * (w.getPhi()<0.0 ? -1.0 : 1.0) );
 	}
+
+  m_loggers[LOGGER_POSE]->updateColumn(DL_TIMESTAMP, context.simul_time);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_X, m_q.x);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Y, m_q.y);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Z, m_q.z);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_YAW, m_q.yaw);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_PITCH, m_q.pitch);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_Q_ROLL, m_q.roll);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_X, m_dq.vals[0]);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Y, m_dq.vals[1]);
+  m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Z, m_dq.vals[2]);
+
+
+
+  {
+    writeLogStrings();
+  }
 }
 
 
@@ -567,7 +633,45 @@ void VehicleBase::create_multibody_system(b2World* world)
 
 void VehicleBase::gui_update( mrpt::opengl::COpenGLScene &scene)
 {
-	this->gui_update_common(scene); // Common part: update sensors, etc.
+  this->gui_update_common(scene); // Common part: update sensors, etc.
+}
+
+void VehicleBase::initLoggers()
+{
+  m_loggers[LOGGER_POSE] = std::make_shared<CSVLogger>();
+//  m_loggers[LOGGER_POSE]->addColumn(DL_TIMESTAMP);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_X);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Y);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Z);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_YAW);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_PITCH);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_ROLL);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_X);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Y);
+//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Z);
+  m_loggers[LOGGER_POSE]->setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_POSE + ".log");
+
+  for(size_t i = 0; i < getNumWheels(); i++)
+  {
+    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)] = std::make_shared<CSVLogger>();
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(DL_TIMESTAMP);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_TORQUE);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_WEIGHT);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_VEL_X);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_VEL_Y);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_FRIC_X);
+//    m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->addColumn(WL_FRIC_Y);
+    m_loggers[LOGGER_WHEEL  + std::to_string(i + 1)]->setFilepath(m_log_path + "mvsim_" + m_name + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
+  }
+}
+
+void VehicleBase::writeLogStrings()
+{
+  std::map<std::string, std::shared_ptr<CSVLogger>>::iterator it;
+  for (it = m_loggers.begin(); it != m_loggers.end(); ++it)
+  {
+    it->second->writeRow();
+  }
 }
 
 void VehicleBase::apply_force(double fx, double fy, double local_ptx, double local_pty)

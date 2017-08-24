@@ -13,14 +13,14 @@ namespace mvsim
 	{
 		PID_Controller();
 
-		double KP,KI,KD;
-		double I_MAX_ABS; //!< Max abs value for I part.
+    double KP,KI,KD;
 		double max_out; //!< For clamping (0=no clamp)
 
 		/** err = desired-actual, dt=ellapsed time in secs */
 		double compute(double err, double dt);
 
-	private:
-		double m_i_term, m_last_err;
+  private:
+    double lastOutput;
+    double e_n, e_n_1, e_n_2;
 	};
 }
