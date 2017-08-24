@@ -44,7 +44,7 @@ void register_all_veh_dynamics()
 
 	REGISTER_VEHICLE_DYNAMICS("differential",DynamicsDifferential)
 	REGISTER_VEHICLE_DYNAMICS("ackermann",DynamicsAckermann)
-  REGISTER_VEHICLE_DYNAMICS("ackermann_ls_diff",DynamicsAckermannDrivetrain)
+  REGISTER_VEHICLE_DYNAMICS("ackermann_drivetrain",DynamicsAckermannDrivetrain)
 }
 
 

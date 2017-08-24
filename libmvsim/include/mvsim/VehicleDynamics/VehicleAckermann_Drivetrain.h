@@ -38,13 +38,15 @@ namespace mvsim
 
     enum DifferentialType
     {
-      DIFF_OPEN_FRONT,
-      DIFF_OPEN_REAR,
-      DIFF_OPEN_4WD,
+      DIFF_OPEN_FRONT = 0,
+      DIFF_OPEN_REAR = 1,
+      DIFF_OPEN_4WD = 2,
 
-      DIFF_TORSEN_FRONT,
-      DIFF_TORSEN_REAR,
-      DIFF_TORSEN_4WD
+      DIFF_TORSEN_FRONT = 3,
+      DIFF_TORSEN_REAR = 4,
+      DIFF_TORSEN_4WD = 5,
+
+      DIFF_MAX
     };
 
     DynamicsAckermannDrivetrain(World *parent);
