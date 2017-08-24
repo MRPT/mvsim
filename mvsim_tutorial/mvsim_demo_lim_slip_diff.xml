@@ -74,7 +74,7 @@
 			<!--   Motor controller -->
 			<controller class="front_steer_pid">
 				<!-- Params -->
-				<KP>2500</KP>  <KI>90</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+				<KP>2500</KP>  <KI>90</KI> <KD>0</KD>
 				<V>0.0</V><W>0</W>
 				<max_torque>600</max_torque>
 			</controller>		
