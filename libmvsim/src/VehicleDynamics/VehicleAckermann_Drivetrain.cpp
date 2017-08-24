@@ -83,12 +83,12 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(const rapidxml::
 		attribs["zmax"] = TParamEntry("%lf", &this->m_chassis_z_max );
 		attribs["color"] = TParamEntry("%color", &this->m_chassis_color );
 
-    parse_xmlnode_attribs(*xml_chassis, attribs,"[DynamicsAckermannLSDiff::dynamics_load_params_from_xml]" );
+    parse_xmlnode_attribs(*xml_chassis, attribs,"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]" );
 
 		// Shape node (optional, fallback to default shape if none found)
 		const rapidxml::xml_node<char> * xml_shape = xml_chassis->first_node("shape");
 		if (xml_shape)
-      mvsim::parse_xmlnode_shape(*xml_shape, m_chassis_poly, "[DynamicsAckermannLSDiff::dynamics_load_params_from_xml]");
+      mvsim::parse_xmlnode_shape(*xml_shape, m_chassis_poly, "[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
 	}
 
 	//<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
@@ -121,7 +121,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(const rapidxml::
 		// other params:
 		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &m_max_steer_ang);
 
-    parse_xmlnode_children_as_param(*xml_node, ack_ps,"[DynamicsAckermannLSDiff::dynamics_load_params_from_xml]" );
+    parse_xmlnode_children_as_param(*xml_node, ack_ps,"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]" );
 
 		// Front-left:
 		m_wheels_info[WHEEL_FL].x = front_x;
@@ -131,6 +131,47 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(const rapidxml::
 		m_wheels_info[WHEEL_FR].y = -0.5*front_d;
 	}
 
+  // Drivetrain parameters
+  // Watch the order of DifferentialType enum!
+  const char* drive_names[6] =
+  {
+    "open_front",
+    "open_rear",
+    "open_4wd",
+    "torsen_front",
+    "torsen_rear",
+    "torsen_4wd"
+  };
+
+  const rapidxml::xml_node<char> * xml_drive = xml_node->first_node("drivetrain");
+  if(xml_drive)
+  {
+    std::map<std::string,TParamEntry> attribs;
+    std::string diff_type;
+    attribs["type"] = TParamEntry("%s", &diff_type);
+
+    parse_xmlnode_attribs(*xml_drive, attribs,"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]" );
+
+    for(size_t i = 0; i < DifferentialType::DIFF_MAX; ++i)
+    {
+      if(diff_type == drive_names[i])
+      {
+        m_diff_type = (DifferentialType) i;
+        break;
+      }
+    }
+
+    std::map<std::string, TParamEntry> drive_params;
+    drive_params["front_rear_split"] = TParamEntry("%lf", &m_FrontRearSplit);
+    drive_params["front_rear_bias"]  = TParamEntry("%lf",  &m_FrontRearBias);
+    drive_params["front_left_right_split"] = TParamEntry("%lf", &m_FrontLRSplit);
+    drive_params["front_left_right_bias"] =  TParamEntry("%lf", &m_FrontLRBias);
+    drive_params["rear_left_right_split"] =  TParamEntry("%lf", &m_RearLRSplit);
+    drive_params["rear_left_right_bias"] =   TParamEntry("%lf", &m_RearLRBias);
+
+    parse_xmlnode_children_as_param(*xml_drive, drive_params,"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]" );
+  }
+
 	// Vehicle controller:
 	// -------------------------------------------------
 	{
@@ -138,13 +179,13 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(const rapidxml::
 		if (xml_control)
 		{
 			rapidxml::xml_attribute<char> *control_class = xml_control->first_attribute("class");
-      if (!control_class || !control_class->value()) throw runtime_error("[DynamicsAckermannLSDiff] Missing 'class' attribute in <controller> XML node");
+      if (!control_class || !control_class->value()) throw runtime_error("[DynamicsAckermannDrivetrain] Missing 'class' attribute in <controller> XML node");
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass==ControllerRawForces::class_name())    m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
 //			else if (sCtrlClass==ControllerTwistFrontSteerPID::class_name())    m_controller = ControllerBasePtr(new ControllerTwistFrontSteerPID(*this) );
 //			else if (sCtrlClass==ControllerFrontSteerPID::class_name())    m_controller = ControllerBasePtr(new ControllerFrontSteerPID(*this) );
-      else throw runtime_error(mrpt::format("[DynamicsAckermannLSDiff] Unknown 'class'='%s' in <controller> XML node",sCtrlClass.c_str()));
+      else throw runtime_error(mrpt::format("[DynamicsAckermannDrivetrain] Unknown 'class'='%s' in <controller> XML node",sCtrlClass.c_str()));
 
 			m_controller->load_config(*xml_control);
 		}
