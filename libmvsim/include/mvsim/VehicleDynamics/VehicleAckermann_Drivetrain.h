@@ -17,12 +17,16 @@
 
 namespace mvsim
 {
-	/** Implementation of 4 wheels Ackermann-driven vehicles.
+  /** Implementation of 4 wheels Ackermann-driven vehicles with drivetrain
+    * As motor input of drivetrain acts controller torque.
+    * Differential model is based on observations of Torsen-like differentials work.
+    * http://www.flashoffroad.com/features/Torsen/Torsen_white_paper.pdf
+    *
 	  * \sa class factory in VehicleBase::factory
 	  */
-  class DynamicsAckermannLSDiff : public VehicleBase
+  class DynamicsAckermannDrivetrain : public VehicleBase
 	{
-    DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsAckermannLSDiff)
+    DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsAckermannDrivetrain)
 	public:
 		// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 		enum {
@@ -32,7 +36,18 @@ namespace mvsim
 			WHEEL_FR = 3
 		};
 
-    DynamicsAckermannLSDiff(World *parent);
+    enum DifferentialType
+    {
+      DIFF_OPEN_FRONT,
+      DIFF_OPEN_REAR,
+      DIFF_OPEN_4WD,
+
+      DIFF_TORSEN_FRONT,
+      DIFF_TORSEN_REAR,
+      DIFF_TORSEN_4WD
+    };
+
+    DynamicsAckermannDrivetrain(World *parent);
 
 		/** The maximum steering angle (rad). Determines min turning radius */
 		double getMaxSteeringAngle() const {return m_max_steer_ang;}
@@ -53,17 +68,17 @@ namespace mvsim
 		};
 
     /** Virtual base for controllers of vehicles of type DynamicsAckermannLSDiff */
-    typedef ControllerBaseTempl<DynamicsAckermannLSDiff> ControllerBase;
+    typedef ControllerBaseTempl<DynamicsAckermannDrivetrain> ControllerBase;
 		typedef std::shared_ptr<ControllerBase> ControllerBasePtr;
 
 		class ControllerRawForces : public ControllerBase
 		{
 		public:
-      ControllerRawForces(DynamicsAckermannLSDiff &veh);
+      ControllerRawForces(DynamicsAckermannDrivetrain &veh);
       static const char* class_name() { return "raw"; }
 			//!< Directly set these values to tell the controller the desired setpoints
       double setpoint_wheel_torque, setpoint_steer_ang;
-      virtual void control_step(const DynamicsAckermannLSDiff::TControllerInput &ci, DynamicsAckermannLSDiff::TControllerOutput &co); // See base class docs
+      virtual void control_step(const DynamicsAckermannDrivetrain::TControllerInput &ci, DynamicsAckermannDrivetrain::TControllerOutput &co); // See base class docs
 			virtual void load_config(const rapidxml::xml_node<char>&node ); // See base class docs
 			virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out);  // See base class docs
 		};
@@ -96,8 +111,15 @@ namespace mvsim
 
 		double m_max_steer_ang; //!< The maximum steering angle (rad). Determines min turning radius
 
+    DifferentialType m_diff_type;
 
+    double m_FrontRearSplit;
+    double m_FrontLRSplit;
+    double m_RearLRSplit;
 
+    double m_FrontRearBias;
+    double m_FrontLRBias;
+    double m_RearLRBias;
 	};
 
 }

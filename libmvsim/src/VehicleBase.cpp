@@ -9,7 +9,7 @@
 #include <mvsim/World.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
-#include <mvsim/VehicleDynamics/VehicleAckermannLSDiff.h>
+#include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/FrictionModels/DefaultFriction.h> // For use as default model
@@ -44,7 +44,7 @@ void register_all_veh_dynamics()
 
 	REGISTER_VEHICLE_DYNAMICS("differential",DynamicsDifferential)
 	REGISTER_VEHICLE_DYNAMICS("ackermann",DynamicsAckermann)
-  REGISTER_VEHICLE_DYNAMICS("ackermann_ls_diff",DynamicsAckermannLSDiff)
+  REGISTER_VEHICLE_DYNAMICS("ackermann_ls_diff",DynamicsAckermannDrivetrain)
 }
 
 
