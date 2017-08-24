@@ -183,7 +183,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(const rapidxml::
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass==ControllerRawForces::class_name())    m_controller = ControllerBasePtr(new ControllerRawForces(*this) );
-//			else if (sCtrlClass==ControllerTwistFrontSteerPID::class_name())    m_controller = ControllerBasePtr(new ControllerTwistFrontSteerPID(*this) );
+      else if (sCtrlClass==ControllerTwistFrontSteerPID::class_name())    m_controller = ControllerBasePtr(new ControllerTwistFrontSteerPID(*this) );
 //			else if (sCtrlClass==ControllerFrontSteerPID::class_name())    m_controller = ControllerBasePtr(new ControllerFrontSteerPID(*this) );
       else throw runtime_error(mrpt::format("[DynamicsAckermannDrivetrain] Unknown 'class'='%s' in <controller> XML node",sCtrlClass.c_str()));
 
