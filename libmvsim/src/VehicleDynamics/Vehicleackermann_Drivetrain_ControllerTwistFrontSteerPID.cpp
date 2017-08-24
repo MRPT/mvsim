@@ -19,7 +19,6 @@ DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::ControllerTwistFrontS
   KP(100),
   KI(0),
   KD(0),
-  I_MAX(10),
   max_torque(400.0)
 {
   // Get distance between wheels:
@@ -47,7 +46,6 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
     co.steer_ang = atan( m_r2f_L / R );
   }
 
-  m_PID.I_MAX_ABS = I_MAX;
   m_PID.KP = KP;
   m_PID.KI = KI;
   m_PID.KD = KD;
@@ -65,7 +63,6 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(cons
   params["KP"] = TParamEntry("%lf", &KP);
   params["KI"] = TParamEntry("%lf", &KI);
   params["KD"] = TParamEntry("%lf", &KD);
-  params["I_MAX"] = TParamEntry("%lf", &I_MAX);
   params["max_torque"] = TParamEntry("%lf", &max_torque);
 
   // Initial speed.

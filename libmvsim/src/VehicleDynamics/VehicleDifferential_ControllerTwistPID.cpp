@@ -18,8 +18,7 @@ DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(DynamicsDifferentia
 	setpoint_ang_speed(0),
 	KP(100),
 	KI(0),
-	KD(0),
-	I_MAX(10),
+  KD(0),
 	max_torque(100.0)
 {
 	// Get distance between wheels:
@@ -45,7 +44,6 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 
 	// Apply controller:
 	for (int i=0;i<2;i++) {
-		m_PID[i].I_MAX_ABS = I_MAX;
 		m_PID[i].KP = KP;
 		m_PID[i].KI = KI;
 		m_PID[i].KD = KD;
@@ -62,10 +60,7 @@ void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_n
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["KD"] = TParamEntry("%lf", &KD);
-	params["I_MAX"] = TParamEntry("%lf", &I_MAX);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
-
-
 
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
