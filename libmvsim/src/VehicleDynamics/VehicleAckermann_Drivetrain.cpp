@@ -322,10 +322,7 @@ void DynamicsAckermannDrivetrain::invoke_motor_controllers(const TSimulContext &
     for(int i = 0; i < 4; i++)
     {
       out_torque_per_wheel[i] = co.drive_torque * torque_split_per_wheel[i];
-      std::cout << torque_split_per_wheel[i] << "\t";
     }
-    std::cout << endl;
-
 
 		// Kinematically-driven steering wheels:
 		// Ackermann formulas for inner&outer weels turning angles wrt the equivalent (central) one:
