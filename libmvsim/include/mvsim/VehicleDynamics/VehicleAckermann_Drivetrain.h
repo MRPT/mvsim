@@ -109,6 +109,24 @@ namespace mvsim
       PID_Controller m_PID;
     };
 
+    class ControllerFrontSteerPID : public ControllerBase
+    {
+    public:
+      ControllerFrontSteerPID(DynamicsAckermannDrivetrain &veh);
+      static const char* class_name() { return "front_steer_pid"; }
+      //!< Directly set these values to tell the controller the desired setpoints
+      double setpoint_lin_speed, setpoint_steer_ang;  //!< desired velocities (m/s) and steering angle (rad)
+      virtual void control_step(const DynamicsAckermannDrivetrain::TControllerInput &ci, DynamicsAckermannDrivetrain::TControllerOutput &co); // See base class docs
+      virtual void load_config(const rapidxml::xml_node<char>&node ); // See base class docs
+      virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out);  // See base class docs
+
+      double KP,KI,KD; //!< PID controller parameters
+      double I_MAX; //!< I part maximum value (absolute value for clamp)
+      double max_torque; //!< Maximum abs. value torque (for clamp) [Nm]
+    private:
+      ControllerTwistFrontSteerPID m_twist_control;
+      double m_r2f_L;
+    };
 
 		const ControllerBasePtr & getController() const {return m_controller;}
 		ControllerBasePtr & getController() {return m_controller;}
