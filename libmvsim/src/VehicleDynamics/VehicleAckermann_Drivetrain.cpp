@@ -6,7 +6,7 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+  */
 
-#include <mvsim/VehicleDynamics/VehicleAckermannLSDiff.h>
+#include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include <mvsim/World.h>
 
 #include "xml_utils.h"
@@ -19,7 +19,7 @@ using namespace mvsim;
 using namespace std;
 
 // Ctor:
-DynamicsAckermannLSDiff::DynamicsAckermannLSDiff(World *parent) :
+DynamicsAckermannDrivetrain::DynamicsAckermannDrivetrain(World *parent) :
 	VehicleBase(parent, 4 /*num wheels*/),
 	m_max_steer_ang(mrpt::utils::DEG2RAD(30))
 {
@@ -56,10 +56,21 @@ DynamicsAckermannLSDiff::DynamicsAckermannLSDiff(World *parent) :
 	// Front-right:
 	m_wheels_info[WHEEL_FR].x = 1.3;
 	m_wheels_info[WHEEL_FR].y = -0.9;
+
+
+  m_FrontRearSplit = 0.5;
+  m_FrontLRSplit   = 0.5;
+  m_RearLRSplit    = 0.5;
+
+  m_FrontRearBias = 1.5;
+  m_FrontLRBias   = 1.5;
+  m_RearLRBias    = 1.5;
+
+  m_diff_type = DIFF_TORSEN_4WD;
 }
 
 /** The derived-class part of load_params_from_xml() */
-void DynamicsAckermannLSDiff::dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
+void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(const rapidxml::xml_node<char> *xml_node)
 {
 	// <chassis ...> </chassis>
 	const rapidxml::xml_node<char> * xml_chassis = xml_node->first_node("chassis");
@@ -145,10 +156,11 @@ void DynamicsAckermannLSDiff::dynamics_load_params_from_xml(const rapidxml::xml_
 }
 
 // See docs in base class:
-void DynamicsAckermannLSDiff::invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_torque_per_wheel)
+void DynamicsAckermannDrivetrain::invoke_motor_controllers(const TSimulContext &context, std::vector<double> &out_torque_per_wheel)
 {
 	// Longitudinal forces at each wheel:
 	out_torque_per_wheel.assign(4, 0.0);
+  double torque_split_per_wheel[4] = {0.0};
 
 	if (m_controller)
 	{
@@ -159,23 +171,120 @@ void DynamicsAckermannLSDiff::invoke_motor_controllers(const TSimulContext &cont
 		m_controller->control_step(ci,co);
 		// Take its output:
 
-    double t1, t2;
+    switch(m_diff_type)
+    {
+      case DIFF_OPEN_FRONT:
+      {
+        torque_split_per_wheel[WHEEL_FL] =      m_FrontLRSplit;
+        torque_split_per_wheel[WHEEL_FR] = 1. - m_FrontLRSplit;
+        torque_split_per_wheel[WHEEL_RL] = 0.0;
+        torque_split_per_wheel[WHEEL_RR] = 0.0;
+      } break;
+      case DIFF_OPEN_REAR:
+      {
+        torque_split_per_wheel[WHEEL_FL] = 0.0;
+        torque_split_per_wheel[WHEEL_FR] = 0.0;
+        torque_split_per_wheel[WHEEL_RL] =      m_RearLRSplit;
+        torque_split_per_wheel[WHEEL_RR] = 1. - m_RearLRSplit;
+      } break;
+      case DIFF_OPEN_4WD:
+      {
+        const double front =      m_FrontRearSplit;
+        const double rear  = 1. - m_FrontRearSplit;
 
-    computeDiffTorqueSplit(m_wheels_info[WHEEL_RL].getW(),
-                           m_wheels_info[WHEEL_RR].getW(),
-                           1.3,
-                           0.5,
-                           t1,
-                           t2);
+        torque_split_per_wheel[WHEEL_FL] = front * m_FrontLRSplit;
+        torque_split_per_wheel[WHEEL_FR] = front * (1. - m_FrontLRSplit);
+        torque_split_per_wheel[WHEEL_RL] = rear  * m_RearLRSplit;
+        torque_split_per_wheel[WHEEL_RR] = rear  * (1. - m_RearLRSplit);
+      } break;
+      case DIFF_TORSEN_FRONT:
+      {
+        // no torque to rear
+        torque_split_per_wheel[WHEEL_RL] = 0.0;
+        torque_split_per_wheel[WHEEL_RR] = 0.0;
 
+        computeDiffTorqueSplit(m_wheels_info[WHEEL_FL].getW(),
+                               m_wheels_info[WHEEL_FR].getW(),
+                               m_FrontLRBias,
+                               m_FrontLRSplit,
+                               torque_split_per_wheel[WHEEL_FL],
+                               torque_split_per_wheel[WHEEL_FR]);
+      } break;
+      case DIFF_TORSEN_REAR:
+      {
+      // no torque to front
+      torque_split_per_wheel[WHEEL_FL] = 0.0;
+      torque_split_per_wheel[WHEEL_FR] = 0.0;
 
+      computeDiffTorqueSplit(m_wheels_info[WHEEL_RL].getW(),
+                             m_wheels_info[WHEEL_RR].getW(),
+                             m_RearLRBias,
+                             m_RearLRSplit,
+                             torque_split_per_wheel[WHEEL_RL],
+                             torque_split_per_wheel[WHEEL_RR]);
+      } break;
+      case DIFF_TORSEN_4WD:
+      {
+        // here we have magic
+        const double w_FL = m_wheels_info[WHEEL_FL].getW();
+        const double w_FR = m_wheels_info[WHEEL_FR].getW();
+        const double w_RL = m_wheels_info[WHEEL_RL].getW();
+        const double w_RR = m_wheels_info[WHEEL_RR].getW();
+        const double w_F  = w_FL + w_FR;
+        const double w_R  = w_RL + w_RR;
 
-    out_torque_per_wheel[WHEEL_RL] = 0;
-    out_torque_per_wheel[WHEEL_RR] = 0;
-    out_torque_per_wheel[WHEEL_RL] = co.drive_torque * t1;
-    out_torque_per_wheel[WHEEL_RR] = co.drive_torque * t2;
+        double t_F = 0.0;
+        double t_R = 0.0;
+        // front-rear
+        computeDiffTorqueSplit(w_F,
+                               w_R,
+                               m_FrontRearBias,
+                               m_FrontRearSplit,
+                               t_F,
+                               t_R);
 
-    std::cout << co.drive_torque <<" " << m_wheels_info[WHEEL_FL].getW() << " " << m_wheels_info[WHEEL_FR].getW() << " " << t1 << " " << t2 << std::endl;
+        double t_FL = 0.0;
+        double t_FR = 0.0;
+        // front left-right
+        computeDiffTorqueSplit(w_FL,
+                               w_FR,
+                               m_FrontLRBias,
+                               m_FrontLRSplit,
+                               t_FL,
+                               t_FR);
+
+        double t_RL = 0.0;
+        double t_RR = 0.0;
+        // rear left-right
+        computeDiffTorqueSplit(w_RL,
+                               w_RR,
+                               m_RearLRBias,
+                               m_RearLRSplit,
+                               t_RL,
+                               t_RR);
+
+        torque_split_per_wheel[WHEEL_FL] = t_F * t_FL;
+        torque_split_per_wheel[WHEEL_FR] = t_F * t_FR;
+        torque_split_per_wheel[WHEEL_RL] = t_R * t_RL;
+        torque_split_per_wheel[WHEEL_RR] = t_R * t_RR;
+
+      } break;
+      default:
+      {
+        // fatal - unknown diff!
+        ASSERTMSG_(0, "DynamicsAckermannDrivetrain::invoke_motor_controllers: \
+                       Unknown differential type!")
+      }break;
+    }
+
+    ASSERT_(out_torque_per_wheel.size() == 4);
+    for(int i = 0; i < 4; i++)
+    {
+      out_torque_per_wheel[i] = co.drive_torque * torque_split_per_wheel[i];
+      std::cout << torque_split_per_wheel[i] << "\t";
+    }
+    std::cout << endl;
+
 
 		// Kinematically-driven steering wheels:
 		// Ackermann formulas for inner&outer weels turning angles wrt the equivalent (central) one:
@@ -187,7 +296,7 @@ void DynamicsAckermannLSDiff::invoke_motor_controllers(const TSimulContext &cont
 
 }
 
-void DynamicsAckermannLSDiff::computeFrontWheelAngles(const double desired_equiv_steer_ang, double &out_fl_ang,double &out_fr_ang) const
+void DynamicsAckermannDrivetrain::computeFrontWheelAngles(const double desired_equiv_steer_ang, double &out_fl_ang,double &out_fr_ang) const
 {
 	// EQ1: cot(d)+0.5*w/l = cot(do)
 	// EQ2: cot(di)=cot(do)-w/l
@@ -207,17 +316,17 @@ void DynamicsAckermannLSDiff::computeFrontWheelAngles(const double desired_equiv
   (delta_neg ? out_fl_ang:out_fr_ang) = atan(1.0/cot_do) * (delta_neg ? -1.0:1.0);
 }
 
-void DynamicsAckermannLSDiff::computeDiffTorqueSplit(const double w1,
+void DynamicsAckermannDrivetrain::computeDiffTorqueSplit(const double w1,
                                                      const double w2,
                                                      const double diffBias,
-                                                     const double defaultSplitRatio,
+                                                     const double splitRatio,
                                                      double &t1,
                                                      double &t2)
 {
-    if(mrpt::utils::signWithZero(w1) == 0 || mrpt::utils::signWithZero(w2) == 0)
+    if(mrpt::utils::signWithZero(w1) == 0.0 || mrpt::utils::signWithZero(w2) == 0.0)
     {
-      t1 = defaultSplitRatio;
-      t2 = 1.0 - defaultSplitRatio;
+      t1 = splitRatio;
+      t2 = 1.0 - splitRatio;
       return;
     }
 
@@ -228,19 +337,17 @@ void DynamicsAckermannLSDiff::computeDiffTorqueSplit(const double w1,
 
     const double delta = omegaMax - diffBias * omegaMin;
 
-    const double deltaTorque = (delta >= 0) ? delta / omegaMax : 0.0f;
-    const double f1 = (w1Abs - w2Abs >= 0) ? defaultSplitRatio * (1.0f - deltaTorque) : defaultSplitRatio * (1.0f + deltaTorque);
-    const double f2 = (w1Abs - w2Abs >= 0) ? (1.0f - defaultSplitRatio)*(1.0f + deltaTorque) : (1.0f - defaultSplitRatio) * (1.0f - deltaTorque);
+    const double deltaTorque = (delta > 0) ? delta / omegaMax : 0.0f;
+    const double f1 = (w1Abs - w2Abs > 0)  ? splitRatio * (1.0f - deltaTorque) : splitRatio * (1.0f + deltaTorque);
+    const double f2 = (w1Abs - w2Abs > 0)  ? (1.0f - splitRatio) * (1.0f + deltaTorque) : (1.0f - splitRatio) * (1.0f - deltaTorque);
     const double denom = 1.0f / (f1 + f2);
+
     t1 = f1 * denom;
     t2 = f2 * denom;
-
-    ASSERT_(std::abs(t1 + t2 - 1.0) < 1e-3);
-
 }
 
 // See docs in base class:
-vec3 DynamicsAckermannLSDiff::getVelocityLocalOdoEstimate() const
+vec3 DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate() const
 {
 	vec3 odo_vel;
 	// Equations:
