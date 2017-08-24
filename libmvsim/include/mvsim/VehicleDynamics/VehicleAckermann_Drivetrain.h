@@ -85,6 +85,30 @@ namespace mvsim
 			virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out);  // See base class docs
 		};
 
+    /** PID controller that controls the vehicle with front traction & steering from Twist commands */
+    class ControllerTwistFrontSteerPID : public ControllerBase
+    {
+    public:
+      ControllerTwistFrontSteerPID(DynamicsAckermannDrivetrain &veh);
+      static const char* class_name() { return "twist_front_steer_pid"; }
+
+      //!< Directly set these values to tell the controller the desired setpoints
+      double setpoint_lin_speed, setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
+      virtual void control_step(const DynamicsAckermannDrivetrain::TControllerInput &ci, DynamicsAckermannDrivetrain::TControllerOutput &co);
+      virtual void load_config(const rapidxml::xml_node<char>&node );
+      virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out);
+
+      double KP,KI,KD; //!< PID controller parameters
+      double I_MAX; //!< I part maximum value (absolute value for clamp)
+      double max_torque; //!< Maximum abs. value torque (for clamp) [Nm]
+
+      // See base docs.
+      virtual bool setTwistCommand(const double vx, const double wz) { setpoint_lin_speed=vx; setpoint_ang_speed=wz; return true; }
+    private:
+      double m_dist_fWheels, m_r2f_L;
+      PID_Controller m_PID;
+    };
+
 
 		const ControllerBasePtr & getController() const {return m_controller;}
 		ControllerBasePtr & getController() {return m_controller;}

@@ -54,7 +54,7 @@
 			      torsen_rear
 			      torsen_4wd -->
 
-			<drivetrain type="torsen_4wd">
+			<drivetrain type="torsen_rear">
 				<front_rear_split>0.65</front_rear_split>
 				<front_rear_bias>1.5</front_rear_bias>
 
@@ -65,12 +65,19 @@
 				<rear_left_right_bias>1.5</rear_left_right_bias>
 			</drivetrain>
 
-			<!--   Motor controller -->
+			<!--   Motor controller 
 			<controller class="raw">
-				<!-- Params -->
 				<torque>0</torque>
 				<steer_ang_deg>0</steer_ang_deg>
-			</controller>			
+			</controller>		-->
+
+			<!--   Motor controller -->
+			<controller class="twist_front_steer_pid">
+				<!-- Params -->
+				<KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+				<V>0.0</V><W>0</W>
+				<max_torque>60</max_torque>
+			</controller>		
 			
 		</dynamics>
 				
