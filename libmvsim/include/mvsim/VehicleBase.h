@@ -30,6 +30,10 @@
 #include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/utils/TColor.h>
 
+#include <string>
+#include <map>
+#include "CsvLogger.h"
+
 namespace mvsim
 {
 	/** Virtual base class for each vehicle "actor" in the simulation.
@@ -95,6 +99,8 @@ namespace mvsim
 		const TListSensors & getSensors() const { return m_sensors; }
 		TListSensors & getSensors() { return m_sensors; }
 
+    std::shared_ptr<CSVLogger> getLoggerPtr(std::string logger_name) { return m_loggers[logger_name]; }
+
 		/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 		const std::string & getName() const { return m_name;}
 
@@ -106,12 +112,23 @@ namespace mvsim
 		/** Get the vehicle index in the World */
 		size_t getVehicleIndex() const { return m_vehicle_index; }
 
+    void setRecording(bool record) { for(auto &logger : m_loggers) logger.second->setRecording(record); }
+    void clearLogs() { for(auto &logger : m_loggers) logger.second->clear(); }
+    void newLogSession() { for(auto &logger : m_loggers) logger.second->newSession(); }
+
 		/** Must create a new object in the scene and/or update it according to the current state.
 		  * If overrided in derived classes, it may be time-saving to call \a gui_update_common() and associated methods for 3D elements common to any vehicle.
 		  */
 		virtual void gui_update( mrpt::opengl::COpenGLScene &scene);
 
 		virtual ControllerBaseInterface * getControllerInterface() = 0;
+
+  protected:
+    std::map<std::string, std::shared_ptr<CSVLogger>> m_loggers;
+    std::string m_log_path;
+
+    virtual void initLoggers();
+    virtual void writeLogStrings();
 
 	protected:
 		// Protected ctor for class factory
@@ -174,7 +191,27 @@ namespace mvsim
     std::mutex       m_force_segments_for_rendering_cs;
 		std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
+  public: // data logger header entries
+    static constexpr char DL_TIMESTAMP[] = "timestamp";
+    static constexpr char LOGGER_POSE[] = "logger_pose";
+    static constexpr char LOGGER_WHEEL[] = "logger_wheel";
 
+    static constexpr char PL_Q_X[] = "Qx";
+    static constexpr char PL_Q_Y[] = "Qy";
+    static constexpr char PL_Q_Z[] = "Qz";
+    static constexpr char PL_Q_YAW[] = "Qyaw";
+    static constexpr char PL_Q_PITCH[] = "Qpitch";
+    static constexpr char PL_Q_ROLL[] = "Qroll";
+    static constexpr char PL_DQ_X[] = "dQx";
+    static constexpr char PL_DQ_Y[] = "dQy";
+    static constexpr char PL_DQ_Z[] = "dQz";
+
+    static constexpr char WL_TORQUE[] = "torque";
+    static constexpr char WL_WEIGHT[] = "weight";
+    static constexpr char WL_VEL_X[] = "velocity_x";
+    static constexpr char WL_VEL_Y[] = "velocity_y";
+    static constexpr char WL_FRIC_X[] = "friction_x";
+    static constexpr char WL_FRIC_Y[] = "friction_y";
 	}; // end VehicleBase
 
 	// Class factory:
