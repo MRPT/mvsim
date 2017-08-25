@@ -46,6 +46,7 @@ WardIagnemmaFriction::WardIagnemmaFriction(VehicleBase & my_vehicle, const rapid
 		parse_xmlnode_children_as_param(*node,params);
   }
 
+  
   MRPT_UNSCOPED_LOGGER_START;
   MRPT_LOG_DEBUG("WardIagnemma Creates!");
   MRPT_UNSCOPED_LOGGER_END;
@@ -97,6 +98,7 @@ void WardIagnemmaFriction::evaluate_friction(const FrictionBase::TFrictionInput 
 	//const mrpt::math::TPoint2D wheel_damping(- C_damping * input.wheel_speed.x, 0.0);
 
   // Actually, Ward-Iagnemma rolling resistance is here (longitudal one):
+
   const double F_rr = -sign(vel_w.x) * partial_mass * gravity * (m_R1 * (1 - exp(-m_A_roll * fabs(vel_w.x))) + m_R2 * fabs(vel_w.x));
 
   if(!m_logger.expired())
