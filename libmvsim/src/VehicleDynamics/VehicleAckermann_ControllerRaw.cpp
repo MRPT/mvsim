@@ -45,6 +45,8 @@ void DynamicsAckermann::ControllerRawForces::load_config(const rapidxml::xml_nod
 
 void DynamicsAckermann::ControllerRawForces::teleop_interface(const TeleopInput &in, TeleopOutput &out)
 {
+  ControllerBase::teleop_interface(in, out);
+
 	switch (in.keycode)
 	{
   case 'W':

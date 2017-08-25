@@ -11,6 +11,7 @@
 #include <mvsim/basic_types.h>  // fwrd decls.
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Wheel.h>
+#include <mvsim/CsvLogger.h>
 
 namespace mvsim
 {
@@ -39,9 +40,14 @@ namespace mvsim
 		/** Evaluates the net force on this wheel (in local coordinates). Refer to the manual for the theorical model. */
 		virtual void evaluate_friction(const FrictionBase::TFrictionInput &input, mrpt::math::TPoint2D &out_result_force_local) const = 0;
 
-	protected:
-		World* m_world;
-		VehicleBase & m_my_vehicle;
+    void setLogger(const std::weak_ptr<CSVLogger> &logger);
+
+  protected:
+    World* m_world;
+    VehicleBase & m_my_vehicle;
+
+    MRPT_TODO("When each wheel will have its own friction - remove this.")
+    std::weak_ptr<CSVLogger> m_logger;
 	};
 
   typedef std::shared_ptr<FrictionBase> FrictionBasePtr;

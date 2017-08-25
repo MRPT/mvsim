@@ -53,3 +53,8 @@ FrictionBase* FrictionBase::factory(VehicleBase & parent, const rapidxml::xml_no
 	return classFactory_friction.create(frict_class->value(),parent,xml_node);
 }
 
+void FrictionBase::setLogger(const std::weak_ptr<CSVLogger> &logger)
+{
+  m_logger = logger;
+}
+
