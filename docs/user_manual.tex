@@ -324,7 +324,109 @@ Outer and inner wheel are defined by the turn direction.
 Where $\omega_{veh}$ is angular velocity of the robot, $R_{ri}$ - radius of the rear wheel, $y_{ri}$ is the y position of the rear wheel, $\omega_{ri}$ is the angular velocity of the rear wheel. All calculations in the robot's local frame. 
 
 
-\textit{Nothing more interesting here.}
+\subsubsection{Ackermann-driven with drivetrain}
+
+This type of dynamics has the same geometry as simple Ackermann-driven robots. However, its powertrain is completely different. 
+
+Instead of one "motor" per wheel, this type of dynamics incorporates one "motor" linked to wheels by differentials. 
+
+There are two types of differentials:
+\begin{itemize}
+	\item Open differntial
+	\item Torsen-like locking differential
+\end{itemize}
+
+Each type of differential can be linked with following configurations: 
+\begin{itemize}
+	\item Front drive
+	\item Rear drive
+	\item 4WD
+\end{itemize}
+
+Split is customizable between all axes.
+
+As engine plays controller, whose torque output is then fed into differentials. 
+
+For open differential act the following equations:
+
+$
+\tau_{FL} = \tau_{motor} \cdot K_{s,f} \cdot K_{s,frl}
+$
+
+$
+\tau_{FR} = \tau_{motor} \cdot K_{s,f} \cdot (1 - K_{s,frl})
+$
+
+$
+\tau_{RL} = \tau_{motor} \cdot K_{s,r} \cdot K_{s,rrl}
+$
+
+$
+\tau_{RR} = \tau_{motor} \cdot K_{s,r} \cdot (1 - K_{s,frl})
+$
+
+
+Where $K_{s,f}, K_{s,frl}, K_{s,rrl}$ are split coefficients between axes.
+
+Different things happen for Torsen-like differentials. 
+As this type is self-locking, its torque output per wheel depends on wheel's velocity. Here is the function of selecting torque on the next time step based on previous time step velocity. First, introduce the bias ratio - the ratio indicating how much more torque the Torsen can send to the tire with more available traction, than is used by the tire with less traction. This ratio represents the "locking effect" of the differential. By default, it is set to $b = 1.5$
+
+$\omega_1, \omega_2$ and $t_1, t_2$ are the output axles angular velocities and torque splits respectively. $K_s$ is differential split when it is not locked.
+
+$
+\omega_{max} = max(|\omega_1|, |\omega_2|)
+$
+
+$
+\omega_{min} = min(|\omega_1|, |\omega_2|)
+$
+
+$
+\delta_{lock} = \omega_{max} - b \cdot \omega_{min}
+$
+
+$
+\delta_t = 
+\begin{cases}
+	\delta_{lock} \cdot \omega_{max}, & \mbox{if } \delta_{lock} > 0 \\
+	0, & \mbox{if } \delta_{lock} \leq 0
+\end{cases}
+$
+
+$
+f_1 = 
+\begin{cases}
+	K_s \cdot (1 - \delta_t) & \mbox{if } |\omega_1| - |\omega_2| > 0 \\
+	K_s \cdot (1 + \delta_t)
+\end{cases}
+$
+$
+f_2 = 
+\begin{cases}
+	(1 - K_s) \cdot (1 + \delta_t) & \mbox{if } |\omega_1| - |\omega_2| > 0 \\
+	(1 - K_s) \cdot (1 - \delta_t)
+\end{cases}
+$
+
+$
+t_1 = \frac{f_1}{f_1 + f_2}
+$
+
+$
+t_2 = \frac{f_2}{f_1 + f_2}
+$
+
+Torque delivery for 2WD is pretty straightforward. There is one input from "motor" and two outputs to wheels, so wheel torques are:
+
+$
+\tau_i = \tau_{motor} \cdot t_i
+$
+
+where $t_i$ is the output of Torsen differential for $i$-th wheel.
+
+With 4WD, torque is first split with Torsen to front and rear parts, each of them is than split independently with another Torsen.
+
+At the moment, there is no model of the engine and thus no feedback of tires torque to engine. 
 
 
 \subsection{Controllers}
@@ -345,8 +447,6 @@ Controllers' input and output are described by dynamics' classes that they use.
 \subsubsection{Differential raw controller}
 
 This type of controller has simple response to user's input integrating wheel torque with each simulation frame.
-
-\textit{Nothing more interesting here.}
 
 \subsubsection{Differential Twist controller}
 
@@ -386,13 +486,20 @@ R = \frac{\nu_s}{\omega_s}
 Desired velocities for wheels are computed by rotating desired linear velocity to the steering angle. 
 In the same way, actual velocities from "odometry" are computed.
 
-Then, velocity of the wheels is controlled with PID regulator.
+Then, torque of separate wheels is controlled with PID regulators for each wheel.
 
 \subsection{Ackermann steering controller}
 
 Ackermann steering controller takes as input linear speed an steering angle. 
 
-Then, it executes Ackermann twist controller to control wheels' velocities. 
+Then, it executes Ackermann twist controller to control wheels' torques. 
+
+\subsection{Ackermann-drivetrain controllers}
+
+These controllers' steering is identical to Ackermann contollers, however, their torque part is different. 
+
+These controllers' output acts like 'engine' for drivetrain. Instead of separate outputs to wheels, it has one torque output to differentials that will split it to separate wheels. 
+
 
 \nocite{*}
 \bibliographystyle{plain}
