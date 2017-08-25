@@ -2,10 +2,10 @@
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
   | Copyright (C) 2014  Jose Luis Blanco Claraco (University of Almeria)    |
+  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under GNU General Public License version 3                  |
   |   See <http://www.gnu.org/licenses/>                                    |
-  +-------------------------------------------------------------------------+  */
-
+  +-------------------------------------------------------------------------+ */
 
 #pragma once
 
@@ -18,4 +18,3 @@
 // Vehicles  ------------------
 #include "VehicleDynamics/VehicleDifferential.h"
 #include "VehicleDynamics/VehicleAckermann.h"
-

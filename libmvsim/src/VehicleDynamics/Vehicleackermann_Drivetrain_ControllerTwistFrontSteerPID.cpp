@@ -2,9 +2,10 @@
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
   | Copyright (C) 2014  Jose Luis Blanco Claraco (University of Almeria)    |
+  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under GNU General Public License version 3                  |
   |   See <http://www.gnu.org/licenses/>                                    |
-  +-------------------------------------------------------------------------+  */
+  +-------------------------------------------------------------------------+ */
 
 #include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include "xml_utils.h"
@@ -12,86 +13,106 @@
 using namespace mvsim;
 using namespace std;
 
-DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::ControllerTwistFrontSteerPID(DynamicsAckermannDrivetrain &veh) :
-  ControllerBase(veh),
-  setpoint_lin_speed(0),
-  setpoint_ang_speed(0),
-  KP(100),
-  KI(0),
-  KD(0),
-  max_torque(400.0)
+DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
+	ControllerTwistFrontSteerPID(DynamicsAckermannDrivetrain& veh)
+	: ControllerBase(veh),
+	  setpoint_lin_speed(0),
+	  setpoint_ang_speed(0),
+	  KP(100),
+	  KI(0),
+	  KD(0),
+	  max_torque(400.0)
 {
-  // Get distance between wheels:
-  m_dist_fWheels = m_veh.m_wheels_info[WHEEL_FL].y - m_veh.m_wheels_info[WHEEL_FR].y;
-  m_r2f_L = m_veh.m_wheels_info[WHEEL_FL].x - m_veh.m_wheels_info[WHEEL_RL].x;
+	// Get distance between wheels:
+	m_dist_fWheels =
+		m_veh.m_wheels_info[WHEEL_FL].y - m_veh.m_wheels_info[WHEEL_FR].y;
+	m_r2f_L = m_veh.m_wheels_info[WHEEL_FL].x - m_veh.m_wheels_info[WHEEL_RL].x;
 
-  ASSERT_(m_dist_fWheels > 0.0)
-  ASSERT_(m_r2f_L > 0.0)
+	ASSERT_(m_dist_fWheels > 0.0)
+	ASSERT_(m_r2f_L > 0.0)
 }
 
 void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
-  const DynamicsAckermannDrivetrain::TControllerInput &ci,
-  DynamicsAckermannDrivetrain::TControllerOutput &co)
+	const DynamicsAckermannDrivetrain::TControllerInput& ci,
+	DynamicsAckermannDrivetrain::TControllerOutput& co)
 {
+	// 1st: desired steering angle:
+	// --------------------------------
+	if (setpoint_ang_speed == 0)
+	{
+		co.steer_ang = 0.0;
+	}
+	else
+	{
+		const double R = setpoint_lin_speed / setpoint_ang_speed;
+		co.steer_ang = atan(m_r2f_L / R);
+	}
 
-  // 1st: desired steering angle:
-  // --------------------------------
-  if (setpoint_ang_speed==0)
-  {
-    co.steer_ang = 0.0;
-  }
-  else
-  {
-    const double R = setpoint_lin_speed / setpoint_ang_speed;
-    co.steer_ang = atan( m_r2f_L / R );
-  }
+	m_PID.KP = KP;
+	m_PID.KI = KI;
+	m_PID.KD = KD;
+	m_PID.max_out = max_torque;
 
-  m_PID.KP = KP;
-  m_PID.KI = KI;
-  m_PID.KD = KD;
-  m_PID.max_out = max_torque;
+	const double vel_act = m_veh.getVelocityLocalOdoEstimate().vals[0];
+	const double vel_des = setpoint_lin_speed;
 
-  const double vel_act = m_veh.getVelocityLocalOdoEstimate().vals[0];
-  const double vel_des = setpoint_lin_speed;
-
-  co.drive_torque = -m_PID.compute(vel_des - vel_act, ci.context.dt);  // "-" because \tau<0 makes robot moves forwards.
+	co.drive_torque = -m_PID.compute(
+		vel_des - vel_act,
+		ci.context.dt);  // "-" because \tau<0 makes robot moves forwards.
 }
 
-void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(const rapidxml::xml_node<char>&node )
+void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(
+	const rapidxml::xml_node<char>& node)
 {
-  std::map<std::string,TParamEntry> params;
-  params["KP"] = TParamEntry("%lf", &KP);
-  params["KI"] = TParamEntry("%lf", &KI);
-  params["KD"] = TParamEntry("%lf", &KD);
-  params["max_torque"] = TParamEntry("%lf", &max_torque);
+	std::map<std::string, TParamEntry> params;
+	params["KP"] = TParamEntry("%lf", &KP);
+	params["KI"] = TParamEntry("%lf", &KI);
+	params["KD"] = TParamEntry("%lf", &KD);
+	params["max_torque"] = TParamEntry("%lf", &max_torque);
 
-  // Initial speed.
-  params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
-  params["W"] = TParamEntry("%lf_deg", &this->setpoint_ang_speed);
+	// Initial speed.
+	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
+	params["W"] = TParamEntry("%lf_deg", &this->setpoint_ang_speed);
 
-  parse_xmlnode_children_as_param(node,params);
+	parse_xmlnode_children_as_param(node, params);
 }
 
-void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::teleop_interface(const TeleopInput &in, TeleopOutput &out)
+void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
+	teleop_interface(const TeleopInput& in, TeleopOutput& out)
 {
-  ControllerBase::teleop_interface(in, out);
+	ControllerBase::teleop_interface(in, out);
 
-  switch (in.keycode)
-  {
-  case 'W':
-  case 'w':  setpoint_lin_speed += 0.1; break;
+	switch (in.keycode)
+	{
+		case 'W':
+		case 'w':
+			setpoint_lin_speed += 0.1;
+			break;
 
-  case 'S':
-  case 's':  setpoint_lin_speed -= 0.1; break;
+		case 'S':
+		case 's':
+			setpoint_lin_speed -= 0.1;
+			break;
 
-  case 'A':
-  case 'a':  setpoint_ang_speed += 1.0*M_PI/180.0; break;
+		case 'A':
+		case 'a':
+			setpoint_ang_speed += 1.0 * M_PI / 180.0;
+			break;
 
-  case 'D':
-  case 'd':  setpoint_ang_speed -= 1.0*M_PI/180.0;  break;
+		case 'D':
+		case 'd':
+			setpoint_ang_speed -= 1.0 * M_PI / 180.0;
+			break;
 
-  case ' ':  setpoint_lin_speed= .0; setpoint_ang_speed=.0; break;
-  };
-  out.append_gui_lines+="[Controller="+ string(class_name()) +"] Teleop keys: w/s=incr/decr lin speed. a/d=left/right steering. spacebar=stop.\n";
-  out.append_gui_lines+=mrpt::format("setpoint: v=%.03f w=%.03f deg/s\n", setpoint_lin_speed, setpoint_ang_speed*180.0/M_PI);
+		case ' ':
+			setpoint_lin_speed = .0;
+			setpoint_ang_speed = .0;
+			break;
+	};
+	out.append_gui_lines += "[Controller=" + string(class_name()) +
+							"] Teleop keys: w/s=incr/decr lin speed. "
+							"a/d=left/right steering. spacebar=stop.\n";
+	out.append_gui_lines += mrpt::format(
+		"setpoint: v=%.03f w=%.03f deg/s\n", setpoint_lin_speed,
+		setpoint_ang_speed * 180.0 / M_PI);
 }
