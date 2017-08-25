@@ -18,8 +18,7 @@ DynamicsAckermann::ControllerFrontSteerPID::ControllerFrontSteerPID(DynamicsAcke
 	setpoint_steer_ang(0),
 	KP(100),
 	KI(0),
-	KD(0),
-	I_MAX(10),
+	KD(0),	
 	max_torque(100.0),
 	m_twist_control(veh)
 {
@@ -52,8 +51,7 @@ void DynamicsAckermann::ControllerFrontSteerPID::control_step(
 
 	m_twist_control.KP = KP;
 	m_twist_control.KI = KI;
-	m_twist_control.KD = KD;
-	m_twist_control.I_MAX = I_MAX;
+  m_twist_control.KD = KD;
 	m_twist_control.max_torque = max_torque;
 
 	m_twist_control.control_step(ci,co);
@@ -65,8 +63,7 @@ void DynamicsAckermann::ControllerFrontSteerPID::load_config(const rapidxml::xml
 	std::map<std::string,TParamEntry> params;
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
-	params["KD"] = TParamEntry("%lf", &KD);
-	params["I_MAX"] = TParamEntry("%lf", &I_MAX);
+	params["KD"] = TParamEntry("%lf", &KD);	
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
 
 

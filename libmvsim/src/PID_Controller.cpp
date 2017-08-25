@@ -7,35 +7,45 @@
   +-------------------------------------------------------------------------+  */
 
 #include <mvsim/PID_Controller.h>
-#include <algorithm> // max
 
 using namespace mvsim;
 
 
 PID_Controller::PID_Controller() :
-	KP(1.0),KI(.0),KD(.0),
-	I_MAX_ABS(10.), max_out(0),m_i_term(0),m_last_err(0)
+  KP(1.0), KI(.0), KD(.0),
+  max_out(0),
+  lastOutput(0),
+  e_n(0),
+  e_n_1(0),
+  e_n_2(0)
 {
 }
 
 /** err = desired-actual, dt=ellapsed time in secs */
 double PID_Controller::compute(double err, double dt)
 {
-	// P:
-	const double p_term = KP * err;
-	// I:
-	m_i_term += dt*KI*err;
-	m_i_term = std::max( -I_MAX_ABS, std::min(I_MAX_ABS,m_i_term) );
-	// D:
-	const double d_term = dt>0 ? KD * (err-m_last_err)/dt : 0.0;
-	m_last_err = err;
+  e_n_2 = e_n_1;
+  e_n_1 = e_n;
+  e_n = err;
 
-	// PID:
-	double ret = p_term + m_i_term + d_term;
+  double output = lastOutput
+             + KP * (e_n - e_n_1)
+             + KI *  e_n * dt
+             + KD * (e_n - 2 * e_n_1 + e_n_2) / dt;
 
-	// Clamp:
-	if (ret>max_out) ret = max_out; else if (ret<-max_out) ret = -max_out;
+  // prevent integral windup
+  if(max_out != 0.0 && (output < -max_out || output > max_out))
+  {
+    output -= KI * e_n * dt;
+  }
 
-	//printf("I=%.04f err=%.03f => ret:%.02f\n",m_i_term, err, ret);
-	return ret;
+  lastOutput = output;
+
+  if(max_out != 0.0)
+  {
+    if(output < -max_out) output = -max_out;
+    if(output >  max_out) output =  max_out;
+  }
+
+  return output;
 }
