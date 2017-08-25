@@ -80,8 +80,7 @@ namespace mvsim
 			virtual void load_config(const rapidxml::xml_node<char>&node ); // See base class docs
 			virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out);  // See base class docs
 
-			double KP,KI,KD; //!< PID controller parameters
-			double I_MAX; //!< I part maximum value (absolute value for clamp)
+      double KP,KI,KD; //!< PID controller parameters
 			double max_torque; //!< Maximum abs. value torque (for clamp) [Nm]
 
 			// See base docs.
@@ -103,8 +102,7 @@ namespace mvsim
 			virtual void load_config(const rapidxml::xml_node<char>&node ); // See base class docs
 			virtual void teleop_interface(const TeleopInput &in, TeleopOutput &out);  // See base class docs
 
-			double KP,KI,KD; //!< PID controller parameters
-			double I_MAX; //!< I part maximum value (absolute value for clamp)
+      double KP,KI,KD; //!< PID controller parameters
 			double max_torque; //!< Maximum abs. value torque (for clamp) [Nm]
 		private:
 			ControllerTwistFrontSteerPID m_twist_control;
