@@ -11,6 +11,7 @@
 cmake_minimum_required(VERSION 3.1)
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
 PROJECT(mvsim)  # Must match the ROS package name.
+set (CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
