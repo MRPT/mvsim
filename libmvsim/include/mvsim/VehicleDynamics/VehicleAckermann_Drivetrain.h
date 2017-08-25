@@ -18,12 +18,17 @@
 
 namespace mvsim
 {
-/** Implementation of 4 wheels Ackermann-driven vehicles.
-  * \sa class factory in VehicleBase::factory
-  */
-class DynamicsAckermann : public VehicleBase
+/** Implementation of 4 wheels Ackermann-driven vehicles with drivetrain
+  * As motor input of drivetrain acts controller torque.
+  * Differential model is based on observations of Torsen-like differentials
+ * work.
+  * http://www.flashoffroad.com/features/Torsen/Torsen_white_paper.pdf
+  *
+	* \sa class factory in VehicleBase::factory
+	*/
+class DynamicsAckermannDrivetrain : public VehicleBase
 {
-	DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsAckermann)
+	DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsAckermannDrivetrain)
    public:
 	// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 	enum
@@ -34,7 +39,20 @@ class DynamicsAckermann : public VehicleBase
 		WHEEL_FR = 3
 	};
 
-	DynamicsAckermann(World* parent);
+	enum DifferentialType
+	{
+		DIFF_OPEN_FRONT = 0,
+		DIFF_OPEN_REAR = 1,
+		DIFF_OPEN_4WD = 2,
+
+		DIFF_TORSEN_FRONT = 3,
+		DIFF_TORSEN_REAR = 4,
+		DIFF_TORSEN_4WD = 5,
+
+		DIFF_MAX
+	};
+
+	DynamicsAckermannDrivetrain(World* parent);
 
 	/** The maximum steering angle (rad). Determines min turning radius */
 	double getMaxSteeringAngle() const { return m_max_steer_ang; }
@@ -48,34 +66,28 @@ class DynamicsAckermann : public VehicleBase
 	};
 	struct TControllerOutput
 	{
-		double fl_torque, fr_torque, rl_torque, rr_torque;
+		double drive_torque;
 		double steer_ang;  //!< Equivalent ackerman steering angle
-		TControllerOutput()
-			: fl_torque(0),
-			  fr_torque(0),
-			  rl_torque(0),
-			  rr_torque(0),
-			  steer_ang(0)
-		{
-		}
+		TControllerOutput() : drive_torque(0), steer_ang(0) {}
 	};
 
-	/** Virtual base for controllers of vehicles of type DynamicsAckermann */
-	typedef ControllerBaseTempl<DynamicsAckermann> ControllerBase;
+	/** Virtual base for controllers of vehicles of type DynamicsAckermannLSDiff
+	 */
+	typedef ControllerBaseTempl<DynamicsAckermannDrivetrain> ControllerBase;
 	typedef std::shared_ptr<ControllerBase> ControllerBasePtr;
 
 	class ControllerRawForces : public ControllerBase
 	{
 	   public:
-		ControllerRawForces(DynamicsAckermann& veh);
+		ControllerRawForces(DynamicsAckermannDrivetrain& veh);
 		static const char* class_name() { return "raw"; }
 		//!< Directly set these values to tell the controller the desired
 		//!setpoints
-		double setpoint_wheel_torque_l, setpoint_wheel_torque_r,
-			setpoint_steer_ang;
+		double setpoint_wheel_torque, setpoint_steer_ang;
 		virtual void control_step(
-			const DynamicsAckermann::TControllerInput& ci,
-			DynamicsAckermann::TControllerOutput& co);  // See base class docs
+			const DynamicsAckermannDrivetrain::TControllerInput& ci,
+			DynamicsAckermannDrivetrain::TControllerOutput&
+				co);  // See base class docs
 		virtual void load_config(
 			const rapidxml::xml_node<char>& node);  // See base class docs
 		virtual void teleop_interface(
@@ -87,19 +99,17 @@ class DynamicsAckermann : public VehicleBase
 	class ControllerTwistFrontSteerPID : public ControllerBase
 	{
 	   public:
-		ControllerTwistFrontSteerPID(DynamicsAckermann& veh);
+		ControllerTwistFrontSteerPID(DynamicsAckermannDrivetrain& veh);
 		static const char* class_name() { return "twist_front_steer_pid"; }
 		//!< Directly set these values to tell the controller the desired
 		//!setpoints
 		double setpoint_lin_speed,
 			setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
 		virtual void control_step(
-			const DynamicsAckermann::TControllerInput& ci,
-			DynamicsAckermann::TControllerOutput& co);  // See base class docs
-		virtual void load_config(
-			const rapidxml::xml_node<char>& node);  // See base class docs
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out);  // See base class docs
+			const DynamicsAckermannDrivetrain::TControllerInput& ci,
+			DynamicsAckermannDrivetrain::TControllerOutput& co);
+		virtual void load_config(const rapidxml::xml_node<char>& node);
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out);
 
 		double KP, KI, KD;  //!< PID controller parameters
 		double max_torque;  //!< Maximum abs. value torque (for clamp) [Nm]
@@ -114,15 +124,13 @@ class DynamicsAckermann : public VehicleBase
 
 	   private:
 		double m_dist_fWheels, m_r2f_L;
-		PID_Controller m_PID[2];  //<! [0]:fl, [1]: fr
+		PID_Controller m_PID;
 	};
 
-	/** PID controller that controls the vehicle with front traction & steering
-	 * from steer & linear speed commands */
 	class ControllerFrontSteerPID : public ControllerBase
 	{
 	   public:
-		ControllerFrontSteerPID(DynamicsAckermann& veh);
+		ControllerFrontSteerPID(DynamicsAckermannDrivetrain& veh);
 		static const char* class_name() { return "front_steer_pid"; }
 		//!< Directly set these values to tell the controller the desired
 		//!setpoints
@@ -130,8 +138,9 @@ class DynamicsAckermann : public VehicleBase
 														//!(m/s) and steering
 														//!angle (rad)
 		virtual void control_step(
-			const DynamicsAckermann::TControllerInput& ci,
-			DynamicsAckermann::TControllerOutput& co);  // See base class docs
+			const DynamicsAckermannDrivetrain::TControllerInput& ci,
+			DynamicsAckermannDrivetrain::TControllerOutput&
+				co);  // See base class docs
 		virtual void load_config(
 			const rapidxml::xml_node<char>& node);  // See base class docs
 		virtual void teleop_interface(
@@ -164,6 +173,12 @@ class DynamicsAckermann : public VehicleBase
 		const double desired_equiv_steer_ang, double& out_fl_ang,
 		double& out_fr_ang) const;
 
+	/** Computes differential split for Torsen-like limited slip differentials.
+	 */
+	void computeDiffTorqueSplit(
+		const double w1, const double w2, const double diffBias,
+		const double defaultSplitRatio, double& t1, double& t2);
+
    protected:
 	// See base class docs
 	virtual void dynamics_load_params_from_xml(
@@ -177,5 +192,15 @@ class DynamicsAckermann : public VehicleBase
 
 	double m_max_steer_ang;  //!< The maximum steering angle (rad). Determines
 							 //!min turning radius
+
+	DifferentialType m_diff_type;
+
+	double m_FrontRearSplit;
+	double m_FrontLRSplit;
+	double m_RearLRSplit;
+
+	double m_FrontRearBias;
+	double m_FrontLRBias;
+	double m_RearLRBias;
 };
 }

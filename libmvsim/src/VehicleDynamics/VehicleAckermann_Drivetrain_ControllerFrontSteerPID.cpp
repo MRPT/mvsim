@@ -7,14 +7,14 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/VehicleDynamics/VehicleAckermann.h>
+#include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
 
-DynamicsAckermann::ControllerFrontSteerPID::ControllerFrontSteerPID(
-	DynamicsAckermann& veh)
+DynamicsAckermannDrivetrain::ControllerFrontSteerPID::ControllerFrontSteerPID(
+	DynamicsAckermannDrivetrain& veh)
 	: ControllerBase(veh),
 	  setpoint_lin_speed(0),
 	  setpoint_steer_ang(0),
@@ -30,9 +30,9 @@ DynamicsAckermann::ControllerFrontSteerPID::ControllerFrontSteerPID(
 }
 
 // See base class docs
-void DynamicsAckermann::ControllerFrontSteerPID::control_step(
-	const DynamicsAckermann::TControllerInput& ci,
-	DynamicsAckermann::TControllerOutput& co)
+void DynamicsAckermannDrivetrain::ControllerFrontSteerPID::control_step(
+	const DynamicsAckermannDrivetrain::TControllerInput& ci,
+	DynamicsAckermannDrivetrain::TControllerOutput& co)
 {
 	// Equivalent v/w velocities:
 	const double v = setpoint_lin_speed;
@@ -62,7 +62,7 @@ void DynamicsAckermann::ControllerFrontSteerPID::control_step(
 	co.steer_ang = setpoint_steer_ang;  // Mainly for the case of v=0
 }
 
-void DynamicsAckermann::ControllerFrontSteerPID::load_config(
+void DynamicsAckermannDrivetrain::ControllerFrontSteerPID::load_config(
 	const rapidxml::xml_node<char>& node)
 {
 	std::map<std::string, TParamEntry> params;
@@ -78,7 +78,7 @@ void DynamicsAckermann::ControllerFrontSteerPID::load_config(
 	parse_xmlnode_children_as_param(node, params);
 }
 
-void DynamicsAckermann::ControllerFrontSteerPID::teleop_interface(
+void DynamicsAckermannDrivetrain::ControllerFrontSteerPID::teleop_interface(
 	const TeleopInput& in, TeleopOutput& out)
 {
 	ControllerBase::teleop_interface(in, out);

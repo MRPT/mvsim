@@ -7,62 +7,61 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/VehicleDynamics/VehicleAckermann.h>
+#include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
 
-DynamicsAckermann::ControllerFrontSteerPID::ControllerFrontSteerPID(
-	DynamicsAckermann& veh)
+DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
+	ControllerTwistFrontSteerPID(DynamicsAckermannDrivetrain& veh)
 	: ControllerBase(veh),
 	  setpoint_lin_speed(0),
-	  setpoint_steer_ang(0),
+	  setpoint_ang_speed(0),
 	  KP(100),
 	  KI(0),
 	  KD(0),
-	  max_torque(100.0),
-	  m_twist_control(veh)
+	  max_torque(400.0)
 {
 	// Get distance between wheels:
+	m_dist_fWheels =
+		m_veh.m_wheels_info[WHEEL_FL].y - m_veh.m_wheels_info[WHEEL_FR].y;
 	m_r2f_L = m_veh.m_wheels_info[WHEEL_FL].x - m_veh.m_wheels_info[WHEEL_RL].x;
+
+	ASSERT_(m_dist_fWheels > 0.0)
 	ASSERT_(m_r2f_L > 0.0)
 }
 
-// See base class docs
-void DynamicsAckermann::ControllerFrontSteerPID::control_step(
-	const DynamicsAckermann::TControllerInput& ci,
-	DynamicsAckermann::TControllerOutput& co)
+void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
+	const DynamicsAckermannDrivetrain::TControllerInput& ci,
+	DynamicsAckermannDrivetrain::TControllerOutput& co)
 {
-	// Equivalent v/w velocities:
-	const double v = setpoint_lin_speed;
-	double w;
-	if (setpoint_steer_ang == 0.0)
+	// 1st: desired steering angle:
+	// --------------------------------
+	if (setpoint_ang_speed == 0)
 	{
-		w = 0.0;
+		co.steer_ang = 0.0;
 	}
 	else
 	{
-		// ang = atan(r2f_L/R)  ->  R= r2f_L / tan(ang)
-		// R = v/w              ->   w=v/R
-		const double R = m_r2f_L / tan(setpoint_steer_ang);
-		w = v / R;
+		const double R = setpoint_lin_speed / setpoint_ang_speed;
+		co.steer_ang = atan(m_r2f_L / R);
 	}
 
-	// Let the twist controller do the calculations:
-	m_twist_control.setpoint_lin_speed = v;
-	m_twist_control.setpoint_ang_speed = w;
+	m_PID.KP = KP;
+	m_PID.KI = KI;
+	m_PID.KD = KD;
+	m_PID.max_out = max_torque;
 
-	m_twist_control.KP = KP;
-	m_twist_control.KI = KI;
-	m_twist_control.KD = KD;
-	m_twist_control.max_torque = max_torque;
+	const double vel_act = m_veh.getVelocityLocalOdoEstimate().vals[0];
+	const double vel_des = setpoint_lin_speed;
 
-	m_twist_control.control_step(ci, co);
-	co.steer_ang = setpoint_steer_ang;  // Mainly for the case of v=0
+	co.drive_torque = -m_PID.compute(
+		vel_des - vel_act,
+		ci.context.dt);  // "-" because \tau<0 makes robot moves forwards.
 }
 
-void DynamicsAckermann::ControllerFrontSteerPID::load_config(
+void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(
 	const rapidxml::xml_node<char>& node)
 {
 	std::map<std::string, TParamEntry> params;
@@ -73,13 +72,13 @@ void DynamicsAckermann::ControllerFrontSteerPID::load_config(
 
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
-	params["STEER_ANG"] = TParamEntry("%lf_deg", &this->setpoint_steer_ang);
+	params["W"] = TParamEntry("%lf_deg", &this->setpoint_ang_speed);
 
 	parse_xmlnode_children_as_param(node, params);
 }
 
-void DynamicsAckermann::ControllerFrontSteerPID::teleop_interface(
-	const TeleopInput& in, TeleopOutput& out)
+void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
+	teleop_interface(const TeleopInput& in, TeleopOutput& out)
 {
 	ControllerBase::teleop_interface(in, out);
 
@@ -97,25 +96,23 @@ void DynamicsAckermann::ControllerFrontSteerPID::teleop_interface(
 
 		case 'A':
 		case 'a':
-			setpoint_steer_ang += 1.0 * M_PI / 180.0;
-			mrpt::utils::keep_min(
-				setpoint_steer_ang, m_veh.getMaxSteeringAngle());
+			setpoint_ang_speed += 1.0 * M_PI / 180.0;
 			break;
 
 		case 'D':
 		case 'd':
-			setpoint_steer_ang -= 1.0 * M_PI / 180.0;
-			mrpt::utils::keep_max(
-				setpoint_steer_ang, -m_veh.getMaxSteeringAngle());
+			setpoint_ang_speed -= 1.0 * M_PI / 180.0;
 			break;
+
 		case ' ':
 			setpoint_lin_speed = .0;
+			setpoint_ang_speed = .0;
 			break;
 	};
 	out.append_gui_lines += "[Controller=" + string(class_name()) +
 							"] Teleop keys: w/s=incr/decr lin speed. "
 							"a/d=left/right steering. spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
-		"setpoint: v=%.03f steer=%.03f deg\n", setpoint_lin_speed,
-		setpoint_steer_ang * 180.0 / M_PI);
+		"setpoint: v=%.03f w=%.03f deg/s\n", setpoint_lin_speed,
+		setpoint_ang_speed * 180.0 / M_PI);
 }

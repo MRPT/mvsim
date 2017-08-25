@@ -9,16 +9,22 @@
 
 #include <mvsim/World.h>
 #include <mvsim/VehicleBase.h>
-#include <mvsim/FrictionModels/DefaultFriction.h>
+#include <mvsim/FrictionModels/WardIagnemmaFriction.h>
 
 #include <rapidxml.hpp>
 #include "xml_utils.h"
 
 using namespace mvsim;
 
-DefaultFriction::DefaultFriction(
+static double sign(double x) { return (double)((x > 0) - (x < 0)); }
+WardIagnemmaFriction::WardIagnemmaFriction(
 	VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
-	: FrictionBase(my_vehicle), m_mu(0.8), m_C_damping(1.0)
+	: FrictionBase(my_vehicle),
+	  m_mu(0.8),
+	  m_C_damping(1.0),
+	  m_A_roll(50),
+	  m_R1(0.08),
+	  m_R2(0.05)
 {
 	// Sanity: we can tolerate node==NULL (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
@@ -31,14 +37,20 @@ DefaultFriction::DefaultFriction(
 		std::map<std::string, TParamEntry> params;
 		params["mu"] = TParamEntry("%lf", &m_mu);
 		params["C_damping"] = TParamEntry("%lf", &m_C_damping);
-
+		params["A_roll"] = TParamEntry("%lf", &m_A_roll);
+		params["R1"] = TParamEntry("%lf", &m_R1);
+		params["R2"] = TParamEntry("%lf", &m_R2);
 		// Parse XML params:
 		parse_xmlnode_children_as_param(*node, params);
 	}
+
+	MRPT_UNSCOPED_LOGGER_START;
+	MRPT_LOG_DEBUG("WardIagnemma Creates!");
+	MRPT_UNSCOPED_LOGGER_END;
 }
 
 // See docs in base class.
-void DefaultFriction::evaluate_friction(
+void WardIagnemmaFriction::evaluate_friction(
 	const FrictionBase::TFrictionInput& input,
 	mrpt::math::TPoint2D& out_result_force_local) const
 {
@@ -89,10 +101,23 @@ void DefaultFriction::evaluate_friction(
 	// const mrpt::math::TPoint2D wheel_damping(- C_damping *
 	// input.wheel_speed.x, 0.0);
 
+	// Actually, Ward-Iagnemma rolling resistance is here (longitudal one):
+
+	const double F_rr =
+		-sign(vel_w.x) * partial_mass * gravity *
+		(m_R1 * (1 - exp(-m_A_roll * fabs(vel_w.x))) + m_R2 * fabs(vel_w.x));
+
+	if (!m_logger.expired())
+	{
+		m_logger.lock()->updateColumn("F_rr", F_rr);
+	}
+
 	const double I_yy = input.wheel.Iyy;
+	//                                  There are torques this is force   v
 	double F_friction_lon = (input.motor_torque - I_yy * desired_wheel_alpha -
 							 C_damping * input.wheel.getW()) /
-							R;
+								R +
+							F_rr;
 
 	// Slippage: The friction with the ground is not infinite:
 	F_friction_lon = b2Clamp(F_friction_lon, -max_friction, max_friction);

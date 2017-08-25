@@ -7,37 +7,33 @@
   |   See <http://www.gnu.org/licenses/>                                    |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/VehicleDynamics/VehicleAckermann.h>
+#include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
 
-DynamicsAckermann::ControllerRawForces::ControllerRawForces(
-	DynamicsAckermann& veh)
-	: ControllerBase(veh),
-	  setpoint_wheel_torque_l(0),
-	  setpoint_wheel_torque_r(0),
-	  setpoint_steer_ang(0)
+DynamicsAckermannDrivetrain::ControllerRawForces::ControllerRawForces(
+	DynamicsAckermannDrivetrain& veh)
+	: ControllerBase(veh), setpoint_wheel_torque(0), setpoint_steer_ang(0)
 {
+	MRPT_TODO("I see this file!")
 }
 
 // See base class docs
-void DynamicsAckermann::ControllerRawForces::control_step(
-	const DynamicsAckermann::TControllerInput& ci,
-	DynamicsAckermann::TControllerOutput& co)
+void DynamicsAckermannDrivetrain::ControllerRawForces::control_step(
+	const DynamicsAckermannDrivetrain::TControllerInput& ci,
+	DynamicsAckermannDrivetrain::TControllerOutput& co)
 {
-	co.fl_torque = this->setpoint_wheel_torque_l;
-	co.fr_torque = this->setpoint_wheel_torque_r;
+	co.drive_torque = this->setpoint_wheel_torque;
 	co.steer_ang = this->setpoint_steer_ang;
 }
 
-void DynamicsAckermann::ControllerRawForces::load_config(
+void DynamicsAckermannDrivetrain::ControllerRawForces::load_config(
 	const rapidxml::xml_node<char>& node)
 {
 	std::map<std::string, TParamEntry> params;
-	params["fl_torque"] = TParamEntry("%lf", &setpoint_wheel_torque_l);
-	params["fr_torque"] = TParamEntry("%lf", &setpoint_wheel_torque_r);
+	params["torque"] = TParamEntry("%lf", &setpoint_wheel_torque);
 
 	// Initial speed.
 	params["steer_ang_deg"] = TParamEntry("%lf_deg", &this->setpoint_steer_ang);
@@ -45,7 +41,7 @@ void DynamicsAckermann::ControllerRawForces::load_config(
 	parse_xmlnode_children_as_param(node, params);
 }
 
-void DynamicsAckermann::ControllerRawForces::teleop_interface(
+void DynamicsAckermannDrivetrain::ControllerRawForces::teleop_interface(
 	const TeleopInput& in, TeleopOutput& out)
 {
 	ControllerBase::teleop_interface(in, out);
@@ -54,14 +50,12 @@ void DynamicsAckermann::ControllerRawForces::teleop_interface(
 	{
 		case 'W':
 		case 'w':
-			setpoint_wheel_torque_l -= 1.0;
-			setpoint_wheel_torque_r -= 1.0;
+			setpoint_wheel_torque -= 1.0;
 			break;
 
 		case 'S':
 		case 's':
-			setpoint_wheel_torque_l += 1.0;
-			setpoint_wheel_torque_r += 1.0;
+			setpoint_wheel_torque += 1.0;
 			break;
 
 		case 'A':
@@ -79,14 +73,14 @@ void DynamicsAckermann::ControllerRawForces::teleop_interface(
 			break;
 
 		case ' ':
-			setpoint_wheel_torque_l = .0;
-			setpoint_wheel_torque_r = .0;
+			setpoint_wheel_torque = .0;
 			break;
 	};
+
 	out.append_gui_lines += "[Controller=" + string(class_name()) +
 							"] Teleop keys: w/s=incr/decr torques. "
 							"a/d=left/right steering. spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
-		"setpoint: t=%.03f steer=%.03f deg\n", setpoint_wheel_torque_l,
+		"setpoint: t=%.03f steer=%.03f deg\n", setpoint_wheel_torque,
 		setpoint_steer_ang * 180.0 / M_PI);
 }
