@@ -24,6 +24,8 @@ void DynamicsDifferential::ControllerRawForces::control_step(
 
 void DynamicsDifferential::ControllerRawForces::teleop_interface(const TeleopInput &in, TeleopOutput &out)
 {
+  ControllerBase::teleop_interface(in, out);
+
 	switch (in.keycode)
 	{
   case 'W':

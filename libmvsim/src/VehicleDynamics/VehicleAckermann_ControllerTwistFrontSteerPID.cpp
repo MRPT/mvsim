@@ -131,6 +131,8 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(const rapidxml
 
 void DynamicsAckermann::ControllerTwistFrontSteerPID::teleop_interface(const TeleopInput &in, TeleopOutput &out)
 {
+  ControllerBase::teleop_interface(in, out);
+
 	switch (in.keycode)
 	{
   case 'W':
