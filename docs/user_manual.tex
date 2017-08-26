@@ -4,7 +4,6 @@
 \usepackage{amsmath}
 \usepackage{array}
 \usepackage{float}
-\usepackage{subfigure}
 \usepackage{color}
 \usepackage{listings}
 \usepackage[utf8x]{inputenc}
@@ -12,6 +11,9 @@
 \usepackage{rotating}
 \usepackage[english]{babel}
 \usepackage{hyperref}
+\usepackage{subfig}
+\usepackage{pdfpages}
+
 
 \usepackage{amsfonts,amsmath,amsthm,amssymb}
 \usepackage{algorithm}
@@ -121,12 +123,45 @@ Each step has several sub steps:
 \item Actual time step - updates dynamics
 \item After time step - everything needed to be done with updated state
 \end{itemize}
+
+\subsubsection{Logging}
+
+Each vehicle is equipped with parameters logger(s). This logger is not configurable and can be rewritten programmaticaly. 
+
+Logger are implemented via \textbf{CsvLogger} class and make log files in CSV format which then can be opened via any editor or viewer. 
+
+Loggers control is introduced via robot controllers, each controller controls only loggers of its robot. 
+
+Best results in visualizing offers QtiPlot \ref{fig:qtiplot_example1}.
+
+\begin{figure}[h!]%\textsl{}
+	\centering
+	\subfloat[Velocity vs rolling resistance]{{\includegraphics[width=5cm]{imgs/vel_frr} }}%
+	\qquad
+	\subfloat[Velocity vs drive torque]{{\includegraphics[width=5cm]{imgs/vel_torque} }}%
+	\caption{Loggers with QtiPlot example}%
+	\label{fig:qtiplot_example1}%
+\end{figure}
+
+
+At the moment, following characteristics are logged: 
+\begin{itemize}
+	\item Pose ($x, y, z, \alpha, \beta, \gamma$)
+	\item Body velocity ($\dot{x}, \dot{z}, \dot{z}$)
+	\item Wheel torque ($\tau$)
+	\item Wheel weight ($m_{wp}$)
+	\item Wheel velocity ($v_x, v_y$)
+\end{itemize}
+
+Loggers support runtime clear and creating new session. The new session mode finalizes current log files and starts to write to a new bunch of them.
+
+
 \newpage
 
 \section{Physics used}
 \subsection{Wheel dynamics}
 
-We introduce wheels as a mass with cylindrical shape.
+We introduce wheels as a mass with cylindrical shape (Figure \ref{fig:wheel_forces}).
 Each wheel has following properties:
 \begin{itemize}
 \item location of the wheel as to the chassis ref point [m,rad] in local coordinates $L_w = \{ x_w, y_w, \Phi \}$
@@ -139,6 +174,13 @@ Each wheel has following properties:
 \end{itemize}
 
 Thus, each wheel is represented as $W = \{L_w, d_w, w_w, m_w, I_{yy}, \phi_w, \omega_w\}$
+
+\begin{figure}[h!]
+  \centerline{\includegraphics[width=0.7\linewidth]{imgs/wheel_forces}}
+  \caption{Wheel forces}
+  \label{fig:wheel_forces}
+\end{figure}
+
 
 \subsection{Friction models}
 \subsubsection{Friction models base}
@@ -236,14 +278,44 @@ With new friction, we evaluate angular acceleration \textit{(code says angular v
 
 Using given angular acceleration, we update wheel's angular velocity:
 \begin{center}
-$
+$$
 \omega_w = \omega_w + \alpha \cdot \Delta t
-$
+$$
 \end{center}
 
 \newpage
-\subsubsection{TODO: Advanced friction}
+\subsubsection{Ward-Iagnemma friction}
+This type of friction is an implementation of paper from Chris Ward and Karl Iagnemma \cite{ward-iagnemma-friction}.
+
+Rolling resistance is generally modeled as a combination of
+static- and velocity-dependant forces [17], [21]. Authors propose function with form similar to Pacejka's model \cite{pacejka_tire_model} as a continuously differentiable
+formulation of the rolling resistance with the static force
+smoothed at zero velocity to avoid a singularity. The rolling
+resistance is
+
+
+$$
+F_{rr} = −sign(V_{fwd}) \cdot N \cdot (R_1 \cdot (1 − e^{−A_{roll} |V_{fwd} |}
+)+R_2 \cdot |V_{fwd}|)
+$$
+
+
+Where $A_{roll}$, $R_1$, $R_2$ are the model-dependent coefficients. The impact of these coefficients is shown at figure \ref{fig:wi_rr} taken from original paper.
+
+\begin{figure}[h!]
+	\centerline{\includegraphics[width = 0.7\textwidth]{imgs/wi_rr}}	
+	\caption{Ward-Iagnemma rolling resistance}
+	\label{fig:wi_rr}
+\end{figure}
+
+This force $F_{rr}$ is then added to $F_{f,lon}$.
+
+Default constants were chosen as in reference paper and showed good stability and robust results. In addition, they can be altered via configuration file. 
+
+
+
 \newpage
+
 
 \subsection{Vehicle models}
 
@@ -349,21 +421,21 @@ As engine plays controller, whose torque output is then fed into differentials.
 
 For open differential act the following equations:
 
-$
+$$
 \tau_{FL} = \tau_{motor} \cdot K_{s,f} \cdot K_{s,frl}
-$
+$$
 
-$
+$$
 \tau_{FR} = \tau_{motor} \cdot K_{s,f} \cdot (1 - K_{s,frl})
-$
+$$
 
-$
+$$
 \tau_{RL} = \tau_{motor} \cdot K_{s,r} \cdot K_{s,rrl}
-$
+$$
 
-$
+$$
 \tau_{RR} = \tau_{motor} \cdot K_{s,r} \cdot (1 - K_{s,frl})
-$
+$$
 
 
 Where $K_{s,f}, K_{s,frl}, K_{s,rrl}$ are split coefficients between axes.
@@ -373,54 +445,54 @@ As this type is self-locking, its torque output per wheel depends on wheel's vel
 
 $\omega_1, \omega_2$ and $t_1, t_2$ are the output axles angular velocities and torque splits respectively. $K_s$ is differential split when it is not locked.
 
-$
+$$
 \omega_{max} = max(|\omega_1|, |\omega_2|)
-$
+$$
 
-$
+$$
 \omega_{min} = min(|\omega_1|, |\omega_2|)
-$
+$$
 
-$
+$$
 \delta_{lock} = \omega_{max} - b \cdot \omega_{min}
-$
+$$
 
-$
+$$
 \delta_t = 
 \begin{cases}
 	\delta_{lock} \cdot \omega_{max}, & \mbox{if } \delta_{lock} > 0 \\
 	0, & \mbox{if } \delta_{lock} \leq 0
 \end{cases}
-$
+$$
 
-$
+$$
 f_1 = 
 \begin{cases}
 	K_s \cdot (1 - \delta_t) & \mbox{if } |\omega_1| - |\omega_2| > 0 \\
 	K_s \cdot (1 + \delta_t)
 \end{cases}
-$
-$
+$$
+$$
 f_2 = 
 \begin{cases}
 	(1 - K_s) \cdot (1 + \delta_t) & \mbox{if } |\omega_1| - |\omega_2| > 0 \\
 	(1 - K_s) \cdot (1 - \delta_t)
 \end{cases}
-$
+$$
 
-$
+$$
 t_1 = \frac{f_1}{f_1 + f_2}
-$
+$$
 
-$
+$$
 t_2 = \frac{f_2}{f_1 + f_2}
-$
+$$
 
 Torque delivery for 2WD is pretty straightforward. There is one input from "motor" and two outputs to wheels, so wheel torques are:
 
-$
+$$
 \tau_i = \tau_{motor} \cdot t_i
-$
+$$
 
 where $t_i$ is the output of Torsen differential for $i$-th wheel.
 
@@ -453,12 +525,12 @@ This type of controller has simple response to user's input integrating wheel to
 Differential twist controller uses PID regulator to control linear and angular speed of the robot. 
 
 Setpoints for $v_r$ and $v_l$ are calculated as following:
-\[
+$$
 v_l = \nu - \frac{\omega}{2} \cdot w
-\]
-\[
+$$
+$$
 v_r = \nu + \frac{\omega}{2} \cdot w
-\]
+$$
 
 where $\nu$ is desired linear velocity and $\omega$ is desired angular velocity.
 
@@ -468,38 +540,37 @@ Inverted formula are suitable to get actual velocities from odometry estimates.
 
 Then, velocity of the wheels is controlled with PID regulator.
 
-\subsection{Ackermann raw controller}
+\subsubsection{Ackermann raw controller}
 
 As a raw differential controller, raw Ackermann controller integrates user input and sets wheel torques and steering wheel angle.
 
-\subsection{Ackermann twist controller}
+\subsubsection{Ackermann twist controller}
 
 Ackermann twist controller uses PID regulator to control wheel torques responding to angular and linear velocity commands. 
 Turn radius and desired steering angle are calculated: 
-\[
+$$
 R = \frac{\nu_s}{\omega_s}
-\]
-\[
+$$
+$$
 \alpha = atan(\frac{w}{r})
-\]
+$$
 
 Desired velocities for wheels are computed by rotating desired linear velocity to the steering angle. 
 In the same way, actual velocities from "odometry" are computed.
 
 Then, torque of separate wheels is controlled with PID regulators for each wheel.
 
-\subsection{Ackermann steering controller}
+\subsubsection{Ackermann steering controller}
 
 Ackermann steering controller takes as input linear speed an steering angle. 
 
 Then, it executes Ackermann twist controller to control wheels' torques. 
 
-\subsection{Ackermann-drivetrain controllers}
+\subsubsection{Ackermann-drivetrain controllers}
 
 These controllers' steering is identical to Ackermann contollers, however, their torque part is different. 
 
 These controllers' output acts like 'engine' for drivetrain. Instead of separate outputs to wheels, it has one torque output to differentials that will split it to separate wheels. 
-
 
 \nocite{*}
 \bibliographystyle{plain}
