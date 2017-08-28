@@ -8,13 +8,13 @@ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and 
 This package includes the C++ library `mvsim`, a standalone app and a ROS node.
 
 License: GNU General Public License version 3
-Copyright (C) 2014 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
+Copyright (C) 2017 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
 [![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
 
 Docs
 ----------
-  * (TO-DO) **The mvsim manual** is the main reference document. (Write me!!)
+  * The mvsim manual is the main reference document can be found in docs/user_manual.tex.
   * (TO-DO) ROS tutorials (Write me!!)
   * http://wiki.ros.org/mvsim
 
@@ -28,6 +28,7 @@ Main features
   * Vehicle models: 
     * Differential driven (2 & 4 wheel drive).
     * Ackermann steering (kinematic & dynamic steering, different mechanical drive models).
+    * Ackermann steering with mechanical differentials of full grade.
   * Sensors: 
     * Laser scanners: Robots see each other, their own bodies, etc.
   * Interface to vehicles: Choose among:
@@ -39,7 +40,8 @@ Compiling: standalone
 -----------------------
 Requisites:
  * A decent C++ compiler!
- * MRPT (>=1.0.0 required; >=1.2.2 recommended): In Windows, build from sources or install precompiled binaries. 
+ * CMake >= 3.1
+ * MRPT (>=2.0.0 required): In Windows, build from sources or install precompiled binaries. 
  * Box2D: Will use an embedded copy if no system version is found.
 
 In Ubuntu, this will install all requirements:
@@ -50,6 +52,9 @@ ROS: Compiling & usage
 ------------------------
  * Install: 
      sudo apt-get install ros-$ROS_DISTRO-mvsim
+
+ * Build:
+ 	 clone to your catkin workspace and build as usual
 
  * Usage: See docs and tutorials in http://wiki.ros.org/mvsim 
 
