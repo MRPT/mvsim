@@ -41,7 +41,7 @@ Compiling: standalone
 Requisites:
  * A decent C++ compiler!
  * CMake >= 3.1
- * MRPT (>=2.0.0 required): In Windows, build from sources or install precompiled binaries. 
+ * MRPT (>=1.5.4 from 1.5 series; or >=2.0.0): In Windows, build from sources or install precompiled binaries. 
  * Box2D: Will use an embedded copy if no system version is found.
 
 In Ubuntu, this will install all requirements:
