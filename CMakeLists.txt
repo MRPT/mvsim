@@ -37,7 +37,8 @@ endif()
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin
-        REQUIRED
+#        REQUIRED  # mvsim can be built with or without ROS, as an standalong lib
+	QUIET
 	COMPONENTS
 	roscpp tf mrpt_bridge dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs dynamic_reconfigure message_generation
 	)
