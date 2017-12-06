@@ -99,8 +99,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 	{
 		for (unsigned int i = 0; i < 5; i++)
 		{
-			mrpt::opengl::CSetOfObjects::Ptr gl_obj =
-				mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+			auto gl_obj = mrpt::opengl::CSetOfObjects::Create();
 			gl_obj->setName(mrpt::format("level_%u", i));
 			gl_scene->insert(gl_obj);
 		}

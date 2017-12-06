@@ -550,15 +550,13 @@ void VehicleBase::gui_update_common(
 		const size_t nWs = this->getNumWheels();
 		if (!m_gl_chassis)
 		{
-			m_gl_chassis =
-				mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
 
 			// Wheels shape:
 			m_gl_wheels.resize(nWs);
 			for (size_t i = 0; i < nWs; i++)
 			{
-				m_gl_wheels[i] =
-					mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+				m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
 				this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
 				m_gl_chassis->insert(m_gl_wheels[i]);
 			}
@@ -573,8 +571,7 @@ void VehicleBase::gui_update_common(
 			SCENE_INSERT_Z_ORDER(scene, 1, m_gl_chassis);
 
 			// Visualization of forces:
-			m_gl_forces =
-				mrpt::make_aligned_shared<mrpt::opengl::CSetOfLines>();
+			m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 			m_gl_forces->setLineWidth(3.0);
 			m_gl_forces->setColor_u8(mrpt::utils::TColor(0xff, 0xff, 0xff));
 

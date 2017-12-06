@@ -86,7 +86,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 
 	// Build mesh:
-	m_gl_mesh = mrpt::make_aligned_shared<mrpt::opengl::CMesh>();
+	m_gl_mesh = mrpt::opengl::CMesh::Create();
 
 	m_gl_mesh->enableTransparency(false);
 
