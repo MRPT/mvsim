@@ -66,8 +66,7 @@ void GroundGrid::gui_update(mrpt::opengl::COpenGLScene& scene)
 	// 1st call OR gridmap changed?
 	if (!m_gl_groundgrid)
 	{
-		m_gl_groundgrid =
-			mrpt::make_aligned_shared<mrpt::opengl::CGridPlaneXY>();
+		m_gl_groundgrid = mrpt::opengl::CGridPlaneXY::Create();
 		m_gl_groundgrid->setPlaneLimits(m_x_min, m_x_max, m_y_min, m_y_max);
 		m_gl_groundgrid->setGridFrequency(m_interval);
 		m_gl_groundgrid->setColor(mrpt::utils::TColorf(m_color));

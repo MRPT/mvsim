@@ -288,10 +288,10 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 	// ----------------------------------
 	if (!m_gl_block)
 	{
-		m_gl_block = mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+		m_gl_block = mrpt::opengl::CSetOfObjects::Create();
 
 		// Block shape:
-		mrpt::opengl::CPolyhedron::Ptr gl_poly =
+		auto gl_poly =
 			mrpt::opengl::CPolyhedron::CreateCustomPrism(
 				m_block_poly, m_block_z_max - m_block_z_min);
 		gl_poly->setLocation(0, 0, m_block_z_min);
@@ -301,7 +301,7 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 		SCENE_INSERT_Z_ORDER(scene, 1, m_gl_block);
 
 		// Visualization of forces:
-		m_gl_forces = mrpt::make_aligned_shared<mrpt::opengl::CSetOfLines>();
+		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(mrpt::utils::TColor(0xff, 0xff, 0xff));
 

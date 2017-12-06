@@ -15,6 +15,7 @@
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <thread>
 
 // Auto-generated from cfg/ directory.
 #include <mvsim/mvsimNodeConfig.h>
