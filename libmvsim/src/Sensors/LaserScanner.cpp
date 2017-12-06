@@ -13,6 +13,7 @@
 #include <mvsim/VehicleBase.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/random.h>
+#include <mrpt/version.h>
 
 #include "xml_utils.h"
 
@@ -219,6 +220,13 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		const double AA =
 			(scan.rightToLeft ? 1.0 : -1.0) * (scan.aperture / (nRays - 1));
 
+		auto &rnd =
+#if MRPT_VERSION >= 0x199
+			mrpt::random::getRandomGenerator();
+#else
+			mrpt::random::randomGenerator;
+#endif
+
 		for (size_t i = 0; i < nRays; i++, A += AA)
 		{
 			const b2Vec2 endPt = b2Vec2(
@@ -240,7 +248,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 					callback.m_point.x - sensorPt.x,
 					callback.m_point.y - sensorPt.y);
 				range +=
-					mrpt::random::randomGenerator.drawGaussian1D_normalized() *
+					rnd.drawGaussian1D_normalized() *
 					m_rangeStdNoise;
 			}
 			else
