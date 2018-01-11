@@ -32,7 +32,7 @@ namespace mvsim
 	*  - "%s" => "val" is assumed to be a pointer to a std::string. Strings are
  * trimmed of whitespaces.
 	*  - "%color" => Expected values: "#RRGGBB[AA]" ([00-FF] each). "val" is
- * assumed to be a pointer to a mrpt::utils::TColor
+ * assumed to be a pointer to a TColor
 	*  - "%pose2d" => Expects "X Y YAW_DEG". "Val" is a pointer to
  * mrpt::poses::CPose2D
 	*  - "%pose2d_ptr3d" => Expects "X Y YAW_DEG". "Val" is a pointer to

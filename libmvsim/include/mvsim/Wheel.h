@@ -12,7 +12,15 @@
 #include <mvsim/basic_types.h>
 
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/version.h>
+
+#if MRPT_VERSION<0x199
 #include <mrpt/utils/TColor.h>
+using mrpt::utils::TColor;
+#else
+#include <mrpt/img/TColor.h>
+using mrpt::img::TColor;
+#endif
 
 namespace mvsim
 {
@@ -33,7 +41,7 @@ class Wheel
 	double mass;  //!< [kg]
 	double Iyy;  //!< Inertia: computed automatically from geometry at
 				 //!constructor and at \a loadFromXML(), but can be overrided.
-	mrpt::utils::TColor color;  //!< Color for OpenGL rendering
+	TColor color;  //!< Color for OpenGL rendering
 
 	Wheel();
 	void getAs3DObject(mrpt::opengl::CSetOfObjects& obj);

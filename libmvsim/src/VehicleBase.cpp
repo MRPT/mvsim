@@ -22,7 +22,6 @@
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
 #include <rapidxml_print.hpp>
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
 
@@ -565,7 +564,7 @@ void VehicleBase::gui_update_common(
 				mrpt::opengl::CPolyhedron::CreateCustomPrism(
 					m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
 			gl_poly->setLocation(0, 0, m_chassis_z_min);
-			gl_poly->setColor(mrpt::utils::TColorf(m_chassis_color));
+			gl_poly->setColor(TColorf(m_chassis_color));
 			m_gl_chassis->insert(gl_poly);
 
 			SCENE_INSERT_Z_ORDER(scene, 1, m_gl_chassis);
@@ -573,7 +572,7 @@ void VehicleBase::gui_update_common(
 			// Visualization of forces:
 			m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 			m_gl_forces->setLineWidth(3.0);
-			m_gl_forces->setColor_u8(mrpt::utils::TColor(0xff, 0xff, 0xff));
+			m_gl_forces->setColor_u8(TColor(0xff, 0xff, 0xff));
 
 			SCENE_INSERT_Z_ORDER(
 				scene, 3, m_gl_forces);  // forces are in global coords

@@ -27,7 +27,7 @@ DynamicsDifferential::DynamicsDifferential(World* parent)
 	m_chassis_mass = 15.0;
 	m_chassis_z_min = 0.05;
 	m_chassis_z_max = 0.6;
-	m_chassis_color = mrpt::utils::TColor(0xff, 0x00, 0x00);
+	m_chassis_color = TColor(0xff, 0x00, 0x00);
 
 	// Default shape:
 	m_chassis_poly.clear();
