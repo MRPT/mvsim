@@ -8,7 +8,12 @@
   +-------------------------------------------------------------------------+ */
 #include <mvsim/World.h>
 
+#if MRPT_VERSION<0x199
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
+#else
+#include <mrpt/core/format.h>
+#endif
+
 #include <mrpt/system/filesystem.h>  // extractFileDirectory()
 
 #include <iostream>  // for debugging

@@ -29,7 +29,7 @@ DynamicsAckermannDrivetrain::DynamicsAckermannDrivetrain(World* parent)
 	m_chassis_mass = 500.0;
 	m_chassis_z_min = 0.20;
 	m_chassis_z_max = 1.40;
-	m_chassis_color = mrpt::utils::TColor(0xe8, 0x30, 0x00);
+	m_chassis_color = TColor(0xe8, 0x30, 0x00);
 
 	// Default shape:
 	m_chassis_poly.clear();

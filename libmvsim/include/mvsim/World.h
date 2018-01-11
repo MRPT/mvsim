@@ -13,9 +13,23 @@
 #include <mvsim/WorldElements/WorldElementBase.h>
 #include <mvsim/Block.h>
 
+#include <mrpt/gui/CDisplayWindow3D.h>
+
+#include <mrpt/version.h>
+#if MRPT_VERSION<0x199
+#include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/utils/CTimeLogger.h>
 #include <mrpt/utils/CTicTac.h>
-#include <mrpt/gui/CDisplayWindow3D.h>
+using CTicTac;
+using CTimeLogger;
+#else
+#include <mrpt/core/format.h>
+#include <mrpt/core/bits_math.h>
+#include <mrpt/system/CTimeLogger.h>
+#include <mrpt/system/CTicTac.h>
+using mrpt::system::CTicTac;
+using mrpt::system::CTimeLogger;
+#endif
 
 #include <mrpt/version.h>
 #if MRPT_VERSION >= 0x130
@@ -159,7 +173,7 @@ class World
 		return m_world_elements;
 	}
 
-	mrpt::utils::CTimeLogger& getTimeLogger() { return m_timlogger; }
+	CTimeLogger& getTimeLogger() { return m_timlogger; }
 	/** Replace macros, prefix the base_path if input filename is relative, etc.
 	  */
 	std::string resolvePath(const std::string& in_path) const;
@@ -255,7 +269,7 @@ class World
 	// -------- GUI stuff ----------
 	mrpt::gui::CDisplayWindow3D::Ptr m_gui_win;
 
-	mrpt::utils::CTimeLogger m_timlogger;
-	mrpt::utils::CTicTac m_timer_iteration;
+	CTimeLogger m_timlogger;
+	CTicTac m_timer_iteration;
 };
 }

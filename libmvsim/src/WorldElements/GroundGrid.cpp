@@ -69,7 +69,7 @@ void GroundGrid::gui_update(mrpt::opengl::COpenGLScene& scene)
 		m_gl_groundgrid = mrpt::opengl::CGridPlaneXY::Create();
 		m_gl_groundgrid->setPlaneLimits(m_x_min, m_x_max, m_y_min, m_y_max);
 		m_gl_groundgrid->setGridFrequency(m_interval);
-		m_gl_groundgrid->setColor(mrpt::utils::TColorf(m_color));
+		m_gl_groundgrid->setColor(TColorf(m_color));
 		m_gl_groundgrid->setLineWidth(m_line_width);
 
 		SCENE_INSERT_Z_ORDER(scene, 0, m_gl_groundgrid);

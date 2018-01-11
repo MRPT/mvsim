@@ -17,9 +17,19 @@
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
 #include <rapidxml_print.hpp>
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
+
+#include <mrpt/version.h>
+#if MRPT_VERSION<0x199
+#include <mrpt/utils/utils_defs.h>  // mrpt::format()
+using mrpt::utils;
+#else
+#include <mrpt/core/format.h>
+#include <mrpt/core/bits_math.h>
+using namespace mrpt::img;
+using namespace mrpt;
+#endif
 
 #include <sstream>  // std::stringstream
 #include <map>
@@ -295,7 +305,7 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 			mrpt::opengl::CPolyhedron::CreateCustomPrism(
 				m_block_poly, m_block_z_max - m_block_z_min);
 		gl_poly->setLocation(0, 0, m_block_z_min);
-		gl_poly->setColor(mrpt::utils::TColorf(m_block_color));
+		gl_poly->setColor(TColorf(m_block_color));
 		m_gl_block->insert(gl_poly);
 
 		SCENE_INSERT_Z_ORDER(scene, 1, m_gl_block);
@@ -303,7 +313,7 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 		// Visualization of forces:
 		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 		m_gl_forces->setLineWidth(3.0);
-		m_gl_forces->setColor_u8(mrpt::utils::TColor(0xff, 0xff, 0xff));
+		m_gl_forces->setColor_u8(TColor(0xff, 0xff, 0xff));
 
 		SCENE_INSERT_Z_ORDER(
 			scene, 3, m_gl_forces);  // forces are in global coords
@@ -340,7 +350,7 @@ void Block::updateMaxRadiusFromPoly()
 		 it != m_block_poly.end(); ++it)
 	{
 		const float n = it->norm();
-		mrpt::utils::keep_max(m_max_radius, n);
+		keep_max(m_max_radius, n);
 	}
 }
 
@@ -358,8 +368,8 @@ void Block::create_multibody_system(b2World* world)
 	{
 		// Convert shape into Box2D format:
 		const size_t nPts = m_block_poly.size();
-		ASSERT_(nPts >= 3)
-		ASSERT_BELOWEQ_(nPts, (size_t)b2_maxPolygonVertices)
+		ASSERT_(nPts >= 3);
+		ASSERT_BELOWEQ_(nPts, (size_t)b2_maxPolygonVertices);
 		std::vector<b2Vec2> pts(nPts);
 		for (size_t i = 0; i < nPts; i++)
 			pts[i] = b2Vec2(m_block_poly[i].x, m_block_poly[i].y);
@@ -426,7 +436,7 @@ void Block::create_multibody_system(b2World* world)
 void Block::apply_force(
 	double fx, double fy, double local_ptx, double local_pty)
 {
-	ASSERT_(m_b2d_block_body)
+	ASSERT_(m_b2d_block_body);
 	const b2Vec2 wPt = m_b2d_block_body->GetWorldPoint(
 		b2Vec2(local_ptx, local_pty));  // Application point -> world coords
 	m_b2d_block_body->ApplyForce(b2Vec2(fx, fy), wPt, true /*wake up*/);

@@ -10,7 +10,15 @@
 #include "XMLClassesRegistry.h"
 
 #include <iostream>
+
+#include <mrpt/version.h>
+#if MRPT_VERSION<0x199
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
+#else
+#include <mrpt/core/format.h>
+#include <mrpt/core/bits_math.h>
+#endif
+
 
 using namespace mvsim;
 using namespace std;

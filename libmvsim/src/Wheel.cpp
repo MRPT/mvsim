@@ -39,7 +39,7 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 
 	auto gl_wheel = mrpt::opengl::CCylinder::Create(
 			0.5 * diameter, 0.5 * diameter, this->width, 15, 1);
-	gl_wheel->setColor(mrpt::utils::TColorf(color));
+	gl_wheel->setColor(TColorf(color));
 	gl_wheel->setPose(
 		mrpt::poses::CPose3D(
 			0, 0.5 * width, 0, 0, 0, mrpt::utils::DEG2RAD(90)));

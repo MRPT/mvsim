@@ -42,7 +42,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["elevation_image_min_z"] = TParamEntry("%lf", &img_min_z);
 	params["elevation_image_max_z"] = TParamEntry("%lf", &img_max_z);
 
-	mrpt::utils::TColor mesh_color(0xa0, 0xe0, 0xa0);
+	TColor mesh_color(0xa0, 0xe0, 0xa0);
 	params["mesh_color"] = TParamEntry("%color", &mesh_color);
 
 	params["resolution"] = TParamEntry("%lf", &m_resolution);

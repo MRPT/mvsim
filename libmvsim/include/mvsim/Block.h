@@ -23,7 +23,13 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/CSetOfLines.h>
+#if MRPT_VERSION<0x199
 #include <mrpt/utils/TColor.h>
+using mrpt::utils::TColor;
+#else
+#include <mrpt/img/TColor.h>
+using mrpt::img::TColor;
+#endif
 
 namespace mvsim
 {
@@ -127,7 +133,7 @@ class Block : public VisualObject, public Simulable
 	double m_max_radius;  //!< Automatically computed from m_block_poly upon
 						  //!each change via updateMaxRadiusFromPoly()
 	double m_block_z_min, m_block_z_max;
-	mrpt::utils::TColor m_block_color;
+	TColor m_block_color;
 	mrpt::math::TPoint2D m_block_com;  //!< In local coordinates
 
 	double m_lateral_friction;  //!< Default: 0.5
