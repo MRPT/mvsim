@@ -11,12 +11,22 @@
 #include "xml_utils.h"
 
 #include <cstdio>
-#include <mrpt/utils/utils_defs.h>
-#include <mrpt/utils/TColor.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mrpt/math/lightweight_geom_data.h>
 #include <mrpt/system/string_utils.h>
+
+#include <mrpt/version.h>
+#if MRPT_VERSION<0x199
+#include <mrpt/utils/utils_defs.h>  // mrpt::format()
+#include <mrpt/utils/TColor.h>
+using mrpt::utils::TColor;
+#else
+#include <mrpt/core/format.h>
+#include <mrpt/core/bits_math.h>
+#include <mrpt/img/TColor.h>
+using mrpt::img::TColor;
+#endif
 
 using namespace rapidxml;
 using namespace mvsim;
@@ -91,8 +101,8 @@ void TParamEntry::parse(
 					"%s Error parsing '%s'='%s' (Expected "
 					"format:'#RRGGBB[AA]')",
 					function_name_context, varName.c_str(), str.c_str()));
-		mrpt::utils::TColor& col = *reinterpret_cast<mrpt::utils::TColor*>(val);
-		col = mrpt::utils::TColor(r, g, b, a);
+		TColor& col = *reinterpret_cast<TColor*>(val);
+		col = TColor(r, g, b, a);
 	}
 	// "%pose2d"
 	// "%pose2d_ptr3d"

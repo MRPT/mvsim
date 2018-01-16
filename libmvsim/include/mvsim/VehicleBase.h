@@ -29,7 +29,13 @@
 
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/CSetOfLines.h>
+#if MRPT_VERSION<0x199
 #include <mrpt/utils/TColor.h>
+using mrpt::utils::TColor;
+#else
+#include <mrpt/img/TColor.h>
+using mrpt::img::TColor;
+#endif
 
 #include <string>
 #include <map>
@@ -227,7 +233,7 @@ class VehicleBase : public VisualObject, public Simulable
 	double m_max_radius;  //!< Automatically computed from m_chassis_poly upon
 						  //!each change via updateMaxRadiusFromPoly()
 	double m_chassis_z_min, m_chassis_z_max;
-	mrpt::utils::TColor m_chassis_color;
+	TColor m_chassis_color;
 
 	mrpt::math::TPoint2D m_chassis_com;  //!< In local coordinates (this
 										 //!excludes the mass of wheels)

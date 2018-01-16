@@ -8,7 +8,14 @@
   +-------------------------------------------------------------------------+ */
 #include <mvsim/World.h>
 
+
+#include <mrpt/version.h>
+#if MRPT_VERSION<0x199
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
+#else
+#include <mrpt/core/format.h>
+#endif
+
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CGridPlaneXY.h>
 
@@ -99,8 +106,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 	{
 		for (unsigned int i = 0; i < 5; i++)
 		{
-			mrpt::opengl::CSetOfObjects::Ptr gl_obj =
-				mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+			auto gl_obj = mrpt::opengl::CSetOfObjects::Create();
 			gl_obj->setName(mrpt::format("level_%u", i));
 			gl_scene->insert(gl_obj);
 		}
@@ -149,7 +155,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			mrpt::format(
 				"Time: %s",
 				mrpt::system::formatTimeInterval(this->m_simul_time).c_str()),
-			mrpt::utils::TColorf(1, 1, 1, 0.5), "serif", txt_h,
+			TColorf(1, 1, 1, 0.5), "serif", txt_h,
 			mrpt::opengl::NICE, ID_GLTEXT_CLOCK);
 		txt_y += txt_h + space_h;
 
@@ -161,7 +167,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			txt_y += nLines * (txt_h + space_h);
 			m_gui_win->addTextMessage(
 				2, txt_y, guiparams->msg_lines,
-				mrpt::utils::TColorf(1, 1, 1, 0.5), "serif", txt_h,
+				TColorf(1, 1, 1, 0.5), "serif", txt_h,
 				mrpt::opengl::NICE, ID_GLTEXT_CLOCK + 1);
 		}
 	}

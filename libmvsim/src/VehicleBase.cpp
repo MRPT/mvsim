@@ -22,7 +22,6 @@
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
 #include <rapidxml_print.hpp>
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
 
@@ -550,15 +549,13 @@ void VehicleBase::gui_update_common(
 		const size_t nWs = this->getNumWheels();
 		if (!m_gl_chassis)
 		{
-			m_gl_chassis =
-				mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
 
 			// Wheels shape:
 			m_gl_wheels.resize(nWs);
 			for (size_t i = 0; i < nWs; i++)
 			{
-				m_gl_wheels[i] =
-					mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+				m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
 				this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
 				m_gl_chassis->insert(m_gl_wheels[i]);
 			}
@@ -567,16 +564,15 @@ void VehicleBase::gui_update_common(
 				mrpt::opengl::CPolyhedron::CreateCustomPrism(
 					m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
 			gl_poly->setLocation(0, 0, m_chassis_z_min);
-			gl_poly->setColor(mrpt::utils::TColorf(m_chassis_color));
+			gl_poly->setColor(TColorf(m_chassis_color));
 			m_gl_chassis->insert(gl_poly);
 
 			SCENE_INSERT_Z_ORDER(scene, 1, m_gl_chassis);
 
 			// Visualization of forces:
-			m_gl_forces =
-				mrpt::make_aligned_shared<mrpt::opengl::CSetOfLines>();
+			m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 			m_gl_forces->setLineWidth(3.0);
-			m_gl_forces->setColor_u8(mrpt::utils::TColor(0xff, 0xff, 0xff));
+			m_gl_forces->setColor_u8(TColor(0xff, 0xff, 0xff));
 
 			SCENE_INSERT_Z_ORDER(
 				scene, 3, m_gl_forces);  // forces are in global coords
