@@ -14,7 +14,13 @@
 
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/math/lightweight_geom_data.h>
+#if MRPT_VERSION<0x199
 #include <mrpt/utils/TColor.h>
+using mrpt::utils::TColor;
+#else
+#include <mrpt/img/TColor.h>
+using mrpt::img::TColor;
+#endif
 
 namespace mvsim
 {

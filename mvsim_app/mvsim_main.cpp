@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 			std::thread(thread_update_GUI, std::ref(thread_params));
 
 		// Run simulation:
-		mrpt::utils::CTicTac tictac;
+		CTicTac tictac;
 		double t_old = tictac.Tac();
 		double REALTIME_FACTOR = 1.0;
 		bool do_exit = false;

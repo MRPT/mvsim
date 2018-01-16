@@ -103,7 +103,7 @@ void OccupancyGridMap::gui_update(mrpt::opengl::COpenGLScene& scene)
 	// 1st time call?? -> Create objects
 	if (!m_gl_grid)
 	{
-		m_gl_grid = mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+		m_gl_grid = mrpt::opengl::CSetOfObjects::Create();
 		SCENE_INSERT_Z_ORDER(scene, 0, m_gl_grid);
 	}
 	if (m_gl_obs_clouds.size() != m_obstacles_for_each_obj.size())
@@ -126,8 +126,7 @@ void OccupancyGridMap::gui_update(mrpt::opengl::COpenGLScene& scene)
 			mrpt::opengl::CSetOfObjects::Ptr& gl_objs = m_gl_obs_clouds[i];
 			if (!gl_objs)
 			{
-				gl_objs =
-					mrpt::make_aligned_shared<mrpt::opengl::CSetOfObjects>();
+				gl_objs = mrpt::opengl::CSetOfObjects::Create();
 				MRPT_TODO("Add a name, and remove old ones in scene, etc.")
 				SCENE_INSERT_Z_ORDER(scene, 1, gl_objs);
 			}
@@ -195,7 +194,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			CObservation2DRangeScan::Ptr& scan = ipv.scan;
 			// Upon first time, reserve mem:
 			if (!scan)
-				scan = mrpt::make_aligned_shared<CObservation2DRangeScan>();
+				scan = CObservation2DRangeScan::Create();
 
 			const float veh_max_obstacles_ranges = ipv.max_obstacles_ranges;
 			const float occup_threshold = 0.5f;
@@ -240,7 +239,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 				m_gl_obs_clouds_buffer[obj_idx];
 			if (m_show_grid_collision_points)
 			{
-				gl_pts = mrpt::make_aligned_shared<mrpt::opengl::CPointCloud>();
+				gl_pts = mrpt::opengl::CPointCloud::Create();
 				gl_pts->setPointSize(4.0f);
 				gl_pts->setColor(0, 0, 1);
 
