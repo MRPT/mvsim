@@ -92,7 +92,7 @@ set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals/")
 # --------------------------
 # Dependency: MRPT
 # --------------------------
-FIND_PACKAGE( MRPT REQUIRED COMPONENTS base opengl obs maps gui tfest)
+FIND_PACKAGE( MRPT REQUIRED COMPONENTS opengl obs maps gui tfest)
 # Defines: MRPT_LIBS -> libs to link against
 
 # --------------------------
