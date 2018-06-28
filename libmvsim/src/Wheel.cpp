@@ -15,6 +15,19 @@
 
 #include "xml_utils.h"
 
+#include <mrpt/version.h>
+#if MRPT_VERSION<0x199
+#include <mrpt/utils/TColor.h>
+using mrpt::utils::TColor;
+using mrpt::utils::TColorf;
+#else
+#include <mrpt/img/TColor.h>
+using mrpt::img::TColor;
+using mrpt::img::TColorf;
+using mrpt;
+#endif
+
+
 using namespace mvsim;
 using namespace std;
 
