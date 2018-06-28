@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2018-06-28)
+------------------
 * fix build against mrpt1
 * update to package XML format 2
 * fix build in mrpt 2.0
