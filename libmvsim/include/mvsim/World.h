@@ -20,15 +20,24 @@
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/utils/CTimeLogger.h>
 #include <mrpt/utils/CTicTac.h>
-using CTicTac;
-using CTimeLogger;
+#include <mrpt/utils/TColor.h>
+using mrpt::utils::CTicTac;
+using mrpt::utils::CTimeLogger;
+using mrpt::utils::CTimeLoggerEntry;
+using mrpt::utils::TColor;
+using mrpt::utils::TColorf;
 #else
 #include <mrpt/core/format.h>
 #include <mrpt/core/bits_math.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/system/CTicTac.h>
+#include <mrpt/img/TColor.h>
 using mrpt::system::CTicTac;
 using mrpt::system::CTimeLogger;
+using mrpt::system::CTimeLoggerEntry;
+using mrpt::img::TColor;
+using mrpt::img::TColorf;
+using mrpt;
 #endif
 
 #include <mrpt/version.h>

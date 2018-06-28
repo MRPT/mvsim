@@ -23,7 +23,7 @@
 #include <mrpt/version.h>
 #if MRPT_VERSION<0x199
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
-using mrpt::utils;
+using namespace mrpt::utils;
 #else
 #include <mrpt/core/format.h>
 #include <mrpt/core/bits_math.h>
