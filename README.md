@@ -1,4 +1,12 @@
-[![Build Status](https://travis-ci.org/ual-arm-ros-pkg/mvsim.svg?branch=master)](https://travis-ci.org/ual-arm-ros-pkg/mvsim)
+ * Travis CI: [![Build Status](https://travis-ci.org/ual-arm-ros-pkg/mvsim.svg?branch=master)](https://travis-ci.org/ual-arm-ros-pkg/mvsim)
+ * ROS build farm:
+   * git master:
+     * ROS Kinetic @ u16.04 Xenial [![Build Status](http://build.ros.org/job/Kdev__mvsim__ubuntu_xenial_amd64/badge/icon)](http://build.ros.org/job/Kdev__mvsim__ubuntu_xenial_amd64/)
+     * ROS Melodic @ u18.04 Bionic [![Build Status](http://build.ros.org/job/Mdev__mvsim__ubuntu_bionic_amd64/badge/icon)](http://build.ros.org/job/Mdev__mvsim__ubuntu_bionic_amd64/)
+   * Last released version:
+     * ROS Melodic @ u18.04 Bionic: [![Build Status](http://build.ros.org/job/Mbin_uB64__mvsim__ubuntu_bionic_amd64__binary/badge/icon)](http://build.ros.org/job/Mbin_uB64__mvsim__ubuntu_bionic_amd64__binary/)
+     * ROS Kinetic @ u16.04 Xenial: [![Build Status](http://build.ros.org/job/Kbin_uX64__mvsim__ubuntu_xenial_amd64__binary/badge/icon)](http://build.ros.org/job/Kbin_uX64__mvsim__ubuntu_xenial_amd64__binary/)
+
 
 MultiVehicle simulator (libmvsim) 
 ======================================
