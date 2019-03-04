@@ -163,7 +163,7 @@ vec3 DynamicsDifferential::getVelocityLocalOdoEstimate() const
 	ASSERTMSG_(
 		Ay != 0.0,
 		"The two wheels of a differential vehicle CAN'T by at the same Y "
-		"coordinate!")
+	    "coordinate!");
 
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;
 	const double vx_veh = w0 * R0 + w_veh * m_wheels_info[WHEEL_L].y;

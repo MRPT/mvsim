@@ -26,6 +26,9 @@ using mrpt::utils::CTimeLogger;
 using mrpt::utils::CTimeLoggerEntry;
 using mrpt::utils::TColor;
 using mrpt::utils::TColorf;
+using mrpt::utils::keep_max;
+using mrpt::utils::DEG2RAD;
+using mrpt::utils::RAD2DEG;
 #else
 #include <mrpt/core/format.h>
 #include <mrpt/core/bits_math.h>
@@ -37,7 +40,9 @@ using mrpt::system::CTimeLogger;
 using mrpt::system::CTimeLoggerEntry;
 using mrpt::img::TColor;
 using mrpt::img::TColorf;
-using mrpt;
+using mrpt::keep_max;
+using mrpt::DEG2RAD;
+using mrpt::RAD2DEG;
 #endif
 
 #include <mrpt/version.h>

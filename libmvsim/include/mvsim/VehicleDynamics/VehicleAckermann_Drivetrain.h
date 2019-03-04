@@ -17,9 +17,15 @@
 #if MRPT_VERSION<0x199
 #include <mrpt/utils/TColor.h>
 using mrpt::utils::TColor;
+using mrpt::utils::keep_min;
+using mrpt::utils::keep_max;
+using mrpt::utils::signWithZero;
 #else
 #include <mrpt/img/TColor.h>
 using mrpt::img::TColor;
+using mrpt::keep_min;
+using mrpt::keep_max;
+using mrpt::signWithZero;
 #endif
 
 namespace mvsim

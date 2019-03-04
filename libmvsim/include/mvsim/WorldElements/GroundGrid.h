@@ -21,7 +21,6 @@ using mrpt::utils::TColorf;
 #include <mrpt/img/TColor.h>
 using mrpt::img::TColor;
 using mrpt::img::TColorf;
-using mrpt;
 #endif
 
 

@@ -19,6 +19,7 @@
 #include <mrpt/core/bits_math.h>
 #endif
 
+#include <algorithm> // count()
 
 using namespace mvsim;
 using namespace std;

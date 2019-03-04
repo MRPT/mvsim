@@ -22,7 +22,7 @@ using namespace std;
 // Ctor:
 DynamicsAckermannDrivetrain::DynamicsAckermannDrivetrain(World* parent)
 	: VehicleBase(parent, 4 /*num wheels*/),
-	  m_max_steer_ang(mrpt::utils::DEG2RAD(30))
+      m_max_steer_ang(DEG2RAD(30))
 {
 	using namespace mrpt::math;
 
@@ -337,7 +337,7 @@ void DynamicsAckermannDrivetrain::invoke_motor_controllers(
 				ASSERTMSG_(
 					0,
 					"DynamicsAckermannDrivetrain::invoke_motor_controllers: \
-                       Unknown differential type!")
+				       Unknown differential type!");
 			}
 			break;
 		}
@@ -366,13 +366,13 @@ void DynamicsAckermannDrivetrain::computeFrontWheelAngles(
 	// EQ2: cot(di)=cot(do)-w/l
 	const double w = m_wheels_info[WHEEL_FL].y - m_wheels_info[WHEEL_FR].y;
 	const double l = m_wheels_info[WHEEL_FL].x - m_wheels_info[WHEEL_RL].x;
-	ASSERT_(l > 0)
+	ASSERT_(l > 0);
 	const double w_l = w / l;
 	const double delta =
 		b2Clamp(std::abs(desired_equiv_steer_ang), 0.0, m_max_steer_ang);
 
 	const bool delta_neg = (desired_equiv_steer_ang < 0);
-	ASSERT_BELOW_(delta, 0.5 * M_PI - 0.01)
+	ASSERT_BELOW_(delta, 0.5 * M_PI - 0.01);
 	const double cot_do = 1.0 / tan(delta) + 0.5 * w_l;
 	const double cot_di = cot_do - w_l;
 	// delta>0: do->right, di->left wheel
@@ -387,8 +387,8 @@ void DynamicsAckermannDrivetrain::computeDiffTorqueSplit(
 	const double w1, const double w2, const double diffBias,
 	const double splitRatio, double& t1, double& t2)
 {
-	if (mrpt::utils::signWithZero(w1) == 0.0 ||
-		mrpt::utils::signWithZero(w2) == 0.0)
+	if (signWithZero(w1) == 0.0 ||
+	    signWithZero(w2) == 0.0)
 	{
 		t1 = splitRatio;
 		t2 = 1.0 - splitRatio;
@@ -432,7 +432,7 @@ vec3 DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate() const
 	ASSERTMSG_(
 		Ay != 0.0,
 		"The two wheels of a differential vehicle CAN'T by at the same Y "
-		"coordinate!")
+	    "coordinate!");
 
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;
 	const double vx_veh = w0 * R0 + w_veh * m_wheels_info[WHEEL_RL].y;

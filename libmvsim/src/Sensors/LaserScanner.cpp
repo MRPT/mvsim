@@ -27,7 +27,7 @@ LaserScanner::LaserScanner(
 	: SensorBase(parent),
 	  m_z_order(++z_order_cnt),
 	  m_rangeStdNoise(0.01),
-	  m_angleStdNoise(mrpt::utils::DEG2RAD(0.01)),
+      m_angleStdNoise(DEG2RAD(0.01)),
 	  m_see_fixtures(true)
 {
 	this->loadConfigFrom(root);
@@ -61,7 +61,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	parse_xmlnode_children_as_param(*root, params);
 
 	// Pass params to the scan2D obj:
-	m_scan_model.aperture = mrpt::utils::DEG2RAD(fov_deg);
+	m_scan_model.aperture = DEG2RAD(fov_deg);
 #if MRPT_VERSION >= 0x150
 	m_scan_model.resizeScan(nRays);
 #else
@@ -208,7 +208,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		callback.m_see_fixtures = m_see_fixtures;
 
 		// Scan size:
-		ASSERT_(nRays >= 2)
+		ASSERT_(nRays >= 2);
 #if MRPT_VERSION >= 0x150
 		scan.resizeScan(nRays);
 #else
@@ -285,7 +285,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			 lstScans.begin();
 		 it != lstScans.end(); ++it)
 	{
-		ASSERT_(it->scan.size() == nRays && it->validRange.size() == nRays)
+		ASSERT_(it->scan.size() == nRays && it->validRange.size() == nRays);
 
 		for (size_t i = 0; i < nRays; i++)
 		{

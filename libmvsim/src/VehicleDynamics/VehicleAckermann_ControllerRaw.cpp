@@ -67,14 +67,14 @@ void DynamicsAckermann::ControllerRawForces::teleop_interface(
 		case 'A':
 		case 'a':
 			setpoint_steer_ang += 1.0 * M_PI / 180.0;
-			mrpt::utils::keep_min(
+			keep_min(
 				setpoint_steer_ang, m_veh.getMaxSteeringAngle());
 			break;
 
 		case 'D':
 		case 'd':
 			setpoint_steer_ang -= 1.0 * M_PI / 180.0;
-			mrpt::utils::keep_max(
+			keep_max(
 				setpoint_steer_ang, -m_veh.getMaxSteeringAngle());
 			break;
 
