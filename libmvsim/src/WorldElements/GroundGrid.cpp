@@ -105,7 +105,7 @@ void GroundGrid::gui_update(mrpt::opengl::COpenGLScene& scene)
 	}
 
 	// "Discretize" offset for a better visual impact:
-	ASSERT_(m_interval > .0)
+	ASSERT_(m_interval > .0);
 	center_offset.x = m_interval *
 					  ::floor(std::abs(center_offset.x) / m_interval) *
 					  (center_offset.x < 0 ? -1. : 1.);

@@ -21,11 +21,15 @@
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #include <mrpt/utils/TColor.h>
 using mrpt::utils::TColor;
+using mrpt::utils::DEG2RAD;
+using mrpt::utils::RAD2DEG;
 #else
 #include <mrpt/core/format.h>
 #include <mrpt/core/bits_math.h>
 #include <mrpt/img/TColor.h>
 using mrpt::img::TColor;
+using mrpt::DEG2RAD;
+using mrpt::RAD2DEG;
 #endif
 
 using namespace rapidxml;
@@ -62,7 +66,7 @@ void TParamEntry::parse(
 					"format:'%s')",
 					function_name_context, varName.c_str(), str.c_str(), frmt));
 		double& ang = *reinterpret_cast<double*>(val);
-		ang = mrpt::utils::DEG2RAD(ang);
+		ang = DEG2RAD(ang);
 	}
 	// "%bool" ==> bool*
 	else if (std::string(frmt) == std::string("%bool"))
@@ -118,7 +122,7 @@ void TParamEntry::parse(
 					function_name_context, varName.c_str(), str.c_str()));
 
 		// User provides angles in deg:
-		yaw = mrpt::utils::DEG2RAD(yaw);
+		yaw = DEG2RAD(yaw);
 
 		const mrpt::poses::CPose2D p(x, y, yaw);
 
@@ -212,13 +216,13 @@ vec3 mvsim::parseXYPHI(
 	double default_angle_radians)
 {
 	vec3 v;
-	v.vals[2] = mrpt::utils::RAD2DEG(default_angle_radians);  // Default ang.
+	v.vals[2] = RAD2DEG(default_angle_radians);  // Default ang.
 
 	int na =
 		::sscanf(s.c_str(), "%lf %lf %lf", &v.vals[0], &v.vals[1], &v.vals[2]);
 
 	// User provides numbers as degrees:
-	v.vals[2] = mrpt::utils::DEG2RAD(v.vals[2]);
+	v.vals[2] = DEG2RAD(v.vals[2]);
 
 	if ((na != 3 && !allow_missing_angle) ||
 		(na != 2 && na != 3 && allow_missing_angle))

@@ -15,7 +15,6 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/utils/CFileGZInputStream.h>
 #include <mrpt/system/filesystem.h>
-#include <mrpt/utils/CObject.h>
 #include <rapidxml.hpp>
 
 #include <mrpt/version.h>
@@ -26,6 +25,11 @@ using mrpt::maps::CSimplePointsMap;
 #include <mrpt/slam/CSimplePointsMap.h>
 using mrpt::slam::CSimplePointsMap;
 #endif
+
+#if MRPT_VERSION >= 0x199
+#include <mrpt/serialization/CArchive.h>
+#endif
+
 
 using namespace rapidxml;
 using namespace mvsim;
@@ -60,7 +64,12 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// MRPT gridmaps format:
 	if (sFileExt == "gridmap")
 	{
-		mrpt::utils::CFileGZInputStream f(sFile);
+		mrpt::utils::CFileGZInputStream fi(sFile);
+#if MRPT_VERSION>=0x199
+		auto f = mrpt::serialization::archiveFrom(fi);
+#else
+		auto &f = fi;
+#endif
 		f >> m_grid;
 	}
 	else
@@ -77,7 +86,13 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		parse_xmlnode_children_as_param(*root, other_params);
 
 		if (!m_grid.loadFromBitmapFile(
-				sFile, resolution, xcenterpixel, ycenterpixel))
+		        sFile, resolution,
+#if MRPT_VERSION>=0x199
+		{xcenterpixel, ycenterpixel}
+#else
+		xcenterpixel, ycenterpixel
+#endif
+		            ))
 			throw std::runtime_error(
 				mrpt::format(
 					"[OccupancyGridMap] ERROR: File not found '%s'",
@@ -226,7 +241,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			{
 				b2BodyDef bdef;
 				ipv.collide_body = b2world->CreateBody(&bdef);
-				ASSERT_(ipv.collide_body)
+				ASSERT_(ipv.collide_body);
 			}
 			// Force move the body to the vehicle origins (to use obstacles in
 			// local coords):
@@ -287,7 +302,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 
 					b2PolygonShape* poly = dynamic_cast<b2PolygonShape*>(
 						ipv.collide_fixtures[k].fixture->GetShape());
-					ASSERT_(poly != NULL)
+					ASSERT_(poly != NULL);
 
 					const float llx = sincos_tab.ccos[k] * scan->scan[k];
 					const float lly = sincos_tab.csin[k] * scan->scan[k];

@@ -14,7 +14,6 @@
 
 #include <mrpt/system/os.h>  // kbhit()
 #include <mrpt/utils/CTicTac.h>
-
 #include <rapidxml_utils.hpp>
 #include <iostream>
 
@@ -122,7 +121,7 @@ int main(int argc, char** argv)
 						txt2gui_tmp += mrpt::format(
 							"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
 							vel.vals[0], vel.vals[1],
-							mrpt::utils::RAD2DEG(vel.vals[2]));
+						    RAD2DEG(vel.vals[2]));
 					}
 					// Get speed: ground truth
 					{
@@ -131,7 +130,7 @@ int main(int argc, char** argv)
 						txt2gui_tmp += mrpt::format(
 							"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
 							vel.vals[0], vel.vals[1],
-							mrpt::utils::RAD2DEG(vel.vals[2]));
+						    RAD2DEG(vel.vals[2]));
 					}
 
 					// Generic teleoperation interface for any controller that

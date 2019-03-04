@@ -14,7 +14,15 @@
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>
 #include <rapidxml_print.hpp>
+
+#include <mrpt/version.h>
+#if MRPT_VERSION<0x199
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
+using namespace mrpt::utils;
+#else
+#include <mrpt/core/format.h>
+using namespace mrpt;
+#endif
 
 #include <sstream>  // std::stringstream
 #include <map>

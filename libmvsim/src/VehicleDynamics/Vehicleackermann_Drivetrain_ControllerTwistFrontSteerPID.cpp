@@ -28,8 +28,8 @@ DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
 		m_veh.m_wheels_info[WHEEL_FL].y - m_veh.m_wheels_info[WHEEL_FR].y;
 	m_r2f_L = m_veh.m_wheels_info[WHEEL_FL].x - m_veh.m_wheels_info[WHEEL_RL].x;
 
-	ASSERT_(m_dist_fWheels > 0.0)
-	ASSERT_(m_r2f_L > 0.0)
+	ASSERT_(m_dist_fWheels > 0.0);
+	ASSERT_(m_r2f_L > 0.0);
 }
 
 void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(

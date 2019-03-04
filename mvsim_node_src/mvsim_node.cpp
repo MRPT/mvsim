@@ -191,7 +191,7 @@ void MVSimNode::spin()
 					txt2gui_tmp += mrpt::format(
 						"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
 						vel.vals[0], vel.vals[1],
-						mrpt::utils::RAD2DEG(vel.vals[2]));
+					    RAD2DEG(vel.vals[2]));
 				}
 				// Get speed: ground truth
 				{
@@ -200,7 +200,7 @@ void MVSimNode::spin()
 					txt2gui_tmp += mrpt::format(
 						"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
 						vel.vals[0], vel.vals[1],
-						mrpt::utils::RAD2DEG(vel.vals[2]));
+					    RAD2DEG(vel.vals[2]));
 				}
 
 				// Generic teleoperation interface for any controller that
