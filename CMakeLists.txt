@@ -11,7 +11,7 @@
 cmake_minimum_required(VERSION 3.1)
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
 PROJECT(mvsim)  # Must match the ROS package name.
-set (CMAKE_CXX_STANDARD 14)
+#set (CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
@@ -99,6 +99,10 @@ set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals/")
 # Dependency: MRPT
 # --------------------------
 FIND_PACKAGE( MRPT REQUIRED COMPONENTS opengl obs maps gui tfest)
+message(STATUS "MRPT_VERSION: ${MRPT_VERSION}")
+if(MRPT_VERSION VERSION_LESS "1.9.9")
+	set (CMAKE_CXX_STANDARD 14)
+endif()
 # Defines: MRPT_LIBS -> libs to link against
 
 # --------------------------
@@ -262,7 +266,7 @@ IF (BUILD_FOR_ROS)
                 mvsim_node
                 mvsim  # the simulator lib
                 ${BOX2D_LIBRARIES}  # Box2D libs
-		${MRPT_LIBS}
+		${MRPT_LIBRARIES}
                 ${catkin_LIBRARIES}
 		)
 
