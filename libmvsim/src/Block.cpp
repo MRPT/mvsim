@@ -21,10 +21,11 @@
 #include <mrpt/opengl/CPolyhedron.h>
 
 #include <mrpt/version.h>
-#if MRPT_VERSION<0x199
+#if MRPT_VERSION < 0x199
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 using namespace mrpt::utils;
 #else
+#include <mrpt/math/TPose2D.h>
 #include <mrpt/core/format.h>
 #include <mrpt/core/bits_math.h>
 using namespace mrpt::img;
@@ -95,11 +96,10 @@ void Block::register_block_class(const rapidxml::xml_node<char>* xml_node)
 	if (!xml_node)
 		throw runtime_error("[Block::register_vehicle_class] XML node is NULL");
 	if (0 != strcmp(xml_node->name(), "block:class"))
-		throw runtime_error(
-			mrpt::format(
-				"[Block::register_block_class] XML element is '%s' "
-				"('block:class' expected)",
-				xml_node->name()));
+		throw runtime_error(mrpt::format(
+			"[Block::register_block_class] XML element is '%s' "
+			"('block:class' expected)",
+			xml_node->name()));
 
 	// rapidxml doesn't allow making copied of objects.
 	// So: convert to txt; then re-parse.
@@ -118,10 +118,9 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 	if (!root) throw runtime_error("[Block::factory] XML node is NULL");
 	if (0 != strcmp(root->name(), "block"))
-		throw runtime_error(
-			mrpt::format(
-				"[Block::factory] XML root element is '%s' ('block' expected)",
-				root->name()));
+		throw runtime_error(mrpt::format(
+			"[Block::factory] XML root element is '%s' ('block' expected)",
+			root->name()));
 
 	// "class": When there is a 'class="XXX"' attribute, look for each parameter
 	//  in the set of "root" + "class_root" XML nodes:
@@ -137,10 +136,9 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 			const string sClassName = block_class->value();
 			class_root = block_classes_registry.get(sClassName);
 			if (!class_root)
-				throw runtime_error(
-					mrpt::format(
-						"[Block::factory] Block class '%s' undefined",
-						sClassName.c_str()));
+				throw runtime_error(mrpt::format(
+					"[Block::factory] Block class '%s' undefined",
+					sClassName.c_str()));
 			block_root_node.add(class_root);
 		}
 	}
@@ -262,10 +260,9 @@ Block* Block::factory(World* parent, const std::string& xml_text)
 	{
 		unsigned int line =
 			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
-		throw std::runtime_error(
-			mrpt::format(
-				"[Block::factory] XML parse error (Line %u): %s",
-				static_cast<unsigned>(line), e.what()));
+		throw std::runtime_error(mrpt::format(
+			"[Block::factory] XML parse error (Line %u): %s",
+			static_cast<unsigned>(line), e.what()));
 	}
 	return Block::factory(parent, xml.first_node());
 }
@@ -301,9 +298,8 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 		m_gl_block = mrpt::opengl::CSetOfObjects::Create();
 
 		// Block shape:
-		auto gl_poly =
-			mrpt::opengl::CPolyhedron::CreateCustomPrism(
-				m_block_poly, m_block_z_max - m_block_z_min);
+		auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
+			m_block_poly, m_block_z_max - m_block_z_min);
 		gl_poly->setLocation(0, 0, m_block_z_min);
 		gl_poly->setColor(TColorf(m_block_color));
 		m_gl_block->insert(gl_poly);
