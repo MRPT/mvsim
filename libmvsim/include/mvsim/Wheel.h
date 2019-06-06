@@ -14,10 +14,14 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/version.h>
 
-#if MRPT_VERSION<0x199
+#if MRPT_VERSION < 0x199
+#include <mrpt/math/lightweight_geom_data.h>
 #include <mrpt/utils/TColor.h>
 using mrpt::utils::TColor;
 #else
+#include <mrpt/math/TPoint2D.h>
+#include <mrpt/math/TPose3D.h>
+#include <mrpt/math/TPolygon2D.h>
 #include <mrpt/img/TColor.h>
 using mrpt::img::TColor;
 #endif
@@ -29,8 +33,8 @@ class VehicleBase;
 class DynamicsDifferential;
 
 /** Common info for 2D wheels, for usage in derived classes.
-	* Wheels are modeled as a mass with a rectangular shape.
-	*/
+ * Wheels are modeled as a mass with a rectangular shape.
+ */
 class Wheel
 {
    public:
@@ -40,7 +44,7 @@ class Wheel
 		width;  //!< Length(diameter) and width of the wheel rectangle [m]
 	double mass;  //!< [kg]
 	double Iyy;  //!< Inertia: computed automatically from geometry at
-				 //!constructor and at \a loadFromXML(), but can be overrided.
+				 //! constructor and at \a loadFromXML(), but can be overrided.
 	TColor color;  //!< Color for OpenGL rendering
 
 	Wheel();
@@ -60,6 +64,6 @@ class Wheel
 	void recalcInertia();  //!< Recompute Iyy from mass, diameter and height.
    protected:
 	double phi, w;  //!< Angular position and velocity of the wheel as it spins
-					//!over its shaft (rad, rad/s)
+					//! over its shaft (rad, rad/s)
 };
-}
+}  // namespace mvsim

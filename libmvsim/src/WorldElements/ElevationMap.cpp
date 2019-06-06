@@ -56,16 +56,28 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		CImage imgElev;
 		if (!imgElev.loadFromFile(
 				sElevationImgFile, 0 /*force load grayscale*/))
-			throw std::runtime_error(
-				mrpt::format(
-					"[ElevationMap] ERROR: Cannot read elevation image '%s'",
-					sElevationImgFile.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read elevation image '%s'",
+				sElevationImgFile.c_str()));
 
 		// Scale: [0,1] => [min_z,max_z]
 		imgElev.getAsMatrix(
 			elevation_data);  // Get image normalized in range [0,1]
 		ASSERT_(img_min_z != img_max_z);
+#if MRPT_VERSION >= 0x199
+		const double vmin = elevation_data.minCoeff();
+		const double vmax = elevation_data.maxCoeff();
+		mrpt::math::CMatrixFloat f = elevation_data;
+		f -= vmin;
+		f *= (img_max_z - img_min_z) / (vmax - vmin);
+		mrpt::math::CMatrixFloat m(
+			elevation_data.rows(), elevation_data.cols());
+		m.setConstant(img_min_z);
+		f += m;
+		elevation_data = f;
+#else
 		elevation_data.adjustRange(img_min_z, img_max_z);
+#endif
 	}
 	else
 	{
@@ -78,10 +90,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (!sTextureImgFile.empty())
 	{
 		if (!mesh_image.loadFromFile(sTextureImgFile))
-			throw std::runtime_error(
-				mrpt::format(
-					"[ElevationMap] ERROR: Cannot read texture image '%s'",
-					sTextureImgFile.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read texture image '%s'",
+				sTextureImgFile.c_str()));
 		has_mesh_image = true;
 	}
 
@@ -120,7 +131,7 @@ void ElevationMap::gui_update(mrpt::opengl::COpenGLScene& scene)
 	ASSERTMSG_(
 		m_gl_mesh,
 		"ERROR: Can't render Mesh before loading it! Have you called "
-	    "loadConfigFrom() first?");
+		"loadConfigFrom() first?");
 
 	// 1st time call?? -> Create objects
 	if (m_first_scene_rendering)
@@ -260,7 +271,7 @@ void ElevationMap::simul_post_timestep(const TSimulContext& context)
 {
 	MRPT_TODO(
 		"Save all elements positions in prestep, then here scale their "
-	    "movements * cos(angle)");
+		"movements * cos(angle)");
 }
 float calcz(
 	const mrpt::math::TPoint3Df& p1, const mrpt::math::TPoint3Df& p2,
