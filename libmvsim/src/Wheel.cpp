@@ -16,18 +16,17 @@
 #include "xml_utils.h"
 
 #include <mrpt/version.h>
-#if MRPT_VERSION<0x199
+#if MRPT_VERSION < 0x199
 #include <mrpt/utils/TColor.h>
+using mrpt::utils::DEG2RAD;
 using mrpt::utils::TColor;
 using mrpt::utils::TColorf;
-using mrpt::utils::DEG2RAD;
 #else
 #include <mrpt/img/TColor.h>
+using mrpt::DEG2RAD;
 using mrpt::img::TColor;
 using mrpt::img::TColorf;
-using mrpt::DEG2RAD;
 #endif
-
 
 using namespace mvsim;
 using namespace std;
@@ -52,11 +51,10 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 	obj.clear();
 
 	auto gl_wheel = mrpt::opengl::CCylinder::Create(
-			0.5 * diameter, 0.5 * diameter, this->width, 15, 1);
+		0.5 * diameter, 0.5 * diameter, this->width, 15);
 	gl_wheel->setColor(TColorf(color));
 	gl_wheel->setPose(
-		mrpt::poses::CPose3D(
-	        0, 0.5 * width, 0, 0, 0, DEG2RAD(90)));
+		mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, DEG2RAD(90)));
 
 	auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
 	gl_wheel_frame->insert(gl_wheel);

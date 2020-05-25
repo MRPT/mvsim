@@ -8,9 +8,8 @@
   +-------------------------------------------------------------------------+ */
 #include <mvsim/World.h>
 
-
 #include <mrpt/version.h>
-#if MRPT_VERSION<0x199
+#if MRPT_VERSION < 0x199
 #include <mrpt/utils/utils_defs.h>  // mrpt::format()
 #else
 #include <mrpt/core/format.h>
@@ -57,14 +56,14 @@ World::TUpdateGUIParams::TUpdateGUIParams() {}
 size_t ID_GLTEXT_CLOCK = 0;
 
 //!< Return true if the GUI window is open, after a previous call to
-//!update_GUI()
+//! update_GUI()
 bool World::is_GUI_open() const { return !!m_gui_win; }
 //!< Forces closing the GUI window, if any.
 void World::close_GUI() { m_gui_win.reset(); }
 /** Updates (or sets-up upon first call) the GUI visualization of the scene.
-* \note This method is prepared to be called concurrently with the simulation,
-* and doing so is recommended to assure a smooth multi-threading simulation.
-*/
+ * \note This method is prepared to be called concurrently with the simulation,
+ * and doing so is recommended to assure a smooth multi-threading simulation.
+ */
 void World::update_GUI(TUpdateGUIParams* guiparams)
 {
 	// First call?
@@ -155,8 +154,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			mrpt::format(
 				"Time: %s",
 				mrpt::system::formatTimeInterval(this->m_simul_time).c_str()),
-			TColorf(1, 1, 1, 0.5), "serif", txt_h,
-			mrpt::opengl::NICE, ID_GLTEXT_CLOCK);
+			ID_GLTEXT_CLOCK);
 		txt_y += txt_h + space_h;
 
 		// User supplied-lines:
@@ -166,9 +164,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 				guiparams->msg_lines.begin(), guiparams->msg_lines.end(), '\n');
 			txt_y += nLines * (txt_h + space_h);
 			m_gui_win->addTextMessage(
-				2, txt_y, guiparams->msg_lines,
-				TColorf(1, 1, 1, 0.5), "serif", txt_h,
-				mrpt::opengl::NICE, ID_GLTEXT_CLOCK + 1);
+				2, txt_y, guiparams->msg_lines, ID_GLTEXT_CLOCK + 1);
 		}
 	}
 

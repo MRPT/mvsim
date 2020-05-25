@@ -27,7 +27,7 @@ LaserScanner::LaserScanner(
 	: SensorBase(parent),
 	  m_z_order(++z_order_cnt),
 	  m_rangeStdNoise(0.01),
-      m_angleStdNoise(DEG2RAD(0.01)),
+	  m_angleStdNoise(DEG2RAD(0.01)),
 	  m_see_fixtures(true)
 {
 	this->loadConfigFrom(root);
@@ -103,9 +103,8 @@ void LaserScanner::gui_update(mrpt::opengl::COpenGLScene& scene)
 	const double z_incrs = 10e-3;  // for m_z_order
 	const double z_offset = 10e-2;
 	const mrpt::poses::CPose2D& p = m_vehicle.getCPose2D();
-	m_gl_scan->setPose(
-		mrpt::poses::CPose3D(
-			p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
+	m_gl_scan->setPose(mrpt::poses::CPose3D(
+		p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
 }
 
 void LaserScanner::simul_pre_timestep(const TSimulContext& context) {}
@@ -122,7 +121,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	// Finally, we'll take the shortest range in each direction:
 	std::list<CObservation2DRangeScan> lstScans;
 
-	const size_t nRays = m_scan_model.scan.size();
+	const size_t nRays = m_scan_model.getScanSize();
 	const double maxRange = m_scan_model.maxRange;
 
 	// Get pose of the robot:
@@ -149,7 +148,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 		// Ray tracing over the gridmap:
 		occGrid.laserScanSimulator(
-			scan, vehPose, 0.5f, m_scan_model.scan.size(), m_rangeStdNoise, 1,
+			scan, vehPose, 0.5f, m_scan_model.getScanSize(), m_rangeStdNoise, 1,
 			m_angleStdNoise);
 	}
 	m_world->getTimeLogger().leave("LaserScanner.scan.1.gridmap");
@@ -220,7 +219,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		const double AA =
 			(scan.rightToLeft ? 1.0 : -1.0) * (scan.aperture / (nRays - 1));
 
-		auto &rnd =
+		auto& rnd =
 #if MRPT_VERSION >= 0x199
 			mrpt::random::getRandomGenerator();
 #else
@@ -240,16 +239,14 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			scan.validRange[i] = callback.m_hit ? 1 : 0;
 #endif
 
-			float range = scan.scan[i];
+			float range = scan.getScanRange(i);
 			if (callback.m_hit)
 			{
 				// Hit:
 				range = ::hypotf(
 					callback.m_point.x - sensorPt.x,
 					callback.m_point.y - sensorPt.y);
-				range +=
-					rnd.drawGaussian1D_normalized() *
-					m_rangeStdNoise;
+				range += rnd.drawGaussian1D_normalized() * m_rangeStdNoise;
 			}
 			else
 			{
@@ -285,15 +282,14 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			 lstScans.begin();
 		 it != lstScans.end(); ++it)
 	{
-		ASSERT_(it->scan.size() == nRays && it->validRange.size() == nRays);
-
 		for (size_t i = 0; i < nRays; i++)
 		{
-			if (it->validRange[i])
+			if (it->getScanRangeValidity(i))
 			{
 #if MRPT_VERSION >= 0x150
 				lastScan->setScanRange(
-					i, std::min(lastScan->scan[i], it->scan[i]));
+					i,
+					std::min(lastScan->getScanRange(i), it->getScanRange(i)));
 				lastScan->setScanRangeValidity(i, true);
 #else
 				lastScan->scan[i] = std::min(lastScan->scan[i], it->scan[i]);

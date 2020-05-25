@@ -106,8 +106,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		ASSERT_EQUAL_(mesh_image.getWidth(), (size_t)elevation_data.cols());
 		ASSERT_EQUAL_(mesh_image.getHeight(), (size_t)elevation_data.rows());
 
-		m_gl_mesh->assignImage(mesh_image);
-		m_gl_mesh->setZ(elevation_data);
+		m_gl_mesh->assignImageAndZ(mesh_image, elevation_data);
 	}
 	else
 	{
@@ -293,8 +292,8 @@ float calcz(
 bool ElevationMap::getElevationAt(double x, double y, float& z) const
 {
 	const mrpt::opengl::CMesh* mesh = m_gl_mesh.get();
-	const float x0 = mesh->getXMin();
-	const float y0 = mesh->getYMin();
+	const float x0 = mesh->getxMin();
+	const float y0 = mesh->getyMin();
 	const size_t nCellsX = m_mesh_z_cache.rows();
 	const size_t nCellsY = m_mesh_z_cache.cols();
 

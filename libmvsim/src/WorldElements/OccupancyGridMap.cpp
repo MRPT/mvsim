@@ -30,7 +30,6 @@ using mrpt::slam::CSimplePointsMap;
 #include <mrpt/serialization/CArchive.h>
 #endif
 
-
 using namespace rapidxml;
 using namespace mvsim;
 using namespace std;
@@ -65,10 +64,10 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (sFileExt == "gridmap")
 	{
 		mrpt::utils::CFileGZInputStream fi(sFile);
-#if MRPT_VERSION>=0x199
+#if MRPT_VERSION >= 0x199
 		auto f = mrpt::serialization::archiveFrom(fi);
 #else
-		auto &f = fi;
+		auto& f = fi;
 #endif
 		f >> m_grid;
 	}
@@ -86,17 +85,16 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		parse_xmlnode_children_as_param(*root, other_params);
 
 		if (!m_grid.loadFromBitmapFile(
-		        sFile, resolution,
-#if MRPT_VERSION>=0x199
-		{xcenterpixel, ycenterpixel}
+				sFile, resolution,
+#if MRPT_VERSION >= 0x199
+				{ xcenterpixel, ycenterpixel }
 #else
-		xcenterpixel, ycenterpixel
+				xcenterpixel, ycenterpixel
 #endif
-		            ))
-			throw std::runtime_error(
-				mrpt::format(
-					"[OccupancyGridMap] ERROR: File not found '%s'",
-					sFile.c_str()));
+				))
+			throw std::runtime_error(mrpt::format(
+				"[OccupancyGridMap] ERROR: File not found '%s'",
+				sFile.c_str()));
 	}
 
 	{
@@ -208,8 +206,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			TInfoPerCollidableobj& ipv = m_obstacles_for_each_obj[obj_idx];
 			CObservation2DRangeScan::Ptr& scan = ipv.scan;
 			// Upon first time, reserve mem:
-			if (!scan)
-				scan = CObservation2DRangeScan::Create();
+			if (!scan) scan = CObservation2DRangeScan::Create();
 
 			const float veh_max_obstacles_ranges = ipv.max_obstacles_ranges;
 			const float occup_threshold = 0.5f;
@@ -224,7 +221,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			// Since we'll dilate obstacle points, let's give a bit more space
 			// as compensation:
 			const float range_enlarge = 0.25f * m_grid.getResolution();
-			for (size_t k = 0; k < scan->scan.size(); k++)
+			for (size_t k = 0; k < scan->getScanSize(); k++)
 			{
 #if MRPT_VERSION >= 0x150
 				scan->setScanRange(k, scan->getScanRange(k) + range_enlarge);
@@ -285,7 +282,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 					ipv.collide_fixtures[k].fixture =
 						ipv.collide_body->CreateFixture(&fixtureDef);
 
-				if (!scan->validRange[k])
+				if (!scan->getScanRangeValidity(k))
 				{
 					ipv.collide_fixtures[k].fixture->SetSensor(
 						true);  // Box2D's way of saying: don't collide with
@@ -304,8 +301,10 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 						ipv.collide_fixtures[k].fixture->GetShape());
 					ASSERT_(poly != NULL);
 
-					const float llx = sincos_tab.ccos[k] * scan->scan[k];
-					const float lly = sincos_tab.csin[k] * scan->scan[k];
+					const float llx =
+						sincos_tab.ccos[k] * scan->getScanRange(k);
+					const float lly =
+						sincos_tab.csin[k] * scan->getScanRange(k);
 
 					const float ggx = ipv.pose.x() + llx;
 					const float ggy = ipv.pose.y() + lly;
