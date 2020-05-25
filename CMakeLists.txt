@@ -9,18 +9,9 @@
 # +-------------------------------------------------------------------------+
 
 cmake_minimum_required(VERSION 3.1)
-set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
 project(mvsim)  # Must match the ROS package name.
-#set (CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
-
-if(COMMAND cmake_policy)
-      cmake_policy(SET CMP0003 NEW)
-      if(POLICY CMP0048)
-      	cmake_policy(SET CMP0048 OLD)  # project version
-      endif()
-endif()
 
 # ------------------------------------------------------------------
 #                              IMPORTANT NOTE
@@ -138,7 +129,8 @@ if (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 
 	# It seems BOX2D doesn't return the correct #include dir (???):
 	set(BOX2D_INCLUDE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/externals/Box2D/")
-
+else()
+	message(STATUS "libbox2d: found in the system (version ${BOX2D_VERSION_STRING})")
 endif()
 
 if (Box2D_FOUND)
