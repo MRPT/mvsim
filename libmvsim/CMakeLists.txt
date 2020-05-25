@@ -1,5 +1,5 @@
 # CMake file for the library target
-PROJECT(LIBMVSIM)
+project(LIBMVSIM)
 
 file(GLOB ROOT_SRCS
 	"${${PROJECT_NAME}_SOURCE_DIR}/src/*.cpp"
@@ -23,22 +23,22 @@ file(GLOB WorldElements_SRCS
 	"${${PROJECT_NAME}_SOURCE_DIR}/include/mvsim/WorldElements/*.h"
 	)
 
-IF(MSVC)
-	ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-ENDIF(MSVC)
+if(MSVC)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif(MSVC)
 
-INCLUDE_DIRECTORIES("${${PROJECT_NAME}_SOURCE_DIR}/src")
-INCLUDE_DIRECTORIES(".")
+include_directories("${${PROJECT_NAME}_SOURCE_DIR}/src")
+include_directories(".")
 
 # Declare the target (a library)
-ADD_LIBRARY(mvsim STATIC
+add_library(mvsim STATIC
 	${ROOT_SRCS}
 	${Sensors_SRCS}
 	${Friction_SRCS}
 	${VehicleDynamics_SRCS}
 	${WorldElements_SRCS}
 	)
-TARGET_LINK_LIBRARIES(mvsim ${MRPT_LIBRARIES} ${BOX2D_LIBRARIES})
+target_link_libraries(mvsim ${MRPT_LIBRARIES} ${BOX2D_LIBRARIES})
 
 source_group(General FILES ${ROOT_SRCS})
 source_group(Sensors FILES ${Sensors_SRCS})

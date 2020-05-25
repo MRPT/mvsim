@@ -9,8 +9,8 @@
 # +-------------------------------------------------------------------------+
 
 cmake_minimum_required(VERSION 3.1)
-SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
-PROJECT(mvsim)  # Must match the ROS package name.
+set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
+project(mvsim)  # Must match the ROS package name.
 #set (CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
@@ -43,39 +43,39 @@ find_package(catkin
 	roscpp tf mrpt_bridge dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs dynamic_reconfigure message_generation
 	)
 
-SET(BUILD_FOR_ROS FALSE)
-IF (${catkin_FOUND})
-	SET(BUILD_FOR_ROS TRUE)
-	MESSAGE(STATUS " ==== multivehicle-simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
-	ADD_DEFINITIONS(-DMVSIM_HAS_ROS)
-ENDIF()
+set(BUILD_FOR_ROS FALSE)
+if (${catkin_FOUND})
+	set(BUILD_FOR_ROS TRUE)
+	message(STATUS " ==== multivehicle-simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
+	add_definitions(-DMVSIM_HAS_ROS)
+endif()
 
 
 # --------------------------
 # Build options
 # --------------------------
-IF (UNIX)
-	SET(DEFAULT_SHARED_LIBS ON)
-ELSE()
-	SET(DEFAULT_SHARED_LIBS OFF)
-ENDIF()
-SET(BUILD_SHARED_LIBS ${DEFAULT_SHARED_LIBS} CACHE BOOL "Build shared libraries (.dll/.so) instead of static ones (.lib/.a)")
+if (UNIX)
+	set(DEFAULT_SHARED_LIBS ON)
+else()
+	set(DEFAULT_SHARED_LIBS OFF)
+endif()
+set(BUILD_SHARED_LIBS ${DEFAULT_SHARED_LIBS} CACHE BOOL "Build shared libraries (.dll/.so) instead of static ones (.lib/.a)")
 
 # Save all libs and executables in the same place
-IF (NOT BUILD_FOR_ROS)
-	SET( LIBRARY_OUTPUT_PATH ${${PROJECT_NAME}_BINARY_DIR}/lib CACHE PATH "Output directory for libraries" )
-	SET( EXECUTABLE_OUTPUT_PATH ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Output directory for applications" )
-ENDIF()
+if (NOT BUILD_FOR_ROS)
+	set( LIBRARY_OUTPUT_PATH ${${PROJECT_NAME}_BINARY_DIR}/lib CACHE PATH "Output directory for libraries" )
+	set( EXECUTABLE_OUTPUT_PATH ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Output directory for applications" )
+endif()
 
 # --------------------------
 # Global compiler flags
 # --------------------------
-IF(MSVC)
+if(MSVC)
 	# Warnings level
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
 	# Force usage of UNICODE projects, which is not the default in MSVC:
 	add_definitions(-DUNICODE -D_UNICODE)
-ENDIF()
+endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	# High level of warnings.
@@ -89,16 +89,16 @@ if (CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   # Set optimized building:
 endif()
 
-IF(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   add_compile_options(-O3)
-ENDIF()
+endif()
 
 set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals/")
 
 # --------------------------
 # Dependency: MRPT
 # --------------------------
-FIND_PACKAGE( MRPT REQUIRED COMPONENTS opengl obs maps gui tfest)
+find_package( MRPT REQUIRED COMPONENTS opengl obs maps gui tfest)
 message(STATUS "MRPT_VERSION: ${MRPT_VERSION}")
 if(MRPT_VERSION VERSION_LESS "1.9.9")
 	set (CMAKE_CXX_STANDARD 14)
@@ -108,14 +108,14 @@ endif()
 # --------------------------
 # Dependency: Box2D
 # --------------------------
-SET(EMBEDDED_Box2D_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/Box2D/Box2D")
+set(EMBEDDED_Box2D_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/Box2D/Box2D")
 
 # 1st) Try to locate it via CMake (installed in the system or precompiled somewhere)
-SET(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
-FIND_PACKAGE(Box2D QUIET) # Quiet in a 1st try...
+set(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
+find_package(Box2D QUIET) # Quiet in a 1st try...
 # Defines:
 
-IF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
+if (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 	# Use embedded version:
 	# Override some defaults in the embedded project:
 	set(BOX2D_INSTALL ON CACHE BOOL "Install Box2D libs, includes, and CMake scripts" FORCE) # IMPORTANT: This must be ON to enable parsing Box2D's .cmake.in file!!
@@ -123,48 +123,48 @@ IF (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 	option(BOX2D_BUILD_SHARED "Build Box2D shared libraries" OFF)
 	option(BOX2D_BUILD_STATIC "Build Box2D static libraries" ON)
 	option(BOX2D_BUILD_EXAMPLES "Build Box2D examples" OFF)
-	MARK_AS_ADVANCED(BOX2D_INSTALL)
-	MARK_AS_ADVANCED(BOX2D_INSTALL_DOC)
-	MARK_AS_ADVANCED(BOX2D_BUILD_SHARED)
-	MARK_AS_ADVANCED(BOX2D_BUILD_STATIC)
-	MARK_AS_ADVANCED(BOX2D_BUILD_EXAMPLES)
+	mark_as_advanced(BOX2D_INSTALL)
+	mark_as_advanced(BOX2D_INSTALL_DOC)
+	mark_as_advanced(BOX2D_BUILD_SHARED)
+	mark_as_advanced(BOX2D_BUILD_STATIC)
+	mark_as_advanced(BOX2D_BUILD_EXAMPLES)
 
 	add_subdirectory(externals/Box2D)
 
 	# 2nd attempt: Fatal error if not found:
-	MESSAGE(STATUS "INFO: Box2D library not found in the system. Using embedded copy.")
-	SET(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
-	FIND_PACKAGE(Box2D REQUIRED)
+	message(STATUS "INFO: Box2D library not found in the system. Using embedded copy.")
+	set(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
+	find_package(Box2D REQUIRED)
 
 	# It seems BOX2D doesn't return the correct #include dir (???):
-	SET(BOX2D_INCLUDE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/externals/Box2D/")
+	set(BOX2D_INCLUDE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/externals/Box2D/")
 
-ENDIF()
+endif()
 
-IF (Box2D_FOUND)
-	#MESSAGE(STATUS "BOX2D_INCLUDE_DIR: ${BOX2D_INCLUDE_DIR}")
-	IF (NOT "" STREQUAL "${BOX2D_INCLUDE_DIR}")
-		INCLUDE_DIRECTORIES("${BOX2D_INCLUDE_DIR}")
-	ENDIF (NOT "" STREQUAL "${BOX2D_INCLUDE_DIR}")
+if (Box2D_FOUND)
+	#message(STATUS "BOX2D_INCLUDE_DIR: ${BOX2D_INCLUDE_DIR}")
+	if (NOT "" STREQUAL "${BOX2D_INCLUDE_DIR}")
+		include_directories("${BOX2D_INCLUDE_DIR}")
+	endif (NOT "" STREQUAL "${BOX2D_INCLUDE_DIR}")
 
 	# It seems this var is not always set (!?)
-	IF ("" STREQUAL "${BOX2D_LIBRARIES}")
-		SET(BOX2D_LIBRARIES Box2D)
-	ENDIF ("" STREQUAL "${BOX2D_LIBRARIES}")
-ENDIF()
+	if ("" STREQUAL "${BOX2D_LIBRARIES}")
+		set(BOX2D_LIBRARIES Box2D)
+	endif ("" STREQUAL "${BOX2D_LIBRARIES}")
+endif()
 
 
 # --------------------------
 # Dependency: rapidxml
 # --------------------------
 # headers-only:
-INCLUDE_DIRECTORIES("${EXTERNALS_DIR}/rapidxml")
+include_directories("${EXTERNALS_DIR}/rapidxml")
 
 
 # --------------------------
 #       The Library
 # --------------------------
-INCLUDE_DIRECTORIES("${${PROJECT_NAME}_SOURCE_DIR}/libmvsim/include/")
+include_directories("${${PROJECT_NAME}_SOURCE_DIR}/libmvsim/include/")
 
 add_subdirectory(libmvsim)
 
@@ -176,7 +176,7 @@ add_subdirectory(mvsim_app) # Standalone app
 # -----------------------------------------------------------------------------
 #                                   ROS SEGMENT
 # -----------------------------------------------------------------------------
-IF (BUILD_FOR_ROS)
+if (BUILD_FOR_ROS)
 	################################################
 	## Declare ROS messages, services and actions ##
 	################################################
@@ -257,9 +257,9 @@ IF (BUILD_FOR_ROS)
 		)
 
 	# make sure configure headers are built before any node using them
-	IF (${PROJECT_NAME}_EXPORTED_TARGETS})
+	if (${PROJECT_NAME}_EXPORTED_TARGETS})
 		add_dependencies(mvsim_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
-	ENDIF()
+	endif()
 
 	## Specify libraries to link a library or executable target against
         target_link_libraries(
@@ -304,11 +304,11 @@ IF (BUILD_FOR_ROS)
 	#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 	# )
 
-ENDIF() # BUILD_FOR_ROS
+endif() # BUILD_FOR_ROS
 
 
 # -----------------------------------------------------------------------------
 #                                MOOS/OpenMORA SEGMENT
 # -----------------------------------------------------------------------------
-#IF(xxx)
-#ENDIF() #
+#if(xxx)
+#endif() #
