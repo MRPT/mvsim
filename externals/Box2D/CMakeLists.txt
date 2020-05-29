@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 
-project(Box2D)
+project(Box2D LANGUAGES CXX VERSION 2.3.0)
 
 if(UNIX)
 	set(BOX2D_INSTALL_BY_DEFAULT ON)

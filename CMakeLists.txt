@@ -9,9 +9,13 @@
 # +-------------------------------------------------------------------------+
 
 cmake_minimum_required(VERSION 3.1)
-project(mvsim)  # Must match the ROS package name.
+
+# CMake file for the library target
+project(mvsim)
+# Project name must match the ROS package name.
 
 find_package( Threads )
+include(GNUInstallDirs)
 
 # ------------------------------------------------------------------
 #                              IMPORTANT NOTE
@@ -255,7 +259,7 @@ if (BUILD_FOR_ROS)
 	## Specify libraries to link a library or executable target against
 	target_link_libraries(
 		mvsim_node
-		mvsim  # the simulator lib
+		mvsim::mvsim  # the simulator lib
 		${BOX2D_LIBRARIES}  # Box2D libs
 		${MRPT_LIBRARIES}
 		${catkin_LIBRARIES}

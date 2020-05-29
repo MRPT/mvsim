@@ -7,7 +7,7 @@ include_directories(${BOX2D_INCLUDE_DIR})
 add_executable(${PROJECT_NAME} mvsim_main.cpp)
 target_link_libraries(
 	${PROJECT_NAME}
-	mvsim # the simulator lib
+	mvsim::mvsim # the simulator lib
 	${MRPT_LIBRARIES}  # MRPT libs
 	${BOX2D_LIBRARIES}  # Box2D libs
 	${CMAKE_THREAD_LIBS_INIT}
