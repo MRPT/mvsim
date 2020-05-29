@@ -1,8 +1,14 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>mvsim</name>
-  <version>0.2.1</version>
   <description>Node for the "multivehicle simulator" framework.</description>
+  
+  <!-- REMEMBER: Keep in synch version number in: 
+    * package.xml
+    * libvmsim/CMakeLists.txt
+    * CHANGELOG.rst
+   -->
+  <version>0.2.1</version>
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
   <license>BSD</license>

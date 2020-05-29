@@ -201,18 +201,49 @@ if(BOX2D_INSTALL)
                   RUNTIME DESTINATION bin)
 	endif()
 	if(BOX2D_BUILD_STATIC)
-		install(TARGETS Box2D EXPORT Box2D-targets DESTINATION ${LIB_INSTALL_DIR})
+		install(TARGETS	Box2D
+				EXPORT 	Box2D-targets
+				RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+				LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+				ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		)
 	endif()
 
 	# install build system hooks for third-party apps
-	install(EXPORT Box2D-targets DESTINATION ${LIB_INSTALL_DIR}/Box2D)
+	install(EXPORT Box2D-targets
+		FILE Box2D-targets.cmake
+		NAMESPACE box2d::
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Box2D
+	)
+	export(
+		TARGETS Box2D
+		FILE "${CMAKE_BINARY_DIR}/cmake/Box2D-targets.cmake"
+		NAMESPACE box2D::
+	)
 
-        set (BOX2D_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include)
-        set (BOX2D_INCLUDE_DIRS ${BOX2D_INCLUDE_DIR} )
-        set (BOX2D_LIBRARY_DIRS ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR})
-        set (BOX2D_LIBRARY Box2D)
-        set (BOX2D_LIBRARIES ${BOX2D_LIBRARY})
-        set (BOX2D_USE_FILE ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}/cmake/Box2D/UseBox2D.cmake)
-        configure_file(Box2DConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/Box2DConfig.cmake @ONLY ESCAPE_QUOTES)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Box2DConfig.cmake UseBox2D.cmake DESTINATION ${LIB_INSTALL_DIR}/cmake/Box2D)
-endif(BOX2D_INSTALL)
+	set (BOX2D_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include)
+	set (BOX2D_INCLUDE_DIRS ${BOX2D_INCLUDE_DIR} )
+	set (BOX2D_LIBRARY_DIRS ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR})
+	set (BOX2D_LIBRARY Box2D)
+	set (BOX2D_LIBRARIES ${BOX2D_LIBRARY})
+	set (BOX2D_USE_FILE ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}/cmake/Box2D/UseBox2D.cmake)
+
+	include(CMakePackageConfigHelpers)
+	configure_package_config_file(
+		Box2DConfig.cmake.in
+		${CMAKE_BINARY_DIR}/cmake/box2d-config.cmake
+		INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Box2D
+	)
+
+	write_basic_package_version_file(
+		${CMAKE_BINARY_DIR}/cmake/box2d-config-version.cmake
+		VERSION ${PROJECT_VERSION}
+		COMPATIBILITY AnyNewerVersion
+	)	
+	install(
+		FILES
+			${CMAKE_BINARY_DIR}/cmake/box2d-config.cmake
+			${CMAKE_BINARY_DIR}/cmake/box2d-config-version.cmake
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/box2d
+	)
+endif()
