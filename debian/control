@@ -1,0 +1,38 @@
+Source: mvsim
+Section: misc
+Priority: optional
+Maintainer: Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), libmrpt-dev (>= 2.0.0), cmake
+Standards-Version: 3.9.8
+
+Package: libmvsim
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Multi vehicle efficient dynamics simulator - libraries
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains the C++ library itself.
+
+Package: libmvsim-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmvsim (= ${binary:Version})
+Description: Multi vehicle efficient dynamics simulator - development files
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains C++ development files: headers, the .so symlink, and
+ cmake files.
+
+Package: mvsim-apps
+Architecture: any
+Priority: extra
+Depends: ${shlibs:Depends}, libmvsim (= ${binary:Version}), ${misc:Depends}
+Description: Multi vehicle efficient dynamics simulator - GUI applications
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains GUI applications.

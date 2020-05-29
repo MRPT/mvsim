@@ -1,5 +1,5 @@
 \documentclass[a4paper,11pt]{article}
-  
+
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{array}
@@ -59,7 +59,7 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 \maketitle
 \vfill
 \begin{center}
-License: GNU General Public License version 3 Copyright (C) 2017 Jose Luis Blanco jlblanco@ual.es (University of Almeria) and collaborators
+License: 3-clause BSD License - Copyright (C) 2014-2020 Jose Luis Blanco jlblanco@ual.es (University of Almeria) and collaborators
 \end{center}
 
 \newpage
@@ -80,10 +80,10 @@ This package includes the C++ library mvsim, a standalone app and a ROS node.
 \item Lightweight in memory, CPU and library requirements.
 \item Fully configurable via .xml "world" files.
 \item World maps:
-	\begin{itemize}	
+	\begin{itemize}
 		\item Occupancy gridmaps: input as images or MRPT binary maps (from icp-slam, rbpf-slam, etc.)
 		\item Elevation meshes.
-	\end{itemize}	 
+	\end{itemize}
 \item Vehicle models:
 	\begin{itemize}
 		\item Differential driven (2 \& 4 wheel drive).
@@ -92,7 +92,7 @@ This package includes the C++ library mvsim, a standalone app and a ROS node.
 \item Sensors:
 	\begin{itemize}
 		\item Laser scanners: Robots see each other, their own bodies, etc.
-	\end{itemize} 
+	\end{itemize}
 \item Interface to vehicles: Choose among:
 	\begin{itemize}
 		\item Raw access to forces and motor torques.
@@ -117,7 +117,7 @@ All requisites of simulated world are described via configuration files so calle
 Decent amount of examples can be found in \textit{mvsim\_tutorial} folder.
 
 \subsubsection{General tags}
-World definition begins with tag \textbf{\textless mvsim\_world\textgreater}. To define simulation timestep, use \textbf{\textless simul\_timestep\textgreater} with \textit{float} value specified in seconds. 
+World definition begins with tag \textbf{\textless mvsim\_world\textgreater}. To define simulation timestep, use \textbf{\textless simul\_timestep\textgreater} with \textit{float} value specified in seconds.
 
 \subsubsection{GUI options}
 GUI options are specified with tag \textit{gui}. \textit{gui} has several nested tags:
@@ -129,7 +129,7 @@ GUI options are specified with tag \textit{gui}. \textit{gui} has several nested
 	\item \textbf{\textless cam\_distance} \textit{float} - default camera distance in world units
 	\item \textbf{\textless fov\_deg\textgreater } \textit{float} - camera field of view in degrees
 \end{itemize}
-	
+
 \subsubsection{Scenario definition}
 
 Scenario defines the "level" where the simulation takes place.
@@ -138,7 +138,7 @@ Scenario defines the "level" where the simulation takes place.
 \textbf{\textless element class="occupancy\_grid"\textgreater} depicts MRPT occupancy map which can be specified with both image file (black and while) and MRPT grid maps.
 \textbf{\textless file\textgreater} specifies file path to image of the map.
 
-\textbf{\textless element class="ground\_grid"\textgreater} is the metric grid for visual reference. 
+\textbf{\textless element class="ground\_grid"\textgreater} is the metric grid for visual reference.
 
 \textbf{\textless element class="elevation\_map"\textgreater} is an elevation map (!experimental). Mesh-based map is build of elevation map in simple bitmap where whiter means higher and darker - lower.
 
@@ -160,16 +160,16 @@ Tag \textbf{\textless vehicle:class\textgreater} depictd description of vehicle 
 Inside \textbf{\textless vehicle:class\textgreater} tag, there are tags \textbf{\textless dynamics\textgreater}, \textbf{\textless friction\textgreater} and exemplars of \textbf{\textless sensor\textgreater}.
 
 \paragraph{Vehicle dynamics}
-At the moment, there are three types of vehicle dynamics implemented. Refer  \ref{vehicle_models} for more information. 
+At the moment, there are three types of vehicle dynamics implemented. Refer  \ref{vehicle_models} for more information.
 
-\textbf{\textless dynamics\textgreater} with attribute \textit{class} specifies class of dynamics used. Currently available classes: 
+\textbf{\textless dynamics\textgreater} with attribute \textit{class} specifies class of dynamics used. Currently available classes:
 \begin{itemize}
 	\item differential
 	\item car\_ackermann
 	\item ackermann\_drivetrain
 \end{itemize}
 
-Each class has specific inner tags structure for its own configuration. 
+Each class has specific inner tags structure for its own configuration.
 
 \paragraph{Common} Every dynamics has wheels specified with tags \textbf{\textless i\_wheel\textgreater} where i stand for wheel position index (r, l for differential drive and fr, fl, rl, rr for Ackermann-drive)
 
@@ -192,9 +192,9 @@ Ackermann models also use \textbf{\textless max\_steer\_ang\_deg\textgreater} to
 	\item \textit{zmax} - distance from top of the robot to ground
 \end{itemize}
 
-\paragraph{Controllers} 
+\paragraph{Controllers}
 There are controllers for every dynamics type \ref{sec:controllers}.
-In XML their names are 
+In XML their names are
 \begin{itemize}
 	\item raw - control raw forces
 	\item twist\_pid - control with twist messages
@@ -258,7 +258,7 @@ that are described in \ref{sec:wi_friction}.
 Sensors are defined with \textbf{\textless sensor\textgreater} tag. It has attributes \textit{type} and \textit{name}.
 
 At the moment, only laser scanner sensor is implemented, its type is \textit{laser}.
-Subtags are: 
+Subtags are:
 \begin{itemize}
 	\item \textbf{\textless pose\textgreater} - an MRPT CPose3D string value
 	\item \textbf{\textless fov\_degrees\textgreater} - FOV of the laser scanner
@@ -270,7 +270,7 @@ Subtags are:
 \end{itemize}
 
 \subsection{Vehicles instantiation}
-Outside of vehicle class, there is an infinite number of vehicles that can be instantiated of this class. 
+Outside of vehicle class, there is an infinite number of vehicles that can be instantiated of this class.
 
 Vehicle instances are defined with \textbf{\textless vehicle\textgreater} tag that has attributes \textit{name} and \textit{class}. \textit{class} must match one of the classes defined earlier with \textbf{\textless vehicle:class\textgreater} tag.
 
@@ -291,11 +291,11 @@ Each step has several sub steps:
 
 \subsubsection{Logging}
 
-Each vehicle is equipped with parameters logger(s). This logger is not configurable and can be rewritten programmaticaly. 
+Each vehicle is equipped with parameters logger(s). This logger is not configurable and can be rewritten programmaticaly.
 
-Logger are implemented via \textbf{CsvLogger} class and make log files in CSV format which then can be opened via any editor or viewer. 
+Logger are implemented via \textbf{CsvLogger} class and make log files in CSV format which then can be opened via any editor or viewer.
 
-Loggers control is introduced via robot controllers, each controller controls only loggers of its robot. 
+Loggers control is introduced via robot controllers, each controller controls only loggers of its robot.
 
 Best results in visualizing offers QtiPlot \ref{fig:qtiplot_example1}.
 
@@ -309,7 +309,7 @@ Best results in visualizing offers QtiPlot \ref{fig:qtiplot_example1}.
 \end{figure}
 
 
-At the moment, following characteristics are logged: 
+At the moment, following characteristics are logged:
 \begin{itemize}
 	\item Pose ($x, y, z, \alpha, \beta, \gamma$)
 	\item Body velocity ($\dot{x}, \dot{z}, \dot{z}$)
@@ -333,7 +333,7 @@ Each wheel has following properties:
 \item diameter $d_w$ [m]
 \item width $w_w$ [m]
 \item mass $m_w$ [kg]
-\item inertia $I_{yy}$ 
+\item inertia $I_{yy}$
 \item spinning angular position $\phi_w$ [rad]
 \item spinning angular velocity $\omega_w$ [rad/s]
 \end{itemize}
@@ -353,7 +353,7 @@ Friction model base introduces \textit{Friction input} structure, that incorpora
 \begin{itemize}
 \item weight on this wheel from the car chassis, excluding the weight of the wheel itself $w$ [N]
 \item motor torque $\tau$ [Nm]
-\item instantaneous velocity 
+\item instantaneous velocity
 \[\nu = \begin{bmatrix}
 \nu_x \\
 \nu_y
@@ -368,7 +368,7 @@ Default friction evaluates forces in the wheel coordinate frame:
 
 \begin{center}
 \[
-\nu_w = 
+\nu_w =
 \begin{bmatrix}
 \nu_{wx} \\
 \nu_{wy}
@@ -426,7 +426,7 @@ F_{f,lon} = max(-F_{f,max}, min(F_{f,lon}, F_{f,max}))
 Simply composing friction forces to vector:
 \begin{center}
 \[
-F_f = 
+F_f =
 \begin{bmatrix}
 F_{f,lat} \\
 F_{f,lon}
@@ -468,14 +468,14 @@ $$
 Where $A_{roll}$, $R_1$, $R_2$ are the model-dependent coefficients. The impact of these coefficients is shown at figure \ref{fig:wi_rr} taken from original paper.
 
 \begin{figure}[h!]
-	\centerline{\includegraphics[width = 0.7\textwidth]{imgs/wi_rr}}	
+	\centerline{\includegraphics[width = 0.7\textwidth]{imgs/wi_rr}}
 	\caption{Ward-Iagnemma rolling resistance}
 	\label{fig:wi_rr}
 \end{figure}
 
 This force $F_{rr}$ is then added to $F_{f,lon}$.
 
-Default constants were chosen as in reference paper and showed good stability and robust results. In addition, they can be altered via configuration file. 
+Default constants were chosen as in reference paper and showed good stability and robust results. In addition, they can be altered via configuration file.
 
 
 
@@ -484,17 +484,17 @@ Default constants were chosen as in reference paper and showed good stability an
 
 \subsection{Vehicle models} \label{vehicle_models}
 
-Vehicle models are fully configurable with world XML files. 
+Vehicle models are fully configurable with world XML files.
 
 \subsubsection{Vehicle base class}
 
 Vehicle base incorporates basic functions for every vehicle actor in the scene. It is also responsible for updating state of vehicles.
 
-It has implementation of interaction with world. Derived classes re-implement only work with torques/forces on wheels. 
+It has implementation of interaction with world. Derived classes re-implement only work with torques/forces on wheels.
 
 At the moment, no model takes into account the weight transfer, so weight on wheels is calculated in this base class.
 
-Vehicle base class also provides ground-truth for velocity and position. 
+Vehicle base class also provides ground-truth for velocity and position.
 \begin{center}
 \[
 p_w = \frac{p_{chassis}}{N_w}
@@ -510,11 +510,11 @@ p_w = \frac{p_{chassis}}{N_w}
 		\item Apply force to vehicle body using Box2D
 	\end{itemize}
 	\item Time step - update internal vehicle state variables $q$ and $\dot{q}$
-	\item After time step - updates wheels rotation		
+	\item After time step - updates wheels rotation
 \end{itemize}
 
-Center of mass is defined as center of Box2D shape, currently there is no +Z mobility. 
- 
+Center of mass is defined as center of Box2D shape, currently there is no +Z mobility.
+
 \subsubsection{Differential driven}
 
 A differential wheeled robot is a mobile robot whose movement is based on two separately driven wheels placed on either side of the robot body. It can thus change its direction by varying the relative rate of rotation of its wheels and hence does not require an additional steering motion.
@@ -529,7 +529,7 @@ A differential wheeled robot is a mobile robot whose movement is based on two se
 \[
 \nu_y = 0
 \]
-Where $\omega_{veh}$ is angular velocity of the robot, $R_i$ - radius of the wheel, $y_i$ is the y position of the wheel, $\omega_i$ is the angular velocity of the wheel. All calculations in the robot's local frame. 
+Where $\omega_{veh}$ is angular velocity of the robot, $R_i$ - radius of the wheel, $y_i$ is the y position of the wheel, $\omega_i$ is the angular velocity of the wheel. All calculations in the robot's local frame.
 
 \textit{Nothing more interesting here.}
 \subsubsection{Ackermann driven}
@@ -558,14 +558,14 @@ Outer and inner wheel are defined by the turn direction.
 \[
 \nu_y = 0
 \]
-Where $\omega_{veh}$ is angular velocity of the robot, $R_{ri}$ - radius of the rear wheel, $y_{ri}$ is the y position of the rear wheel, $\omega_{ri}$ is the angular velocity of the rear wheel. All calculations in the robot's local frame. 
+Where $\omega_{veh}$ is angular velocity of the robot, $R_{ri}$ - radius of the rear wheel, $y_{ri}$ is the y position of the rear wheel, $\omega_{ri}$ is the angular velocity of the rear wheel. All calculations in the robot's local frame.
 
 
 \subsubsection{Ackermann-driven with drivetrain} \label{sec:ackermann_drivetrain}
 
-This type of dynamics has the same geometry as simple Ackermann-driven robots. However, its powertrain is completely different. 
+This type of dynamics has the same geometry as simple Ackermann-driven robots. However, its powertrain is completely different.
 
-Instead of one "motor" per wheel, this type of dynamics incorporates one "motor" linked to wheels by differentials. 
+Instead of one "motor" per wheel, this type of dynamics incorporates one "motor" linked to wheels by differentials.
 
 There are two types of differentials:
 \begin{itemize}
@@ -573,7 +573,7 @@ There are two types of differentials:
 	\item Torsen-like locking differential \cite{torsen-whitepaper}
 \end{itemize}
 
-Each type of differential can be linked with following configurations: 
+Each type of differential can be linked with following configurations:
 \begin{itemize}
 	\item Front drive
 	\item Rear drive
@@ -582,7 +582,7 @@ Each type of differential can be linked with following configurations:
 
 Split is customizable between all axes.
 
-As engine plays controller, whose torque output is then fed into differentials. 
+As engine plays controller, whose torque output is then fed into differentials.
 
 For open differential act the following equations:
 
@@ -605,7 +605,7 @@ $$
 
 Where $K_{s,f}, K_{s,frl}, K_{s,rrl}$ are split coefficients between axes.
 
-Different things happen for Torsen-like differentials. 
+Different things happen for Torsen-like differentials.
 As this type is self-locking, its torque output per wheel depends on wheel's velocity. Here is the function of selecting torque on the next time step based on previous time step velocity. First, introduce the bias ratio - the ratio indicating how much more torque the Torsen can send to the tire with more available traction, than is used by the tire with less traction. This ratio represents the "locking effect" of the differential. By default, it is set to $b = 1.5$
 
 $\omega_1, \omega_2$ and $t_1, t_2$ are the output axles angular velocities and torque splits respectively. $K_s$ is differential split when it is not locked.
@@ -623,7 +623,7 @@ $$
 $$
 
 $$
-\delta_t = 
+\delta_t =
 \begin{cases}
 	\delta_{lock} \cdot \omega_{max}, & \mbox{if } \delta_{lock} >  0 \\
 	0, & \mbox{if } \delta_{lock} \leq 0
@@ -631,14 +631,14 @@ $$
 $$
 
 $$
-f_1 = 
+f_1 =
 \begin{cases}
 	K_s \cdot (1 - \delta_t) & \mbox{if } |\omega_1| - |\omega_2| > 0 \\
 	K_s \cdot (1 + \delta_t)
 \end{cases}
 $$
 $$
-f_2 = 
+f_2 =
 \begin{cases}
 	(1 - K_s) \cdot (1 + \delta_t) & \mbox{if } |\omega_1| - |\omega_2| > 0 \\
 	(1 - K_s) \cdot (1 - \delta_t)
@@ -663,23 +663,23 @@ where $t_i$ is the output of Torsen differential for $i$-th wheel.
 
 With 4WD, torque is first split with Torsen to front and rear parts, each of them is than split independently with another Torsen.
 
-At the moment, there is no model of the engine and thus no feedback of tires torque to engine. 
+At the moment, there is no model of the engine and thus no feedback of tires torque to engine.
 
 
 \subsection{Controllers} \label{sec:controllers}
 
-Different vehicles have different controllers. 
-At the moment, differential and Ackermann drives have their own controllers. 
+Different vehicles have different controllers.
+At the moment, differential and Ackermann drives have their own controllers.
 
-Controllers are divided into several types: 
+Controllers are divided into several types:
 \begin{itemize}
 \item Raw forces
 \item Twist
 \end{itemize}
 
-Ackermann has controller, which controls steering angle and speed. 
+Ackermann has controller, which controls steering angle and speed.
 
-Controllers' input and output are described by dynamics' classes that they use. 
+Controllers' input and output are described by dynamics' classes that they use.
 
 \subsubsection{Differential raw controller}
 
@@ -687,7 +687,7 @@ This type of controller has simple response to user's input integrating wheel to
 
 \subsubsection{Differential Twist controller}
 
-Differential twist controller uses PID regulator to control linear and angular speed of the robot. 
+Differential twist controller uses PID regulator to control linear and angular speed of the robot.
 
 Setpoints for $v_r$ and $v_l$ are calculated as following:
 $$
@@ -711,8 +711,8 @@ As a raw differential controller, raw Ackermann controller integrates user input
 
 \subsubsection{Ackermann twist controller}
 
-Ackermann twist controller uses PID regulator to control wheel torques responding to angular and linear velocity commands. 
-Turn radius and desired steering angle are calculated: 
+Ackermann twist controller uses PID regulator to control wheel torques responding to angular and linear velocity commands.
+Turn radius and desired steering angle are calculated:
 $$
 R = \frac{\nu_s}{\omega_s}
 $$
@@ -720,22 +720,22 @@ $$
 \alpha = atan(\frac{w}{r})
 $$
 
-Desired velocities for wheels are computed by rotating desired linear velocity to the steering angle. 
+Desired velocities for wheels are computed by rotating desired linear velocity to the steering angle.
 In the same way, actual velocities from "odometry" are computed.
 
 Then, torque of separate wheels is controlled with PID regulators for each wheel.
 
 \subsubsection{Ackermann steering controller}
 
-Ackermann steering controller takes as input linear speed an steering angle. 
+Ackermann steering controller takes as input linear speed an steering angle.
 
-Then, it executes Ackermann twist controller to control wheels' torques. 
+Then, it executes Ackermann twist controller to control wheels' torques.
 
 \subsubsection{Ackermann-drivetrain controllers}
 
-These controllers' steering is identical to Ackermann contollers, however, their torque part is different. 
+These controllers' steering is identical to Ackermann contollers, however, their torque part is different.
 
-These controllers' output acts like 'engine' for drivetrain. Instead of separate outputs to wheels, it has one torque output to differentials that will split it to separate wheels. 
+These controllers' output acts like 'engine' for drivetrain. Instead of separate outputs to wheels, it has one torque output to differentials that will split it to separate wheels.
 
 \nocite{*}
 \bibliographystyle{plain}
