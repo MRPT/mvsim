@@ -6,6 +6,3 @@ export DH_VERBOSE=1
 
 %:
 	dh $@ --buildsystem=cmake --parallel
-
-override_dh_strip:
-	dh_strip --dbg-package=libmvsim-dbg
