@@ -32,7 +32,7 @@ Description: Multi vehicle efficient dynamics simulator - development files
 
 Package: mvsim-apps
 Architecture: any
-Priority: extra
+Priority: optional
 Depends: ${shlibs:Depends}, libmvsim (= ${binary:Version}), ${misc:Depends}
 Description: Multi vehicle efficient dynamics simulator - GUI applications
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
