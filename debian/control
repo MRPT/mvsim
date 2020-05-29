@@ -2,7 +2,11 @@ Source: mvsim
 Section: misc
 Priority: optional
 Maintainer: Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>
-Build-Depends: debhelper (>= 9.0.0), libmrpt-dev (>= 2.0.0), cmake
+Build-Depends:
+	debhelper (>= 9.0.0),
+	libmrpt-dev (>= 2.0.0),
+	cmake,
+	libbox2d-dev
 Standards-Version: 3.9.8
 
 Package: libmvsim
