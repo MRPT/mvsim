@@ -3,8 +3,8 @@
   |                                                                         |
   | Copyright (C) 2017  Borys Tymchenko                                     |
   | Odessa National Polytechnic University                                  |
-  | Distributed under GNU General Public License version 3                  |
-  |   See <http://www.gnu.org/licenses/>                                    |
+  | Distributed under 3-clause BSD License                                  |
+  |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
 #pragma once

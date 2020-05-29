@@ -2,6 +2,12 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+--------------
+* License changed to 3-clause BSD.
+* MRPT 2.x is now required to build mvsim.
+
+
 0.2.1 (2019-04-12)
 ------------------
 * Fix build against latest mrpt-master & 1.5.x versions.
