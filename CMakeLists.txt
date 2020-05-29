@@ -11,7 +11,7 @@
 cmake_minimum_required(VERSION 3.1)
 project(mvsim)  # Must match the ROS package name.
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
+find_package( Threads )
 
 # ------------------------------------------------------------------
 #                              IMPORTANT NOTE
@@ -91,10 +91,7 @@ set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals/")
 # --------------------------
 find_package( MRPT REQUIRED COMPONENTS opengl obs maps gui tfest)
 message(STATUS "MRPT_VERSION: ${MRPT_VERSION}")
-if(MRPT_VERSION VERSION_LESS "1.9.9")
-	set (CMAKE_CXX_STANDARD 14)
-endif()
-# Defines: MRPT_LIBS -> libs to link against
+# Defines: MRPT_LIBRARIES -> libs to link against
 
 # --------------------------
 # Dependency: Box2D
@@ -122,6 +119,8 @@ if (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 
 	add_subdirectory(externals/Box2D)
 
+	set_property(TARGET Box2D PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 	# 2nd attempt: Fatal error if not found:
 	message(STATUS "INFO: Box2D library not found in the system. Using embedded copy.")
 	set(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
@@ -137,12 +136,12 @@ if (Box2D_FOUND)
 	#message(STATUS "BOX2D_INCLUDE_DIR: ${BOX2D_INCLUDE_DIR}")
 	if (NOT "" STREQUAL "${BOX2D_INCLUDE_DIR}")
 		include_directories("${BOX2D_INCLUDE_DIR}")
-	endif (NOT "" STREQUAL "${BOX2D_INCLUDE_DIR}")
+	endif()
 
 	# It seems this var is not always set (!?)
 	if ("" STREQUAL "${BOX2D_LIBRARIES}")
 		set(BOX2D_LIBRARIES Box2D)
-	endif ("" STREQUAL "${BOX2D_LIBRARIES}")
+	endif()
 endif()
 
 
@@ -254,13 +253,14 @@ if (BUILD_FOR_ROS)
 	endif()
 
 	## Specify libraries to link a library or executable target against
-        target_link_libraries(
-                mvsim_node
-                mvsim  # the simulator lib
-                ${BOX2D_LIBRARIES}  # Box2D libs
+	target_link_libraries(
+		mvsim_node
+		mvsim  # the simulator lib
+		${BOX2D_LIBRARIES}  # Box2D libs
 		${MRPT_LIBRARIES}
-                ${catkin_LIBRARIES}
-		)
+		${catkin_LIBRARIES}
+		${CMAKE_THREAD_LIBS_INIT}
+	)
 
 	#############
 	## Install ##

@@ -10,4 +10,5 @@ target_link_libraries(
 	mvsim # the simulator lib
 	${MRPT_LIBRARIES}  # MRPT libs
 	${BOX2D_LIBRARIES}  # Box2D libs
+	${CMAKE_THREAD_LIBS_INIT}
 	)

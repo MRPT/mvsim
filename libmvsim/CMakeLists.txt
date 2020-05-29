@@ -1,5 +1,5 @@
 # CMake file for the library target
-project(LIBMVSIM)
+project(libmvsim)
 
 file(GLOB ROOT_SRCS
 	"${${PROJECT_NAME}_SOURCE_DIR}/src/*.cpp"
@@ -31,14 +31,25 @@ include_directories("${${PROJECT_NAME}_SOURCE_DIR}/src")
 include_directories(".")
 
 # Declare the target (a library)
-add_library(mvsim STATIC
+add_library(mvsim
 	${ROOT_SRCS}
 	${Sensors_SRCS}
 	${Friction_SRCS}
 	${VehicleDynamics_SRCS}
 	${WorldElements_SRCS}
-	)
-target_link_libraries(mvsim ${MRPT_LIBRARIES} ${BOX2D_LIBRARIES})
+)
+
+# To make code portable between using directly the mvsim source tree, or 
+# importing exported cmake targets:
+add_library(mvsim::mvsim ALIAS mvsim)
+
+target_link_libraries(mvsim 
+  PRIVATE
+    ${CMAKE_THREAD_LIBS_INIT}
+  PUBLIC
+    ${MRPT_LIBRARIES}
+    ${BOX2D_LIBRARIES}
+)
 
 source_group(General FILES ${ROOT_SRCS})
 source_group(Sensors FILES ${Sensors_SRCS})
