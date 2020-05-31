@@ -25,7 +25,7 @@ author = 'José Luis Blanco Claraco'
 
 html_theme_options = {
 #    'canonical_url': '',
-#    'analytics_id': 'UA-XXXXXXX-1',  #  Provided by Google in your dashboard
+    'analytics_id': 'UA-21128561-9',  #  Provided by Google in your dashboard
     'logo_only': False,
     'display_version': True,
     'prev_next_buttons_location': 'bottom',
