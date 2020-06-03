@@ -2,8 +2,8 @@
 <package format="2">
   <name>mvsim</name>
   <description>Node for the "multivehicle simulator" framework.</description>
-  
-  <!-- REMEMBER: Keep in synch version number in: 
+
+  <!-- REMEMBER: Keep in synch version number in:
     * package.xml
     * libvmsim/CMakeLists.txt
     * CHANGELOG.rst
@@ -12,7 +12,7 @@
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
   <license>BSD</license>
-  <url type="website">http://wiki.ros.org/mvsim</url>
+  <url type="website">https://wiki.ros.org/mvsim</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
