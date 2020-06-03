@@ -1,0 +1,325 @@
+Simulated world definition
+===========================
+
+Simulation happens inside a World object. This is the central class for
+usage from user code, running the simulation, loading XML models,
+managing GUI visualization, etc. The ROS node acts as a bridge between
+this class and the ROS subsystem.
+
+Simulated worlds are described via configuration files
+called “world” files, defined in the XML file format.
+
+Many examples can be found in the
+`mvsim_tutorial directory <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_.
+
+The next sections define valid values for XML elements in a world file.
+
+*world.xml* sections
+----------------------
+
+1. Global XML tags
+~~~~~~~~~~~~~~~~~~~~
+
+World definition begins with tag **<mvsim\_world>**. To define
+simulation timestep, use **<simul\_timestep>** with *float* value
+specified in seconds.
+
+.. code-block:: xml
+
+	<mvsim_world version="1.0">
+	...
+		<!-- General simulation options -->
+		<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [s] -->
+	...
+	</mvsim_world>
+
+
+2. GUI options
+~~~~~~~~~~~~~~~~~
+
+GUI options are specified with tag *gui*. *gui* has several nested tags:
+
+.. code-block:: xml
+
+	<mvsim_world version="1.0">
+	...
+		<!-- GUI options -->
+		<gui>
+			<!-- Is camera orthographic or projective? -->
+			<ortho>false</ortho>
+
+			<!-- Show reaction forces on wheels with lines -->
+			<show_forces>true</show_forces>
+			<force_scale>0.01</force_scale> <!-- (Newtons to meters draw scale) -->
+
+			<!-- default camera distance in world units -->
+			<cam_distance>35</cam_distance>
+
+			<!-- camera vertical field of view in degrees -->
+			<fov_deg>35</fov_deg>
+
+			<!-- <follow_vehicle>r1</follow_vehicle> -->
+		</gui>
+	...
+	</mvsim_world>
+
+
+3. Scenario definition
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Scenario defines the “level” where the simulation takes place.
+
+**<element class=“occupancy\_grid”>** depicts MRPT occupancy map which
+can be specified with both image file (black and while) and MRPT grid
+maps. **<file>** specifies file path to image of the map.
+
+**<element class=“ground\_grid”>** is the metric grid for visual
+reference.
+
+**<element class=“elevation\_map”>** is an elevation map
+(!experimental). Mesh-based map is build of elevation map in simple
+bitmap where whiter means higher and darker - lower.
+
+This tag has several subtags:
+
+-  **<elevation\_image>** - path the elevation bitmap itself
+
+-  **<elevation\_image\_min\_z>** - minimum height in world units
+
+-  **<elevation\_image\_max\_z>** - maximum height in world units
+
+-  **<texture\_image>** - path texture image for elevation bitmap. Mus
+   not be used with *mesh\_color* simultaneously
+
+-  **<mesh\_color>** - mesh color in HEX RGB format
+
+-  **<resolution>** - mesh XY scale
+
+4. Vehicle descriptions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tag **<vehicle:class>** depictd description of vehicle class. The
+attribute *name* will be later referenced when describing vehicle
+exemplars.
+
+Inside **<vehicle:class>** tag, there are tags **<dynamics>**,
+**<friction>** and exemplars of **<sensor>**.
+
+Vehicle dynamics
+^^^^^^^^^^^^^^^^
+
+At the moment, there are three types of vehicle dynamics implemented.
+Refer [vehicle\_models] for more information.
+
+**<dynamics>** with attribute *class* specifies class of dynamics used.
+Currently available classes:
+
+-  differential
+
+-  car\_ackermann
+
+-  ackermann\_drivetrain
+
+Each class has specific inner tags structure for its own configuration.
+
+Common
+^^^^^^
+
+Every dynamics has wheels specified with tags **<i\_wheel>** where i
+stand for wheel position index (r, l for differential drive and fr, fl,
+rl, rr for Ackermann-drive)
+
+Wheel tags have following attributes:
+
+-  *pos* - two floats representing x an y coordinate of the wheel in
+   local frame
+
+-  *mass* - float value for mass of the wheel
+
+-  *width* - float value representing wheel width [fig:wheel\_forces]
+
+-  *diameter* - float value to represent wheel diameter
+   [fig:wheel\_forces]
+
+Ackermann models also use **<max\_steer\_ang\_deg>** to specify maximum
+steering angle.
+
+**<chassis>** is also common for all dynamics, it has attributes:
+
+-  *mass* - mass of chassis
+
+-  *zmin* - distance from bottom of the robot to ground
+
+-  *zmax* - distance from top of the robot to ground
+
+Controllers
+^^^^^^^^^^^
+
+There are controllers for every dynamics type [sec:controllers]. In XML
+their names are
+
+-  raw - control raw forces
+
+-  twist\_pid - control with twist messages
+
+-  front\_steer\_pid - [Ackermann only] - control with PID for velocity
+   and raw steering angles
+
+Controllers with *pid* in their names use PID regulator which needs to
+be configured. There are tags **<KP><KI><KD>** for this purpose. Also
+they need the parameter **<max\_torque>** to be set.
+
+Twist controllers need to set initial **<V>** and **<W>** for linear and
+angular velocities respectively.
+
+Steer controllers need to set initial **<V>** and **<STEER\_ANG>** for
+linear velocity and steering angle respectively.
+
+Ackermann-drivetrain model
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+needs a differential type and split to be configured. For this purpose
+there is a tag **<drivetrain>** with argument *type*. Supported types
+are defined in [sec:ackermann\_drivetrain]. In XML their names are:
+
+-  open\_front
+
+-  open\_rear
+
+-  open\_4wd
+
+-  torsen\_front
+
+-  torsen\_rear
+
+-  torsen\_4wd
+
+**<drivetrain>** has inner tags describing its internal structure:
+
+-  **<front\_rear\_split>**
+
+-  **<front\_rear\_bias>**
+
+-  **<front\_left\_right\_split>**
+
+-  **<front\_left\_right\_bias>**
+
+-  **<rear\_left\_right\_split>**
+
+-  **<rear\_left\_right\_bias>**
+
+which are pretty self-explanatory.
+
+Friction
+^^^^^^^^
+
+Friction models are described in [sec:friction\_models] and defined
+outside of **<dynamics>**. The tag for friction is **<friction>** with
+attribute *class*.
+
+Class names in XML are:
+
+-  wardiagnemma
+
+-  default
+
+**Default** friction [sec:default\_friction] uses subtags:
+
+-  **<mu>** - the friction coefficient
+
+-  **<C\_damping>** - damping coefficient
+
+In addition to **default**, **Ward-Iagnemma** friction includes subtags:
+
+-  **A\_roll**
+
+-  **R1**
+
+-  **R2**
+
+that are described in [sec:wi\_friction].
+
+Sensors
+^^^^^^^
+
+Sensors are defined with **<sensor>** tag. It has attributes *type* and
+*name*.
+
+At the moment, only laser scanner sensor is implemented, its type is
+*laser*. Subtags are:
+
+-  **<pose>** - an MRPT CPose3D string value
+
+-  **<fov\_degrees>** - FOV of the laser scanner
+
+-  **<sensor\_period>** - period in seconds when sensor sends updates
+
+-  **<nrays>** - laser scanner rays per FOV
+
+-  **<range\_std\_noise>** - standard deviation of noise in distance
+   measurements
+
+-  **<angle\_std\_noise\_deg>** - standatd deviation of noise in angles
+   of rays
+
+-  **<bodies\_visible>** - boolean flag to see other robots or not
+
+Vehicle instantiations
+-------------------------
+
+For each vehicle **class**, an arbitrary number of vehicle **instances**
+can be created in a given world.
+
+Vehicle instances are defined with the **<vehicle>** tag that has attributes
+*name* and *class*. *class* must match one of the classes defined
+earlier with **<vehicle:class>** tag.
+
+Subtags are:
+
+-  **<init\_pose>** - in global coordinates: :math:`x`, :math:`y`,
+   :math:`\gamma` (deg)
+
+-  **<init\_vel>** - in local coordinates: :math:`v_x`,\ :math:`v_y`,
+   :math:`\omega` (deg/s)
+
+Simulation execution
+------------------------
+
+Simulation executes step-by-step with user-defined :math:`\Delta t` time
+between steps. Each step has several sub steps:
+
+-  Before time step - sets actions, updates models, etc.
+
+-  Actual time step - updates dynamics
+
+-  After time step - everything needed to be done with updated state
+
+Logging
+~~~~~~~
+
+Each vehicle is equipped with parameters logger(s). This logger is not
+configurable and can be rewritten programmaticaly.
+
+Logger are implemented via **CsvLogger** class and make log files in CSV
+format which then can be opened via any editor or viewer.
+
+Loggers control is introduced via robot controllers, each controller
+controls only loggers of its robot.
+
+Best results in visualizing offers QtiPlot [fig:qtiplot\_example1].
+
+At the moment, following characteristics are logged:
+
+-  Pose (:math:`x, y, z, \alpha, \beta, \gamma`)
+
+-  Body velocity (:math:`\dot{x}, \dot{z}, \dot{z}`)
+
+-  Wheel torque (:math:`\tau`)
+
+-  Wheel weight (:math:`m_{wp}`)
+
+-  Wheel velocity (:math:`v_x, v_y`)
+
+Loggers support runtime clear and creating new session. The new session
+mode finalizes current log files and starts to write to a new bunch of
+them.

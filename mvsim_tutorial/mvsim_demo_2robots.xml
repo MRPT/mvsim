@@ -3,7 +3,7 @@
 	<simul_timestep>0.010</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
 	<b2d_vel_iters>3</b2d_vel_iters>
 	<b2d_pos_iters>3</b2d_pos_iters>
-	
+
 	<!-- GUI options -->
 	<gui>
 		<ortho>false</ortho>
@@ -13,30 +13,33 @@
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
-	
+
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->
 	<element class="occupancy_grid">
 		<!-- File can be an image or an MRPT .gridmap file -->
 		<file>mvsim_demo_world1.png</file>
-		
+
 		<!-- The rest of params are ignored if file is an MRPT gridmap -->
-		<resolution>0.25</resolution>
-		
+		<resolution>0.5</resolution>
+
+		<centerpixel_x>100</centerpixel_x>
+		<centerpixel_y>100</centerpixel_y>
+
 		<!--<show_collisions>true</show_collisions>-->
 	</element>
-		
+
 	<!-- ground grid (for visual reference) -->
 	<element class="ground_grid">
 		<!--<floating>true</floating>-->
 	</element>
-	
+
 	<!-- =============================
-		   Vehicle classes definition 
+		   Vehicle classes definition
 	     ============================= -->
 	<vehicle:class name="small_robot">
-		
+
 		<!--  Dynamical model -->
 		<dynamics class="differential">
 			<!-- Params -->
@@ -44,7 +47,7 @@
 			<r_wheel pos="0.0 -0.5" mass="4.0" width="0.20" diameter="0.40" />
 			<chassis mass="15.0" zmin="0.05" zmax="0.6">
 			</chassis>
-			
+
 			<!--   Motor controller -->
 			<controller class="twist_pid">
 				<!-- Params -->
@@ -52,15 +55,15 @@
 				<V>0.0</V><W>0</W>
 				<max_torque>25</max_torque>
 			</controller>
-			
+
 		</dynamics>
-				
+
 		<!-- Friction force simulation -->
 		<friction class="default">
 			<mu>0.7</mu>
 			<C_damping>0.4</C_damping>
 		</friction>
-				
+
 		<!-- Sensors: -->
 		<sensor class="laser" name="laser1">
 			<pose> 0.60  0.0  0.0 </pose>
@@ -70,10 +73,10 @@
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
 		</sensor>
 	</vehicle:class>
-	
-	
+
+
 	<vehicle:class name="car_ackermann">
-		
+
 		<!--  Dynamical model -->
 		<dynamics class="ackermann">
 			<!-- Params -->
@@ -84,26 +87,26 @@
 			<f_wheels_x>1.3</f_wheels_x>
 			<f_wheels_d>2.0</f_wheels_d>
 			<max_steer_ang_deg>30.0</max_steer_ang_deg>
-			
+
 			<chassis mass="800.0" zmin="0.15" zmax="1.2">
 			</chassis>
-			
+
 			<!--   Motor controller -->
 			<controller class="twist_front_steer_pid">
 				<!-- Params -->
 				<KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
 				<V>0.0</V><W>0</W>
 				<max_torque>600</max_torque>
-			</controller>			
-			
+			</controller>
+
 		</dynamics>
-				
+
 		<!-- Friction force simulation -->
 		<friction class="default">
 			<mu>0.7</mu>
 			<C_damping>10</C_damping>
 		</friction>
-		
+
 		<!-- Sensors: -->
 		<sensor class="laser" name="laser1">
 			<pose> 1.80  0.0  0.0 </pose>
@@ -112,11 +115,11 @@
 			<range_std_noise>0.01</range_std_noise>
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
 		</sensor>
-		
+
 	</vehicle:class>
-		 
+
 	<!-- ========================
-		   Vehicle(s) definition 
+		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="small_robot">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
@@ -131,7 +134,7 @@
 
 
 	<!-- ======================================
-	      Obstacle blocks classes definition 
+	      Obstacle blocks classes definition
 	     ====================================== -->
 	<block:class name="square_obstacle">
 		<mass>20</mass>
@@ -155,6 +158,6 @@
 	<block class="square_obstacle">
 		<init_pose>7 7 45</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 	</block>
-		
-	
+
+
 </mvsim_world>

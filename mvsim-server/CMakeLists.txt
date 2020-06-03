@@ -1,5 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
-project(mvsim_app)
+project(mvsim-server)
 
 # === Define executable ===
 add_executable(${PROJECT_NAME} mvsim_main.cpp)

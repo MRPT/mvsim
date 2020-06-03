@@ -19,8 +19,8 @@ import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = 'mvsim'
-copyright = '2020, José Luis Blanco Claraco'
-author = 'José Luis Blanco Claraco'
+copyright = u'2020, Jose Luis Blanco Claraco'
+author = u'Jose Luis Blanco Claraco'
 
 
 html_theme_options = {
@@ -52,6 +52,7 @@ master_doc = 'index'
 # ones.
 extensions = [
     'sphinx_rtd_theme',
+	'sphinx.ext.mathjax'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

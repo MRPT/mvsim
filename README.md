@@ -1,5 +1,5 @@
-gcc/clang: [![mvsim](https://circleci.com/gh/MRPT/mvsim.svg?style=svg)](https://circleci.com/gh/MRPT/mvsim) Docs: [![Documentation Status](https://readthedocs.org/projects/mvsimulator/badge/?version=latest)](https://mvsimulator.readthedocs.io/en/latest/?badge=latest)
-ROS build farm: git master: Melodic [![Build Status](http://build.ros.org/job/Mdev__mvsim__ubuntu_bionic_amd64/badge/icon)](http://build.ros.org/job/Mdev__mvsim__ubuntu_bionic_amd64/) Last released versions: Melodic [![Build Status](http://build.ros.org/job/Mbin_uB64__mvsim__ubuntu_bionic_amd64__binary/badge/icon)](http://build.ros.org/job/Mbin_uB64__mvsim__ubuntu_bionic_amd64__binary/) Kinetic [![Build Status](http://build.ros.org/job/Kbin_uX64__mvsim__ubuntu_xenial_amd64__binary/badge/icon)](http://build.ros.org/job/Kbin_uX64__mvsim__ubuntu_xenial_amd64__binary/)
+[![mvsim](https://circleci.com/gh/MRPT/mvsim.svg?style=svg)](https://circleci.com/gh/MRPT/mvsim) [![Documentation Status](https://readthedocs.org/projects/mvsimulator/badge/?version=latest)](https://mvsimulator.readthedocs.io/en/latest/?badge=latest)
+ROS build farm: git master: M [![Build Status](http://build.ros.org/job/Mdev__mvsim__ubuntu_bionic_amd64/badge/icon)](http://build.ros.org/job/Mdev__mvsim__ubuntu_bionic_amd64/) Last release: M [![Build Status](http://build.ros.org/job/Mbin_uB64__mvsim__ubuntu_bionic_amd64__binary/badge/icon)](http://build.ros.org/job/Mbin_uB64__mvsim__ubuntu_bionic_amd64__binary/) K [![Build Status](http://build.ros.org/job/Kbin_uX64__mvsim__ubuntu_xenial_amd64__binary/badge/icon)](http://build.ros.org/job/Kbin_uX64__mvsim__ubuntu_xenial_amd64__binary/)
 
 MultiVehicle simulator (libmvsim)
 ======================================
@@ -15,9 +15,8 @@ Copyright (C) 2014-2020 Jose Luis Blanco <jlblanco@ual.es> (University of Almeri
 
 Docs
 ----------
-  * The mvsim manual is the main reference document can be found in docs/user_manual.tex.
-  * (TO-DO) ROS tutorials (Write me!!)
-  * http://wiki.ros.org/mvsim
+  * [Main documentation site](https://readthedocs.org/projects/mvsimulator/badge/?version=latest)
+  * https://wiki.ros.org/mvsim
 
 Main features
 --------------
@@ -35,30 +34,3 @@ Main features
   * Interface to vehicles: Choose among:
     * Raw access to forces and motor torques.
     * Twist commands (using internal controllers).
-
-
-Compiling: standalone
------------------------
-Requisites:
- * A decent C++ compiler!
- * CMake >= 3.1
- * MRPT (>=1.5.4 from 1.5 series; or >=2.0.0): In Windows, build from sources or install precompiled binaries.
- * Box2D: Will use an embedded copy if no system version is found.
-
-In Ubuntu, this will install all requirements:
-
-     sudo apt-get install libmrpt-dev libbox2d-dev
-
-ROS: Compiling & usage
-------------------------
- * Install:
-     sudo apt-get install ros-$ROS_DISTRO-mvsim
-
- * Build:
- 	 clone to your catkin workspace and build as usual
-
- * Usage: See docs and tutorials in http://wiki.ros.org/mvsim
-
-Compiling: MOOS / OpenMORA
----------------------------
-This package is already included in [OpenMORA](https://github.com/OpenMORA).
