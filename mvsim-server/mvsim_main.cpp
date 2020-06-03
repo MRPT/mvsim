@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 			// Global keys:
 			switch (keyevent.keycode)
 			{
-				case 27:
+				case GLFW_KEY_ESCAPE:
 					do_exit = true;
 					break;
 				case '1':

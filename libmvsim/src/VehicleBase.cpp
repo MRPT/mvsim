@@ -562,15 +562,14 @@ void VehicleBase::gui_update_common(
 			gl_poly->setColor_u8(m_chassis_color);
 			m_gl_chassis->insert(gl_poly);
 
-			SCENE_INSERT_Z_ORDER(scene, 1, m_gl_chassis);
+			scene.insert(m_gl_chassis);
 
 			// Visualization of forces:
 			m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 			m_gl_forces->setLineWidth(3.0);
 			m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
-			SCENE_INSERT_Z_ORDER(
-				scene, 3, m_gl_forces);  // forces are in global coords
+			scene.insert(m_gl_forces);  // forces are in global coords
 		}
 
 		// Update them:

@@ -133,7 +133,7 @@ void ElevationMap::gui_update(mrpt::opengl::COpenGLScene& scene)
 	if (m_first_scene_rendering)
 	{
 		m_first_scene_rendering = false;
-		SCENE_INSERT_Z_ORDER(scene, 0, m_gl_mesh);
+		scene.insert(m_gl_mesh);
 	}
 }
 
