@@ -7,9 +7,9 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/WorldElements/ElevationMap.h>
-#include <mvsim/World.h>
 #include <mvsim/VehicleBase.h>
+#include <mvsim/World.h>
+#include <mvsim/WorldElements/ElevationMap.h>
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
@@ -42,7 +42,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["elevation_image_min_z"] = TParamEntry("%lf", &img_min_z);
 	params["elevation_image_max_z"] = TParamEntry("%lf", &img_max_z);
 
-	TColor mesh_color(0xa0, 0xe0, 0xa0);
+	mrpt::img::TColor mesh_color(0xa0, 0xe0, 0xa0);
 	params["mesh_color"] = TParamEntry("%color", &mesh_color);
 
 	params["resolution"] = TParamEntry("%lf", &m_resolution);
@@ -53,7 +53,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	mrpt::math::CMatrixFloat elevation_data;
 	if (!sElevationImgFile.empty())
 	{
-		CImage imgElev;
+		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(
 				sElevationImgFile, 0 /*force load grayscale*/))
 			throw std::runtime_error(mrpt::format(
@@ -64,7 +64,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		imgElev.getAsMatrix(
 			elevation_data);  // Get image normalized in range [0,1]
 		ASSERT_(img_min_z != img_max_z);
-#if MRPT_VERSION >= 0x199
+
 		const double vmin = elevation_data.minCoeff();
 		const double vmax = elevation_data.maxCoeff();
 		mrpt::math::CMatrixFloat f = elevation_data;
@@ -75,9 +75,6 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		m.setConstant(img_min_z);
 		f += m;
 		elevation_data = f;
-#else
-		elevation_data.adjustRange(img_min_z, img_max_z);
-#endif
 	}
 	else
 	{
@@ -85,7 +82,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 
 	// Load texture (optional):
-	CImage mesh_image;
+	mrpt::img::CImage mesh_image;
 	bool has_mesh_image = false;
 	if (!sTextureImgFile.empty())
 	{
@@ -186,7 +183,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 				const Wheel& wheel = itVeh->second->getWheelInfo(iW);
 
 				// Local frame
-				TMatchingPair corr;
+				mrpt::tfest::TMatchingPair corr;
 
 				corr.other_idx = iW;
 				corr.other_x = wheel.x;

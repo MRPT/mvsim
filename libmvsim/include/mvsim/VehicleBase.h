@@ -11,42 +11,36 @@
 
 #include <mutex>
 
-#include <mvsim/basic_types.h>
-#include <mvsim/VisualObject.h>
-#include <mvsim/Simulable.h>
-#include <mvsim/Wheel.h>
 #include <mvsim/ClassFactory.h>
+#include <mvsim/ControllerBase.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/Sensors/SensorBase.h>
-#include <mvsim/ControllerBase.h>
+#include <mvsim/Simulable.h>
+#include <mvsim/VisualObject.h>
+#include <mvsim/Wheel.h>
+#include <mvsim/basic_types.h>
 
-#include <Box2D/Dynamics/b2World.h>
-#include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Collision/Shapes/b2PolygonShape.h>
+#include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2Fixture.h>
+#include <Box2D/Dynamics/b2World.h>
 
 #include <mrpt/poses/CPose2D.h>
 
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/opengl/CSetOfLines.h>
-#if MRPT_VERSION<0x199
-#include <mrpt/utils/TColor.h>
-using mrpt::utils::TColor;
-#else
 #include <mrpt/img/TColor.h>
-using mrpt::img::TColor;
-#endif
+#include <mrpt/opengl/CSetOfLines.h>
+#include <mrpt/opengl/CSetOfObjects.h>
 
-#include <string>
 #include <map>
+#include <string>
 #include "CsvLogger.h"
 
 namespace mvsim
 {
 /** Virtual base class for each vehicle "actor" in the simulation.
-  * Derived classes implements different dynamical models (Differential,
+ * Derived classes implements different dynamical models (Differential,
  * Ackermann,...)
-  */
+ */
 class VehicleBase : public VisualObject, public Simulable
 {
    public:
@@ -112,7 +106,7 @@ class VehicleBase : public VisualObject, public Simulable
 	const vec3& getVelocity() const { return m_dq; }
 	/** Last time-step velocity (of the ref. point, in local coords)
 	 * (ground-truth)
-	  * \sa getVelocityLocalOdoEstimate() */
+	 * \sa getVelocityLocalOdoEstimate() */
 	vec3 getVelocityLocal() const;
 	/** Current velocity of each wheel's center point (in local coords). Call
 	 * with veh_vel_local=getVelocityLocal() for ground-truth.  */
@@ -122,8 +116,8 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** Gets the current estimation of odometry-based velocity as reconstructed
 	 * solely from wheels spinning velocities and geometry.
-	  * This is the input of any realistic low-level controller onboard.
-	  * \sa getVelocityLocal() */
+	 * This is the input of any realistic low-level controller onboard.
+	 * \sa getVelocityLocal() */
 	virtual vec3 getVelocityLocalOdoEstimate() const = 0;
 
 	typedef std::vector<SensorBase::Ptr> TListSensors;
@@ -163,10 +157,10 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** Must create a new object in the scene and/or update it according to the
 	 * current state.
-	  * If overrided in derived classes, it may be time-saving to call \a
+	 * If overrided in derived classes, it may be time-saving to call \a
 	 * gui_update_common() and associated methods for 3D elements common to any
 	 * vehicle.
-	  */
+	 */
 	virtual void gui_update(mrpt::opengl::COpenGLScene& scene);
 
 	virtual ControllerBaseInterface* getControllerInterface() = 0;
@@ -194,35 +188,35 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** To be called at derived classes' gui_update(), updates all stuff common
 	 * to any vehicle type.
-	  * Calls: internal_gui_update_sensors(), internal_gui_update_forces()
-	  * \param[in] defaultVehicleBody If true, will draw default wheels &
+	 * Calls: internal_gui_update_sensors(), internal_gui_update_forces()
+	 * \param[in] defaultVehicleBody If true, will draw default wheels &
 	 * vehicle chassis.
-	  */
+	 */
 	void gui_update_common(
 		mrpt::opengl::COpenGLScene& scene, bool defaultVehicleBody = true);
 
 	std::string
 		m_name;  //!< User-supplied name of the vehicle (e.g. "r1", "veh1")
 	size_t m_vehicle_index;  //!< user-supplied index number: must be set/get'ed
-							 //!with setVehicleIndex() getVehicleIndex()
+							 //! with setVehicleIndex() getVehicleIndex()
 							 //!(default=0)
 
 	/** Derived classes must store here the body of the vehicle main body
 	 * (chassis).
-	  * This is used by \a simul_post_timestep() to extract the vehicle
+	 * This is used by \a simul_post_timestep() to extract the vehicle
 	 * dynamical coords (q,\dot{q}) after each simulation step.
-	  */
+	 */
 	b2Body* m_b2d_vehicle_body;
 
 	FrictionBasePtr m_friction;  //!< Instance of friction model for the
-								 //!vehicle-to-ground interaction.
+								 //! vehicle-to-ground interaction.
 
 	TListSensors m_sensors;  //!< Sensors aboard
 
 	mrpt::math::TPose3D
 		m_q;  //!< Last time-step pose (of the ref. point, in global coords)
 	vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global
-				//!coords)
+				//! coords)
 
 	std::vector<double>
 		m_torque_per_wheel;  //!< Updated in simul_pre_timestep()
@@ -231,26 +225,26 @@ class VehicleBase : public VisualObject, public Simulable
 	double m_chassis_mass;
 	mrpt::math::TPolygon2D m_chassis_poly;
 	double m_max_radius;  //!< Automatically computed from m_chassis_poly upon
-						  //!each change via updateMaxRadiusFromPoly()
+						  //! each change via updateMaxRadiusFromPoly()
 	double m_chassis_z_min, m_chassis_z_max;
-	TColor m_chassis_color;
+	mrpt::img::TColor m_chassis_color;
 
 	mrpt::math::TPoint2D m_chassis_com;  //!< In local coordinates (this
-										 //!excludes the mass of wheels)
+										 //! excludes the mass of wheels)
 
 	void updateMaxRadiusFromPoly();
 
 	// Wheels info:
 	std::vector<Wheel> m_wheels_info;  //!< The fixed size of this vector is set
-									   //!upon construction. Derived classes
-									   //!must define the order of the wheels,
-									   //!e.g. [0]=rear left, etc.
+									   //! upon construction. Derived classes
+									   //! must define the order of the wheels,
+									   //! e.g. [0]=rear left, etc.
 
 	// Box2D elements:
 	b2Fixture* m_fixture_chassis;  //!< Created at
 	std::vector<b2Fixture*> m_fixture_wheels;  //!< [0]:rear-left, etc.
 											   //!(depending on derived class).
-											   //!Size set at constructor.
+											   //! Size set at constructor.
 
    private:
 	void internal_gui_update_sensors(
@@ -300,4 +294,4 @@ extern TClassFactory_vehicleDynamics classFactory_vehicleDynamics;
 	REGISTER_CLASS1(                                                 \
 		TClassFactory_vehicleDynamics, classFactory_vehicleDynamics, \
 		TEXTUAL_NAME, CLASS_NAME)
-}
+}  // namespace mvsim

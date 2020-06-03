@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include <mvsim/VisualObject.h>
-#include <mvsim/Simulable.h>
 #include <mvsim/ClassFactory.h>
+#include <mvsim/Simulable.h>
+#include <mvsim/VisualObject.h>
 
 namespace mvsim
 {
@@ -22,9 +22,9 @@ class WorldElementBase : public VisualObject, public Simulable
 	virtual ~WorldElementBase() {}
 	/** Class factory: Creates a world element from XML description of type
 	 * "<element class='*'>...</element>".
-	  * Only if xml_node==nullptr, the world element name can be passed in
+	 * Only if xml_node==nullptr, the world element name can be passed in
 	 * class_name. Otherwise, class_name is ignored.
-	  */
+	 */
 	static WorldElementBase* factory(
 		World* parent, const rapidxml::xml_node<char>* xml_node,
 		const char* class_name = nullptr);
@@ -47,4 +47,4 @@ extern TClassFactory_worldElements classFactory_worldElements;
 	REGISTER_CLASS2(                                                           \
 		TClassFactory_worldElements, classFactory_worldElements, TEXTUAL_NAME, \
 		CLASS_NAME)
-}
+}  // namespace mvsim

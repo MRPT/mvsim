@@ -98,15 +98,13 @@ void DynamicsAckermannDrivetrain::ControllerFrontSteerPID::teleop_interface(
 		case 'A':
 		case 'a':
 			setpoint_steer_ang += 1.0 * M_PI / 180.0;
-			keep_min(
-				setpoint_steer_ang, m_veh.getMaxSteeringAngle());
+			mrpt::keep_min(setpoint_steer_ang, m_veh.getMaxSteeringAngle());
 			break;
 
 		case 'D':
 		case 'd':
 			setpoint_steer_ang -= 1.0 * M_PI / 180.0;
-			keep_max(
-				setpoint_steer_ang, -m_veh.getMaxSteeringAngle());
+			mrpt::keep_max(setpoint_steer_ang, -m_veh.getMaxSteeringAngle());
 			break;
 		case ' ':
 			setpoint_lin_speed = .0;

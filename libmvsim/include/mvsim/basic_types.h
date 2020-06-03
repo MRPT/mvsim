@@ -29,7 +29,7 @@ template <class Ch>
 class xml_attribute;
 template <class Ch>
 class xml_document;
-}
+}  // namespace rapidxml
 
 namespace mrpt
 {
@@ -37,12 +37,12 @@ namespace opengl
 {
 class COpenGLScene;
 class CSetOfObjects;
-}
+}  // namespace opengl
 namespace slam
 {
 class CObservation;
 }
-}
+}  // namespace mrpt
 
 namespace mvsim
 {
@@ -82,4 +82,4 @@ struct vec2
 		vals[1] = y;
 	}
 };
-}
+}  // namespace mvsim

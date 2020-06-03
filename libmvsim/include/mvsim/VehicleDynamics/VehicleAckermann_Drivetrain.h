@@ -9,35 +9,22 @@
 
 #pragma once
 
-#include <mvsim/VehicleBase.h>
-#include <mvsim/PID_Controller.h>
-
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/math/lightweight_geom_data.h>
-#if MRPT_VERSION<0x199
-#include <mrpt/utils/TColor.h>
-using mrpt::utils::TColor;
-using mrpt::utils::keep_min;
-using mrpt::utils::keep_max;
-using mrpt::utils::signWithZero;
-#else
 #include <mrpt/img/TColor.h>
-using mrpt::img::TColor;
-using mrpt::keep_min;
-using mrpt::keep_max;
-using mrpt::signWithZero;
-#endif
+#include <mrpt/math/lightweight_geom_data.h>
+#include <mrpt/opengl/CSetOfObjects.h>
+#include <mvsim/PID_Controller.h>
+#include <mvsim/VehicleBase.h>
 
 namespace mvsim
 {
 /** Implementation of 4 wheels Ackermann-driven vehicles with drivetrain
-  * As motor input of drivetrain acts controller torque.
-  * Differential model is based on observations of Torsen-like differentials
+ * As motor input of drivetrain acts controller torque.
+ * Differential model is based on observations of Torsen-like differentials
  * work.
-  * http://www.flashoffroad.com/features/Torsen/Torsen_white_paper.pdf
-  *
-	* \sa class factory in VehicleBase::factory
-	*/
+ * http://www.flashoffroad.com/features/Torsen/Torsen_white_paper.pdf
+ *
+ * \sa class factory in VehicleBase::factory
+ */
 class DynamicsAckermannDrivetrain : public VehicleBase
 {
 	DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsAckermannDrivetrain)
@@ -94,7 +81,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		ControllerRawForces(DynamicsAckermannDrivetrain& veh);
 		static const char* class_name() { return "raw"; }
 		//!< Directly set these values to tell the controller the desired
-		//!setpoints
+		//! setpoints
 		double setpoint_wheel_torque, setpoint_steer_ang;
 		virtual void control_step(
 			const DynamicsAckermannDrivetrain::TControllerInput& ci,
@@ -114,7 +101,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		ControllerTwistFrontSteerPID(DynamicsAckermannDrivetrain& veh);
 		static const char* class_name() { return "twist_front_steer_pid"; }
 		//!< Directly set these values to tell the controller the desired
-		//!setpoints
+		//! setpoints
 		double setpoint_lin_speed,
 			setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
 		virtual void control_step(
@@ -145,10 +132,10 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		ControllerFrontSteerPID(DynamicsAckermannDrivetrain& veh);
 		static const char* class_name() { return "front_steer_pid"; }
 		//!< Directly set these values to tell the controller the desired
-		//!setpoints
+		//! setpoints
 		double setpoint_lin_speed, setpoint_steer_ang;  //!< desired velocities
 														//!(m/s) and steering
-														//!angle (rad)
+														//! angle (rad)
 		virtual void control_step(
 			const DynamicsAckermannDrivetrain::TControllerInput& ci,
 			DynamicsAckermannDrivetrain::TControllerOutput&
@@ -178,9 +165,9 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 
 	/** Computes the exact angles of the front wheels required to have an
 	 * equivalent central steering angle.
-	  * The method takes into account all wheels info & steering limits stored
+	 * The method takes into account all wheels info & steering limits stored
 	 * in the object.
-	  */
+	 */
 	void computeFrontWheelAngles(
 		const double desired_equiv_steer_ang, double& out_fl_ang,
 		double& out_fr_ang) const;
@@ -203,7 +190,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	ControllerBasePtr m_controller;  //!< The installed controller
 
 	double m_max_steer_ang;  //!< The maximum steering angle (rad). Determines
-							 //!min turning radius
+							 //! min turning radius
 
 	DifferentialType m_diff_type;
 
@@ -215,4 +202,4 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	double m_FrontLRBias;
 	double m_RearLRBias;
 };
-}
+}  // namespace mvsim

@@ -14,8 +14,8 @@
 namespace mvsim
 {
 /** Interface of ControllerBaseTempl<> for teleoperation, etc.
-  * Abstract interface common to any vehicle type & any controller.
-  */
+ * Abstract interface common to any vehicle type & any controller.
+ */
 class ControllerBaseInterface
 {
    public:
@@ -30,7 +30,8 @@ class ControllerBaseInterface
 	};
 
 	virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out)
-	{ /*default: do nothing*/}
+	{ /*default: do nothing*/
+	}
 
 	/** Accept a Twist command. \return true if the controller supports this
 	 * kind of commands, false otherwise */
@@ -96,7 +97,8 @@ class ControllerBaseTempl : public ControllerBaseInterface
 
 	/** Override to load class-specific options from the <controller> node */
 	virtual void load_config(const rapidxml::xml_node<char>& node)
-	{ /*default: do nothing*/}
+	{ /*default: do nothing*/
+	}
 
 	virtual void setLogRecording(bool recording)
 	{
@@ -104,7 +106,8 @@ class ControllerBaseTempl : public ControllerBaseInterface
 	}
 	virtual void clearLogs() { m_veh.clearLogs(); }
 	virtual void newLogSession() { m_veh.newLogSession(); }
+
    protected:
 	VEH_DYNAMICS& m_veh;
 };
-}
+}  // namespace mvsim

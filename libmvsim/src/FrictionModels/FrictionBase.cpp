@@ -7,8 +7,8 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>
+#include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/FrictionModels/WardIagnemmaFriction.h>
 #include <mvsim/VehicleBase.h>
 #include <rapidxml.hpp>

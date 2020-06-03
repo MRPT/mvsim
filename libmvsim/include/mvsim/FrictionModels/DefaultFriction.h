@@ -9,15 +9,15 @@
 
 #pragma once
 
+#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <vector>
-#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 
 namespace mvsim
 {
 /** The default friction model for interaction between each wheel-ground contact
  * point
-  */
+ */
 class DefaultFriction : public FrictionBase
 {
 	DECLARES_REGISTER_FRICTION(DefaultFriction)
@@ -34,4 +34,4 @@ class DefaultFriction : public FrictionBase
 	double m_mu;  //!< friction coeficient (non-dimensional)
 	double m_C_damping;  //!< For wheels "internal friction" (N*m*s/rad)
 };
-}
+}  // namespace mvsim

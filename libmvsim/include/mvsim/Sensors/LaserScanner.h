@@ -9,20 +9,11 @@
 
 #pragma once
 
-#include <mutex>
-#include <mvsim/Sensors/SensorBase.h>
-#include <mrpt/poses/CPose2D.h>
-#include <mrpt/opengl/CPlanarLaserScan.h>
-
-#include <mrpt/version.h>
-#if MRPT_VERSION >= 0x130
 #include <mrpt/obs/CObservation2DRangeScan.h>
-using mrpt::obs::CObservation2DRangeScan;
-#else
-#include <mrpt/slam/CObservation2DRangeScan.h>
-using mrpt::slam::CObservation2DRangeScan;
-using mrpt::slam::CObservation2DRangeScanPtr;
-#endif
+#include <mrpt/opengl/CPlanarLaserScan.h>
+#include <mrpt/poses/CPose2D.h>
+#include <mvsim/Sensors/SensorBase.h>
+#include <mutex>
 
 namespace mvsim
 {
@@ -50,20 +41,19 @@ class LaserScanner : public SensorBase
 	double m_rangeStdNoise;
 	double m_angleStdNoise;
 	bool m_see_fixtures;  //!< Whether all box2d "fixtures" are visible (solid)
-						  //!or not (Default=true)
+						  //! or not (Default=true)
 
-	CObservation2DRangeScan m_scan_model;  //!< Store here all scan parameters.
-										   //!This obj will be copied as a
-										   //!"pattern" to fill it with actual
-										   //!scan data.
+	// Store here all scan parameters. This obj will be copied as a
+	// "pattern" to fill it with actual scan data.
+	mrpt::obs::CObservation2DRangeScan m_scan_model;
 
 	std::mutex m_last_scan_cs;
-	mrpt::obs::CObservation2DRangeScan::Ptr
-		m_last_scan;  //!< Last simulated scan
+	/** Last simulated scan */
+	mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan;
 	mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan2gui;
 
 	bool m_gui_uptodate;  //!< Whether m_gl_scan has to be updated upon next
-						  //!call of gui_update() from m_last_scan2gui
+						  //! call of gui_update() from m_last_scan2gui
 	mrpt::opengl::CPlanarLaserScan::Ptr m_gl_scan;
 };
-}
+}  // namespace mvsim

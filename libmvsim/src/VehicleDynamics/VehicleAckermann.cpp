@@ -13,23 +13,22 @@
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
-#include <rapidxml.hpp>
 #include <cmath>
+#include <rapidxml.hpp>
 
 using namespace mvsim;
 using namespace std;
 
 // Ctor:
 DynamicsAckermann::DynamicsAckermann(World* parent)
-	: VehicleBase(parent, 4 /*num wheels*/),
-      m_max_steer_ang(DEG2RAD(30))
+	: VehicleBase(parent, 4 /*num wheels*/)
 {
 	using namespace mrpt::math;
 
 	m_chassis_mass = 500.0;
 	m_chassis_z_min = 0.20;
 	m_chassis_z_max = 1.40;
-	m_chassis_color = TColor(0xe8, 0x30, 0x00);
+	m_chassis_color = mrpt::img::TColor(0xe8, 0x30, 0x00);
 
 	// Default shape:
 	m_chassis_poly.clear();
@@ -156,11 +155,10 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 				m_controller =
 					ControllerBasePtr(new ControllerFrontSteerPID(*this));
 			else
-				throw runtime_error(
-					mrpt::format(
-						"[DynamicsAckermann] Unknown 'class'='%s' in "
-						"<controller> XML node",
-						sCtrlClass.c_str()));
+				throw runtime_error(mrpt::format(
+					"[DynamicsAckermann] Unknown 'class'='%s' in "
+					"<controller> XML node",
+					sCtrlClass.c_str()));
 
 			m_controller->load_config(*xml_control);
 		}
@@ -242,7 +240,7 @@ vec3 DynamicsAckermann::getVelocityLocalOdoEstimate() const
 	ASSERTMSG_(
 		Ay != 0.0,
 		"The two wheels of a differential vehicle CAN'T by at the same Y "
-	    "coordinate!");
+		"coordinate!");
 
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;
 	const double vx_veh = w0 * R0 + w_veh * m_wheels_info[WHEEL_RL].y;
@@ -256,8 +254,8 @@ vec3 DynamicsAckermann::getVelocityLocalOdoEstimate() const
 #if 0  // Debug
 	{
 		vec3 gt_vel = this->getVelocityLocal();
-		printf("\n gt: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", gt_vel.vals[0], gt_vel.vals[1], mrpt::utils::RAD2DEG(gt_vel.vals[2]));
-		printf("odo: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", odo_vel.vals[0], odo_vel.vals[1], mrpt::utils::RAD2DEG(odo_vel.vals[2]));
+		printf("\n gt: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", gt_vel.vals[0], gt_vel.vals[1], mrpt::RAD2DEG(gt_vel.vals[2]));
+		printf("odo: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", odo_vel.vals[0], odo_vel.vals[1], mrpt::RAD2DEG(odo_vel.vals[2]));
 	}
 #endif
 	return odo_vel;

@@ -7,28 +7,16 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/WorldElements/OccupancyGridMap.h>
-#include <mvsim/World.h>
-#include "xml_utils.h"
-
+#include <mrpt/io/CFileGZInputStream.h>
+#include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/poses/CPose2D.h>
-#include <mrpt/utils/CFileGZInputStream.h>
-#include <mrpt/system/filesystem.h>
-#include <rapidxml.hpp>
-
-#include <mrpt/version.h>
-#if MRPT_VERSION >= 0x130
-#include <mrpt/maps/CSimplePointsMap.h>
-using mrpt::maps::CSimplePointsMap;
-#else
-#include <mrpt/slam/CSimplePointsMap.h>
-using mrpt::slam::CSimplePointsMap;
-#endif
-
-#if MRPT_VERSION >= 0x199
 #include <mrpt/serialization/CArchive.h>
-#endif
+#include <mrpt/system/filesystem.h>
+#include <mvsim/World.h>
+#include <mvsim/WorldElements/OccupancyGridMap.h>
+#include <rapidxml.hpp>
+#include "xml_utils.h"
 
 using namespace rapidxml;
 using namespace mvsim;
@@ -63,12 +51,8 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// MRPT gridmaps format:
 	if (sFileExt == "gridmap")
 	{
-		mrpt::utils::CFileGZInputStream fi(sFile);
-#if MRPT_VERSION >= 0x199
+		mrpt::io::CFileGZInputStream fi(sFile);
 		auto f = mrpt::serialization::archiveFrom(fi);
-#else
-		auto& f = fi;
-#endif
 		f >> m_grid;
 	}
 	else
@@ -85,13 +69,7 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		parse_xmlnode_children_as_param(*root, other_params);
 
 		if (!m_grid.loadFromBitmapFile(
-				sFile, resolution,
-#if MRPT_VERSION >= 0x199
-				{ xcenterpixel, ycenterpixel }
-#else
-				xcenterpixel, ycenterpixel
-#endif
-				))
+				sFile, resolution, {xcenterpixel, ycenterpixel}))
 			throw std::runtime_error(mrpt::format(
 				"[OccupancyGridMap] ERROR: File not found '%s'",
 				sFile.c_str()));
@@ -204,9 +182,9 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 		{
 			// 1) Simulate scan to get obstacles around the vehicle:
 			TInfoPerCollidableobj& ipv = m_obstacles_for_each_obj[obj_idx];
-			CObservation2DRangeScan::Ptr& scan = ipv.scan;
+			mrpt::obs::CObservation2DRangeScan::Ptr& scan = ipv.scan;
 			// Upon first time, reserve mem:
-			if (!scan) scan = CObservation2DRangeScan::Create();
+			if (!scan) scan = mrpt::obs::CObservation2DRangeScan::Create();
 
 			const float veh_max_obstacles_ranges = ipv.max_obstacles_ranges;
 			const float occup_threshold = 0.5f;
@@ -223,11 +201,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			const float range_enlarge = 0.25f * m_grid.getResolution();
 			for (size_t k = 0; k < scan->getScanSize(); k++)
 			{
-#if MRPT_VERSION >= 0x150
 				scan->setScanRange(k, scan->getScanRange(k) + range_enlarge);
-#else
-				scan->scan[k] += range_enlarge;
-#endif
 			}
 			// 2) Create a Box2D "ground body" with square "fixtures" so the
 			// vehicle can collide with the occ. grid:
@@ -273,8 +247,8 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 
 			// Create fixtures at their place (or disable it if no obstacle has
 			// been sensed):
-			const CSinCosLookUpTableFor2DScans::TSinCosValues& sincos_tab =
-				m_sincos_lut.getSinCosForScan(*scan);
+			const mrpt::obs::CSinCosLookUpTableFor2DScans::TSinCosValues&
+				sincos_tab = m_sincos_lut.getSinCosForScan(*scan);
 			ipv.collide_fixtures.resize(nRays);
 			for (size_t k = 0; k < nRays; k++)
 			{

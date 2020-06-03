@@ -8,18 +8,10 @@
   +-------------------------------------------------------------------------+ */
 
 #include "XMLClassesRegistry.h"
-
-#include <iostream>
-
-#include <mrpt/version.h>
-#if MRPT_VERSION<0x199
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
-#else
-#include <mrpt/core/format.h>
 #include <mrpt/core/bits_math.h>
-#endif
-
-#include <algorithm> // count()
+#include <mrpt/core/format.h>
+#include <algorithm>  // count()
+#include <iostream>
 
 using namespace mvsim;
 using namespace std;
@@ -51,19 +43,17 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_vehicle_class)
 		const rapidxml::xml_node<>* root_node =
 			xml->first_node(m_tagname.c_str());  //"vehicle:class"
 		if (!root_node)
-			throw runtime_error(
-				mrpt::format(
-					"[XmlClassesRegistry] Missing XML node <%s>",
-					m_tagname.c_str()));
+			throw runtime_error(mrpt::format(
+				"[XmlClassesRegistry] Missing XML node <%s>",
+				m_tagname.c_str()));
 
 		const rapidxml::xml_attribute<>* att_name =
 			root_node->first_attribute("name");
 		if (!att_name || !att_name->value())
-			throw runtime_error(
-				mrpt::format(
-					"[VehicleClassesRegistry] Missing mandatory attribute "
-					"'name' in node <%s>",
-					m_tagname.c_str()));
+			throw runtime_error(mrpt::format(
+				"[VehicleClassesRegistry] Missing mandatory attribute "
+				"'name' in node <%s>",
+				m_tagname.c_str()));
 
 		const string sClassName = att_name->value();
 
@@ -77,10 +67,9 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_vehicle_class)
 		unsigned int line =
 			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
 		delete xml;
-		throw std::runtime_error(
-			mrpt::format(
-				"[XmlClassesRegistry] XML parse error (Line %u): %s",
-				static_cast<unsigned>(line), e.what()));
+		throw std::runtime_error(mrpt::format(
+			"[XmlClassesRegistry] XML parse error (Line %u): %s",
+			static_cast<unsigned>(line), e.what()));
 	}
 	catch (std::exception&)
 	{

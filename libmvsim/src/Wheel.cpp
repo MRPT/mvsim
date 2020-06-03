@@ -7,26 +7,13 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/Wheel.h>
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/opengl/CCylinder.h>
-#include <mrpt/opengl/stock_objects.h>
-#include <rapidxml.hpp>
-
-#include "xml_utils.h"
-
-#include <mrpt/version.h>
-#if MRPT_VERSION < 0x199
-#include <mrpt/utils/TColor.h>
-using mrpt::utils::DEG2RAD;
-using mrpt::utils::TColor;
-using mrpt::utils::TColorf;
-#else
 #include <mrpt/img/TColor.h>
-using mrpt::DEG2RAD;
-using mrpt::img::TColor;
-using mrpt::img::TColorf;
-#endif
+#include <mrpt/opengl/CCylinder.h>
+#include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/opengl/stock_objects.h>
+#include <mvsim/Wheel.h>
+#include <rapidxml.hpp>
+#include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
@@ -52,9 +39,9 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 
 	auto gl_wheel = mrpt::opengl::CCylinder::Create(
 		0.5 * diameter, 0.5 * diameter, this->width, 15);
-	gl_wheel->setColor(TColorf(color));
+	gl_wheel->setColor_u8(color);
 	gl_wheel->setPose(
-		mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, DEG2RAD(90)));
+		mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
 
 	auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
 	gl_wheel_frame->insert(gl_wheel);

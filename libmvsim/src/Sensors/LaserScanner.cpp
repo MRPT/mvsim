@@ -7,14 +7,12 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/World.h>
-#include <mvsim/WorldElements/OccupancyGridMap.h>
-#include <mvsim/Sensors/LaserScanner.h>
-#include <mvsim/VehicleBase.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/random.h>
-#include <mrpt/version.h>
-
+#include <mvsim/Sensors/LaserScanner.h>
+#include <mvsim/VehicleBase.h>
+#include <mvsim/World.h>
+#include <mvsim/WorldElements/OccupancyGridMap.h>
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -27,7 +25,7 @@ LaserScanner::LaserScanner(
 	: SensorBase(parent),
 	  m_z_order(++z_order_cnt),
 	  m_rangeStdNoise(0.01),
-	  m_angleStdNoise(DEG2RAD(0.01)),
+	  m_angleStdNoise(mrpt::DEG2RAD(0.01)),
 	  m_see_fixtures(true)
 {
 	this->loadConfigFrom(root);
@@ -61,13 +59,8 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	parse_xmlnode_children_as_param(*root, params);
 
 	// Pass params to the scan2D obj:
-	m_scan_model.aperture = DEG2RAD(fov_deg);
-#if MRPT_VERSION >= 0x150
+	m_scan_model.aperture = mrpt::DEG2RAD(fov_deg);
 	m_scan_model.resizeScan(nRays);
-#else
-	m_scan_model.scan.resize(nRays);
-	m_scan_model.validRange.resize(nRays);
-#endif
 
 	// Assign a sensible default name/sensor label if none is provided:
 	if (m_name.empty())
@@ -111,6 +104,9 @@ void LaserScanner::simul_pre_timestep(const TSimulContext& context) {}
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void LaserScanner::simul_post_timestep(const TSimulContext& context)
 {
+	using mrpt::maps::COccupancyGridMap2D;
+	using mrpt::obs::CObservation2DRangeScan;
+
 	// Limit sensor rate:
 	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period) return;
 
@@ -143,7 +139,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		const COccupancyGridMap2D& occGrid = grid->getOccGrid();
 
 		// Create new scan:
-		lstScans.push_back(CObservation2DRangeScan(m_scan_model));
+		lstScans.emplace_back(m_scan_model);
 		CObservation2DRangeScan& scan = lstScans.back();
 
 		// Ray tracing over the gridmap:
@@ -208,23 +204,13 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 		// Scan size:
 		ASSERT_(nRays >= 2);
-#if MRPT_VERSION >= 0x150
 		scan.resizeScan(nRays);
-#else
-		scan.scan.resize(nRays);
-		scan.validRange.resize(nRays);
-#endif
 		double A =
 			sensorPose.phi() + (scan.rightToLeft ? -0.5 : +0.5) * scan.aperture;
 		const double AA =
 			(scan.rightToLeft ? 1.0 : -1.0) * (scan.aperture / (nRays - 1));
 
-		auto& rnd =
-#if MRPT_VERSION >= 0x199
-			mrpt::random::getRandomGenerator();
-#else
-			mrpt::random::randomGenerator;
-#endif
+		auto& rnd = mrpt::random::getRandomGenerator();
 
 		for (size_t i = 0; i < nRays; i++, A += AA)
 		{
@@ -233,11 +219,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 			callback.m_hit = false;
 			m_world->getBox2DWorld()->RayCast(&callback, sensorPt, endPt);
-#if MRPT_VERSION >= 0x150
 			scan.setScanRangeValidity(i, callback.m_hit);
-#else
-			scan.validRange[i] = callback.m_hit ? 1 : 0;
-#endif
 
 			float range = scan.getScanRange(i);
 			if (callback.m_hit)
@@ -253,11 +235,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 				// Miss:
 				range = maxRange;
 			}
-#if MRPT_VERSION >= 0x150
 			scan.setScanRange(i, range);
-#else
-			scan.scan[i] = range;
-#endif
 		}  // end for (raycast scan)
 	}
 	m_world->getTimeLogger().leave("LaserScanner.scan.2.polygons");
@@ -271,12 +249,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	lastScan->timestamp = mrpt::system::now();
 	lastScan->sensorLabel = m_name;
 
-#if MRPT_VERSION >= 0x150
 	lastScan->resizeScanAndAssign(nRays, maxRange, false);
-#else
-	lastScan->scan.assign(nRays, maxRange);
-	lastScan->validRange.assign(nRays, 0);
-#endif
 
 	for (std::list<CObservation2DRangeScan>::const_iterator it =
 			 lstScans.begin();
@@ -286,15 +259,10 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		{
 			if (it->getScanRangeValidity(i))
 			{
-#if MRPT_VERSION >= 0x150
 				lastScan->setScanRange(
 					i,
 					std::min(lastScan->getScanRange(i), it->getScanRange(i)));
 				lastScan->setScanRangeValidity(i, true);
-#else
-				lastScan->scan[i] = std::min(lastScan->scan[i], it->scan[i]);
-				lastScan->validRange[i] = 1;  // valid
-#endif
 			}
 		}
 	}

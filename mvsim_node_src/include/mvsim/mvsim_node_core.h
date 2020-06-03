@@ -20,8 +20,8 @@
 // Auto-generated from cfg/ directory.
 #include <mvsim/mvsimNodeConfig.h>
 
-#include <mvsim/mvsim.h>  // the mvsim library
 #include <mrpt/utils/CTicTac.h>
+#include <mvsim/mvsim.h>  // the mvsim library
 
 #if MRPT_VERSION >= 0x130
 #include <mrpt/obs/CObservation.h>
@@ -32,7 +32,7 @@ using mrpt::slam::CObservation;
 #endif
 
 /** A class to wrap libmvsim as a ROS node
-  */
+ */
 class MVSimNode
 {
    public:
@@ -61,17 +61,17 @@ class MVSimNode
 	};  // End of MyWorld
 
 	MyWorld mvsim_world_;  //!< The mvsim library simulated world (includes
-						   //!everything: vehicles, obstacles, etc.)
+						   //! everything: vehicles, obstacles, etc.)
 
 	double realtime_factor_;  //!< (Defaul=1.0) >1: speed-up, <1: slow-down
 	int gui_refresh_period_ms_;  //!< Default:25
 	bool m_show_gui;  //!< Default= true
 	bool m_do_fake_localization;  //!< Default=true. Behaves as
-								  //!navigation/fake_localization for each
-								  //!vehicle without the need to launch
-								  //!additional nodes.
+								  //! navigation/fake_localization for each
+								  //! vehicle without the need to launch
+								  //! additional nodes.
 	double m_transform_tolerance;  //!< (Default=0.1) Time tolerance for
-								   //!published TFs
+								   //! published TFs
 
    protected:
 	ros::NodeHandle& m_n;
@@ -103,8 +103,8 @@ class MVSimNode
 
 	std::vector<TPubSubPerVehicle>
 		m_pubsub_vehicles;  //!< Pubs/Subs for each vehicle. Initialized by
-							//!initPubSubs(), called from
-							//!notifyROSWorldIsUpdated()
+							//! initPubSubs(), called from
+							//! notifyROSWorldIsUpdated()
 
 	/** Initialize all pub/subs required for each vehicle, for the specific
 	 * vehicle \a veh */
@@ -132,20 +132,20 @@ class MVSimNode
 		TThreadParams() : obj(NULL), closing(false) {}
 	};
 	TThreadParams thread_params_;
-	mrpt::utils::CTicTac realtime_tictac_;
+	mrpt::system::CTicTac realtime_tictac_;
 
 	double t_old_;  // = realtime_tictac_.Tac();
 	bool world_init_ok_;  //!< will be true after a success call to
-						  //!loadWorldModel()
+						  //! loadWorldModel()
 
 	double m_period_ms_publish_tf;  //!< Minimum period between publication of
-									//!TF transforms & /*/odom topics (In ms)
-	mrpt::utils::CTicTac m_tim_publish_tf;
+									//! TF transforms & /*/odom topics (In ms)
+	mrpt::system::CTicTac m_tim_publish_tf;
 
 	double m_period_ms_teleop_refresh;  //!< Minimum period between update of
-										//!live info & read of teleop key
-										//!strokes in GUI (In ms)
-	mrpt::utils::CTicTac m_tim_teleop_refresh;
+										//! live info & read of teleop key
+										//! strokes in GUI (In ms)
+	mrpt::system::CTicTac m_tim_teleop_refresh;
 
 	size_t m_teleop_idx_veh;  //!< for teleoperation from the GUI (selects the
 							  //!"focused" vehicle)

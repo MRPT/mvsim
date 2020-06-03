@@ -7,26 +7,26 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/World.h>
+#include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
+#include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
-#include <mvsim/FrictionModels/FrictionBase.h>
-#include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
+#include <mvsim/World.h>
 
 #include "JointXMLnode.h"
 #include "XMLClassesRegistry.h"
 #include "xml_utils.h"
 
-#include <rapidxml.hpp>
-#include <rapidxml_utils.hpp>
-#include <rapidxml_print.hpp>
-#include <mrpt/poses/CPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
+#include <mrpt/poses/CPose2D.h>
+#include <rapidxml.hpp>
+#include <rapidxml_print.hpp>
+#include <rapidxml_utils.hpp>
 
-#include <sstream>  // std::stringstream
 #include <map>
+#include <sstream>  // std::stringstream
 #include <string>
 
 using namespace mvsim;
@@ -131,11 +131,10 @@ void VehicleBase::register_vehicle_class(
 		throw runtime_error(
 			"[VehicleBase::register_vehicle_class] XML node is nullptr");
 	if (0 != strcmp(xml_node->name(), "vehicle:class"))
-		throw runtime_error(
-			mrpt::format(
-				"[VehicleBase::register_vehicle_class] XML element is '%s' "
-				"('vehicle:class' expected)",
-				xml_node->name()));
+		throw runtime_error(mrpt::format(
+			"[VehicleBase::register_vehicle_class] XML element is '%s' "
+			"('vehicle:class' expected)",
+			xml_node->name()));
 
 	// rapidxml doesn't allow making copied of objects.
 	// So: convert to txt; then re-parse.
@@ -155,13 +154,13 @@ VehicleBase* VehicleBase::factory(
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[VehicleBase::factory] XML node is nullptr");
+	if (!root)
+		throw runtime_error("[VehicleBase::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "vehicle"))
-		throw runtime_error(
-			mrpt::format(
-				"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
-				"expected)",
-				root->name()));
+		throw runtime_error(mrpt::format(
+			"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
+			"expected)",
+			root->name()));
 
 	// "class": When a vehicle has a 'class="XXX"' attribute, look for each
 	// parameter
@@ -179,10 +178,9 @@ VehicleBase* VehicleBase::factory(
 			const rapidxml::xml_node<char>* class_root =
 				veh_classes_registry.get(sClassName);
 			if (!class_root)
-				throw runtime_error(
-					mrpt::format(
-						"[VehicleBase::factory] Vehicle class '%s' undefined",
-						sClassName.c_str()));
+				throw runtime_error(mrpt::format(
+					"[VehicleBase::factory] Vehicle class '%s' undefined",
+					sClassName.c_str()));
 
 			veh_root_node.add(class_root);
 			// cout << *class_root;
@@ -205,10 +203,9 @@ VehicleBase* VehicleBase::factory(
 	VehicleBase* veh =
 		classFactory_vehicleDynamics.create(dyn_class->value(), parent);
 	if (!veh)
-		throw runtime_error(
-			mrpt::format(
-				"[VehicleBase::factory] Unknown vehicle dynamics class '%s'",
-				dyn_class->value()));
+		throw runtime_error(mrpt::format(
+			"[VehicleBase::factory] Unknown vehicle dynamics class '%s'",
+			dyn_class->value()));
 
 	// Initialize here all common params shared by any polymorphic class:
 	// -------------------------------------------------
@@ -349,10 +346,9 @@ VehicleBase* VehicleBase::factory(World* parent, const std::string& xml_text)
 	{
 		unsigned int line =
 			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
-		throw std::runtime_error(
-			mrpt::format(
-				"[VehicleBase::factory] XML parse error (Line %u): %s",
-				static_cast<unsigned>(line), e.what()));
+		throw std::runtime_error(mrpt::format(
+			"[VehicleBase::factory] XML parse error (Line %u): %s",
+			static_cast<unsigned>(line), e.what()));
 	}
 	return VehicleBase::factory(parent, xml.first_node());
 }
@@ -409,9 +405,8 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		m_friction->evaluate_friction(fi, net_force_);
 
 		// Apply force:
-		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(
-			b2Vec2(
-				net_force_.x, net_force_.y));  // Force vector -> world coords
+		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(
+			net_force_.x, net_force_.y));  // Force vector -> world coords
 		const b2Vec2 wPt = m_b2d_vehicle_body->GetWorldPoint(
 			b2Vec2(w.x, w.y));  // Application point -> world coords
 		// printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f
@@ -564,7 +559,7 @@ void VehicleBase::gui_update_common(
 				mrpt::opengl::CPolyhedron::CreateCustomPrism(
 					m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
 			gl_poly->setLocation(0, 0, m_chassis_z_min);
-			gl_poly->setColor(TColorf(m_chassis_color));
+			gl_poly->setColor_u8(m_chassis_color);
 			m_gl_chassis->insert(gl_poly);
 
 			SCENE_INSERT_Z_ORDER(scene, 1, m_gl_chassis);
@@ -572,7 +567,7 @@ void VehicleBase::gui_update_common(
 			// Visualization of forces:
 			m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 			m_gl_forces->setLineWidth(3.0);
-			m_gl_forces->setColor_u8(TColor(0xff, 0xff, 0xff));
+			m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
 			SCENE_INSERT_Z_ORDER(
 				scene, 3, m_gl_forces);  // forces are in global coords
@@ -585,9 +580,8 @@ void VehicleBase::gui_update_common(
 		for (size_t i = 0; i < nWs; i++)
 		{
 			const Wheel& w = getWheelInfo(i);
-			m_gl_wheels[i]->setPose(
-				mrpt::math::TPose3D(
-					w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+			m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
+				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
 		}
 	}
 
@@ -627,7 +621,7 @@ void VehicleBase::updateMaxRadiusFromPoly()
 		 it != m_chassis_poly.end(); ++it)
 	{
 		const float n = it->norm();
-    keep_max(m_max_radius, n);
+		mrpt::keep_max(m_max_radius, n);
 	}
 }
 

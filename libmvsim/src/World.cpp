@@ -10,10 +10,10 @@
 
 #include <mrpt/system/filesystem.h>  // filePathSeparatorsToNative()
 
-#include <iostream>  // for debugging
 #include <algorithm>  // count()
-#include <stdexcept>
+#include <iostream>  // for debugging
 #include <map>
+#include <stdexcept>
 
 using namespace mvsim;
 using namespace std;
@@ -117,7 +117,7 @@ void World::internal_one_timestep(double dt)
 
 	// 1) Pre-step
 	{
-		CTimeLoggerEntry tle(m_timlogger, "timestep.0.prestep");
+		mrpt::system::CTimeLoggerEntry tle(m_timlogger, "timestep.0.prestep");
 		for (TListVehicles::iterator it = m_vehicles.begin();
 			 it != m_vehicles.end(); ++it)
 			it->second->simul_pre_timestep(context);
@@ -145,7 +145,7 @@ void World::internal_one_timestep(double dt)
 
 	// 2) Run dynamics
 	{
-		CTimeLoggerEntry tle(
+		mrpt::system::CTimeLoggerEntry tle(
 			m_timlogger, "timestep.1.dynamics_integrator");
 
 		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
@@ -154,7 +154,7 @@ void World::internal_one_timestep(double dt)
 
 	// 3) Save dynamical state into vehicles classes
 	{
-		CTimeLoggerEntry tle(
+		mrpt::system::CTimeLoggerEntry tle(
 			m_timlogger, "timestep.3.save_dynstate");
 
 		context.simul_time = m_simul_time;
@@ -174,7 +174,7 @@ void World::internal_one_timestep(double dt)
 
 	// 4) Post-step:
 	{
-		CTimeLoggerEntry tle(m_timlogger, "timestep.4.poststep");
+		mrpt::system::CTimeLoggerEntry tle(m_timlogger, "timestep.4.poststep");
 		for (TListVehicles::iterator it = m_vehicles.begin();
 			 it != m_vehicles.end(); ++it)
 			it->second->simul_post_timestep(context);
@@ -206,7 +206,7 @@ void World::internal_one_timestep(double dt)
 }
 
 /** Replace macros, prefix the base_path if input filename is relative, etc.
-  */
+ */
 std::string World::resolvePath(const std::string& s_in) const
 {
 	std::string ret;
