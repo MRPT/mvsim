@@ -4,7 +4,11 @@ Priority: optional
 Maintainer: Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>
 Build-Depends:
 	debhelper (>= 9.0.0),
-	libmrpt-dev (>= 2.0.0),
+	libmrpt-opengl-dev (>= 2.0.0),
+	libmrpt-obs-dev (>= 2.0.0),
+	libmrpt-maps-dev (>= 2.0.0),
+	libmrpt-gui-dev (>= 2.0.0),
+	libmrpt-tfest-dev (>= 2.0.0),	    
 	cmake,
 	libbox2d-dev
 Standards-Version: 3.9.8
