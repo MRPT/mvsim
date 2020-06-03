@@ -15,7 +15,11 @@ In Ubuntu, this will install all requirements:
 
 .. code-block:: bash
 
- sudo apt install build-essential cmake g++ libmrpt-dev libbox2d-dev
+ sudo apt install \
+   build-essential cmake g++ \
+   libbox2d-dev \
+   libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev \
+   libmrpt-gui-dev libmrpt-tfest-dev
 
 Compile as usual:
 
