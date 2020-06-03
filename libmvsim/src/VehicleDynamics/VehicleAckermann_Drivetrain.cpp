@@ -41,8 +41,8 @@ DynamicsAckermannDrivetrain::DynamicsAckermannDrivetrain(World* parent)
 	m_chassis_poly.push_back(TPoint2D(1.5, -0.9));
 	updateMaxRadiusFromPoly();
 
-	m_fixture_chassis = NULL;
-	for (int i = 0; i < 4; i++) m_fixture_wheels[i] = NULL;
+	m_fixture_chassis = nullptr;
+	for (int i = 0; i < 4; i++) m_fixture_wheels[i] = nullptr;
 
 	// Default values:
 	// rear-left:

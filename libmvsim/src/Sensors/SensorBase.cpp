@@ -57,7 +57,7 @@ SensorBase* SensorBase::factory(
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[SensorBase::factory] XML node is NULL");
+	if (!root) throw runtime_error("[SensorBase::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "sensor"))
 		throw runtime_error(
 			mrpt::format(

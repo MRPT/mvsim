@@ -30,7 +30,7 @@ const rapidxml::xml_node<char>* XmlClassesRegistry::get(
 	map<string, TXMLData>::const_iterator it =
 		m_classes.find(xml_node_vehicle_class);
 	if (it == m_classes.end())
-		return NULL;
+		return nullptr;
 	else
 		return it->second.xml_doc->first_node();
 }

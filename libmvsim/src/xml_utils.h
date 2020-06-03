@@ -44,7 +44,7 @@ struct TParamEntry
 	const char* frmt;
 	void* val;
 
-	TParamEntry() : frmt(NULL), val(NULL) {}
+	TParamEntry() : frmt(nullptr), val(nullptr) {}
 	TParamEntry(const char* frmt_, void* val_) : frmt(frmt_), val(val_) {}
 	/** Tries to parse the given input string according to the expected format,
 	 * then store the result in "*val"

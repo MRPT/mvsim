@@ -77,7 +77,7 @@ constexpr char VehicleBase::WL_FRIC_Y[];
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	: VisualObject(parent),
 	  m_vehicle_index(0),
-	  m_b2d_vehicle_body(NULL),
+	  m_b2d_vehicle_body(nullptr),
 	  m_q(0, 0, 0, 0, 0, 0),
 	  m_dq(0, 0, 0),
 	  m_chassis_mass(15.0),
@@ -86,7 +86,7 @@ VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	  m_chassis_color(0xff, 0x00, 0x00),
 	  m_chassis_com(.0, .0),
 	  m_wheels_info(nWheels),
-	  m_fixture_wheels(nWheels, NULL)
+	  m_fixture_wheels(nWheels, nullptr)
 {
 	using namespace mrpt::math;
 	// Default shape:
@@ -129,7 +129,7 @@ void VehicleBase::register_vehicle_class(
 	// Sanity checks:
 	if (!xml_node)
 		throw runtime_error(
-			"[VehicleBase::register_vehicle_class] XML node is NULL");
+			"[VehicleBase::register_vehicle_class] XML node is nullptr");
 	if (0 != strcmp(xml_node->name(), "vehicle:class"))
 		throw runtime_error(
 			mrpt::format(
@@ -155,7 +155,7 @@ VehicleBase* VehicleBase::factory(
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[VehicleBase::factory] XML node is NULL");
+	if (!root) throw runtime_error("[VehicleBase::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "vehicle"))
 		throw runtime_error(
 			mrpt::format(
@@ -307,7 +307,7 @@ VehicleBase* VehicleBase::factory(
 		{
 			// Default:
 			veh->m_friction = std::shared_ptr<FrictionBase>(
-				new DefaultFriction(*veh, NULL /*default params*/));
+				new DefaultFriction(*veh, nullptr /*default params*/));
 		}
 		else
 		{

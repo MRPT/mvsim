@@ -202,7 +202,7 @@ void mvsim::parse_xmlnode_children_as_param(
 	while (node)
 	{
 		parse_xmlnode_as_param(*node, params, function_name_context);
-		node = node->next_sibling(NULL);  // Move on to next node
+		node = node->next_sibling(nullptr);  // Move on to next node
 	}
 }
 

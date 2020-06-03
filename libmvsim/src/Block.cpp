@@ -45,7 +45,7 @@ XmlClassesRegistry block_classes_registry("block:class");
 Block::Block(World* parent)
 	: VisualObject(parent),
 	  m_block_index(0),
-	  m_b2d_block_body(NULL),
+	  m_b2d_block_body(nullptr),
 	  m_q(0, 0, 0, 0, 0, 0),
 	  m_dq(0, 0, 0),
 	  m_mass(30.0),
@@ -94,7 +94,7 @@ void Block::register_block_class(const rapidxml::xml_node<char>* xml_node)
 {
 	// Sanity checks:
 	if (!xml_node)
-		throw runtime_error("[Block::register_vehicle_class] XML node is NULL");
+		throw runtime_error("[Block::register_vehicle_class] XML node is nullptr");
 	if (0 != strcmp(xml_node->name(), "block:class"))
 		throw runtime_error(mrpt::format(
 			"[Block::register_block_class] XML element is '%s' "
@@ -116,7 +116,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[Block::factory] XML node is NULL");
+	if (!root) throw runtime_error("[Block::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "block"))
 		throw runtime_error(mrpt::format(
 			"[Block::factory] XML root element is '%s' ('block' expected)",
@@ -126,7 +126,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	//  in the set of "root" + "class_root" XML nodes:
 	// --------------------------------------------------------------------------------
 	JointXMLnode<> block_root_node;
-	const rapidxml::xml_node<char>* class_root = NULL;
+	const rapidxml::xml_node<char>* class_root = nullptr;
 	{
 		block_root_node.add(
 			root);  // Always search in root. Also in the class root, if any:
