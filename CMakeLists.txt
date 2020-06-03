@@ -166,7 +166,7 @@ add_subdirectory(libmvsim)
 # --------------------------
 #       Apps
 # --------------------------
-add_subdirectory(mvsim_app) # Standalone app
+add_subdirectory(mvsim-server)
 
 # -----------------------------------------------------------------------------
 #                                   ROS SEGMENT
