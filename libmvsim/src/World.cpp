@@ -34,6 +34,16 @@ World::World()
 // Dtor.
 World::~World()
 {
+	if (m_gui_thread.joinable())
+	{
+		std::cout << "[mvsim ~World] Waiting for GUI thread to quit..."
+				  << std::endl;
+		m_gui_thread_must_close = true;
+		m_gui_thread.join();
+		std::cout << "[mvsim ~World] GUI thread shut down successful."
+				  << std::endl;
+	}
+
 	this->clear_all();
 	delete m_box2d_world;
 	m_box2d_world = nullptr;

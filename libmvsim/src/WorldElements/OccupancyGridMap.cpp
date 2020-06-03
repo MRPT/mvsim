@@ -95,7 +95,7 @@ void OccupancyGridMap::gui_update(mrpt::opengl::COpenGLScene& scene)
 	if (!m_gl_grid)
 	{
 		m_gl_grid = mrpt::opengl::CSetOfObjects::Create();
-		SCENE_INSERT_Z_ORDER(scene, 0, m_gl_grid);
+		scene.insert(m_gl_grid);
 	}
 	if (m_gl_obs_clouds.size() != m_obstacles_for_each_obj.size())
 	{
@@ -119,7 +119,7 @@ void OccupancyGridMap::gui_update(mrpt::opengl::COpenGLScene& scene)
 			{
 				gl_objs = mrpt::opengl::CSetOfObjects::Create();
 				MRPT_TODO("Add a name, and remove old ones in scene, etc.")
-				SCENE_INSERT_Z_ORDER(scene, 1, gl_objs);
+				scene.insert(gl_objs);
 			}
 
 			// Now that we are in a safe thread (with the OpenGL scene lock

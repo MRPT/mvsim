@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/format.h>
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/opengl/CGridPlaneXY.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mvsim/World.h>
@@ -16,18 +17,6 @@
 
 using namespace mvsim;
 using namespace std;
-
-// Default ctor: inits empty world.
-World::TGUI_Options::TGUI_Options()
-	: win_w(800),
-	  win_h(600),
-	  ortho(false),
-	  show_forces(false),
-	  force_scale(0.01),
-	  camera_distance(80),
-	  fov_deg(60)
-{
-}
 
 void World::TGUI_Options::parse_from(const rapidxml::xml_node<char>& node)
 {
@@ -40,11 +29,12 @@ void World::TGUI_Options::parse_from(const rapidxml::xml_node<char>& node)
 	gui_params["cam_distance"] = TParamEntry("%lf", &camera_distance);
 	gui_params["fov_deg"] = TParamEntry("%lf", &fov_deg);
 	gui_params["follow_vehicle"] = TParamEntry("%s", &follow_vehicle);
+	gui_params["start_maximized"] = TParamEntry("%bool", &start_maximized);
+	gui_params["refresh_fps"] = TParamEntry("%i", &refresh_fps);
 
 	parse_xmlnode_children_as_param(node, gui_params, "[World::TGUI_Options]");
 }
 
-World::TUpdateGUIParams::TUpdateGUIParams() {}
 // Text labels unique IDs:
 size_t ID_GLTEXT_CLOCK = 0;
 
@@ -53,23 +43,26 @@ size_t ID_GLTEXT_CLOCK = 0;
 bool World::is_GUI_open() const { return !!m_gui_win; }
 //!< Forces closing the GUI window, if any.
 void World::close_GUI() { m_gui_win.reset(); }
-/** Updates (or sets-up upon first call) the GUI visualization of the scene.
- * \note This method is prepared to be called concurrently with the simulation,
- * and doing so is recommended to assure a smooth multi-threading simulation.
- */
-void World::update_GUI(TUpdateGUIParams* guiparams)
-{
-	// First call?
-	// -----------------------
-	if (!m_gui_win)
-	{
-		m_timlogger.enter("update_GUI_init");
 
-		m_gui_win = mrpt::gui::CDisplayWindow3D::Create(
-			"mvsim", m_gui_options.win_w, m_gui_options.win_h);
-		m_gui_win->setCameraZoom(m_gui_options.camera_distance);
-		m_gui_win->setCameraProjective(!m_gui_options.ortho);
-		m_gui_win->setFOV(m_gui_options.fov_deg);
+void World::internal_GUI_thread()
+{
+	try
+	{
+		std::cout << "[World::internal_GUI_thread] Init.\n";
+		nanogui::init();
+
+		mrpt::gui::CDisplayWindowGUI_Params cp;
+		cp.maximized = m_gui_options.start_maximized;
+
+		m_gui_win = mrpt::gui::CDisplayWindowGUI::Create(
+			"mvsim", m_gui_options.win_w, m_gui_options.win_h, cp);
+
+		// Add a background scene:
+		auto scene = mrpt::opengl::COpenGLScene::Create();
+		{
+			std::lock_guard<std::mutex> lck(m_gui_win->background_scene_mtx);
+			m_gui_win->background_scene = std::move(scene);
+		}
 
 		// Only if the world is empty: at least introduce a ground grid:
 		if (m_world_elements.empty())
@@ -79,30 +72,107 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			this->m_world_elements.push_back(we);
 		}
 
-		m_timlogger.leave("update_GUI_init");
+		// Add controls:
+
+		m_gui_win->performLayout();
+		auto& cam = m_gui_win->camera();
+
+		cam.setCameraPointing(0.0f, .0f, .0f);
+		cam.setCameraProjective(!m_gui_options.ortho);
+		cam.setZoomDistance(m_gui_options.camera_distance);
+
+		// Main GUI loop
+		// ---------------------
+		m_gui_win->drawAll();
+		m_gui_win->setVisible(true);
+
+		// Listen for keyboard events:
+		m_gui_win->setKeyboardCallback([&](int key, int /*scancode*/,
+										   int action, int modifiers) {
+			if (action != GLFW_PRESS && action != GLFW_REPEAT) return false;
+
+			auto lck = mrpt::lockHelper(m_lastKeyEvent_mtx);
+
+			m_lastKeyEvent.keycode = key;
+			m_lastKeyEvent.modifierShift = (modifiers & GLFW_MOD_SHIFT) != 0;
+			m_lastKeyEvent.modifierCtrl = (modifiers & GLFW_MOD_CONTROL) != 0;
+			m_lastKeyEvent.modifierSuper = (modifiers & GLFW_MOD_SUPER) != 0;
+			m_lastKeyEvent.modifierAlt = (modifiers & GLFW_MOD_ALT) != 0;
+
+			m_lastKeyEventValid = true;
+
+			return false;
+		});
+
+		m_gui_thread_running = true;
+
+		// The GUI must be closed from this same thread. Use a shared atomic
+		// bool:
+		m_gui_win->setLoopCallback([&]() {
+			if (m_gui_thread_must_close) nanogui::leave();
+		});
+
+		nanogui::mainloop(m_gui_options.refresh_fps);
+
+		std::cout << "[World::internal_GUI_thread] Mainloop ended.\n";
+
+		m_gui_win.reset();
+
+		nanogui::shutdown();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "[internal_GUI_init] Exception: "
+				  << mrpt::exception_to_str(e) << std::endl;
+	}
+	m_gui_thread_running = false;
+}
+
+void World::update_GUI(TUpdateGUIParams* guiparams)
+{
+	// First call?
+	// -----------------------
+	{
+		auto lock = mrpt::lockHelper(m_gui_thread_start_mtx);
+		if (!m_gui_thread_running && !m_gui_thread.joinable())
+		{
+			std::cout << "[update_GUI] Launching GUI thread...\n";
+
+			m_gui_thread = std::thread(&World::internal_GUI_thread, this);
+			for (int timeout = 0; timeout < 300; timeout++)
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				if (m_gui_thread_running) break;
+			}
+
+			if (!m_gui_thread_running)
+			{
+				THROW_EXCEPTION("Timeout waiting for GUI to open!");
+			}
+			else
+			{
+				std::cout << "[update_GUI] GUI thread started.\n";
+			}
+		}
+	}
+
+	if (!m_gui_win)
+	{
+		std::cerr << "[World::update_GUI] Ignoring call since GUI window has "
+					 "been closed."
+				  << std::endl;
+		return;
 	}
 
 	m_timlogger.enter("update_GUI");  // Don't count initialization, since that
 									  // is a total outlier and lacks interest!
 
 	m_timlogger.enter("update_GUI.1.get-lock");
-	mrpt::opengl::COpenGLScene::Ptr gl_scene =
-		m_gui_win->get3DSceneAndLock();  // ** LOCK **
-	m_timlogger.leave("update_GUI.1.get-lock");
 
-	// 1st time only:
-	// Build different "stacks" or "z-order levels" for
-	// rendering with transparencies to work nicely
-	// --------------------------------------------------------
-	if (!gl_scene->getByName("level_0"))
-	{
-		for (unsigned int i = 0; i < 5; i++)
-		{
-			auto gl_obj = mrpt::opengl::CSetOfObjects::Create();
-			gl_obj->setName(mrpt::format("level_%u", i));
-			gl_scene->insert(gl_obj);
-		}
-	}
+	m_gui_win->background_scene_mtx.lock();
+	mrpt::opengl::COpenGLScene::Ptr& gl_scene = m_gui_win->background_scene;
+
+	m_timlogger.leave("update_GUI.1.get-lock");
 
 	// Update view of map elements
 	// -----------------------------
@@ -142,7 +212,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 		int txt_y = 4;
 
 		// 1st line: time
-		m_gui_win->addTextMessage(
+		gl_scene->getViewport()->addTextMessage(
 			2, 2,
 			mrpt::format(
 				"Time: %s",
@@ -156,7 +226,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			const size_t nLines = std::count(
 				guiparams->msg_lines.begin(), guiparams->msg_lines.end(), '\n');
 			txt_y += nLines * (txt_h + space_h);
-			m_gui_win->addTextMessage(
+			gl_scene->getViewport()->addTextMessage(
 				2, txt_y, guiparams->msg_lines, ID_GLTEXT_CLOCK + 1);
 		}
 	}
@@ -184,20 +254,23 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 		else
 		{
 			const mrpt::poses::CPose2D pose = it->second->getCPose2D();
-			m_gui_win->setCameraPointingToPoint(pose.x(), pose.y(), 0.0f);
+			m_gui_win->camera().setCameraPointing(pose.x(), pose.y(), 0.0f);
 		}
 	}
 
 	// Force refresh view
 	// -----------------------
-	m_gui_win->unlockAccess3DScene();  // ** UNLOCK **
-	m_gui_win->repaint();
+	m_gui_win->background_scene_mtx.unlock();
 
 	m_timlogger.leave("update_GUI");
 
 	// Key-strokes:
 	// -----------------------
-	if (guiparams && m_gui_win->keyHit())
-		guiparams->keyevent.keycode =
-			m_gui_win->getPushedKey(&guiparams->keyevent.key_modifier);
+	if (guiparams && m_lastKeyEventValid)
+	{
+		auto lck = mrpt::lockHelper(m_lastKeyEvent_mtx);
+
+		guiparams->keyevent = std::move(m_lastKeyEvent);
+		m_lastKeyEventValid = false;
+	}
 }

@@ -13,7 +13,7 @@
 #include <Box2D/Dynamics/b2World.h>
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
-#include <mrpt/gui/CDisplayWindow3D.h>
+#include <mrpt/gui/CDisplayWindowGUI.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/system/CTicTac.h>
@@ -29,6 +29,9 @@ namespace mvsim
  * This is the central class for usage from user code, running the simulation,
  * loading XML models, managing GUI visualization, etc.
  * The ROS node acts as a bridge between this class and the ROS subsystem.
+ *
+ * See: https://mvsimulator.readthedocs.io/en/latest/world.html
+ *
  */
 class World
 {
@@ -38,14 +41,11 @@ class World
 	World();  //!< Default ctor: inits an empty world
 	~World();  //!< Dtor.
 
-	void clear_all(bool acquire_mt_lock = true);  //!< Resets the entire
-												  //! simulation environment to
-												  //! an empty world. \a
-												  //! acquire_mt_lock determines
-												  //! whether to lock the
-												  //! multithreading semaphore
-												  //! before (set to false only
-												  //! if it's already acquired).
+	/** Resets the entire simulation environment to an empty world.
+	 * \a acquire_mt_lock determines whether to lock the multithreading mutex
+	 * before (set to false only if it's already acquired).
+	 */
+	void clear_all(bool acquire_mt_lock = true);
 
 	/** Load an entire world description into this object from a specification
 	 * in XML format.
@@ -97,10 +97,13 @@ class World
 	/** For usage in TUpdateGUIParams and \a update_GUI() */
 	struct TGUIKeyEvent
 	{
-		int keycode;  //!< 0=no Key. Otherwise, ASCII code.
-		mrpt::gui::mrptKeyModifier key_modifier;
+		int keycode = 0;  //!< 0=no Key. Otherwise, ASCII code.
+		bool modifierShift = false;
+		bool modifierCtrl = false;
+		bool modifierAlt = false;
+		bool modifierSuper = false;
 
-		TGUIKeyEvent() : keycode(0) {}
+		TGUIKeyEvent() = default;
 	};
 
 	struct TUpdateGUIParams
@@ -108,7 +111,7 @@ class World
 		TGUIKeyEvent keyevent;  //!< Keystrokes in the window are returned here.
 		std::string msg_lines;  //!< Messages to show
 
-		TUpdateGUIParams();
+		TUpdateGUIParams() = default;
 	};
 
 	/** Updates (or sets-up upon first call) the GUI visualization of the scene.
@@ -119,6 +122,17 @@ class World
 	 * multi-threading simulation.
 	 */
 	void update_GUI(TUpdateGUIParams* params = nullptr);
+
+	void internal_GUI_thread();
+	std::thread m_gui_thread;
+
+	std::atomic_bool m_gui_thread_running = false;
+	std::atomic_bool m_gui_thread_must_close = false;
+	std::mutex m_gui_thread_start_mtx;
+
+	TGUIKeyEvent m_lastKeyEvent;
+	std::atomic_bool m_lastKeyEventValid = false;
+	std::mutex m_lastKeyEvent_mtx;
 
 	bool is_GUI_open() const;  //!< Return true if the GUI window is open, after
 							   //! a previous call to update_GUI()
@@ -209,16 +223,18 @@ class World
 	// ------- GUI options -----
 	struct TGUI_Options
 	{
-		unsigned int win_w, win_h;
-		bool ortho;
-		bool show_forces;
-		double force_scale;  //!< In meters/Newton
-		double camera_distance;
-		double fov_deg;
-		std::string
-			follow_vehicle;  //!< Name of the vehicle to follow (empty=none)
+		unsigned int win_w = 800, win_h = 600;
+		bool start_maximized = false;
+		int refresh_fps = 20;
+		bool ortho = false;
+		bool show_forces = false;
+		double force_scale = 0.01;  //!< In meters/Newton
+		double camera_distance = 80.0;
+		double fov_deg = 60.0;
+		/** Name of the vehicle to follow (empty=none) */
+		std::string follow_vehicle;
 
-		TGUI_Options();
+		TGUI_Options() = default;
 		void parse_from(const rapidxml::xml_node<char>& node);
 	};
 
@@ -241,7 +257,7 @@ class World
 	void internal_one_timestep(double dt);
 
 	// -------- GUI stuff ----------
-	mrpt::gui::CDisplayWindow3D::Ptr m_gui_win;
+	mrpt::gui::CDisplayWindowGUI::Ptr m_gui_win;
 
 	mrpt::system::CTimeLogger m_timlogger;
 	mrpt::system::CTicTac m_timer_iteration;
