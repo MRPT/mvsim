@@ -8,8 +8,9 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/system/CTicTac.h>
-#include <mrpt/system/os.h>  // kbhit()
+#include <mrpt/system/os.h>	 // kbhit()
 #include <mvsim/mvsim.h>
+
 #include <chrono>
 #include <iostream>
 #include <rapidxml_utils.hpp>
@@ -24,7 +25,7 @@ struct TThreadParams
 	TThreadParams() : world(NULL), closing(false) {}
 };
 void usage(const char* argv0);
-void thread_update_GUI(TThreadParams& thread_params);
+static void mvsim_server_thread_update_GUI(TThreadParams& thread_params);
 World::TGUIKeyEvent gui_key_events;
 std::string msg2gui;
 
@@ -47,15 +48,15 @@ int main(int argc, char** argv)
 		// Launch GUI thread:
 		TThreadParams thread_params;
 		thread_params.world = &world;
-		std::thread thGUI =
-			std::thread(thread_update_GUI, std::ref(thread_params));
+		std::thread thGUI = std::thread(
+			&mvsim_server_thread_update_GUI, std::ref(thread_params));
 
 		// Run simulation:
 		mrpt::system::CTicTac tictac;
 		double t_old = tictac.Tac();
 		double REALTIME_FACTOR = 1.0;
 		bool do_exit = false;
-		size_t teleop_idx_veh = 0;  // Index of the vehicle to teleop
+		size_t teleop_idx_veh = 0;	// Index of the vehicle to teleop
 
 		while (!do_exit && !mrpt::system::os::kbhit())
 		{
@@ -65,9 +66,8 @@ int main(int argc, char** argv)
 			double t_new = tictac.Tac();
 			double incr_time = REALTIME_FACTOR * (t_new - t_old);
 
-			if (incr_time >= world.get_simul_timestep())  // Just in case the
-														  // computer is *really
-														  // fast*...
+			// Just in case the computer is *really fast*...
+			if (incr_time >= world.get_simul_timestep())
 			{
 				// Simulate:
 				world.run_simulation(incr_time);
@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 			// Clear the keystroke buffer
 			if (keyevent.keycode != 0) gui_key_events = World::TGUIKeyEvent();
 
-			msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
+			msg2gui = txt2gui_tmp;	// send txt msgs to show in the GUI
 
 		}  // end while()
 
@@ -163,7 +163,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-void thread_update_GUI(TThreadParams& thread_params)
+void mvsim_server_thread_update_GUI(TThreadParams& thread_params)
 {
 	while (!thread_params.closing)
 	{

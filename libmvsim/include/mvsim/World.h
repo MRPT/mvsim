@@ -21,6 +21,7 @@
 #include <mvsim/Block.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
+
 #include <list>
 
 namespace mvsim
@@ -108,8 +109,8 @@ class World
 
 	struct TUpdateGUIParams
 	{
-		TGUIKeyEvent keyevent;  //!< Keystrokes in the window are returned here.
-		std::string msg_lines;  //!< Messages to show
+		TGUIKeyEvent keyevent;	//!< Keystrokes in the window are returned here.
+		std::string msg_lines;	//!< Messages to show
 
 		TUpdateGUIParams() = default;
 	};
@@ -123,7 +124,13 @@ class World
 	 */
 	void update_GUI(TUpdateGUIParams* params = nullptr);
 
+	void internalUpdate3DSceneObjects(
+		mrpt::opengl::COpenGLScene::Ptr& gl_scene);
 	void internal_GUI_thread();
+
+	std::string m_gui_msg_lines;
+	std::mutex m_gui_msg_lines_mtx;
+
 	std::thread m_gui_thread;
 
 	std::atomic_bool m_gui_thread_running = false;
@@ -144,10 +151,10 @@ class World
 	/** \name Public types
 	  @{*/
 	typedef std::multimap<std::string, VehicleBase*>
-		TListVehicles;  //!< Map 'vehicle-name' => vehicle object. See
+		TListVehicles;	//!< Map 'vehicle-name' => vehicle object. See
 						//! getListOfVehicles()
 	typedef std::list<WorldElementBase*>
-		TListWorldElements;  //!< See getListOfWorldElements()
+		TListWorldElements;	 //!< See getListOfWorldElements()
 	typedef std::multimap<std::string, Block*>
 		TListBlocks;  //!< Map 'block-name' => block object. See
 					  //! getListOfBlocks()
@@ -228,7 +235,7 @@ class World
 		int refresh_fps = 20;
 		bool ortho = false;
 		bool show_forces = false;
-		double force_scale = 0.01;  //!< In meters/Newton
+		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
 		double fov_deg = 60.0;
 		/** Name of the vehicle to follow (empty=none) */
@@ -238,14 +245,14 @@ class World
 		void parse_from(const rapidxml::xml_node<char>& node);
 	};
 
-	TGUI_Options m_gui_options;  //!< Some of these options are only used the
+	TGUI_Options m_gui_options;	 //!< Some of these options are only used the
 								 //! first time the GUI window is created.
 
 	// -------- World contents ----------
-	std::mutex m_world_cs;  //!< The main semaphore to protect simulation
+	std::mutex m_world_cs;	//!< The main semaphore to protect simulation
 							//! objects from multithreading access.
 
-	b2World* m_box2d_world;  //!< Box2D dynamic simulator instance
+	b2World* m_box2d_world;	 //!< Box2D dynamic simulator instance
 	b2Body*
 		m_b2_ground_body;  //!< Used to declare friction between vehicles-ground
 
