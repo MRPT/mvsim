@@ -12,7 +12,9 @@
 #include <mrpt/opengl/CGridPlaneXY.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mvsim/World.h>
+
 #include <rapidxml.hpp>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -110,6 +112,11 @@ void World::internal_GUI_thread()
 		// bool:
 		m_gui_win->setLoopCallback([&]() {
 			if (m_gui_thread_must_close) nanogui::leave();
+
+			// Update all GUI elements:
+			ASSERT_(m_gui_win->background_scene);
+
+			internalUpdate3DSceneObjects(m_gui_win->background_scene);
 		});
 
 		nanogui::mainloop(m_gui_options.refresh_fps);
@@ -126,6 +133,98 @@ void World::internal_GUI_thread()
 				  << mrpt::exception_to_str(e) << std::endl;
 	}
 	m_gui_thread_running = false;
+}
+
+void World::internalUpdate3DSceneObjects(
+	mrpt::opengl::COpenGLScene::Ptr& gl_scene)
+{
+	// Update view of map elements
+	// -----------------------------
+	m_timlogger.enter("update_GUI.2.map-elements");
+
+	for (std::list<WorldElementBase*>::iterator it = m_world_elements.begin();
+		 it != m_world_elements.end(); ++it)
+		(*it)->gui_update(*gl_scene);
+
+	m_timlogger.leave("update_GUI.2.map-elements");
+
+	// Update view of vehicles
+	// -----------------------------
+	m_timlogger.enter("update_GUI.3.vehicles");
+
+	for (TListVehicles::iterator it = m_vehicles.begin();
+		 it != m_vehicles.end(); ++it)
+		it->second->gui_update(*gl_scene);
+
+	m_timlogger.leave("update_GUI.3.vehicles");
+
+	// Update view of blocks
+	// -----------------------------
+	m_timlogger.enter("update_GUI.4.blocks");
+
+	for (TListBlocks::iterator it = m_blocks.begin(); it != m_blocks.end();
+		 ++it)
+		it->second->gui_update(*gl_scene);
+
+	m_timlogger.leave("update_GUI.4.blocks");
+
+	// Other messages
+	// -----------------------------
+	m_timlogger.enter("update_GUI.5.text-msgs");
+	{
+		const int txt_h = 12, space_h = 2;	// font height
+		int txt_y = 4;
+
+		// 1st line: time
+		gl_scene->getViewport()->addTextMessage(
+			2, 2,
+			mrpt::format(
+				"Time: %s",
+				mrpt::system::formatTimeInterval(this->m_simul_time).c_str()),
+			ID_GLTEXT_CLOCK);
+		txt_y += txt_h + space_h;
+
+		// User supplied-lines:
+		m_gui_msg_lines_mtx.lock();
+		const std::string msg_lines = m_gui_msg_lines;
+		m_gui_msg_lines_mtx.unlock();
+
+		if (!msg_lines.empty())
+		{
+			const size_t nLines =
+				std::count(msg_lines.begin(), msg_lines.end(), '\n');
+			txt_y += nLines * (txt_h + space_h);
+			gl_scene->getViewport()->addTextMessage(
+				2, txt_y, msg_lines, ID_GLTEXT_CLOCK + 1);
+		}
+	}
+
+	m_timlogger.leave("update_GUI.5.text-msgs");
+
+	// Camera follow modes:
+	// -----------------------
+	if (!m_gui_options.follow_vehicle.empty())
+	{
+		TListVehicles::const_iterator it =
+			m_vehicles.find(m_gui_options.follow_vehicle);
+		if (it == m_vehicles.end())
+		{
+			static bool warn1st = true;
+			if (warn1st)
+			{
+				std::cerr << mrpt::format(
+					"GUI: Camera set to follow vehicle named '%s' which can't "
+					"be found!\n",
+					m_gui_options.follow_vehicle.c_str());
+				warn1st = true;
+			}
+		}
+		else
+		{
+			const mrpt::poses::CPose2D pose = it->second->getCPose2D();
+			m_gui_win->camera().setCameraPointing(pose.x(), pose.y(), 0.0f);
+		}
+	}
 }
 
 void World::update_GUI(TUpdateGUIParams* guiparams)
@@ -167,100 +266,9 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 	m_timlogger.enter("update_GUI");  // Don't count initialization, since that
 									  // is a total outlier and lacks interest!
 
-	m_timlogger.enter("update_GUI.1.get-lock");
-
-	m_gui_win->background_scene_mtx.lock();
-	mrpt::opengl::COpenGLScene::Ptr& gl_scene = m_gui_win->background_scene;
-
-	m_timlogger.leave("update_GUI.1.get-lock");
-
-	// Update view of map elements
-	// -----------------------------
-	m_timlogger.enter("update_GUI.2.map-elements");
-
-	for (std::list<WorldElementBase*>::iterator it = m_world_elements.begin();
-		 it != m_world_elements.end(); ++it)
-		(*it)->gui_update(*gl_scene);
-
-	m_timlogger.leave("update_GUI.2.map-elements");
-
-	// Update view of vehicles
-	// -----------------------------
-	m_timlogger.enter("update_GUI.3.vehicles");
-
-	for (TListVehicles::iterator it = m_vehicles.begin();
-		 it != m_vehicles.end(); ++it)
-		it->second->gui_update(*gl_scene);
-
-	m_timlogger.leave("update_GUI.3.vehicles");
-
-	// Update view of blocks
-	// -----------------------------
-	m_timlogger.enter("update_GUI.4.blocks");
-
-	for (TListBlocks::iterator it = m_blocks.begin(); it != m_blocks.end();
-		 ++it)
-		it->second->gui_update(*gl_scene);
-
-	m_timlogger.leave("update_GUI.4.blocks");
-
-	// Other messages
-	// -----------------------------
-	m_timlogger.enter("update_GUI.5.text-msgs");
-	{
-		const int txt_h = 12, space_h = 2;  // font height
-		int txt_y = 4;
-
-		// 1st line: time
-		gl_scene->getViewport()->addTextMessage(
-			2, 2,
-			mrpt::format(
-				"Time: %s",
-				mrpt::system::formatTimeInterval(this->m_simul_time).c_str()),
-			ID_GLTEXT_CLOCK);
-		txt_y += txt_h + space_h;
-
-		// User supplied-lines:
-		if (guiparams)
-		{
-			const size_t nLines = std::count(
-				guiparams->msg_lines.begin(), guiparams->msg_lines.end(), '\n');
-			txt_y += nLines * (txt_h + space_h);
-			gl_scene->getViewport()->addTextMessage(
-				2, txt_y, guiparams->msg_lines, ID_GLTEXT_CLOCK + 1);
-		}
-	}
-
-	m_timlogger.leave("update_GUI.5.text-msgs");
-
-	// Camera follow modes:
-	// -----------------------
-	if (!m_gui_options.follow_vehicle.empty())
-	{
-		TListVehicles::const_iterator it =
-			m_vehicles.find(m_gui_options.follow_vehicle);
-		if (it == m_vehicles.end())
-		{
-			static bool warn1st = true;
-			if (warn1st)
-			{
-				std::cerr << mrpt::format(
-					"GUI: Camera set to follow vehicle named '%s' which can't "
-					"be found!\n",
-					m_gui_options.follow_vehicle.c_str());
-				warn1st = true;
-			}
-		}
-		else
-		{
-			const mrpt::poses::CPose2D pose = it->second->getCPose2D();
-			m_gui_win->camera().setCameraPointing(pose.x(), pose.y(), 0.0f);
-		}
-	}
-
-	// Force refresh view
-	// -----------------------
-	m_gui_win->background_scene_mtx.unlock();
+	m_gui_msg_lines_mtx.lock();
+	m_gui_msg_lines = guiparams->msg_lines;
+	m_gui_msg_lines_mtx.unlock();
 
 	m_timlogger.leave("update_GUI");
 
