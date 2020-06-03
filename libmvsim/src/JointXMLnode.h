@@ -27,12 +27,12 @@ class JointXMLnode
 	void add(const rapidxml::xml_node<Ch>* node) { m_nodes.push_back(node); }
 	const rapidxml::xml_node<Ch>* first_node(const char* name)
 	{
-		const rapidxml::xml_node<Ch>* ret = NULL;
+		const rapidxml::xml_node<Ch>* ret = nullptr;
 		for (typename TListNodes::const_iterator it = m_nodes.begin();
 			 it != m_nodes.end(); ++it)
 		{
 			ret = (*it)->first_node(name);
-			if (ret != NULL) return ret;
+			if (ret != nullptr) return ret;
 		}
 		return ret;
 	}
@@ -58,7 +58,7 @@ class JointXMLnode
 				if (lst_idx < lst.size())
 					current = lst[lst_idx]->first_node();
 				else
-					current = NULL;
+					current = nullptr;
 			}
 			return *this;
 		}
@@ -86,7 +86,7 @@ class JointXMLnode
 		bool operator!=(const iterator& it) const { return !(*this == it); }
 	   private:
 		// begin():
-		iterator(JointXMLnode<Ch>& pa) : parent(pa), lst_idx(0), current(NULL)
+		iterator(JointXMLnode<Ch>& pa) : parent(pa), lst_idx(0), current(nullptr)
 		{
 			JointXMLnode<Ch>::TListNodes& lst = parent.getListOfNodes();
 			while (!current && lst_idx < lst.size())
@@ -97,7 +97,7 @@ class JointXMLnode
 		}
 		// end()
 		iterator(JointXMLnode<Ch>& pa, size_t idx)
-			: parent(pa), lst_idx(idx), current(NULL)
+			: parent(pa), lst_idx(idx), current(nullptr)
 		{
 		}
 

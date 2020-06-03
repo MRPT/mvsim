@@ -164,6 +164,6 @@ void World::load_from_XML(
 		}
 
 		// Move on to next node:
-		node = node->next_sibling(NULL);
+		node = node->next_sibling(nullptr);
 	}
 }

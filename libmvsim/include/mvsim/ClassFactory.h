@@ -25,7 +25,7 @@ class ClassFactory
 	{
 		CLASS* (*ptr_factory1)(ARG1);
 		CLASS* (*ptr_factory2)(ARG1, ARG2);
-		TClassData() : ptr_factory1(NULL), ptr_factory2(NULL) {}
+		TClassData() : ptr_factory1(nullptr), ptr_factory2(nullptr) {}
 	};
 
 	void do_register(const std::string& class_name, const TClassData& data)
@@ -43,7 +43,7 @@ class ClassFactory
 					.c_str());
 		if (!it->second.ptr_factory1)
 			throw std::runtime_error(
-				(std::string("ClassFactory: factory(1) pointer is NULL for ") +
+				(std::string("ClassFactory: factory(1) pointer is nullptr for ") +
 				 class_name)
 					.c_str());
 		return (*it->second.ptr_factory1)(a1);
@@ -58,7 +58,7 @@ class ClassFactory
 					.c_str());
 		if (!it->second.ptr_factory2)
 			throw std::runtime_error(
-				(std::string("ClassFactory: factory(2) pointer is NULL for ") +
+				(std::string("ClassFactory: factory(2) pointer is nullptr for ") +
 				 class_name)
 					.c_str());
 		return (*it->second.ptr_factory2)(a1, a2);

@@ -27,7 +27,7 @@ class XmlClassesRegistry
 		std::string* xml_data;  // Must be kept alloc'ed during the entire life
 								// of xml_doc!!
 
-		TXMLData() : xml_doc(NULL), xml_data(NULL) {}
+		TXMLData() : xml_doc(nullptr), xml_data(nullptr) {}
 		~TXMLData()
 		{
 			if (xml_doc) delete xml_doc;
@@ -44,7 +44,7 @@ class XmlClassesRegistry
 	{
 	}
 
-	/** Return an XML node with the class definition, or NULL if not found */
+	/** Return an XML node with the class definition, or nullptr if not found */
 	const rapidxml::xml_node<char>* get(
 		const std::string& xml_node_class) const;
 

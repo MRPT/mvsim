@@ -39,8 +39,8 @@ DynamicsDifferential::DynamicsDifferential(World* parent)
 	m_chassis_poly.push_back(TPoint2D(0.4, -0.5));
 	updateMaxRadiusFromPoly();
 
-	m_fixture_chassis = NULL;
-	for (int i = 0; i < 2; i++) m_fixture_wheels[i] = NULL;
+	m_fixture_chassis = nullptr;
+	for (int i = 0; i < 2; i++) m_fixture_wheels[i] = nullptr;
 }
 
 /** The derived-class part of load_params_from_xml() */

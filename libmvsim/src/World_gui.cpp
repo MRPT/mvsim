@@ -82,7 +82,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 		if (m_world_elements.empty())
 		{
 			WorldElementBase* we =
-				WorldElementBase::factory(this, NULL, "groundgrid");
+				WorldElementBase::factory(this, nullptr, "groundgrid");
 			this->m_world_elements.push_back(we);
 		}
 

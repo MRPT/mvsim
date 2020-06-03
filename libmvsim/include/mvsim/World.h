@@ -152,7 +152,7 @@ class World
 	 * simulation, and doing so is recommended to assure a smooth
 	 * multi-threading simulation.
 	  */
-	void update_GUI(TUpdateGUIParams* params = NULL);
+	void update_GUI(TUpdateGUIParams* params = nullptr);
 
 	bool is_GUI_open() const;  //!< Return true if the GUI window is open, after
 							   //!a previous call to update_GUI()

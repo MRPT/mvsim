@@ -20,7 +20,7 @@ DefaultFriction::DefaultFriction(
 	VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
 	: FrictionBase(my_vehicle), m_mu(0.8), m_C_damping(1.0)
 {
-	// Sanity: we can tolerate node==NULL (=> means use default params).
+	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
 		throw std::runtime_error(
 			"<friction>...</friction> XML node was expected!!");

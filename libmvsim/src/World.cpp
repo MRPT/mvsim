@@ -26,7 +26,7 @@ World::World()
 	  m_b2d_vel_iters(6),
 	  m_b2d_pos_iters(3),
 	  m_base_path("."),
-	  m_box2d_world(NULL)
+	  m_box2d_world(nullptr)
 {
 	this->clear_all();
 }
@@ -36,7 +36,7 @@ World::~World()
 {
 	this->clear_all();
 	delete m_box2d_world;
-	m_box2d_world = NULL;
+	m_box2d_world = nullptr;
 }
 
 // Resets the entire simulation environment to an empty world.

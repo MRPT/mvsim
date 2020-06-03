@@ -26,7 +26,7 @@ WardIagnemmaFriction::WardIagnemmaFriction(
 	  m_R1(0.08),
 	  m_R2(0.05)
 {
-	// Sanity: we can tolerate node==NULL (=> means use default params).
+	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
 		throw std::runtime_error(
 			"<friction>...</friction> XML node was expected!!");
