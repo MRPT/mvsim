@@ -7,15 +7,13 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/mvsim.h>
-
-#include <chrono>
-#include <thread>
-
+#include <mrpt/system/CTicTac.h>
 #include <mrpt/system/os.h>  // kbhit()
-#include <mrpt/utils/CTicTac.h>
-#include <rapidxml_utils.hpp>
+#include <mvsim/mvsim.h>
+#include <chrono>
 #include <iostream>
+#include <rapidxml_utils.hpp>
+#include <thread>
 
 using namespace mvsim;
 
@@ -53,7 +51,7 @@ int main(int argc, char** argv)
 			std::thread(thread_update_GUI, std::ref(thread_params));
 
 		// Run simulation:
-		CTicTac tictac;
+		mrpt::system::CTicTac tictac;
 		double t_old = tictac.Tac();
 		double REALTIME_FACTOR = 1.0;
 		bool do_exit = false;
@@ -121,7 +119,7 @@ int main(int argc, char** argv)
 						txt2gui_tmp += mrpt::format(
 							"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
 							vel.vals[0], vel.vals[1],
-						    RAD2DEG(vel.vals[2]));
+							mrpt::RAD2DEG(vel.vals[2]));
 					}
 					// Get speed: ground truth
 					{
@@ -130,7 +128,7 @@ int main(int argc, char** argv)
 						txt2gui_tmp += mrpt::format(
 							"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
 							vel.vals[0], vel.vals[1],
-						    RAD2DEG(vel.vals[2]));
+							mrpt::RAD2DEG(vel.vals[2]));
 					}
 
 					// Generic teleoperation interface for any controller that

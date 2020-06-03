@@ -24,4 +24,4 @@ struct PID_Controller
 	double lastOutput;
 	double e_n, e_n_1, e_n_2;
 };
-}
+}  // namespace mvsim

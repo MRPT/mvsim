@@ -6,25 +6,15 @@
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
-#include <mvsim/World.h>
-
-#if MRPT_VERSION<0x199
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
-#else
 #include <mrpt/core/format.h>
-#endif
-
 #include <mrpt/system/filesystem.h>  // extractFileDirectory()
-
-#include <iostream>  // for debugging
+#include <mvsim/World.h>
 #include <algorithm>  // count()
-#include <stdexcept>
+#include <iostream>  // for debugging
 #include <map>
-
-// XML parsing:
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
-
+#include <stdexcept>
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -32,9 +22,9 @@ using namespace std;
 
 /** Load an entire world description into this object from a specification in
  * XML format.
-	* \exception std::exception On any error, with what() giving a descriptive
+ * \exception std::exception On any error, with what() giving a descriptive
  * error message
-	*/
+ */
 void World::load_from_XML(
 	const std::string& xml_text, const std::string& fileNameForPath)
 {
@@ -62,10 +52,9 @@ void World::load_from_XML(
 	{
 		unsigned int line =
 			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
-		throw std::runtime_error(
-			mrpt::format(
-				"XML parse error (Line %u): %s", static_cast<unsigned>(line),
-				e.what()));
+		throw std::runtime_error(mrpt::format(
+			"XML parse error (Line %u): %s", static_cast<unsigned>(line),
+			e.what()));
 	}
 
 	// Sanity checks:
@@ -74,10 +63,8 @@ void World::load_from_XML(
 		throw runtime_error(
 			"XML parse error: No root node found (empty file?)");
 	if (0 != strcmp(root->name(), "mvsim_world"))
-		throw runtime_error(
-			mrpt::format(
-				"XML root element is '%s' ('mvsim_world' expected)",
-				root->name()));
+		throw runtime_error(mrpt::format(
+			"XML root element is '%s' ('mvsim_world' expected)", root->name()));
 
 	// Optional: format version attrib:
 	const xml_attribute<>* attrb_version = root->first_attribute("version");
@@ -87,11 +74,10 @@ void World::load_from_XML(
 		int ret = sscanf(
 			attrb_version->value(), "%i.%i", &version_major, &version_min);
 		if (ret != 2)
-			throw runtime_error(
-				mrpt::format(
-					"Error parsing version attribute: '%s' ('%%i.%%i' "
-					"expected)",
-					attrb_version->value()));
+			throw runtime_error(mrpt::format(
+				"Error parsing version attribute: '%s' ('%%i.%%i' "
+				"expected)",
+				attrb_version->value()));
 	}
 
 	// load general parameters:

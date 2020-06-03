@@ -7,20 +7,14 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/VehicleBase.h>
-#include <mvsim/Sensors/LaserScanner.h>
-
-#include <rapidxml.hpp>
-#include <rapidxml_utils.hpp>
-#include <rapidxml_print.hpp>
-#if MRPT_VERSION>=0x199
 #include <mrpt/core/format.h>
-#else
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
-#endif
-
-#include <sstream>  // std::stringstream
+#include <mvsim/Sensors/LaserScanner.h>
+#include <mvsim/VehicleBase.h>
 #include <map>
+#include <rapidxml.hpp>
+#include <rapidxml_print.hpp>
+#include <rapidxml_utils.hpp>
+#include <sstream>  // std::stringstream
 #include <string>
 
 using namespace mvsim;
@@ -59,11 +53,10 @@ SensorBase* SensorBase::factory(
 
 	if (!root) throw runtime_error("[SensorBase::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "sensor"))
-		throw runtime_error(
-			mrpt::format(
-				"[SensorBase::factory] XML root element is '%s' ('sensor' "
-				"expected)",
-				root->name()));
+		throw runtime_error(mrpt::format(
+			"[SensorBase::factory] XML root element is '%s' ('sensor' "
+			"expected)",
+			root->name()));
 
 	// Get "class" attrib:
 	const xml_attribute<>* sensor_class = root->first_attribute("class");
@@ -78,10 +71,8 @@ SensorBase* SensorBase::factory(
 	SensorBase* we = classFactory_sensors.create(sName, parent, root);
 
 	if (!we)
-		throw runtime_error(
-			mrpt::format(
-				"[SensorBase::factory] Unknown sensor type '%s'",
-				root->name()));
+		throw runtime_error(mrpt::format(
+			"[SensorBase::factory] Unknown sensor type '%s'", root->name()));
 
 	return we;
 }

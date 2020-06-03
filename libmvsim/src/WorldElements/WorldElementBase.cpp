@@ -7,25 +7,15 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/WorldElements/OccupancyGridMap.h>
-#include <mvsim/WorldElements/GroundGrid.h>
-#include <mvsim/WorldElements/ElevationMap.h>
-
-#include <rapidxml.hpp>
-#include <rapidxml_utils.hpp>
-#include <rapidxml_print.hpp>
-
-#include <mrpt/version.h>
-#if MRPT_VERSION<0x199
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
-using namespace mrpt::utils;
-#else
 #include <mrpt/core/format.h>
-using namespace mrpt;
-#endif
-
-#include <sstream>  // std::stringstream
+#include <mvsim/WorldElements/ElevationMap.h>
+#include <mvsim/WorldElements/GroundGrid.h>
+#include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <map>
+#include <rapidxml.hpp>
+#include <rapidxml_print.hpp>
+#include <rapidxml_utils.hpp>
+#include <sstream>  // std::stringstream
 #include <string>
 
 using namespace mvsim;
@@ -63,11 +53,10 @@ WorldElementBase* WorldElementBase::factory(
 	else
 	{
 		if (0 != strcmp(root->name(), "element"))
-			throw runtime_error(
-				mrpt::format(
-					"[WorldElementBase::factory] XML root element is '%s' "
-					"('<element>' expected)",
-					root->name()));
+			throw runtime_error(mrpt::format(
+				"[WorldElementBase::factory] XML root element is '%s' "
+				"('<element>' expected)",
+				root->name()));
 
 		// Get class name:
 		const xml_attribute<>* attrib_class = root->first_attribute("class");
@@ -82,10 +71,9 @@ WorldElementBase* WorldElementBase::factory(
 		classFactory_worldElements.create(sName, parent, root);
 
 	if (!we)
-		throw runtime_error(
-			mrpt::format(
-				"[WorldElementBase::factory] Unknown world element type '%s'",
-				root->name()));
+		throw runtime_error(mrpt::format(
+			"[WorldElementBase::factory] Unknown world element type '%s'",
+			root->name()));
 
 	return we;
 }

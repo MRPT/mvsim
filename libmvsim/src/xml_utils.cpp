@@ -7,38 +7,24 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/basic_types.h>
 #include "xml_utils.h"
-
-#include <cstdio>
+#include <mrpt/core/bits_math.h>
+#include <mrpt/core/format.h>
+#include <mrpt/img/TColor.h>
+#include <mrpt/math/lightweight_geom_data.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
-#include <mrpt/math/lightweight_geom_data.h>
 #include <mrpt/system/string_utils.h>
-
-#include <mrpt/version.h>
-#if MRPT_VERSION<0x199
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
-#include <mrpt/utils/TColor.h>
-using mrpt::utils::TColor;
-using mrpt::utils::DEG2RAD;
-using mrpt::utils::RAD2DEG;
-#else
-#include <mrpt/core/format.h>
-#include <mrpt/core/bits_math.h>
-#include <mrpt/img/TColor.h>
-using mrpt::img::TColor;
-using mrpt::DEG2RAD;
-using mrpt::RAD2DEG;
-#endif
+#include <mvsim/basic_types.h>
+#include <cstdio>
 
 using namespace rapidxml;
 using namespace mvsim;
 
 /** Tries to parse the given input string according to the expected format, then
  * store the result in "*val"
-	* \exception std::runtime_error On format errors.
-	*/
+ * \exception std::runtime_error On format errors.
+ */
 void TParamEntry::parse(
 	const std::string& str, const std::string& varName,
 	const char* function_name_context) const
@@ -49,24 +35,22 @@ void TParamEntry::parse(
 	{
 		char auxStr[512];
 		if (1 != ::sscanf(str.c_str(), frmt, auxStr))
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error parsing '%s'='%s' (Expected format:'%s')",
-					function_name_context, varName.c_str(), str.c_str(), frmt));
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing '%s'='%s' (Expected format:'%s')",
+				function_name_context, varName.c_str(), str.c_str(), frmt));
 		std::string& str = *reinterpret_cast<std::string*>(val);
 		str = mrpt::system::trim(auxStr);
 	}
-	// "%lf_deg" ==> DEG2RAD()
+	// "%lf_deg" ==> mrpt::DEG2RAD()
 	else if (std::string(frmt) == std::string("%lf_deg"))
 	{
 		if (1 != ::sscanf(str.c_str(), frmt, val))
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error parsing attribute '%s'='%s' (Expected "
-					"format:'%s')",
-					function_name_context, varName.c_str(), str.c_str(), frmt));
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing attribute '%s'='%s' (Expected "
+				"format:'%s')",
+				function_name_context, varName.c_str(), str.c_str(), frmt));
 		double& ang = *reinterpret_cast<double*>(val);
-		ang = DEG2RAD(ang);
+		ang = mrpt::DEG2RAD(ang);
 	}
 	// "%bool" ==> bool*
 	else if (std::string(frmt) == std::string("%bool"))
@@ -80,33 +64,30 @@ void TParamEntry::parse(
 		else if (sStr == "0" || sStr == "false")
 			bool_val = false;
 		else
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error parsing 'bool' attribute '%s'='%s' (Expected "
-					"'true' or 'false')",
-					function_name_context, varName.c_str(), str.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing 'bool' attribute '%s'='%s' (Expected "
+				"'true' or 'false')",
+				function_name_context, varName.c_str(), str.c_str()));
 	}
-	// "%color" ==> TColor
+	// "%color" ==> mrpt::img::TColor
 	else if (std::string(frmt) == std::string("%color"))
 	{
 		// HTML-like format:
 		if (!(str.size() > 1 && str[0] == '#'))
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error parsing '%s'='%s' (Expected "
-					"format:'#RRGGBB[AA]')",
-					function_name_context, varName.c_str(), str.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing '%s'='%s' (Expected "
+				"format:'#RRGGBB[AA]')",
+				function_name_context, varName.c_str(), str.c_str()));
 
 		unsigned int r, g, b, a = 0xff;
 		int ret = ::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
 		if (ret != 3 && ret != 4)
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error parsing '%s'='%s' (Expected "
-					"format:'#RRGGBB[AA]')",
-					function_name_context, varName.c_str(), str.c_str()));
-		TColor& col = *reinterpret_cast<TColor*>(val);
-		col = TColor(r, g, b, a);
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing '%s'='%s' (Expected "
+				"format:'#RRGGBB[AA]')",
+				function_name_context, varName.c_str(), str.c_str()));
+		mrpt::img::TColor& col = *reinterpret_cast<mrpt::img::TColor*>(val);
+		col = mrpt::img::TColor(r, g, b, a);
 	}
 	// "%pose2d"
 	// "%pose2d_ptr3d"
@@ -115,14 +96,13 @@ void TParamEntry::parse(
 		double x, y, yaw;
 		int ret = ::sscanf(str.c_str(), "%lf %lf %lf", &x, &y, &yaw);
 		if (ret != 3)
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error parsing '%s'='%s' (Expected format:'X Y "
-					"YAW_DEG')",
-					function_name_context, varName.c_str(), str.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing '%s'='%s' (Expected format:'X Y "
+				"YAW_DEG')",
+				function_name_context, varName.c_str(), str.c_str()));
 
 		// User provides angles in deg:
-		yaw = DEG2RAD(yaw);
+		yaw = mrpt::DEG2RAD(yaw);
 
 		const mrpt::poses::CPose2D p(x, y, yaw);
 
@@ -140,20 +120,18 @@ void TParamEntry::parse(
 			pp = mrpt::poses::CPose3D(p);
 		}
 		else
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error: Unknown format specifier '%s'",
-					function_name_context, frmt));
+			throw std::runtime_error(mrpt::format(
+				"%s Error: Unknown format specifier '%s'",
+				function_name_context, frmt));
 	}
 	else
 	{
 		// Generic parse:
 		if (1 != ::sscanf(str.c_str(), frmt, val))
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error parsing attribute '%s'='%s' (Expected "
-					"format:'%s')",
-					function_name_context, varName.c_str(), str.c_str(), frmt));
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing attribute '%s'='%s' (Expected "
+				"format:'%s')",
+				function_name_context, varName.c_str(), str.c_str(), frmt));
 	}
 }
 
@@ -208,21 +186,21 @@ void mvsim::parse_xmlnode_children_as_param(
 
 /** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and
  * returns
-	* a vec3 with [x,y,phi] with angle in radians. Raises an exception upon
+ * a vec3 with [x,y,phi] with angle in radians. Raises an exception upon
  * malformed string.
-	*/
+ */
 vec3 mvsim::parseXYPHI(
 	const std::string& s, bool allow_missing_angle,
 	double default_angle_radians)
 {
 	vec3 v;
-	v.vals[2] = RAD2DEG(default_angle_radians);  // Default ang.
+	v.vals[2] = mrpt::RAD2DEG(default_angle_radians);  // Default ang.
 
 	int na =
 		::sscanf(s.c_str(), "%lf %lf %lf", &v.vals[0], &v.vals[1], &v.vals[2]);
 
 	// User provides numbers as degrees:
-	v.vals[2] = DEG2RAD(v.vals[2]);
+	v.vals[2] = mrpt::DEG2RAD(v.vals[2]);
 
 	if ((na != 3 && !allow_missing_angle) ||
 		(na != 2 && na != 3 && allow_missing_angle))
@@ -234,8 +212,8 @@ vec3 mvsim::parseXYPHI(
 
 /** Parses a <shape><pt>X Y</pt>...</shape> XML node into a
  * mrpt::math::TPolygon2D
-	* \exception std::exception On syntax errors, etc.
-	*/
+ * \exception std::exception On syntax errors, etc.
+ */
 void mvsim::parse_xmlnode_shape(
 	const rapidxml::xml_node<char>& xml_node, mrpt::math::TPolygon2D& out_poly,
 	const char* function_name_context)
@@ -246,26 +224,23 @@ void mvsim::parse_xmlnode_shape(
 		 pt_node = pt_node->next_sibling("pt"))
 	{
 		if (!pt_node->value())
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error: <pt> node seems empty.", function_name_context));
+			throw std::runtime_error(mrpt::format(
+				"%s Error: <pt> node seems empty.", function_name_context));
 
 		mrpt::math::TPoint2D pt;
 		const char* str_val = pt_node->value();
 		if (2 != ::sscanf(str_val, "%lf %lf", &pt.x, &pt.y))
-			throw std::runtime_error(
-				mrpt::format(
-					"%s Error parsing <pt> node: '%s' (Expected format:'<pt>X "
-					"Y</pt>')",
-					function_name_context, str_val));
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing <pt> node: '%s' (Expected format:'<pt>X "
+				"Y</pt>')",
+				function_name_context, str_val));
 
 		out_poly.push_back(pt);
 	}
 
 	if (out_poly.size() < 3)
-		throw std::runtime_error(
-			mrpt::format(
-				"%s Error: <shape> node requires 3 or more <pt>X Y</pt> "
-				"entries.",
-				function_name_context));
+		throw std::runtime_error(mrpt::format(
+			"%s Error: <shape> node requires 3 or more <pt>X Y</pt> "
+			"entries.",
+			function_name_context));
 }

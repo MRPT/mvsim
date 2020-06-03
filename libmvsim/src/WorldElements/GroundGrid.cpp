@@ -7,8 +7,8 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/WorldElements/GroundGrid.h>
 #include <mvsim/World.h>
+#include <mvsim/WorldElements/GroundGrid.h>
 #include "xml_utils.h"
 
 #include <mrpt/opengl/COpenGLScene.h>
@@ -69,7 +69,7 @@ void GroundGrid::gui_update(mrpt::opengl::COpenGLScene& scene)
 		m_gl_groundgrid = mrpt::opengl::CGridPlaneXY::Create();
 		m_gl_groundgrid->setPlaneLimits(m_x_min, m_x_max, m_y_min, m_y_max);
 		m_gl_groundgrid->setGridFrequency(m_interval);
-		m_gl_groundgrid->setColor(TColorf(m_color));
+		m_gl_groundgrid->setColor_u8(m_color);
 		m_gl_groundgrid->setLineWidth(m_line_width);
 
 		SCENE_INSERT_Z_ORDER(scene, 0, m_gl_groundgrid);
@@ -86,11 +86,10 @@ void GroundGrid::gui_update(mrpt::opengl::COpenGLScene& scene)
 			vehs.find(m_float_center_at_vehicle_name);
 		// not found -> error:
 		if (!m_float_center_at_vehicle_name.empty() && it_veh == vehs.end())
-			throw std::runtime_error(
-				mrpt::format(
-					"[GroundGrid] *ERROR* Cannot find vehicle named '%s' to "
-					"focus on.",
-					m_float_center_at_vehicle_name.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"[GroundGrid] *ERROR* Cannot find vehicle named '%s' to "
+				"focus on.",
+				m_float_center_at_vehicle_name.c_str()));
 
 		// If the user didn't specify any name, assume it's the first vehicle,
 		// or ignore it if none exists:

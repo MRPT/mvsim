@@ -9,16 +9,16 @@
 
 #pragma once
 
-#include <mvsim/VehicleBase.h>
 #include <mvsim/PID_Controller.h>
+#include <mvsim/VehicleBase.h>
 
 #include <mrpt/math/lightweight_geom_data.h>
 
 namespace mvsim
 {
 /** Implementation of differential-driven vehicles.
-  * \sa class factory in VehicleBase::factory
-  */
+ * \sa class factory in VehicleBase::factory
+ */
 class DynamicsDifferential : public VehicleBase
 {
 	DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential)
@@ -59,7 +59,7 @@ class DynamicsDifferential : public VehicleBase
 		}
 		static const char* class_name() { return "raw"; }
 		//!< Directly set these values to tell the controller the desired
-		//!setpoints
+		//! setpoints
 		double setpoint_wheel_torque_l, setpoint_wheel_torque_r;
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
@@ -77,7 +77,7 @@ class DynamicsDifferential : public VehicleBase
 		ControllerTwistPID(DynamicsDifferential& veh);
 		static const char* class_name() { return "twist_pid"; }
 		//!< Directly set these values to tell the controller the desired
-		//!setpoints
+		//! setpoints
 		double setpoint_lin_speed,
 			setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
 		virtual void control_step(
@@ -126,4 +126,4 @@ class DynamicsDifferential : public VehicleBase
    private:
 	ControllerBasePtr m_controller;  //!< The installed controller
 };
-}
+}  // namespace mvsim

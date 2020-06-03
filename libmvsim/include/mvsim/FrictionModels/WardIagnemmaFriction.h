@@ -9,9 +9,9 @@
 
 #pragma once
 
+#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <vector>
-#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 
 namespace mvsim
 {
@@ -39,4 +39,4 @@ class WardIagnemmaFriction : public FrictionBase
 	double m_A_roll, m_R1,
 		m_R2;  //!< Ward-Iagnemma rolling resistance coefficient
 };
-}
+}  // namespace mvsim

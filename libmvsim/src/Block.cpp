@@ -7,34 +7,22 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/World.h>
+#include <mrpt/core/bits_math.h>
+#include <mrpt/core/format.h>
+#include <mrpt/math/TPose2D.h>
+#include <mrpt/opengl/CPolyhedron.h>
+#include <mrpt/poses/CPose2D.h>
 #include <mvsim/Block.h>
-
+#include <mvsim/World.h>
+#include <map>
+#include <rapidxml.hpp>
+#include <rapidxml_print.hpp>
+#include <rapidxml_utils.hpp>
+#include <sstream>  // std::stringstream
+#include <string>
 #include "JointXMLnode.h"
 #include "XMLClassesRegistry.h"
 #include "xml_utils.h"
-
-#include <rapidxml.hpp>
-#include <rapidxml_utils.hpp>
-#include <rapidxml_print.hpp>
-#include <mrpt/poses/CPose2D.h>
-#include <mrpt/opengl/CPolyhedron.h>
-
-#include <mrpt/version.h>
-#if MRPT_VERSION < 0x199
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
-using namespace mrpt::utils;
-#else
-#include <mrpt/math/TPose2D.h>
-#include <mrpt/core/format.h>
-#include <mrpt/core/bits_math.h>
-using namespace mrpt::img;
-using namespace mrpt;
-#endif
-
-#include <sstream>  // std::stringstream
-#include <map>
-#include <string>
 
 using namespace mvsim;
 using namespace std;
@@ -94,7 +82,8 @@ void Block::register_block_class(const rapidxml::xml_node<char>* xml_node)
 {
 	// Sanity checks:
 	if (!xml_node)
-		throw runtime_error("[Block::register_vehicle_class] XML node is nullptr");
+		throw runtime_error(
+			"[Block::register_vehicle_class] XML node is nullptr");
 	if (0 != strcmp(xml_node->name(), "block:class"))
 		throw runtime_error(mrpt::format(
 			"[Block::register_block_class] XML element is '%s' "
@@ -301,7 +290,7 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 		auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
 			m_block_poly, m_block_z_max - m_block_z_min);
 		gl_poly->setLocation(0, 0, m_block_z_min);
-		gl_poly->setColor(TColorf(m_block_color));
+		gl_poly->setColor_u8(m_block_color);
 		m_gl_block->insert(gl_poly);
 
 		SCENE_INSERT_Z_ORDER(scene, 1, m_gl_block);
@@ -309,7 +298,7 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 		// Visualization of forces:
 		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 		m_gl_forces->setLineWidth(3.0);
-		m_gl_forces->setColor_u8(TColor(0xff, 0xff, 0xff));
+		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
 		SCENE_INSERT_Z_ORDER(
 			scene, 3, m_gl_forces);  // forces are in global coords
@@ -346,7 +335,7 @@ void Block::updateMaxRadiusFromPoly()
 		 it != m_block_poly.end(); ++it)
 	{
 		const float n = it->norm();
-		keep_max(m_max_radius, n);
+		mrpt::keep_max(m_max_radius, n);
 	}
 }
 

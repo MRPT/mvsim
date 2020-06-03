@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include <mvsim/VisualObject.h>
-#include <mvsim/Simulable.h>
 #include <mvsim/ClassFactory.h>
+#include <mvsim/Simulable.h>
+#include <mvsim/VisualObject.h>
 
 namespace mvsim
 {
@@ -23,7 +23,7 @@ class SensorBase : public VisualObject, public Simulable
 	using Ptr = std::shared_ptr<SensorBase>;
 
 	SensorBase(VehicleBase& vehicle);  //!< Ctor takes a ref to the vehicle to
-									   //!which the sensor is attached.
+									   //! which the sensor is attached.
 	virtual ~SensorBase();
 
 	/** Class factory: Creates a sensor from XML description of type "<sensor
@@ -40,7 +40,7 @@ class SensorBase : public VisualObject, public Simulable
 	VehicleBase& m_vehicle;  //!< The vehicle this sensor is attached to
 
 	double m_sensor_last_timestamp;  //!< The last sensor reading timestamp. See
-									 //!m_sensor_period
+									 //! m_sensor_period
 };
 
 // Class factory:
@@ -55,4 +55,4 @@ extern TClassFactory_sensors classFactory_sensors;
 #define REGISTER_SENSOR(TEXTUAL_NAME, CLASS_NAME) \
 	REGISTER_CLASS2(                              \
 		TClassFactory_sensors, classFactory_sensors, TEXTUAL_NAME, CLASS_NAME)
-}
+}  // namespace mvsim

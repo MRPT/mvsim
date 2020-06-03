@@ -9,10 +9,10 @@
 
 #pragma once
 
-#include <mvsim/basic_types.h>  // fwrd decls.
 #include <mvsim/ClassFactory.h>
-#include <mvsim/Wheel.h>
 #include <mvsim/CsvLogger.h>
+#include <mvsim/Wheel.h>
+#include <mvsim/basic_types.h>  // fwrd decls.
 
 namespace mvsim
 {
@@ -36,10 +36,10 @@ class FrictionBase
 						//!(Newtons), excluding the weight of the wheel itself.
 		double motor_torque;  //!< The force applied by the motor to the wheel
 							  //!(Nm). Negative means backwards, which makes the
-							  //!vehicle go forwards.
+							  //! vehicle go forwards.
 		mrpt::math::TPoint2D wheel_speed;  //!< Instantaneous velocity vector
 										   //!(in local coords) of the wheel
-										   //!center point.
+										   //! center point.
 
 		TFrictionInput(const TSimulContext& _context, Wheel& _wheel)
 			: context(_context),
@@ -70,8 +70,8 @@ class FrictionBase
 typedef std::shared_ptr<FrictionBase> FrictionBasePtr;
 
 // Class factory:
-typedef ClassFactory<FrictionBase, VehicleBase&,
-					 const rapidxml::xml_node<char>*>
+typedef ClassFactory<
+	FrictionBase, VehicleBase&, const rapidxml::xml_node<char>*>
 	TClassFactory_friction;
 extern TClassFactory_friction classFactory_friction;
 
@@ -84,4 +84,4 @@ extern TClassFactory_friction classFactory_friction;
 	REGISTER_CLASS2(                                                 \
 		TClassFactory_friction, classFactory_friction, TEXTUAL_NAME, \
 		CLASS_NAME)
-}
+}  // namespace mvsim

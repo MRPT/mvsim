@@ -52,4 +52,4 @@ class XmlClassesRegistry
 	void add(const std::string& input_xml_node_class);
 
 };  // end class
-}
+}  // namespace mvsim

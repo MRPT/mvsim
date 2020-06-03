@@ -84,9 +84,11 @@ class JointXMLnode
 				   (&this->parent == &it.parent);
 		}
 		bool operator!=(const iterator& it) const { return !(*this == it); }
+
 	   private:
 		// begin():
-		iterator(JointXMLnode<Ch>& pa) : parent(pa), lst_idx(0), current(nullptr)
+		iterator(JointXMLnode<Ch>& pa)
+			: parent(pa), lst_idx(0), current(nullptr)
 		{
 			JointXMLnode<Ch>::TListNodes& lst = parent.getListOfNodes();
 			while (!current && lst_idx < lst.size())
@@ -110,4 +112,4 @@ class JointXMLnode
 	iterator begin() { return iterator(*this); }
 	iterator end() { return iterator(*this, m_nodes.size()); }
 };
-}
+}  // namespace mvsim

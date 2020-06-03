@@ -7,9 +7,9 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/World.h>
-#include <mvsim/VehicleBase.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>
+#include <mvsim/VehicleBase.h>
+#include <mvsim/World.h>
 
 #include <rapidxml.hpp>
 #include "xml_utils.h"

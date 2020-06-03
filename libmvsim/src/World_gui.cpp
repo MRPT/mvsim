@@ -6,18 +6,11 @@
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
-#include <mvsim/World.h>
 
-#include <mrpt/version.h>
-#if MRPT_VERSION < 0x199
-#include <mrpt/utils/utils_defs.h>  // mrpt::format()
-#else
 #include <mrpt/core/format.h>
-#endif
-
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CGridPlaneXY.h>
-
+#include <mrpt/opengl/COpenGLScene.h>
+#include <mvsim/World.h>
 #include <rapidxml.hpp>
 #include "xml_utils.h"
 

@@ -27,7 +27,7 @@ DynamicsDifferential::DynamicsDifferential(World* parent)
 	m_chassis_mass = 15.0;
 	m_chassis_z_min = 0.05;
 	m_chassis_z_max = 0.6;
-	m_chassis_color = TColor(0xff, 0x00, 0x00);
+	m_chassis_color = mrpt::img::TColor(0xff, 0x00, 0x00);
 
 	// Default shape:
 	m_chassis_poly.clear();
@@ -110,11 +110,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 			else if (sCtrlClass == ControllerTwistPID::class_name())
 				m_controller = ControllerBasePtr(new ControllerTwistPID(*this));
 			else
-				throw runtime_error(
-					mrpt::format(
-						"[DynamicsDifferential] Unknown 'class'='%s' in "
-						"<controller> XML node",
-						sCtrlClass.c_str()));
+				throw runtime_error(mrpt::format(
+					"[DynamicsDifferential] Unknown 'class'='%s' in "
+					"<controller> XML node",
+					sCtrlClass.c_str()));
 
 			m_controller->load_config(*xml_control);
 		}
@@ -163,7 +162,7 @@ vec3 DynamicsDifferential::getVelocityLocalOdoEstimate() const
 	ASSERTMSG_(
 		Ay != 0.0,
 		"The two wheels of a differential vehicle CAN'T by at the same Y "
-	    "coordinate!");
+		"coordinate!");
 
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;
 	const double vx_veh = w0 * R0 + w_veh * m_wheels_info[WHEEL_L].y;
@@ -177,8 +176,8 @@ vec3 DynamicsDifferential::getVelocityLocalOdoEstimate() const
 #if 0  // Debug
 	{
 		vec3 gt_vel = this->getVelocityLocal();
-		printf("\n gt: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", gt_vel.vals[0], gt_vel.vals[1], mrpt::utils::RAD2DEG(gt_vel.vals[2]));
-		printf("odo: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", odo_vel.vals[0], odo_vel.vals[1], mrpt::utils::RAD2DEG(odo_vel.vals[2]));
+		printf("\n gt: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", gt_vel.vals[0], gt_vel.vals[1], mrpt::RAD2DEG(gt_vel.vals[2]));
+		printf("odo: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", odo_vel.vals[0], odo_vel.vals[1], mrpt::RAD2DEG(odo_vel.vals[2]));
 	}
 #endif
 	return odo_vel;

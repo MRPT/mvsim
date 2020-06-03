@@ -9,32 +9,25 @@
 
 #pragma once
 
-#include <mvsim/basic_types.h>
-#include <mvsim/VisualObject.h>
-#include <mvsim/Simulable.h>
-#include <mvsim/ClassFactory.h>
-
-#include <Box2D/Dynamics/b2World.h>
-#include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Collision/Shapes/b2PolygonShape.h>
-#include <Box2D/Dynamics/b2Fixture.h>
 #include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
-
-#include <mrpt/poses/CPose2D.h>
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/opengl/CSetOfLines.h>
-#if MRPT_VERSION<0x199
-#include <mrpt/utils/TColor.h>
-using mrpt::utils::TColor;
-#else
+#include <Box2D/Dynamics/b2Body.h>
+#include <Box2D/Dynamics/b2Fixture.h>
+#include <Box2D/Dynamics/b2World.h>
 #include <mrpt/img/TColor.h>
-using mrpt::img::TColor;
-#endif
+#include <mrpt/opengl/CSetOfLines.h>
+#include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/poses/CPose2D.h>
+#include <mvsim/ClassFactory.h>
+#include <mvsim/Simulable.h>
+#include <mvsim/VisualObject.h>
+#include <mvsim/basic_types.h>
+#include <mutex>
 
 namespace mvsim
 {
 /** A non-vehicle "actor" for the simulation, typically obstacle blocks.
-  */
+ */
 class Block : public VisualObject, public Simulable
 {
    public:
@@ -112,28 +105,28 @@ class Block : public VisualObject, public Simulable
 	std::string
 		m_name;  //!< User-supplied name of the block (e.g. "r1", "veh1")
 	size_t m_block_index;  //!< user-supplied index number: must be set/get'ed
-						   //!with setblockIndex() getblockIndex() (default=0)
+						   //! with setblockIndex() getblockIndex() (default=0)
 
 	/** Derived classes must store here the body of the block main body
 	 * (chassis).
-	  * This is used by \a simul_post_timestep() to extract the block dynamical
+	 * This is used by \a simul_post_timestep() to extract the block dynamical
 	 * coords (q,\dot{q}) after each simulation step.
-	  */
+	 */
 	b2Body* m_b2d_block_body;
 	std::vector<b2FrictionJoint*> m_friction_joints;
 
 	mrpt::math::TPose3D
 		m_q;  //!< Last time-step pose (of the ref. point, in global coords)
 	vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global
-				//!coords)
+				//! coords)
 
 	// Block info:
 	double m_mass;
 	mrpt::math::TPolygon2D m_block_poly;
 	double m_max_radius;  //!< Automatically computed from m_block_poly upon
-						  //!each change via updateMaxRadiusFromPoly()
+						  //! each change via updateMaxRadiusFromPoly()
 	double m_block_z_min, m_block_z_max;
-	TColor m_block_color;
+	mrpt::img::TColor m_block_color;
 	mrpt::math::TPoint2D m_block_com;  //!< In local coordinates
 
 	double m_lateral_friction;  //!< Default: 0.5
@@ -156,4 +149,4 @@ class Block : public VisualObject, public Simulable
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
 };  // end Block
-}
+}  // namespace mvsim

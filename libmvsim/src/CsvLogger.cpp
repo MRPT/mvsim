@@ -56,10 +56,9 @@ bool CSVLogger::open()
 {
 	if (m_file)
 	{
-		m_file->open(
-			(std::string("session") + std::to_string(currentSession) +
-			 std::string("-") + m_filepath)
-				.c_str());
+		m_file->open((std::string("session") + std::to_string(currentSession) +
+					  std::string("-") + m_filepath)
+						 .c_str());
 		return isOpen();
 	}
 	return false;

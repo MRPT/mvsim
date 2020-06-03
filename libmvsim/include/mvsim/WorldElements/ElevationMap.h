@@ -9,25 +9,11 @@
 
 #pragma once
 
-#include <mvsim/WorldElements/WorldElementBase.h>
+#include <mrpt/img/CImage.h>
 #include <mrpt/opengl/CMesh.h>
 #include <mrpt/poses/CPose3D.h>
-
-#include <mrpt/version.h>
-#if MRPT_VERSION>=0x199
 #include <mrpt/tfest/TMatchingPair.h>
-#include <mrpt/img/CImage.h>
-using mrpt::tfest::TMatchingPairList;
-using mrpt::tfest::TMatchingPair;
-using mrpt::img::CImage;
-#else
-#include <mrpt/utils/CImage.h>
-#include <mrpt/utils/TMatchingPair.h>
-using mrpt::utils::TMatchingPairList;
-using mrpt::utils::TMatchingPair;
-using mrpt::utils::CImage;
-#endif
-
+#include <mvsim/WorldElements/WorldElementBase.h>
 
 namespace mvsim
 {
@@ -58,12 +44,12 @@ class ElevationMap : public WorldElementBase
 	bool m_first_scene_rendering;
 	double m_resolution;
 	mrpt::math::CMatrixFloat m_mesh_z_cache;  //!< A copy of elevation data in
-											  //!m_gl_mesh. Coordinate order is
+											  //! m_gl_mesh. Coordinate order is
 											  //!(x,y)
 
    private:
 	// temp vars (declared here to avoid reallocs):
-	TMatchingPairList corrs;
+	mrpt::tfest::TMatchingPairList corrs;
 	mrpt::poses::CPose3D m_optimal_transf;
 };
-}
+}  // namespace mvsim
