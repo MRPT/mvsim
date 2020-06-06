@@ -11,6 +11,8 @@
 
 #include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
+#include <mvsim/TParameterDefinitions.h>
+
 #include <vector>
 
 namespace mvsim
@@ -32,6 +34,10 @@ class DefaultFriction : public FrictionBase
 
    private:
 	double m_mu;  //!< friction coeficient (non-dimensional)
-	double m_C_damping;  //!< For wheels "internal friction" (N*m*s/rad)
+	double m_C_damping;	 //!< For wheels "internal friction" (N*m*s/rad)
+
+   public:
+	const TParameterDefinitions m_params = {
+		{"mu", {"%lf", &m_mu}}, {"C_damping", {"%lf", &m_C_damping}}};
 };
 }  // namespace mvsim

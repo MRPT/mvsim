@@ -157,7 +157,7 @@ int main(int argc, char** argv)
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << "ERROR: " << e.what() << std::endl;
+		std::cerr << "ERROR: " << mrpt::exception_to_str(e);
 		return 1;
 	}
 	return 0;

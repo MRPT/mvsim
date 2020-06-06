@@ -58,7 +58,7 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	else
 	// Assume it's an image:
 	{
-		std::map<std::string, TParamEntry> other_params;
+		TParameterDefinitions other_params;
 		double xcenterpixel = -1, ycenterpixel = -1;
 		double resolution = 0.10;
 
@@ -77,7 +77,7 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	{
 		// Other general params:
-		std::map<std::string, TParamEntry> ps;
+		TParameterDefinitions ps;
 		ps["show_collisions"] =
 			TParamEntry("%bool", &m_show_grid_collision_points);
 		ps["restitution"] = TParamEntry("%lf", &m_restitution);

@@ -7,24 +7,22 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/format.h>
-#include <mrpt/system/filesystem.h>  // extractFileDirectory()
+#include <mrpt/core/lock_helper.h>
+#include <mrpt/system/filesystem.h>	 // extractFileDirectory()
 #include <mvsim/World.h>
+
 #include <algorithm>  // count()
-#include <iostream>  // for debugging
+#include <iostream>	 // for debugging
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <stdexcept>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
 
-/** Load an entire world description into this object from a specification in
- * XML format.
- * \exception std::exception On any error, with what() giving a descriptive
- * error message
- */
 void World::load_from_XML(
 	const std::string& xml_text, const std::string& fileNameForPath)
 {
@@ -36,10 +34,10 @@ void World::load_from_XML(
 		mrpt::system::trim(mrpt::system::extractFileDirectory(fileNameForPath));
 	// printf("[World] INFO: Using base path='%s'\n",m_base_path.c_str());
 
-	std::lock_guard<std::mutex> csl(m_world_cs);  // Protect multithread access
+	auto lck = mrpt::lockHelper(m_world_cs);  // Protect multithread access
 
 	// Clear the existing world.
-	this->clear_all(false /* critical section is already acquired */);
+	this->clear_all();
 
 	// Parse the XML input:
 	rapidxml::xml_document<> xml;
@@ -80,17 +78,6 @@ void World::load_from_XML(
 				attrb_version->value()));
 	}
 
-	// load general parameters:
-	// ------------------------------------------------
-	std::map<std::string, TParamEntry> other_world_params;
-	other_world_params["gravity"] = TParamEntry("%lf", &this->m_gravity);
-	other_world_params["simul_timestep"] =
-		TParamEntry("%lf", &this->m_simul_timestep);
-	other_world_params["b2d_vel_iters"] =
-		TParamEntry("%i", &this->m_b2d_vel_iters);
-	other_world_params["b2d_pos_iters"] =
-		TParamEntry("%i", &this->m_b2d_pos_iters);
-
 	// Process all nodes:
 	// ------------------------------------------------
 	xml_node<>* node = root->first_node();
@@ -106,8 +93,8 @@ void World::load_from_XML(
 		else if (!strcmp(node->name(), "vehicle"))
 		{
 			VehicleBase* veh = VehicleBase::factory(this, node);
-			veh->setVehicleIndex(
-				m_vehicles.size());  // Assign each vehicle an "index" number
+			// Assign each vehicle a unique "index" number
+			veh->setVehicleIndex(m_vehicles.size());
 
 			MRPT_TODO("Check for duplicated names")
 			m_vehicles.insert(TListVehicles::value_type(veh->getName(), veh));
@@ -140,7 +127,7 @@ void World::load_from_XML(
 		else
 		{
 			// Default: Check if it's a parameter:
-			if (!parse_xmlnode_as_param(*node, other_world_params))
+			if (!parse_xmlnode_as_param(*node, m_other_world_params))
 			{
 				// Unknown element!!
 				std::cerr << "[World::load_from_XML] *Warning* Ignoring "

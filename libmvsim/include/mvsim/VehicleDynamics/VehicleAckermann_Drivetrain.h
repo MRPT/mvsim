@@ -10,8 +10,6 @@
 #pragma once
 
 #include <mrpt/img/TColor.h>
-#include <mrpt/math/lightweight_geom_data.h>
-#include <mrpt/opengl/CSetOfObjects.h>
 #include <mvsim/PID_Controller.h>
 #include <mvsim/VehicleBase.h>
 
@@ -88,9 +86,9 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 			DynamicsAckermannDrivetrain::TControllerOutput&
 				co);  // See base class docs
 		virtual void load_config(
-			const rapidxml::xml_node<char>& node);  // See base class docs
+			const rapidxml::xml_node<char>& node);	// See base class docs
 		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out);  // See base class docs
+			const TeleopInput& in, TeleopOutput& out);	// See base class docs
 	};
 
 	/** PID controller that controls the vehicle with front traction & steering
@@ -103,15 +101,15 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		//!< Directly set these values to tell the controller the desired
 		//! setpoints
 		double setpoint_lin_speed,
-			setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
+			setpoint_ang_speed;	 //!< desired velocities (m/s) and (rad/s)
 		virtual void control_step(
 			const DynamicsAckermannDrivetrain::TControllerInput& ci,
 			DynamicsAckermannDrivetrain::TControllerOutput& co);
 		virtual void load_config(const rapidxml::xml_node<char>& node);
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out);
 
-		double KP, KI, KD;  //!< PID controller parameters
-		double max_torque;  //!< Maximum abs. value torque (for clamp) [Nm]
+		double KP, KI, KD;	//!< PID controller parameters
+		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 
 		// See base docs.
 		virtual bool setTwistCommand(const double vx, const double wz)
@@ -133,7 +131,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		static const char* class_name() { return "front_steer_pid"; }
 		//!< Directly set these values to tell the controller the desired
 		//! setpoints
-		double setpoint_lin_speed, setpoint_steer_ang;  //!< desired velocities
+		double setpoint_lin_speed, setpoint_steer_ang;	//!< desired velocities
 														//!(m/s) and steering
 														//! angle (rad)
 		virtual void control_step(
@@ -141,12 +139,12 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 			DynamicsAckermannDrivetrain::TControllerOutput&
 				co);  // See base class docs
 		virtual void load_config(
-			const rapidxml::xml_node<char>& node);  // See base class docs
+			const rapidxml::xml_node<char>& node);	// See base class docs
 		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out);  // See base class docs
+			const TeleopInput& in, TeleopOutput& out);	// See base class docs
 
-		double KP, KI, KD;  //!< PID controller parameters
-		double max_torque;  //!< Maximum abs. value torque (for clamp) [Nm]
+		double KP, KI, KD;	//!< PID controller parameters
+		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 	   private:
 		ControllerTwistFrontSteerPID m_twist_control;
 		double m_r2f_L;
@@ -187,9 +185,9 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		const TSimulContext& context, std::vector<double>& out_force_per_wheel);
 
    private:
-	ControllerBasePtr m_controller;  //!< The installed controller
+	ControllerBasePtr m_controller;	 //!< The installed controller
 
-	double m_max_steer_ang;  //!< The maximum steering angle (rad). Determines
+	double m_max_steer_ang;	 //!< The maximum steering angle (rad). Determines
 							 //! min turning radius
 
 	DifferentialType m_diff_type;

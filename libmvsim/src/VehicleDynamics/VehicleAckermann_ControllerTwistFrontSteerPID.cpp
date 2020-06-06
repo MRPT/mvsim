@@ -132,7 +132,7 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(
 	const rapidxml::xml_node<char>& node)
 {
-	std::map<std::string, TParamEntry> params;
+	TParameterDefinitions params;
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["KD"] = TParamEntry("%lf", &KD);

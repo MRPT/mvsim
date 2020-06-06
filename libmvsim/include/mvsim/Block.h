@@ -20,8 +20,10 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
+#include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/basic_types.h>
+
 #include <mutex>
 
 namespace mvsim
@@ -103,7 +105,7 @@ class Block : public VisualObject, public Simulable
 	Block(World* parent);
 
 	std::string
-		m_name;  //!< User-supplied name of the block (e.g. "r1", "veh1")
+		m_name;	 //!< User-supplied name of the block (e.g. "r1", "veh1")
 	size_t m_block_index;  //!< user-supplied index number: must be set/get'ed
 						   //! with setblockIndex() getblockIndex() (default=0)
 
@@ -117,7 +119,7 @@ class Block : public VisualObject, public Simulable
 
 	mrpt::math::TPose3D
 		m_q;  //!< Last time-step pose (of the ref. point, in global coords)
-	vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global
+	vec3 m_dq;	//!< Last time-step velocity (of the ref. point, in global
 				//! coords)
 
 	// Block info:
@@ -129,9 +131,18 @@ class Block : public VisualObject, public Simulable
 	mrpt::img::TColor m_block_color;
 	mrpt::math::TPoint2D m_block_com;  //!< In local coordinates
 
-	double m_lateral_friction;  //!< Default: 0.5
+	double m_lateral_friction;	//!< Default: 0.5
 	double m_ground_friction;  //!< Default: 0.5
 	double m_restitution;  //!< Deault: 0.01
+
+	const TParameterDefinitions m_params = {
+		{"mass", {"%lf", &m_mass}},
+		{"zmin", {"%lf", &m_block_z_min}},
+		{"zmax", {"%lf", &m_block_z_max}},
+		{"ground_friction", {"%lf", &m_ground_friction}},
+		{"lateral_friction", {"%lf", &m_lateral_friction}},
+		{"restitution", {"%lf", &m_restitution}},
+		{"color", {"%color", &m_block_color}}};
 
 	void updateMaxRadiusFromPoly();
 
@@ -141,12 +152,12 @@ class Block : public VisualObject, public Simulable
    private:
 	void internal_gui_update_forces(
 		mrpt::opengl::COpenGLScene&
-			scene);  //!< Called from gui_update_common()
+			scene);	 //!< Called from gui_update_common()
 
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_block;
 	mrpt::opengl::CSetOfLines::Ptr m_gl_forces;
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
-};  // end Block
+};	// end Block
 }  // namespace mvsim

@@ -19,6 +19,7 @@
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Block.h>
+#include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
@@ -43,10 +44,8 @@ class World
 	~World();  //!< Dtor.
 
 	/** Resets the entire simulation environment to an empty world.
-	 * \a acquire_mt_lock determines whether to lock the multithreading mutex
-	 * before (set to false only if it's already acquired).
 	 */
-	void clear_all(bool acquire_mt_lock = true);
+	void clear_all();
 
 	/** Load an entire world description into this object from a specification
 	 * in XML format.
@@ -150,14 +149,16 @@ class World
 
 	/** \name Public types
 	  @{*/
-	typedef std::multimap<std::string, VehicleBase*>
-		TListVehicles;	//!< Map 'vehicle-name' => vehicle object. See
-						//! getListOfVehicles()
-	typedef std::list<WorldElementBase*>
-		TListWorldElements;	 //!< See getListOfWorldElements()
-	typedef std::multimap<std::string, Block*>
-		TListBlocks;  //!< Map 'block-name' => block object. See
-					  //! getListOfBlocks()
+
+	/** Map 'vehicle-name' => vehicle object. See getListOfVehicles() */
+	using TListVehicles = std::multimap<std::string, VehicleBase*>;
+
+	/** See getListOfWorldElements() */
+	using TListWorldElements = std::list<WorldElementBase*>;
+
+	/** Map 'block-name' => block object. See getListOfBlocks()*/
+	using TListBlocks = std::multimap<std::string, Block*>;
+
 	/** @} */
 
 	/** \name Access inner working objects
@@ -205,7 +206,8 @@ class World
 	/** \name Optional user hooks
 	  @{*/
 	virtual void onNewObservation(
-		const VehicleBase& veh, const mrpt::obs::CObservation* obs)
+		[[maybe_unused]] const VehicleBase& veh,
+		[[maybe_unused]] const mrpt::obs::CObservation* obs)
 	{
 		/* default: do nothing */
 	}
@@ -216,15 +218,27 @@ class World
 	friend class Block;
 
 	// -------- World Params ----------
-	double m_gravity;  //!< Gravity acceleration (Default=9.8 m/s^2). Used to
-					   //! evaluate weights for friction, etc.
-	double m_simul_time;  //!< In seconds, real simulation time since beginning
-						  //!(may be different than wall-clock time because of
-						  //! time warp, etc.)
-	double m_simul_timestep;  //!< Simulation fixed-time interval for numerical
-							  //! integration.
-	int m_b2d_vel_iters,
-		m_b2d_pos_iters;  //!< Velocity and position iteration count (Box2D)
+	/** Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
+	 * friction, etc. */
+	double m_gravity;
+
+	/** Simulation fixed-time interval for numerical integration.*/
+	double m_simul_timestep;
+
+	/** Velocity and position iteration count (refer to libbox2d docs) */
+	int m_b2d_vel_iters, m_b2d_pos_iters;
+
+	const TParameterDefinitions m_other_world_params = {
+		{"gravity", {"%lf", &m_gravity}},
+		{"simul_timestep", {"%lf", &m_simul_timestep}},
+		{"b2d_vel_iters", {"%i", &m_b2d_vel_iters}},
+		{"b2d_pos_iters", {"%i", &m_b2d_pos_iters}},
+	};
+
+	/** In seconds, real simulation time since beginning (may be different than
+	 * wall-clock time because of time warp, etc.) */
+	double m_simul_time;
+
 	std::string m_base_path;  //!< Path from which to take relative directories.
 
 	// ------- GUI options -----
@@ -249,8 +263,8 @@ class World
 								 //! first time the GUI window is created.
 
 	// -------- World contents ----------
-	std::mutex m_world_cs;	//!< The main semaphore to protect simulation
-							//! objects from multithreading access.
+	/** Mutex protecting simulation objects from multi-thread access */
+	std::recursive_mutex m_world_cs;
 
 	b2World* m_box2d_world;	 //!< Box2D dynamic simulator instance
 	b2Body*

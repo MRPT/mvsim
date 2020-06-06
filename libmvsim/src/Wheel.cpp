@@ -12,26 +12,15 @@
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mvsim/Wheel.h>
+
 #include <rapidxml.hpp>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
 
-Wheel::Wheel()
-	: x(.0),
-	  y(-.5),
-	  yaw(.0),
-	  diameter(.4),
-	  width(.2),
-	  mass(2.0),
-	  Iyy(1.0),
-	  color(0xff323232),
-	  phi(.0),
-	  w(.0)
-{
-	recalcInertia();
-}
+Wheel::Wheel() { recalcInertia(); }
 
 void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 {
@@ -80,14 +69,7 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 	const double INERTIA_NOT_SET = -1.;
 	this->Iyy = INERTIA_NOT_SET;
 
-	std::map<std::string, TParamEntry> attribs;
-	attribs["mass"] = TParamEntry("%lf", &this->mass);
-	attribs["width"] = TParamEntry("%lf", &this->width);
-	attribs["diameter"] = TParamEntry("%lf", &this->diameter);
-	attribs["color"] = TParamEntry("%color", &this->color);
-	attribs["inertia"] = TParamEntry("%lf", &this->Iyy);
-
-	parse_xmlnode_attribs(*xml_node, attribs, "[Wheel]");
+	parse_xmlnode_attribs(*xml_node, m_params, "[Wheel]");
 
 	// If not manually overrided, calc automatically:
 	if (Iyy == INERTIA_NOT_SET) this->recalcInertia();

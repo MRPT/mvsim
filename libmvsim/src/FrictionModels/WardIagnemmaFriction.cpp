@@ -34,7 +34,7 @@ WardIagnemmaFriction::WardIagnemmaFriction(
 	if (node)
 	{
 		// Parse params:
-		std::map<std::string, TParamEntry> params;
+		TParameterDefinitions params;
 		params["mu"] = TParamEntry("%lf", &m_mu);
 		params["C_damping"] = TParamEntry("%lf", &m_C_damping);
 		params["A_roll"] = TParamEntry("%lf", &m_A_roll);

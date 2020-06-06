@@ -37,7 +37,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	m_gui_uptodate = false;
 
 	// Attribs:
-	std::map<std::string, TParamEntry> attribs;
+	TParameterDefinitions attribs;
 	attribs["name"] = TParamEntry("%s", &this->m_name);
 
 	parse_xmlnode_attribs(*root, attribs, "[LaserScanner]");
@@ -46,7 +46,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	int nRays = 181;
 	double fov_deg = 180;
 
-	std::map<std::string, TParamEntry> params;
+	TParameterDefinitions params;
 	params["fov_degrees"] = TParamEntry("%lf", &fov_deg);
 	params["nrays"] = TParamEntry("%i", &nRays);
 	params["pose"] = TParamEntry("%pose2d_ptr3d", &m_scan_model.sensorPose);

@@ -8,14 +8,16 @@
   +-------------------------------------------------------------------------+ */
 
 #include "xml_utils.h"
+
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
 #include <mrpt/img/TColor.h>
-#include <mrpt/math/lightweight_geom_data.h>
+#include <mrpt/math/TPolygon2D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mrpt/system/string_utils.h>
 #include <mvsim/basic_types.h>
+
 #include <cstdio>
 
 using namespace rapidxml;
@@ -137,10 +139,9 @@ void TParamEntry::parse(
 
 void mvsim::parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node,
-	const std::map<std::string, TParamEntry>& params,
-	const char* function_name_context)
+	const TParameterDefinitions& params, const char* function_name_context)
 {
-	for (std::map<std::string, TParamEntry>::const_iterator it = params.begin();
+	for (TParameterDefinitions::const_iterator it = params.begin();
 		 it != params.end(); ++it)
 	{
 		const rapidxml::xml_attribute<char>* attr =
@@ -153,10 +154,9 @@ void mvsim::parse_xmlnode_attribs(
 
 bool mvsim::parse_xmlnode_as_param(
 	const rapidxml::xml_node<char>& xml_node,
-	const std::map<std::string, TParamEntry>& params,
-	const char* function_name_context)
+	const TParameterDefinitions& params, const char* function_name_context)
 {
-	std::map<std::string, TParamEntry>::const_iterator it_param =
+	TParameterDefinitions::const_iterator it_param =
 		params.find(xml_node.name());
 
 	if (it_param != params.end())
@@ -172,15 +172,14 @@ bool mvsim::parse_xmlnode_as_param(
 /** Call \a parse_xmlnode_as_param() for all children nodes of the given node.
  */
 void mvsim::parse_xmlnode_children_as_param(
-	const rapidxml::xml_node<char>& root,
-	const std::map<std::string, TParamEntry>& params,
+	const rapidxml::xml_node<char>& root, const TParameterDefinitions& params,
 	const char* function_name_context)
 {
 	rapidxml::xml_node<>* node = root.first_node();
 	while (node)
 	{
 		parse_xmlnode_as_param(*node, params, function_name_context);
-		node = node->next_sibling(nullptr);  // Move on to next node
+		node = node->next_sibling(nullptr);	 // Move on to next node
 	}
 }
 

@@ -12,6 +12,7 @@
 #include <mvsim/World.h>
 
 #include <rapidxml.hpp>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -25,16 +26,8 @@ DefaultFriction::DefaultFriction(
 		throw std::runtime_error(
 			"<friction>...</friction> XML node was expected!!");
 
-	if (node)
-	{
-		// Parse params:
-		std::map<std::string, TParamEntry> params;
-		params["mu"] = TParamEntry("%lf", &m_mu);
-		params["C_damping"] = TParamEntry("%lf", &m_C_damping);
-
-		// Parse XML params:
-		parse_xmlnode_children_as_param(*node, params);
-	}
+	// Parse XML params:
+	if (node) parse_xmlnode_children_as_param(*node, m_params);
 }
 
 // See docs in base class.

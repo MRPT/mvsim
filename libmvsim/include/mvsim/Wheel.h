@@ -14,6 +14,7 @@
 #include <mrpt/math/TPolygon2D.h>
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mvsim/TParameterDefinitions.h>
 #include <mvsim/basic_types.h>
 
 namespace mvsim
@@ -28,16 +29,32 @@ class DynamicsDifferential;
 class Wheel
 {
    public:
-	double x, y, yaw;  //!< Location of the wheel wrt the chassis ref point
-					   //![m,rad] (in local coords)
-	double diameter,
-		width;  //!< Length(diameter) and width of the wheel rectangle [m]
-	double mass;  //!< [kg]
-	double Iyy;  //!< Inertia: computed automatically from geometry at
-				 //! constructor and at \a loadFromXML(), but can be overrided.
-	mrpt::img::TColor color;  //!< Color for OpenGL rendering
-
 	Wheel();
+
+	/** Location of the wheel wrt the chassis ref point [m,rad] (in local
+	 * coords) */
+	double x = 0, y = -0.5, yaw = 0;
+
+	/** Length(diameter) and width of the wheel rectangle [m] */
+	double diameter = .4, width = .2;
+	double mass = 2.0;	//!< [kg]
+
+	/** Inertia: computed automatically from geometry at constructor and at \a
+	 * loadFromXML(), but can be overrided. */
+	double Iyy = 1.0;
+
+	/** Color for OpenGL rendering */
+	mrpt::img::TColor color{0xff323232};
+
+	const TParameterDefinitions m_params = {
+		{"mass", {"%lf", &mass}},
+		{"width", {"%lf", &width}},
+		{"diameter", {"%lf", &diameter}},
+		{"color", {"%color", &color}},
+		{"inertia", {"%lf", &Iyy}}};
+
+	// methods ----
+
 	void getAs3DObject(mrpt::opengl::CSetOfObjects& obj);
 	void loadFromXML(const rapidxml::xml_node<char>* xml_node);
 
@@ -50,10 +67,11 @@ class Wheel
 		phi = val;
 	}  //!< Orientation (rad) wrt vehicle local frame
 	double getW() const { return w; }  //!< Spinning velocity (rad/s) wrt shaft
-	void setW(double val) { w = val; }  //!< Spinning velocity (rad/s) wrt shaft
+	void setW(double val) { w = val; }	//!< Spinning velocity (rad/s) wrt shaft
 	void recalcInertia();  //!< Recompute Iyy from mass, diameter and height.
    protected:
-	double phi, w;  //!< Angular position and velocity of the wheel as it spins
-					//! over its shaft (rad, rad/s)
+	/** Angular position and velocity of the wheel as it spins over its shaft
+	 * (rad, rad/s) */
+	double phi = 0, w = 0;
 };
 }  // namespace mvsim

@@ -12,8 +12,6 @@
 #include <mvsim/PID_Controller.h>
 #include <mvsim/VehicleBase.h>
 
-#include <mrpt/math/lightweight_geom_data.h>
-
 namespace mvsim
 {
 /** Implementation of differential-driven vehicles.
@@ -66,7 +64,7 @@ class DynamicsDifferential : public VehicleBase
 			DynamicsDifferential::TControllerOutput&
 				co);  // See base class docs
 		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out);  // See base class docs
+			const TeleopInput& in, TeleopOutput& out);	// See base class docs
 	};
 
 	/** PID controller that controls the vehicle twist: linear & angular
@@ -79,18 +77,18 @@ class DynamicsDifferential : public VehicleBase
 		//!< Directly set these values to tell the controller the desired
 		//! setpoints
 		double setpoint_lin_speed,
-			setpoint_ang_speed;  //!< desired velocities (m/s) and (rad/s)
+			setpoint_ang_speed;	 //!< desired velocities (m/s) and (rad/s)
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
 			DynamicsDifferential::TControllerOutput&
 				co);  // See base class docs
 		virtual void load_config(
-			const rapidxml::xml_node<char>& node);  // See base class docs
+			const rapidxml::xml_node<char>& node);	// See base class docs
 		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out);  // See base class docs
+			const TeleopInput& in, TeleopOutput& out);	// See base class docs
 
-		double KP, KI, KD;  //!< PID controller parameters
-		double max_torque;  //!< Maximum abs. value torque (for clamp) [Nm]
+		double KP, KI, KD;	//!< PID controller parameters
+		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 		// See base docs.
 		virtual bool setTwistCommand(const double vx, const double wz)
 		{
@@ -124,6 +122,6 @@ class DynamicsDifferential : public VehicleBase
 		const TSimulContext& context, std::vector<double>& out_force_per_wheel);
 
    private:
-	ControllerBasePtr m_controller;  //!< The installed controller
+	ControllerBasePtr m_controller;	 //!< The installed controller
 };
 }  // namespace mvsim
