@@ -23,18 +23,18 @@ if (MVSIM_WITH_ZMQ)
 			NAMES zmq.hpp
 			PATHS ${PC_ZeroMQ_INCLUDE_DIRS}
 			)
-	
+
 	# use the hint from about to find the location of libzmq
 	find_library(ZeroMQ_LIBRARY
 			NAMES zmq
 			PATHS ${PC_ZeroMQ_LIBRARY_DIRS}
-			)	
+			)
 
 	if ($ENV{VERBOSE})
 		message(STATUS "ZeroMQ_LIBRARY: ${ZeroMQ_LIBRARY}")
 		message(STATUS "ZeroMQ_INCLUDE_DIR: ${ZeroMQ_INCLUDE_DIR}")
 	endif()
-	
+
 	if (ZeroMQ_LIBRARY AND ZeroMQ_INCLUDE_DIR)
 		#
 	else()
@@ -92,7 +92,7 @@ add_library(mvsim::mvsim   ALIAS ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
     ${CMAKE_THREAD_LIBS_INIT}
-    protobuf::libprotobuf
+    ${Protobuf_LIBRARIES}
     ${ZeroMQ_LIBRARY}
   PUBLIC
     ${MRPT_LIBRARIES}
@@ -154,7 +154,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 if(MSVC)
-	target_compile_definitions(${PROJECT_NAME} PRIVATE 
+	target_compile_definitions(${PROJECT_NAME} PRIVATE
 		_CRT_SECURE_NO_WARNINGS
 	)
 	target_compile_options(${PROJECT_NAME} PRIVATE
