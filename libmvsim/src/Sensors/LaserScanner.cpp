@@ -51,10 +51,13 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["fov_degrees"] = TParamEntry("%lf", &fov_deg);
 	params["nrays"] = TParamEntry("%i", &nRays);
 	params["pose"] = TParamEntry("%pose2d_ptr3d", &m_scan_model.sensorPose);
+	params["height"] = TParamEntry("%lf", &m_scan_model.sensorPose.z());
 	params["range_std_noise"] = TParamEntry("%lf", &m_rangeStdNoise);
 	params["angle_std_noise_deg"] = TParamEntry("%lf_deg", &m_angleStdNoise);
 	params["sensor_period"] = TParamEntry("%lf", &this->m_sensor_period);
 	params["bodies_visible"] = TParamEntry("%bool", &this->m_see_fixtures);
+
+	m_scan_model.sensorPose.z() = 0.05;
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params);
@@ -246,8 +249,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	// ----------------------------------------
 	m_world->getTimeLogger().enter("LaserScanner.scan.3.merge");
 
-	CObservation2DRangeScan* lastScan =
-		new CObservation2DRangeScan(m_scan_model);
+	auto lastScan = CObservation2DRangeScan::Create(m_scan_model);
+
 	lastScan->timestamp = mrpt::system::now();
 	lastScan->sensorLabel = m_name;
 
@@ -272,7 +275,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 	{
 		std::lock_guard<std::mutex> csl(m_last_scan_cs);
-		m_last_scan = CObservation2DRangeScan::Ptr(lastScan);
+		m_last_scan = std::move(lastScan);
 		m_last_scan2gui = m_last_scan;
 	}
 
