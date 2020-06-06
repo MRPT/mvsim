@@ -206,8 +206,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
-	b2World* b2world = parent->getBox2DWorld();
-	block->create_multibody_system(b2world);
+	block->create_multibody_system(*parent->getBox2DWorld());
 
 	if (block->m_b2d_block_body)
 	{
@@ -329,13 +328,13 @@ void Block::updateMaxRadiusFromPoly()
 }
 
 /** Create bodies, fixtures, etc. for the dynamical simulation */
-void Block::create_multibody_system(b2World* world)
+void Block::create_multibody_system(b2World& world)
 {
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 
-	m_b2d_block_body = world->CreateBody(&bodyDef);
+	m_b2d_block_body = world.CreateBody(&bodyDef);
 
 	// Define shape of block:
 	// ------------------------------
