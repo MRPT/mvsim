@@ -14,12 +14,14 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/Block.h>
 #include <mvsim/World.h>
+
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-#include <sstream>  // std::stringstream
+#include <sstream>	// std::stringstream
 #include <string>
+
 #include "JointXMLnode.h"
 #include "XMLClassesRegistry.h"
 #include "xml_utils.h"
@@ -45,12 +47,11 @@ Block::Block(World* parent)
 	  m_ground_friction(0.5),
 	  m_restitution(0.01)
 {
-	using namespace mrpt::math;
 	// Default shape:
-	m_block_poly.push_back(TPoint2D(-0.5, -0.5));
-	m_block_poly.push_back(TPoint2D(-0.5, 0.5));
-	m_block_poly.push_back(TPoint2D(0.5, 0.5));
-	m_block_poly.push_back(TPoint2D(0.5, -0.5));
+	m_block_poly.emplace_back(-0.5, -0.5);
+	m_block_poly.emplace_back(-0.5, 0.5);
+	m_block_poly.emplace_back(0.5, 0.5);
+	m_block_poly.emplace_back(0.5, -0.5);
 	updateMaxRadiusFromPoly();
 }
 
@@ -98,8 +99,6 @@ void Block::register_block_class(const rapidxml::xml_node<char>* xml_node)
 	block_classes_registry.add(ss.str());
 }
 
-/** Class factory: Creates a vehicle from XML description of type
- * "<vehicle>...</vehicle>".  */
 Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 {
 	using namespace std;
@@ -118,7 +117,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	const rapidxml::xml_node<char>* class_root = nullptr;
 	{
 		block_root_node.add(
-			root);  // Always search in root. Also in the class root, if any:
+			root);	// Always search in root. Also in the class root, if any:
 		const xml_attribute<>* block_class = root->first_attribute("class");
 		if (block_class)
 		{
@@ -165,7 +164,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 					 &block->m_q.yaw))
 			throw runtime_error(
 				"[Block::factory] Error parsing <init_pose>...</init_pose>");
-		block->m_q.yaw *= M_PI / 180.0;  // deg->rad
+		block->m_q.yaw *= M_PI / 180.0;	 // deg->rad
 	}
 
 	// (Optional) initial vel:
@@ -182,7 +181,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 			// Convert twist (velocity) from local -> global coords:
 			const mrpt::poses::CPose2D pose(
-				0, 0, block->m_q.yaw);  // Only the rotation
+				0, 0, block->m_q.yaw);	// Only the rotation
 			pose.composePoint(
 				block->m_dq.vals[0], block->m_dq.vals[1], block->m_dq.vals[0],
 				block->m_dq.vals[1]);
@@ -190,19 +189,10 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	}
 
 	// Params:
-	std::map<std::string, TParamEntry> params;
-	params["mass"] = TParamEntry("%lf", &block->m_mass);
-	params["zmin"] = TParamEntry("%lf", &block->m_block_z_min);
-	params["zmax"] = TParamEntry("%lf", &block->m_block_z_max);
-	params["ground_friction"] = TParamEntry("%lf", &block->m_ground_friction);
-	params["lateral_friction"] = TParamEntry("%lf", &block->m_lateral_friction);
-	params["restitution"] = TParamEntry("%lf", &block->m_restitution);
-	params["color"] = TParamEntry("%color", &block->m_block_color);
-
-	parse_xmlnode_children_as_param(*root, params, "[Block::factory]");
+	parse_xmlnode_children_as_param(*root, block->m_params, "[Block::factory]");
 	if (class_root)
 		parse_xmlnode_children_as_param(
-			*class_root, params, "[Block::factory]");
+			*class_root, block->m_params, "[Block::factory]");
 
 	// Shape node (optional, fallback to default shape if none found)
 	const rapidxml::xml_node<char>* xml_shape =
@@ -300,7 +290,7 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
-		scene.insert(m_gl_forces);  // forces are in global coords
+		scene.insert(m_gl_forces);	// forces are in global coords
 	}
 
 	// Update them:
@@ -394,8 +384,8 @@ void Block::create_multibody_system(b2World* world)
 	const double max_friction = mu * weight_per_contact_point;
 
 	// Location (local coords) of each contact-point:
-	const vec2 pt_loc[nContactPoints] = {vec2(m_max_radius, 0),
-										 vec2(-m_max_radius, 0)};
+	const vec2 pt_loc[nContactPoints] = {
+		vec2(m_max_radius, 0), vec2(-m_max_radius, 0)};
 
 	b2FrictionJointDef fjd;
 
@@ -422,6 +412,6 @@ void Block::apply_force(
 {
 	ASSERT_(m_b2d_block_body);
 	const b2Vec2 wPt = m_b2d_block_body->GetWorldPoint(
-		b2Vec2(local_ptx, local_pty));  // Application point -> world coords
+		b2Vec2(local_ptx, local_pty));	// Application point -> world coords
 	m_b2d_block_body->ApplyForce(b2Vec2(fx, fy), wPt, true /*wake up*/);
 }

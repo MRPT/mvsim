@@ -6,12 +6,12 @@
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
+#include <mrpt/core/lock_helper.h>
+#include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mvsim/World.h>
 
-#include <mrpt/system/filesystem.h>  // filePathSeparatorsToNative()
-
 #include <algorithm>  // count()
-#include <iostream>  // for debugging
+#include <iostream>	 // for debugging
 #include <map>
 #include <stdexcept>
 
@@ -50,49 +50,38 @@ World::~World()
 }
 
 // Resets the entire simulation environment to an empty world.
-void World::clear_all(bool acquire_mt_lock)
+void World::clear_all()
 {
-	try
-	{
-		if (acquire_mt_lock) m_world_cs.lock();
+	auto lck = mrpt::lockHelper(m_world_cs);
 
-		// Reset params:
-		m_simul_time = 0.0;
+	// Reset params:
+	m_simul_time = 0.0;
 
-		// (B2D) World contents:
-		// ---------------------------------------------
-		delete m_box2d_world;
-		m_box2d_world = new b2World(b2Vec2_zero);
+	// (B2D) World contents:
+	// ---------------------------------------------
+	delete m_box2d_world;
+	m_box2d_world = new b2World(b2Vec2_zero);
 
-		// Define the ground body.
-		b2BodyDef groundBodyDef;
-		m_b2_ground_body = m_box2d_world->CreateBody(&groundBodyDef);
+	// Define the ground body.
+	b2BodyDef groundBodyDef;
+	m_b2_ground_body = m_box2d_world->CreateBody(&groundBodyDef);
 
-		// Clear lists of objs:
-		// ---------------------------------------------
-		for (TListVehicles::iterator it = m_vehicles.begin();
-			 it != m_vehicles.end(); ++it)
-			delete it->second;
-		m_vehicles.clear();
+	// Clear lists of objs:
+	// ---------------------------------------------
+	for (TListVehicles::iterator it = m_vehicles.begin();
+		 it != m_vehicles.end(); ++it)
+		delete it->second;
+	m_vehicles.clear();
 
-		for (std::list<WorldElementBase*>::iterator it =
-				 m_world_elements.begin();
-			 it != m_world_elements.end(); ++it)
-			delete *it;
-		m_world_elements.clear();
+	for (std::list<WorldElementBase*>::iterator it = m_world_elements.begin();
+		 it != m_world_elements.end(); ++it)
+		delete *it;
+	m_world_elements.clear();
 
-		for (TListBlocks::iterator it = m_blocks.begin(); it != m_blocks.end();
-			 ++it)
-			delete it->second;
-		m_blocks.clear();
-
-		if (acquire_mt_lock) m_world_cs.unlock();
-	}
-	catch (std::exception&)
-	{
-		if (acquire_mt_lock) m_world_cs.unlock();
-		throw;  // re-throw
-	}
+	for (TListBlocks::iterator it = m_blocks.begin(); it != m_blocks.end();
+		 ++it)
+		delete it->second;
+	m_blocks.clear();
 }
 
 /** Runs the simulation for a given time interval (in seconds) */
@@ -159,7 +148,7 @@ void World::internal_one_timestep(double dt)
 			m_timlogger, "timestep.1.dynamics_integrator");
 
 		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
-		m_simul_time += dt;  // Avance time
+		m_simul_time += dt;	 // Avance time
 	}
 
 	// 3) Save dynamical state into vehicles classes

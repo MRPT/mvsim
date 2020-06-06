@@ -31,7 +31,7 @@ ElevationMap::~ElevationMap() {}
 void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	// Other general params:
-	std::map<std::string, TParamEntry> params;
+	TParameterDefinitions params;
 
 	std::string sElevationImgFile;
 	params["elevation_image"] = TParamEntry("%s", &sElevationImgFile);

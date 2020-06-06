@@ -7,14 +7,14 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/opengl/COpenGLScene.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
 #include <mvsim/World.h>
 
-#include "xml_utils.h"
-
-#include <mrpt/opengl/COpenGLScene.h>
 #include <cmath>
 #include <rapidxml.hpp>
+
+#include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
@@ -23,8 +23,6 @@ using namespace std;
 DynamicsAckermann::DynamicsAckermann(World* parent)
 	: VehicleBase(parent, 4 /*num wheels*/)
 {
-	using namespace mrpt::math;
-
 	m_chassis_mass = 500.0;
 	m_chassis_z_min = 0.20;
 	m_chassis_z_max = 1.40;
@@ -32,12 +30,12 @@ DynamicsAckermann::DynamicsAckermann(World* parent)
 
 	// Default shape:
 	m_chassis_poly.clear();
-	m_chassis_poly.push_back(TPoint2D(-0.8, -1.0));
-	m_chassis_poly.push_back(TPoint2D(-0.8, 1.0));
-	m_chassis_poly.push_back(TPoint2D(1.5, 0.9));
-	m_chassis_poly.push_back(TPoint2D(1.8, 0.8));
-	m_chassis_poly.push_back(TPoint2D(1.8, -0.8));
-	m_chassis_poly.push_back(TPoint2D(1.5, -0.9));
+	m_chassis_poly.emplace_back(-0.8, -1.0);
+	m_chassis_poly.emplace_back(-0.8, 1.0);
+	m_chassis_poly.emplace_back(1.5, 0.9);
+	m_chassis_poly.emplace_back(1.8, 0.8);
+	m_chassis_poly.emplace_back(1.8, -0.8);
+	m_chassis_poly.emplace_back(1.5, -0.9);
 	updateMaxRadiusFromPoly();
 
 	m_fixture_chassis = nullptr;
@@ -68,7 +66,7 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	if (xml_chassis)
 	{
 		// Attribs:
-		std::map<std::string, TParamEntry> attribs;
+		TParameterDefinitions attribs;
 		attribs["mass"] = TParamEntry("%lf", &this->m_chassis_mass);
 		attribs["zmin"] = TParamEntry("%lf", &this->m_chassis_z_min);
 		attribs["zmax"] = TParamEntry("%lf", &this->m_chassis_z_max);
@@ -92,10 +90,10 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	//<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
 	//<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
 	const char* w_names[4] = {
-		"rl_wheel",  // 0
-		"rr_wheel",  // 1
-		"fl_wheel",  // 2
-		"fr_wheel"  // 3
+		"rl_wheel",	 // 0
+		"rr_wheel",	 // 1
+		"fl_wheel",	 // 2
+		"fr_wheel"	// 3
 	};
 	// Load common params:
 	for (size_t i = 0; i < 4; i++)
@@ -111,7 +109,7 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	{
 		double front_x = 1.3;
 		double front_d = 2.0;
-		std::map<std::string, TParamEntry> ack_ps;
+		TParameterDefinitions ack_ps;
 		// Front wheels:
 		ack_ps["f_wheels_x"] = TParamEntry("%lf", &front_x);
 		ack_ps["f_wheels_d"] = TParamEntry("%lf", &front_d);

@@ -7,13 +7,13 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/opengl/COpenGLScene.h>
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 
-#include "xml_utils.h"
-
-#include <mrpt/opengl/COpenGLScene.h>
 #include <rapidxml.hpp>
+
+#include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
@@ -31,12 +31,12 @@ DynamicsDifferential::DynamicsDifferential(World* parent)
 
 	// Default shape:
 	m_chassis_poly.clear();
-	m_chassis_poly.push_back(TPoint2D(-0.4, -0.5));
-	m_chassis_poly.push_back(TPoint2D(-0.4, 0.5));
-	m_chassis_poly.push_back(TPoint2D(0.4, 0.5));
-	m_chassis_poly.push_back(TPoint2D(0.6, 0.3));
-	m_chassis_poly.push_back(TPoint2D(0.6, -0.3));
-	m_chassis_poly.push_back(TPoint2D(0.4, -0.5));
+	m_chassis_poly.emplace_back(-0.4, -0.5);
+	m_chassis_poly.emplace_back(-0.4, 0.5);
+	m_chassis_poly.emplace_back(0.4, 0.5);
+	m_chassis_poly.emplace_back(0.6, 0.3);
+	m_chassis_poly.emplace_back(0.6, -0.3);
+	m_chassis_poly.emplace_back(0.4, -0.5);
 	updateMaxRadiusFromPoly();
 
 	m_fixture_chassis = nullptr;
@@ -53,7 +53,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	if (xml_chassis)
 	{
 		// Attribs:
-		std::map<std::string, TParamEntry> attribs;
+		TParameterDefinitions attribs;
 		attribs["mass"] = TParamEntry("%lf", &this->m_chassis_mass);
 		attribs["zmin"] = TParamEntry("%lf", &this->m_chassis_z_min);
 		attribs["zmax"] = TParamEntry("%lf", &this->m_chassis_z_max);
@@ -75,6 +75,9 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	// <l_wheel ...>, <r_wheel ...>
 	const char* w_names[2] = {"l_wheel", "r_wheel"};
 	const double w_default_y[2] = {0.5, -0.5};
+	m_wheels_info.clear();
+	m_wheels_info.resize(2);  // reset default values
+
 	// Load common params:
 	for (size_t i = 0; i < 2; i++)
 	{
@@ -83,10 +86,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 		if (xml_wheel)
 			m_wheels_info[i].loadFromXML(xml_wheel);
 		else
-		{
-			m_wheels_info[i] = Wheel();
 			m_wheels_info[i].y = w_default_y[i];
-		}
 	}
 
 	// Vehicle controller:

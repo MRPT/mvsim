@@ -39,7 +39,7 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	if (!root) return;  // Assume defaults
 
-	std::map<std::string, TParamEntry> params;
+	TParameterDefinitions params;
 	params["floating"] = TParamEntry("%bool", &m_is_floating);
 	params["floating_focus"] =
 		TParamEntry("%s", &m_float_center_at_vehicle_name);

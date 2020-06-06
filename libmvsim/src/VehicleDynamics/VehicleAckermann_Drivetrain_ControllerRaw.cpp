@@ -32,7 +32,7 @@ void DynamicsAckermannDrivetrain::ControllerRawForces::control_step(
 void DynamicsAckermannDrivetrain::ControllerRawForces::load_config(
 	const rapidxml::xml_node<char>& node)
 {
-	std::map<std::string, TParamEntry> params;
+	TParameterDefinitions params;
 	params["torque"] = TParamEntry("%lf", &setpoint_wheel_torque);
 
 	// Initial speed.

@@ -35,7 +35,7 @@ void DynamicsAckermann::ControllerRawForces::control_step(
 void DynamicsAckermann::ControllerRawForces::load_config(
 	const rapidxml::xml_node<char>& node)
 {
-	std::map<std::string, TParamEntry> params;
+	TParameterDefinitions params;
 	params["fl_torque"] = TParamEntry("%lf", &setpoint_wheel_torque_l);
 	params["fr_torque"] = TParamEntry("%lf", &setpoint_wheel_torque_r);
 

@@ -22,7 +22,7 @@ using namespace std;
 
 void World::TGUI_Options::parse_from(const rapidxml::xml_node<char>& node)
 {
-	std::map<std::string, TParamEntry> gui_params;
+	TParameterDefinitions gui_params;
 	gui_params["win_w"] = TParamEntry("%u", &win_w);
 	gui_params["win_h"] = TParamEntry("%u", &win_h);
 	gui_params["ortho"] = TParamEntry("%bool", &ortho);

@@ -9,8 +9,14 @@
 
 #pragma once
 
-#include <mutex>
-
+#include <Box2D/Collision/Shapes/b2PolygonShape.h>
+#include <Box2D/Dynamics/b2Body.h>
+#include <Box2D/Dynamics/b2Fixture.h>
+#include <Box2D/Dynamics/b2World.h>
+#include <mrpt/img/TColor.h>
+#include <mrpt/opengl/CSetOfLines.h>
+#include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/poses/CPose2D.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/ControllerBase.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
@@ -20,19 +26,10 @@
 #include <mvsim/Wheel.h>
 #include <mvsim/basic_types.h>
 
-#include <Box2D/Collision/Shapes/b2PolygonShape.h>
-#include <Box2D/Dynamics/b2Body.h>
-#include <Box2D/Dynamics/b2Fixture.h>
-#include <Box2D/Dynamics/b2World.h>
-
-#include <mrpt/poses/CPose2D.h>
-
-#include <mrpt/img/TColor.h>
-#include <mrpt/opengl/CSetOfLines.h>
-#include <mrpt/opengl/CSetOfObjects.h>
-
 #include <map>
+#include <mutex>
 #include <string>
+
 #include "CsvLogger.h"
 
 namespace mvsim
@@ -58,9 +55,9 @@ class VehicleBase : public VisualObject, public Simulable
 
 	// ------- Interface with "World" ------
 	virtual void simul_pre_timestep(
-		const TSimulContext& context);  // See derived class docs
+		const TSimulContext& context);	// See derived class docs
 	virtual void simul_post_timestep(
-		const TSimulContext& context);  // See derived class docs
+		const TSimulContext& context);	// See derived class docs
 	virtual void apply_force(
 		double fx, double fy, double local_ptx = 0.0,
 		double local_pty = 0.0);  // See derived class docs
@@ -196,8 +193,8 @@ class VehicleBase : public VisualObject, public Simulable
 		mrpt::opengl::COpenGLScene& scene, bool defaultVehicleBody = true);
 
 	std::string
-		m_name;  //!< User-supplied name of the vehicle (e.g. "r1", "veh1")
-	size_t m_vehicle_index;  //!< user-supplied index number: must be set/get'ed
+		m_name;	 //!< User-supplied name of the vehicle (e.g. "r1", "veh1")
+	size_t m_vehicle_index;	 //!< user-supplied index number: must be set/get'ed
 							 //! with setVehicleIndex() getVehicleIndex()
 							 //!(default=0)
 
@@ -208,18 +205,18 @@ class VehicleBase : public VisualObject, public Simulable
 	 */
 	b2Body* m_b2d_vehicle_body;
 
-	FrictionBasePtr m_friction;  //!< Instance of friction model for the
+	FrictionBasePtr m_friction;	 //!< Instance of friction model for the
 								 //! vehicle-to-ground interaction.
 
-	TListSensors m_sensors;  //!< Sensors aboard
+	TListSensors m_sensors;	 //!< Sensors aboard
 
 	mrpt::math::TPose3D
 		m_q;  //!< Last time-step pose (of the ref. point, in global coords)
-	vec3 m_dq;  //!< Last time-step velocity (of the ref. point, in global
+	vec3 m_dq;	//!< Last time-step velocity (of the ref. point, in global
 				//! coords)
 
 	std::vector<double>
-		m_torque_per_wheel;  //!< Updated in simul_pre_timestep()
+		m_torque_per_wheel;	 //!< Updated in simul_pre_timestep()
 
 	// Chassis info:
 	double m_chassis_mass;
@@ -229,7 +226,7 @@ class VehicleBase : public VisualObject, public Simulable
 	double m_chassis_z_min, m_chassis_z_max;
 	mrpt::img::TColor m_chassis_color;
 
-	mrpt::math::TPoint2D m_chassis_com;  //!< In local coordinates (this
+	mrpt::math::TPoint2D m_chassis_com;	 //!< In local coordinates (this
 										 //! excludes the mass of wheels)
 
 	void updateMaxRadiusFromPoly();
@@ -249,10 +246,10 @@ class VehicleBase : public VisualObject, public Simulable
    private:
 	void internal_gui_update_sensors(
 		mrpt::opengl::COpenGLScene&
-			scene);  //!< Called from gui_update_common()
+			scene);	 //!< Called from gui_update_common()
 	void internal_gui_update_forces(
 		mrpt::opengl::COpenGLScene&
-			scene);  //!< Called from gui_update_common()
+			scene);	 //!< Called from gui_update_common()
 
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_chassis;
 	std::vector<mrpt::opengl::CSetOfObjects::Ptr> m_gl_wheels;
@@ -260,7 +257,7 @@ class VehicleBase : public VisualObject, public Simulable
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
-   public:  // data logger header entries
+   public:	// data logger header entries
 	static constexpr char DL_TIMESTAMP[] = "timestamp";
 	static constexpr char LOGGER_POSE[] = "logger_pose";
 	static constexpr char LOGGER_WHEEL[] = "logger_wheel";
@@ -281,7 +278,7 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr char WL_VEL_Y[] = "velocity_y";
 	static constexpr char WL_FRIC_X[] = "friction_x";
 	static constexpr char WL_FRIC_Y[] = "friction_y";
-};  // end VehicleBase
+};	// end VehicleBase
 
 // Class factory:
 typedef ClassFactory<VehicleBase, World*> TClassFactory_vehicleDynamics;

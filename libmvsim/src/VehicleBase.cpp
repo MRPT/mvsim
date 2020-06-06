@@ -7,6 +7,9 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/math/TPose2D.h>
+#include <mrpt/opengl/CPolyhedron.h>
+#include <mrpt/poses/CPose2D.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/VehicleBase.h>
@@ -15,19 +18,16 @@
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 
-#include "JointXMLnode.h"
-#include "XMLClassesRegistry.h"
-#include "xml_utils.h"
-
-#include <mrpt/opengl/CPolyhedron.h>
-#include <mrpt/poses/CPose2D.h>
+#include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-
-#include <map>
-#include <sstream>  // std::stringstream
+#include <sstream>	// std::stringstream
 #include <string>
+
+#include "JointXMLnode.h"
+#include "XMLClassesRegistry.h"
+#include "xml_utils.h"
 
 using namespace mvsim;
 using namespace std;
@@ -88,14 +88,13 @@ VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	  m_wheels_info(nWheels),
 	  m_fixture_wheels(nWheels, nullptr)
 {
-	using namespace mrpt::math;
 	// Default shape:
-	m_chassis_poly.push_back(TPoint2D(-0.4, -0.5));
-	m_chassis_poly.push_back(TPoint2D(-0.4, 0.5));
-	m_chassis_poly.push_back(TPoint2D(0.4, 0.5));
-	m_chassis_poly.push_back(TPoint2D(0.6, 0.3));
-	m_chassis_poly.push_back(TPoint2D(0.6, -0.3));
-	m_chassis_poly.push_back(TPoint2D(0.4, -0.5));
+	m_chassis_poly.emplace_back(-0.4, -0.5);
+	m_chassis_poly.emplace_back(-0.4, 0.5);
+	m_chassis_poly.emplace_back(0.4, 0.5);
+	m_chassis_poly.emplace_back(0.6, 0.3);
+	m_chassis_poly.emplace_back(0.6, -0.3);
+	m_chassis_poly.emplace_back(0.4, -0.5);
 	updateMaxRadiusFromPoly();
 }
 
@@ -169,7 +168,7 @@ VehicleBase* VehicleBase::factory(
 	JointXMLnode<> veh_root_node;
 	{
 		veh_root_node.add(
-			root);  // Always search in root. Also in the class root, if any:
+			root);	// Always search in root. Also in the class root, if any:
 
 		const xml_attribute<>* veh_class = root->first_attribute("class");
 		if (veh_class)
@@ -251,7 +250,7 @@ VehicleBase* VehicleBase::factory(
 				throw runtime_error(
 					"[VehicleBase::factory] Error parsing "
 					"<init_vel>...</init_vel>");
-			veh->m_dq.vals[2] *= M_PI / 180.0;  // deg->rad
+			veh->m_dq.vals[2] *= M_PI / 180.0;	// deg->rad
 
 			// Convert twist (velocity) from local -> global coords:
 			const mrpt::poses::CPose2D pose(
@@ -376,7 +375,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 	const double gravity = getWorldObject()->get_gravity();
 	const double massPerWheel =
-		getChassisMass() / nW;  // Part of the vehicle weight on each wheel.
+		getChassisMass() / nW;	// Part of the vehicle weight on each wheel.
 	const double weightPerWheel = massPerWheel * gravity;
 
 	std::vector<mrpt::math::TPoint2D> wheels_vels;
@@ -385,7 +384,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	ASSERT_EQUAL_(wheels_vels.size(), nW);
 
 	std::vector<mrpt::math::TSegment3D>
-		force_vectors;  // For visualization only
+		force_vectors;	// For visualization only
 
 	for (size_t i = 0; i < nW; i++)
 	{
@@ -394,7 +393,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 		FrictionBase::TFrictionInput fi(context, w);
 		fi.motor_torque =
-			-m_torque_per_wheel[i];  // "-" => Forwards is negative
+			-m_torque_per_wheel[i];	 // "-" => Forwards is negative
 		fi.weight = weightPerWheel;
 		fi.wheel_speed = wheels_vels[i];
 
@@ -408,7 +407,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(
 			net_force_.x, net_force_.y));  // Force vector -> world coords
 		const b2Vec2 wPt = m_b2d_vehicle_body->GetWorldPoint(
-			b2Vec2(w.x, w.y));  // Application point -> world coords
+			b2Vec2(w.x, w.y));	// Application point -> world coords
 		// printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f
 		// Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
@@ -436,7 +435,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		if (m_world->m_gui_options.show_forces)
 		{
 			const double forceScale =
-				m_world->m_gui_options.force_scale;  // [meters/N]
+				m_world->m_gui_options.force_scale;	 // [meters/N]
 			const mrpt::math::TPoint3D pt1(
 				wPt.x, wPt.y, m_chassis_z_max * 1.1 + m_q.z);
 			const mrpt::math::TPoint3D pt2 =
@@ -503,7 +502,7 @@ void VehicleBase::getWheelsVelocityLocal(
 	// =>
 	// v_w = v_veh + ( -w*y, w*x )
 
-	const double w = veh_vel_local.vals[2];  // vehicle w
+	const double w = veh_vel_local.vals[2];	 // vehicle w
 
 	const size_t nW = this->getNumWheels();
 	vels.resize(nW);
@@ -569,7 +568,7 @@ void VehicleBase::gui_update_common(
 			m_gl_forces->setLineWidth(3.0);
 			m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
-			scene.insert(m_gl_forces);  // forces are in global coords
+			scene.insert(m_gl_forces);	// forces are in global coords
 		}
 
 		// Update them:
@@ -656,7 +655,7 @@ void VehicleBase::create_multibody_system(b2World* world)
 		// Set the box density to be non-zero, so it will be dynamic.
 		b2MassData mass;
 		chassisPoly.ComputeMass(
-			&mass, 1);  // Mass with density=1 => compute area
+			&mass, 1);	// Mass with density=1 => compute area
 		fixtureDef.density = m_chassis_mass / mass.mass;
 
 		// Override the default friction.
@@ -692,7 +691,7 @@ void VehicleBase::create_multibody_system(b2World* world)
 		// Set the box density to be non-zero, so it will be dynamic.
 		b2MassData mass;
 		wheelShape.ComputeMass(
-			&mass, 1);  // Mass with density=1 => compute area
+			&mass, 1);	// Mass with density=1 => compute area
 		fixtureDef.density = m_wheels_info[i].mass / mass.mass;
 
 		// Override the default friction.
@@ -704,7 +703,7 @@ void VehicleBase::create_multibody_system(b2World* world)
 
 void VehicleBase::gui_update(mrpt::opengl::COpenGLScene& scene)
 {
-	this->gui_update_common(scene);  // Common part: update sensors, etc.
+	this->gui_update_common(scene);	 // Common part: update sensors, etc.
 }
 
 void VehicleBase::initLoggers()
@@ -761,6 +760,6 @@ void VehicleBase::apply_force(
 {
 	ASSERT_(m_b2d_vehicle_body);
 	const b2Vec2 wPt = m_b2d_vehicle_body->GetWorldPoint(
-		b2Vec2(local_ptx, local_pty));  // Application point -> world coords
+		b2Vec2(local_ptx, local_pty));	// Application point -> world coords
 	m_b2d_vehicle_body->ApplyForce(b2Vec2(fx, fy), wPt, true /*wake up*/);
 }
