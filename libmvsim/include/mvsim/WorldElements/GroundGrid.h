@@ -23,9 +23,9 @@ class GroundGrid : public WorldElementBase
 	virtual ~GroundGrid();
 
 	virtual void loadConfigFrom(
-		const rapidxml::xml_node<char>* root);  //!< See docs in base class
+		const rapidxml::xml_node<char>* root) override;
 	virtual void gui_update(
-		mrpt::opengl::COpenGLScene& scene);  //!< See docs in base class
+		mrpt::opengl::COpenGLScene& scene) override;
 
    protected:
 	bool m_is_floating;

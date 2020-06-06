@@ -13,6 +13,7 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -167,7 +168,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			RayCastClosestCallback() : m_see_fixtures(true), m_hit(false) {}
 			float32 ReportFixture(
 				b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal,
-				float32 fraction)
+				float32 fraction) override
 			{
 				if (!m_see_fixtures ||
 					fixture->GetUserData() == INVISIBLE_FIXTURE_USER_DATA)

@@ -45,10 +45,11 @@ class Block : public VisualObject, public Simulable
 	static void register_block_class(const rapidxml::xml_node<char>* xml_node);
 
 	// ------- Interface with "World" ------
-	virtual void simul_pre_timestep(const TSimulContext& context);
-	virtual void simul_post_timestep(const TSimulContext& context);
+	virtual void simul_pre_timestep(const TSimulContext& context) override;
+	virtual void simul_post_timestep(const TSimulContext& context) override;
 	virtual void apply_force(
-		double fx, double fy, double local_ptx = 0.0, double local_pty = 0.0);
+		double fx, double fy, double local_ptx = 0.0,
+		double local_pty = 0.0) override;
 
 	/** Gets the body dynamical state into q, dot{q} */
 	void simul_post_timestep_common(const TSimulContext& context);
@@ -98,7 +99,7 @@ class Block : public VisualObject, public Simulable
 	size_t getBlockIndex() const { return m_block_index; }
 	/** Must create a new object in the scene and/or update it according to the
 	 * current state. */
-	virtual void gui_update(mrpt::opengl::COpenGLScene& scene);
+	virtual void gui_update(mrpt::opengl::COpenGLScene& scene) override;
 
    protected:
 	// Protected ctor for class factory

@@ -30,7 +30,7 @@ class DefaultFriction : public FrictionBase
 	// See docs in base class.
 	virtual void evaluate_friction(
 		const FrictionBase::TFrictionInput& input,
-		mrpt::math::TPoint2D& out_result_force_local) const;
+		mrpt::math::TPoint2D& out_result_force_local) const override;
 
    private:
 	double m_mu;  //!< friction coeficient (non-dimensional)

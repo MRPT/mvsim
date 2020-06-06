@@ -72,9 +72,15 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+target_include_directories(${PROJECT_NAME}
+    SYSTEM PUBLIC
+        $<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
+)
+
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR CMAKE_COMPILER_IS_GNUCXX)
 	target_compile_options(${PROJECT_NAME} PRIVATE
         -Wall -pedantic
+        -Wsuggest-override -Werror=suggest-override
     )
 
 	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")

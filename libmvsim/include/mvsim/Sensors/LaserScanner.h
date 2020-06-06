@@ -13,6 +13,7 @@
 #include <mrpt/opengl/CPlanarLaserScan.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/Sensors/SensorBase.h>
+
 #include <mutex>
 
 namespace mvsim
@@ -24,20 +25,17 @@ class LaserScanner : public SensorBase
 	LaserScanner(VehicleBase& parent, const rapidxml::xml_node<char>* root);
 	virtual ~LaserScanner();
 
-	virtual void loadConfigFrom(
-		const rapidxml::xml_node<char>* root);  //!< See docs in base class
-	virtual void gui_update(
-		mrpt::opengl::COpenGLScene& scene);  //!< See docs in base class
+	// See docs in base class
+	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
+	virtual void gui_update(mrpt::opengl::COpenGLScene& scene) override;
 
-	virtual void simul_pre_timestep(
-		const TSimulContext& context);  //!< See docs in base class
-	virtual void simul_post_timestep(
-		const TSimulContext& context);  //!< See docs in base class
+	virtual void simul_pre_timestep(const TSimulContext& context) override;
+	virtual void simul_post_timestep(const TSimulContext& context) override;
 
    protected:
-	int m_z_order;  //!< to help rendering multiple scans
+	int m_z_order;	//!< to help rendering multiple scans
 	mrpt::poses::CPose2D m_sensor_pose_on_veh;
-	std::string m_name;  //!< sensor label/name
+	std::string m_name;	 //!< sensor label/name
 	double m_rangeStdNoise;
 	double m_angleStdNoise;
 	bool m_see_fixtures;  //!< Whether all box2d "fixtures" are visible (solid)
