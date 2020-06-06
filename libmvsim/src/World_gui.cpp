@@ -22,19 +22,7 @@ using namespace std;
 
 void World::TGUI_Options::parse_from(const rapidxml::xml_node<char>& node)
 {
-	TParameterDefinitions gui_params;
-	gui_params["win_w"] = TParamEntry("%u", &win_w);
-	gui_params["win_h"] = TParamEntry("%u", &win_h);
-	gui_params["ortho"] = TParamEntry("%bool", &ortho);
-	gui_params["show_forces"] = TParamEntry("%bool", &show_forces);
-	gui_params["force_scale"] = TParamEntry("%lf", &force_scale);
-	gui_params["cam_distance"] = TParamEntry("%lf", &camera_distance);
-	gui_params["fov_deg"] = TParamEntry("%lf", &fov_deg);
-	gui_params["follow_vehicle"] = TParamEntry("%s", &follow_vehicle);
-	gui_params["start_maximized"] = TParamEntry("%bool", &start_maximized);
-	gui_params["refresh_fps"] = TParamEntry("%i", &refresh_fps);
-
-	parse_xmlnode_children_as_param(node, gui_params, "[World::TGUI_Options]");
+	parse_xmlnode_children_as_param(node, params, "[World::TGUI_Options]");
 }
 
 // Text labels unique IDs:
@@ -50,7 +38,8 @@ void World::internal_GUI_thread()
 {
 	try
 	{
-		std::cout << "[World::internal_GUI_thread] Init.\n";
+		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Started.");
+
 		nanogui::init();
 
 		mrpt::gui::CDisplayWindowGUI_Params cp;
@@ -121,7 +110,7 @@ void World::internal_GUI_thread()
 
 		nanogui::mainloop(m_gui_options.refresh_fps);
 
-		std::cout << "[World::internal_GUI_thread] Mainloop ended.\n";
+		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
 
 		m_gui_win.reset();
 
@@ -129,8 +118,8 @@ void World::internal_GUI_thread()
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << "[internal_GUI_init] Exception: "
-				  << mrpt::exception_to_str(e) << std::endl;
+		MRPT_LOG_ERROR_STREAM(
+			"[internal_GUI_init] Exception: " << mrpt::exception_to_str(e));
 	}
 	m_gui_thread_running = false;
 }
@@ -235,7 +224,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 		auto lock = mrpt::lockHelper(m_gui_thread_start_mtx);
 		if (!m_gui_thread_running && !m_gui_thread.joinable())
 		{
-			std::cout << "[update_GUI] Launching GUI thread...\n";
+			MRPT_LOG_DEBUG("[update_GUI] Launching GUI thread...");
 
 			m_gui_thread = std::thread(&World::internal_GUI_thread, this);
 			for (int timeout = 0; timeout < 300; timeout++)
@@ -250,16 +239,17 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			}
 			else
 			{
-				std::cout << "[update_GUI] GUI thread started.\n";
+				MRPT_LOG_DEBUG("[update_GUI] GUI thread started.");
 			}
 		}
 	}
 
 	if (!m_gui_win)
 	{
-		std::cerr << "[World::update_GUI] Ignoring call since GUI window has "
-					 "been closed."
-				  << std::endl;
+		MRPT_LOG_THROTTLE_WARN(
+			2.0,
+			"[World::update_GUI] Ignoring call since GUI window has "
+			"been closed.");
 		return;
 	}
 
