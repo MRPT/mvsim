@@ -250,7 +250,7 @@ class World : public mrpt::system::COutputLogger
 	struct TGUI_Options
 	{
 		unsigned int win_w = 800, win_h = 600;
-		bool start_maximized = false;
+		bool start_maximized = true;
 		int refresh_fps = 20;
 		bool ortho = false;
 		bool show_forces = false;
@@ -259,6 +259,18 @@ class World : public mrpt::system::COutputLogger
 		double fov_deg = 60.0;
 		/** Name of the vehicle to follow (empty=none) */
 		std::string follow_vehicle;
+
+		const TParameterDefinitions params = {
+			{"win_w", {"%u", &win_w}},
+			{"win_h", {"%u", &win_h}},
+			{"ortho", {"%bool", &ortho}},
+			{"show_forces", {"%bool", &show_forces}},
+			{"force_scale", {"%lf", &force_scale}},
+			{"fov_deg", {"%lf", &fov_deg}},
+			{"follow_vehicle", {"%s", &follow_vehicle}},
+			{"start_maximized", {"%bool", &start_maximized}},
+			{"refresh_fps", {"%i", &refresh_fps}},
+		};
 
 		TGUI_Options() = default;
 		void parse_from(const rapidxml::xml_node<char>& node);
