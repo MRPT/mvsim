@@ -12,6 +12,7 @@ jobs:
             apt install software-properties-common -yq
             add-apt-repository ppa:joseluisblancoc/mrpt -y
             apt install build-essential g++ cmake libbox2d-dev libmrpt-dev -yq
+            apt install protobuf-compiler -yq
       - checkout
       - run:
           name: Generate cmake files
@@ -31,6 +32,7 @@ jobs:
             apt install software-properties-common -yq
             add-apt-repository ppa:joseluisblancoc/mrpt -y
             apt install build-essential g++ cmake libbox2d-dev libmrpt-dev -yq
+            apt install protobuf-compiler -yq
       - checkout
       - run:
           name: Generate cmake files
@@ -50,6 +52,7 @@ jobs:
             apt install software-properties-common -yq
             add-apt-repository ppa:joseluisblancoc/mrpt -y
             apt install build-essential clang cmake libbox2d-dev libmrpt-dev -yq
+            apt install protobuf-compiler -yq
       - checkout
       - run:
           name: Generate cmake files

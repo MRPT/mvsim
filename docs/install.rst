@@ -19,7 +19,10 @@ In Ubuntu, this will install all requirements:
    build-essential cmake g++ \
    libbox2d-dev \
    libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev \
-   libmrpt-gui-dev libmrpt-tfest-dev
+   libmrpt-gui-dev libmrpt-tfest-dev \
+   protobuf-compiler \
+   libzmq3-dev
+
 
 Compile as usual:
 

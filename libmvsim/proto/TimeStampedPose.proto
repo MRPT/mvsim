@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message TimeStampedPose {
+  required double unixTimestamp = 1;
+
+  required string objectId = 2;
+
+  required double x = 3;
+  required double y = 4;
+  required double z = 5;
+  required double yaw = 6;
+  required double pitch = 7;
+  required double roll = 8;
+}

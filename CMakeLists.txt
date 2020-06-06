@@ -14,7 +14,8 @@ cmake_minimum_required(VERSION 3.1)
 project(mvsim)
 # Project name must match the ROS package name.
 
-find_package( Threads )
+
+find_package(Threads)
 include(GNUInstallDirs)
 
 # ------------------------------------------------------------------
@@ -91,8 +92,7 @@ endif()
 # --------------------------
 # Dependency: MRPT
 # --------------------------
-find_package( MRPT REQUIRED COMPONENTS opengl obs maps gui tfest)
-message(STATUS "MRPT_VERSION: ${MRPT_VERSION}")
+find_package( MRPT REQUIRED COMPONENTS opengl obs maps gui tfest serialization)
 # Defines: MRPT_LIBRARIES -> libs to link against
 
 # --------------------------
@@ -130,8 +130,6 @@ if (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 
 	# It seems BOX2D doesn't return the correct #include dir (???):
 	set(BOX2D_INCLUDE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/externals/Box2D/")
-else()
-	message(STATUS "libbox2d: found in the system (version ${BOX2D_VERSION_STRING})")
 endif()
 
 if (Box2D_FOUND)
