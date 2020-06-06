@@ -28,12 +28,12 @@ class OccupancyGridMap : public WorldElementBase
 	virtual ~OccupancyGridMap();
 
 	virtual void loadConfigFrom(
-		const rapidxml::xml_node<char>* root);  //!< See docs in base class
+		const rapidxml::xml_node<char>* root) override;
 	virtual void gui_update(
-		mrpt::opengl::COpenGLScene& scene);  //!< See docs in base class
+		mrpt::opengl::COpenGLScene& scene) override;
 
 	virtual void simul_pre_timestep(
-		const TSimulContext& context);  //!< See docs in base class
+		const TSimulContext& context) override;
 
 	const mrpt::maps::COccupancyGridMap2D& getOccGrid() const { return m_grid; }
 	mrpt::maps::COccupancyGridMap2D& getOccGrid() { return m_grid; }

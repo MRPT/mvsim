@@ -61,10 +61,9 @@ class DynamicsDifferential : public VehicleBase
 		double setpoint_wheel_torque_l, setpoint_wheel_torque_r;
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
-			DynamicsDifferential::TControllerOutput&
-				co);  // See base class docs
+			DynamicsDifferential::TControllerOutput& co) override;
 		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out);	// See base class docs
+			const TeleopInput& in, TeleopOutput& out) override;
 	};
 
 	/** PID controller that controls the vehicle twist: linear & angular
@@ -80,17 +79,15 @@ class DynamicsDifferential : public VehicleBase
 			setpoint_ang_speed;	 //!< desired velocities (m/s) and (rad/s)
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
-			DynamicsDifferential::TControllerOutput&
-				co);  // See base class docs
-		virtual void load_config(
-			const rapidxml::xml_node<char>& node);	// See base class docs
+			DynamicsDifferential::TControllerOutput& co) override;
+		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out);	// See base class docs
+			const TeleopInput& in, TeleopOutput& out) override;
 
 		double KP, KI, KD;	//!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 		// See base docs.
-		virtual bool setTwistCommand(const double vx, const double wz)
+		virtual bool setTwistCommand(const double vx, const double wz) override
 		{
 			setpoint_lin_speed = vx;
 			setpoint_ang_speed = wz;
@@ -104,22 +101,23 @@ class DynamicsDifferential : public VehicleBase
 
 	const ControllerBasePtr& getController() const { return m_controller; }
 	ControllerBasePtr& getController() { return m_controller; }
-	virtual ControllerBaseInterface* getControllerInterface()
+	virtual ControllerBaseInterface* getControllerInterface() override
 	{
 		return m_controller.get();
 	}
 
 	/** @} */  // end controllers
 
-	virtual vec3 getVelocityLocalOdoEstimate() const;  // See docs of base class
+	virtual vec3 getVelocityLocalOdoEstimate() const override;
 
    protected:
 	// See base class docs
 	virtual void dynamics_load_params_from_xml(
-		const rapidxml::xml_node<char>* xml_node);
+		const rapidxml::xml_node<char>* xml_node) override;
 	// See base class docs
 	virtual void invoke_motor_controllers(
-		const TSimulContext& context, std::vector<double>& out_force_per_wheel);
+		const TSimulContext& context,
+		std::vector<double>& out_force_per_wheel) override;
 
    private:
 	ControllerBasePtr m_controller;	 //!< The installed controller

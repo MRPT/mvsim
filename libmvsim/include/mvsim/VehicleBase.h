@@ -54,13 +54,11 @@ class VehicleBase : public VisualObject, public Simulable
 		const rapidxml::xml_node<char>* xml_node);
 
 	// ------- Interface with "World" ------
-	virtual void simul_pre_timestep(
-		const TSimulContext& context);	// See derived class docs
-	virtual void simul_post_timestep(
-		const TSimulContext& context);	// See derived class docs
+	virtual void simul_pre_timestep(const TSimulContext& context) override;
+	virtual void simul_post_timestep(const TSimulContext& context) override;
 	virtual void apply_force(
 		double fx, double fy, double local_ptx = 0.0,
-		double local_pty = 0.0);  // See derived class docs
+		double local_pty = 0.0) override;
 
 	/** Gets the body dynamical state into q, dot{q} */
 	void simul_post_timestep_common(const TSimulContext& context);
@@ -158,7 +156,7 @@ class VehicleBase : public VisualObject, public Simulable
 	 * gui_update_common() and associated methods for 3D elements common to any
 	 * vehicle.
 	 */
-	virtual void gui_update(mrpt::opengl::COpenGLScene& scene);
+	virtual void gui_update(mrpt::opengl::COpenGLScene& scene) override;
 
 	virtual ControllerBaseInterface* getControllerInterface() = 0;
 

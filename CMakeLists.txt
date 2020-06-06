@@ -88,8 +88,6 @@ if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   add_compile_options(-O3)
 endif()
 
-set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals/")
-
 # --------------------------
 # Dependency: MRPT
 # --------------------------
@@ -148,12 +146,6 @@ if (Box2D_FOUND)
 	endif()
 endif()
 
-
-# --------------------------
-# Dependency: rapidxml
-# --------------------------
-# headers-only:
-include_directories("${EXTERNALS_DIR}/rapidxml")
 
 
 # --------------------------
