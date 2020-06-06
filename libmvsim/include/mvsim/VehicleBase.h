@@ -67,7 +67,7 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** Create bodies, fixtures, etc. for the dynamical simulation. May be
 	 * overrided by derived classes */
-	virtual void create_multibody_system(b2World* world);
+	virtual void create_multibody_system(b2World& world);
 
 	/** Get (an approximation of) the max radius of the vehicle, from its point
 	 * of reference (in meters) */

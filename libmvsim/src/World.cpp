@@ -19,14 +19,7 @@ using namespace mvsim;
 using namespace std;
 
 // Default ctor: inits empty world.
-World::World()
-	: m_gravity(9.81),
-	  m_simul_time(0.0),
-	  m_simul_timestep(0.010),
-	  m_b2d_vel_iters(6),
-	  m_b2d_pos_iters(3),
-	  m_base_path("."),
-	  m_box2d_world(nullptr)
+World::World() : mrpt::system::COutputLogger("mvsim::World")
 {
 	this->clear_all();
 }
@@ -36,17 +29,14 @@ World::~World()
 {
 	if (m_gui_thread.joinable())
 	{
-		std::cout << "[mvsim ~World] Waiting for GUI thread to quit..."
-				  << std::endl;
+		MRPT_LOG_DEBUG("Waiting for GUI thread to quit...");
 		m_gui_thread_must_close = true;
 		m_gui_thread.join();
-		std::cout << "[mvsim ~World] GUI thread shut down successful."
-				  << std::endl;
+		MRPT_LOG_DEBUG("GUI thread shut down successful.");
 	}
 
 	this->clear_all();
-	delete m_box2d_world;
-	m_box2d_world = nullptr;
+	m_box2d_world.reset();
 }
 
 // Resets the entire simulation environment to an empty world.
@@ -59,8 +49,7 @@ void World::clear_all()
 
 	// (B2D) World contents:
 	// ---------------------------------------------
-	delete m_box2d_world;
-	m_box2d_world = new b2World(b2Vec2_zero);
+	m_box2d_world = std::make_unique<b2World>(b2Vec2_zero);
 
 	// Define the ground body.
 	b2BodyDef groundBodyDef;
@@ -110,7 +99,7 @@ void World::internal_one_timestep(double dt)
 	m_timer_iteration.Tic();
 
 	TSimulContext context;
-	context.b2_world = m_box2d_world;
+	context.b2_world = m_box2d_world.get();
 	context.simul_time = m_simul_time;
 	context.dt = dt;
 

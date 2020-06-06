@@ -15,7 +15,9 @@
 #include <mrpt/system/filesystem.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
+
 #include <rapidxml.hpp>
+
 #include "xml_utils.h"
 
 using namespace rapidxml;
@@ -205,13 +207,12 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			}
 			// 2) Create a Box2D "ground body" with square "fixtures" so the
 			// vehicle can collide with the occ. grid:
-			b2World* b2world = m_world->getBox2DWorld();
 
 			// Create Box2D objects upon first usage:
 			if (!ipv.collide_body)
 			{
 				b2BodyDef bdef;
-				ipv.collide_body = b2world->CreateBody(&bdef);
+				ipv.collide_body = m_world->getBox2DWorld()->CreateBody(&bdef);
 				ASSERT_(ipv.collide_body);
 			}
 			// Force move the body to the vehicle origins (to use obstacles in
@@ -242,7 +243,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &sqrPoly;
 			fixtureDef.restitution = m_restitution;
-			fixtureDef.density = 0;  // Fixed (inf. mass)
+			fixtureDef.density = 0;	 // Fixed (inf. mass)
 			fixtureDef.friction = m_lateral_friction;  // 0.5f;
 
 			// Create fixtures at their place (or disable it if no obstacle has
@@ -259,7 +260,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 				if (!scan->getScanRangeValidity(k))
 				{
 					ipv.collide_fixtures[k].fixture->SetSensor(
-						true);  // Box2D's way of saying: don't collide with
+						true);	// Box2D's way of saying: don't collide with
 								// this!
 					ipv.collide_fixtures[k].fixture->SetUserData(
 						INVISIBLE_FIXTURE_USER_DATA);
@@ -267,7 +268,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 				else
 				{
 					ipv.collide_fixtures[k].fixture->SetSensor(
-						false);  // Box2D's way of saying: don't collide with
+						false);	 // Box2D's way of saying: don't collide with
 								 // this!
 					ipv.collide_fixtures[k].fixture->SetUserData(nullptr);
 

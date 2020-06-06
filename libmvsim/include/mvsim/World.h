@@ -16,6 +16,7 @@
 #include <mrpt/gui/CDisplayWindowGUI.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/obs/CObservation.h>
+#include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Block.h>
@@ -35,7 +36,7 @@ namespace mvsim
  * See: https://mvsimulator.readthedocs.io/en/latest/world.html
  *
  */
-class World
+class World : public mrpt::system::COutputLogger
 {
    public:
 	/** \name Initialization, simulation set-up
@@ -163,8 +164,11 @@ class World
 
 	/** \name Access inner working objects
 	  @{*/
-	b2World* getBox2DWorld() { return m_box2d_world; }
-	const b2World* getBox2DWorld() const { return m_box2d_world; }
+	std::unique_ptr<b2World>& getBox2DWorld() { return m_box2d_world; }
+	const std::unique_ptr<b2World>& getBox2DWorld() const
+	{
+		return m_box2d_world;
+	}
 	b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
 	const TListVehicles& getListOfVehicles() const { return m_vehicles; }
 	TListVehicles& getListOfVehicles() { return m_vehicles; }
@@ -220,13 +224,13 @@ class World
 	// -------- World Params ----------
 	/** Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
 	 * friction, etc. */
-	double m_gravity;
+	double m_gravity = 9.81;
 
 	/** Simulation fixed-time interval for numerical integration.*/
-	double m_simul_timestep;
+	double m_simul_timestep = 10e-3;
 
 	/** Velocity and position iteration count (refer to libbox2d docs) */
-	int m_b2d_vel_iters, m_b2d_pos_iters;
+	int m_b2d_vel_iters = 6, m_b2d_pos_iters = 3;
 
 	const TParameterDefinitions m_other_world_params = {
 		{"gravity", {"%lf", &m_gravity}},
@@ -237,9 +241,10 @@ class World
 
 	/** In seconds, real simulation time since beginning (may be different than
 	 * wall-clock time because of time warp, etc.) */
-	double m_simul_time;
+	double m_simul_time = 0;
 
-	std::string m_base_path;  //!< Path from which to take relative directories.
+	/** Path from which to take relative directories. */
+	std::string m_base_path{"."};
 
 	// ------- GUI options -----
 	struct TGUI_Options
@@ -266,9 +271,11 @@ class World
 	/** Mutex protecting simulation objects from multi-thread access */
 	std::recursive_mutex m_world_cs;
 
-	b2World* m_box2d_world;	 //!< Box2D dynamic simulator instance
-	b2Body*
-		m_b2_ground_body;  //!< Used to declare friction between vehicles-ground
+	/** Box2D dynamic simulator instance */
+	std::unique_ptr<b2World> m_box2d_world;
+
+	/** Used to declare friction between vehicles-ground*/
+	b2Body* m_b2_ground_body = nullptr;
 
 	TListVehicles m_vehicles;
 	TListWorldElements m_world_elements;

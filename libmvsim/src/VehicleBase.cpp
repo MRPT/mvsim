@@ -280,8 +280,7 @@ VehicleBase* VehicleBase::factory(
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
-	b2World* b2world = parent->getBox2DWorld();
-	veh->create_multibody_system(b2world);
+	veh->create_multibody_system(*parent->getBox2DWorld());
 
 	if (veh->m_b2d_vehicle_body)
 	{
@@ -624,13 +623,13 @@ void VehicleBase::updateMaxRadiusFromPoly()
 }
 
 /** Create bodies, fixtures, etc. for the dynamical simulation */
-void VehicleBase::create_multibody_system(b2World* world)
+void VehicleBase::create_multibody_system(b2World& world)
 {
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 
-	m_b2d_vehicle_body = world->CreateBody(&bodyDef);
+	m_b2d_vehicle_body = world.CreateBody(&bodyDef);
 
 	// Define shape of chassis:
 	// ------------------------------
