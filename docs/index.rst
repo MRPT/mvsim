@@ -40,6 +40,8 @@ Documentation credits:
    - Borys Tymchenko `@spsancti <https://github.com/spsancti>`_
    - Jose Luis Blanco Claraco `@jlblancoc <https://github.com/jlblancoc>`_
 
+Github repository: https://github.com/MRPT/mvsim
+
 Indices and tables
 ==================
 
