@@ -12,6 +12,7 @@ Build-Depends:
 	cmake,
 	libbox2d-dev,
 	protobuf-compiler,
+	libprotobuf-dev,
 	libzmq3-dev
 Standards-Version: 3.9.8
 
