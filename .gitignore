@@ -278,3 +278,5 @@ TSWLatexianTemp*
 # expex forward references with \gathertags
 *-tags.tex
 docs/_build
+docs/requirements.txt
+docs/myenv
