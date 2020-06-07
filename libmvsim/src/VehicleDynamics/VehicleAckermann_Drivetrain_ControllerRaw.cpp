@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -17,7 +18,6 @@ DynamicsAckermannDrivetrain::ControllerRawForces::ControllerRawForces(
 	DynamicsAckermannDrivetrain& veh)
 	: ControllerBase(veh), setpoint_wheel_torque(0), setpoint_steer_ang(0)
 {
-	MRPT_TODO("I see this file!")
 }
 
 // See base class docs

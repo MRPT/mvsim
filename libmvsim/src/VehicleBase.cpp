@@ -531,8 +531,8 @@ mrpt::poses::CPose2D VehicleBase::getCPose2D() const
 	return mrpt::poses::CPose2D(mrpt::math::TPose2D(m_q));
 }
 
-/** To be called at derived classes' gui_update() */
-void VehicleBase::gui_update_common(
+/** To be called at derived classes' internalGuiUpdate() */
+void VehicleBase::internalGuiUpdate_common(
 	mrpt::opengl::COpenGLScene& scene, bool defaultVehicleBody)
 {
 	// 1st time call?? -> Create objects
@@ -583,18 +583,18 @@ void VehicleBase::gui_update_common(
 	}
 
 	// Other common stuff:
-	internal_gui_update_sensors(scene);
-	internal_gui_update_forces(scene);
+	internal_internalGuiUpdate_sensors(scene);
+	internal_internalGuiUpdate_forces(scene);
 }
 
-void VehicleBase::internal_gui_update_sensors(mrpt::opengl::COpenGLScene& scene)
+void VehicleBase::internal_internalGuiUpdate_sensors(
+	mrpt::opengl::COpenGLScene& scene)
 {
-	for (TListSensors::iterator it = m_sensors.begin(); it != m_sensors.end();
-		 ++it)
-		(*it)->gui_update(scene);
+	for (auto& s : m_sensors) s->guiUpdate(scene);
 }
 
-void VehicleBase::internal_gui_update_forces(mrpt::opengl::COpenGLScene& scene)
+void VehicleBase::internal_internalGuiUpdate_forces(
+	mrpt::opengl::COpenGLScene& scene)
 {
 	if (m_world->m_gui_options.show_forces)
 	{
@@ -700,9 +700,9 @@ void VehicleBase::create_multibody_system(b2World& world)
 	}
 }
 
-void VehicleBase::gui_update(mrpt::opengl::COpenGLScene& scene)
+void VehicleBase::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 {
-	this->gui_update_common(scene);	 // Common part: update sensors, etc.
+	this->internalGuiUpdate_common(scene);	// Common part: update sensors, etc.
 }
 
 void VehicleBase::initLoggers()

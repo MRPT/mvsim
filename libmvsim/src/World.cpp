@@ -11,7 +11,6 @@
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
-#include <iostream>	 // for debugging
 #include <map>
 #include <stdexcept>
 

@@ -150,14 +150,6 @@ class VehicleBase : public VisualObject, public Simulable
 		for (auto& logger : m_loggers) logger.second->newSession();
 	}
 
-	/** Must create a new object in the scene and/or update it according to the
-	 * current state.
-	 * If overrided in derived classes, it may be time-saving to call \a
-	 * gui_update_common() and associated methods for 3D elements common to any
-	 * vehicle.
-	 */
-	virtual void gui_update(mrpt::opengl::COpenGLScene& scene) override;
-
 	virtual ControllerBaseInterface* getControllerInterface() = 0;
 
    protected:
@@ -166,6 +158,7 @@ class VehicleBase : public VisualObject, public Simulable
 
 	virtual void initLoggers();
 	virtual void writeLogStrings();
+	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
 
    protected:
 	// Protected ctor for class factory
@@ -181,13 +174,12 @@ class VehicleBase : public VisualObject, public Simulable
 		const TSimulContext& context,
 		std::vector<double>& out_force_per_wheel) = 0;
 
-	/** To be called at derived classes' gui_update(), updates all stuff common
-	 * to any vehicle type.
-	 * Calls: internal_gui_update_sensors(), internal_gui_update_forces()
-	 * \param[in] defaultVehicleBody If true, will draw default wheels &
-	 * vehicle chassis.
+	/** To be called at derived classes' internalGuiUpdate(), updates all stuff
+	 * common to any vehicle type. Calls: internal_internalGuiUpdate_sensors(),
+	 * internal_internalGuiUpdate_forces() \param[in] defaultVehicleBody If
+	 * true, will draw default wheels & vehicle chassis.
 	 */
-	void gui_update_common(
+	void internalGuiUpdate_common(
 		mrpt::opengl::COpenGLScene& scene, bool defaultVehicleBody = true);
 
 	std::string
@@ -242,12 +234,12 @@ class VehicleBase : public VisualObject, public Simulable
 											   //! Size set at constructor.
 
    private:
-	void internal_gui_update_sensors(
+	void internal_internalGuiUpdate_sensors(
 		mrpt::opengl::COpenGLScene&
-			scene);	 //!< Called from gui_update_common()
-	void internal_gui_update_forces(
+			scene);	 //!< Called from internalGuiUpdate_common()
+	void internal_internalGuiUpdate_forces(
 		mrpt::opengl::COpenGLScene&
-			scene);	 //!< Called from gui_update_common()
+			scene);	 //!< Called from internalGuiUpdate_common()
 
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_chassis;
 	std::vector<mrpt::opengl::CSetOfObjects::Ptr> m_gl_wheels;

@@ -89,7 +89,7 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 }
 
-void OccupancyGridMap::gui_update(mrpt::opengl::COpenGLScene& scene)
+void OccupancyGridMap::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 {
 	using namespace mrpt::math;
 
