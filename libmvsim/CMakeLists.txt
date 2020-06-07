@@ -122,28 +122,26 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+    SYSTEM PUBLIC
+        $<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${ZeroMQ_INCLUDE_DIR}
-)
-
-target_include_directories(${PROJECT_NAME}
-    SYSTEM PUBLIC
-        $<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
 )
 
 if (MVSIM_WITH_PROTOBUF)
 	target_include_directories(${PROJECT_NAME}
 	    SYSTEM PRIVATE
 	        $<BUILD_INTERFACE:${Protobuf_INCLUDE_DIRS}>
-					$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+			$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 	)
 endif()
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR CMAKE_COMPILER_IS_GNUCXX)
 	target_compile_options(${PROJECT_NAME} PRIVATE
         -Wall -pedantic
-        -Wsuggest-override -Werror=suggest-override
+        -Wsuggest-override 
+        # -Werror=suggest-override # Removed for protobuf headers in u18.04
     )
 
 	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
