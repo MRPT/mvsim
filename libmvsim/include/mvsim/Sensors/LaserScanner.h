@@ -27,12 +27,13 @@ class LaserScanner : public SensorBase
 
 	// See docs in base class
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
-	virtual void gui_update(mrpt::opengl::COpenGLScene& scene) override;
 
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
    protected:
+	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+
 	int m_z_order;	//!< to help rendering multiple scans
 	mrpt::poses::CPose2D m_sensor_pose_on_veh;
 	std::string m_name;	 //!< sensor label/name
@@ -51,7 +52,7 @@ class LaserScanner : public SensorBase
 	mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan2gui;
 
 	bool m_gui_uptodate;  //!< Whether m_gl_scan has to be updated upon next
-						  //! call of gui_update() from m_last_scan2gui
+						  //! call of internalGuiUpdate() from m_last_scan2gui
 	mrpt::opengl::CPlanarLaserScan::Ptr m_gl_scan;
 };
 }  // namespace mvsim

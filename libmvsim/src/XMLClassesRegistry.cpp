@@ -8,10 +8,11 @@
   +-------------------------------------------------------------------------+ */
 
 #include "XMLClassesRegistry.h"
+
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
+
 #include <algorithm>  // count()
-#include <iostream>
 
 using namespace mvsim;
 using namespace std;
@@ -41,7 +42,7 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_vehicle_class)
 
 		// sanity checks:
 		const rapidxml::xml_node<>* root_node =
-			xml->first_node(m_tagname.c_str());  //"vehicle:class"
+			xml->first_node(m_tagname.c_str());	 //"vehicle:class"
 		if (!root_node)
 			throw runtime_error(mrpt::format(
 				"[XmlClassesRegistry] Missing XML node <%s>",

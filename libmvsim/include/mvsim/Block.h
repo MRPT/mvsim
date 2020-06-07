@@ -97,18 +97,18 @@ class Block : public VisualObject, public Simulable
 	void setBlockIndex(size_t idx) { m_block_index = idx; }
 	/** Get the block index in the World */
 	size_t getBlockIndex() const { return m_block_index; }
-	/** Must create a new object in the scene and/or update it according to the
-	 * current state. */
-	virtual void gui_update(mrpt::opengl::COpenGLScene& scene) override;
 
    protected:
 	// Protected ctor for class factory
 	Block(World* parent);
 
-	std::string
-		m_name;	 //!< User-supplied name of the block (e.g. "r1", "veh1")
-	size_t m_block_index;  //!< user-supplied index number: must be set/get'ed
-						   //! with setblockIndex() getblockIndex() (default=0)
+	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+	/** User-supplied name of the block (e.g. "r1", "veh1") */
+	std::string m_name;
+
+	/** user-supplied index number: must be set/get'ed with setblockIndex()
+	 * getblockIndex() (default=0) */
+	size_t m_block_index;
 
 	/** Derived classes must store here the body of the block main body
 	 * (chassis).
@@ -151,9 +151,7 @@ class Block : public VisualObject, public Simulable
 	b2Fixture* m_fixture_block;
 
    private:
-	void internal_gui_update_forces(
-		mrpt::opengl::COpenGLScene&
-			scene);	 //!< Called from gui_update_common()
+	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_block;
 	mrpt::opengl::CSetOfLines::Ptr m_gl_forces;

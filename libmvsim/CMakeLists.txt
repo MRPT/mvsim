@@ -122,11 +122,13 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-    SYSTEM PUBLIC
-        $<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${ZeroMQ_INCLUDE_DIR}
+)
+target_include_directories(${PROJECT_NAME}
+    SYSTEM PUBLIC
+        $<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
 )
 
 if (MVSIM_WITH_PROTOBUF)

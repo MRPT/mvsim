@@ -74,7 +74,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 }
 
-void LaserScanner::gui_update(mrpt::opengl::COpenGLScene& scene)
+void LaserScanner::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 {
 	// 1st time?
 	if (!m_gl_scan)

@@ -16,6 +16,7 @@
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
+
 #include <mutex>
 
 namespace mvsim
@@ -27,22 +28,20 @@ class OccupancyGridMap : public WorldElementBase
 	OccupancyGridMap(World* parent, const rapidxml::xml_node<char>* root);
 	virtual ~OccupancyGridMap();
 
-	virtual void loadConfigFrom(
-		const rapidxml::xml_node<char>* root) override;
-	virtual void gui_update(
-		mrpt::opengl::COpenGLScene& scene) override;
+	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
 
-	virtual void simul_pre_timestep(
-		const TSimulContext& context) override;
+	virtual void simul_pre_timestep(const TSimulContext& context) override;
 
 	const mrpt::maps::COccupancyGridMap2D& getOccGrid() const { return m_grid; }
 	mrpt::maps::COccupancyGridMap2D& getOccGrid() { return m_grid; }
 
    protected:
+	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+
 	mrpt::maps::COccupancyGridMap2D m_grid;
 
 	bool m_gui_uptodate;  //!< Whether m_gl_grid has to be updated upon next
-						  //! call of gui_update()
+						  //! call of internalGuiUpdate()
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_grid;
 
 	struct TFixturePtr
@@ -74,6 +73,6 @@ class OccupancyGridMap : public WorldElementBase
 
 	bool m_show_grid_collision_points;
 	double m_restitution;  //!< Elastic restitution coef (default: 0.01)
-	double m_lateral_friction;  //!< (Default: 0.5)
+	double m_lateral_friction;	//!< (Default: 0.5)
 };
 }  // namespace mvsim

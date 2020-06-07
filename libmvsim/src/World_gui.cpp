@@ -131,9 +131,7 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------------
 	m_timlogger.enter("update_GUI.2.map-elements");
 
-	for (std::list<WorldElementBase*>::iterator it = m_world_elements.begin();
-		 it != m_world_elements.end(); ++it)
-		(*it)->gui_update(*gl_scene);
+	for (auto& e : m_world_elements) e->guiUpdate(*gl_scene);
 
 	m_timlogger.leave("update_GUI.2.map-elements");
 
@@ -141,9 +139,7 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------------
 	m_timlogger.enter("update_GUI.3.vehicles");
 
-	for (TListVehicles::iterator it = m_vehicles.begin();
-		 it != m_vehicles.end(); ++it)
-		it->second->gui_update(*gl_scene);
+	for (auto& v : m_vehicles) v.second->guiUpdate(*gl_scene);
 
 	m_timlogger.leave("update_GUI.3.vehicles");
 
@@ -151,9 +147,7 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------------
 	m_timlogger.enter("update_GUI.4.blocks");
 
-	for (TListBlocks::iterator it = m_blocks.begin(); it != m_blocks.end();
-		 ++it)
-		it->second->gui_update(*gl_scene);
+	for (auto& v : m_blocks) v.second->guiUpdate(*gl_scene);
 
 	m_timlogger.leave("update_GUI.4.blocks");
 
@@ -194,16 +188,15 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------
 	if (!m_gui_options.follow_vehicle.empty())
 	{
-		TListVehicles::const_iterator it =
-			m_vehicles.find(m_gui_options.follow_vehicle);
+		auto it = m_vehicles.find(m_gui_options.follow_vehicle);
 		if (it == m_vehicles.end())
 		{
 			static bool warn1st = true;
 			if (warn1st)
 			{
-				std::cerr << mrpt::format(
+				MRPT_LOG_ERROR_FMT(
 					"GUI: Camera set to follow vehicle named '%s' which can't "
-					"be found!\n",
+					"be found!",
 					m_gui_options.follow_vehicle.c_str());
 				warn1st = true;
 			}

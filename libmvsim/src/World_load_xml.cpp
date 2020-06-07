@@ -130,9 +130,10 @@ void World::load_from_XML(
 			if (!parse_xmlnode_as_param(*node, m_other_world_params))
 			{
 				// Unknown element!!
-				std::cerr << "[World::load_from_XML] *Warning* Ignoring "
-							 "unknown XML node type '"
-						  << node->name() << "'\n";
+				MRPT_LOG_WARN_STREAM(
+					"[World::load_from_XML] *Warning* Ignoring "
+					"unknown XML node type '"
+					<< node->name());
 			}
 		}
 

@@ -266,8 +266,8 @@ mrpt::poses::CPose2D Block::getCPose2D() const
 	return mrpt::poses::CPose2D(mrpt::math::TPose2D(m_q));
 }
 
-/** To be called at derived classes' gui_update() */
-void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
+/** To be called at derived classes' internalGuiUpdate() */
+void Block::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 {
 	// 1st time call?? -> Create objects
 	// ----------------------------------
@@ -296,10 +296,10 @@ void Block::gui_update(mrpt::opengl::COpenGLScene& scene)
 	m_gl_block->setPose(m_q);
 
 	// Other common stuff:
-	internal_gui_update_forces(scene);
+	internal_internalGuiUpdate_forces(scene);
 }
 
-void Block::internal_gui_update_forces(mrpt::opengl::COpenGLScene& scene)
+void Block::internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene)
 {
 	if (m_world->m_gui_options.show_forces)
 	{

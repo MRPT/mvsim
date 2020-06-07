@@ -25,7 +25,6 @@ class ElevationMap : public WorldElementBase
 	virtual ~ElevationMap();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
-	virtual void gui_update(mrpt::opengl::COpenGLScene& scene) override;
 
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
@@ -34,6 +33,8 @@ class ElevationMap : public WorldElementBase
 		double x, double y, float& z) const;  //!< return false if out of bounds
 
    protected:
+	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */
 	mrpt::opengl::CMesh::Ptr m_gl_mesh;

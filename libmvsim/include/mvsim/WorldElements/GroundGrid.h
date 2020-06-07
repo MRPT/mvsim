@@ -22,12 +22,11 @@ class GroundGrid : public WorldElementBase
 	GroundGrid(World* parent, const rapidxml::xml_node<char>* root);
 	virtual ~GroundGrid();
 
-	virtual void loadConfigFrom(
-		const rapidxml::xml_node<char>* root) override;
-	virtual void gui_update(
-		mrpt::opengl::COpenGLScene& scene) override;
+	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
 
    protected:
+	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+
 	bool m_is_floating;
 	std::string m_float_center_at_vehicle_name;
 	double m_x_min, m_x_max, m_y_min, m_y_max, m_interval;
