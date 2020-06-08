@@ -9,7 +9,10 @@
 
 #pragma once
 
+#include <mrpt/opengl/opengl_frwds.h>
 #include <mvsim/basic_types.h>
+#include <cstdint>
+#include <memory>
 
 namespace mvsim
 {
@@ -31,6 +34,11 @@ class VisualObject
 
    protected:
 	World* m_world;
+
+	/** If not empty, will override the derived-class visualization for this
+	 * object. */
+	std::shared_ptr<mrpt::opengl::CSetOfObjects> m_customVisual;
+	int32_t m_customVisualId = -1;
 
 	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) = 0;
 };
