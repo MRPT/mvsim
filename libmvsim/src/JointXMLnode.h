@@ -28,10 +28,9 @@ class JointXMLnode
 	const rapidxml::xml_node<Ch>* first_node(const char* name)
 	{
 		const rapidxml::xml_node<Ch>* ret = nullptr;
-		for (typename TListNodes::const_iterator it = m_nodes.begin();
-			 it != m_nodes.end(); ++it)
+		for (const auto& node : m_nodes)
 		{
-			ret = (*it)->first_node(name);
+			ret = node->first_node(name);
 			if (ret != nullptr) return ret;
 		}
 		return ret;
@@ -104,10 +103,10 @@ class JointXMLnode
 		}
 
 		JointXMLnode<Ch>& parent;
-		size_t lst_idx;  // => lst.size() means this is "end()"
+		size_t lst_idx;	 // => lst.size() means this is "end()"
 		rapidxml::xml_node<Ch>* current;
 
-	};  // end class iterator
+	};	// end class iterator
 
 	iterator begin() { return iterator(*this); }
 	iterator end() { return iterator(*this, m_nodes.size()); }

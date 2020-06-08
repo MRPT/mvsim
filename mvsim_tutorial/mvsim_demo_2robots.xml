@@ -116,6 +116,17 @@
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
 		</sensor>
 
+		<!--  Custom visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<!--
+		<visual>
+			<model_uri>robot.obj</model_uri>
+			<model_scale>1e-3</model_scale>
+			<model_offset_x>0.0</model_offset_x>
+			<model_offset_y>0.0</model_offset_y>
+			<model_offset_z>0.0</model_offset_z>
+		</visual>
+		-->
 	</vehicle:class>
 
 	<!-- ========================
@@ -148,6 +159,32 @@
 			<pt> 1.0 -0.5</pt>
 		</shape>
 	</block:class>
+	
+	<block:class name="obstacle_table">
+		<mass>30</mass>
+		<color>#0080ff</color>
+		<zmax>1.0</zmax>
+		<ground_friction>0.5</ground_friction>
+		<shape>
+			<pt>-1.262 -0.631</pt>
+			<pt>-1.262  0.631</pt>
+			<pt> 1.262  0.631</pt>
+			<pt> 1.262 -0.631</pt>
+		</shape>
+		<!--  Custom visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>table1.obj</model_uri>
+			<model_scale>0.025</model_scale>
+			<model_offset_x>0.0</model_offset_x>
+			<model_offset_y>0.0</model_offset_y>
+			<model_offset_z>0.26</model_offset_z>
+			<model_yaw>0.0</model_yaw>
+			<model_pitch>0.0</model_pitch>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
 
 	<!-- ========================
 		Obstacle blocks
@@ -155,7 +192,7 @@
 	<block class="square_obstacle">
 		<init_pose>6 5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 	</block>
-	<block class="square_obstacle">
+	<block class="obstacle_table">
 		<init_pose>7 7 45</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 	</block>
 

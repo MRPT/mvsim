@@ -11,6 +11,7 @@
 
 #include <mrpt/opengl/opengl_frwds.h>
 #include <mvsim/basic_types.h>
+
 #include <cstdint>
 #include <memory>
 
@@ -33,6 +34,8 @@ class VisualObject
 	const World* getWorldObject() const { return m_world; }
 
    protected:
+	bool parseVisual(const rapidxml::xml_node<char>* visual_node);
+
 	World* m_world;
 
 	/** If not empty, will override the derived-class visualization for this
@@ -41,5 +44,10 @@ class VisualObject
 	int32_t m_customVisualId = -1;
 
 	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) = 0;
+	virtual mrpt::poses::CPose3D internalGuiGetVisualPose()
+	{
+		throw std::runtime_error(
+			"internalGuiGetVisualPose: not implemented for this class!");
+	}
 };
 }  // namespace mvsim

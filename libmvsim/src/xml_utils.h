@@ -49,9 +49,8 @@ void parse_xmlnodelist_children_as_param(
 	NODE_LIST& lst_nodes, const TParameterDefinitions& params,
 	const char* function_name_context = "")
 {
-	for (typename NODE_LIST::iterator it = lst_nodes.begin();
-		 it != lst_nodes.end(); ++it)
-		parse_xmlnode_children_as_param(**it, params, function_name_context);
+	for (auto& node : lst_nodes)
+		parse_xmlnode_children_as_param(*node, params, function_name_context);
 }
 
 // Bits:

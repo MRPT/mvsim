@@ -142,7 +142,8 @@ endif()
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR CMAKE_COMPILER_IS_GNUCXX)
 	target_compile_options(${PROJECT_NAME} PRIVATE
         -Wall -pedantic
-        -Wsuggest-override 
+        -Wsuggest-override
+        -Werror=return-type
         # -Werror=suggest-override # Removed for protobuf headers in u18.04
     )
 

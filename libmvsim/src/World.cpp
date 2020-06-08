@@ -56,6 +56,7 @@ void World::clear_all()
 
 	// Clear lists of objs:
 	// ---------------------------------------------
+	MRPT_TODO("Port to lists of smart pointers");
 	for (TListVehicles::iterator it = m_vehicles.begin();
 		 it != m_vehicles.end(); ++it)
 		delete it->second;

@@ -160,15 +160,17 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 				pose.x, pose.y,
 				0 /* angle=0, no need to rotate everything to later rotate back again! */);
 		}
-		for (World::TListBlocks::const_iterator it = lstBlocks.begin();
-			 it != lstBlocks.end(); ++it, ++obj_idx)
+		for (const auto& block : lstBlocks)
 		{
 			TInfoPerCollidableobj& ipv = m_obstacles_for_each_obj[obj_idx];
-			ipv.max_obstacles_ranges = it->second->getMaxBlockRadius() * 1.50f;
-			const mrpt::math::TPose3D& pose = it->second->getPose();
-			ipv.pose = mrpt::poses::CPose2D(
-				pose.x, pose.y,
-				0 /* angle=0, no need to rotate everything to later rotate back again! */);
+			ipv.max_obstacles_ranges =
+				block.second->getMaxBlockRadius() * 1.50f;
+			const mrpt::math::TPose3D& pose = block.second->getPose();
+			/* angle=0, no need to rotate everything to later rotate back again!
+			 */
+			ipv.pose = mrpt::poses::CPose2D(pose.x, pose.y, 0);
+
+			obj_idx++;
 		}
 	}
 
