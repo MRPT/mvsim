@@ -7,10 +7,18 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/opengl/CAssimpModel.h>
+#include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/system/filesystem.h>
 #include <mvsim/VisualObject.h>
+#include <mvsim/World.h>
+
 #include <atomic>
+#include <rapidxml.hpp>
+
+#include "xml_utils.h"
 
 using namespace mvsim;
 
@@ -33,10 +41,84 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 			// Add to the 3D scene:
 			scene.insert(m_customVisual);
 		}
+
+		// Update pose:
+		m_customVisual->setPose(internalGuiGetVisualPose());
 	}
 	else
 	{
 		// Default:
 		internalGuiUpdate(scene);
 	}
+}
+
+bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
+{
+	MRPT_TRY_START
+
+	if (visual_node == nullptr) return false;
+
+	std::string modelURI;
+	double modelScale = 1.0;
+	mrpt::math::TPose3D modelPose;
+
+	TParameterDefinitions params;
+	params["model_uri"] = TParamEntry("%s", &modelURI);
+	params["model_scale"] = TParamEntry("%lf", &modelScale);
+	params["model_offset_x"] = TParamEntry("%lf", &modelPose.x);
+	params["model_offset_y"] = TParamEntry("%lf", &modelPose.y);
+	params["model_offset_z"] = TParamEntry("%lf", &modelPose.z);
+	params["model_yaw"] = TParamEntry("%lf_deg", &modelPose.yaw);
+	params["model_pitch"] = TParamEntry("%lf_deg", &modelPose.pitch);
+	params["model_roll"] = TParamEntry("%lf_deg", &modelPose.roll);
+
+	// Parse XML params:
+	parse_xmlnode_children_as_param(*visual_node, params);
+
+	if (modelURI.empty()) return false;
+
+	std::string localFileName;
+
+	if (modelURI.substr(0, 7) == "http://" ||
+		modelURI.substr(0, 8) == "https://")
+	{
+		MRPT_TODO("Retrieve models from online sources");
+		THROW_EXCEPTION("To do: online models");
+		// localFileName = xx;
+	}
+	else if (modelURI.substr(0, 7) == "file://")
+	{
+		localFileName = modelURI.substr(7);
+	}
+	else
+		localFileName = modelURI;
+
+	localFileName = m_world->resolvePath(localFileName);
+
+	ASSERT_FILE_EXISTS_(localFileName);
+
+	m_customVisual = mrpt::opengl::CSetOfObjects::Create();
+	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
+	auto glModel = mrpt::opengl::CAssimpModel::Create();
+
+	glModel->loadScene(localFileName);
+
+	mrpt::math::TPoint3D bbmin, bbmax;
+	glModel->getBoundingBox(bbmin, bbmax);
+
+	glGroup->insert(glModel);
+
+	auto glBox = mrpt::opengl::CBox::Create();
+	glBox->setWireframe(true);
+	glBox->setBoxCorners(bbmin, bbmax);
+	glBox->setVisibility(false);
+	glGroup->insert(glBox);
+
+	glGroup->setScale(modelScale);
+	glGroup->setPose(modelPose);
+
+	m_customVisual->insert(glGroup);
+
+	return true;
+	MRPT_TRY_END
 }

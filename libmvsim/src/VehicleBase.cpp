@@ -32,7 +32,7 @@
 using namespace mvsim;
 using namespace std;
 
-XmlClassesRegistry veh_classes_registry("vehicle:class");
+static XmlClassesRegistry veh_classes_registry("vehicle:class");
 
 TClassFactory_vehicleDynamics mvsim::classFactory_vehicleDynamics;
 
@@ -315,15 +315,18 @@ VehicleBase* VehicleBase::factory(
 
 	// Sensors: <sensor class='XXX'> entries
 	// -------------------------------------------------
-	for (JointXMLnode<>::iterator it = veh_root_node.begin();
-		 it != veh_root_node.end(); ++it)
+	for (const auto& xmlNode : veh_root_node)
 	{
-		if (!strcmp(it->name(), "sensor"))
+		if (!strcmp(xmlNode->name(), "sensor"))
 		{
-			SensorBase* se = SensorBase::factory(*veh, *it);
+			SensorBase* se = SensorBase::factory(*veh, xmlNode);
 			veh->m_sensors.push_back(SensorBase::Ptr(se));
 		}
 	}
+
+	// Custom visualization 3D model:
+	// -----------------------------------------------------------
+	veh->parseVisual(veh_root_node.first_node("visual"));
 
 	return veh;
 }
@@ -531,7 +534,11 @@ mrpt::poses::CPose2D VehicleBase::getCPose2D() const
 	return mrpt::poses::CPose2D(mrpt::math::TPose2D(m_q));
 }
 
-/** To be called at derived classes' internalGuiUpdate() */
+mrpt::poses::CPose3D VehicleBase::internalGuiGetVisualPose()
+{
+	return mrpt::poses::CPose3D(m_q);
+}
+
 void VehicleBase::internalGuiUpdate_common(
 	mrpt::opengl::COpenGLScene& scene, bool defaultVehicleBody)
 {

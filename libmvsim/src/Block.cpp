@@ -29,7 +29,7 @@
 using namespace mvsim;
 using namespace std;
 
-XmlClassesRegistry block_classes_registry("block:class");
+static XmlClassesRegistry block_classes_registry("block:class");
 
 // Protected ctor:
 Block::Block(World* parent)
@@ -188,7 +188,12 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		}
 	}
 
+	// Custom visualization 3D model:
+	// -----------------------------------------------------------
+	block->parseVisual(block_root_node.first_node("visual"));
+
 	// Params:
+	// -----------------------------------------------------------
 	parse_xmlnode_children_as_param(*root, block->m_params, "[Block::factory]");
 	if (class_root)
 		parse_xmlnode_children_as_param(
@@ -266,7 +271,11 @@ mrpt::poses::CPose2D Block::getCPose2D() const
 	return mrpt::poses::CPose2D(mrpt::math::TPose2D(m_q));
 }
 
-/** To be called at derived classes' internalGuiUpdate() */
+mrpt::poses::CPose3D Block::internalGuiGetVisualPose()
+{
+	return mrpt::poses::CPose3D(m_q);
+}
+
 void Block::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 {
 	// 1st time call?? -> Create objects
@@ -319,10 +328,9 @@ void Block::updateMaxRadiusFromPoly()
 	using namespace mrpt::math;
 
 	m_max_radius = 0.001f;
-	for (TPolygon2D::const_iterator it = m_block_poly.begin();
-		 it != m_block_poly.end(); ++it)
+	for (const auto& segment : m_block_poly)
 	{
-		const float n = it->norm();
+		const float n = segment.norm();
 		mrpt::keep_max(m_max_radius, n);
 	}
 }

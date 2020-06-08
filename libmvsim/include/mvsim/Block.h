@@ -103,6 +103,8 @@ class Block : public VisualObject, public Simulable
 	Block(World* parent);
 
 	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
+
 	/** User-supplied name of the block (e.g. "r1", "veh1") */
 	std::string m_name;
 

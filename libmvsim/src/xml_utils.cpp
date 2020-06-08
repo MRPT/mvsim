@@ -141,13 +141,12 @@ void mvsim::parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node,
 	const TParameterDefinitions& params, const char* function_name_context)
 {
-	for (TParameterDefinitions::const_iterator it = params.begin();
-		 it != params.end(); ++it)
+	for (const auto& param : params)
 	{
 		const rapidxml::xml_attribute<char>* attr =
-			xml_node.first_attribute(it->first.c_str());
+			xml_node.first_attribute(param.first.c_str());
 		if (attr && attr->value())
-			it->second.parse(
+			param.second.parse(
 				attr->value(), attr->name(), function_name_context);
 	}
 }

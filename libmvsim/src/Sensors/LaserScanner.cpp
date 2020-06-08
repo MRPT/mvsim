@@ -80,7 +80,8 @@ void LaserScanner::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 	if (!m_gl_scan)
 	{
 		m_gl_scan = mrpt::opengl::CPlanarLaserScan::Create();
-		m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.01f);
+		m_gl_scan->enableSurface(false);
+		// m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.4f);
 		m_gl_scan->setLocalRepresentativePoint({0, 0, 0.10f});
 		scene.insert(m_gl_scan);
 	}
@@ -134,12 +135,12 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 	const World::TListWorldElements& elements =
 		m_world->getListOfWorldElements();
-	for (World::TListWorldElements::const_iterator it = elements.begin();
-		 it != elements.end(); ++it)
+
+	for (const auto& element : elements)
 	{
 		// If not a grid map, ignore:
 		const OccupancyGridMap* grid =
-			dynamic_cast<const OccupancyGridMap*>(*it);
+			dynamic_cast<const OccupancyGridMap*>(element);
 		if (!grid) continue;
 		const COccupancyGridMap2D& occGrid = grid->getOccGrid();
 
@@ -256,17 +257,15 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 	lastScan->resizeScanAndAssign(nRays, maxRange, false);
 
-	for (std::list<CObservation2DRangeScan>::const_iterator it =
-			 lstScans.begin();
-		 it != lstScans.end(); ++it)
+	for (const auto& scan : lstScans)
 	{
 		for (size_t i = 0; i < nRays; i++)
 		{
-			if (it->getScanRangeValidity(i))
+			if (scan.getScanRangeValidity(i))
 			{
 				lastScan->setScanRange(
 					i,
-					std::min(lastScan->getScanRange(i), it->getScanRange(i)));
+					std::min(lastScan->getScanRange(i), scan.getScanRange(i)));
 				lastScan->setScanRangeValidity(i, true);
 			}
 		}

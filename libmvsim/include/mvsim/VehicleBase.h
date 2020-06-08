@@ -159,6 +159,7 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void initLoggers();
 	virtual void writeLogStrings();
 	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
 
    protected:
 	// Protected ctor for class factory
