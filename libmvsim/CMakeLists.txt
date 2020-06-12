@@ -48,31 +48,37 @@ file(GLOB ROOT_SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/*.h"
-	)
+)
 file(GLOB Sensors_SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/Sensors/*.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/Sensors/*.h"
-	)
+)
 file(GLOB Friction_SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/FrictionModels/*.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/FrictionModels/*.h"
-	)
+)
 file(GLOB VehicleDynamics_SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/VehicleDynamics/*.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/VehicleDynamics/*.h"
-	)
+)
 file(GLOB WorldElements_SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/WorldElements/*.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/WorldElements/*.h"
-	)
+)
+file(GLOB Server_SRCS
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Server/*.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/Server/*.h"
+)
+file(GLOB Client_SRCS
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Client/*.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/Client/*.h"
+)
 
 # Protobuf messages:
 file(GLOB PROTOBUF_DEFINITION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
 if (MVSIM_WITH_PROTOBUF)
-	foreach(file ${PROTOBUF_DEFINITION_FILES})
-		protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${file})
-		#protobuf_generate_python(...)
-	endforeach()
+	protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOBUF_DEFINITION_FILES})
+	#protobuf_generate_python(...)
 endif()
 
 # Declare the target (a library)
@@ -82,6 +88,8 @@ add_library(${PROJECT_NAME}
 	${Friction_SRCS}
 	${VehicleDynamics_SRCS}
 	${WorldElements_SRCS}
+	${Server_SRCS}
+	${Client_SRCS}
 	${PROTO_SRCS} ${PROTO_HDRS} ${PROTOBUF_DEFINITION_FILES}
 )
 
@@ -101,6 +109,8 @@ target_link_libraries(${PROJECT_NAME}
 
 source_group(Main FILES ${ROOT_SRCS})
 source_group(Sensors FILES ${Sensors_SRCS})
+source_group(Server FILES ${Sensors_SRCS})
+source_group(Client FILES ${Sensors_SRCS})
 source_group(Friction FILES ${Friction_SRCS})
 source_group(VehicleDynamics FILES ${VehicleDynamics_SRCS})
 source_group(WorldElements FILES ${WorldElements_SRCS})
