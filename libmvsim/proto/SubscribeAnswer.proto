@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SubscribeAnswer {
+  /** Echoes the requested topic name, for confirmation */
+  required string topic = 1;
+
+  /** Should be always true */
+  required bool success = 2;
+}

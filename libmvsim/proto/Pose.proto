@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message Pose {
+  required double x = 1;
+  required double y = 2;
+  required double z = 3;
+  required double yaw = 4;
+  required double pitch = 5;
+  required double roll = 6;
+}

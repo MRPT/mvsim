@@ -1,5 +1,7 @@
 syntax = "proto2";
 
+import "Pose.proto";
+
 package mvsim_msgs;
 
 message TimeStampedPose {
@@ -7,10 +9,5 @@ message TimeStampedPose {
 
   required string objectId = 2;
 
-  required double x = 3;
-  required double y = 4;
-  required double z = 5;
-  required double yaw = 6;
-  required double pitch = 7;
-  required double roll = 8;
+  required Pose pose = 3;
 }
