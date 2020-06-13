@@ -8,8 +8,8 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/system/CTicTac.h>
-#include <mrpt/system/os.h>  // kbhit()
-#include <mvsim/Server/Server.h>
+#include <mrpt/system/os.h>	 // kbhit()
+#include <mvsim/Comms/Server.h>
 #include <mvsim/World.h>
 
 #include <chrono>
@@ -47,10 +47,12 @@ int main(int argc, char** argv)
 		world.load_from_XML(fil_xml.data(), argv[1]);
 
 		// Start network server:
-		// world.server_.setMinLoggingLevel(...);
 		mvsim::Server server;
-		server.attachToWorld(world);
+		server.setMinLoggingLevel(mrpt::system::LVL_DEBUG);
 		server.start();
+
+		// Attach world as a mvsim communications node:
+		world.connectToServer();
 
 		// Launch GUI thread:
 		TThreadParams thread_params;
@@ -63,7 +65,7 @@ int main(int argc, char** argv)
 		double t_old = tictac.Tac();
 		double REALTIME_FACTOR = 1.0;
 		bool do_exit = false;
-		size_t teleop_idx_veh = 0;  // Index of the vehicle to teleop
+		size_t teleop_idx_veh = 0;	// Index of the vehicle to teleop
 
 		while (!do_exit && !mrpt::system::os::kbhit())
 		{
@@ -155,7 +157,7 @@ int main(int argc, char** argv)
 			// Clear the keystroke buffer
 			if (keyevent.keycode != 0) gui_key_events = World::TGUIKeyEvent();
 
-			msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
+			msg2gui = txt2gui_tmp;	// send txt msgs to show in the GUI
 
 		}  // end while()
 

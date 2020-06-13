@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/system/filesystem.h>  // filePathSeparatorsToNative()
+#include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
@@ -137,7 +137,7 @@ void World::internal_one_timestep(double dt)
 			m_timlogger, "timestep.1.dynamics_integrator");
 
 		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
-		m_simul_time += dt;  // Avance time
+		m_simul_time += dt;	 // Avance time
 	}
 
 	// 3) Save dynamical state into vehicles classes
@@ -238,4 +238,11 @@ void World::runVisitorOnWorldElements(WorldElementVisitorBase& v)
 	for (std::list<WorldElementBase*>::iterator it = m_world_elements.begin();
 		 it != m_world_elements.end(); ++it)
 		v.visit(*it);
+}
+
+void World::connectToServer()
+{
+	//
+	MRPT_TODO("Allow changing parameters... from xml?");
+	m_client.connect();
 }

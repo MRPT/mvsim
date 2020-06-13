@@ -7,24 +7,28 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/World.h>
+#include <mrpt/io/CMemoryStream.h>
+#include <mrpt/serialization/CArchive.h>
 
-using namespace mvsim;
-
-#if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
-//#include <mrpt/serialization/zmq_serialization.h>
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+#include <google/protobuf/message.h>
+#include <mvsim/Comms/common.h>
 
 #include <zmq.hpp>
 
-#include "TimeStampedPose.pb.h"
-#endif
+using namespace mvsim;
 
-#if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
-
-static void test()
+void mvsim::sendMessage(
+	const google::protobuf::MessageLite& m, zmq::socket_t& socket)
 {
-	mvsim_msgs::TimeStampedPose t;
-	std::string s = t.SerializeAsString();
+	mrpt::io::CMemoryStream buf;
+	auto arch = mrpt::serialization::archiveFrom(buf);
+
+	arch << m.GetTypeName();
+	arch << m.SerializeAsString();
+
+	zmq::message_t msg(buf.getRawBufferData(), buf.getTotalBytesCount());
+	socket.send(msg, zmq::send_flags::none);
 }
 
 #endif

@@ -10,8 +10,14 @@
 #pragma once
 
 #include <mrpt/system/COutputLogger.h>
+
 #include <atomic>
 #include <thread>
+
+namespace zmq
+{
+class context_t;
+}
 
 namespace mvsim
 {
@@ -43,8 +49,6 @@ class Server : public mrpt::system::COutputLogger
 
 	/** @name Main mvsim Server API
 	 * @{ */
-	void attachToWorld(World& w) { world_ = &w; }
-
 	/** Launches the server in a parallel thread. */
 	void start();
 
@@ -54,10 +58,9 @@ class Server : public mrpt::system::COutputLogger
 	/** @} */
 
    private:
-	World* world_ = nullptr;
-
 	std::thread mainThread_;
-	std::atomic_bool mainThreadMustExit_ = false;
+	std::atomic<zmq::context_t*> mainThreadZMQcontext_ = nullptr;
+	void requestMainThreadTermination();
 
 	void internalServerThread();
 };
