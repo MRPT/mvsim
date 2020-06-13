@@ -65,13 +65,9 @@ file(GLOB WorldElements_SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/WorldElements/*.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/WorldElements/*.h"
 )
-file(GLOB Server_SRCS
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/Server/*.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/Server/*.h"
-)
-file(GLOB Client_SRCS
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/Client/*.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/Client/*.h"
+file(GLOB Comms_SRCS
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Comms/*.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/Comms/*.h"
 )
 
 # Protobuf messages:
@@ -88,8 +84,7 @@ add_library(${PROJECT_NAME}
 	${Friction_SRCS}
 	${VehicleDynamics_SRCS}
 	${WorldElements_SRCS}
-	${Server_SRCS}
-	${Client_SRCS}
+	${Comms_SRCS}
 	${PROTO_SRCS} ${PROTO_HDRS} ${PROTOBUF_DEFINITION_FILES}
 )
 
@@ -109,8 +104,7 @@ target_link_libraries(${PROJECT_NAME}
 
 source_group(Main FILES ${ROOT_SRCS})
 source_group(Sensors FILES ${Sensors_SRCS})
-source_group(Server FILES ${Sensors_SRCS})
-source_group(Client FILES ${Sensors_SRCS})
+source_group(Comms FILES ${Comms_SRCS})
 source_group(Friction FILES ${Friction_SRCS})
 source_group(VehicleDynamics FILES ${VehicleDynamics_SRCS})
 source_group(WorldElements FILES ${WorldElements_SRCS})

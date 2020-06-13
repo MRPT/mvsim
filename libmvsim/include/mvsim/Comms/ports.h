@@ -8,3 +8,9 @@
   +-------------------------------------------------------------------------+ */
 
 #pragma once
+
+namespace mvsim
+{
+constexpr unsigned int MVSIM_PORTNO_MAIN_REP = 23700;
+
+}
