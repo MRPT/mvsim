@@ -11,10 +11,8 @@
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-namespace zmq
-{
-class socket_t;
-}
+#include "zmq_fwrds.h"
+
 namespace google::protobuf
 {
 class MessageLite;
@@ -22,6 +20,20 @@ class MessageLite;
 
 namespace mvsim
 {
+/** Sends a ZMQ message comprising:
+ * - std::string with the protobuf message type name.
+ * - std::string with the binary serialization of the message itself.
+ */
 void sendMessage(const google::protobuf::MessageLite& m, zmq::socket_t& socket);
-}
+
+/** Parses a ZMQ message received as sent by sendMessage(), and decodes it into
+ * the provided google::protobuf message. Use this signature when the expected
+ * type of the received message is known before hand.
+ *
+ * \exception std::runtime_error If the message type does not match with out.
+ */
+void parseMessage(
+	const zmq::message_t& msg, google::protobuf::MessageLite& out);
+
+}  // namespace mvsim
 #endif

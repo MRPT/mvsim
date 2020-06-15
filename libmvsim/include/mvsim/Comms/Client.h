@@ -10,14 +10,10 @@
 #pragma once
 
 #include <mrpt/system/COutputLogger.h>
+#include <mvsim/Comms/zmq_fwrds.h>
 
 #include <atomic>
 #include <thread>
-
-namespace zmq
-{
-class context_t;
-}
 
 namespace mvsim
 {

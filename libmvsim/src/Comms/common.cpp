@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/core/exceptions.h>
 #include <mrpt/io/CMemoryStream.h>
 #include <mrpt/serialization/CArchive.h>
 
@@ -33,6 +34,27 @@ void mvsim::sendMessage(
 #else
 	socket.send(msg);
 #endif
+}
+
+void mvsim::parseMessage(
+	const zmq::message_t& msg, google::protobuf::MessageLite& out)
+{
+	mrpt::io::CMemoryStream buf;
+	buf.assignMemoryNotOwn(msg.data(), msg.size());
+
+	auto arch = mrpt::serialization::archiveFrom(buf);
+
+	std::string typeName, serializedData;
+	arch >> typeName >> serializedData;
+
+	ASSERT_EQUAL_(typeName, out.GetTypeName());
+
+	bool ok = out.ParseFromString(serializedData);
+	if (!ok)
+		THROW_EXCEPTION_FMT(
+			"Format error: protobuf could not decode binary message of type "
+			"'%s'",
+			typeName.c_str());
 }
 
 #endif
