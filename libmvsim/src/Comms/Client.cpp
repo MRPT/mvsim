@@ -83,7 +83,9 @@ void Client::internalClientThread()
 		//  Get the reply.
 		zmq::message_t reply;
 		mainReqSocket.recv(&reply);
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
 		MRPT_LOG_INFO_STREAM("Received: " << reply.str());
+#endif
 	}
 	catch (const zmq::error_t& e)
 	{
@@ -117,7 +119,12 @@ void Client::requestMainThreadTermination()
 	zmq::context_t* ctx = mainThreadZMQcontext_;
 	if (ctx)
 	{
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
 		ctx->shutdown();
+#else
+		// Missing shutdown() in older versions:
+		zmq_ctx_shutdown(ctx->operator void*());
+#endif
 	}
 #endif
 }

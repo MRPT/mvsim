@@ -77,10 +77,16 @@ void Server::internalServerThread()
 			zmq::message_t request;
 
 			//  Wait for next request from client
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
 			std::optional<size_t> reqSize = mainRepSocket.recv(request);
 			ASSERT_(reqSize.has_value());
+#else
+			mainRepSocket.recv(&request);
+#endif
 
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
 			MRPT_LOG_DEBUG_STREAM("Received: " << request.str());
+#endif
 
 			MRPT_TODO("Actual dispatch");
 
@@ -122,7 +128,12 @@ void Server::requestMainThreadTermination()
 	zmq::context_t* ctx = mainThreadZMQcontext_;
 	if (ctx)
 	{
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
 		ctx->shutdown();
+#else
+		// Missing shutdown() in older versions:
+		zmq_ctx_shutdown(ctx->operator void*());
+#endif
 	}
 #endif
 }
