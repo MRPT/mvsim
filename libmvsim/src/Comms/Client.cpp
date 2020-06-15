@@ -92,10 +92,23 @@ void Client::internalClientThread()
 
 		//  Get the reply.
 		zmq::message_t reply;
-		mainReqSocket.recv(&reply);
 #if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
+		std::optional<size_t> msgSize = mainReqSocket.recv(reply);
+		ASSERT_(msgSize.has_value());
 		MRPT_LOG_INFO_STREAM("Received: " << reply.str());
+#else
+		mainReqSocket.recv(&reply);
 #endif
+
+		mvsim_msgs::RegisterNodeAnswer rna;
+		mvsim::parseMessage(reply, rna);
+		if (!rna.success())
+		{
+			THROW_EXCEPTION_FMT(
+				"Server did not allow registering node: %s",
+				rna.errormessage().c_str());
+		}
+		MRPT_LOG_DEBUG("Successfully registered in the server.");
 	}
 	catch (const zmq::error_t& e)
 	{
