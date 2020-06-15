@@ -8,7 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/system/CTicTac.h>
-#include <mrpt/system/os.h>	 // kbhit()
+#include <mrpt/system/os.h>  // kbhit()
 #include <mvsim/Comms/Server.h>
 #include <mvsim/World.h>
 
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 		double t_old = tictac.Tac();
 		double REALTIME_FACTOR = 1.0;
 		bool do_exit = false;
-		size_t teleop_idx_veh = 0;	// Index of the vehicle to teleop
+		size_t teleop_idx_veh = 0;  // Index of the vehicle to teleop
 
 		while (!do_exit && !mrpt::system::os::kbhit())
 		{
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
 			// Clear the keystroke buffer
 			if (keyevent.keycode != 0) gui_key_events = World::TGUIKeyEvent();
 
-			msg2gui = txt2gui_tmp;	// send txt msgs to show in the GUI
+			msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
 
 		}  // end while()
 

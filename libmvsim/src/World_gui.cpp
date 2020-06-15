@@ -17,6 +17,11 @@
 
 #include "xml_utils.h"
 
+#include <mrpt/version.h>
+#if MRPT_VERSION >= 0x204
+#include <mrpt/system/thread_name.h>
+#endif
+
 using namespace mvsim;
 using namespace std;
 
@@ -155,7 +160,7 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------------
 	m_timlogger.enter("update_GUI.5.text-msgs");
 	{
-		const int txt_h = 12, space_h = 2;	// font height
+		const int txt_h = 12, space_h = 2;  // font height
 		int txt_y = 4;
 
 		// 1st line: time
@@ -220,6 +225,9 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			MRPT_LOG_DEBUG("[update_GUI] Launching GUI thread...");
 
 			m_gui_thread = std::thread(&World::internal_GUI_thread, this);
+#if MRPT_VERSION >= 0x204
+			mrpt::system::thread_name("guiThread", m_gui_thread);
+#endif
 			for (int timeout = 0; timeout < 300; timeout++)
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
