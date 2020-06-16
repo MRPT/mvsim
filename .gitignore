@@ -280,3 +280,4 @@ TSWLatexianTemp*
 docs/_build
 docs/requirements.txt
 docs/myenv
+*.autosave
