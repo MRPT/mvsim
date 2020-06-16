@@ -8,11 +8,10 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/exceptions.h>
+#include <mrpt/version.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Comms/common.h>
 #include <mvsim/Comms/ports.h>
-
-#include <mrpt/version.h>
 #if MRPT_VERSION >= 0x204
 #include <mrpt/system/thread_name.h>
 #endif
@@ -92,7 +91,7 @@ void Client::internalClientThread()
 
 		//  Get the reply.
 		zmq::message_t reply;
-#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
 		std::optional<size_t> msgSize = mainReqSocket.recv(reply);
 		ASSERT_(msgSize.has_value());
 		MRPT_LOG_INFO_STREAM("Received: " << reply.str());

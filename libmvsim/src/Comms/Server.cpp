@@ -8,11 +8,9 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/exceptions.h>
+#include <mrpt/version.h>
 #include <mvsim/Comms/Server.h>
 #include <mvsim/Comms/common.h>
-#include <mvsim/Comms/ports.h>
-
-#include <mrpt/version.h>
 #if MRPT_VERSION >= 0x204
 #include <mrpt/system/thread_name.h>
 #endif
@@ -80,21 +78,21 @@ void Server::internalServerThread()
 		mainThreadZMQcontext_ = &context;
 
 		zmq::socket_t mainRepSocket(context, ZMQ_REP);
-		mainRepSocket.bind("tcp://*:"s + std::to_string(MVSIM_PORTNO_MAIN_REP));
+		mainRepSocket.bind("tcp://*:"s + std::to_string(serverPortNo_));
 
 		for (;;)
 		{
 			zmq::message_t request;
 
 			//  Wait for next request from client
-#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
 			std::optional<size_t> reqSize = mainRepSocket.recv(request);
 			ASSERT_(reqSize.has_value());
 #else
 			mainRepSocket.recv(&request);
 #endif
 
-#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
 			MRPT_LOG_DEBUG_STREAM("Received: " << request.str());
 #endif
 

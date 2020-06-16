@@ -1,7 +1,9 @@
-project(mvsim-server)
+project(mvsim)
 
 # === Define executable ===
-add_executable(${PROJECT_NAME} mvsim_main.cpp)
+add_executable(${PROJECT_NAME} 
+	mvsim_cli_main.cpp
+)
 target_link_libraries(
 	${PROJECT_NAME}
 	mvsim::mvsim # the simulator lib
