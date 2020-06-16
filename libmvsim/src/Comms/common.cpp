@@ -8,8 +8,6 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/exceptions.h>
-#include <mrpt/io/CMemoryStream.h>
-#include <mrpt/serialization/CArchive.h>
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <google/protobuf/message.h>
@@ -36,8 +34,8 @@ void mvsim::sendMessage(
 #endif
 }
 
-void mvsim::parseMessage(
-	const zmq::message_t& msg, google::protobuf::MessageLite& out)
+std::tuple<std::string, std::string> mvsim::internal::parseMessageToParts(
+	const zmq::message_t& msg)
 {
 	mrpt::io::CMemoryStream buf;
 	buf.assignMemoryNotOwn(msg.data(), msg.size());
@@ -46,6 +44,13 @@ void mvsim::parseMessage(
 
 	std::string typeName, serializedData;
 	arch >> typeName >> serializedData;
+	return {typeName, serializedData};
+}
+
+void mvsim::parseMessage(
+	const zmq::message_t& msg, google::protobuf::MessageLite& out)
+{
+	const auto [typeName, serializedData] = internal::parseMessageToParts(msg);
 
 	ASSERT_EQUAL_(typeName, out.GetTypeName());
 

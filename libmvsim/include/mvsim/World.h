@@ -224,7 +224,7 @@ class World : public mrpt::system::COutputLogger
 	friend class VehicleBase;
 	friend class Block;
 
-	mvsim::Client m_client;
+	mvsim::Client m_client{"World"};
 
 	// -------- World Params ----------
 	/** Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
