@@ -93,7 +93,7 @@ void Server::internalServerThread()
 #endif
 
 #if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
-			MRPT_LOG_DEBUG_STREAM("Received: " << request.str());
+			MRPT_LOG_DEBUG_STREAM("Received ZMQ msg: " << request.str());
 #endif
 
 			MRPT_TODO("Actual dispatch");

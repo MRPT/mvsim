@@ -36,7 +36,7 @@ namespace mvsim
 class Client : public mrpt::system::COutputLogger
 {
    public:
-	Client();
+	Client(const std::string& nodeName = "anonymous");
 	~Client();
 
 	/** @name Main mvsim client communication API

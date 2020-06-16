@@ -18,15 +18,21 @@
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
+#include <google/protobuf/text_format.h>
+
 #include <zmq.hpp>
 
 #include "RegisterNodeAnswer.pb.h"
 #include "RegisterNodeRequest.pb.h"
+
 #endif
 
 using namespace mvsim;
 
-Client::Client() : mrpt::system::COutputLogger("mvsim::Client") {}
+Client::Client(const std::string& nodeName)
+	: mrpt::system::COutputLogger("mvsim::Client"), nodeName_(nodeName)
+{
+}
 Client::~Client() { shutdown(); }
 
 void Client::connect()
@@ -94,13 +100,17 @@ void Client::internalClientThread()
 #if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
 		std::optional<size_t> msgSize = mainReqSocket.recv(reply);
 		ASSERT_(msgSize.has_value());
-		MRPT_LOG_INFO_STREAM("Received: " << reply.str());
 #else
 		mainReqSocket.recv(&reply);
 #endif
 
 		mvsim_msgs::RegisterNodeAnswer rna;
 		mvsim::parseMessage(reply, rna);
+
+		std::string s;
+		google::protobuf::TextFormat::PrintToString(rna, &s);
+		MRPT_LOG_DEBUG_STREAM("Recv as text:\n" << s);
+
 		if (!rna.success())
 		{
 			THROW_EXCEPTION_FMT(

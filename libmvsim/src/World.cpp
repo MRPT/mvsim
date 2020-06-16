@@ -244,5 +244,6 @@ void World::connectToServer()
 {
 	//
 	MRPT_TODO("Allow changing parameters... from xml?");
+	m_client.setVerbosityLevel(this->getMinLoggingLevel());
 	m_client.connect();
 }
