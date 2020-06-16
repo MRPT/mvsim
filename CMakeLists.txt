@@ -92,7 +92,7 @@ endif()
 # --------------------------
 # Dependency: MRPT
 # --------------------------
-find_package( MRPT REQUIRED COMPONENTS opengl obs maps gui tfest serialization)
+find_package(MRPT REQUIRED COMPONENTS opengl obs maps gui tfest serialization tclap)
 # Defines: MRPT_LIBRARIES -> libs to link against
 
 # --------------------------
@@ -156,7 +156,7 @@ add_subdirectory(libmvsim)
 # --------------------------
 #       Apps
 # --------------------------
-add_subdirectory(mvsim-server)
+add_subdirectory(mvsim-cli)
 
 # -----------------------------------------------------------------------------
 #                                   ROS SEGMENT
@@ -235,7 +235,6 @@ if (BUILD_FOR_ROS)
 
 	## Add cmake target dependencies of the executable/library
 	## as an example, message headers may need to be generated before nodes
-	# add_dependencies(mrpt_localization_node mrpt_localization_generate_messages_cpp)
 	add_dependencies(mvsim_node
 		mvsim_gencfg
 		mvsim # the simulator lib

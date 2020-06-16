@@ -10,6 +10,7 @@
 #pragma once
 
 #include <mrpt/system/COutputLogger.h>
+#include <mvsim/Comms/ports.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
 #include <atomic>
@@ -45,7 +46,7 @@ class Server : public mrpt::system::COutputLogger
 
 	/** @name Main mvsim Server API
 	 * @{ */
-	/** Launches the server in a parallel thread. */
+	/** Launches the server in a parallel thread and returns immediately. */
 	void start();
 
 	/** Shutdowns the server. Blocks until the thread is stopped. There is no
@@ -53,12 +54,17 @@ class Server : public mrpt::system::COutputLogger
 	void shutdown() noexcept;
 	/** @} */
 
+	unsigned int listenningPort() const { return serverPortNo_; }
+	void listenningPort(unsigned int port) { serverPortNo_ = port; }
+
    private:
 	std::thread mainThread_;
 	std::atomic<zmq::context_t*> mainThreadZMQcontext_ = nullptr;
 	void requestMainThreadTermination();
 
 	void internalServerThread();
+
+	unsigned int serverPortNo_ = MVSIM_PORTNO_MAIN_REP;
 };
 
 }  // namespace mvsim
