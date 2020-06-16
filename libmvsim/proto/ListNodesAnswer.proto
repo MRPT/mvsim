@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message ListNodesAnswer {
+  repeated string nodes = 1;
+}

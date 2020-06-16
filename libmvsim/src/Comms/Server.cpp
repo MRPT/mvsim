@@ -18,8 +18,14 @@
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <zmq.hpp>
 
+#include "ListNodesAnswer.pb.h"
+#include "ListNodesRequest.pb.h"
+#include "ListTopicsAnswer.pb.h"
+#include "ListTopicsRequest.pb.h"
 #include "RegisterNodeAnswer.pb.h"
 #include "RegisterNodeRequest.pb.h"
+#include "SubscribeAnswer.pb.h"
+#include "SubscribeRequest.pb.h"
 
 #endif
 
@@ -92,16 +98,25 @@ void Server::internalServerThread()
 			mainRepSocket.recv(&request);
 #endif
 
-#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
-			MRPT_LOG_DEBUG_STREAM("Received ZMQ msg: " << request.str());
-#endif
+			using client_requests_t =
+				std::variant<mvsim_msgs::RegisterNodeRequest>;
 
-			MRPT_TODO("Actual dispatch");
+			// Parse and dispatch:
+			try
+			{
+				client_requests_t req =
+					mvsim::parseMessageVariant<client_requests_t>(request);
 
-			//  Send reply back to client
-			mvsim_msgs::RegisterNodeAnswer rna;
-			rna.set_success(true);
-			mvsim::sendMessage(rna, mainRepSocket);
+				std::visit(
+					overloaded{
+						[&](const auto& m) { this->handle(m, mainRepSocket); },
+					},
+					req);
+			}
+			catch (const UnexpectedMessageException& e)
+			{
+				MRPT_LOG_ERROR_STREAM(e.what());
+			}
 		}
 	}
 	catch (const zmq::error_t& e)
@@ -145,3 +160,55 @@ void Server::requestMainThreadTermination()
 	}
 #endif
 }
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+
+// mvsim_msgs::RegisterNodeRequest
+void Server::handle(const mvsim_msgs::RegisterNodeRequest& m, zmq::socket_t& s)
+{
+	//  Send reply back to client
+	MRPT_LOG_DEBUG_STREAM(
+		"Registering new node named '" << m.nodename() << "'");
+
+	MRPT_TODO("Actual registration!");
+
+	mvsim_msgs::RegisterNodeAnswer rna;
+	rna.set_success(true);
+	mvsim::sendMessage(rna, s);
+}
+
+// mvsim_msgs::SubscribeRequest
+void Server::handle(const mvsim_msgs::SubscribeRequest& m, zmq::socket_t& s)
+{
+	//  Send reply back to client
+	MRPT_LOG_DEBUG_STREAM(
+		"Subscription request for topic " << m.topic() << "'");
+
+	mvsim_msgs::SubscribeAnswer ans;
+
+	mvsim::sendMessage(ans, s);
+}
+
+// mvsim_msgs::ListTopicsRequest
+void Server::handle(const mvsim_msgs::ListTopicsRequest& m, zmq::socket_t& s)
+{
+	//  Send reply back to client
+	MRPT_LOG_DEBUG("Listing topics request");
+
+	mvsim_msgs::ListTopicsAnswer ans;
+
+	mvsim::sendMessage(ans, s);
+}
+
+// mvsim_msgs::ListNodesRequest
+void Server::handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s)
+{
+	//  Send reply back to client
+	MRPT_LOG_DEBUG("Listing nodes request");
+
+	mvsim_msgs::ListNodesAnswer ans;
+
+	mvsim::sendMessage(ans, s);
+}
+
+#endif

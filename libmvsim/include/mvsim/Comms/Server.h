@@ -16,6 +16,15 @@
 #include <atomic>
 #include <thread>
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+
+#include "ListNodesRequest.pb.h"
+#include "ListTopicsRequest.pb.h"
+#include "RegisterNodeRequest.pb.h"
+#include "SubscribeRequest.pb.h"
+
+#endif
+
 namespace mvsim
 {
 class World;
@@ -63,6 +72,15 @@ class Server : public mrpt::system::COutputLogger
 	void requestMainThreadTermination();
 
 	void internalServerThread();
+
+	// ========= Message handlers ========
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	void handle(const mvsim_msgs::RegisterNodeRequest& m, zmq::socket_t& s);
+	void handle(const mvsim_msgs::SubscribeRequest& m, zmq::socket_t& s);
+	void handle(const mvsim_msgs::ListTopicsRequest& m, zmq::socket_t& s);
+	void handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s);
+
+#endif
 
 	unsigned int serverPortNo_ = MVSIM_PORTNO_MAIN_REP;
 };
