@@ -5,7 +5,7 @@
 
   <!-- REMEMBER: Keep in synch version number in:
     * package.xml
-    * libvmsim/CMakeLists.txt
+    * CMakeLists.txt
     * libmvsim/mvsim/mvsim_version.h
     * CHANGELOG.rst
    -->

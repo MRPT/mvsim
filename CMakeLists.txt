@@ -14,6 +14,7 @@ cmake_minimum_required(VERSION 3.1)
 project(mvsim)
 # Project name must match the ROS package name.
 
+set(MVSIM_VERSION  0.3.0)
 
 find_package(Threads)
 include(GNUInstallDirs)
@@ -147,11 +148,9 @@ endif()
 
 
 # --------------------------
-#       The Library
+#  Main library modules
 # --------------------------
-include_directories("${${PROJECT_NAME}_SOURCE_DIR}/libmvsim/include/")
-
-add_subdirectory(libmvsim)
+add_subdirectory(modules)
 
 # --------------------------
 #       Apps

@@ -6,7 +6,8 @@ add_executable(${PROJECT_NAME}
 )
 target_link_libraries(
 	${PROJECT_NAME}
-	mvsim::mvsim # the simulator lib
+	mvsim::simulator
+	mvsim::comms
 	${MRPT_LIBRARIES}  # MRPT libs
 	${BOX2D_LIBRARIES}  # Box2D libs
 	${CMAKE_THREAD_LIBS_INIT}
