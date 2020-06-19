@@ -13,7 +13,8 @@ Build-Depends:
 	libbox2d-dev,
 	protobuf-compiler,
 	libprotobuf-dev,
-	libzmq3-dev
+	libzmq3-dev,
+	pybind11-dev
 Standards-Version: 3.9.8
 
 Package: libmvsim

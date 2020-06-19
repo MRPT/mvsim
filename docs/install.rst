@@ -21,7 +21,8 @@ In Ubuntu, this will install all requirements:
    libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev \
    libmrpt-gui-dev libmrpt-tfest-dev \
    protobuf-compiler \
-   libzmq3-dev
+   libzmq3-dev \
+   pybind11-dev
 
 
 Compile as usual:
