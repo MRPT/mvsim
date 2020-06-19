@@ -45,6 +45,24 @@ if (MVSIM_WITH_ZMQ)
 	endif()
 endif()
 
+option(MVSIM_WITH_PYTHON "Build python wrappers" ON)
+if (MVSIM_WITH_PYTHON)
+  find_package(pybind11)
+  
+  if (pybind11_FOUND AND pybind11_VERSION VERSION_LESS 2.2)
+	message(STATUS "Warning: Disabling Python bindings since pybind11 >=2.2 is required but only found version ${pybind11_VERSION}")
+	set(MVSIM_WITH_PYTHON OFF CACHE BOOL "Build python wrappers" FORCE)
+	set(pybind11_FOUND OFF)
+  endif()
+  
+  if (pybind11_FOUND)
+	#
+  else()
+		set(MVSIM_WITH_PYTHON OFF CACHE BOOL "Build python wrappers" FORCE)
+  endif()
+endif()
+
+
 # ========================== Functions ====================================
 
 function(mvsim_common_target_settings MODULENAME_)
@@ -173,5 +191,6 @@ message(STATUS "MRPT version   : ${MRPT_VERSION}")
 message(STATUS "libbox2d       : ${BOX2D_VERSION_STRING}")
 message(STATUS "Protobuf       : ${MVSIM_WITH_PROTOBUF} ${Protobuf_VERSION}")
 message(STATUS "ZeroMQ         : ${MVSIM_WITH_ZMQ} ${ZeroMQ_VERSION}")
+message(STATUS "Python wrappers: ${MVSIM_WITH_PYTHON} (pybind11: ${pybind11_VERSION})")
 message(STATUS "")
 
