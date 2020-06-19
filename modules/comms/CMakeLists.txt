@@ -17,3 +17,12 @@ mvsim_common_target_settings(${MODULE_NAME})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE mvsim::msgs)
 
+# =========== Python wrapper ==================
+if (MVSIM_WITH_PYTHON)
+  file(GLOB_RECURSE PY_SRCS python/generated-sources/*.cpp)
+
+  pybind11_add_module(pymvsim_${MODULE_NAME}
+	${PY_SRCS}
+	)
+  target_link_libraries(pymvsim_${MODULE_NAME} PUBLIC ${PROJECT_NAME})
+endif()

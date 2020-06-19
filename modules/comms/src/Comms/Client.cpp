@@ -29,11 +29,12 @@
 
 using namespace mvsim;
 
-Client::Client(const std::string& nodeName)
-	: mrpt::system::COutputLogger("mvsim::Client"), nodeName_(nodeName)
-{
-}
+Client::Client() : mrpt::system::COutputLogger("mvsim::Client") {}
+Client::Client(const std::string& nodeName) : Client() { setName(nodeName); }
+
 Client::~Client() { shutdown(); }
+
+void Client::setName(const std::string& nodeName) { nodeName_ = nodeName; }
 
 void Client::connect()
 {
