@@ -26,6 +26,8 @@
 #include "RegisterNodeRequest.pb.h"
 #include "SubscribeAnswer.pb.h"
 #include "SubscribeRequest.pb.h"
+#include "UnregisterNodeAnswer.pb.h"
+#include "UnregisterNodeRequest.pb.h"
 
 #endif
 
@@ -98,8 +100,9 @@ void Server::internalServerThread()
 			mainRepSocket.recv(&request);
 #endif
 
-			using client_requests_t =
-				std::variant<mvsim_msgs::RegisterNodeRequest>;
+			using client_requests_t = std::variant<
+				mvsim_msgs::RegisterNodeRequest,
+				mvsim_msgs::UnregisterNodeRequest>;
 
 			// Parse and dispatch:
 			try
@@ -173,6 +176,20 @@ void Server::handle(const mvsim_msgs::RegisterNodeRequest& m, zmq::socket_t& s)
 	MRPT_TODO("Actual registration!");
 
 	mvsim_msgs::RegisterNodeAnswer rna;
+	rna.set_success(true);
+	mvsim::sendMessage(rna, s);
+}
+
+// mvsim_msgs::UnregisterNodeRequest
+void Server::handle(
+	const mvsim_msgs::UnregisterNodeRequest& m, zmq::socket_t& s)
+{
+	//  Send reply back to client
+	MRPT_LOG_DEBUG_STREAM("Unregistering node named '" << m.nodename() << "'");
+
+	MRPT_TODO("Actual unregistration!");
+
+	mvsim_msgs::UnregisterNodeAnswer rna;
 	rna.set_success(true);
 	mvsim::sendMessage(rna, s);
 }

@@ -31,6 +31,9 @@ namespace mvsim
  */
 void sendMessage(const google::protobuf::MessageLite& m, zmq::socket_t& socket);
 
+/** Receives a message from the socket. */
+zmq::message_t receiveMessage(zmq::socket_t& s);
+
 /** Parses a ZMQ message received as sent by sendMessage(), and decodes it into
  * the provided google::protobuf message. Use this signature when the expected
  * type of the received message is known before hand.
