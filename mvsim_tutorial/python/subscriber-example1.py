@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import pymvsim_comms
+import time
 
 if __name__ == "__main__":
     client = pymvsim_comms.mvsim.Client()
@@ -8,3 +9,4 @@ if __name__ == "__main__":
     print("Connecting to server...")
     client.connect()
     print("Connected successfully.")
+    time.sleep(2.0)

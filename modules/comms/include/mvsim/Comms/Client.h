@@ -61,9 +61,13 @@ class Client : public mrpt::system::COutputLogger
 
 	std::thread mainThread_;
 	std::atomic<zmq::context_t*> mainThreadZMQcontext_ = nullptr;
+	std::atomic_bool mainThreadMustExit_ = false;
 	void requestMainThreadTermination();
 
 	void internalClientThread();
+
+	void doRegisterClient(zmq::socket_t& s);
+	void doUnregisterClient(zmq::socket_t& s);
 };
 
 }  // namespace mvsim

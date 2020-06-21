@@ -22,6 +22,7 @@
 #include "ListTopicsRequest.pb.h"
 #include "RegisterNodeRequest.pb.h"
 #include "SubscribeRequest.pb.h"
+#include "UnregisterNodeRequest.pb.h"
 
 #endif
 
@@ -76,6 +77,7 @@ class Server : public mrpt::system::COutputLogger
 	// ========= Message handlers ========
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	void handle(const mvsim_msgs::RegisterNodeRequest& m, zmq::socket_t& s);
+	void handle(const mvsim_msgs::UnregisterNodeRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::SubscribeRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::ListTopicsRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s);

@@ -62,4 +62,16 @@ void mvsim::parseMessage(
 			typeName.c_str());
 }
 
+zmq::message_t mvsim::receiveMessage(zmq::socket_t& s)
+{
+	zmq::message_t m;
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
+	std::optional<size_t> msgSize = s.recv(m);
+	ASSERT_(msgSize.has_value());
+#else
+	s.recv(&m);
+#endif
+	return m;
+}
+
 #endif
