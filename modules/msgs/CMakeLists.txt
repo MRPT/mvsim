@@ -30,6 +30,25 @@ if (MVSIM_WITH_PROTOBUF)
 		SYSTEM PUBLIC
 			$<BUILD_INTERFACE:${Protobuf_INCLUDE_DIRS}>
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+			$<INSTALL_INTERFACE:include/mvsim-msgs>
+	)
+
+
+	#message(STATUS "Python_SITELIB: ${Python_SITELIB}")
+	# TODO: Install python files in a better place?
+	
+	install(
+	FILES
+	  ${PROTO_HDRS}
+	  ${PROTO_PY_FILES}
+	DESTINATION
+	  ${CMAKE_INSTALL_INCLUDEDIR}/include/mvsim-msgs/
+	)
+	install(
+	FILES
+	  ${PROTOBUF_DEFINITION_FILES}
+	DESTINATION
+	  ${CMAKE_INSTALL_INCLUDEDIR}/share/mvsim-msgs/proto/
 	)
 endif()
 
