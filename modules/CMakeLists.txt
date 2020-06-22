@@ -142,7 +142,9 @@ function(mvsim_common_target_settings MODULENAME_)
 		  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
-  install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  endif()
   
   install(EXPORT ${TARGETNAME_}-targets
 	  FILE ${TARGETNAME_}-targets.cmake
@@ -157,7 +159,7 @@ function(mvsim_common_target_settings MODULENAME_)
 
   configure_package_config_file(
 	  ${mvsim_SOURCE_DIR}/cmake/mvsim-config.cmake.in
-	  ${CMAKE_BINARY_DIR}/cmake/mvsim-config.cmake
+	  ${CMAKE_BINARY_DIR}/cmake/${TARGETNAME_}-config.cmake
 	  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGETNAME_}
   )
   
