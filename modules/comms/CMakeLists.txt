@@ -17,6 +17,17 @@ mvsim_common_target_settings(${MODULE_NAME})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE mvsim::msgs)
 
+target_link_libraries(${PROJECT_NAME}
+ PRIVATE
+	${CMAKE_THREAD_LIBS_INIT}
+	${Protobuf_LIBRARIES}
+	${ZeroMQ_LIBRARY}
+ PUBLIC
+	mrpt::system
+	mrpt::io
+	mrpt::serialization
+)
+
 # =========== Python wrapper ==================
 if (MVSIM_WITH_PYTHON)
   file(GLOB_RECURSE PY_SRCS python/generated-sources/*.cpp)
