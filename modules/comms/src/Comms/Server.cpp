@@ -100,9 +100,11 @@ void Server::internalServerThread()
 			mainRepSocket.recv(&request);
 #endif
 
+			// Variant with all valid client requests:
 			using client_requests_t = std::variant<
 				mvsim_msgs::RegisterNodeRequest,
-				mvsim_msgs::UnregisterNodeRequest>;
+				mvsim_msgs::UnregisterNodeRequest, mvsim_msgs::SubscribeRequest,
+				mvsim_msgs::ListNodesRequest, mvsim_msgs::ListTopicsRequest>;
 
 			// Parse and dispatch:
 			try
@@ -164,6 +166,34 @@ void Server::requestMainThreadTermination()
 #endif
 }
 
+void Server::db_remove_node(const std::string& nodeName)
+{
+	std::unique_lock lck(dbMutex);
+
+	auto itNode = connectedNodes_.find(nodeName);
+	if (itNode == connectedNodes_.end()) return;  // Nothing to do
+
+	for (const std::string& topic : itNode->second.advertisedTopics)
+	{
+		auto itTopic = knownTopics_.find(topic);
+		if (itTopic == knownTopics_.end()) continue;
+		knownTopics_.erase(itTopic);
+	}
+
+	// for (const std::string& topic : itNode->second.subscribedTopics) { }
+
+	connectedNodes_.erase(itNode);
+}
+
+void Server::db_register_node(const std::string& nodeName)
+{
+	std::unique_lock lck(dbMutex);
+
+	InfoPerNode& ipn =
+		connectedNodes_.emplace_hint(connectedNodes_.end(), nodeName, nodeName)
+			->second;
+}
+
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
 // mvsim_msgs::RegisterNodeRequest
@@ -173,7 +203,12 @@ void Server::handle(const mvsim_msgs::RegisterNodeRequest& m, zmq::socket_t& s)
 	MRPT_LOG_DEBUG_STREAM(
 		"Registering new node named '" << m.nodename() << "'");
 
-	MRPT_TODO("Actual registration!");
+	// Make sure we don't have already a node named like this:
+	// Don't raise an error if the name was already registered, since it might
+	// be that the same node disconnected and connected again:
+	db_remove_node(m.nodename());
+
+	db_register_node(m.nodename());
 
 	mvsim_msgs::RegisterNodeAnswer rna;
 	rna.set_success(true);
