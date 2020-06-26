@@ -71,17 +71,6 @@ function(mvsim_common_target_settings MODULENAME_)
   # To make code portable between using directly the mvsim source tree, or
   # importing exported cmake targets:
   add_library(mvsim::${MODULENAME_}  ALIAS ${TARGETNAME_})
-  
-  target_link_libraries(${TARGETNAME_}
-	PRIVATE
-	  ${CMAKE_THREAD_LIBS_INIT}
-	  ${Protobuf_LIBRARIES}
-	  ${ZeroMQ_LIBRARY}
-	PUBLIC
-	  ${MRPT_LIBRARIES}
-	  ${BOX2D_LIBRARIES}
-  )
-
 
   if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR CMAKE_COMPILER_IS_GNUCXX)
 	  target_compile_options(${TARGETNAME_} PRIVATE
@@ -97,7 +86,7 @@ function(mvsim_common_target_settings MODULENAME_)
 		  )
 	  endif()
   endif()
-  
+
   if(MSVC)
 	  target_compile_definitions(${TARGETNAME_} PRIVATE
 		  _CRT_SECURE_NO_WARNINGS
@@ -117,11 +106,16 @@ function(mvsim_common_target_settings MODULENAME_)
 	LIBRARY_OUTPUT_DIRECTORY "lib"
 	WINDOWS_EXPORT_ALL_SYMBOLS ON
   )
-  
+
+  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)
+      target_include_directories(${TARGETNAME_}
+          PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+          $<INSTALL_INTERFACE:include>
+          )
+  endif()
+
   target_include_directories(${TARGETNAME_}
-	  PUBLIC
-		  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-		  $<INSTALL_INTERFACE:include>
 	  PRIVATE
 		  ${CMAKE_CURRENT_SOURCE_DIR}/src
 		  ${ZeroMQ_INCLUDE_DIR}
@@ -134,7 +128,7 @@ function(mvsim_common_target_settings MODULENAME_)
   if (MVSIM_WITH_ZMQ)
     target_compile_definitions(${TARGETNAME_} PRIVATE MVSIM_HAS_ZMQ)
   endif()
-  
+
   # ==== Install & export target ========
   install(TARGETS	${TARGETNAME_}
 		  EXPORT 	${TARGETNAME_}-targets
@@ -162,13 +156,13 @@ function(mvsim_common_target_settings MODULENAME_)
 	  ${CMAKE_BINARY_DIR}/cmake/${TARGETNAME_}-config.cmake
 	  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGETNAME_}
   )
-  
+
   write_basic_package_version_file(
 	  ${CMAKE_BINARY_DIR}/cmake/${TARGETNAME_}-config-version.cmake
 	  VERSION ${PROJECT_VERSION}
 	  COMPATIBILITY AnyNewerVersion
   )
-  
+
   install(
 	  FILES
 		  ${CMAKE_BINARY_DIR}/cmake/${TARGETNAME_}-config.cmake

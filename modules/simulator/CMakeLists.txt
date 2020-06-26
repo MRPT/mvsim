@@ -40,6 +40,20 @@ source_group(WorldElements FILES ${WorldElements_SRCS})
 
 mvsim_common_target_settings(${MODULE_NAME})
 
+target_link_libraries(${PROJECT_NAME}
+# PRIVATE
+#	${CMAKE_THREAD_LIBS_INIT}
+#	${Protobuf_LIBRARIES}
+#	${ZeroMQ_LIBRARY}
+ PUBLIC
+	mrpt::obs
+	mrpt::opengl
+	mrpt::maps
+	mrpt::gui
+	${BOX2D_LIBRARIES}
+)
+
+
 target_include_directories(${PROJECT_NAME}
 	SYSTEM PUBLIC
 		$<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
