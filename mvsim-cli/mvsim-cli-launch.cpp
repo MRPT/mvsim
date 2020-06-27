@@ -7,155 +7,28 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/3rdparty/tclap/CmdLine.h>
-#include <mrpt/system/CTicTac.h>
-#include <mrpt/system/os.h>	 // kbhit()
-#include <mvsim/Comms/Server.h>
-#include <mvsim/Comms/ports.h>
+#include <mrpt/core/exceptions.h>
 #include <mvsim/World.h>
 
-#include <chrono>
-#include <functional>
-#include <iostream>
 #include <rapidxml_utils.hpp>
 #include <thread>
 
-TCLAP::CmdLine cmd("mvsim", ' ', "version", false /* no --help */);
-
-TCLAP::UnlabeledMultiArg<std::string> argCmd(
-	"command", "Command to run. Run 'mvsim help' to list commands.", false, "",
-	cmd);
-
-TCLAP::ValueArg<std::string> argVerbosity(
-	"v", "verbose", "Verbosity level", false, "INFO", "INFO", cmd);
-
-TCLAP::SwitchArg argHelp(
-	"h", "help", "Shows more detailed help for command", cmd);
-
-TCLAP::ValueArg<int> argPort(
-	"p", "port", "TCP port to listen at", false, mvsim::MVSIM_PORTNO_MAIN_REP,
-	"TCP port", cmd);
-
-using namespace mvsim;
-
-// ======= Command handlers =======
-using cmd_t = std::function<int(void)>;
-
-static int printListCommands();	 // "help"
-static int launchStandAloneServer();  // "server"
-static int launchSimulation();	// "launch":
-
-const std::map<std::string, cmd_t> cliCommands = {
-	{"help", cmd_t(&printListCommands)},
-	{"server", cmd_t(&launchStandAloneServer)},
-	{"launch", cmd_t(&launchSimulation)},
-};
-
-int main(int argc, char** argv)
-{
-	try
-	{
-		if (!cmd.parse(argc, argv))
-		{
-			printListCommands();
-			return 1;
-		}
-
-		// Take first unlabeled argument:
-		std::string command;
-		if (const auto& lst = argCmd.getValue(); !lst.empty())
-			command = lst.at(0);
-
-		// Look up command in table:
-		auto itCmd = cliCommands.find(command);
-
-		if (!argCmd.isSet() || itCmd == cliCommands.end())
-		{
-			mrpt::system::setConsoleColor(mrpt::system::CONCOL_RED);
-			std::cerr << "Error: missing or unknown command.\n";
-			mrpt::system::setConsoleColor(mrpt::system::CONCOL_NORMAL);
-			printListCommands();
-			return 1;
-		}
-
-		// Execute command:
-		return (itCmd->second)();
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << "ERROR: " << mrpt::exception_to_str(e);
-		return 1;
-	}
-	return 0;
-}
-
-int printListCommands()
-{
-	fprintf(
-		stderr,
-		R"XXX(mvsim: A lightweight multivehicle simulation environment.
-
-Available commands:
-    mvsim launch <WORLD.xml>  Start a comm. server and simulates a world.
-    mvsim server              Start a standalone communication server.
-    mvsim node                List connected nodes.
-    mvsim topic               Show information on topics. 
-
-Or use `mvsim <COMMAND> --help` for further options
-)XXX");
-	return 0;
-}
-
-static std::shared_ptr<mvsim::Server> server;
-
-static void commonLaunchServer()
-{
-	ASSERT_(!server);
-
-	// Start network server:
-	server = std::make_shared<mvsim::Server>();
-
-	if (argPort.isSet()) server->listenningPort(argPort.getValue());
-
-	server->setMinLoggingLevel(
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			argVerbosity.getValue()));
-
-	server->start();
-}
-
-int launchStandAloneServer()
-{
-	if (argHelp.isSet())
-	{
-		fprintf(
-			stdout,
-			R"XXX(Usage: mvsim server
-
-Available options:
-  -p %5u, --port %5u   Listen on given TCP port.
-  -v, --verbosity      Set verbosity level: DEBUG, INFO (default), WARN, ERROR
-)XXX",
-			mvsim::MVSIM_PORTNO_MAIN_REP, mvsim::MVSIM_PORTNO_MAIN_REP);
-		return 0;
-	}
-
-	commonLaunchServer();
-	return 0;
-}
+#include "mvsim-cli.h"
 
 struct TThreadParams
 {
-	World* world;
+	mvsim::World* world;
 	volatile bool closing;
 	TThreadParams() : world(NULL), closing(false) {}
 };
 static void mvsim_server_thread_update_GUI(TThreadParams& thread_params);
-World::TGUIKeyEvent gui_key_events;
+mvsim::World::TGUIKeyEvent gui_key_events;
 std::string msg2gui;
 
 int launchSimulation()
 {
+	using namespace mvsim;
+
 	// check args:
 	bool badArgs = false;
 	const auto& unlabeledArgs = argCmd.getValue();
@@ -306,7 +179,7 @@ void mvsim_server_thread_update_GUI(TThreadParams& thread_params)
 {
 	while (!thread_params.closing)
 	{
-		World::TUpdateGUIParams guiparams;
+		mvsim::World::TUpdateGUIParams guiparams;
 		guiparams.msg_lines = msg2gui;
 
 		thread_params.world->update_GUI(&guiparams);

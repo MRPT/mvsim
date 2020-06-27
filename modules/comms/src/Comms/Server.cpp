@@ -222,7 +222,7 @@ void Server::handle(
 	//  Send reply back to client
 	MRPT_LOG_DEBUG_STREAM("Unregistering node named '" << m.nodename() << "'");
 
-	MRPT_TODO("Actual unregistration!");
+	db_remove_node(m.nodename());
 
 	mvsim_msgs::UnregisterNodeAnswer rna;
 	rna.set_success(true);
