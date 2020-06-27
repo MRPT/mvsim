@@ -13,7 +13,11 @@
 
 int commandNode()
 {
-	//
+	mvsim::Client client;
+
+	client.connect();
+
+	client.shutdown();
 
 	return 0;
 }

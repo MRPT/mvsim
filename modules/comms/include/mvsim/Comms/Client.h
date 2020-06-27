@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <mrpt/core/pimpl.h>
 #include <mrpt/system/COutputLogger.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
@@ -55,16 +56,12 @@ class Client : public mrpt::system::COutputLogger
 	/** @} */
 
    private:
+	struct ZMQImpl;
+	mrpt::pimpl<std::shared_ptr<ZMQImpl>> m_zmq;
+
 	std::string serverHostAddress_ = "localhost";
 
 	std::string nodeName_ = "anonymous";
-
-	std::thread mainThread_;
-	std::atomic<zmq::context_t*> mainThreadZMQcontext_ = nullptr;
-	std::atomic_bool mainThreadMustExit_ = false;
-	void requestMainThreadTermination();
-
-	void internalClientThread();
 
 	void doRegisterClient(zmq::socket_t& s);
 	void doUnregisterClient(zmq::socket_t& s);
