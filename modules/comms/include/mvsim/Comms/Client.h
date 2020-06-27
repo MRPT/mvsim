@@ -53,18 +53,25 @@ class Client : public mrpt::system::COutputLogger
 	 * destruction. */
 	void shutdown() noexcept;
 
+	struct InfoPerNode
+	{
+		std::string name;
+	};
+
+	std::vector<InfoPerNode> requestListOfNodes();
+
 	/** @} */
 
    private:
 	struct ZMQImpl;
-	mrpt::pimpl<std::shared_ptr<ZMQImpl>> m_zmq;
+	mrpt::pimpl<std::shared_ptr<ZMQImpl>> zmq_;
 
 	std::string serverHostAddress_ = "localhost";
 
 	std::string nodeName_ = "anonymous";
 
-	void doRegisterClient(zmq::socket_t& s);
-	void doUnregisterClient(zmq::socket_t& s);
+	void doRegisterClient();
+	void doUnregisterClient();
 };
 
 }  // namespace mvsim

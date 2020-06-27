@@ -258,9 +258,20 @@ void Server::handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s)
 	//  Send reply back to client
 	MRPT_LOG_DEBUG("Listing nodes request");
 
-	mvsim_msgs::ListNodesAnswer ans;
+	// Optional name filter:
+	const auto& queryPrefix = m.nodestartswith();
 
+	mvsim_msgs::ListNodesAnswer ans;
+	for (const auto& n : connectedNodes_)
+	{
+		const auto& name = n.second.nodeName;
+
+		if (!queryPrefix.empty() ||
+			name.substr(0, queryPrefix.size()) == queryPrefix)
+		{
+			ans.add_nodes(name);
+		}
+	}
 	mvsim::sendMessage(ans, s);
 }
-
 #endif

@@ -22,6 +22,8 @@
 
 #include <zmq.hpp>
 
+#include "ListNodesAnswer.pb.h"
+#include "ListNodesRequest.pb.h"
 #include "RegisterNodeAnswer.pb.h"
 #include "RegisterNodeRequest.pb.h"
 #include "UnregisterNodeAnswer.pb.h"
@@ -41,7 +43,7 @@ struct Client::ZMQImpl
 
 Client::Client()
 	: mrpt::system::COutputLogger("mvsim::Client"),
-	  m_zmq(mrpt::make_impl<std::shared_ptr<Client::ZMQImpl>>(
+	  zmq_(mrpt::make_impl<std::shared_ptr<Client::ZMQImpl>>(
 		  std::make_shared<Client::ZMQImpl>()))
 {
 }
@@ -55,17 +57,17 @@ void Client::connect()
 {
 	using namespace std::string_literals;
 	ASSERTMSG_(
-		!(*m_zmq)->mainReqSocket.connected(), "Client is already running.");
+		!(*zmq_)->mainReqSocket.connected(), "Client is already running.");
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-	(*m_zmq)->mainReqSocket = zmq::socket_t((*m_zmq)->context, ZMQ_REQ);
-	(*m_zmq)->mainReqSocket.connect(
+	(*zmq_)->mainReqSocket = zmq::socket_t((*zmq_)->context, ZMQ_REQ);
+	(*zmq_)->mainReqSocket.connect(
 		"tcp://"s + serverHostAddress_ + ":"s +
 		std::to_string(MVSIM_PORTNO_MAIN_REP));
 
 	// Let the server know about this new node:
-	doRegisterClient((*m_zmq)->mainReqSocket);
+	doRegisterClient();
 
 #else
 	THROW_EXCEPTION(
@@ -78,14 +80,12 @@ void Client::shutdown() noexcept
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-	if (!(*m_zmq)->mainReqSocket.connected()) return;
+	if (!(*zmq_)->mainReqSocket.connected()) return;
 
 	try
 	{
 		MRPT_LOG_DEBUG_STREAM("Unregistering from server.");
-		doUnregisterClient((*m_zmq)->mainReqSocket);
-
-		MRPT_LOG_DEBUG_STREAM("Joined thread.");
+		doUnregisterClient();
 	}
 	catch (const std::exception& e)
 	{
@@ -94,17 +94,20 @@ void Client::shutdown() noexcept
 	}
 
 #if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
-	(*m_zmq)->context.shutdown();
+	(*zmq_)->context.shutdown();
 #else
 	// Missing shutdown() in older versions:
-	zmq_ctx_shutdown((*m_zmq)->context.operator void*());
+	zmq_ctx_shutdown((*zmq_)->context.operator void*());
 #endif
 
 #endif
 }
 
-void Client::doRegisterClient(zmq::socket_t& s)
+void Client::doRegisterClient()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto& s = (*zmq_)->mainReqSocket;
+
 	mvsim_msgs::RegisterNodeRequest rnq;
 	rnq.set_nodename(nodeName_);
 	mvsim::sendMessage(rnq, s);
@@ -121,10 +124,16 @@ void Client::doRegisterClient(zmq::socket_t& s)
 			rna.errormessage().c_str());
 	}
 	MRPT_LOG_DEBUG("Successfully registered in the server.");
+#else
+	THROW_EXCEPTION("MVSIM built without ZMQ");
+#endif
 }
 
-void Client::doUnregisterClient(zmq::socket_t& s)
+void Client::doUnregisterClient()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto& s = (*zmq_)->mainReqSocket;
+
 	mvsim_msgs::UnregisterNodeRequest rnq;
 	rnq.set_nodename(nodeName_);
 	mvsim::sendMessage(rnq, s);
@@ -141,4 +150,34 @@ void Client::doUnregisterClient(zmq::socket_t& s)
 			rna.errormessage().c_str());
 	}
 	MRPT_LOG_DEBUG("Successfully unregistered in the server.");
+#else
+	THROW_EXCEPTION("MVSIM built without ZMQ");
+#endif
+}
+
+std::vector<Client::InfoPerNode> Client::requestListOfNodes()
+{
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto& s = (*zmq_)->mainReqSocket;
+
+	mvsim_msgs::ListNodesRequest req;
+	mvsim::sendMessage(req, s);
+
+	//  Get the reply.
+	const zmq::message_t reply = mvsim::receiveMessage(s);
+
+	mvsim_msgs::ListNodesAnswer lna;
+	mvsim::parseMessage(reply, lna);
+
+	std::vector<Client::InfoPerNode> nodes;
+	nodes.resize(lna.nodes_size());
+
+	for (int i = 0; i < lna.nodes_size(); i++)
+	{
+		nodes[i].name = lna.nodes(i);
+	}
+	return nodes;
+#else
+	THROW_EXCEPTION("MVSIM built without ZMQ");
+#endif
 }
