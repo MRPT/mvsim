@@ -2,7 +2,12 @@ project(mvsim)
 
 # === Define executable ===
 add_executable(${PROJECT_NAME} 
-	mvsim_cli_main.cpp
+	mvsim-cli-main.cpp
+	mvsim-cli-node.cpp
+	mvsim-cli-topic.cpp
+	mvsim-cli-launch.cpp
+	mvsim-cli-server.cpp
+	mvsim-cli.h
 )
 target_link_libraries(
 	${PROJECT_NAME}
