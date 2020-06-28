@@ -13,7 +13,6 @@
 #include <mrpt/system/os.h>	 // kbhit()
 
 #include <chrono>
-#include <functional>
 #include <iostream>
 #include <map>
 
@@ -32,9 +31,8 @@ TCLAP::SwitchArg argHelp(
 	"h", "help", "Shows more detailed help for command", cmd);
 
 // ======= Command handlers =======
-using cmd_t = std::function<int(void)>;
 
-const std::map<std::string, cmd_t> cliCommands = {
+static const std::map<std::string, cmd_t> cliCommands = {
 	{"help", cmd_t(&printListCommands)},
 	{"server", cmd_t(&launchStandAloneServer)},
 	{"launch", cmd_t(&launchSimulation)},
