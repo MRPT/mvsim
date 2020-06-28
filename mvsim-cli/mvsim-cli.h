@@ -11,11 +11,15 @@
 
 #include <mrpt/3rdparty/tclap/CmdLine.h>
 
+#include <functional>
+
 extern TCLAP::CmdLine cmd;
 extern TCLAP::UnlabeledMultiArg<std::string> argCmd;
 extern TCLAP::ValueArg<std::string> argVerbosity;
 extern TCLAP::ValueArg<int> argPort;
 extern TCLAP::SwitchArg argHelp;
+
+using cmd_t = std::function<int(void)>;
 
 int printListCommands();  // "help"
 int launchStandAloneServer();  // "server"
