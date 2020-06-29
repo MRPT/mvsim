@@ -11,30 +11,30 @@
 
 #include "mvsim-cli.h"
 
-static int printCommandsTopic(bool showErrorMsg);
-static int topicList();
+static int printCommandsNode(bool showErrorMsg);
+static int nodeList();
 
-static const std::map<std::string, cmd_t> cliTopicCommands = {
-	{"list", cmd_t(&topicList)},
+static const std::map<std::string, cmd_t> cliNodeCommands = {
+	{"list", cmd_t(&nodeList)},
 };
 
 int commandNode()
 {
 	const auto& lstCmds = argCmd.getValue();
-	if (argHelp.isSet()) return printCommandsTopic(false);
-	if (lstCmds.size() != 2) return printCommandsTopic(true);
+	if (argHelp.isSet()) return printCommandsNode(false);
+	if (lstCmds.size() != 2) return printCommandsNode(true);
 
 	// Take second unlabeled argument:
 	const std::string subcommand = lstCmds.at(1);
-	auto itSubcmd = cliTopicCommands.find(subcommand);
+	auto itSubcmd = cliNodeCommands.find(subcommand);
 
-	if (itSubcmd == cliTopicCommands.end()) return printCommandsTopic(true);
+	if (itSubcmd == cliNodeCommands.end()) return printCommandsNode(true);
 
 	// Execute command:
 	return (itSubcmd->second)();
 }
 
-int topicList()
+int nodeList()
 {
 	mvsim::Client client;
 
@@ -58,7 +58,7 @@ int topicList()
 	return 0;
 }
 
-int printCommandsTopic(bool showErrorMsg)
+int printCommandsNode(bool showErrorMsg)
 {
 	if (showErrorMsg)
 	{

@@ -15,3 +15,9 @@ class socket_t;
 class context_t;
 class message_t;
 }  // namespace zmq
+
+namespace google::protobuf
+{
+class Descriptor;
+class Message;
+}  // namespace google::protobuf

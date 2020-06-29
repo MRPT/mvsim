@@ -21,6 +21,7 @@
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
+#include "AdvertiseTopicRequest.pb.h"
 #include "ListNodesRequest.pb.h"
 #include "ListTopicsRequest.pb.h"
 #include "RegisterNodeRequest.pb.h"
@@ -84,6 +85,7 @@ class Server : public mrpt::system::COutputLogger
 	void handle(const mvsim_msgs::SubscribeRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::ListTopicsRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s);
+	void handle(const mvsim_msgs::AdvertiseTopicRequest& m, zmq::socket_t& s);
 #endif
 
 	/** @name Database (db_*) about connected nodes, topics, etc.
@@ -98,6 +100,11 @@ class Server : public mrpt::system::COutputLogger
 
 	/** Adds the given node  */
 	void db_register_node(const std::string& nodeName);
+
+	/** Adds a new publisher for a given topic */
+	void db_advertise_topic(
+		const std::string& topicName, const std::string& topicTypeName,
+		const std::string& publisherEndpoint, const std::string& nodeName);
 
 	struct InfoPerNode
 	{
@@ -118,20 +125,27 @@ class Server : public mrpt::system::COutputLogger
 	{
 		InfoPerPublisher(
 			const std::string& topic_name,
-			const std::string& publisher_node_name)
-			: topicName(topic_name), publisherNodeName(publisher_node_name)
+			const std::string& publisher_node_name,
+			const std::string& publisher_endpoint)
+			: topicName(topic_name),
+			  publisherNodeName(publisher_node_name),
+			  publisherEndpoint(publisher_endpoint)
 		{
 		}
 		const std::string topicName;
 		const std::string publisherNodeName;
-
-		std::string publisherIPAddressAndPort;
+		const std::string publisherEndpoint;
 	};
 
 	struct InfoPerTopic
 	{
-		InfoPerTopic(const std::string& name) : topicName(name) {}
-		const std::string topicName;
+		InfoPerTopic() = default;
+		InfoPerTopic(
+			const std::string& name, const std::string& topic_type_name)
+			: topicName(name), topicTypeName(topic_type_name)
+		{
+		}
+		std::string topicName, topicTypeName;
 
 		std::map<node_name_t, InfoPerPublisher> publishers;
 	};
