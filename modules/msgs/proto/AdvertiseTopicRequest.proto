@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message AdvertiseTopicRequest {
+  // topic name (full path)
+  required string topicName = 1;
+  
+  // topic type, as from protobuf `T::descriptor()->full_name()`
+  required string topicTypeName = 2;
+  
+  // ZMQ endpoint where this topic is being published
+  required string endpoint = 3;
+  
+  // Node name
+  required string nodeName = 4;
+
+}

@@ -2,7 +2,7 @@ syntax = "proto2";
 
 package mvsim_msgs;
 
-message UnregisterNodeAnswer {
+message GenericAnswer {
   /* Should be checked */
   required bool success = 1;
   

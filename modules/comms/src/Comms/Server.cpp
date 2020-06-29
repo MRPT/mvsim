@@ -18,6 +18,7 @@
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <zmq.hpp>
 
+#include "GenericAnswer.pb.h"
 #include "ListNodesAnswer.pb.h"
 #include "ListNodesRequest.pb.h"
 #include "ListTopicsAnswer.pb.h"
@@ -26,7 +27,6 @@
 #include "RegisterNodeRequest.pb.h"
 #include "SubscribeAnswer.pb.h"
 #include "SubscribeRequest.pb.h"
-#include "UnregisterNodeAnswer.pb.h"
 #include "UnregisterNodeRequest.pb.h"
 
 #endif
@@ -104,7 +104,8 @@ void Server::internalServerThread()
 			using client_requests_t = std::variant<
 				mvsim_msgs::RegisterNodeRequest,
 				mvsim_msgs::UnregisterNodeRequest, mvsim_msgs::SubscribeRequest,
-				mvsim_msgs::ListNodesRequest, mvsim_msgs::ListTopicsRequest>;
+				mvsim_msgs::ListNodesRequest, mvsim_msgs::ListTopicsRequest,
+				mvsim_msgs::AdvertiseTopicRequest>;
 
 			// Parse and dispatch:
 			try
@@ -194,6 +195,35 @@ void Server::db_register_node(const std::string& nodeName)
 			->second;
 }
 
+void Server::db_advertise_topic(
+	const std::string& topicName, const std::string& topicTypeName,
+	const std::string& publisherEndpoint, const std::string& nodeName)
+{
+	std::unique_lock lck(dbMutex);
+
+	// 1) Add as a source of this topic:
+	auto& dbTopic = knownTopics_[topicName];
+
+	if (!dbTopic.topicTypeName.empty() &&
+		dbTopic.topicTypeName != topicTypeName)
+	{
+		throw std::runtime_error(mrpt::format(
+			"Trying to register topic `%s` [%s] but already known with type "
+			"[%s]",
+			topicName.c_str(), topicTypeName.c_str(),
+			dbTopic.topicTypeName.c_str()));
+	}
+	dbTopic.topicName = topicName;
+	dbTopic.topicTypeName = topicTypeName;
+
+	dbTopic.publishers.try_emplace(
+		nodeName, topicName, nodeName, publisherEndpoint);
+
+	// 2) If clients are already waiting for this topic, inform them so they
+	// can subscribe to this new source of data:
+	MRPT_TODO("TO-DO");
+}
+
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
 // mvsim_msgs::RegisterNodeRequest
@@ -224,7 +254,7 @@ void Server::handle(
 
 	db_remove_node(m.nodename());
 
-	mvsim_msgs::UnregisterNodeAnswer rna;
+	mvsim_msgs::GenericAnswer rna;
 	rna.set_success(true);
 	mvsim::sendMessage(rna, s);
 }
@@ -274,4 +304,29 @@ void Server::handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s)
 	}
 	mvsim::sendMessage(ans, s);
 }
+
+// mvsim_msgs::AdvertiseTopicRequest
+void Server::handle(
+	const mvsim_msgs::AdvertiseTopicRequest& m, zmq::socket_t& s)
+{
+	//  Send reply back to client
+	MRPT_LOG_DEBUG_FMT(
+		"Received new topic advertiser: `%s` [%s] @ %s", m.topicname().c_str(),
+		m.topictypename().c_str(), m.endpoint().c_str());
+
+	mvsim_msgs::GenericAnswer ans;
+	try
+	{
+		db_advertise_topic(
+			m.topicname(), m.topictypename(), m.endpoint(), m.nodename());
+		ans.set_success(true);
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(mrpt::exception_to_str(e));
+	}
+	mvsim::sendMessage(ans, s);
+}
+
 #endif

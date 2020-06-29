@@ -53,11 +53,16 @@ class Client : public mrpt::system::COutputLogger
 	 * destruction. */
 	void shutdown() noexcept;
 
+	template <typename T>
+	void advertiseTopic(const std::string& topicName);
+
+	void publishTopic(
+		const std::string& topicName, const google::protobuf::Message& msg);
+
 	struct InfoPerNode
 	{
 		std::string name;
 	};
-
 	std::vector<InfoPerNode> requestListOfNodes();
 
 	/** @} */
@@ -72,6 +77,16 @@ class Client : public mrpt::system::COutputLogger
 
 	void doRegisterClient();
 	void doUnregisterClient();
+
+	void doAdvertiseTopic(
+		const std::string& topicName,
+		const google::protobuf::Descriptor* descriptor);
 };
+
+template <typename T>
+void Client::advertiseTopic(const std::string& topicName)
+{
+	doAdvertiseTopic(topicName, T::descriptor());
+}
 
 }  // namespace mvsim
