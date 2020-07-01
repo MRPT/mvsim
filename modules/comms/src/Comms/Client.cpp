@@ -16,6 +16,9 @@
 #include <mrpt/system/thread_name.h>
 #endif
 
+#include <mutex>
+#include <shared_mutex>
+
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
 #include <google/protobuf/text_format.h>
@@ -37,8 +40,12 @@ using namespace mvsim;
 #if defined(MVSIM_HAS_ZMQ)
 struct InfoPerAdvertisedTopic
 {
+	InfoPerAdvertisedTopic(zmq::context_t& c) : context(c) {}
+
+	zmq::context_t& context;
+
 	std::string topicName;
-	zmq::socket_t subSocket;
+	zmq::socket_t pubSocket = zmq::socket_t(context, ZMQ_PUB);
 	std::string endpoint;
 	const google::protobuf::Descriptor* descriptor = nullptr;
 };
@@ -48,17 +55,17 @@ struct Client::ZMQImpl
 {
 #if defined(MVSIM_HAS_ZMQ)
 	zmq::context_t context{1};
-	zmq::socket_t mainReqSocket;
+	std::optional<zmq::socket_t> mainReqSocket;
 
 	std::map<std::string, InfoPerAdvertisedTopic> advertisedTopics;
+	std::shared_mutex advertisedTopics_mtx;
 
 #endif
 };
 
 Client::Client()
 	: mrpt::system::COutputLogger("mvsim::Client"),
-	  zmq_(mrpt::make_impl<std::shared_ptr<Client::ZMQImpl>>(
-		  std::make_shared<Client::ZMQImpl>()))
+	  zmq_(std::make_unique<Client::ZMQImpl>())
 {
 }
 Client::Client(const std::string& nodeName) : Client() { setName(nodeName); }
@@ -71,12 +78,13 @@ void Client::connect()
 {
 	using namespace std::string_literals;
 	ASSERTMSG_(
-		!(*zmq_)->mainReqSocket.connected(), "Client is already running.");
+		!zmq_->mainReqSocket || !zmq_->mainReqSocket->connected(),
+		"Client is already running.");
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-	(*zmq_)->mainReqSocket = zmq::socket_t((*zmq_)->context, ZMQ_REQ);
-	(*zmq_)->mainReqSocket.connect(
+	zmq_->mainReqSocket = zmq::socket_t(zmq_->context, ZMQ_REQ);
+	zmq_->mainReqSocket->connect(
 		"tcp://"s + serverHostAddress_ + ":"s +
 		std::to_string(MVSIM_PORTNO_MAIN_REP));
 
@@ -94,7 +102,7 @@ void Client::shutdown() noexcept
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-	if (!(*zmq_)->mainReqSocket.connected()) return;
+	if (!zmq_->mainReqSocket->connected()) return;
 
 	try
 	{
@@ -108,10 +116,10 @@ void Client::shutdown() noexcept
 	}
 
 #if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
-	(*zmq_)->context.shutdown();
+	zmq_->context.shutdown();
 #else
 	// Missing shutdown() in older versions:
-	zmq_ctx_shutdown((*zmq_)->context.operator void*());
+	zmq_ctx_shutdown(zmq_->context.operator void*());
 #endif
 
 #endif
@@ -120,7 +128,7 @@ void Client::shutdown() noexcept
 void Client::doRegisterClient()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	auto& s = (*zmq_)->mainReqSocket;
+	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::RegisterNodeRequest rnq;
 	rnq.set_nodename(nodeName_);
@@ -146,7 +154,7 @@ void Client::doRegisterClient()
 void Client::doUnregisterClient()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	auto& s = (*zmq_)->mainReqSocket;
+	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::UnregisterNodeRequest rnq;
 	rnq.set_nodename(nodeName_);
@@ -172,7 +180,7 @@ void Client::doUnregisterClient()
 std::vector<Client::InfoPerNode> Client::requestListOfNodes()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	auto& s = (*zmq_)->mainReqSocket;
+	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::ListNodesRequest req;
 	mvsim::sendMessage(req, s);
@@ -202,7 +210,9 @@ void Client::doAdvertiseTopic(
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-	auto& advTopics = (*zmq_)->advertisedTopics;
+	auto& advTopics = zmq_->advertisedTopics;
+
+	std::unique_lock<std::shared_mutex> lck(zmq_->advertisedTopics_mtx);
 
 	if (advTopics.find(topicName) != advTopics.end())
 		THROW_EXCEPTION_FMT(
@@ -210,23 +220,28 @@ void Client::doAdvertiseTopic(
 			"(!)",
 			topicName.c_str());
 
-	InfoPerAdvertisedTopic& ipat = advTopics[topicName];
+	// the ctor of InfoPerAdvertisedTopic automatically creates a ZMQ_PUB
+	// socket in pubSocket
+	InfoPerAdvertisedTopic& ipat =
+		advTopics.emplace_hint(advTopics.begin(), topicName, zmq_->context)
+			->second;
+
+	lck.unlock();
 
 	// Create PUBLISH socket:
-	ipat.subSocket = zmq::socket_t((*zmq_)->context, ZMQ_PUB);
-	ipat.subSocket.bind("tcp://0.0.0.0:*");
-	if (!ipat.subSocket.connected())
+	ipat.pubSocket.bind("tcp://0.0.0.0:*");
+	if (!ipat.pubSocket.connected())
 		THROW_EXCEPTION("Could not bind publisher socket");
 
 	// Retrieve assigned TCP port:
 	char assignedPort[100];
 	size_t assignedPortLen = sizeof(assignedPort);
-	ipat.subSocket.getsockopt(
+	ipat.pubSocket.getsockopt(
 		ZMQ_LAST_ENDPOINT, assignedPort, &assignedPortLen);
 	assignedPort[assignedPortLen] = '\0';
 
 	ipat.endpoint = assignedPort;
-	ipat.topicName = topicName;	 // redundant in container, but handy.
+	ipat.topicName = topicName;  // redundant in container, but handy.
 	ipat.descriptor = descriptor;
 
 	MRPT_LOG_DEBUG_FMT(
@@ -241,10 +256,10 @@ void Client::doAdvertiseTopic(
 	req.set_topictypename(ipat.descriptor->full_name());
 	req.set_nodename(nodeName_);
 
-	mvsim::sendMessage(req, (*zmq_)->mainReqSocket);
+	mvsim::sendMessage(req, *zmq_->mainReqSocket);
 
 	//  Get the reply.
-	const zmq::message_t reply = mvsim::receiveMessage((*zmq_)->mainReqSocket);
+	const zmq::message_t reply = mvsim::receiveMessage(*zmq_->mainReqSocket);
 	mvsim_msgs::GenericAnswer ans;
 	mvsim::parseMessage(reply, ans);
 
@@ -261,9 +276,40 @@ void Client::doAdvertiseTopic(
 void Client::publishTopic(
 	const std::string& topicName, const google::protobuf::Message& msg)
 {
+	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	ASSERTMSG_(
+		zmq_ && zmq_->mainReqSocket && zmq_->mainReqSocket->connected(),
+		"Client not connected to Server");
+
+	std::shared_lock<std::shared_mutex> lck(zmq_->advertisedTopics_mtx);
+	auto itIpat = zmq_->advertisedTopics.find(topicName);
+
+	ASSERTMSG_(
+		itIpat != zmq_->advertisedTopics.end(),
+		mrpt::format(
+			"Topic `%s` cannot been registered. Missing former call to "
+			"advertiseTopic()?",
+			topicName.c_str()));
+
+	lck.unlock();
+
+	auto& ipat = itIpat->second;
+
+	ASSERTMSG_(
+		msg.GetDescriptor() == ipat.descriptor,
+		mrpt::format(
+			"Topic `%s` has type `%s`, but expected `%s` from former call to "
+			"advertiseTopic()?",
+			topicName.c_str(), msg.GetDescriptor()->name().c_str(),
+			ipat.descriptor->name().c_str()));
+
+	ASSERT_(ipat.pubSocket.connected());
+
+	mvsim::sendMessage(msg, ipat.pubSocket);
 
 #else
 	THROW_EXCEPTION("MVSIM built without ZMQ & PROTOBUF");
 #endif
+	MRPT_END
 }
