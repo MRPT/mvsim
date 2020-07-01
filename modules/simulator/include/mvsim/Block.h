@@ -11,10 +11,10 @@
 
 #include <Box2D/Collision/Shapes/b2PolygonShape.h>
 #include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
-#include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2Fixture.h>
 #include <Box2D/Dynamics/b2World.h>
 #include <mrpt/img/TColor.h>
+#include <mrpt/math/TPolygon2D.h>
 #include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/poses/CPose2D.h>
@@ -33,12 +33,13 @@ namespace mvsim
 class Block : public VisualObject, public Simulable
 {
    public:
+	using Ptr = std::shared_ptr<Block>;
+
 	/** Class factory: Creates a block from XML description of type
 	 * "<block>...</block>".  */
-	static Block* factory(
-		World* parent, const rapidxml::xml_node<char>* xml_node);
+	static Ptr factory(World* parent, const rapidxml::xml_node<char>* xml_node);
 	/// \overload
-	static Block* factory(World* parent, const std::string& xml_text);
+	static Ptr factory(World* parent, const std::string& xml_text);
 
 	/** Register a new class of blocks from XML description of type
 	 * "<block:class name='name'>...</block:class>".  */
@@ -48,11 +49,9 @@ class Block : public VisualObject, public Simulable
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 	virtual void apply_force(
-		double fx, double fy, double local_ptx = 0.0,
-		double local_pty = 0.0) override;
-
-	/** Gets the body dynamical state into q, dot{q} */
-	void simul_post_timestep_common(const TSimulContext& context);
+		const mrpt::math::TVector2D& force,
+		const mrpt::math::TPoint2D& applyPoint =
+			mrpt::math::TPoint2D(0, 0)) override;
 
 	/** Create bodies, fixtures, etc. for the dynamical simulation. May be
 	 * overrided by derived classes */
@@ -63,30 +62,11 @@ class Block : public VisualObject, public Simulable
 	virtual float getMaxBlockRadius() const { return m_max_radius; }
 	/** Get the block mass */
 	virtual double getMass() const { return m_mass; }
-	b2Body* getBox2DBlockBody() { return m_b2d_block_body; }
+	b2Body* getBox2DBlockBody() { return m_b2d_body; }
 	mrpt::math::TPoint2D getBlockCenterOfMass() const
 	{
 		return m_block_com;
 	}  //!< In local coordinates
-
-	const mrpt::math::TPose3D& getPose() const
-	{
-		return m_q;
-	}  //!< Last time-step pose (of the ref. point, in global coords)
-	   //!(ground-truth)
-	void setPose(const mrpt::math::TPose3D& p) const
-	{
-		const_cast<mrpt::math::TPose3D&>(m_q) = p;
-	}  //!< Manually override block pose (Use with caution!) (purposely set as
-	   //!"const")
-
-	mrpt::poses::CPose2D getCPose2D() const;  //!< \overload
-	/** Last time-step velocity (of the ref. point, in global coords)
-	 * (ground-truth) */
-	const vec3& getVelocity() const { return m_dq; }
-	/** Last time-step velocity (of the ref. point, in local coords)
-	 * (ground-truth) */
-	vec3 getVelocityLocal() const;
 
 	/** User-supplied name of the block (e.g. "block1") */
 	const std::string& getName() const { return m_name; }
@@ -112,18 +92,7 @@ class Block : public VisualObject, public Simulable
 	 * getblockIndex() (default=0) */
 	size_t m_block_index;
 
-	/** Derived classes must store here the body of the block main body
-	 * (chassis).
-	 * This is used by \a simul_post_timestep() to extract the block dynamical
-	 * coords (q,\dot{q}) after each simulation step.
-	 */
-	b2Body* m_b2d_block_body;
 	std::vector<b2FrictionJoint*> m_friction_joints;
-
-	mrpt::math::TPose3D
-		m_q;  //!< Last time-step pose (of the ref. point, in global coords)
-	vec3 m_dq;	//!< Last time-step velocity (of the ref. point, in global
-				//! coords)
 
 	// Block info:
 	double m_mass;
@@ -134,7 +103,7 @@ class Block : public VisualObject, public Simulable
 	mrpt::img::TColor m_block_color;
 	mrpt::math::TPoint2D m_block_com;  //!< In local coordinates
 
-	double m_lateral_friction;	//!< Default: 0.5
+	double m_lateral_friction;  //!< Default: 0.5
 	double m_ground_friction;  //!< Default: 0.5
 	double m_restitution;  //!< Deault: 0.01
 
@@ -160,5 +129,5 @@ class Block : public VisualObject, public Simulable
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
-};	// end Block
+};  // end Block
 }  // namespace mvsim

@@ -142,14 +142,14 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 	// - Vehicles
 	// - Blocks
 	{
-		const World::TListVehicles& lstVehs =
+		const World::VehicleList& lstVehs =
 			this->m_world->getListOfVehicles();
-		const World::TListBlocks& lstBlocks = this->m_world->getListOfBlocks();
+		const World::BlockList& lstBlocks = this->m_world->getListOfBlocks();
 		const size_t nObjs = lstVehs.size() + lstBlocks.size();
 
 		m_obstacles_for_each_obj.resize(nObjs);
 		size_t obj_idx = 0;
-		for (World::TListVehicles::const_iterator itVeh = lstVehs.begin();
+		for (World::VehicleList::const_iterator itVeh = lstVehs.begin();
 			 itVeh != lstVehs.end(); ++itVeh, ++obj_idx)
 		{
 			TInfoPerCollidableobj& ipv = m_obstacles_for_each_obj[obj_idx];

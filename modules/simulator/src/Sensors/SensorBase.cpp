@@ -42,8 +42,9 @@ SensorBase::SensorBase(VehicleBase& vehicle)
 {
 }
 
-SensorBase::~SensorBase() {}
-SensorBase* SensorBase::factory(
+SensorBase::~SensorBase() = default;
+
+SensorBase::Ptr SensorBase::factory(
 	VehicleBase& parent, const rapidxml::xml_node<char>* root)
 {
 	register_all_sensors();
@@ -68,7 +69,7 @@ SensorBase* SensorBase::factory(
 	const string sName = string(sensor_class->value());
 
 	// Class factory:
-	SensorBase* we = classFactory_sensors.create(sName, parent, root);
+	auto we = classFactory_sensors.create(sName, parent, root);
 
 	if (!we)
 		throw runtime_error(mrpt::format(

@@ -41,12 +41,13 @@ namespace mvsim
 class VehicleBase : public VisualObject, public Simulable
 {
    public:
+	using Ptr = std::shared_ptr<VehicleBase>;
+
 	/** Class factory: Creates a vehicle from XML description of type
 	 * "<vehicle>...</vehicle>".  */
-	static VehicleBase* factory(
-		World* parent, const rapidxml::xml_node<char>* xml_node);
+	static Ptr factory(World* parent, const rapidxml::xml_node<char>* xml_node);
 	/// \overload
-	static VehicleBase* factory(World* parent, const std::string& xml_text);
+	static Ptr factory(World* parent, const std::string& xml_text);
 
 	/** Register a new class of vehicles from XML description of type
 	 * "<vehicle:class name='name'>...</vehicle:class>".  */
@@ -57,11 +58,9 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 	virtual void apply_force(
-		double fx, double fy, double local_ptx = 0.0,
-		double local_pty = 0.0) override;
-
-	/** Gets the body dynamical state into q, dot{q} */
-	void simul_post_timestep_common(const TSimulContext& context);
+		const mrpt::math::TVector2D& force,
+		const mrpt::math::TPoint2D& applyPoint =
+			mrpt::math::TPoint2D(0, 0)) override;
 
 	/** Create bodies, fixtures, etc. for the dynamical simulation. May be
 	 * overrided by derived classes */
@@ -72,7 +71,7 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual float getMaxVehicleRadius() const { return m_max_radius; }
 	/** Get the overall vehicle mass, excluding wheels. */
 	virtual double getChassisMass() const { return m_chassis_mass; }
-	b2Body* getBox2DChassisBody() { return m_b2d_vehicle_body; }
+	b2Body* getBox2DChassisBody() { return m_b2d_body; }
 	mrpt::math::TPoint2D getChassisCenterOfMass() const
 	{
 		return m_chassis_com;
@@ -84,36 +83,18 @@ class VehicleBase : public VisualObject, public Simulable
 		return m_wheels_info[idx];
 	}
 	Wheel& getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
-	const mrpt::math::TPose3D& getPose() const
-	{
-		return m_q;
-	}  //!< Last time-step pose (of the ref. point, in global coords)
-	   //!(ground-truth)
-	void setPose(const mrpt::math::TPose3D& p) const
-	{
-		const_cast<mrpt::math::TPose3D&>(m_q) = p;
-	}  //!< Manually override vehicle pose (Use with caution!) (purposely set as
-	   //!"const")
 
-	mrpt::poses::CPose2D getCPose2D() const;  //!< \overload
-	/** Last time-step velocity (of the ref. point, in global coords)
-	 * (ground-truth) */
-	const vec3& getVelocity() const { return m_dq; }
-	/** Last time-step velocity (of the ref. point, in local coords)
-	 * (ground-truth)
-	 * \sa getVelocityLocalOdoEstimate() */
-	vec3 getVelocityLocal() const;
 	/** Current velocity of each wheel's center point (in local coords). Call
 	 * with veh_vel_local=getVelocityLocal() for ground-truth.  */
 	void getWheelsVelocityLocal(
 		std::vector<mrpt::math::TPoint2D>& vels,
-		const vec3& veh_vel_local) const;
+		const mrpt::math::TTwist2D& veh_vel_local) const;
 
 	/** Gets the current estimation of odometry-based velocity as reconstructed
 	 * solely from wheels spinning velocities and geometry.
 	 * This is the input of any realistic low-level controller onboard.
 	 * \sa getVelocityLocal() */
-	virtual vec3 getVelocityLocalOdoEstimate() const = 0;
+	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const = 0;
 
 	typedef std::vector<SensorBase::Ptr> TListSensors;
 
@@ -183,31 +164,20 @@ class VehicleBase : public VisualObject, public Simulable
 	void internalGuiUpdate_common(
 		mrpt::opengl::COpenGLScene& scene, bool defaultVehicleBody = true);
 
-	std::string
-		m_name;	 //!< User-supplied name of the vehicle (e.g. "r1", "veh1")
-	size_t m_vehicle_index;	 //!< user-supplied index number: must be set/get'ed
-							 //! with setVehicleIndex() getVehicleIndex()
-							 //!(default=0)
+	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
+	std::string m_name;
 
-	/** Derived classes must store here the body of the vehicle main body
-	 * (chassis).
-	 * This is used by \a simul_post_timestep() to extract the vehicle
-	 * dynamical coords (q,\dot{q}) after each simulation step.
-	 */
-	b2Body* m_b2d_vehicle_body;
+	/** user-supplied index number: must be set/get'ed with setVehicleIndex()
+	 * getVehicleIndex() (default=0) */
+	size_t m_vehicle_index;
 
-	FrictionBasePtr m_friction;	 //!< Instance of friction model for the
-								 //! vehicle-to-ground interaction.
+	/** Instance of friction model for the vehicle-to-ground interaction. */
+	FrictionBasePtr m_friction;
 
-	TListSensors m_sensors;	 //!< Sensors aboard
+	TListSensors m_sensors;  //!< Sensors aboard
 
-	mrpt::math::TPose3D
-		m_q;  //!< Last time-step pose (of the ref. point, in global coords)
-	vec3 m_dq;	//!< Last time-step velocity (of the ref. point, in global
-				//! coords)
-
-	std::vector<double>
-		m_torque_per_wheel;	 //!< Updated in simul_pre_timestep()
+	/** Updated in simul_pre_timestep() */
+	std::vector<double> m_torque_per_wheel;
 
 	// Chassis info:
 	double m_chassis_mass;
@@ -217,7 +187,7 @@ class VehicleBase : public VisualObject, public Simulable
 	double m_chassis_z_min, m_chassis_z_max;
 	mrpt::img::TColor m_chassis_color;
 
-	mrpt::math::TPoint2D m_chassis_com;	 //!< In local coordinates (this
+	mrpt::math::TPoint2D m_chassis_com;  //!< In local coordinates (this
 										 //! excludes the mass of wheels)
 
 	void updateMaxRadiusFromPoly();
@@ -237,10 +207,10 @@ class VehicleBase : public VisualObject, public Simulable
    private:
 	void internal_internalGuiUpdate_sensors(
 		mrpt::opengl::COpenGLScene&
-			scene);	 //!< Called from internalGuiUpdate_common()
+			scene);  //!< Called from internalGuiUpdate_common()
 	void internal_internalGuiUpdate_forces(
 		mrpt::opengl::COpenGLScene&
-			scene);	 //!< Called from internalGuiUpdate_common()
+			scene);  //!< Called from internalGuiUpdate_common()
 
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_chassis;
 	std::vector<mrpt::opengl::CSetOfObjects::Ptr> m_gl_wheels;
@@ -248,7 +218,7 @@ class VehicleBase : public VisualObject, public Simulable
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
-   public:	// data logger header entries
+   public:  // data logger header entries
 	static constexpr char DL_TIMESTAMP[] = "timestamp";
 	static constexpr char LOGGER_POSE[] = "logger_pose";
 	static constexpr char LOGGER_WHEEL[] = "logger_wheel";
@@ -269,7 +239,7 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr char WL_VEL_Y[] = "velocity_y";
 	static constexpr char WL_FRIC_X[] = "friction_x";
 	static constexpr char WL_FRIC_Y[] = "friction_y";
-};	// end VehicleBase
+};  // end VehicleBase
 
 // Class factory:
 typedef ClassFactory<VehicleBase, World*> TClassFactory_vehicleDynamics;

@@ -8,11 +8,11 @@
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/system/filesystem.h>	 // extractFileDirectory()
+#include <mrpt/system/filesystem.h>  // extractFileDirectory()
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
-#include <iostream>	 // for debugging
+#include <iostream>  // for debugging
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
@@ -86,18 +86,22 @@ void World::load_from_XML(
 		// <element class='*'> entries:
 		if (!strcmp(node->name(), "element"))
 		{
-			WorldElementBase* we = WorldElementBase::factory(this, node);
-			this->m_world_elements.push_back(we);
+			WorldElementBase::Ptr e = WorldElementBase::factory(this, node);
+			m_world_elements.emplace_back(e);
+			m_simulableObjects.push_back(
+				std::dynamic_pointer_cast<Simulable>(e));
 		}
 		// <vehicle> entries:
 		else if (!strcmp(node->name(), "vehicle"))
 		{
-			VehicleBase* veh = VehicleBase::factory(this, node);
+			VehicleBase::Ptr veh = VehicleBase::factory(this, node);
 			// Assign each vehicle a unique "index" number
 			veh->setVehicleIndex(m_vehicles.size());
 
 			MRPT_TODO("Check for duplicated names")
-			m_vehicles.insert(TListVehicles::value_type(veh->getName(), veh));
+			m_vehicles.insert(VehicleList::value_type(veh->getName(), veh));
+			m_simulableObjects.push_back(
+				std::dynamic_pointer_cast<Simulable>(veh));
 		}
 		// <vehicle:class> entries:
 		else if (!strcmp(node->name(), "vehicle:class"))
@@ -107,12 +111,14 @@ void World::load_from_XML(
 		// <block> entries:
 		else if (!strcmp(node->name(), "block"))
 		{
-			Block* block = Block::factory(this, node);
-			block->setBlockIndex(
-				m_blocks.size());  // Assign each block an "index" number
+			Block::Ptr block = Block::factory(this, node);
+			// Assign each block an "index" number
+			block->setBlockIndex(m_blocks.size());
 
 			// make sure the name is not duplicated:
-			m_blocks.insert(TListBlocks::value_type(block->getName(), block));
+			m_blocks.insert(BlockList::value_type(block->getName(), block));
+			m_simulableObjects.push_back(
+				std::dynamic_pointer_cast<Simulable>(block));
 		}
 		// <block:class> entries:
 		else if (!strcmp(node->name(), "block:class"))

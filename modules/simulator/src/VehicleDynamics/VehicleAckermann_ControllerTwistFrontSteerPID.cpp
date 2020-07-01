@@ -56,7 +56,7 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	std::vector<mrpt::math::TPoint2D>
 		desired_wheel_vels;  // In local vehicle frame
 	m_veh.getWheelsVelocityLocal(
-		desired_wheel_vels, vec3(setpoint_lin_speed, 0.0, setpoint_ang_speed));
+		desired_wheel_vels, mrpt::math::TTwist2D(setpoint_lin_speed, 0.0, setpoint_ang_speed));
 
 	ASSERT_(desired_wheel_vels.size() == 4);
 

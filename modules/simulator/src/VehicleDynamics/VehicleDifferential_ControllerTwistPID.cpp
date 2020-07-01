@@ -44,11 +44,11 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 
 	// Compute each wheel actual velocity (from an "odometry" estimation of
 	// velocity, not ground-truth!):
-	const vec3 vehVelOdo = m_veh.getVelocityLocalOdoEstimate();
+	const mrpt::math::TTwist2D vehVelOdo = m_veh.getVelocityLocalOdoEstimate();
 	const double act_vel_l =
-		vehVelOdo.vals[0] - 0.5 * vehVelOdo.vals[2] * m_distWheels;
+		vehVelOdo.vx - 0.5 * vehVelOdo.omega * m_distWheels;
 	const double act_vel_r =
-		vehVelOdo.vals[0] + 0.5 * vehVelOdo.vals[2] * m_distWheels;
+		vehVelOdo.vx + 0.5 * vehVelOdo.omega * m_distWheels;
 
 	// Apply controller:
 	for (int i = 0; i < 2; i++)

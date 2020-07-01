@@ -40,8 +40,8 @@ void TParamEntry::parse(
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected format:'%s')",
 				function_name_context, varName.c_str(), str.c_str(), frmt));
-		std::string& str = *reinterpret_cast<std::string*>(val);
-		str = mrpt::system::trim(auxStr);
+		std::string& val2 = *reinterpret_cast<std::string*>(val);
+		val2 = mrpt::system::trim(auxStr);
 	}
 	// "%lf_deg" ==> mrpt::DEG2RAD()
 	else if (std::string(frmt) == std::string("%lf_deg"))
@@ -178,27 +178,26 @@ void mvsim::parse_xmlnode_children_as_param(
 	while (node)
 	{
 		parse_xmlnode_as_param(*node, params, function_name_context);
-		node = node->next_sibling(nullptr);	 // Move on to next node
+		node = node->next_sibling(nullptr);  // Move on to next node
 	}
 }
 
 /** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and
  * returns
- * a vec3 with [x,y,phi] with angle in radians. Raises an exception upon
- * malformed string.
+ * a mrpt::math::TTwist2D with [x,y,phi] with angle in radians. Raises an
+ * exception upon malformed string.
  */
-vec3 mvsim::parseXYPHI(
+mrpt::math::TPose2D mvsim::parseXYPHI(
 	const std::string& s, bool allow_missing_angle,
 	double default_angle_radians)
 {
-	vec3 v;
-	v.vals[2] = mrpt::RAD2DEG(default_angle_radians);  // Default ang.
+	mrpt::math::TPose2D v;
+	v.phi = mrpt::RAD2DEG(default_angle_radians);  // Default ang.
 
-	int na =
-		::sscanf(s.c_str(), "%lf %lf %lf", &v.vals[0], &v.vals[1], &v.vals[2]);
+	int na = ::sscanf(s.c_str(), "%lf %lf %lf", &v.x, &v.y, &v.phi);
 
 	// User provides numbers as degrees:
-	v.vals[2] = mrpt::DEG2RAD(v.vals[2]);
+	v.phi = mrpt::DEG2RAD(v.phi);
 
 	if ((na != 3 && !allow_missing_angle) ||
 		(na != 2 && na != 3 && allow_missing_angle))

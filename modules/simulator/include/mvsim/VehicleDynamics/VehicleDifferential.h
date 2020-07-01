@@ -108,7 +108,7 @@ class DynamicsDifferential : public VehicleBase
 
 	/** @} */  // end controllers
 
-	virtual vec3 getVelocityLocalOdoEstimate() const override;
+	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const override;
 
    protected:
 	// See base class docs

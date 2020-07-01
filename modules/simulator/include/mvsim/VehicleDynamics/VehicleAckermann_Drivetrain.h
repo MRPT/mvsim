@@ -156,7 +156,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 
 	/** @} */  // end controllers
 
-	virtual vec3 getVelocityLocalOdoEstimate() const override;
+	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const override;
 
 	/** Computes the exact angles of the front wheels required to have an
 	 * equivalent central steering angle.

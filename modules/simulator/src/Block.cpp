@@ -19,7 +19,7 @@
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-#include <sstream>	// std::stringstream
+#include <sstream>  // std::stringstream
 #include <string>
 
 #include "JointXMLnode.h"
@@ -35,9 +35,6 @@ static XmlClassesRegistry block_classes_registry("block:class");
 Block::Block(World* parent)
 	: VisualObject(parent),
 	  m_block_index(0),
-	  m_b2d_block_body(nullptr),
-	  m_q(0, 0, 0, 0, 0, 0),
-	  m_dq(0, 0, 0),
 	  m_mass(30.0),
 	  m_block_z_min(0.0),
 	  m_block_z_max(1.0),
@@ -53,28 +50,6 @@ Block::Block(World* parent)
 	m_block_poly.emplace_back(0.5, 0.5);
 	m_block_poly.emplace_back(0.5, -0.5);
 	updateMaxRadiusFromPoly();
-}
-
-void Block::simul_post_timestep_common(const TSimulContext& /*context*/)
-{
-	if (m_b2d_block_body)
-	{
-		// Pos:
-		const b2Vec2& pos = m_b2d_block_body->GetPosition();
-		const float32 angle = m_b2d_block_body->GetAngle();
-		m_q.x = pos(0);
-		m_q.y = pos(1);
-		m_q.yaw = angle;
-		// The rest (z,pitch,roll) will be always 0, unless other world-element
-		// modifies them! (e.g. elevation map)
-
-		// Vel:
-		const b2Vec2& vel = m_b2d_block_body->GetLinearVelocity();
-		const float32 w = m_b2d_block_body->GetAngularVelocity();
-		m_dq.vals[0] = vel(0);
-		m_dq.vals[1] = vel(1);
-		m_dq.vals[2] = w;
-	}
 }
 
 /** Register a new class of vehicles from XML description of type
@@ -99,7 +74,7 @@ void Block::register_block_class(const rapidxml::xml_node<char>* xml_node)
 	block_classes_registry.add(ss.str());
 }
 
-Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
+Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 {
 	using namespace std;
 	using namespace rapidxml;
@@ -117,7 +92,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	const rapidxml::xml_node<char>* class_root = nullptr;
 	{
 		block_root_node.add(
-			root);	// Always search in root. Also in the class root, if any:
+			root);  // Always search in root. Also in the class root, if any:
 		const xml_attribute<>* block_class = root->first_attribute("class");
 		if (block_class)
 		{
@@ -133,7 +108,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 	// Build object (we don't use class factory for blocks)
 	// ----------------------------------------------------
-	Block* block = new Block(parent);
+	Block::Ptr block = Block::Ptr(new Block(parent));
 
 	// Init params
 	// -------------------------------------------------
@@ -164,7 +139,7 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 					 &block->m_q.yaw))
 			throw runtime_error(
 				"[Block::factory] Error parsing <init_pose>...</init_pose>");
-		block->m_q.yaw *= M_PI / 180.0;	 // deg->rad
+		block->m_q.yaw *= M_PI / 180.0;  // deg->rad
 	}
 
 	// (Optional) initial vel:
@@ -173,18 +148,14 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		if (node)
 		{
 			if (3 != ::sscanf(
-						 node->value(), "%lf %lf %lf", &block->m_dq.vals[0],
-						 &block->m_dq.vals[1], &block->m_dq.vals[2]))
+						 node->value(), "%lf %lf %lf", &block->m_dq.vx,
+						 &block->m_dq.vy, &block->m_dq.omega))
 				throw runtime_error(
 					"[Block::factory] Error parsing <init_vel>...</init_vel>");
-			block->m_dq.vals[2] *= M_PI / 180.0;  // deg->rad
+			block->m_dq.omega *= M_PI / 180.0;  // deg->rad
 
 			// Convert twist (velocity) from local -> global coords:
-			const mrpt::poses::CPose2D pose(
-				0, 0, block->m_q.yaw);	// Only the rotation
-			pose.composePoint(
-				block->m_dq.vals[0], block->m_dq.vals[1], block->m_dq.vals[0],
-				block->m_dq.vals[1]);
+			block->m_dq.rotate(block->m_q.yaw);
 		}
 	}
 
@@ -213,21 +184,21 @@ Block* Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// ----------------------------------------------------
 	block->create_multibody_system(*parent->getBox2DWorld());
 
-	if (block->m_b2d_block_body)
+	if (block->m_b2d_body)
 	{
 		// Init pos:
-		block->m_b2d_block_body->SetTransform(
+		block->m_b2d_body->SetTransform(
 			b2Vec2(block->m_q.x, block->m_q.y), block->m_q.yaw);
 		// Init vel:
-		block->m_b2d_block_body->SetLinearVelocity(
-			b2Vec2(block->m_dq.vals[0], block->m_dq.vals[1]));
-		block->m_b2d_block_body->SetAngularVelocity(block->m_dq.vals[2]);
+		block->m_b2d_body->SetLinearVelocity(
+			b2Vec2(block->m_dq.vx, block->m_dq.vy));
+		block->m_b2d_body->SetAngularVelocity(block->m_dq.omega);
 	}
 
 	return block;
 }
 
-Block* Block::factory(World* parent, const std::string& xml_text)
+Block::Ptr Block::factory(World* parent, const std::string& xml_text)
 {
 	// Parse the string as if it was an XML file:
 	std::stringstream s;
@@ -250,25 +221,16 @@ Block* Block::factory(World* parent, const std::string& xml_text)
 	return Block::factory(parent, xml.first_node());
 }
 
-void Block::simul_pre_timestep(const TSimulContext& context) {}
-/** Override to do any required process right after the integration of dynamic
- * equations for each timestep */
-void Block::simul_post_timestep(const TSimulContext& context) {}
-/** Last time-step velocity (of the ref. point, in local coords) */
-vec3 Block::getVelocityLocal() const
+void Block::simul_pre_timestep(const TSimulContext& context)
 {
-	vec3 local_vel;
-	local_vel.vals[2] = m_dq.vals[2];  // omega remains the same.
-
-	const mrpt::poses::CPose2D p(0, 0, -m_q.yaw);  // "-" means inverse pose
-	p.composePoint(
-		m_dq.vals[0], m_dq.vals[1], local_vel.vals[0], local_vel.vals[1]);
-	return local_vel;
+	Simulable::simul_pre_timestep(context);
 }
 
-mrpt::poses::CPose2D Block::getCPose2D() const
+/** Override to do any required process right after the integration of dynamic
+ * equations for each timestep */
+void Block::simul_post_timestep(const TSimulContext& context)
 {
-	return mrpt::poses::CPose2D(mrpt::math::TPose2D(m_q));
+	Simulable::simul_post_timestep(context);
 }
 
 mrpt::poses::CPose3D Block::internalGuiGetVisualPose()
@@ -298,7 +260,7 @@ void Block::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
-		scene.insert(m_gl_forces);	// forces are in global coords
+		scene.insert(m_gl_forces);  // forces are in global coords
 	}
 
 	// Update them:
@@ -342,7 +304,7 @@ void Block::create_multibody_system(b2World& world)
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 
-	m_b2d_block_body = world.CreateBody(&bodyDef);
+	m_b2d_body = world.CreateBody(&bodyDef);
 
 	// Define shape of block:
 	// ------------------------------
@@ -373,7 +335,7 @@ void Block::create_multibody_system(b2World& world)
 		fixtureDef.friction = m_lateral_friction;  // 0.3f;
 
 		// Add the shape to the body.
-		m_fixture_block = m_b2d_block_body->CreateFixture(&fixtureDef);
+		m_fixture_block = m_b2d_body->CreateFixture(&fixtureDef);
 
 		// Compute center of mass:
 		b2MassData vehMass;
@@ -391,19 +353,20 @@ void Block::create_multibody_system(b2World& world)
 	const double max_friction = mu * weight_per_contact_point;
 
 	// Location (local coords) of each contact-point:
-	const vec2 pt_loc[nContactPoints] = {
-		vec2(m_max_radius, 0), vec2(-m_max_radius, 0)};
+	const mrpt::math::TPoint2D pt_loc[nContactPoints] = {
+		mrpt::math::TPoint2D(m_max_radius, 0),
+		mrpt::math::TPoint2D(-m_max_radius, 0)};
 
 	b2FrictionJointDef fjd;
 
 	fjd.bodyA = m_world->getBox2DGroundBody();
-	fjd.bodyB = m_b2d_block_body;
+	fjd.bodyB = m_b2d_body;
 
 	for (size_t i = 0; i < nContactPoints; i++)
 	{
-		const b2Vec2 local_pt = b2Vec2(pt_loc[i].vals[0], pt_loc[i].vals[1]);
+		const b2Vec2 local_pt = b2Vec2(pt_loc[i].x, pt_loc[i].y);
 
-		fjd.localAnchorA = m_b2d_block_body->GetWorldPoint(local_pt);
+		fjd.localAnchorA = m_b2d_body->GetWorldPoint(local_pt);
 		fjd.localAnchorB = local_pt;
 		fjd.maxForce = max_friction;
 		fjd.maxTorque = 0;
@@ -415,10 +378,11 @@ void Block::create_multibody_system(b2World& world)
 }
 
 void Block::apply_force(
-	double fx, double fy, double local_ptx, double local_pty)
+	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
-	ASSERT_(m_b2d_block_body);
-	const b2Vec2 wPt = m_b2d_block_body->GetWorldPoint(
-		b2Vec2(local_ptx, local_pty));	// Application point -> world coords
-	m_b2d_block_body->ApplyForce(b2Vec2(fx, fy), wPt, true /*wake up*/);
+	ASSERT_(m_b2d_body);
+	// Application point -> world coords
+	const b2Vec2 wPt =
+		m_b2d_body->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
+	m_b2d_body->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }

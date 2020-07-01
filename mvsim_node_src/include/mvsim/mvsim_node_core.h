@@ -172,8 +172,8 @@ class MVSimNode
 		const tf::Transform& tx, const ros::Time& stamp);
 
 	struct MVSimVisitor_notifyROSWorldIsUpdated
-		: public mvsim::World::VehicleVisitorBase,
-		  public mvsim::World::WorldElementVisitorBase
+		: public mvsim::World::vehicle_visitor_t,
+		  public mvsim::World::world_element_visitor_t
 	{
 		void visit(mvsim::VehicleBase* obj);
 		void visit(mvsim::WorldElementBase* obj);

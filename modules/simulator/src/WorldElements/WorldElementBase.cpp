@@ -37,7 +37,7 @@ void register_all_world_elements()
 	REGISTER_WORLD_ELEMENT("elevation_map", ElevationMap)
 }
 
-WorldElementBase* WorldElementBase::factory(
+WorldElementBase::Ptr WorldElementBase::factory(
 	World* parent, const rapidxml::xml_node<char>* root, const char* class_name)
 {
 	register_all_world_elements();
@@ -67,8 +67,7 @@ WorldElementBase* WorldElementBase::factory(
 
 		sName = string(attrib_class->value());
 	}
-	WorldElementBase* we =
-		classFactory_worldElements.create(sName, parent, root);
+	auto we = classFactory_worldElements.create(sName, parent, root);
 
 	if (!we)
 		throw runtime_error(mrpt::format(

@@ -80,9 +80,9 @@ void GroundGrid::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 	if (m_is_floating)
 	{
 		// Centered at a vehicle:
-		const World::TListVehicles& vehs = m_world->getListOfVehicles();
+		const World::VehicleList& vehs = m_world->getListOfVehicles();
 		// Look for the vehicle by its name:
-		World::TListVehicles::const_iterator it_veh =
+		World::VehicleList::const_iterator it_veh =
 			vehs.find(m_float_center_at_vehicle_name);
 		// not found -> error:
 		if (!m_float_center_at_vehicle_name.empty() && it_veh == vehs.end())

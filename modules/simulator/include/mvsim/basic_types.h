@@ -10,6 +10,9 @@
 
 // Misc. types & forwards declarations
 
+#include <mrpt/math/TPoint2D.h>
+#include <mrpt/math/TPose2D.h>
+#include <mrpt/math/TTwist2D.h>
 #include <string>
 
 class b2World;
@@ -49,37 +52,12 @@ namespace mvsim
 class World;
 class VehicleBase;
 
-/** XX */
+/** Simulation context for simulable objects updates */
 struct TSimulContext
 {
-	b2World* b2_world;
-	double simul_time;  //!< Current time in the simulated world
-	double dt;  //!< timestep
+	b2World* b2_world = nullptr;
+	double simul_time = 0;  //!< Current time in the simulated world
+	double dt = 0;  //!< timestep
 };
 
-/** Vector to store a pose (x,y,yaw), vel (dx,dy,omega) or acc (ddx,ddy,alpha)
- */
-struct vec3
-{
-	double vals[3];
-	vec3() {}
-	vec3(double x, double y, double th)
-	{
-		vals[0] = x;
-		vals[1] = y;
-		vals[2] = th;
-	}
-};
-
-/** 2D points or vectors */
-struct vec2
-{
-	double vals[2];
-	vec2() {}
-	vec2(double x, double y)
-	{
-		vals[0] = x;
-		vals[1] = y;
-	}
-};
 }  // namespace mvsim

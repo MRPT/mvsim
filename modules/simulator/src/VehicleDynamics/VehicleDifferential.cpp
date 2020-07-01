@@ -145,9 +145,9 @@ void DynamicsDifferential::invoke_motor_controllers(
 }
 
 // See docs in base class:
-vec3 DynamicsDifferential::getVelocityLocalOdoEstimate() const
+mrpt::math::TTwist2D DynamicsDifferential::getVelocityLocalOdoEstimate() const
 {
-	vec3 odo_vel;
+	mrpt::math::TTwist2D odo_vel;
 	// Equations:
 
 	// Velocities in local +X at each wheel i={0,1}:
@@ -167,18 +167,9 @@ vec3 DynamicsDifferential::getVelocityLocalOdoEstimate() const
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;
 	const double vx_veh = w0 * R0 + w_veh * m_wheels_info[WHEEL_L].y;
 
-	odo_vel.vals[0] = vx_veh;
-	odo_vel.vals[2] = w_veh;
+	odo_vel.vx = vx_veh;
+	odo_vel.vy = 0.0;
+	odo_vel.omega = w_veh;
 
-	// v_y = 0
-	odo_vel.vals[1] = 0.0;
-
-#if 0  // Debug
-	{
-		vec3 gt_vel = this->getVelocityLocal();
-		printf("\n gt: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", gt_vel.vals[0], gt_vel.vals[1], mrpt::RAD2DEG(gt_vel.vals[2]));
-		printf("odo: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", odo_vel.vals[0], odo_vel.vals[1], mrpt::RAD2DEG(odo_vel.vals[2]));
-	}
-#endif
 	return odo_vel;
 }

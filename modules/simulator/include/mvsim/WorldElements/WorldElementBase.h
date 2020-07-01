@@ -18,6 +18,8 @@ namespace mvsim
 class WorldElementBase : public VisualObject, public Simulable
 {
    public:
+	using Ptr = std::shared_ptr<WorldElementBase>;
+
 	WorldElementBase(World* parent) : VisualObject(parent) {}
 	virtual ~WorldElementBase() {}
 	/** Class factory: Creates a world element from XML description of type
@@ -25,7 +27,7 @@ class WorldElementBase : public VisualObject, public Simulable
 	 * Only if xml_node==nullptr, the world element name can be passed in
 	 * class_name. Otherwise, class_name is ignored.
 	 */
-	static WorldElementBase* factory(
+	static Ptr factory(
 		World* parent, const rapidxml::xml_node<char>* xml_node,
 		const char* class_name = nullptr);
 
@@ -35,8 +37,9 @@ class WorldElementBase : public VisualObject, public Simulable
 };
 
 // Class factory:
-typedef ClassFactory<WorldElementBase, World*, const rapidxml::xml_node<char>*>
-	TClassFactory_worldElements;
+using TClassFactory_worldElements =
+	ClassFactory<WorldElementBase, World*, const rapidxml::xml_node<char>*>;
+
 extern TClassFactory_worldElements classFactory_worldElements;
 
 #define DECLARES_REGISTER_WORLD_ELEMENT(CLASS_NAME) \

@@ -40,7 +40,7 @@ FrictionBase::FrictionBase(VehicleBase& my_vehicle)
 }
 
 FrictionBase::~FrictionBase() {}
-FrictionBase* FrictionBase::factory(
+FrictionBase::Ptr FrictionBase::factory(
 	VehicleBase& parent, const rapidxml::xml_node<char>* xml_node)
 {
 	register_all_friction();
