@@ -212,6 +212,8 @@ class World : public mrpt::system::COutputLogger
 	/** @} */
 
 	void connectToServer();
+	mvsim::Client& commsClient() { return m_client; }
+	const mvsim::Client& commsClient() const { return m_client; }
 
    private:
 	friend class VehicleBase;

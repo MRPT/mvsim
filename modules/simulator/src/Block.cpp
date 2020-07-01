@@ -162,6 +162,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// Custom visualization 3D model:
 	// -----------------------------------------------------------
 	block->parseVisual(block_root_node.first_node("visual"));
+	block->parseSimulable(block_root_node.first_node("publish"));
 
 	// Params:
 	// -----------------------------------------------------------

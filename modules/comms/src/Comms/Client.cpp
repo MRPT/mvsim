@@ -308,6 +308,12 @@ void Client::publishTopic(
 
 	mvsim::sendMessage(msg, ipat.pubSocket);
 
+#if 0
+	MRPT_LOG_DEBUG_FMT(
+		"Published on topic `%s`: %s", topicName.c_str(),
+		msg.DebugString().c_str());
+#endif
+
 #else
 	THROW_EXCEPTION("MVSIM built without ZMQ & PROTOBUF");
 #endif
