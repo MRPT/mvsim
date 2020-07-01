@@ -9,11 +9,11 @@
 
 #pragma once
 
-#include <mrpt/core/pimpl.h>
 #include <mrpt/system/COutputLogger.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
 #include <atomic>
+#include <memory>
 #include <thread>
 
 namespace mvsim
@@ -69,7 +69,7 @@ class Client : public mrpt::system::COutputLogger
 
    private:
 	struct ZMQImpl;
-	mrpt::pimpl<std::shared_ptr<ZMQImpl>> zmq_;
+	std::unique_ptr<ZMQImpl> zmq_;
 
 	std::string serverHostAddress_ = "localhost";
 
