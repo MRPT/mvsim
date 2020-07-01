@@ -57,10 +57,10 @@ void parse_xmlnodelist_children_as_param(
 
 /** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and
  * returns
- * a vec3 with [x,y,phi] with angle in radians. Raises an exception upon
- * malformed string.
+ * a mrpt::math::TTwist2D with [x,y,phi] with angle in radians. Raises an
+ * exception upon malformed string.
  */
-vec3 parseXYPHI(
+mrpt::math::TPose2D parseXYPHI(
 	const std::string& s, bool allow_missing_angle = false,
 	double default_angle_radians = 0.0);
 

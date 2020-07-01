@@ -102,10 +102,10 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 	//<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
 	//<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
 	const char* w_names[4] = {
-		"rl_wheel",	 // 0
-		"rr_wheel",	 // 1
-		"fl_wheel",	 // 2
-		"fr_wheel"	// 3
+		"rl_wheel",  // 0
+		"rr_wheel",  // 1
+		"fl_wheel",  // 2
+		"fr_wheel"  // 3
 	};
 	// Load common params:
 	for (size_t i = 0; i < 4; i++)
@@ -142,7 +142,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 
 	// Drivetrain parameters
 	// Watch the order of DifferentialType enum!
-	const char* drive_names[6] = {"open_front",	  "open_rear",	 "open_4wd",
+	const char* drive_names[6] = {"open_front",   "open_rear",   "open_4wd",
 								  "torsen_front", "torsen_rear", "torsen_4wd"};
 
 	const rapidxml::xml_node<char>* xml_drive =
@@ -412,9 +412,10 @@ void DynamicsAckermannDrivetrain::computeDiffTorqueSplit(
 }
 
 // See docs in base class:
-vec3 DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate() const
+mrpt::math::TTwist2D DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate()
+	const
 {
-	vec3 odo_vel;
+	mrpt::math::TTwist2D odo_vel;
 	// Equations:
 
 	// Velocities in local +X at each wheel i={0,1}:
@@ -434,18 +435,9 @@ vec3 DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate() const
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;
 	const double vx_veh = w0 * R0 + w_veh * m_wheels_info[WHEEL_RL].y;
 
-	odo_vel.vals[0] = vx_veh;
-	odo_vel.vals[2] = w_veh;
+	odo_vel.vx = vx_veh;
+	odo_vel.vy = 0.0;
+	odo_vel.omega = w_veh;
 
-	// v_y = 0
-	odo_vel.vals[1] = 0.0;
-
-#if 0  // Debug
-	{
-		vec3 gt_vel = this->getVelocityLocal();
-		printf("\n gt: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", gt_vel.vals[0], gt_vel.vals[1], mrpt::RAD2DEG(gt_vel.vals[2]));
-		printf("odo: vx=%7.03f, vy=%7.03f, w= %7.03fdeg\n", odo_vel.vals[0], odo_vel.vals[1], mrpt::RAD2DEG(odo_vel.vals[2]));
-	}
-#endif
 	return odo_vel;
 }

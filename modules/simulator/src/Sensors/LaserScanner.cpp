@@ -110,6 +110,8 @@ void LaserScanner::simul_pre_timestep(const TSimulContext& context) {}
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void LaserScanner::simul_post_timestep(const TSimulContext& context)
 {
+	Simulable::simul_post_timestep(context);
+
 	using mrpt::maps::COccupancyGridMap2D;
 	using mrpt::obs::CObservation2DRangeScan;
 
@@ -133,14 +135,13 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	// -------------
 	m_world->getTimeLogger().enter("LaserScanner.scan.1.gridmap");
 
-	const World::TListWorldElements& elements =
-		m_world->getListOfWorldElements();
+	const World::WorldElementList& elements = m_world->getListOfWorldElements();
 
 	for (const auto& element : elements)
 	{
 		// If not a grid map, ignore:
 		const OccupancyGridMap* grid =
-			dynamic_cast<const OccupancyGridMap*>(element);
+			dynamic_cast<const OccupancyGridMap*>(element.get());
 		if (!grid) continue;
 		const COccupancyGridMap2D& occGrid = grid->getOccGrid();
 

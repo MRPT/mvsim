@@ -28,7 +28,7 @@ class SensorBase : public VisualObject, public Simulable
 
 	/** Class factory: Creates a sensor from XML description of type "<sensor
 	 * class='CLASS_NAME'>...</sensor>".  */
-	static SensorBase* factory(
+	static SensorBase::Ptr factory(
 		VehicleBase& parent, const rapidxml::xml_node<char>* xml_node);
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) = 0;

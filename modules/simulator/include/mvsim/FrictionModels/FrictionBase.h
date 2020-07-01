@@ -12,7 +12,7 @@
 #include <mvsim/ClassFactory.h>
 #include <mvsim/CsvLogger.h>
 #include <mvsim/Wheel.h>
-#include <mvsim/basic_types.h>	// fwrd decls.
+#include <mvsim/basic_types.h>  // fwrd decls.
 
 namespace mvsim
 {
@@ -20,19 +20,21 @@ namespace mvsim
 class FrictionBase
 {
    public:
+	using Ptr = std::shared_ptr<FrictionBase>;
+
 	FrictionBase(VehicleBase& my_vehicle);
 	virtual ~FrictionBase();
 
 	/** Class factory: Creates a friction object from XML description of type
 	 * "<friction>...</friction>".  */
-	static FrictionBase* factory(
+	static FrictionBase::Ptr factory(
 		VehicleBase& parent, const rapidxml::xml_node<char>* xml_node);
 
 	struct TFrictionInput
 	{
 		const TSimulContext& context;
 		Wheel& wheel;
-		double weight;	//!< Weight on this wheel from the car chassis
+		double weight;  //!< Weight on this wheel from the car chassis
 						//!(Newtons), excluding the weight of the wheel itself.
 		double motor_torque;  //!< The force applied by the motor to the wheel
 							  //!(Nm). Negative means backwards, which makes the

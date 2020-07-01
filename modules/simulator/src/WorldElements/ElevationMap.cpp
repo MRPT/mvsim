@@ -146,8 +146,8 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 
 	ASSERT_(m_gl_mesh);
 
-	const World::TListVehicles& lstVehs = this->m_world->getListOfVehicles();
-	for (World::TListVehicles::const_iterator itVeh = lstVehs.begin();
+	const World::VehicleList& lstVehs = this->m_world->getListOfVehicles();
+	for (World::VehicleList::const_iterator itVeh = lstVehs.begin();
 		 itVeh != lstVehs.end(); ++itVeh)
 	{
 		m_world->getTimeLogger().enter("elevationmap.handle_vehicle");
@@ -245,8 +245,8 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 			const mrpt::math::TPoint2D chassis_com =
 				itVeh->second->getChassisCenterOfMass();
 			itVeh->second->apply_force(
-				dir_down.x * chassis_weight, dir_down.y * chassis_weight,
-				chassis_com.x, chassis_com.y);
+				{dir_down.x * chassis_weight, dir_down.y * chassis_weight},
+				chassis_com);
 
 			// To wheels:
 			for (size_t iW = 0; iW < nWheels; iW++)
@@ -254,8 +254,8 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 				const Wheel& wheel = itVeh->second->getWheelInfo(iW);
 				const double wheel_weight = wheel.mass * gravity;
 				itVeh->second->apply_force(
-					dir_down.x * wheel_weight, dir_down.y * wheel_weight,
-					wheel.x, wheel.y);
+					{dir_down.x * wheel_weight, dir_down.y * wheel_weight},
+					{wheel.x, wheel.y});
 			}
 		}
 
@@ -265,6 +265,8 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 
 void ElevationMap::simul_post_timestep(const TSimulContext& context)
 {
+	Simulable::simul_post_timestep(context);
+
 	MRPT_TODO(
 		"Save all elements positions in prestep, then here scale their "
 		"movements * cos(angle)");

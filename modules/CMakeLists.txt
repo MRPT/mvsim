@@ -77,6 +77,7 @@ function(mvsim_common_target_settings MODULENAME_)
 		  -Wall -pedantic
 		  -Wsuggest-override
 		  -Werror=return-type
+		  -Wshadow
 		  # -Werror=suggest-override # Removed for protobuf headers in u18.04
 	  )
   

@@ -53,12 +53,11 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	m_PID.KD = KD;
 	m_PID.max_out = max_torque;
 
-	const double vel_act = m_veh.getVelocityLocalOdoEstimate().vals[0];
+	const double vel_act = m_veh.getVelocityLocalOdoEstimate().vx;
 	const double vel_des = setpoint_lin_speed;
 
-	co.drive_torque = -m_PID.compute(
-		vel_des - vel_act,
-		ci.context.dt);  // "-" because \tau<0 makes robot moves forwards.
+	// "-" because \tau<0 makes robot moves forwards.
+	co.drive_torque = -m_PID.compute(vel_des - vel_act, ci.context.dt);
 }
 
 void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(

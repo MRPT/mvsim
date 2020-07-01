@@ -75,7 +75,7 @@ Available options:
 	double t_old = tictac.Tac();
 	double REALTIME_FACTOR = 1.0;
 	bool do_exit = false;
-	size_t teleop_idx_veh = 0;	// Index of the vehicle to teleop
+	size_t teleop_idx_veh = 0;  // Index of the vehicle to teleop
 
 	while (!do_exit && !mrpt::system::os::kbhit())
 	{
@@ -121,7 +121,7 @@ Available options:
 		};
 
 		{  // Test: Differential drive: Control raw forces
-			const World::TListVehicles& vehs = world.getListOfVehicles();
+			const World::VehicleList& vehs = world.getListOfVehicles();
 			txt2gui_tmp += mrpt::format(
 				"Selected vehicle: %u/%u\n",
 				static_cast<unsigned>(teleop_idx_veh + 1),
@@ -129,23 +129,24 @@ Available options:
 			if (vehs.size() > teleop_idx_veh)
 			{
 				// Get iterator to selected vehicle:
-				World::TListVehicles::const_iterator it_veh = vehs.begin();
+				World::VehicleList::const_iterator it_veh = vehs.begin();
 				std::advance(it_veh, teleop_idx_veh);
 
 				// Get speed: ground truth
 				{
-					const vec3& vel = it_veh->second->getVelocityLocal();
+					const mrpt::math::TTwist2D& vel =
+						it_veh->second->getVelocityLocal();
 					txt2gui_tmp += mrpt::format(
 						"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
-						vel.vals[0], vel.vals[1], mrpt::RAD2DEG(vel.vals[2]));
+						vel.vx, vel.vy, mrpt::RAD2DEG(vel.omega));
 				}
 				// Get speed: ground truth
 				{
-					const vec3& vel =
+					const mrpt::math::TTwist2D& vel =
 						it_veh->second->getVelocityLocalOdoEstimate();
 					txt2gui_tmp += mrpt::format(
 						"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
-						vel.vals[0], vel.vals[1], mrpt::RAD2DEG(vel.vals[2]));
+						vel.vx, vel.vy, mrpt::RAD2DEG(vel.omega));
 				}
 
 				// Generic teleoperation interface for any controller that
@@ -165,7 +166,7 @@ Available options:
 		// Clear the keystroke buffer
 		if (keyevent.keycode != 0) gui_key_events = World::TGUIKeyEvent();
 
-		msg2gui = txt2gui_tmp;	// send txt msgs to show in the GUI
+		msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
 
 	}  // end while()
 

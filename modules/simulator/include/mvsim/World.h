@@ -110,8 +110,8 @@ class World : public mrpt::system::COutputLogger
 
 	struct TUpdateGUIParams
 	{
-		TGUIKeyEvent keyevent;	//!< Keystrokes in the window are returned here.
-		std::string msg_lines;	//!< Messages to show
+		TGUIKeyEvent keyevent;  //!< Keystrokes in the window are returned here.
+		std::string msg_lines;  //!< Messages to show
 
 		TUpdateGUIParams() = default;
 	};
@@ -153,13 +153,13 @@ class World : public mrpt::system::COutputLogger
 	  @{*/
 
 	/** Map 'vehicle-name' => vehicle object. See getListOfVehicles() */
-	using TListVehicles = std::multimap<std::string, VehicleBase*>;
+	using VehicleList = std::multimap<std::string, VehicleBase::Ptr>;
 
 	/** See getListOfWorldElements() */
-	using TListWorldElements = std::list<WorldElementBase*>;
+	using WorldElementList = std::list<WorldElementBase::Ptr>;
 
 	/** Map 'block-name' => block object. See getListOfBlocks()*/
-	using TListBlocks = std::multimap<std::string, Block*>;
+	using BlockList = std::multimap<std::string, Block::Ptr>;
 
 	/** @} */
 
@@ -171,11 +171,11 @@ class World : public mrpt::system::COutputLogger
 		return m_box2d_world;
 	}
 	b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
-	const TListVehicles& getListOfVehicles() const { return m_vehicles; }
-	TListVehicles& getListOfVehicles() { return m_vehicles; }
-	const TListBlocks& getListOfBlocks() const { return m_blocks; }
-	TListBlocks& getListOfBlocks() { return m_blocks; }
-	const TListWorldElements& getListOfWorldElements() const
+	const VehicleList& getListOfVehicles() const { return m_vehicles; }
+	VehicleList& getListOfVehicles() { return m_vehicles; }
+	const BlockList& getListOfBlocks() const { return m_blocks; }
+	BlockList& getListOfBlocks() { return m_blocks; }
+	const WorldElementList& getListOfWorldElements() const
 	{
 		return m_world_elements;
 	}
@@ -189,22 +189,15 @@ class World : public mrpt::system::COutputLogger
 
 	/** \name Visitors API
 	  @{*/
-	/** Derive from this class to call runVisitorOnVehicles() */
-	struct VehicleVisitorBase
-	{
-		virtual void visit(VehicleBase* obj) = 0;
-	};
-	/** Derive from this class to call runVisitorOnWorldElements() */
-	struct WorldElementVisitorBase
-	{
-		virtual void visit(WorldElementBase* obj) = 0;
-	};
+
+	using vehicle_visitor_t = std::function<void(VehicleBase&)>;
+	using world_element_visitor_t = std::function<void(WorldElementBase&)>;
 
 	/** Run the user-provided visitor on each vehicle */
-	void runVisitorOnVehicles(VehicleVisitorBase& v);
+	void runVisitorOnVehicles(const vehicle_visitor_t& v);
 
 	/** Run the user-provided visitor on each world element */
-	void runVisitorOnWorldElements(WorldElementVisitorBase& v);
+	void runVisitorOnWorldElements(const world_element_visitor_t& v);
 
 	/** @} */
 
@@ -259,7 +252,7 @@ class World : public mrpt::system::COutputLogger
 		int refresh_fps = 20;
 		bool ortho = false;
 		bool show_forces = false;
-		double force_scale = 0.01;	//!< In meters/Newton
+		double force_scale = 0.01;  //!< In meters/Newton
 		double camera_distance = 80.0;
 		double fov_deg = 60.0;
 		/** Name of the vehicle to follow (empty=none) */
@@ -281,7 +274,7 @@ class World : public mrpt::system::COutputLogger
 		void parse_from(const rapidxml::xml_node<char>& node);
 	};
 
-	TGUI_Options m_gui_options;	 //!< Some of these options are only used the
+	TGUI_Options m_gui_options;  //!< Some of these options are only used the
 								 //! first time the GUI window is created.
 
 	// -------- World contents ----------
@@ -294,9 +287,14 @@ class World : public mrpt::system::COutputLogger
 	/** Used to declare friction between vehicles-ground*/
 	b2Body* m_b2_ground_body = nullptr;
 
-	TListVehicles m_vehicles;
-	TListWorldElements m_world_elements;
-	TListBlocks m_blocks;
+	VehicleList m_vehicles;
+	WorldElementList m_world_elements;
+	BlockList m_blocks;
+
+	// List of all objects above (vehicles, world_elements, blocks), but as
+	// shared_ptr to their Simulable interfaces, so we can easily iterate on
+	// this list only for common tasks:
+	std::vector<std::shared_ptr<Simulable>> m_simulableObjects;
 
 	/** Runs one individual time step */
 	void internal_one_timestep(double dt);

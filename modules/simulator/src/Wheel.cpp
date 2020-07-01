@@ -58,10 +58,10 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 		if (attr && attr->value())
 		{
 			const std::string sAttr = attr->value();
-			vec3 v = parseXYPHI(sAttr, true);
-			this->x = v.vals[0];
-			this->y = v.vals[1];
-			this->yaw = v.vals[2];
+			mrpt::math::TPose2D v = parseXYPHI(sAttr, true);
+			this->x = v.x;
+			this->y = v.y;
+			this->yaw = v.phi;
 		}
 	}
 

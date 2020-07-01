@@ -10,6 +10,7 @@
 
 #include <mvsim/basic_types.h>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -21,6 +22,8 @@ template <class CLASS, typename ARG1 = void, typename ARG2 = int>
 class ClassFactory
 {
    public:
+	using Ptr = std::shared_ptr<CLASS>;
+
 	struct TClassData
 	{
 		CLASS* (*ptr_factory1)(ARG1);
@@ -33,10 +36,9 @@ class ClassFactory
 		m_classes[class_name] = data;
 	}
 
-	CLASS* create(const std::string& class_name, ARG1 a1) const
+	Ptr create(const std::string& class_name, ARG1 a1) const
 	{
-		typename std::map<std::string, TClassData>::const_iterator it =
-			m_classes.find(class_name);
+		auto it = m_classes.find(class_name);
 		if (it == m_classes.end())
 			throw std::runtime_error(
 				(std::string("ClassFactory: Unknown class ") + class_name)
@@ -47,12 +49,11 @@ class ClassFactory
 					 "ClassFactory: factory(1) pointer is nullptr for ") +
 				 class_name)
 					.c_str());
-		return (*it->second.ptr_factory1)(a1);
+		return Ptr((*it->second.ptr_factory1)(a1));
 	}
-	CLASS* create(const std::string& class_name, ARG1 a1, ARG2 a2) const
+	Ptr create(const std::string& class_name, ARG1 a1, ARG2 a2) const
 	{
-		typename std::map<std::string, TClassData>::const_iterator it =
-			m_classes.find(class_name);
+		auto it = m_classes.find(class_name);
 		if (it == m_classes.end())
 			throw std::runtime_error(
 				(std::string("ClassFactory: Unknown class ") + class_name)
@@ -63,12 +64,12 @@ class ClassFactory
 					 "ClassFactory: factory(2) pointer is nullptr for ") +
 				 class_name)
 					.c_str());
-		return (*it->second.ptr_factory2)(a1, a2);
+		return Ptr((*it->second.ptr_factory2)(a1, a2));
 	}
 
    private:
 	std::map<std::string, TClassData> m_classes;
-};  // end class
+};  // namespace mvsim
 
 #define DECLARES_REGISTER_CLASS1(CLASS_NAME, BASE_CLASS, ARG1) \
    public:                                                     \

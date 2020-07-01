@@ -22,7 +22,7 @@
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-#include <sstream>	// std::stringstream
+#include <sstream>  // std::stringstream
 #include <string>
 
 #include "JointXMLnode.h"
@@ -77,9 +77,6 @@ constexpr char VehicleBase::WL_FRIC_Y[];
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	: VisualObject(parent),
 	  m_vehicle_index(0),
-	  m_b2d_vehicle_body(nullptr),
-	  m_q(0, 0, 0, 0, 0, 0),
-	  m_dq(0, 0, 0),
 	  m_chassis_mass(15.0),
 	  m_chassis_z_min(0.05),
 	  m_chassis_z_max(0.6),
@@ -96,28 +93,6 @@ VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	m_chassis_poly.emplace_back(0.6, -0.3);
 	m_chassis_poly.emplace_back(0.4, -0.5);
 	updateMaxRadiusFromPoly();
-}
-
-void VehicleBase::simul_post_timestep_common(const TSimulContext& context)
-{
-	if (m_b2d_vehicle_body)
-	{
-		// Pos:
-		const b2Vec2& pos = m_b2d_vehicle_body->GetPosition();
-		const float32 angle = m_b2d_vehicle_body->GetAngle();
-		m_q.x = pos(0);
-		m_q.y = pos(1);
-		m_q.yaw = angle;
-		// The rest (z,pitch,roll) will be always 0, unless other world-element
-		// modifies them! (e.g. elevation map)
-
-		// Vel:
-		const b2Vec2& vel = m_b2d_vehicle_body->GetLinearVelocity();
-		const float32 w = m_b2d_vehicle_body->GetAngularVelocity();
-		m_dq.vals[0] = vel(0);
-		m_dq.vals[1] = vel(1);
-		m_dq.vals[2] = w;
-	}
 }
 
 /** Register a new class of vehicles from XML description of type
@@ -145,7 +120,7 @@ void VehicleBase::register_vehicle_class(
 
 /** Class factory: Creates a vehicle from XML description of type
  * "<vehicle>...</vehicle>".  */
-VehicleBase* VehicleBase::factory(
+VehicleBase::Ptr VehicleBase::factory(
 	World* parent, const rapidxml::xml_node<char>* root)
 {
 	register_all_veh_dynamics();
@@ -168,7 +143,7 @@ VehicleBase* VehicleBase::factory(
 	JointXMLnode<> veh_root_node;
 	{
 		veh_root_node.add(
-			root);	// Always search in root. Also in the class root, if any:
+			root);  // Always search in root. Also in the class root, if any:
 
 		const xml_attribute<>* veh_class = root->first_attribute("class");
 		if (veh_class)
@@ -199,7 +174,7 @@ VehicleBase* VehicleBase::factory(
 			"[VehicleBase::factory] Missing mandatory attribute 'class' in "
 			"node <dynamics>");
 
-	VehicleBase* veh =
+	VehicleBase::Ptr veh =
 		classFactory_vehicleDynamics.create(dyn_class->value(), parent);
 	if (!veh)
 		throw runtime_error(mrpt::format(
@@ -245,19 +220,15 @@ VehicleBase* VehicleBase::factory(
 		if (node)
 		{
 			if (3 != ::sscanf(
-						 node->value(), "%lf %lf %lf", &veh->m_dq.vals[0],
-						 &veh->m_dq.vals[1], &veh->m_dq.vals[2]))
+						 node->value(), "%lf %lf %lf", &veh->m_dq.vx,
+						 &veh->m_dq.vy, &veh->m_dq.omega))
 				throw runtime_error(
 					"[VehicleBase::factory] Error parsing "
 					"<init_vel>...</init_vel>");
-			veh->m_dq.vals[2] *= M_PI / 180.0;	// deg->rad
+			veh->m_dq.omega *= M_PI / 180.0;  // deg->rad
 
 			// Convert twist (velocity) from local -> global coords:
-			const mrpt::poses::CPose2D pose(
-				0, 0, veh->m_q.yaw);  // Only the rotation
-			pose.composePoint(
-				veh->m_dq.vals[0], veh->m_dq.vals[1], veh->m_dq.vals[0],
-				veh->m_dq.vals[1]);
+			veh->m_dq.rotate(veh->m_q.yaw);
 		}
 	}
 
@@ -282,15 +253,14 @@ VehicleBase* VehicleBase::factory(
 	// ----------------------------------------------------
 	veh->create_multibody_system(*parent->getBox2DWorld());
 
-	if (veh->m_b2d_vehicle_body)
+	if (veh->m_b2d_body)
 	{
 		// Init pos:
-		veh->m_b2d_vehicle_body->SetTransform(
+		veh->m_b2d_body->SetTransform(
 			b2Vec2(veh->m_q.x, veh->m_q.y), veh->m_q.yaw);
 		// Init vel:
-		veh->m_b2d_vehicle_body->SetLinearVelocity(
-			b2Vec2(veh->m_dq.vals[0], veh->m_dq.vals[1]));
-		veh->m_b2d_vehicle_body->SetAngularVelocity(veh->m_dq.vals[2]);
+		veh->m_b2d_body->SetLinearVelocity(b2Vec2(veh->m_dq.vx, veh->m_dq.vy));
+		veh->m_b2d_body->SetAngularVelocity(veh->m_dq.omega);
 	}
 
 	// Friction model:
@@ -319,7 +289,7 @@ VehicleBase* VehicleBase::factory(
 	{
 		if (!strcmp(xmlNode->name(), "sensor"))
 		{
-			SensorBase* se = SensorBase::factory(*veh, xmlNode);
+			SensorBase::Ptr se = SensorBase::factory(*veh, xmlNode);
 			veh->m_sensors.push_back(SensorBase::Ptr(se));
 		}
 	}
@@ -331,7 +301,8 @@ VehicleBase* VehicleBase::factory(
 	return veh;
 }
 
-VehicleBase* VehicleBase::factory(World* parent, const std::string& xml_text)
+VehicleBase::Ptr VehicleBase::factory(
+	World* parent, const std::string& xml_text)
 {
 	// Parse the string as if it was an XML file:
 	std::stringstream s;
@@ -356,6 +327,9 @@ VehicleBase* VehicleBase::factory(World* parent, const std::string& xml_text)
 
 void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 {
+	Simulable::simul_pre_timestep(context);
+	for (auto& s : m_sensors) s->simul_pre_timestep(context);
+
 	// Update wheels position (they may turn, etc. as in an Ackermann
 	// configuration)
 	for (size_t i = 0; i < m_fixture_wheels.size(); i++)
@@ -377,7 +351,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 	const double gravity = getWorldObject()->get_gravity();
 	const double massPerWheel =
-		getChassisMass() / nW;	// Part of the vehicle weight on each wheel.
+		getChassisMass() / nW;  // Part of the vehicle weight on each wheel.
 	const double weightPerWheel = massPerWheel * gravity;
 
 	std::vector<mrpt::math::TPoint2D> wheels_vels;
@@ -386,7 +360,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	ASSERT_EQUAL_(wheels_vels.size(), nW);
 
 	std::vector<mrpt::math::TSegment3D>
-		force_vectors;	// For visualization only
+		force_vectors;  // For visualization only
 
 	for (size_t i = 0; i < nW; i++)
 	{
@@ -395,7 +369,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 		FrictionBase::TFrictionInput fi(context, w);
 		fi.motor_torque =
-			-m_torque_per_wheel[i];	 // "-" => Forwards is negative
+			-m_torque_per_wheel[i];  // "-" => Forwards is negative
 		fi.weight = weightPerWheel;
 		fi.wheel_speed = wheels_vels[i];
 
@@ -406,14 +380,14 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		m_friction->evaluate_friction(fi, net_force_);
 
 		// Apply force:
-		const b2Vec2 wForce = m_b2d_vehicle_body->GetWorldVector(b2Vec2(
+		const b2Vec2 wForce = m_b2d_body->GetWorldVector(b2Vec2(
 			net_force_.x, net_force_.y));  // Force vector -> world coords
-		const b2Vec2 wPt = m_b2d_vehicle_body->GetWorldPoint(
-			b2Vec2(w.x, w.y));	// Application point -> world coords
+		const b2Vec2 wPt = m_b2d_body->GetWorldPoint(
+			b2Vec2(w.x, w.y));  // Application point -> world coords
 		// printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f
 		// Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
-		m_b2d_vehicle_body->ApplyForce(wForce, wPt, true /*wake up*/);
+		m_b2d_body->ApplyForce(wForce, wPt, true /*wake up*/);
 
 		// log
 		{
@@ -437,7 +411,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		if (m_world->m_gui_options.show_forces)
 		{
 			const double forceScale =
-				m_world->m_gui_options.force_scale;	 // [meters/N]
+				m_world->m_gui_options.force_scale;  // [meters/N]
 			const mrpt::math::TPoint3D pt1(
 				wPt.x, wPt.y, m_chassis_z_max * 1.1 + m_q.z);
 			const mrpt::math::TPoint3D pt2 =
@@ -458,6 +432,10 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
  * equations for each timestep */
 void VehicleBase::simul_post_timestep(const TSimulContext& context)
 {
+	// Common part (update m_q, m_dq)
+	Simulable::simul_post_timestep(context);
+	for (auto& s : m_sensors) s->simul_post_timestep(context);
+
 	// Integrate wheels' rotation:
 	const size_t nW = getNumWheels();
 
@@ -486,9 +464,9 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_YAW, m_q.yaw);
 	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_PITCH, m_q.pitch);
 	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_ROLL, m_q.roll);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_X, m_dq.vals[0]);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Y, m_dq.vals[1]);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Z, m_dq.vals[2]);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_X, m_dq.vx);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Y, m_dq.vy);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Z, m_dq.omega);
 
 	{
 		writeLogStrings();
@@ -497,14 +475,15 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 
 /** Last time-step velocity of each wheel's center point (in local coords) */
 void VehicleBase::getWheelsVelocityLocal(
-	std::vector<mrpt::math::TPoint2D>& vels, const vec3& veh_vel_local) const
+	std::vector<mrpt::math::TPoint2D>& vels,
+	const mrpt::math::TTwist2D& veh_vel_local) const
 {
 	// Each wheel velocity is:
 	// v_w = v_veh + \omega \times wheel_pos
 	// =>
 	// v_w = v_veh + ( -w*y, w*x )
 
-	const double w = veh_vel_local.vals[2];	 // vehicle w
+	const double w = veh_vel_local.omega;  // vehicle w
 
 	const size_t nW = this->getNumWheels();
 	vels.resize(nW);
@@ -512,26 +491,9 @@ void VehicleBase::getWheelsVelocityLocal(
 	{
 		const Wheel& wheel = getWheelInfo(i);
 
-		vels[i].x = veh_vel_local.vals[0] - w * wheel.y;
-		vels[i].y = veh_vel_local.vals[1] + w * wheel.x;
+		vels[i].x = veh_vel_local.vx - w * wheel.y;
+		vels[i].y = veh_vel_local.vy + w * wheel.x;
 	}
-}
-
-/** Last time-step velocity (of the ref. point, in local coords) */
-vec3 VehicleBase::getVelocityLocal() const
-{
-	vec3 local_vel;
-	local_vel.vals[2] = m_dq.vals[2];  // omega remains the same.
-
-	const mrpt::poses::CPose2D p(0, 0, -m_q.yaw);  // "-" means inverse pose
-	p.composePoint(
-		m_dq.vals[0], m_dq.vals[1], local_vel.vals[0], local_vel.vals[1]);
-	return local_vel;
-}
-
-mrpt::poses::CPose2D VehicleBase::getCPose2D() const
-{
-	return mrpt::poses::CPose2D(mrpt::math::TPose2D(m_q));
 }
 
 mrpt::poses::CPose3D VehicleBase::internalGuiGetVisualPose()
@@ -574,7 +536,7 @@ void VehicleBase::internalGuiUpdate_common(
 			m_gl_forces->setLineWidth(3.0);
 			m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
-			scene.insert(m_gl_forces);	// forces are in global coords
+			scene.insert(m_gl_forces);  // forces are in global coords
 		}
 
 		// Update them:
@@ -636,7 +598,7 @@ void VehicleBase::create_multibody_system(b2World& world)
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 
-	m_b2d_vehicle_body = world.CreateBody(&bodyDef);
+	m_b2d_body = world.CreateBody(&bodyDef);
 
 	// Define shape of chassis:
 	// ------------------------------
@@ -661,14 +623,14 @@ void VehicleBase::create_multibody_system(b2World& world)
 		// Set the box density to be non-zero, so it will be dynamic.
 		b2MassData mass;
 		chassisPoly.ComputeMass(
-			&mass, 1);	// Mass with density=1 => compute area
+			&mass, 1);  // Mass with density=1 => compute area
 		fixtureDef.density = m_chassis_mass / mass.mass;
 
 		// Override the default friction.
 		fixtureDef.friction = 0.3f;
 
 		// Add the shape to the body.
-		m_fixture_chassis = m_b2d_vehicle_body->CreateFixture(&fixtureDef);
+		m_fixture_chassis = m_b2d_body->CreateFixture(&fixtureDef);
 
 		// Compute center of mass:
 		b2MassData vehMass;
@@ -697,19 +659,19 @@ void VehicleBase::create_multibody_system(b2World& world)
 		// Set the box density to be non-zero, so it will be dynamic.
 		b2MassData mass;
 		wheelShape.ComputeMass(
-			&mass, 1);	// Mass with density=1 => compute area
+			&mass, 1);  // Mass with density=1 => compute area
 		fixtureDef.density = m_wheels_info[i].mass / mass.mass;
 
 		// Override the default friction.
 		fixtureDef.friction = 0.5f;
 
-		m_fixture_wheels[i] = m_b2d_vehicle_body->CreateFixture(&fixtureDef);
+		m_fixture_wheels[i] = m_b2d_body->CreateFixture(&fixtureDef);
 	}
 }
 
 void VehicleBase::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 {
-	this->internalGuiUpdate_common(scene);	// Common part: update sensors, etc.
+	this->internalGuiUpdate_common(scene);  // Common part: update sensors, etc.
 }
 
 void VehicleBase::initLoggers()
@@ -762,10 +724,10 @@ void VehicleBase::writeLogStrings()
 }
 
 void VehicleBase::apply_force(
-	double fx, double fy, double local_ptx, double local_pty)
+	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
-	ASSERT_(m_b2d_vehicle_body);
-	const b2Vec2 wPt = m_b2d_vehicle_body->GetWorldPoint(
-		b2Vec2(local_ptx, local_pty));	// Application point -> world coords
-	m_b2d_vehicle_body->ApplyForce(b2Vec2(fx, fy), wPt, true /*wake up*/);
+	ASSERT_(m_b2d_body);
+	const b2Vec2 wPt = m_b2d_body->GetWorldPoint(b2Vec2(
+		applyPoint.x, applyPoint.y));  // Application point -> world coords
+	m_b2d_body->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }
