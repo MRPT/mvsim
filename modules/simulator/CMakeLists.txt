@@ -40,8 +40,10 @@ source_group(WorldElements FILES ${WorldElements_SRCS})
 
 mvsim_common_target_settings(${MODULE_NAME})
 
+
 target_link_libraries(${PROJECT_NAME}
-# PRIVATE
+ PRIVATE
+	mvsim::msgs
 #	${CMAKE_THREAD_LIBS_INIT}
 #	${Protobuf_LIBRARIES}
 #	${ZeroMQ_LIBRARY}

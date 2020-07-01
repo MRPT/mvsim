@@ -56,6 +56,7 @@ class VehicleBase;
 struct TSimulContext
 {
 	b2World* b2_world = nullptr;
+	World* world = nullptr;
 	double simul_time = 0;  //!< Current time in the simulated world
 	double dt = 0;  //!< timestep
 };

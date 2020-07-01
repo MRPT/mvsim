@@ -298,6 +298,8 @@ VehicleBase::Ptr VehicleBase::factory(
 	// -----------------------------------------------------------
 	veh->parseVisual(veh_root_node.first_node("visual"));
 
+	veh->parseSimulable(veh_root_node.first_node("publish"));
+
 	return veh;
 }
 

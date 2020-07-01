@@ -135,11 +135,21 @@
 	<vehicle name="r1" class="small_robot">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+		
+		<publish>
+		  <publish_pose_topic>/r1/pose</publish_pose_topic>
+		  <publish_pose_period>50e-3</publish_pose_period>
+		</publish>
 	</vehicle>
 
 	<vehicle name="r2" class="car_ackermann">
 		<init_pose>-10.0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<publish>
+		  <publish_pose_topic>/r2/pose</publish_pose_topic>
+		  <publish_pose_period>50e-3</publish_pose_period>
+		</publish>
 	</vehicle>
 
 
@@ -191,9 +201,17 @@
 	     ======================== -->
 	<block class="square_obstacle">
 		<init_pose>6 5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<publish>
+		  <publish_pose_topic>/obstacle1/pose</publish_pose_topic>
+		  <publish_pose_period>50e-3</publish_pose_period>
+		</publish>
 	</block>
 	<block class="obstacle_table">
 		<init_pose>7 7 45</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<publish>
+		  <publish_pose_topic>/obstacle2/pose</publish_pose_topic>
+		  <publish_pose_period>50e-3</publish_pose_period>
+		</publish>
 	</block>
 
 

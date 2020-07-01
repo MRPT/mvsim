@@ -72,5 +72,15 @@ class Simulable
 
 	/** Last time-step velocity (of the ref. point, in global coords) */
 	mrpt::math::TTwist2D m_dq{0, 0, 0};
+
+	bool parseSimulable(const rapidxml::xml_node<char>* node);
+
+	/** If not empty, publish the pose on this topic */
+	std::string publishPoseTopic_;
+	double publishPosePeriod_ = 100e-3;  //! Publish period [seconds]
+	double publishPoseLastTime_ = 0;
+	bool publishAdvertised_ = false;
+
+	void internalHandlePublish(const TSimulContext& context);
 };
 }  // namespace mvsim

@@ -87,6 +87,7 @@ void World::internal_one_timestep(double dt)
 	m_timer_iteration.Tic();
 
 	TSimulContext context;
+	context.world = this;
 	context.b2_world = m_box2d_world.get();
 	context.simul_time = m_simul_time;
 	context.dt = dt;
