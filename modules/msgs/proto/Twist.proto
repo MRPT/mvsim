@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message Twist {
+  required double vx = 1;
+  required double vy = 2;
+  required double vz = 3;
+  required double wx = 4;
+  required double wy = 5;
+  required double wz = 6;
+}

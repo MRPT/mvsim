@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message AdvertiseServiceRequest {
+  // service name (full path)
+  required string serviceName = 1;
+  
+  // types, as from protobuf `T::descriptor()->full_name()`
+  required string inputTypeName = 2;
+  required string outputTypeName = 3;
+  
+  // ZMQ endpoint where this service can be requested
+  required string endpoint = 4;
+  
+  // Node name offering this service
+  required string nodeName = 5;
+}
