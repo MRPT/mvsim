@@ -56,6 +56,9 @@ class Client : public mrpt::system::COutputLogger
 	template <typename T>
 	void advertiseTopic(const std::string& topicName);
 
+	template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
+	void advertiseService(const std::string& serviceName);
+
 	void publishTopic(
 		const std::string& topicName, const google::protobuf::Message& msg);
 
@@ -81,12 +84,23 @@ class Client : public mrpt::system::COutputLogger
 	void doAdvertiseTopic(
 		const std::string& topicName,
 		const google::protobuf::Descriptor* descriptor);
+	void doAdvertiseService(
+		const std::string& topicName,
+		const google::protobuf::Descriptor* descIn,
+		const google::protobuf::Descriptor* descOut);
 };
 
 template <typename T>
 void Client::advertiseTopic(const std::string& topicName)
 {
 	doAdvertiseTopic(topicName, T::descriptor());
+}
+
+template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
+void Client::advertiseService(const std::string& serviceName)
+{
+	doAdvertiseService(
+		serviceName, INPUT_MSG_T::descriptor(), OUTPUT_MSG_T::descriptor());
 }
 
 }  // namespace mvsim

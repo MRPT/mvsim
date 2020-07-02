@@ -224,6 +224,34 @@ void Server::db_advertise_topic(
 	MRPT_TODO("TO-DO");
 }
 
+void Server::db_advertise_service(
+	const std::string& serviceName, const std::string& inputTypeName,
+	const std::string& outputTypeName, const std::string& publisherEndpoint,
+	const std::string& nodeName)
+{
+	std::unique_lock lck(dbMutex);
+
+	// 1) Add as a source of this topic:
+	auto& dbSrv = knownServices_[serviceName];
+
+	if (!dbSrv.inputTypeName.empty() &&
+		(dbSrv.inputTypeName != inputTypeName ||
+		 dbSrv.outputTypeName != outputTypeName))
+	{
+		throw std::runtime_error(mrpt::format(
+			"Trying to register service `%s` [%s->%s] but already known with "
+			"types "
+			"[%s->%s]",
+			serviceName.c_str(), inputTypeName.c_str(), outputTypeName.c_str(),
+			dbSrv.inputTypeName.c_str(), dbSrv.outputTypeName.c_str()));
+	}
+	dbSrv.serviceName = serviceName;
+	dbSrv.inputTypeName = inputTypeName;
+	dbSrv.outputTypeName = outputTypeName;
+	dbSrv.endpoint = publisherEndpoint;
+	dbSrv.nodeName = nodeName;
+}
+
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
 // mvsim_msgs::RegisterNodeRequest
@@ -311,14 +339,41 @@ void Server::handle(
 {
 	//  Send reply back to client
 	MRPT_LOG_DEBUG_FMT(
-		"Received new topic advertiser: `%s` [%s] @ %s", m.topicname().c_str(),
-		m.topictypename().c_str(), m.endpoint().c_str());
+		"Received new topic advertiser: `%s` [%s] @ %s (%s)",
+		m.topicname().c_str(), m.topictypename().c_str(), m.endpoint().c_str(),
+		m.nodename().c_str());
 
 	mvsim_msgs::GenericAnswer ans;
 	try
 	{
 		db_advertise_topic(
 			m.topicname(), m.topictypename(), m.endpoint(), m.nodename());
+		ans.set_success(true);
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(mrpt::exception_to_str(e));
+	}
+	mvsim::sendMessage(ans, s);
+}
+
+// mvsim_msgs::AdvertiseServiceRequest
+void Server::handle(
+	const mvsim_msgs::AdvertiseServiceRequest& m, zmq::socket_t& s)
+{
+	//  Send reply back to client
+	MRPT_LOG_DEBUG_FMT(
+		"Received new service offering: `%s` [%s->%s] @ %s (%s)",
+		m.servicename().c_str(), m.inputtypename().c_str(),
+		m.outputtypename().c_str(), m.endpoint().c_str(), m.nodename().c_str());
+
+	mvsim_msgs::GenericAnswer ans;
+	try
+	{
+		db_advertise_service(
+			m.servicename(), m.inputtypename(), m.outputtypename(),
+			m.endpoint(), m.nodename());
 		ans.set_success(true);
 	}
 	catch (const std::exception& e)

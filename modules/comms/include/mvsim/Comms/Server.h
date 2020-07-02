@@ -16,11 +16,12 @@
 
 #include <atomic>
 #include <set>
-#include <shared_mutex>	 // read/write mutex
+#include <shared_mutex>  // read/write mutex
 #include <thread>
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
+#include "AdvertiseServiceRequest.pb.h"
 #include "AdvertiseTopicRequest.pb.h"
 #include "ListNodesRequest.pb.h"
 #include "ListTopicsRequest.pb.h"
@@ -86,6 +87,7 @@ class Server : public mrpt::system::COutputLogger
 	void handle(const mvsim_msgs::ListTopicsRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::AdvertiseTopicRequest& m, zmq::socket_t& s);
+	void handle(const mvsim_msgs::AdvertiseServiceRequest& m, zmq::socket_t& s);
 #endif
 
 	/** @name Database (db_*) about connected nodes, topics, etc.
@@ -105,6 +107,12 @@ class Server : public mrpt::system::COutputLogger
 	void db_advertise_topic(
 		const std::string& topicName, const std::string& topicTypeName,
 		const std::string& publisherEndpoint, const std::string& nodeName);
+
+	/** Adds a new offer for a service */
+	void db_advertise_service(
+		const std::string& serviceName, const std::string& inputTypeName,
+		const std::string& outputTypeName, const std::string& publisherEndpoint,
+		const std::string& nodeName);
 
 	struct InfoPerNode
 	{
@@ -151,6 +159,26 @@ class Server : public mrpt::system::COutputLogger
 	};
 	using topic_name_t = std::string;
 	std::map<topic_name_t, InfoPerTopic> knownTopics_;
+
+	struct InfoPerService
+	{
+		InfoPerService() = default;
+		InfoPerService(
+			const std::string& name, const std::string& in_type_name,
+			const std::string& out_type_name, const std::string& end_point,
+			const std::string& node_name)
+			: serviceName(name),
+			  inputTypeName(in_type_name),
+			  outputTypeName(out_type_name),
+			  endpoint(end_point),
+			  nodeName(node_name)
+		{
+		}
+		std::string serviceName, inputTypeName, outputTypeName;
+		std::string endpoint, nodeName;
+	};
+	using service_name_t = std::string;
+	std::map<service_name_t, InfoPerService> knownServices_;
 
 	/** @} */
 

@@ -273,6 +273,77 @@ void Client::doAdvertiseTopic(
 #endif
 }
 
+void Client::doAdvertiseService(
+	const std::string& topicName, const google::protobuf::Descriptor* descIn,
+	const google::protobuf::Descriptor* descOut);
+{
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+
+	MRPT_TODO("continue here");
+
+	auto& advTopics = zmq_->advertisedTopics;
+
+	std::unique_lock<std::shared_mutex> lck(zmq_->advertisedTopics_mtx);
+
+	if (advTopics.find(topicName) != advTopics.end())
+		THROW_EXCEPTION_FMT(
+			"Topic `%s` already registered for publication in this same client "
+			"(!)",
+			topicName.c_str());
+
+	// the ctor of InfoPerAdvertisedTopic automatically creates a ZMQ_PUB
+	// socket in pubSocket
+	InfoPerAdvertisedTopic& ipat =
+		advTopics.emplace_hint(advTopics.begin(), topicName, zmq_->context)
+			->second;
+
+	lck.unlock();
+
+	// Create PUBLISH socket:
+	ipat.pubSocket.bind("tcp://0.0.0.0:*");
+	if (!ipat.pubSocket.connected())
+		THROW_EXCEPTION("Could not bind publisher socket");
+
+	// Retrieve assigned TCP port:
+	char assignedPort[100];
+	size_t assignedPortLen = sizeof(assignedPort);
+	ipat.pubSocket.getsockopt(
+		ZMQ_LAST_ENDPOINT, assignedPort, &assignedPortLen);
+	assignedPort[assignedPortLen] = '\0';
+
+	ipat.endpoint = assignedPort;
+	ipat.topicName = topicName;  // redundant in container, but handy.
+	ipat.descriptor = descriptor;
+
+	MRPT_LOG_DEBUG_FMT(
+		"Advertising topic `%s` [%s] on endpoint `%s`", topicName.c_str(),
+		descriptor->full_name().c_str(), ipat.endpoint.c_str());
+
+	// MRPT_LOG_INFO_STREAM("Type: " << descriptor->DebugString());
+
+	mvsim_msgs::AdvertiseTopicRequest req;
+	req.set_topicname(ipat.topicName);
+	req.set_endpoint(ipat.endpoint);
+	req.set_topictypename(ipat.descriptor->full_name());
+	req.set_nodename(nodeName_);
+
+	mvsim::sendMessage(req, *zmq_->mainReqSocket);
+
+	//  Get the reply.
+	const zmq::message_t reply = mvsim::receiveMessage(*zmq_->mainReqSocket);
+	mvsim_msgs::GenericAnswer ans;
+	mvsim::parseMessage(reply, ans);
+
+	if (!ans.success())
+		THROW_EXCEPTION_FMT(
+			"Error registering topic `%s` in server: `%s`",
+			ans.errormessage().c_str());
+
+#else
+	THROW_EXCEPTION("MVSIM built without ZMQ & PROTOBUF");
+#endif
+}
+
 void Client::publishTopic(
 	const std::string& topicName, const google::protobuf::Message& msg)
 {
