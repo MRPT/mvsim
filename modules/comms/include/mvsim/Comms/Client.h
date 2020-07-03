@@ -56,11 +56,18 @@ class Client : public mrpt::system::COutputLogger
 	template <typename T>
 	void advertiseTopic(const std::string& topicName);
 
-	template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
-	void advertiseService(const std::string& serviceName);
-
 	void publishTopic(
 		const std::string& topicName, const google::protobuf::Message& msg);
+
+	template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
+	void advertiseService(
+		const std::string& serviceName,
+		const std::function<OUTPUT_MSG_T(const INPUT_MSG_T&)>& callback);
+
+	template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
+	void callService(
+		const std::string& serviceName, const INPUT_MSG_T& input,
+		OUTPUT_MSG_T& output);
 
 	struct InfoPerNode
 	{
@@ -70,24 +77,36 @@ class Client : public mrpt::system::COutputLogger
 
 	/** @} */
 
+	using service_callback_t =
+		std::function<std::shared_ptr<google::protobuf::Message>(
+			const std::string& /*inAsString*/)>;
+
    private:
 	struct ZMQImpl;
 	std::unique_ptr<ZMQImpl> zmq_;
 
 	std::string serverHostAddress_ = "localhost";
-
 	std::string nodeName_ = "anonymous";
+
+	std::thread serviceInvokerThread_;
 
 	void doRegisterClient();
 	void doUnregisterClient();
+
+	void internalServiceServingThread();
 
 	void doAdvertiseTopic(
 		const std::string& topicName,
 		const google::protobuf::Descriptor* descriptor);
 	void doAdvertiseService(
-		const std::string& topicName,
+		const std::string& serviceName,
 		const google::protobuf::Descriptor* descIn,
-		const google::protobuf::Descriptor* descOut);
+		const google::protobuf::Descriptor* descOut,
+		service_callback_t callback);
+
+	void doCallService(
+		const std::string& serviceName, const google::protobuf::Message& input,
+		google::protobuf::Message& output);
 };
 
 template <typename T>
@@ -97,10 +116,25 @@ void Client::advertiseTopic(const std::string& topicName)
 }
 
 template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
-void Client::advertiseService(const std::string& serviceName)
+void Client::advertiseService(
+	const std::string& serviceName,
+	const std::function<OUTPUT_MSG_T(const INPUT_MSG_T&)>& callback)
 {
 	doAdvertiseService(
-		serviceName, INPUT_MSG_T::descriptor(), OUTPUT_MSG_T::descriptor());
+		serviceName, INPUT_MSG_T::descriptor(), OUTPUT_MSG_T::descriptor(),
+		service_callback_t([callback](const std::string& inData) {
+			INPUT_MSG_T in;
+			in.ParseFromString(inData);
+			return std::make_shared<OUTPUT_MSG_T>(callback(in));
+		}));
+}
+
+template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
+void Client::callService(
+	const std::string& serviceName, const INPUT_MSG_T& input,
+	OUTPUT_MSG_T& output)
+{
+	doCallService(serviceName, input, output);
 }
 
 }  // namespace mvsim

@@ -134,12 +134,12 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 			throw runtime_error(
 				"[Block::factory] Missing XML node <init_pose>");
 
-		if (3 != ::sscanf(
-					 node->value(), "%lf %lf %lf", &block->m_q.x, &block->m_q.y,
-					 &block->m_q.yaw))
+		mrpt::math::TPose3D q;
+		if (3 != ::sscanf(node->value(), "%lf %lf %lf", &q.x, &q.y, &q.yaw))
 			throw runtime_error(
 				"[Block::factory] Error parsing <init_pose>...</init_pose>");
-		block->m_q.yaw *= M_PI / 180.0;  // deg->rad
+		q.yaw *= M_PI / 180.0;  // deg->rad
+		block->setPose(q);
 	}
 
 	// (Optional) initial vel:
@@ -147,15 +147,17 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		const xml_node<>* node = block_root_node.first_node("init_vel");
 		if (node)
 		{
-			if (3 != ::sscanf(
-						 node->value(), "%lf %lf %lf", &block->m_dq.vx,
-						 &block->m_dq.vy, &block->m_dq.omega))
+			mrpt::math::TTwist2D dq;
+			if (3 !=
+				::sscanf(
+					node->value(), "%lf %lf %lf", &dq.vx, &dq.vy, &dq.omega))
 				throw runtime_error(
 					"[Block::factory] Error parsing <init_vel>...</init_vel>");
-			block->m_dq.omega *= M_PI / 180.0;  // deg->rad
+			dq.omega *= M_PI / 180.0;  // deg->rad
 
 			// Convert twist (velocity) from local -> global coords:
-			block->m_dq.rotate(block->m_q.yaw);
+			dq.rotate(block->getPose().yaw);
+			block->setTwist(dq);
 		}
 	}
 
@@ -188,12 +190,13 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	if (block->m_b2d_body)
 	{
 		// Init pos:
-		block->m_b2d_body->SetTransform(
-			b2Vec2(block->m_q.x, block->m_q.y), block->m_q.yaw);
+		const auto q = block->getPose();
+		const auto dq = block->getTwist();
+
+		block->m_b2d_body->SetTransform(b2Vec2(q.x, q.y), q.yaw);
 		// Init vel:
-		block->m_b2d_body->SetLinearVelocity(
-			b2Vec2(block->m_dq.vx, block->m_dq.vy));
-		block->m_b2d_body->SetAngularVelocity(block->m_dq.omega);
+		block->m_b2d_body->SetLinearVelocity(b2Vec2(dq.vx, dq.vy));
+		block->m_b2d_body->SetAngularVelocity(dq.omega);
 	}
 
 	return block;
@@ -236,7 +239,7 @@ void Block::simul_post_timestep(const TSimulContext& context)
 
 mrpt::poses::CPose3D Block::internalGuiGetVisualPose()
 {
-	return mrpt::poses::CPose3D(m_q);
+	return mrpt::poses::CPose3D(getPose());
 }
 
 void Block::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
@@ -265,7 +268,7 @@ void Block::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 	}
 
 	// Update them:
-	m_gl_block->setPose(m_q);
+	m_gl_block->setPose(getPose());
 
 	// Other common stuff:
 	internal_internalGuiUpdate_forces(scene);

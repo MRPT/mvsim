@@ -19,6 +19,7 @@
 #include <zmq.hpp>
 
 #include "GenericAnswer.pb.h"
+#include "GetServiceInfoAnswer.pb.h"
 #include "ListNodesAnswer.pb.h"
 #include "ListNodesRequest.pb.h"
 #include "ListTopicsAnswer.pb.h"
@@ -105,7 +106,9 @@ void Server::internalServerThread()
 				mvsim_msgs::RegisterNodeRequest,
 				mvsim_msgs::UnregisterNodeRequest, mvsim_msgs::SubscribeRequest,
 				mvsim_msgs::ListNodesRequest, mvsim_msgs::ListTopicsRequest,
-				mvsim_msgs::AdvertiseTopicRequest>;
+				mvsim_msgs::AdvertiseTopicRequest,
+				mvsim_msgs::AdvertiseServiceRequest,
+				mvsim_msgs::GetServiceInfoRequest>;
 
 			// Parse and dispatch:
 			try
@@ -252,6 +255,24 @@ void Server::db_advertise_service(
 	dbSrv.nodeName = nodeName;
 }
 
+bool Server::db_get_service_info(
+	const std::string& serviceName, std::string& publisherEndpoint,
+	std::string& nodeName) const
+{
+	std::shared_lock lck(dbMutex);
+
+	// 1) Add as a source of this topic:
+	auto itSrv = knownServices_.find(serviceName);
+	if (itSrv == knownServices_.end()) return false;
+
+	auto& dbSrv = itSrv->second;
+
+	publisherEndpoint = dbSrv.endpoint;
+	nodeName = dbSrv.nodeName;
+
+	return true;
+}
+
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
 // mvsim_msgs::RegisterNodeRequest
@@ -295,6 +316,34 @@ void Server::handle(const mvsim_msgs::SubscribeRequest& m, zmq::socket_t& s)
 		"Subscription request for topic " << m.topic() << "'");
 
 	mvsim_msgs::SubscribeAnswer ans;
+	MRPT_TODO("TO DO");
+
+	mvsim::sendMessage(ans, s);
+}
+
+// mvsim_msgs::GetServiceInfoRequest
+void Server::handle(
+	const mvsim_msgs::GetServiceInfoRequest& m, zmq::socket_t& s)
+{
+	//  Send reply back to client
+	MRPT_LOG_DEBUG_STREAM(
+		"GetServiceInfo request for service '" << m.servicename() << "'");
+
+	mvsim_msgs::GetServiceInfoAnswer ans;
+	std::string node, endpoint;
+
+	if (db_get_service_info(m.servicename(), endpoint, node))
+	{
+		ans.set_success(true);
+		ans.set_serviceendpoint(endpoint);
+		ans.set_servicenodename(node);
+	}
+	else
+	{
+		ans.set_success(false);
+		ans.set_errormessage(mrpt::format(
+			"Could not find service `%s`", m.servicename().c_str()));
+	}
 
 	mvsim::sendMessage(ans, s);
 }

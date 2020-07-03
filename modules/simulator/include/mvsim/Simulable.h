@@ -14,9 +14,12 @@
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/basic_types.h>
+#include <shared_mutex>
 
 namespace mvsim
 {
+class Client;
+
 class Simulable
 {
    public:
@@ -43,13 +46,36 @@ class Simulable
 
 	/** Last time-step pose (of the ref. point, in global coords) (ground-truth)
 	 */
-	const mrpt::math::TPose3D& getPose() const { return m_q; }
+	mrpt::math::TPose3D getPose() const
+	{
+		m_q_mtx.lock_shared();
+		mrpt::math::TPose3D ret = m_q;
+		m_q_mtx.unlock_shared();
+		return ret;
+	}
+
+	mrpt::math::TTwist2D getTwist() const
+	{
+		m_q_mtx.lock_shared();
+		mrpt::math::TTwist2D ret = m_dq;
+		m_q_mtx.unlock_shared();
+		return ret;
+	}
 
 	/** Manually override vehicle pose (Use with caution!) (purposely set a
 	 * "const")*/
 	void setPose(const mrpt::math::TPose3D& p) const
 	{
+		m_q_mtx.lock();
 		const_cast<mrpt::math::TPose3D&>(m_q) = p;
+		m_q_mtx.unlock();
+	}
+
+	void setTwist(const mrpt::math::TTwist2D& dq) const
+	{
+		m_q_mtx.lock();
+		const_cast<mrpt::math::TTwist2D&>(m_dq) = dq;
+		m_q_mtx.unlock();
 	}
 
 	/// Alternative to getPose()
@@ -59,6 +85,8 @@ class Simulable
 	 * (ground-truth) */
 	const mrpt::math::TTwist2D& getVelocity() const { return m_dq; }
 
+	virtual void registerOnServer(mvsim::Client& c);
+
    protected:
 	/** Derived classes must store here the body of the physical element (e.g.
 	 * chassis).
@@ -67,20 +95,23 @@ class Simulable
 	 */
 	b2Body* m_b2d_body = nullptr;
 
+	bool parseSimulable(const rapidxml::xml_node<char>* node);
+
+	void internalHandlePublish(const TSimulContext& context);
+
+   private:
+	/** protects m_q, m_dq */
+	mutable std::shared_mutex m_q_mtx;
+
 	/** Last time-step pose (of the ref. point, in global coords) */
 	mrpt::math::TPose3D m_q = mrpt::math::TPose3D::Identity();
 
 	/** Last time-step velocity (of the ref. point, in global coords) */
 	mrpt::math::TTwist2D m_dq{0, 0, 0};
 
-	bool parseSimulable(const rapidxml::xml_node<char>* node);
-
 	/** If not empty, publish the pose on this topic */
 	std::string publishPoseTopic_;
 	double publishPosePeriod_ = 100e-3;  //! Publish period [seconds]
 	double publishPoseLastTime_ = 0;
-	bool publishAdvertised_ = false;
-
-	void internalHandlePublish(const TSimulContext& context);
 };
 }  // namespace mvsim

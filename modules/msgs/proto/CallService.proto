@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message CallService {
+  // service name (full path)
+  required string serviceName = 1;
+  
+  // Input message, serialized as a string
+  required bytes serializedInput = 2;
+  
+  // Output will be returned as an independent service.
+}

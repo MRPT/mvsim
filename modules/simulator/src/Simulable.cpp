@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mvsim/Comms/Client.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/World.h>
@@ -23,7 +24,15 @@ using namespace mvsim;
 
 void Simulable::simul_pre_timestep(  //
 	[[maybe_unused]] const TSimulContext& context)
-{ /* default: do nothing*/
+{
+	if (!m_b2d_body) return;
+
+	// Pos:
+	m_b2d_body->SetTransform(b2Vec2(m_q.x, m_q.y), m_q.yaw);
+
+	// Vel:
+	m_b2d_body->SetLinearVelocity(b2Vec2(m_dq.vx, m_dq.vy));
+	m_b2d_body->SetAngularVelocity(m_dq.omega);
 }
 
 void Simulable::simul_post_timestep(  //
@@ -59,6 +68,8 @@ void Simulable::apply_force(
 
 mrpt::math::TTwist2D Simulable::getVelocityLocal() const
 {
+	std::shared_lock lck(m_q_mtx);
+
 	mrpt::math::TTwist2D local_vel = m_dq;
 	local_vel.rotate(-m_q.yaw);  // "-" means inverse pose
 	return local_vel;
@@ -66,6 +77,8 @@ mrpt::math::TTwist2D Simulable::getVelocityLocal() const
 
 mrpt::poses::CPose2D Simulable::getCPose2D() const
 {
+	std::shared_lock lck(m_q_mtx);
+
 	return {m_q.x, m_q.y, m_q.yaw};
 }
 
@@ -88,16 +101,12 @@ bool Simulable::parseSimulable(const rapidxml::xml_node<char>* node)
 
 void Simulable::internalHandlePublish(const TSimulContext& context)
 {
+	std::shared_lock lck(m_q_mtx);
+
 	MRPT_START
 	if (publishPoseTopic_.empty()) return;
 
 	auto& client = context.world->commsClient();
-
-	if (!publishAdvertised_)
-	{
-		publishAdvertised_ = true;
-		client.advertiseTopic<mvsim_msgs::Pose>(publishPoseTopic_);
-	}
 
 	const double tNow = mrpt::Clock::toDouble(mrpt::Clock::now());
 	if (tNow < publishPoseLastTime_ + publishPosePeriod_) return;
@@ -113,6 +122,16 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 	msg.set_pitch(m_q.pitch);
 	msg.set_roll(m_q.roll);
 	client.publishTopic(publishPoseTopic_, msg);
+
+	MRPT_END
+}
+
+void Simulable::registerOnServer(mvsim::Client& c)
+{
+	MRPT_START
+	// Topic:
+	if (!publishPoseTopic_.empty())
+		c.advertiseTopic<mvsim_msgs::Pose>(publishPoseTopic_);
 
 	MRPT_END
 }
