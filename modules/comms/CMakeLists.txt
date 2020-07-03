@@ -20,9 +20,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE mvsim::msgs)
 target_link_libraries(${PROJECT_NAME}
  PRIVATE
 	${CMAKE_THREAD_LIBS_INIT}
-	${Protobuf_LIBRARIES}
 	${ZeroMQ_LIBRARY}
  PUBLIC
+	${Protobuf_LIBRARIES}
 	mrpt::system
 	mrpt::io
 	mrpt::serialization

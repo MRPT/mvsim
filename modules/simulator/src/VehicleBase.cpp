@@ -205,13 +205,14 @@ VehicleBase::Ptr VehicleBase::factory(
 			throw runtime_error(
 				"[VehicleBase::factory] Missing XML node <init_pose>");
 
-		if (3 != ::sscanf(
-					 node->value(), "%lf %lf %lf", &veh->m_q.x, &veh->m_q.y,
-					 &veh->m_q.yaw))
+		mrpt::math::TPose3D p;
+		if (3 != ::sscanf(node->value(), "%lf %lf %lf", &p.x, &p.y, &p.yaw))
 			throw runtime_error(
 				"[VehicleBase::factory] Error parsing "
 				"<init_pose>...</init_pose>");
-		veh->m_q.yaw *= M_PI / 180.0;  // deg->rad
+		p.yaw *= M_PI / 180.0;  // deg->rad
+
+		veh->setPose(p);
 	}
 
 	// (Optional) initial vel:
@@ -219,16 +220,18 @@ VehicleBase::Ptr VehicleBase::factory(
 		const xml_node<>* node = veh_root_node.first_node("init_vel");
 		if (node)
 		{
-			if (3 != ::sscanf(
-						 node->value(), "%lf %lf %lf", &veh->m_dq.vx,
-						 &veh->m_dq.vy, &veh->m_dq.omega))
+			mrpt::math::TTwist2D dq;
+			if (3 !=
+				::sscanf(
+					node->value(), "%lf %lf %lf", &dq.vx, &dq.vy, &dq.omega))
 				throw runtime_error(
 					"[VehicleBase::factory] Error parsing "
 					"<init_vel>...</init_vel>");
-			veh->m_dq.omega *= M_PI / 180.0;  // deg->rad
+			dq.omega *= M_PI / 180.0;  // deg->rad
 
 			// Convert twist (velocity) from local -> global coords:
-			veh->m_dq.rotate(veh->m_q.yaw);
+			dq.rotate(veh->getPose().yaw);
+			veh->setTwist(dq);
 		}
 	}
 
@@ -256,11 +259,13 @@ VehicleBase::Ptr VehicleBase::factory(
 	if (veh->m_b2d_body)
 	{
 		// Init pos:
-		veh->m_b2d_body->SetTransform(
-			b2Vec2(veh->m_q.x, veh->m_q.y), veh->m_q.yaw);
+		const auto q = veh->getPose();
+		const auto dq = veh->getTwist();
+
+		veh->m_b2d_body->SetTransform(b2Vec2(q.x, q.y), q.yaw);
 		// Init vel:
-		veh->m_b2d_body->SetLinearVelocity(b2Vec2(veh->m_dq.vx, veh->m_dq.vy));
-		veh->m_b2d_body->SetAngularVelocity(veh->m_dq.omega);
+		veh->m_b2d_body->SetLinearVelocity(b2Vec2(dq.vx, dq.vy));
+		veh->m_b2d_body->SetAngularVelocity(dq.omega);
 	}
 
 	// Friction model:
@@ -415,7 +420,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 			const double forceScale =
 				m_world->m_gui_options.force_scale;  // [meters/N]
 			const mrpt::math::TPoint3D pt1(
-				wPt.x, wPt.y, m_chassis_z_max * 1.1 + m_q.z);
+				wPt.x, wPt.y, m_chassis_z_max * 1.1 + getPose().z);
 			const mrpt::math::TPoint3D pt2 =
 				pt1 + mrpt::math::TPoint3D(wForce.x, wForce.y, 0) * forceScale;
 			force_vectors.push_back(mrpt::math::TSegment3D(pt1, pt2));
@@ -459,16 +464,19 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 				(w.getPhi() < 0.0 ? -1.0 : 1.0));
 	}
 
+	const auto q = getPose();
+	const auto dq = getTwist();
+
 	m_loggers[LOGGER_POSE]->updateColumn(DL_TIMESTAMP, context.simul_time);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_X, m_q.x);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Y, m_q.y);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Z, m_q.z);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_YAW, m_q.yaw);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_PITCH, m_q.pitch);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_ROLL, m_q.roll);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_X, m_dq.vx);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Y, m_dq.vy);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Z, m_dq.omega);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_X, q.x);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Y, q.y);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Z, q.z);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_YAW, q.yaw);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_PITCH, q.pitch);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_ROLL, q.roll);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_X, dq.vx);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Y, dq.vy);
+	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Z, dq.omega);
 
 	{
 		writeLogStrings();
@@ -500,7 +508,7 @@ void VehicleBase::getWheelsVelocityLocal(
 
 mrpt::poses::CPose3D VehicleBase::internalGuiGetVisualPose()
 {
-	return mrpt::poses::CPose3D(m_q);
+	return mrpt::poses::CPose3D(getPose());
 }
 
 void VehicleBase::internalGuiUpdate_common(
@@ -543,7 +551,7 @@ void VehicleBase::internalGuiUpdate_common(
 
 		// Update them:
 		// ----------------------------------
-		m_gl_chassis->setPose(m_q);
+		m_gl_chassis->setPose(getPose());
 
 		for (size_t i = 0; i < nWs; i++)
 		{

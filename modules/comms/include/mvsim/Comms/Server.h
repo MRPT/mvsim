@@ -23,6 +23,7 @@
 
 #include "AdvertiseServiceRequest.pb.h"
 #include "AdvertiseTopicRequest.pb.h"
+#include "GetServiceInfoRequest.pb.h"
 #include "ListNodesRequest.pb.h"
 #include "ListTopicsRequest.pb.h"
 #include "RegisterNodeRequest.pb.h"
@@ -88,6 +89,7 @@ class Server : public mrpt::system::COutputLogger
 	void handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::AdvertiseTopicRequest& m, zmq::socket_t& s);
 	void handle(const mvsim_msgs::AdvertiseServiceRequest& m, zmq::socket_t& s);
+	void handle(const mvsim_msgs::GetServiceInfoRequest& m, zmq::socket_t& s);
 #endif
 
 	/** @name Database (db_*) about connected nodes, topics, etc.
@@ -95,7 +97,7 @@ class Server : public mrpt::system::COutputLogger
 
 	/** Adquired by all db_* functions; must be locked whenever any of the
 	 * variables in this block is read/write. */
-	std::shared_mutex dbMutex;
+	mutable std::shared_mutex dbMutex;
 
 	/** Remove all references to a given node name */
 	void db_remove_node(const std::string& nodeName);
@@ -113,6 +115,11 @@ class Server : public mrpt::system::COutputLogger
 		const std::string& serviceName, const std::string& inputTypeName,
 		const std::string& outputTypeName, const std::string& publisherEndpoint,
 		const std::string& nodeName);
+
+	/** \return true on success */
+	bool db_get_service_info(
+		const std::string& serviceName, std::string& publisherEndpoint,
+		std::string& nodeName) const;
 
 	struct InfoPerNode
 	{

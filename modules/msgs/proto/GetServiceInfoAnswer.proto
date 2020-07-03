@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message GetServiceInfoAnswer {
+  /* Should be checked */
+  required bool success = 1;
+  /* Only if success=false */
+  optional string errorMessage = 2;
+  
+  optional string serviceEndpoint = 3;
+  optional string serviceNodeName = 4;
+}

@@ -14,6 +14,9 @@
 #include <map>
 #include <stdexcept>
 
+#include "GenericAnswer.pb.h"
+#include "SrvSetPose.pb.h"
+
 using namespace mvsim;
 using namespace std;
 
@@ -84,6 +87,8 @@ void World::run_simulation(double dt)
 /** Runs one individual time step */
 void World::internal_one_timestep(double dt)
 {
+	std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
+
 	m_timer_iteration.Tic();
 
 	TSimulContext context;
@@ -171,7 +176,41 @@ void World::runVisitorOnWorldElements(const world_element_visitor_t& v)
 void World::connectToServer()
 {
 	//
-	MRPT_TODO("Allow changing parameters... from xml?");
+	MRPT_TODO("Allow changing server IP from xml?");
 	m_client.setVerbosityLevel(this->getMinLoggingLevel());
 	m_client.connect();
+
+	// Let objects register topics / services:
+	for (auto& o : m_simulableObjects)
+	{
+		ASSERT_(o);
+		o->registerOnServer(m_client);
+	}
+
+	// global services:
+	m_client.advertiseService<
+		mvsim_msgs::SrvSetPose, mvsim_msgs::GenericAnswer>(
+		"set_pose",
+		std::function<mvsim_msgs::GenericAnswer(const mvsim_msgs::SrvSetPose&)>(
+			[this](const mvsim_msgs::SrvSetPose& req) {
+				std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
+
+				mvsim_msgs::GenericAnswer ans;
+				const auto sId = req.objectid();
+
+				MRPT_TODO("switch to map<string>. Add name to Simulable");
+				if (auto itV = m_vehicles.find(sId); itV != m_vehicles.end())
+				{
+					itV->second->setPose({req.pose().x(), req.pose().y(),
+										  req.pose().z(), req.pose().yaw(),
+										  req.pose().pitch(),
+										  req.pose().roll()});
+					ans.set_success(true);
+				}
+				else
+				{
+					ans.set_success(false);
+				}
+				return ans;
+			}));
 }

@@ -211,7 +211,10 @@ class World : public mrpt::system::COutputLogger
 	}
 	/** @} */
 
+	/** Connect to server, advertise topics and services, etc. per the world
+	 * description loaded from XML file. */
 	void connectToServer();
+
 	mvsim::Client& commsClient() { return m_client; }
 	const mvsim::Client& commsClient() const { return m_client; }
 
@@ -300,6 +303,8 @@ class World : public mrpt::system::COutputLogger
 
 	/** Runs one individual time step */
 	void internal_one_timestep(double dt);
+
+	std::mutex m_simulationStepRunningMtx;
 
 	// -------- GUI stuff ----------
 	mrpt::gui::CDisplayWindowGUI::Ptr m_gui_win;
