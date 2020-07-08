@@ -14,7 +14,8 @@ Build-Depends:
 	protobuf-compiler,
 	libprotobuf-dev,
 	libzmq3-dev,
-	pybind11-dev (>= 2.2.0)
+	pybind11-dev (>= 2.2.0),
+	python3-dev,
 Standards-Version: 3.9.8
 
 Package: libmvsim-comms0.3.0
@@ -99,7 +100,7 @@ Description: Multi vehicle efficient dynamics simulator - all development files
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
  and accurate simulation of typical robot sensors (e.g. laser scanners).
  .
- This package contains C++ development files: headers, the .so symlink, and
+ This metapackage contains C++ development files: headers, the .so symlink, and
  cmake files.
 
 Package: mvsim-apps

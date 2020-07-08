@@ -1,14 +1,39 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+include /usr/share/dpkg/architecture.mk
+
+BUILDDIR = obj-$(DEB_HOST_MULTIARCH)
+
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
 
-# For multiarch support:
-DEB_BUILD_MULTIARCH ?= $(shell dpkg-architecture -qDEB_BUILD_MULTIARCH)
-
-export LD_LIBRARY_PATH=$(shell pwd)/debian/tmp/usr/lib/$(DEB_BUILD_MULTIARCH)
+CMAKE_FLAGS = \
+	-DCMAKE_BUILD_TYPE=Release	\
+	-DCMAKE_CXX_FLAGS_RELEASE="$(CXXFLAGS)" \
+	-DCMAKE_C_FLAGS_RELEASE="$(CFLAGS)" \
+	-DCMAKE_EXE_LINKER_FLAGS_RELEASE="$(LDFLAGS)" \
+	-DCMAKE_INSTALL_LIBDIR="lib/$(DEB_HOST_MULTIARCH)" \
+	-DCMAKE_INSTALL_PREFIX=/usr \
+	-DCMAKE_SKIP_RPATH=ON \
+	-DCMAKE_VERBOSE_MAKEFILE=ON \
+	$(CMAKE_ARCH_FLAGS)
 
 %:
-	env
 	dh $@ --buildsystem=cmake --parallel
+#	dh $@ --with python2,python3 --buildsystem=cmake --parallel
+
+override_dh_auto_configure:
+	dh_auto_configure -B $(BUILDDIR) \
+		-- $(CMAKE_FLAGS) \
+		-DCMAKE_SHARED_LINKER_FLAGS_RELEASE="$(LDFLAGS)" \
+		-DBUILD_SHARED_LIBS=ON
+
+
+override_dh_missing:
+	dh_missing --list-missing
+
+#override_dh_gencontrol:
+#	dh_numpy3 -p python3-mvsim
+#	dh_gencontrol
