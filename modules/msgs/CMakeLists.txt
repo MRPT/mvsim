@@ -17,7 +17,7 @@ add_library(${PROJECT_NAME}
   ${PROTOBUF_DEFINITION_FILES}
 )
 
-source_group(ProtobufMessages FILES 
+source_group(ProtobufMessages FILES
   ${PROTO_SRCS} ${PROTO_HDRS}
   ${PROTO_PY_FILES}
   ${PROTOBUF_DEFINITION_FILES}
@@ -36,19 +36,19 @@ if (MVSIM_WITH_PROTOBUF)
 
 	#message(STATUS "Python_SITELIB: ${Python_SITELIB}")
 	# TODO: Install python files in a better place?
-	
+
 	install(
 	FILES
 	  ${PROTO_HDRS}
 	  ${PROTO_PY_FILES}
 	DESTINATION
-	  ${CMAKE_INSTALL_INCLUDEDIR}/include/mvsim-msgs/
+	  ${CMAKE_INSTALL_INCLUDEDIR}/mvsim/mvsim-msgs/
 	)
 	install(
 	FILES
 	  ${PROTOBUF_DEFINITION_FILES}
 	DESTINATION
-	  ${CMAKE_INSTALL_INCLUDEDIR}/share/mvsim-msgs/proto/
+	  ${CMAKE_INSTALL_INCLUDEDIR}/mvsim/mvsim-msgs/proto/
 	)
 endif()
 
