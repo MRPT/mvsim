@@ -32,6 +32,7 @@ Description: Multi vehicle efficient dynamics simulator - communications
 Package: libmvsim-comms-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
+         libmvsim-comms0.3.0 (= ${binary:Version}),
          libprotobuf-dev, libmrpt-core-dev
 Description: Multi vehicle efficient dynamics simulator - comms dev package
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
@@ -55,6 +56,7 @@ Description: Multi vehicle efficient dynamics simulator - messages
 Package: libmvsim-msgs-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
+         libmvsim-msgs0.3.0 (= ${binary:Version}),
          libprotobuf-dev
 Description: Multi vehicle efficient dynamics simulator - messages dev package
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
@@ -79,6 +81,7 @@ Description: Multi vehicle efficient dynamics simulator - simulator
 Package: libmvsim-simulator-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
+         libmvsim-simulator0.3.0 (= ${binary:Version}),
          libmrpt-maps-dev
 Description: Multi vehicle efficient dynamics simulator - simulator dev package
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
