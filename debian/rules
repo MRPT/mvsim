@@ -3,9 +3,14 @@
 
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
-env
+
+# For multiarch support:
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
 
 export LD_LIBRARY_PATH=$(shell pwd)/debian/tmp/usr/lib/$(DEB_BUILD_ARCH)
 
 %:
+	env
 	dh $@ --buildsystem=cmake --parallel
