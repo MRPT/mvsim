@@ -19,7 +19,8 @@ Standards-Version: 3.9.8
 
 Package: libmvsim-comms0.3.0
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         libmvsim-msgs0.3.0 (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - communications
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
@@ -65,7 +66,8 @@ Description: Multi vehicle efficient dynamics simulator - messages dev package
 
 Package: libmvsim-simulator0.3.0
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         libmvsim-comms0.3.0 (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - simulator
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
@@ -104,7 +106,8 @@ Package: mvsim-apps
 Architecture: any
 Priority: optional
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         libmvsim-simulator (= ${binary:Version})
+         libmvsim-simulator0.3.0 (= ${binary:Version}),
+		 libmvsim-comms0.3.0 (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - GUI applications
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
