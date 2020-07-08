@@ -7,7 +7,7 @@ export DH_VERBOSE=1
 # For multiarch support:
 DEB_BUILD_MULTIARCH ?= $(shell dpkg-architecture -qDEB_BUILD_MULTIARCH)
 
-export LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(shell pwd)/debian/tmp/usr/lib/$(DEB_BUILD_MULTIARCH)
+export LD_LIBRARY_PATH=$(shell pwd)/debian/tmp/usr/lib/$(DEB_BUILD_MULTIARCH)
 
 %:
 	env
