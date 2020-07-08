@@ -5,11 +5,9 @@
 export DH_VERBOSE=1
 
 # For multiarch support:
-DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
-DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
-DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+DEB_BUILD_MULTIARCH ?= $(shell dpkg-architecture -qDEB_BUILD_MULTIARCH)
 
-export LD_LIBRARY_PATH=$(shell pwd)/debian/tmp/usr/lib/$(DEB_BUILD_ARCH)
+export LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(shell pwd)/debian/tmp/usr/lib/$(DEB_BUILD_MULTIARCH)
 
 %:
 	env
