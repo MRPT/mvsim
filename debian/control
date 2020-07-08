@@ -14,23 +14,85 @@ Build-Depends:
 	protobuf-compiler,
 	libprotobuf-dev,
 	libzmq3-dev,
-	pybind11-dev
+	pybind11-dev (>= 2.2.0)
 Standards-Version: 3.9.8
 
-Package: libmvsim
+Package: libmvsim-comms0.3.0
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Multi vehicle efficient dynamics simulator - libraries
+Description: Multi vehicle efficient dynamics simulator - communications
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
  and accurate simulation of typical robot sensors (e.g. laser scanners).
  .
- This package contains the C++ library itself.
+ This package contains the C++ library for communications.
+
+Package: libmvsim-comms-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         libprotobuf-dev, libmrpt-core-dev
+Description: Multi vehicle efficient dynamics simulator - comms dev package
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains C++ development files: headers, the .so symlink, and
+ cmake files.
+
+
+Package: libmvsim-msgs0.3.0
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Multi vehicle efficient dynamics simulator - messages
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains the C++ library for communications.
+
+Package: libmvsim-msgs-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         libprotobuf-dev
+Description: Multi vehicle efficient dynamics simulator - messages dev package
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains C++ development files: headers, the .so symlink,
+ cmake files, and the .proto message definition files.
+
+
+Package: libmvsim-simulator0.3.0
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Multi vehicle efficient dynamics simulator - simulator
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains the C++ library for communications.
+
+Package: libmvsim-simulator-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         libmrpt-maps-dev
+Description: Multi vehicle efficient dynamics simulator - simulator dev package
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains C++ development files: headers, the .so symlink, and
+ cmake files.
+
 
 Package: libmvsim-dev
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libmvsim (= ${binary:Version})
-Description: Multi vehicle efficient dynamics simulator - development files
+Depends: ${shlibs:Depends}, ${misc:Depends},
+          libmvsim-comms-dev,
+          libmvsim-simulator-dev,
+          libmvsim-msgs-dev
+Description: Multi vehicle efficient dynamics simulator - all development files
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
  and accurate simulation of typical robot sensors (e.g. laser scanners).
@@ -41,10 +103,11 @@ Description: Multi vehicle efficient dynamics simulator - development files
 Package: mvsim-apps
 Architecture: any
 Priority: optional
-Depends: ${shlibs:Depends}, libmvsim (= ${binary:Version}), ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         libmvsim-simulator (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - GUI applications
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
  and accurate simulation of typical robot sensors (e.g. laser scanners).
  .
- This package contains GUI applications.
+ This package contains the mvsim-cli main application.

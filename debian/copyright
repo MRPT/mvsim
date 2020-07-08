@@ -1,7 +1,7 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: mvsim
 Upstream-Contact: José Luis Blanco Claraco <joseluisblancoc@gmail.com>
-Source: https://github.com/ual-arm-ros-pkg/mvsim
+Source: https://github.com/MRPT/mvsim
 
 Files: *
 Copyright: 2014-2020, Jose Luis Blanco Claraco
