@@ -15,7 +15,7 @@ Copyright (C) 2014-2020 Jose Luis Blanco <jlblanco@ual.es> (University of Almeri
 
 Docs
 ----------
-  * [Main documentation site](https://readthedocs.org/projects/mvsimulator/badge/?version=latest)
+  * [Main documentation site](https://mvsimulator.readthedocs.io/en/latest/)
   * https://wiki.ros.org/mvsim
 
 Main features
