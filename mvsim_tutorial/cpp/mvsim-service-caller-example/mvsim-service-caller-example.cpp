@@ -4,9 +4,9 @@
 #include <iostream>
 
 // mvsim_msgs:
-#include <GenericAnswer.pb.h>
-#include <SrvSetPose.pb.h>
-#include <SrvSetPoseTwist.pb.h>
+#include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetPose.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetPoseTwist.pb.h>
 
 int main(int argc, char** argv)
 {
