@@ -10,27 +10,28 @@ file(GLOB PROTOBUF_DEFINITION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOBUF_DEFINITION_FILES})
 protobuf_generate_python(PROTO_PY_FILES ${PROTOBUF_DEFINITION_FILES})
 
-# Make a copy of headers so they appear under the same local 
-# path for both, INSTALL and BUILD interfaces:
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mvsim/mvsim-msgs/)
-file(COPY ${PROTO_HDRS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/mvsim/mvsim-msgs/)
-
 # Declare the target (a library)
 add_library(${PROJECT_NAME}
   ${PROTO_SRCS} ${PROTO_HDRS}
   ${PROTO_PY_FILES}
   ${PROTOBUF_DEFINITION_FILES}
 )
-
 source_group(ProtobufMessages FILES
   ${PROTO_SRCS} ${PROTO_HDRS}
   ${PROTO_PY_FILES}
   ${PROTOBUF_DEFINITION_FILES}
 )
-
 mvsim_common_target_settings(${MODULE_NAME})
 
 if (MVSIM_WITH_PROTOBUF)
+
+	# Make a copy of headers so they appear under the same local 
+	# path for both, INSTALL and BUILD interfaces:
+	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mvsim/mvsim-msgs/)
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy ${PROTO_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/mvsim/mvsim-msgs/
+	)
+
 	target_include_directories(${PROJECT_NAME}
 		SYSTEM PUBLIC
 			$<BUILD_INTERFACE:${Protobuf_INCLUDE_DIRS}>
