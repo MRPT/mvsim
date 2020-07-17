@@ -61,6 +61,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	std::string modelURI;
 	double modelScale = 1.0;
 	mrpt::math::TPose3D modelPose;
+	bool initialShowBoundingBox = false;
 
 	TParameterDefinitions params;
 	params["model_uri"] = TParamEntry("%s", &modelURI);
@@ -71,6 +72,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	params["model_yaw"] = TParamEntry("%lf_deg", &modelPose.yaw);
 	params["model_pitch"] = TParamEntry("%lf_deg", &modelPose.pitch);
 	params["model_roll"] = TParamEntry("%lf_deg", &modelPose.roll);
+	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*visual_node, params);
@@ -111,13 +113,19 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	auto glBox = mrpt::opengl::CBox::Create();
 	glBox->setWireframe(true);
 	glBox->setBoxCorners(bbmin, bbmax);
-	glBox->setVisibility(false);
+	glBox->setVisibility(initialShowBoundingBox);
 	glGroup->insert(glBox);
 
 	glGroup->setScale(modelScale);
 	glGroup->setPose(modelPose);
 
 	m_customVisual->insert(glGroup);
+
+	// Auto bounds from visual model bounding-box:
+
+	// Apply transformation to bounding box too:
+	viz_bbmin_ = modelPose.composePoint(bbmin * modelScale);
+	viz_bbmax_ = modelPose.composePoint(bbmax * modelScale);
 
 	return true;
 	MRPT_TRY_END

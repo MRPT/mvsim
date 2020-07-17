@@ -10,6 +10,7 @@
 #pragma once
 
 #include <mrpt/opengl/opengl_frwds.h>
+#include <mrpt/poses/CPose3D.h>
 #include <mvsim/basic_types.h>
 
 #include <cstdint>
@@ -33,6 +34,15 @@ class VisualObject
 	World* getWorldObject() { return m_world; }
 	const World* getWorldObject() const { return m_world; }
 
+	/** Returns bounding boxes, as loaded by parseVisual() from an XML config
+	 * file. */
+	void getVisualModelBoundingBox(
+		mrpt::math::TPoint3D& bbmin, mrpt::math::TPoint3D& bbmax) const
+	{
+		bbmin = viz_bbmin_;
+		bbmax = viz_bbmax_;
+	}
+
    protected:
 	bool parseVisual(const rapidxml::xml_node<char>* visual_node);
 
@@ -49,5 +59,8 @@ class VisualObject
 		throw std::runtime_error(
 			"internalGuiGetVisualPose: not implemented for this class!");
 	}
+
+   private:
+	mrpt::math::TPoint3D viz_bbmin_{}, viz_bbmax_{};
 };
 }  // namespace mvsim

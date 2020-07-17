@@ -173,10 +173,35 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		parse_xmlnode_children_as_param(
 			*class_root, block->m_params, "[Block::factory]");
 
+	// Auto shape node from visual?
+	if (const rapidxml::xml_node<char>* xml_shape_viz =
+			block_root_node.first_node("shape_from_visual");
+		xml_shape_viz)
+	{
+		mrpt::math::TPoint3D bbmin, bbmax;
+		block->getVisualModelBoundingBox(bbmin, bbmax);
+		if (bbmin == bbmax)
+		{
+			THROW_EXCEPTION(
+				"Error: Tag <shape_from_visual/> found but bounding box of "
+				"visual object seems incorrect.");
+		}
+		std::cout << "Auto BBOX in block `" << block->m_name << "`: " << bbmin
+				  << " - " << bbmax << "\n";
+
+		block->m_block_poly.clear();
+		block->m_block_poly.emplace_back(bbmin.x, bbmin.y);
+		block->m_block_poly.emplace_back(bbmin.x, bbmax.y);
+		block->m_block_poly.emplace_back(bbmax.x, bbmax.y);
+		block->m_block_poly.emplace_back(bbmax.x, bbmin.y);
+
+		block->updateMaxRadiusFromPoly();
+	}
+
 	// Shape node (optional, fallback to default shape if none found)
-	const rapidxml::xml_node<char>* xml_shape =
-		block_root_node.first_node("shape");
-	if (xml_shape)
+	if (const rapidxml::xml_node<char>* xml_shape =
+			block_root_node.first_node("shape");
+		xml_shape)
 	{
 		mvsim::parse_xmlnode_shape(
 			*xml_shape, block->m_block_poly, "[Block::factory]");
