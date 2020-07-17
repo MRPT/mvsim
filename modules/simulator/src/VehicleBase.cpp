@@ -261,7 +261,6 @@ VehicleBase::Ptr VehicleBase::factory(
 					"Error: Tag <shape_from_visual/> found but bounding box of "
 					"visual object seems incorrect.");
 			}
-			std::cout << "Veh Auto BBOX: " << bbmin << " - " << bbmax << "\n";
 
 			auto& poly = veh->m_chassis_poly;
 			poly.clear();
