@@ -61,9 +61,9 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	const rapidxml::xml_node<char>* xml_node)
 {
 	// <chassis ...> </chassis>
-	const rapidxml::xml_node<char>* xml_chassis =
-		xml_node->first_node("chassis");
-	if (xml_chassis)
+	if (const rapidxml::xml_node<char>* xml_chassis =
+			xml_node->first_node("chassis");
+		xml_chassis)
 	{
 		// Attribs:
 		TParameterDefinitions attribs;
@@ -77,9 +77,9 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 			"[DynamicsAckermann::dynamics_load_params_from_xml]");
 
 		// Shape node (optional, fallback to default shape if none found)
-		const rapidxml::xml_node<char>* xml_shape =
-			xml_chassis->first_node("shape");
-		if (xml_shape)
+		if (const rapidxml::xml_node<char>* xml_shape =
+				xml_chassis->first_node("shape");
+			xml_shape)
 			mvsim::parse_xmlnode_shape(
 				*xml_shape, m_chassis_poly,
 				"[DynamicsAckermann::dynamics_load_params_from_xml]");

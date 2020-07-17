@@ -235,9 +235,43 @@ VehicleBase::Ptr VehicleBase::factory(
 		}
 	}
 
-	// Initialize class-specific params:
-	// -------------------------------------------------
+	// Custom visualization 3D model:
+	// -----------------------------------------------------------
+	veh->parseVisual(veh_root_node.first_node("visual"));
+	veh->parseSimulable(veh_root_node.first_node("publish"));
+
+	// Initialize class-specific params (mass, chassis shape, etc.)
+	// ---------------------------------------------------------------
 	veh->dynamics_load_params_from_xml(dyn_node);
+
+	// Auto shape node from visual?
+	if (const rapidxml::xml_node<char>* xml_chassis =
+			dyn_node->first_node("chassis");
+		xml_chassis)
+	{
+		if (const rapidxml::xml_node<char>* sfv =
+				xml_chassis->first_node("shape_from_visual");
+			sfv)
+		{
+			mrpt::math::TPoint3D bbmin, bbmax;
+			veh->getVisualModelBoundingBox(bbmin, bbmax);
+			if (bbmin == bbmax)
+			{
+				THROW_EXCEPTION(
+					"Error: Tag <shape_from_visual/> found but bounding box of "
+					"visual object seems incorrect.");
+			}
+			std::cout << "Veh Auto BBOX: " << bbmin << " - " << bbmax << "\n";
+
+			auto& poly = veh->m_chassis_poly;
+			poly.clear();
+			poly.emplace_back(bbmin.x, bbmin.y);
+			poly.emplace_back(bbmin.x, bbmax.y);
+			poly.emplace_back(bbmax.x, bbmax.y);
+			poly.emplace_back(bbmax.x, bbmin.y);
+		}
+	}
+	veh->updateMaxRadiusFromPoly();
 
 	// <Optional> Log path. If not specified, app folder will be used
 	// -----------------------------------------------------------
@@ -298,12 +332,6 @@ VehicleBase::Ptr VehicleBase::factory(
 			veh->m_sensors.push_back(SensorBase::Ptr(se));
 		}
 	}
-
-	// Custom visualization 3D model:
-	// -----------------------------------------------------------
-	veh->parseVisual(veh_root_node.first_node("visual"));
-
-	veh->parseSimulable(veh_root_node.first_node("publish"));
 
 	return veh;
 }
@@ -593,10 +621,9 @@ void VehicleBase::updateMaxRadiusFromPoly()
 	using namespace mrpt::math;
 
 	m_max_radius = 0.001f;
-	for (TPolygon2D::const_iterator it = m_chassis_poly.begin();
-		 it != m_chassis_poly.end(); ++it)
+	for (const auto& pt : m_chassis_poly)
 	{
-		const float n = it->norm();
+		const float n = pt.norm();
 		mrpt::keep_max(m_max_radius, n);
 	}
 }
