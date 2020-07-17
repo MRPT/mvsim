@@ -186,8 +186,6 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 				"Error: Tag <shape_from_visual/> found but bounding box of "
 				"visual object seems incorrect.");
 		}
-		std::cout << "Auto BBOX in block `" << block->m_name << "`: " << bbmin
-				  << " - " << bbmax << "\n";
 
 		block->m_block_poly.clear();
 		block->m_block_poly.emplace_back(bbmin.x, bbmin.y);
