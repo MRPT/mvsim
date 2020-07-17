@@ -10,6 +10,11 @@ file(GLOB PROTOBUF_DEFINITION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOBUF_DEFINITION_FILES})
 protobuf_generate_python(PROTO_PY_FILES ${PROTOBUF_DEFINITION_FILES})
 
+# Make a copy of headers so they appear under the same local 
+# path for both, INSTALL and BUILD interfaces:
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mvsim/mvsim-msgs/)
+file(COPY ${PROTO_HDRS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/mvsim/mvsim-msgs/)
+
 # Declare the target (a library)
 add_library(${PROJECT_NAME}
   ${PROTO_SRCS} ${PROTO_HDRS}
@@ -32,7 +37,6 @@ if (MVSIM_WITH_PROTOBUF)
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 			$<INSTALL_INTERFACE:include/mvsim-msgs>
 	)
-
 
 	#message(STATUS "Python_SITELIB: ${Python_SITELIB}")
 	# TODO: Install python files in a better place?
