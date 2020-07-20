@@ -12,10 +12,12 @@
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Comms/common.h>
 #include <mvsim/Comms/ports.h>
+#include <mvsim/Comms/zmq_monitor.h>
 #if MRPT_VERSION >= 0x204
 #include <mrpt/system/thread_name.h>
 #endif
 
+#include <iostream>
 #include <mutex>
 #include <shared_mutex>
 
@@ -63,14 +65,14 @@ struct InfoPerService
 	const google::protobuf::Descriptor* descOutput = nullptr;
 	Client::service_callback_t callback;
 };
-
 #endif
 
 struct Client::ZMQImpl
 {
 #if defined(MVSIM_HAS_ZMQ)
-	zmq::context_t context{1};
+	zmq::context_t context{1, ZMQ_MAX_SOCKETS_DFLT};
 	std::optional<zmq::socket_t> mainReqSocket;
+	mvsim::SocketMonitor mainReqSocketMonitor;
 
 	std::map<std::string, InfoPerAdvertisedTopic> advertisedTopics;
 	std::shared_mutex advertisedTopics_mtx;
@@ -92,6 +94,15 @@ Client::~Client() { shutdown(); }
 
 void Client::setName(const std::string& nodeName) { nodeName_ = nodeName; }
 
+bool Client::connected() const
+{
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	return zmq_->mainReqSocketMonitor.connected();
+#else
+	return false;
+#endif
+}
+
 void Client::connect()
 {
 	using namespace std::string_literals;
@@ -101,7 +112,11 @@ void Client::connect()
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-	zmq_->mainReqSocket = zmq::socket_t(zmq_->context, ZMQ_REQ);
+	zmq_->mainReqSocket.emplace(zmq_->context, ZMQ_REQ);
+
+	// Monitor to listen on ZMQ socket events:
+	zmq_->mainReqSocketMonitor.monitor(zmq_->mainReqSocket.value());
+
 	zmq_->mainReqSocket->connect(
 		"tcp://"s + serverHostAddress_ + ":"s +
 		std::to_string(MVSIM_PORTNO_MAIN_REP));
@@ -110,7 +125,7 @@ void Client::connect()
 	doRegisterClient();
 
 	// Create listening socket for services:
-	zmq_->srvListenSocket = zmq::socket_t(zmq_->context, ZMQ_REP);
+	zmq_->srvListenSocket.emplace(zmq_->context, ZMQ_REP);
 	zmq_->srvListenSocket->bind("tcp://0.0.0.0:*"s);
 
 	if (!zmq_->srvListenSocket->connected())
@@ -252,7 +267,8 @@ void Client::doAdvertiseTopic(
 
 	if (advTopics.find(topicName) != advTopics.end())
 		THROW_EXCEPTION_FMT(
-			"Topic `%s` already registered for publication in this same client "
+			"Topic `%s` already registered for publication in this same "
+			"client "
 			"(!)",
 			topicName.c_str());
 
@@ -395,7 +411,8 @@ void Client::publishTopic(
 	ASSERTMSG_(
 		msg.GetDescriptor() == ipat.descriptor,
 		mrpt::format(
-			"Topic `%s` has type `%s`, but expected `%s` from former call to "
+			"Topic `%s` has type `%s`, but expected `%s` from former call "
+			"to "
 			"advertiseTopic()?",
 			topicName.c_str(), msg.GetDescriptor()->name().c_str(),
 			ipat.descriptor->name().c_str()));
@@ -468,8 +485,8 @@ void Client::internalServiceServingThread()
 	{
 		if (e.num() == ETERM)
 		{
-			// This simply means someone called requestMainThreadTermination().
-			// Just exit silently.
+			// This simply means someone called
+			// requestMainThreadTermination(). Just exit silently.
 			MRPT_LOG_INFO_STREAM(
 				"Server thread about to exit for ZMQ term signal.");
 		}

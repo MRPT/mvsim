@@ -48,6 +48,9 @@ class Client : public mrpt::system::COutputLogger
 	/** Connects to the server in a parallel thread. */
 	void connect();
 
+	/** Whether the client is correctly connected to the server. */
+	bool connected() const;
+
 	/** Shutdowns the communication thread. Blocks until the thread is stopped.
 	 * There is no need to manually call this method, it is called upon
 	 * destruction. */
