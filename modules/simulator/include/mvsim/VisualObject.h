@@ -53,7 +53,8 @@ class VisualObject
 	std::shared_ptr<mrpt::opengl::CSetOfObjects> m_customVisual;
 	int32_t m_customVisualId = -1;
 
-	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) = 0;
+	virtual void internalGuiUpdate(
+		mrpt::opengl::COpenGLScene& scene, bool childrenOnly = false) = 0;
 	virtual mrpt::poses::CPose3D internalGuiGetVisualPose()
 	{
 		throw std::runtime_error(

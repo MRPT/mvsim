@@ -46,6 +46,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Other scalar params:
 	int nRays = 181;
 	double fov_deg = 180;
+	m_scan_model.sensorPose.z() = 0.05;
 
 	TParameterDefinitions params;
 	params["fov_degrees"] = TParamEntry("%lf", &fov_deg);
@@ -57,7 +58,11 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["sensor_period"] = TParamEntry("%lf", &this->m_sensor_period);
 	params["bodies_visible"] = TParamEntry("%bool", &this->m_see_fixtures);
 
-	m_scan_model.sensorPose.z() = 0.05;
+	params["viz_pointSize"] = TParamEntry("%f", &this->m_viz_pointSize);
+	params["viz_visiblePlane"] =
+		TParamEntry("%bool", &this->m_viz_visiblePlane);
+	params["viz_visiblePoints"] =
+		TParamEntry("%bool", &this->m_viz_visiblePoints);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params);
@@ -74,14 +79,18 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 }
 
-void LaserScanner::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
+void LaserScanner::internalGuiUpdate(
+	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
 	// 1st time?
 	if (!m_gl_scan)
 	{
 		m_gl_scan = mrpt::opengl::CPlanarLaserScan::Create();
-		m_gl_scan->enableSurface(false);
+		m_gl_scan->enablePoints(m_viz_visiblePoints);
+		m_gl_scan->setPointSize(m_viz_pointSize);
+		m_gl_scan->enableSurface(m_viz_visiblePlane);
 		// m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.4f);
+
 		m_gl_scan->setLocalRepresentativePoint({0, 0, 0.10f});
 		scene.insert(m_gl_scan);
 	}
@@ -100,7 +109,7 @@ void LaserScanner::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 	}
 
 	const double z_incrs = 10e-3;  // for m_z_order
-	const double z_offset = 10e-2;
+	const double z_offset = 1e-2;
 	const mrpt::poses::CPose2D& p = m_vehicle.getCPose2D();
 	m_gl_scan->setPose(mrpt::poses::CPose3D(
 		p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
@@ -211,7 +220,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 		// Scan size:
 		ASSERT_(nRays >= 2);
-		scan.resizeScan(nRays);
+		scan.resizeScanAndAssign(nRays, maxRange, false);
 		double A =
 			sensorPose.phi() + (scan.rightToLeft ? -0.5 : +0.5) * scan.aperture;
 		const double AA =
@@ -232,9 +241,9 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			if (callback.m_hit)
 			{
 				// Hit:
-				range = ::hypotf(
-					callback.m_point.x - sensorPt.x,
-					callback.m_point.y - sensorPt.y);
+				range = std::sqrt(
+					mrpt::square(callback.m_point.x - sensorPt.x) +
+					mrpt::square(callback.m_point.y - sensorPt.y));
 				range += rnd.drawGaussian1D_normalized() * m_rangeStdNoise;
 			}
 			else

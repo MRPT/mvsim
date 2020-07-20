@@ -265,23 +265,33 @@ mrpt::poses::CPose3D Block::internalGuiGetVisualPose()
 	return mrpt::poses::CPose3D(getPose());
 }
 
-void Block::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
+void Block::internalGuiUpdate(
+	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
 	// 1st time call?? -> Create objects
 	// ----------------------------------
-	if (!m_gl_block)
+	if (!childrenOnly)
 	{
-		m_gl_block = mrpt::opengl::CSetOfObjects::Create();
+		if (!m_gl_block)
+		{
+			m_gl_block = mrpt::opengl::CSetOfObjects::Create();
 
-		// Block shape:
-		auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
-			m_block_poly, m_block_z_max - m_block_z_min);
-		gl_poly->setLocation(0, 0, m_block_z_min);
-		gl_poly->setColor_u8(m_block_color);
-		m_gl_block->insert(gl_poly);
+			// Block shape:
+			auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
+				m_block_poly, m_block_z_max - m_block_z_min);
+			gl_poly->setLocation(0, 0, m_block_z_min);
+			gl_poly->setColor_u8(m_block_color);
+			m_gl_block->insert(gl_poly);
 
-		scene.insert(m_gl_block);
+			scene.insert(m_gl_block);
+		}
 
+		// Update them:
+		m_gl_block->setPose(getPose());
+	}
+
+	if (!m_gl_forces)
+	{
 		// Visualization of forces:
 		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 		m_gl_forces->setLineWidth(3.0);
@@ -289,9 +299,6 @@ void Block::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
 
 		scene.insert(m_gl_forces);  // forces are in global coords
 	}
-
-	// Update them:
-	m_gl_block->setPose(getPose());
 
 	// Other common stuff:
 	internal_internalGuiUpdate_forces(scene);

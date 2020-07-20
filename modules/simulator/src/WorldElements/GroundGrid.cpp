@@ -59,7 +59,8 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (!m_float_center_at_vehicle_name.empty()) m_is_floating = true;
 }
 
-void GroundGrid::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
+void GroundGrid::internalGuiUpdate(
+	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
 	using namespace mrpt::math;
 

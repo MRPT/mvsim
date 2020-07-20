@@ -45,11 +45,10 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 		// Update pose:
 		m_customVisual->setPose(internalGuiGetVisualPose());
 	}
-	else
-	{
-		// Default:
-		internalGuiUpdate(scene);
-	}
+
+	const bool childrenOnly = m_customVisual.operator bool();
+
+	internalGuiUpdate(scene, childrenOnly);
 }
 
 bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)

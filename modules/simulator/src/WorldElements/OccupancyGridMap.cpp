@@ -89,7 +89,8 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 }
 
-void OccupancyGridMap::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
+void OccupancyGridMap::internalGuiUpdate(
+	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
 	using namespace mrpt::math;
 
@@ -142,8 +143,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 	// - Vehicles
 	// - Blocks
 	{
-		const World::VehicleList& lstVehs =
-			this->m_world->getListOfVehicles();
+		const World::VehicleList& lstVehs = this->m_world->getListOfVehicles();
 		const World::BlockList& lstBlocks = this->m_world->getListOfBlocks();
 		const size_t nObjs = lstVehs.size() + lstBlocks.size();
 
@@ -245,7 +245,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &sqrPoly;
 			fixtureDef.restitution = m_restitution;
-			fixtureDef.density = 0;	 // Fixed (inf. mass)
+			fixtureDef.density = 0;  // Fixed (inf. mass)
 			fixtureDef.friction = m_lateral_friction;  // 0.5f;
 
 			// Create fixtures at their place (or disable it if no obstacle has
@@ -262,7 +262,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 				if (!scan->getScanRangeValidity(k))
 				{
 					ipv.collide_fixtures[k].fixture->SetSensor(
-						true);	// Box2D's way of saying: don't collide with
+						true);  // Box2D's way of saying: don't collide with
 								// this!
 					ipv.collide_fixtures[k].fixture->SetUserData(
 						INVISIBLE_FIXTURE_USER_DATA);
@@ -270,7 +270,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 				else
 				{
 					ipv.collide_fixtures[k].fixture->SetSensor(
-						false);	 // Box2D's way of saying: don't collide with
+						false);  // Box2D's way of saying: don't collide with
 								 // this!
 					ipv.collide_fixtures[k].fixture->SetUserData(nullptr);
 

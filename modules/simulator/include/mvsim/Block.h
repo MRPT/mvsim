@@ -82,7 +82,8 @@ class Block : public VisualObject, public Simulable
 	// Protected ctor for class factory
 	Block(World* parent);
 
-	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+	virtual void internalGuiUpdate(
+		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
 	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
 
 	/** User-supplied name of the block (e.g. "r1", "veh1") */
