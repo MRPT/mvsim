@@ -139,7 +139,8 @@ class VehicleBase : public VisualObject, public Simulable
 
 	virtual void initLoggers();
 	virtual void writeLogStrings();
-	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+	virtual void internalGuiUpdate(
+		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
 	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
 
    protected:
@@ -155,14 +156,6 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void invoke_motor_controllers(
 		const TSimulContext& context,
 		std::vector<double>& out_force_per_wheel) = 0;
-
-	/** To be called at derived classes' internalGuiUpdate(), updates all stuff
-	 * common to any vehicle type. Calls: internal_internalGuiUpdate_sensors(),
-	 * internal_internalGuiUpdate_forces() \param[in] defaultVehicleBody If
-	 * true, will draw default wheels & vehicle chassis.
-	 */
-	void internalGuiUpdate_common(
-		mrpt::opengl::COpenGLScene& scene, bool defaultVehicleBody = true);
 
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 	std::string m_name;

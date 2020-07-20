@@ -120,7 +120,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	m_gl_mesh->setGridLimits(-0.5 * LX, 0.5 * LX, -0.5 * LY, 0.5 * LY);
 }
 
-void ElevationMap::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
+void ElevationMap::internalGuiUpdate(
+	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
 	using namespace mrpt::math;
 

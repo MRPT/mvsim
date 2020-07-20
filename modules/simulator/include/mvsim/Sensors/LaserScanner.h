@@ -32,15 +32,21 @@ class LaserScanner : public SensorBase
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
    protected:
-	virtual void internalGuiUpdate(mrpt::opengl::COpenGLScene& scene) override;
+	virtual void internalGuiUpdate(
+		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
 
-	int m_z_order;	//!< to help rendering multiple scans
+	int m_z_order;  //!< to help rendering multiple scans
 	mrpt::poses::CPose2D m_sensor_pose_on_veh;
-	std::string m_name;	 //!< sensor label/name
+	std::string m_name;  //!< sensor label/name
 	double m_rangeStdNoise;
 	double m_angleStdNoise;
-	bool m_see_fixtures;  //!< Whether all box2d "fixtures" are visible (solid)
-						  //! or not (Default=true)
+	/** Whether all box2d "fixtures" are visible (solid) or not (Default=true)
+	 */
+	bool m_see_fixtures;
+
+	bool m_viz_visiblePlane = false;
+	bool m_viz_visiblePoints = false;
+	float m_viz_pointSize = 3.0f;
 
 	// Store here all scan parameters. This obj will be copied as a
 	// "pattern" to fill it with actual scan data.

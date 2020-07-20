@@ -538,61 +538,6 @@ mrpt::poses::CPose3D VehicleBase::internalGuiGetVisualPose()
 	return mrpt::poses::CPose3D(getPose());
 }
 
-void VehicleBase::internalGuiUpdate_common(
-	mrpt::opengl::COpenGLScene& scene, bool defaultVehicleBody)
-{
-	// 1st time call?? -> Create objects
-	// ----------------------------------
-	if (defaultVehicleBody)
-	{
-		const size_t nWs = this->getNumWheels();
-		if (!m_gl_chassis)
-		{
-			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
-
-			// Wheels shape:
-			m_gl_wheels.resize(nWs);
-			for (size_t i = 0; i < nWs; i++)
-			{
-				m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
-				this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
-				m_gl_chassis->insert(m_gl_wheels[i]);
-			}
-			// Robot shape:
-			mrpt::opengl::CPolyhedron::Ptr gl_poly =
-				mrpt::opengl::CPolyhedron::CreateCustomPrism(
-					m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
-			gl_poly->setLocation(0, 0, m_chassis_z_min);
-			gl_poly->setColor_u8(m_chassis_color);
-			m_gl_chassis->insert(gl_poly);
-
-			scene.insert(m_gl_chassis);
-
-			// Visualization of forces:
-			m_gl_forces = mrpt::opengl::CSetOfLines::Create();
-			m_gl_forces->setLineWidth(3.0);
-			m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
-
-			scene.insert(m_gl_forces);  // forces are in global coords
-		}
-
-		// Update them:
-		// ----------------------------------
-		m_gl_chassis->setPose(getPose());
-
-		for (size_t i = 0; i < nWs; i++)
-		{
-			const Wheel& w = getWheelInfo(i);
-			m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
-				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
-		}
-	}
-
-	// Other common stuff:
-	internal_internalGuiUpdate_sensors(scene);
-	internal_internalGuiUpdate_forces(scene);
-}
-
 void VehicleBase::internal_internalGuiUpdate_sensors(
 	mrpt::opengl::COpenGLScene& scene)
 {
@@ -705,9 +650,62 @@ void VehicleBase::create_multibody_system(b2World& world)
 	}
 }
 
-void VehicleBase::internalGuiUpdate(mrpt::opengl::COpenGLScene& scene)
+void VehicleBase::internalGuiUpdate(
+	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
-	this->internalGuiUpdate_common(scene);  // Common part: update sensors, etc.
+	// 1st time call?? -> Create objects
+	// ----------------------------------
+	if (!childrenOnly)
+	{
+		const size_t nWs = this->getNumWheels();
+		if (!m_gl_chassis)
+		{
+			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
+
+			// Wheels shape:
+			m_gl_wheels.resize(nWs);
+			for (size_t i = 0; i < nWs; i++)
+			{
+				m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
+				this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
+				m_gl_chassis->insert(m_gl_wheels[i]);
+			}
+			// Robot shape:
+			mrpt::opengl::CPolyhedron::Ptr gl_poly =
+				mrpt::opengl::CPolyhedron::CreateCustomPrism(
+					m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
+			gl_poly->setLocation(0, 0, m_chassis_z_min);
+			gl_poly->setColor_u8(m_chassis_color);
+			m_gl_chassis->insert(gl_poly);
+
+			scene.insert(m_gl_chassis);
+		}
+
+		// Update them:
+		// ----------------------------------
+		m_gl_chassis->setPose(getPose());
+
+		for (size_t i = 0; i < nWs; i++)
+		{
+			const Wheel& w = getWheelInfo(i);
+			m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
+				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+		}
+	}
+
+	// Init on first use:
+	if (!m_gl_forces)
+	{
+		// Visualization of forces:
+		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
+		m_gl_forces->setLineWidth(3.0);
+		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
+		scene.insert(m_gl_forces);  // forces are in global coords
+	}
+
+	// Other common stuff:
+	internal_internalGuiUpdate_sensors(scene);
+	internal_internalGuiUpdate_forces(scene);
 }
 
 void VehicleBase::initLoggers()
