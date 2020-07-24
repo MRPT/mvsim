@@ -175,6 +175,8 @@ void Client::shutdown() noexcept
 	zmq_ctx_shutdown(zmq_->context.operator void*());
 #endif
 
+	if (serviceInvokerThread_.joinable()) serviceInvokerThread_.join();
+
 #endif
 }
 
@@ -335,7 +337,7 @@ void Client::doAdvertiseTopic(
 	assignedPort[assignedPortLen] = '\0';
 
 	ipat.endpoint = assignedPort;
-	ipat.topicName = topicName;  // redundant in container, but handy.
+	ipat.topicName = topicName;	 // redundant in container, but handy.
 	ipat.descriptor = descriptor;
 
 	MRPT_LOG_DEBUG_FMT(
@@ -393,7 +395,7 @@ void Client::doAdvertiseService(
 		ZMQ_LAST_ENDPOINT, assignedPort, &assignedPortLen);
 	assignedPort[assignedPortLen] = '\0';
 
-	ips.serviceName = serviceName;  // redundant in container, but handy.
+	ips.serviceName = serviceName;	// redundant in container, but handy.
 	ips.callback = callback;
 	ips.descInput = descIn;
 	ips.descOutput = descOut;
@@ -530,20 +532,22 @@ void Client::internalServiceServingThread()
 			// This simply means someone called
 			// requestMainThreadTermination(). Just exit silently.
 			MRPT_LOG_INFO_STREAM(
-				"Server thread about to exit for ZMQ term signal.");
+				"internalServiceServingThread about to exit for ZMQ term "
+				"signal.");
 		}
 		else
 		{
 			MRPT_LOG_ERROR_STREAM(
-				"internalServerThread: ZMQ error: " << e.what());
+				"internalServiceServingThread: ZMQ error: " << e.what());
 		}
 	}
 	catch (const std::exception& e)
 	{
 		MRPT_LOG_ERROR_STREAM(
-			"internalServerThread: Exception: " << mrpt::exception_to_str(e));
+			"internalServiceServingThread: Exception: "
+			<< mrpt::exception_to_str(e));
 	}
-	MRPT_LOG_DEBUG_STREAM("Server thread quitted.");
+	MRPT_LOG_DEBUG_STREAM("internalServiceServingThread quitted.");
 
 #endif
 }

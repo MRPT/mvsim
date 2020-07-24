@@ -9,22 +9,27 @@
 
 #pragma once
 
-#include <thread>
-#include <mutex>
+#include <mrpt/core/format.h>
+
 #include <atomic>
 #include <iostream>
-#include <mrpt/core/format.h>
+#include <mutex>
+#include <thread>
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <zmq.hpp>
 
-namespace mvsim {
-
+namespace mvsim
+{
 class SocketMonitor : public zmq::monitor_t
 {
    public:
 	SocketMonitor() = default;
-	~SocketMonitor() { zmq::monitor_t::abort(); }
+	~SocketMonitor()
+	{
+		zmq::monitor_t::abort();
+		if (runningMonitor_.joinable()) runningMonitor_.join();
+	}
 
 	void monitor(zmq::socket_t& s)
 	{
@@ -79,7 +84,6 @@ class SocketMonitor : public zmq::monitor_t
 	std::thread runningMonitor_;
 };
 
-}
+}  // namespace mvsim
 
 #endif
-
