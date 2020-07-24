@@ -35,6 +35,8 @@
 #include "GetServiceInfoRequest.pb.h"
 #include "ListNodesAnswer.pb.h"
 #include "ListNodesRequest.pb.h"
+#include "ListTopicsAnswer.pb.h"
+#include "ListTopicsRequest.pb.h"
 #include "RegisterNodeAnswer.pb.h"
 #include "RegisterNodeRequest.pb.h"
 #include "UnregisterNodeRequest.pb.h"
@@ -255,6 +257,47 @@ std::vector<Client::InfoPerNode> Client::requestListOfNodes()
 #endif
 }
 
+std::vector<Client::InfoPerTopic> Client::requestListOfTopics()
+{
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto& s = *zmq_->mainReqSocket;
+
+	mvsim_msgs::ListTopicsRequest req;
+	mvsim::sendMessage(req, s);
+
+	//  Get the reply.
+	const zmq::message_t reply = mvsim::receiveMessage(s);
+
+	mvsim_msgs::ListTopicsAnswer lta;
+	mvsim::parseMessage(reply, lta);
+
+	std::vector<Client::InfoPerTopic> topics;
+	topics.resize(lta.topics_size());
+
+	for (int i = 0; i < lta.topics_size(); i++)
+	{
+		const auto& t = lta.topics(i);
+		auto& dst = topics[i];
+
+		dst.name = t.name();
+		dst.type = t.type();
+
+		ASSERT_EQUAL_(t.endpoint_size(), t.publishername_size());
+		dst.endpoints.resize(t.endpoint_size());
+		dst.publishers.resize(t.endpoint_size());
+
+		for (int k = 0; k < t.endpoint_size(); k++)
+		{
+			dst.publishers[k] = t.publishername(k);
+			dst.endpoints[k] = t.endpoint(k);
+		}
+	}
+	return topics;
+#else
+	THROW_EXCEPTION("MVSIM built without ZMQ");
+#endif
+}
+
 void Client::doAdvertiseTopic(
 	const std::string& topicName,
 	const google::protobuf::Descriptor* descriptor)
@@ -268,8 +311,7 @@ void Client::doAdvertiseTopic(
 	if (advTopics.find(topicName) != advTopics.end())
 		THROW_EXCEPTION_FMT(
 			"Topic `%s` already registered for publication in this same "
-			"client "
-			"(!)",
+			"client (!)",
 			topicName.c_str());
 
 	// the ctor of InfoPerAdvertisedTopic automatically creates a ZMQ_PUB
@@ -280,7 +322,7 @@ void Client::doAdvertiseTopic(
 
 	lck.unlock();
 
-	// Create PUBLISH socket:
+	// Bind the PUBLISH socket:
 	ipat.pubSocket.bind("tcp://0.0.0.0:*");
 	if (!ipat.pubSocket.connected())
 		THROW_EXCEPTION("Could not bind publisher socket");

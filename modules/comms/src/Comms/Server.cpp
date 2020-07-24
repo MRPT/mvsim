@@ -356,6 +356,30 @@ void Server::handle(const mvsim_msgs::ListTopicsRequest& m, zmq::socket_t& s)
 
 	mvsim_msgs::ListTopicsAnswer ans;
 
+	// Optional name filter:
+	const auto& queryPrefix = m.topicstartswith();
+
+	std::shared_lock lck(dbMutex);
+
+	for (const auto& kv : knownTopics_)
+	{
+		const auto& t = kv.second;
+		const auto& name = t.topicName;
+
+		if (!queryPrefix.empty() ||
+			name.substr(0, queryPrefix.size()) == queryPrefix)
+		{
+			auto tInfo = ans.add_topics();
+			tInfo->set_name(name);
+			tInfo->set_type(t.topicTypeName);
+
+			for (const auto& pubs : t.publishers)
+			{
+				tInfo->add_publishername(pubs.second.publisherNodeName);
+				tInfo->add_endpoint(pubs.second.publisherEndpoint);
+			}
+		}
+	}
 	mvsim::sendMessage(ans, s);
 }
 

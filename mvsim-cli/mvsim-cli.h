@@ -18,13 +18,14 @@ extern TCLAP::UnlabeledMultiArg<std::string> argCmd;
 extern TCLAP::ValueArg<std::string> argVerbosity;
 extern TCLAP::ValueArg<int> argPort;
 extern TCLAP::SwitchArg argHelp;
+extern TCLAP::SwitchArg argDetails;
 
 using cmd_t = std::function<int(void)>;
 
 int printListCommands();  // "help"
 int launchStandAloneServer();  // "server"
-int launchSimulation();	 // "launch"
-int commandNode();	// "node"
-int commandTopic();	 // "topic"
+int launchSimulation();  // "launch"
+int commandNode();  // "node"
+int commandTopic();  // "topic"
 
 void commonLaunchServer();

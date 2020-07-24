@@ -78,6 +78,14 @@ class Client : public mrpt::system::COutputLogger
 	};
 	std::vector<InfoPerNode> requestListOfNodes();
 
+	struct InfoPerTopic
+	{
+		std::string name;
+		std::string type;
+		std::vector<std::string> endpoints, publishers;
+	};
+	std::vector<InfoPerTopic> requestListOfTopics();
+
 	/** @} */
 
 	using service_callback_t =
