@@ -64,6 +64,8 @@ if (NOT BUILD_FOR_ROS)
 	set( EXECUTABLE_OUTPUT_PATH ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Output directory for applications" )
 endif()
 
+set(CMAKE_DEBUG_POSTFIX "-dbg")
+
 # --------------------------
 # Global compiler flags
 # --------------------------
