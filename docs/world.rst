@@ -309,11 +309,24 @@ Vehicles and obstacles blocks share common C++ ``mvsim::Simulable`` and
 Related to topic publication
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Under the ``<publish> </publish>`` tag group:
+
 - **publish\_pose\_topic**: If provided, the pose of this object will be published as a topic with message type ``mvsim_msgs::Pose``.
 - **publish\_pose\_period**: Period (in seconds) for the topic publication.
 
+Example:
+
+.. code-block:: xml
+
+	<publish>
+	  <publish_pose_topic>/r1/pose</publish_pose_topic>
+	  <publish_pose_period>50e-3</publish_pose_period>
+	</publish>
+
 Related to visual aspect
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Under the ``<visual> </visual>`` tag group:
 
 - **model\_uri**: Path to 3D model file. Can be any file format supported by ASSIMP, 
   like ``.dae``, ``.stl``, etc. If empty, the default visual aspect will be used.
@@ -321,6 +334,18 @@ Related to visual aspect
 - **model\_offset_x**, **model\_offset_y** , **model\_offset_z**: (Default=0) Offset translation [meters].
 - **model\_yaw**, **model\_pitch**, **model\_roll**: (Default=0) Optional model rotation [degrees].
 - **show_bounding_box**: (Default=``false``) Initial visibility of the object bounding box.
+
+Example:
+
+.. code-block:: xml
+
+	<visual>
+	  <model_uri>robot.obj</model_uri>
+	  <model_scale>1.0</model_scale>
+	  <model_offset_x>0.0</model_offset_x>
+	  <model_offset_y>0.0</model_offset_y>
+	  <model_offset_z>0.0</model_offset_z>
+	</visual>
 
 
 Simulation execution
