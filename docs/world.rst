@@ -7,18 +7,15 @@ managing GUI visualization, etc. The ROS node acts as a bridge between
 this class and the ROS subsystem.
 
 Simulated worlds are described via configuration files
-called “world” files, defined in the XML file format.
+called "world" files, defined in the XML file format.
 
 Many examples can be found in the
 `mvsim_tutorial directory <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_.
 
-The next sections define valid values for XML elements in a world file.
-
-*world.xml* sections
-----------------------
+The next sections explain possible XML elements in a world file.
 
 1. Global XML tags
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 World definition begins with tag **<mvsim\_world>**. To define
 simulation timestep, use **<simul\_timestep>** with *float* value
@@ -35,7 +32,7 @@ specified in seconds.
 
 
 2. GUI options
-~~~~~~~~~~~~~~~~~
+-----------------
 
 GUI options are specified with tag *gui*. *gui* has several nested tags:
 
@@ -64,19 +61,19 @@ GUI options are specified with tag *gui*. *gui* has several nested tags:
 	</mvsim_world>
 
 
-3. Scenario definition
-~~~~~~~~~~~~~~~~~~~~~~~
+3. "World elements"
+---------------------
 
-Scenario defines the “level” where the simulation takes place.
+Scenario defines the "level" where the simulation takes place.
 
-**<element class=“occupancy\_grid”>** depicts MRPT occupancy map which
+**<element class="occupancy\_grid">** depicts MRPT occupancy map which
 can be specified with both image file (black and while) and MRPT grid
 maps. **<file>** specifies file path to image of the map.
 
-**<element class=“ground\_grid”>** is the metric grid for visual
+**<element class="ground\_grid">** is the metric grid for visual
 reference.
 
-**<element class=“elevation\_map”>** is an elevation map
+**<element class="elevation\_map">** is an elevation map
 (!experimental). Mesh-based map is build of elevation map in simple
 bitmap where whiter means higher and darker - lower.
 
@@ -95,8 +92,8 @@ This tag has several subtags:
 
 -  **<resolution>** - mesh XY scale
 
-4. Vehicle descriptions
-~~~~~~~~~~~~~~~~~~~~~~~~
+4. Vehicle class descriptions
+--------------------------------
 
 Tag **<vehicle:class>** depictd description of vehicle class. The
 attribute *name* will be later referenced when describing vehicle
@@ -264,7 +261,8 @@ At the moment, only laser scanner sensor is implemented, its type is
 
 -  **<bodies\_visible>** - boolean flag to see other robots or not
 
-Vehicle instantiations
+
+5. Vehicle instances
 -------------------------
 
 For each vehicle **class**, an arbitrary number of vehicle **instances**
@@ -282,8 +280,51 @@ Subtags are:
 -  **<init\_vel>** - in local coordinates: :math:`v_x`,\ :math:`v_y`,
    :math:`\omega` (deg/s)
 
+
+6. "Obstacle block" classes
+-----------------------------
+
+Write me!
+
+
+7. "Obstacle block" instances
+-------------------------------
+
+Write me!
+
+
+8. Vehicles and blocks parameters
+-----------------------------------
+
+Vehicles and obstacles blocks share common C++ ``mvsim::Simulable`` and 
+``mvsim::VisualObject`` interfaces that provide the common parameters below.
+
+.. note::
+
+   The following parameters can appear in either the {vehicle,block} class 
+   definitions or in a particular instantiation block, depending on whether you 
+   want parameters to be common to all instances or not, respectively. 
+
+
+Related to topic publication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **publish\_pose\_topic**: If provided, the pose of this object will be published as a topic with message type ``mvsim_msgs::Pose``.
+- **publish\_pose\_period**: Period (in seconds) for the topic publication.
+
+Related to visual aspect
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **model\_uri**: Path to 3D model file. Can be any file format supported by ASSIMP, 
+  like ``.dae``, ``.stl``, etc. If empty, the default visual aspect will be used.
+- **model\_scale**: (Default=1.0) Scale to apply to the 3D model.
+- **model\_offset_x**, **model\_offset_y** , **model\_offset_z**: (Default=0) Offset translation [meters].
+- **model\_yaw**, **model\_pitch**, **model\_roll**: (Default=0) Optional model rotation [degrees].
+- **show_bounding_box**: (Default=``false``) Initial visibility of the object bounding box.
+
+
 Simulation execution
-------------------------
+========================
 
 Simulation executes step-by-step with user-defined :math:`\Delta t` time
 between steps. Each step has several sub steps:
