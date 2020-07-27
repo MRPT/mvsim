@@ -85,6 +85,8 @@ variant_t recursiveParse(
 }
 }  // namespace internal
 
+std::string get_zmq_endpoint(const zmq::socket_t& s);
+
 /** Parses a ZMQ message into one of a set of possible protobuf message types,
  * passed as a std::variant<...>.
  *

@@ -224,7 +224,39 @@ void Server::db_advertise_topic(
 
 	// 2) If clients are already waiting for this topic, inform them so they
 	// can subscribe to this new source of data:
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+#endif
 	MRPT_TODO("TO-DO");
+}
+
+void Server::db_add_topic_subscriber(
+	const std::string& topicName, const std::string& updatesEndPoint)
+{
+	std::unique_lock lck(dbMutex);
+
+	auto& dbTopic = knownTopics_[topicName];
+
+	dbTopic.subscribers.try_emplace(
+		updatesEndPoint, topicName, updatesEndPoint);
+
+	// Send all currently-existing publishers:
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mvsim_msgs::TopicInfo tiMsg;
+	tiMsg.set_topicname(topicName);
+	tiMsg.set_topictype(dbTopic.topicTypeName);
+
+	for (const auto& pub : dbTopic.publishers)
+	{
+		tiMsg.add_publishername(pub.second.publisherNodeName);
+		tiMsg.add_publisherendpoint(pub.second.publisherEndpoint);
+	}
+
+	ASSERT_(mainThreadZMQcontext_);
+	zmq::socket_t s(*mainThreadZMQcontext_, ZMQ_REQ);
+	s.connect(updatesEndPoint);
+	ASSERT_(s.connected());
+	sendMessage(tiMsg, s);
+#endif
 }
 
 void Server::db_advertise_service(
@@ -315,9 +347,14 @@ void Server::handle(const mvsim_msgs::SubscribeRequest& m, zmq::socket_t& s)
 	MRPT_LOG_DEBUG_STREAM(
 		"Subscription request for topic " << m.topic() << "'");
 
-	mvsim_msgs::SubscribeAnswer ans;
-	MRPT_TODO("TO DO");
+	// Include in our DB of subscriptions:
+	// This also sends the subcriber the list of existing endpoints it must
+	// subscribe to:
+	db_add_topic_subscriber(m.topic(), m.updatesendpoint());
 
+	mvsim_msgs::SubscribeAnswer ans;
+	ans.set_topic(m.topic());
+	ans.set_success(true);
 	mvsim::sendMessage(ans, s);
 }
 
@@ -370,13 +407,13 @@ void Server::handle(const mvsim_msgs::ListTopicsRequest& m, zmq::socket_t& s)
 			name.substr(0, queryPrefix.size()) == queryPrefix)
 		{
 			auto tInfo = ans.add_topics();
-			tInfo->set_name(name);
-			tInfo->set_type(t.topicTypeName);
+			tInfo->set_topicname(name);
+			tInfo->set_topictype(t.topicTypeName);
 
 			for (const auto& pubs : t.publishers)
 			{
 				tInfo->add_publishername(pubs.second.publisherNodeName);
-				tInfo->add_endpoint(pubs.second.publisherEndpoint);
+				tInfo->add_publisherendpoint(pubs.second.publisherEndpoint);
 			}
 		}
 	}

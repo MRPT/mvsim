@@ -4,5 +4,5 @@ package mvsim_msgs;
 
 message SubscribeRequest {
   required string topic = 1;
-  required fixed32 maxQueue = 2;
+  required string updatesEndpoint = 2;
 }

@@ -15,7 +15,7 @@ source_group(Comms FILES ${Comms_SRCS})
 
 mvsim_common_target_settings(${MODULE_NAME})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE mvsim::msgs)
+target_link_libraries(${PROJECT_NAME} PUBLIC mvsim::msgs)
 
 target_link_libraries(${PROJECT_NAME}
  PRIVATE
