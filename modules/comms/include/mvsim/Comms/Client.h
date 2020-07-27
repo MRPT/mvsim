@@ -10,16 +10,24 @@
 #pragma once
 
 #include <mrpt/system/COutputLogger.h>
+#include <mvsim/Comms/common.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
 #include <atomic>
 #include <memory>
 #include <thread>
 
+namespace mvsim::internal
+{
+struct InfoPerService;
+struct InfoPerSubscribedTopic;
+}  // namespace mvsim::internal
+
 namespace mvsim
 {
 /** This is the connection of any user program with the MVSIM server, so
- * it can advertise and subscribe to topics.
+ * it can advertise and subscribe to topics and use remote services.
+ *
  * Users should instance a class mvsim::Client (C++) or mvsim.Client (Python) to
  * communicate with the simulation runnin in mvsim::World or any other module.
  *
@@ -62,6 +70,11 @@ class Client : public mrpt::system::COutputLogger
 	void publishTopic(
 		const std::string& topicName, const google::protobuf::Message& msg);
 
+	template <typename MSG_T>
+	void subscribeTopic(
+		const std::string& topicName,
+		const std::function<void(const MSG_T&)>& callback);
+
 	template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
 	void advertiseService(
 		const std::string& serviceName,
@@ -88,10 +101,6 @@ class Client : public mrpt::system::COutputLogger
 
 	/** @} */
 
-	using service_callback_t =
-		std::function<std::shared_ptr<google::protobuf::Message>(
-			const std::string& /*inAsString*/)>;
-
    private:
 	struct ZMQImpl;
 	std::unique_ptr<ZMQImpl> zmq_;
@@ -100,11 +109,17 @@ class Client : public mrpt::system::COutputLogger
 	std::string nodeName_ = "anonymous";
 
 	std::thread serviceInvokerThread_;
+	std::thread topicUpdatesThread_;
 
 	void doRegisterClient();
 	void doUnregisterClient();
 
 	void internalServiceServingThread();
+	void internalTopicUpdatesThread();
+
+	using service_callback_t =
+		std::function<std::shared_ptr<google::protobuf::Message>(
+			const std::string& /*inAsString*/)>;
 
 	void doAdvertiseTopic(
 		const std::string& topicName,
@@ -115,9 +130,18 @@ class Client : public mrpt::system::COutputLogger
 		const google::protobuf::Descriptor* descOut,
 		service_callback_t callback);
 
+	using topic_callback_t = std::function<void(const zmq::message_t& /*m*/)>;
+
+	void doSubscribeTopic(
+		const std::string& topicName,
+		const google::protobuf::Descriptor* descriptor,
+		const topic_callback_t& callback);
 	void doCallService(
 		const std::string& serviceName, const google::protobuf::Message& input,
 		google::protobuf::Message& output);
+
+	friend struct internal::InfoPerService;
+	friend struct internal::InfoPerSubscribedTopic;
 };
 
 template <typename T>
@@ -137,6 +161,20 @@ void Client::advertiseService(
 			INPUT_MSG_T in;
 			in.ParseFromString(inData);
 			return std::make_shared<OUTPUT_MSG_T>(callback(in));
+		}));
+}
+
+template <typename MSG_T>
+void Client::subscribeTopic(
+	const std::string& topicName,
+	const std::function<void(const MSG_T&)>& callback)
+{
+	doSubscribeTopic(
+		topicName, MSG_T::descriptor(),
+		topic_callback_t([callback](const zmq::message_t& m) {
+			MSG_T in;
+			mvsim::parseMessage(m, in);
+			callback(in);
 		}));
 }
 

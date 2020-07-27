@@ -123,11 +123,11 @@ function(mvsim_common_target_settings MODULENAME_)
   )
 
   if (MVSIM_WITH_PROTOBUF)
-    target_compile_definitions(${TARGETNAME_} PRIVATE MVSIM_HAS_PROTOBUF)
+    target_compile_definitions(${TARGETNAME_} PUBLIC MVSIM_HAS_PROTOBUF)
   endif()
   
   if (MVSIM_WITH_ZMQ)
-    target_compile_definitions(${TARGETNAME_} PRIVATE MVSIM_HAS_ZMQ)
+    target_compile_definitions(${TARGETNAME_} PUBLIC MVSIM_HAS_ZMQ)
   endif()
 
   # ==== Install & export target ========

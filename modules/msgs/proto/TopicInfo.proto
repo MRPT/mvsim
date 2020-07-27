@@ -3,10 +3,10 @@ syntax = "proto2";
 package mvsim_msgs;
 
 message TopicInfo {
-  required string name = 1;
-  required string type = 2;
+  required string topicName = 1;
+  required string topicType = 2;
   
   // endpoint and publisherName will always be the same size.
-  repeated string endpoint = 3;
+  repeated string publisherEndpoint = 3;
   repeated string publisherName = 4;
 }

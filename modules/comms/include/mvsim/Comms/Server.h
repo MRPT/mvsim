@@ -16,7 +16,7 @@
 
 #include <atomic>
 #include <set>
-#include <shared_mutex>  // read/write mutex
+#include <shared_mutex>	 // read/write mutex
 #include <thread>
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -121,6 +121,9 @@ class Server : public mrpt::system::COutputLogger
 		const std::string& serviceName, std::string& publisherEndpoint,
 		std::string& nodeName) const;
 
+	void db_add_topic_subscriber(
+		const std::string& topicName, const std::string& updatesEndPoint);
+
 	struct InfoPerNode
 	{
 		InfoPerNode(const std::string& name) : nodeName(name) {}
@@ -136,6 +139,8 @@ class Server : public mrpt::system::COutputLogger
 	using node_name_t = std::string;
 	std::map<node_name_t, InfoPerNode> connectedNodes_;
 
+	using endpoint_t = std::string;
+
 	struct InfoPerPublisher
 	{
 		InfoPerPublisher(
@@ -149,7 +154,20 @@ class Server : public mrpt::system::COutputLogger
 		}
 		const std::string topicName;
 		const std::string publisherNodeName;
-		const std::string publisherEndpoint;
+		const endpoint_t publisherEndpoint;
+	};
+
+	struct InfoPerSubscriber
+	{
+		InfoPerSubscriber(
+			const std::string& topic_name,
+			const std::string& sub_updates_endpoint)
+			: topicName(topic_name),
+			  subscriberUpdatesEndpoint(sub_updates_endpoint)
+		{
+		}
+		const std::string topicName;
+		const endpoint_t subscriberUpdatesEndpoint;
 	};
 
 	struct InfoPerTopic
@@ -163,6 +181,7 @@ class Server : public mrpt::system::COutputLogger
 		std::string topicName, topicTypeName;
 
 		std::map<node_name_t, InfoPerPublisher> publishers;
+		std::map<endpoint_t, InfoPerSubscriber> subscribers;
 	};
 	using topic_name_t = std::string;
 	std::map<topic_name_t, InfoPerTopic> knownTopics_;

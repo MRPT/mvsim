@@ -74,4 +74,13 @@ zmq::message_t mvsim::receiveMessage(zmq::socket_t& s)
 	return m;
 }
 
+std::string mvsim::get_zmq_endpoint(const zmq::socket_t& s)
+{
+	char assignedPort[200];
+	size_t assignedPortLen = sizeof(assignedPort);
+	s.getsockopt(ZMQ_LAST_ENDPOINT, assignedPort, &assignedPortLen);
+	assignedPort[assignedPortLen] = '\0';
+	return {assignedPort};
+}
+
 #endif

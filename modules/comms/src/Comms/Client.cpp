@@ -39,6 +39,8 @@
 #include "ListTopicsRequest.pb.h"
 #include "RegisterNodeAnswer.pb.h"
 #include "RegisterNodeRequest.pb.h"
+#include "SubscribeAnswer.pb.h"
+#include "SubscribeRequest.pb.h"
 #include "UnregisterNodeRequest.pb.h"
 
 #endif
@@ -46,6 +48,8 @@
 using namespace mvsim;
 
 #if defined(MVSIM_HAS_ZMQ)
+namespace mvsim::internal
+{
 struct InfoPerAdvertisedTopic
 {
 	InfoPerAdvertisedTopic(zmq::context_t& c) : context(c) {}
@@ -67,6 +71,28 @@ struct InfoPerService
 	const google::protobuf::Descriptor* descOutput = nullptr;
 	Client::service_callback_t callback;
 };
+struct InfoPerSubscribedTopic
+{
+	InfoPerSubscribedTopic(zmq::context_t& c) : context(c)
+	{
+		MRPT_TODO("Launch thread!");
+	}
+	~InfoPerSubscribedTopic()
+	{
+		if (topicThread.joinable()) topicThread.join();
+	}
+
+	zmq::context_t& context;
+
+	std::string topicName;
+	zmq::socket_t subSocket = zmq::socket_t(context, ZMQ_SUB);
+	const google::protobuf::Descriptor* descriptor = nullptr;
+
+	std::vector<Client::topic_callback_t> callbacks;
+
+	std::thread topicThread;
+};
+}  // namespace mvsim::internal
 #endif
 
 struct Client::ZMQImpl
@@ -76,12 +102,19 @@ struct Client::ZMQImpl
 	std::optional<zmq::socket_t> mainReqSocket;
 	mvsim::SocketMonitor mainReqSocketMonitor;
 
-	std::map<std::string, InfoPerAdvertisedTopic> advertisedTopics;
+	std::map<std::string, internal::InfoPerAdvertisedTopic> advertisedTopics;
 	std::shared_mutex advertisedTopics_mtx;
 
 	std::optional<zmq::socket_t> srvListenSocket;
-	std::map<std::string, InfoPerService> offeredServices;
+	std::map<std::string, internal::InfoPerService> offeredServices;
 	std::shared_mutex offeredServices_mtx;
+
+	std::map<std::string, internal::InfoPerSubscribedTopic> subscribedTopics;
+	std::shared_mutex subscribedTopics_mtx;
+
+	std::optional<zmq::socket_t> topicNotificationsSocket;
+	std::string topicNotificationsEndPoint;
+
 #endif
 };
 
@@ -139,9 +172,29 @@ void Client::connect()
 
 	serviceInvokerThread_ =
 		std::thread(&Client::internalServiceServingThread, this);
-
 #if MRPT_VERSION >= 0x204
 	mrpt::system::thread_name("services_"s + nodeName_, serviceInvokerThread_);
+#endif
+
+	// Create listening socket for subscription updates:
+	zmq_->topicNotificationsSocket.emplace(zmq_->context, ZMQ_REP);
+	zmq_->topicNotificationsSocket->bind("tcp://0.0.0.0:*"s);
+
+	if (!zmq_->topicNotificationsSocket->connected())
+		THROW_EXCEPTION("Error binding topic updates listening socket.");
+
+	zmq_->topicNotificationsEndPoint =
+		get_zmq_endpoint(*zmq_->topicNotificationsSocket);
+
+	ASSERTMSG_(
+		!topicUpdatesThread_.joinable(),
+		"Client topic updates thread is already running!");
+
+	topicUpdatesThread_ =
+		std::thread(&Client::internalTopicUpdatesThread, this);
+#if MRPT_VERSION >= 0x204
+	mrpt::system::thread_name(
+		"topicUpdates_"s + nodeName_, topicUpdatesThread_);
 #endif
 
 #else
@@ -281,17 +334,17 @@ std::vector<Client::InfoPerTopic> Client::requestListOfTopics()
 		const auto& t = lta.topics(i);
 		auto& dst = topics[i];
 
-		dst.name = t.name();
-		dst.type = t.type();
+		dst.name = t.topicname();
+		dst.type = t.topictype();
 
-		ASSERT_EQUAL_(t.endpoint_size(), t.publishername_size());
-		dst.endpoints.resize(t.endpoint_size());
-		dst.publishers.resize(t.endpoint_size());
+		ASSERT_EQUAL_(t.publisherendpoint_size(), t.publishername_size());
+		dst.endpoints.resize(t.publisherendpoint_size());
+		dst.publishers.resize(t.publisherendpoint_size());
 
-		for (int k = 0; k < t.endpoint_size(); k++)
+		for (int k = 0; k < t.publisherendpoint_size(); k++)
 		{
 			dst.publishers[k] = t.publishername(k);
-			dst.endpoints[k] = t.endpoint(k);
+			dst.endpoints[k] = t.publisherendpoint(k);
 		}
 	}
 	return topics;
@@ -318,7 +371,7 @@ void Client::doAdvertiseTopic(
 
 	// the ctor of InfoPerAdvertisedTopic automatically creates a ZMQ_PUB
 	// socket in pubSocket
-	InfoPerAdvertisedTopic& ipat =
+	internal::InfoPerAdvertisedTopic& ipat =
 		advTopics.emplace_hint(advTopics.begin(), topicName, zmq_->context)
 			->second;
 
@@ -330,13 +383,7 @@ void Client::doAdvertiseTopic(
 		THROW_EXCEPTION("Could not bind publisher socket");
 
 	// Retrieve assigned TCP port:
-	char assignedPort[100];
-	size_t assignedPortLen = sizeof(assignedPort);
-	ipat.pubSocket.getsockopt(
-		ZMQ_LAST_ENDPOINT, assignedPort, &assignedPortLen);
-	assignedPort[assignedPortLen] = '\0';
-
-	ipat.endpoint = assignedPort;
+	ipat.endpoint = get_zmq_endpoint(ipat.pubSocket);
 	ipat.topicName = topicName;	 // redundant in container, but handy.
 	ipat.descriptor = descriptor;
 
@@ -384,7 +431,7 @@ void Client::doAdvertiseService(
 			"Service `%s` already registered in this same client!",
 			serviceName.c_str());
 
-	InfoPerService& ips = services[serviceName];
+	internal::InfoPerService& ips = services[serviceName];
 
 	lck.unlock();
 
@@ -455,8 +502,7 @@ void Client::publishTopic(
 	ASSERTMSG_(
 		msg.GetDescriptor() == ipat.descriptor,
 		mrpt::format(
-			"Topic `%s` has type `%s`, but expected `%s` from former call "
-			"to "
+			"Topic `%s` has type `%s`, but expected `%s` from former call to "
 			"advertiseTopic()?",
 			topicName.c_str(), msg.GetDescriptor()->name().c_str(),
 			ipat.descriptor->name().c_str()));
@@ -515,7 +561,7 @@ void Client::internalServiceServingThread()
 				continue;
 			}
 
-			InfoPerService& ips = itSrv->second;
+			internal::InfoPerService& ips = itSrv->second;
 
 			// MRPT_TODO("Check input descriptor?");
 
@@ -548,6 +594,90 @@ void Client::internalServiceServingThread()
 			<< mrpt::exception_to_str(e));
 	}
 	MRPT_LOG_DEBUG_STREAM("internalServiceServingThread quitted.");
+
+#endif
+}
+
+void Client::internalTopicUpdatesThread()
+{
+	using namespace std::string_literals;
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	try
+	{
+		MRPT_LOG_DEBUG_STREAM(
+			"[" << nodeName_ << "] Client topic updates thread started.");
+
+		zmq::socket_t& s = *zmq_->topicNotificationsSocket;
+
+		for (;;)
+		{
+			//  Wait for next update from server:
+			zmq::message_t m = mvsim::receiveMessage(s);
+
+			// parse it:
+			mvsim_msgs::TopicInfo tiMsg;
+			mvsim::parseMessage(m, tiMsg);
+
+			// We got a message. This means we have to new endpoints to
+			// subscribe, either because we have just subscribed to a new topic,
+			// or a new node has advertised a topic we already subscribed in the
+			// past.
+
+			// Look for the entry in the list of subscribed topics:
+			std::shared_lock<std::shared_mutex> lck(zmq_->subscribedTopics_mtx);
+			const auto& topicName = tiMsg.topicname();
+
+			auto itTopic = zmq_->subscribedTopics.find(topicName);
+			if (itTopic == zmq_->subscribedTopics.end())
+			{
+				// This shouldn't happen (?).
+				MRPT_LOG_WARN_STREAM(
+					"Received a topic `"
+					<< topicName
+					<< "` update message from server, but this node is not "
+					   "subscribed to it (!).");
+				continue;
+			}
+
+			MRPT_LOG_DEBUG_STREAM(
+				"[internalTopicUpdatesThread] Received: "
+				<< tiMsg.DebugString());
+
+			internal::InfoPerSubscribedTopic& ipt = itTopic->second;
+
+			for (int i = 0; i < tiMsg.publisherendpoint_size(); i++)
+			{
+				ipt.subSocket.connect(tiMsg.publisherendpoint(i));
+			}
+
+			// No need to send response back to server.
+		}
+	}
+	catch (const zmq::error_t& e)
+	{
+		if (e.num() == ETERM)
+		{
+			// This simply means someone called
+			// requestMainThreadTermination(). Just exit silently.
+			MRPT_LOG_INFO_STREAM(
+				"internalTopicUpdatesThread about to exit for ZMQ term "
+				"signal.");
+		}
+		else
+		{
+			MRPT_LOG_ERROR_STREAM(
+				"internalTopicUpdatesThread: ZMQ error: " << e.what());
+		}
+	}
+	catch (const std::exception& e)
+	{
+		MRPT_LOG_ERROR_STREAM(
+			"internalTopicUpdatesThread: Exception: "
+			<< mrpt::exception_to_str(e));
+	}
+	MRPT_LOG_DEBUG_STREAM(
+		"[" << nodeName_ << "] Client topic updates thread quitted.");
 
 #endif
 }
@@ -593,6 +723,50 @@ void Client::doCallService(
 
 	const auto m = mvsim::receiveMessage(srvReqSock);
 	mvsim::parseMessage(m, output);
+#endif
+	MRPT_END
+}
+
+void Client::doSubscribeTopic(
+	const std::string& topicName,
+	const google::protobuf::Descriptor* descriptor,
+	const topic_callback_t& callback)
+{
+	MRPT_START
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	// Register in my internal DB:
+	std::unique_lock<std::shared_mutex> lck(zmq_->subscribedTopics_mtx);
+
+	auto& topics = zmq_->subscribedTopics;
+
+	// It's ok to subscribe more than once:
+	internal::InfoPerSubscribedTopic& ipt =
+		topics.emplace_hint(topics.begin(), topicName, zmq_->context)->second;
+
+	// subscribe to .recv() any message:
+	ipt.subSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+
+	ipt.callbacks.push_back(callback);
+
+	lck.unlock();
+
+	// Let the server know about our interest in the topic:
+	mvsim_msgs::SubscribeRequest subReq;
+	subReq.set_topic(topicName);
+	subReq.set_updatesendpoint(zmq_->topicNotificationsEndPoint);
+
+	mvsim::sendMessage(subReq, *zmq_->mainReqSocket);
+
+	const auto m = mvsim::receiveMessage(*zmq_->mainReqSocket);
+	mvsim_msgs::SubscribeAnswer subAns;
+	mvsim::parseMessage(m, subAns);
+
+	ASSERT_EQUAL_(subAns.topic(), topicName);
+	ASSERT_(subAns.success());
+
+	// That is... the rest will be done upon reception of messages from the
+	// server on potential clients we should subscribe to.
+
 #endif
 	MRPT_END
 }
