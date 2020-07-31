@@ -177,7 +177,7 @@ void Client::connect()
 #endif
 
 	// Create listening socket for subscription updates:
-	zmq_->topicNotificationsSocket.emplace(zmq_->context, ZMQ_REP);
+	zmq_->topicNotificationsSocket.emplace(zmq_->context, ZMQ_PAIR);
 	zmq_->topicNotificationsSocket->bind("tcp://0.0.0.0:*"s);
 
 	if (!zmq_->topicNotificationsSocket->connected())
@@ -384,7 +384,7 @@ void Client::doAdvertiseTopic(
 
 	// Retrieve assigned TCP port:
 	ipat.endpoint = get_zmq_endpoint(ipat.pubSocket);
-	ipat.topicName = topicName;	 // redundant in container, but handy.
+	ipat.topicName = topicName;  // redundant in container, but handy.
 	ipat.descriptor = descriptor;
 
 	MRPT_LOG_DEBUG_FMT(
@@ -442,7 +442,7 @@ void Client::doAdvertiseService(
 		ZMQ_LAST_ENDPOINT, assignedPort, &assignedPortLen);
 	assignedPort[assignedPortLen] = '\0';
 
-	ips.serviceName = serviceName;	// redundant in container, but handy.
+	ips.serviceName = serviceName;  // redundant in container, but handy.
 	ips.callback = callback;
 	ips.descInput = descIn;
 	ips.descOutput = descOut;
@@ -750,6 +750,9 @@ void Client::doSubscribeTopic(
 
 	lck.unlock();
 
+	ipt.topicThread =
+		std::thread([&]() { this->internalTopicSubscribeThread(ipt); });
+
 	// Let the server know about our interest in the topic:
 	mvsim_msgs::SubscribeRequest subReq;
 	subReq.set_topic(topicName);
@@ -769,4 +772,55 @@ void Client::doSubscribeTopic(
 
 #endif
 	MRPT_END
+}
+
+void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
+{
+	using namespace std::string_literals;
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	try
+	{
+		MRPT_LOG_DEBUG_STREAM(
+			"[" << nodeName_ << "] Client topic subscribe thread for `"
+				<< ipt.topicName << "` started.");
+
+		zmq::socket_t& s = ipt.subSocket;
+
+		for (;;)
+		{
+			//  Wait for next update from server:
+			zmq::message_t m = mvsim::receiveMessage(s);
+
+			// parse it:
+			std::cout << "RX topic " << ipt.topicName << " len:" << m.size()
+					  << "\n";
+		}
+	}
+	catch (const zmq::error_t& e)
+	{
+		if (e.num() == ETERM)
+		{
+			// This simply means someone called
+			// requestMainThreadTermination(). Just exit silently.
+			MRPT_LOG_INFO_STREAM(
+				"internalTopicSubscribeThread about to exit for ZMQ term "
+				"signal.");
+		}
+		else
+		{
+			MRPT_LOG_ERROR_STREAM(
+				"internalTopicSubscribeThread: ZMQ error: " << e.what());
+		}
+	}
+	catch (const std::exception& e)
+	{
+		MRPT_LOG_ERROR_STREAM(
+			"internalTopicSubscribeThread: Exception: "
+			<< mrpt::exception_to_str(e));
+	}
+	MRPT_LOG_DEBUG_STREAM(
+		"[" << nodeName_ << "] Client topic subscribe thread quitted.");
+
+#endif
 }

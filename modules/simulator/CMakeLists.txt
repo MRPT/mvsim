@@ -38,6 +38,11 @@ source_group(Friction FILES ${Friction_SRCS})
 source_group(VehicleDynamics FILES ${VehicleDynamics_SRCS})
 source_group(WorldElements FILES ${WorldElements_SRCS})
 
+set(PACKAGE_DEPENDENCIES
+  mrpt-maps
+  mrpt-gui
+  mvsim-comms
+  )
 mvsim_common_target_settings(${MODULE_NAME})
 
 
@@ -52,6 +57,7 @@ target_link_libraries(${PROJECT_NAME}
 	mrpt::opengl
 	mrpt::maps
 	mrpt::gui
+	mvsim::comms
 	${BOX2D_LIBRARIES}
 )
 
@@ -60,6 +66,4 @@ target_include_directories(${PROJECT_NAME}
 	SYSTEM PUBLIC
 		$<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
 )
-
-target_link_libraries(${PROJECT_NAME} PUBLIC mvsim::comms)
 

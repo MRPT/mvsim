@@ -3,6 +3,7 @@
 #include <mvsim/mvsim-msgs/Pose.pb.h>
 
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 void myCallback(const mvsim_msgs::Pose& p)
