@@ -116,6 +116,7 @@ class Client : public mrpt::system::COutputLogger
 
 	void internalServiceServingThread();
 	void internalTopicUpdatesThread();
+	void internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt);
 
 	using service_callback_t =
 		std::function<std::shared_ptr<google::protobuf::Message>(

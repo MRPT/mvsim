@@ -13,9 +13,13 @@ add_library(${PROJECT_NAME}
 
 source_group(Comms FILES ${Comms_SRCS})
 
+set(PACKAGE_DEPENDENCIES 
+  mrpt-system
+  mrpt-io
+  mrpt-serialization
+  mvsim-msgs
+  )
 mvsim_common_target_settings(${MODULE_NAME})
-
-target_link_libraries(${PROJECT_NAME} PUBLIC mvsim::msgs)
 
 target_link_libraries(${PROJECT_NAME}
  PRIVATE
@@ -26,6 +30,7 @@ target_link_libraries(${PROJECT_NAME}
 	mrpt::system
 	mrpt::io
 	mrpt::serialization
+	mvsim::msgs
 )
 
 # =========== Python wrapper ==================

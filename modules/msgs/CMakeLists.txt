@@ -21,6 +21,7 @@ source_group(ProtobufMessages FILES
   ${PROTO_PY_FILES}
   ${PROTOBUF_DEFINITION_FILES}
 )
+set(PACKAGE_DEPENDENCIES "")
 mvsim_common_target_settings(${MODULE_NAME})
 
 if (MVSIM_WITH_PROTOBUF)

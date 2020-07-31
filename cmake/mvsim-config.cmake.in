@@ -1,9 +1,10 @@
 @PACKAGE_INIT@
 
-find_package(mrpt-maps REQUIRED)
-find_package(mrpt-gui REQUIRED)
-#find_package(mrpt-tclap REQUIRED)
+include(CMakeFindDependencyMacro)
+
+foreach(dep @PACKAGE_DEPENDENCIES@)
+  find_dependency(${dep})
+endforeach()
 
 include(${CMAKE_CURRENT_LIST_DIR}/@TARGETNAME_@-targets.cmake)
-
 

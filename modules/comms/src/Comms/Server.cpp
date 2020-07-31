@@ -252,7 +252,7 @@ void Server::db_add_topic_subscriber(
 	}
 
 	ASSERT_(mainThreadZMQcontext_);
-	zmq::socket_t s(*mainThreadZMQcontext_, ZMQ_REQ);
+	zmq::socket_t s(*mainThreadZMQcontext_, ZMQ_PAIR);
 	s.connect(updatesEndPoint);
 	ASSERT_(s.connected());
 	sendMessage(tiMsg, s);
