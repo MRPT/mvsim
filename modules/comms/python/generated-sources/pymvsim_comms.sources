@@ -1,2 +1,3 @@
 pymvsim_comms.cpp
+mvsim/Comms/common.cpp
 mvsim/Comms/Client.cpp
