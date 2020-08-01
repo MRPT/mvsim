@@ -131,6 +131,8 @@ class VehicleBase : public VisualObject, public Simulable
 
 	virtual ControllerBaseInterface* getControllerInterface() = 0;
 
+	void registerOnServer(mvsim::Client& c) override;
+
    protected:
 	std::map<std::string, std::shared_ptr<CSVLogger>> m_loggers;
 	std::string m_log_path;

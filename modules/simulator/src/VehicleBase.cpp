@@ -765,3 +765,10 @@ void VehicleBase::apply_force(
 		applyPoint.x, applyPoint.y));  // Application point -> world coords
 	m_b2d_body->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }
+
+void VehicleBase::registerOnServer(mvsim::Client& c)
+{
+	// register myself, and my children objects:
+	Simulable::registerOnServer(c);
+	for (auto& sensor : m_sensors) sensor->registerOnServer(c);
+}

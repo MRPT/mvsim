@@ -577,7 +577,7 @@ void Client::internalServiceServingThread()
 		{
 			// This simply means someone called
 			// requestMainThreadTermination(). Just exit silently.
-			MRPT_LOG_INFO_STREAM(
+			MRPT_LOG_DEBUG_STREAM(
 				"internalServiceServingThread about to exit for ZMQ term "
 				"signal.");
 		}
@@ -618,6 +618,11 @@ void Client::internalTopicUpdatesThread()
 			// parse it:
 			mvsim_msgs::TopicInfo tiMsg;
 			mvsim::parseMessage(m, tiMsg);
+
+			// Let the server know that we received this:
+			mvsim_msgs::GenericAnswer ans;
+			ans.set_success(true);
+			mvsim::sendMessage(ans, s);
 
 			// We got a message. This means we have to new endpoints to
 			// subscribe, either because we have just subscribed to a new topic,
@@ -660,7 +665,7 @@ void Client::internalTopicUpdatesThread()
 		{
 			// This simply means someone called
 			// requestMainThreadTermination(). Just exit silently.
-			MRPT_LOG_INFO_STREAM(
+			MRPT_LOG_DEBUG_STREAM(
 				"internalTopicUpdatesThread about to exit for ZMQ term "
 				"signal.");
 		}
@@ -748,6 +753,8 @@ void Client::doSubscribeTopic(
 
 	ipt.callbacks.push_back(callback);
 
+	ipt.topicName = topicName;
+
 	lck.unlock();
 
 	ipt.topicThread =
@@ -812,7 +819,7 @@ void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
 		{
 			// This simply means someone called
 			// requestMainThreadTermination(). Just exit silently.
-			MRPT_LOG_INFO_STREAM(
+			MRPT_LOG_DEBUG_STREAM(
 				"[" << nodeName_
 					<< "] Client topic subscribe thread about to exit for ZMQ "
 					   "term signal.");

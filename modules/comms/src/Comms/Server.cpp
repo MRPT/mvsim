@@ -134,7 +134,7 @@ void Server::internalServerThread()
 		{
 			// This simply means someone called requestMainThreadTermination().
 			// Just exit silently.
-			MRPT_LOG_INFO_STREAM(
+			MRPT_LOG_DEBUG_STREAM(
 				"Server thread about to exit for ZMQ term signal.");
 		}
 		else
@@ -256,6 +256,12 @@ void Server::db_add_topic_subscriber(
 	s.connect(updatesEndPoint);
 	ASSERT_(s.connected());
 	sendMessage(tiMsg, s);
+
+	mvsim_msgs::GenericAnswer ans;
+	const auto m = receiveMessage(s);
+	mvsim::parseMessage(m, ans);
+	ASSERT_(ans.success());
+
 #endif
 }
 
