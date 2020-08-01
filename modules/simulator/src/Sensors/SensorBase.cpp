@@ -10,6 +10,7 @@
 #include <mrpt/core/format.h>
 #include <mvsim/Sensors/LaserScanner.h>
 #include <mvsim/VehicleBase.h>
+#include <mvsim/World.h>
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
@@ -18,6 +19,10 @@
 #include <string>
 
 #include "xml_utils.h"
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+#include "GenericObservation.pb.h"
+#endif
 
 using namespace mvsim;
 
@@ -96,4 +101,42 @@ bool SensorBase::parseSensorPublish(
 
 	return true;
 	MRPT_END
+}
+
+void SensorBase::reportNewObservation(
+	const std::shared_ptr<mrpt::obs::CObservation>& obs,
+	const TSimulContext& context)
+{
+	// Notify the world:
+	m_world->onNewObservation(m_vehicle, obs.get());
+
+	// Publish:
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	if (!publishTopic_.empty())
+	{
+		mvsim_msgs::GenericObservation msg;
+		msg.set_unixtimestamp(mrpt::Clock::toDouble(obs->timestamp));
+		msg.set_sourceobjectid(m_vehicle.getName());
+
+		std::vector<uint8_t> serializedData;
+		mrpt::serialization::ObjectToOctetVector(obs.get(), serializedData);
+
+		msg.set_mrptserializedobservation(
+			serializedData.data(), serializedData.size());
+
+		context.world->commsClient().publishTopic(publishTopic_, msg);
+	}
+#endif
+}
+
+void SensorBase::registerOnServer(mvsim::Client& c)
+{
+	// Default base stuff:
+	Simulable::registerOnServer(c);
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	// Topic:
+	if (!publishTopic_.empty())
+		c.advertiseTopic<mvsim_msgs::GenericObservation>(publishTopic_);
+#endif
 }

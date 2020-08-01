@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <mrpt/obs/obs_frwds.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
@@ -36,6 +37,8 @@ class SensorBase : public VisualObject, public Simulable
 	double m_sensor_period;  //!< Generate one sensor reading every this period
 							 //!(in seconds) (Default = 0.1)
 
+	void registerOnServer(mvsim::Client& c) override;
+
    protected:
 	VehicleBase& m_vehicle;  //!< The vehicle this sensor is attached to
 
@@ -47,6 +50,10 @@ class SensorBase : public VisualObject, public Simulable
 	bool parseSensorPublish(
 		const rapidxml::xml_node<char>* node,
 		const std::map<std::string, std::string>& varValues);
+
+	void reportNewObservation(
+		const std::shared_ptr<mrpt::obs::CObservation>& obs,
+		const TSimulContext& context);
 };
 
 // Class factory:

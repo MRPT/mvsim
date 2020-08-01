@@ -121,7 +121,11 @@ void LaserScanner::internalGuiUpdate(
 		p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
 }
 
-void LaserScanner::simul_pre_timestep(const TSimulContext& context) {}
+void LaserScanner::simul_pre_timestep([
+	[maybe_unused]] const TSimulContext& context)
+{
+}
+
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void LaserScanner::simul_post_timestep(const TSimulContext& context)
 {
@@ -294,7 +298,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		m_last_scan2gui = m_last_scan;
 	}
 
-	m_world->onNewObservation(m_vehicle, m_last_scan.get());
+	SensorBase::reportNewObservation(m_last_scan, context);
 
 	m_gui_uptodate = false;
 }

@@ -16,7 +16,7 @@
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-#include "Pose.pb.h"
+#include "TimeStampedPose.pb.h"
 
 #endif
 
@@ -115,14 +115,18 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 
 	publishPoseLastTime_ = tNow;
 
-	MRPT_TODO("Change type to timestamped pose");
-	mvsim_msgs::Pose msg;
-	msg.set_x(m_q.x);
-	msg.set_y(m_q.y);
-	msg.set_z(.0);
-	msg.set_yaw(m_q.yaw);
-	msg.set_pitch(m_q.pitch);
-	msg.set_roll(m_q.roll);
+	mvsim_msgs::TimeStampedPose msg;
+	msg.set_unixtimestamp(tNow);
+	msg.set_objectid(m_name);
+
+	auto pose = msg.mutable_pose();
+	pose->set_x(m_q.x);
+	pose->set_y(m_q.y);
+	pose->set_z(.0);
+	pose->set_yaw(m_q.yaw);
+	pose->set_pitch(m_q.pitch);
+	pose->set_roll(m_q.roll);
+
 	client.publishTopic(publishPoseTopic_, msg);
 
 	MRPT_END
@@ -131,9 +135,12 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 void Simulable::registerOnServer(mvsim::Client& c)
 {
 	MRPT_START
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	// Topic:
 	if (!publishPoseTopic_.empty())
-		c.advertiseTopic<mvsim_msgs::Pose>(publishPoseTopic_);
+		c.advertiseTopic<mvsim_msgs::TimeStampedPose>(publishPoseTopic_);
+#endif
 
 	MRPT_END
 }

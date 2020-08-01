@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message GenericObservation {
+  required double unixTimestamp = 1;
+  required string sourceObjectId = 2;
+  required bytes  mrptSerializedObservation = 3;
+}

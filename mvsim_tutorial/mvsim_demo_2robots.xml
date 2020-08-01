@@ -71,6 +71,9 @@
 			<nrays>181</nrays>
 			<range_std_noise>0.01</range_std_noise>
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
+			<publish>
+			  <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
+			</publish>
 		</sensor>
 	</vehicle:class>
 
@@ -117,7 +120,6 @@
 			<publish>
 			  <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
 			</publish>
-
 		</sensor>
 
 		<!--  Custom visualization model -->
