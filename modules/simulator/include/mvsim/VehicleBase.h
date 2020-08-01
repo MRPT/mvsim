@@ -133,6 +133,14 @@ class VehicleBase : public VisualObject, public Simulable
 
 	void registerOnServer(mvsim::Client& c) override;
 
+	b2Fixture* get_fixture_chassis() { return m_fixture_chassis; }
+	std::vector<b2Fixture*>& get_fixture_wheels() { return m_fixture_wheels; }
+	const b2Fixture* get_fixture_chassis() const { return m_fixture_chassis; }
+	const std::vector<b2Fixture*>& get_fixture_wheels() const
+	{
+		return m_fixture_wheels;
+	}
+
    protected:
 	std::map<std::string, std::shared_ptr<CSVLogger>> m_loggers;
 	std::string m_log_path;
@@ -195,12 +203,10 @@ class VehicleBase : public VisualObject, public Simulable
 											   //! Size set at constructor.
 
    private:
-	void internal_internalGuiUpdate_sensors(
-		mrpt::opengl::COpenGLScene&
-			scene);  //!< Called from internalGuiUpdate_common()
-	void internal_internalGuiUpdate_forces(
-		mrpt::opengl::COpenGLScene&
-			scene);  //!< Called from internalGuiUpdate_common()
+	// Called from internalGuiUpdate_common()
+	void internal_internalGuiUpdate_sensors(mrpt::opengl::COpenGLScene& scene);
+	// Called from internalGuiUpdate_common()
+	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_chassis;
 	std::vector<mrpt::opengl::CSetOfObjects::Ptr> m_gl_wheels;

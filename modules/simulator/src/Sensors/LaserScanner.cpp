@@ -183,6 +183,21 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		lstScans.push_back(CObservation2DRangeScan(m_scan_model));
 		CObservation2DRangeScan& scan = lstScans.back();
 
+		// Avoid the lidar seeing the vehicle owns shape:
+		std::map<b2Fixture*, void*> orgUserData;
+
+		auto makeFixtureInvisible = [&](b2Fixture* f) {
+			if (!f) return;
+			orgUserData[f] = f->GetUserData();
+			f->SetUserData(INVISIBLE_FIXTURE_USER_DATA);
+		};
+		auto undoInvisibleFixtures = [&]() {
+			for (auto& kv : orgUserData) kv.first->SetUserData(kv.second);
+		};
+
+		makeFixtureInvisible(m_vehicle.get_fixture_chassis());
+		for (auto& f : m_vehicle.get_fixture_wheels()) makeFixtureInvisible(f);
+
 		// Do Box2D raycasting stuff:
 		// ------------------------------
 		// This callback finds the closest hit. Polygon 0 is filtered.
@@ -263,6 +278,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			}
 			scan.setScanRange(i, range);
 		}  // end for (raycast scan)
+
+		undoInvisibleFixtures();
 	}
 	m_world->getTimeLogger().leave("LaserScanner.scan.2.polygons");
 
