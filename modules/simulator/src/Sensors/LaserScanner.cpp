@@ -41,7 +41,10 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	TParameterDefinitions attribs;
 	attribs["name"] = TParamEntry("%s", &this->m_name);
 
-	parse_xmlnode_attribs(*root, attribs, "[LaserScanner]");
+	parse_xmlnode_attribs(*root, attribs, {}, "[LaserScanner]");
+
+	const std::map<std::string, std::string> varValues = {
+		{"NAME", m_name}, {"PARENT_NAME", m_vehicle.getName()}};
 
 	// Other scalar params:
 	int nRays = 181;
@@ -65,7 +68,10 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		TParamEntry("%bool", &this->m_viz_visiblePoints);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*root, params);
+	parse_xmlnode_children_as_param(*root, params, varValues);
+
+	// Parse common sensor XML params:
+	this->parseSensorPublish(root->first_node("publish"), varValues);
 
 	// Pass params to the scan2D obj:
 	m_scan_model.aperture = mrpt::DEG2RAD(fov_deg);

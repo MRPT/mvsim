@@ -39,8 +39,14 @@ class SensorBase : public VisualObject, public Simulable
    protected:
 	VehicleBase& m_vehicle;  //!< The vehicle this sensor is attached to
 
-	double m_sensor_last_timestamp;  //!< The last sensor reading timestamp. See
-									 //! m_sensor_period
+	/** The last sensor reading timestamp. See  m_sensor_period */
+	double m_sensor_last_timestamp;
+
+	std::string publishTopic_;
+
+	bool parseSensorPublish(
+		const rapidxml::xml_node<char>* node,
+		const std::map<std::string, std::string>& varValues);
 };
 
 // Class factory:

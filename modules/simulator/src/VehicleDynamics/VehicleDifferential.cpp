@@ -47,6 +47,8 @@ DynamicsDifferential::DynamicsDifferential(World* parent)
 void DynamicsDifferential::dynamics_load_params_from_xml(
 	const rapidxml::xml_node<char>* xml_node)
 {
+	const std::map<std::string, std::string> varValues = {{"NAME", m_name}};
+
 	// <chassis ...> </chassis>
 	const rapidxml::xml_node<char>* xml_chassis =
 		xml_node->first_node("chassis");
@@ -60,7 +62,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 		attribs["color"] = TParamEntry("%color", &this->m_chassis_color);
 
 		parse_xmlnode_attribs(
-			*xml_chassis, attribs,
+			*xml_chassis, attribs, varValues,
 			"[DynamicsDifferential::dynamics_load_params_from_xml]");
 
 		// Shape node (optional, fallback to default shape if none found)

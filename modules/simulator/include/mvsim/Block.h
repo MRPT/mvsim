@@ -68,8 +68,6 @@ class Block : public VisualObject, public Simulable
 		return m_block_com;
 	}  //!< In local coordinates
 
-	/** User-supplied name of the block (e.g. "block1") */
-	const std::string& getName() const { return m_name; }
 	/** Get the 2D shape of the block, as set from the config file (only used
 	 * for collision detection) */
 	const mrpt::math::TPolygon2D& getBlockShape() const { return m_block_poly; }
@@ -85,9 +83,6 @@ class Block : public VisualObject, public Simulable
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
 	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
-
-	/** User-supplied name of the block (e.g. "r1", "veh1") */
-	std::string m_name;
 
 	/** user-supplied index number: must be set/get'ed with setblockIndex()
 	 * getblockIndex() (default=0) */

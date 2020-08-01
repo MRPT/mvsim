@@ -19,6 +19,7 @@
 #include <mvsim/basic_types.h>
 
 #include <cstdio>
+#include "parse_utils.h"
 
 using namespace rapidxml;
 using namespace mvsim;
@@ -28,9 +29,12 @@ using namespace mvsim;
  * \exception std::runtime_error On format errors.
  */
 void TParamEntry::parse(
-	const std::string& str, const std::string& varName,
-	const char* function_name_context) const
+	const std::string& inStr, const std::string& varName,
+	const std::map<std::string, std::string>& variableNamesValues,
+	const char* functionNameContext) const
 {
+	const std::string str = mvsim::parse(inStr, variableNamesValues);
+
 	// Special cases:
 	// "%s" ==> std::strings
 	if (std::string(frmt) == std::string("%s"))
@@ -39,7 +43,7 @@ void TParamEntry::parse(
 		if (1 != ::sscanf(str.c_str(), frmt, auxStr))
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected format:'%s')",
-				function_name_context, varName.c_str(), str.c_str(), frmt));
+				functionNameContext, varName.c_str(), str.c_str(), frmt));
 		std::string& val2 = *reinterpret_cast<std::string*>(val);
 		val2 = mrpt::system::trim(auxStr);
 	}
@@ -50,7 +54,7 @@ void TParamEntry::parse(
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing attribute '%s'='%s' (Expected "
 				"format:'%s')",
-				function_name_context, varName.c_str(), str.c_str(), frmt));
+				functionNameContext, varName.c_str(), str.c_str(), frmt));
 		double& ang = *reinterpret_cast<double*>(val);
 		ang = mrpt::DEG2RAD(ang);
 	}
@@ -69,7 +73,7 @@ void TParamEntry::parse(
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing 'bool' attribute '%s'='%s' (Expected "
 				"'true' or 'false')",
-				function_name_context, varName.c_str(), str.c_str()));
+				functionNameContext, varName.c_str(), str.c_str()));
 	}
 	// "%color" ==> mrpt::img::TColor
 	else if (std::string(frmt) == std::string("%color"))
@@ -79,7 +83,7 @@ void TParamEntry::parse(
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected "
 				"format:'#RRGGBB[AA]')",
-				function_name_context, varName.c_str(), str.c_str()));
+				functionNameContext, varName.c_str(), str.c_str()));
 
 		unsigned int r, g, b, a = 0xff;
 		int ret = ::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
@@ -87,7 +91,7 @@ void TParamEntry::parse(
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected "
 				"format:'#RRGGBB[AA]')",
-				function_name_context, varName.c_str(), str.c_str()));
+				functionNameContext, varName.c_str(), str.c_str()));
 		mrpt::img::TColor& col = *reinterpret_cast<mrpt::img::TColor*>(val);
 		col = mrpt::img::TColor(r, g, b, a);
 	}
@@ -101,7 +105,7 @@ void TParamEntry::parse(
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected format:'X Y "
 				"YAW_DEG')",
-				function_name_context, varName.c_str(), str.c_str()));
+				functionNameContext, varName.c_str(), str.c_str()));
 
 		// User provides angles in deg:
 		yaw = mrpt::DEG2RAD(yaw);
@@ -123,8 +127,8 @@ void TParamEntry::parse(
 		}
 		else
 			throw std::runtime_error(mrpt::format(
-				"%s Error: Unknown format specifier '%s'",
-				function_name_context, frmt));
+				"%s Error: Unknown format specifier '%s'", functionNameContext,
+				frmt));
 	}
 	else
 	{
@@ -133,13 +137,15 @@ void TParamEntry::parse(
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing attribute '%s'='%s' (Expected "
 				"format:'%s')",
-				function_name_context, varName.c_str(), str.c_str(), frmt));
+				functionNameContext, varName.c_str(), str.c_str(), frmt));
 	}
 }
 
 void mvsim::parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node,
-	const TParameterDefinitions& params, const char* function_name_context)
+	const TParameterDefinitions& params,
+	const std::map<std::string, std::string>& variableNamesValues,
+	const char* functionNameContext)
 {
 	for (const auto& param : params)
 	{
@@ -147,13 +153,16 @@ void mvsim::parse_xmlnode_attribs(
 			xml_node.first_attribute(param.first.c_str());
 		if (attr && attr->value())
 			param.second.parse(
-				attr->value(), attr->name(), function_name_context);
+				attr->value(), attr->name(), variableNamesValues,
+				functionNameContext);
 	}
 }
 
 bool mvsim::parse_xmlnode_as_param(
 	const rapidxml::xml_node<char>& xml_node,
-	const TParameterDefinitions& params, const char* function_name_context)
+	const TParameterDefinitions& params,
+	const std::map<std::string, std::string>& variableNamesValues,
+	const char* functionNameContext)
 {
 	TParameterDefinitions::const_iterator it_param =
 		params.find(xml_node.name());
@@ -162,7 +171,8 @@ bool mvsim::parse_xmlnode_as_param(
 	{
 		// parse parameter:
 		it_param->second.parse(
-			xml_node.value(), xml_node.name(), function_name_context);
+			xml_node.value(), xml_node.name(), variableNamesValues,
+			functionNameContext);
 		return true;
 	}
 	return false;
@@ -172,12 +182,14 @@ bool mvsim::parse_xmlnode_as_param(
  */
 void mvsim::parse_xmlnode_children_as_param(
 	const rapidxml::xml_node<char>& root, const TParameterDefinitions& params,
-	const char* function_name_context)
+	const std::map<std::string, std::string>& variableNamesValues,
+	const char* functionNameContext)
 {
 	rapidxml::xml_node<>* node = root.first_node();
 	while (node)
 	{
-		parse_xmlnode_as_param(*node, params, function_name_context);
+		parse_xmlnode_as_param(
+			*node, params, variableNamesValues, functionNameContext);
 		node = node->next_sibling(nullptr);  // Move on to next node
 	}
 }
@@ -213,7 +225,7 @@ mrpt::math::TPose2D mvsim::parseXYPHI(
  */
 void mvsim::parse_xmlnode_shape(
 	const rapidxml::xml_node<char>& xml_node, mrpt::math::TPolygon2D& out_poly,
-	const char* function_name_context)
+	const char* functionNameContext)
 {
 	out_poly.clear();
 
@@ -222,7 +234,7 @@ void mvsim::parse_xmlnode_shape(
 	{
 		if (!pt_node->value())
 			throw std::runtime_error(mrpt::format(
-				"%s Error: <pt> node seems empty.", function_name_context));
+				"%s Error: <pt> node seems empty.", functionNameContext));
 
 		mrpt::math::TPoint2D pt;
 		const char* str_val = pt_node->value();
@@ -230,7 +242,7 @@ void mvsim::parse_xmlnode_shape(
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing <pt> node: '%s' (Expected format:'<pt>X "
 				"Y</pt>')",
-				function_name_context, str_val));
+				functionNameContext, str_val));
 
 		out_poly.push_back(pt);
 	}
@@ -239,5 +251,5 @@ void mvsim::parse_xmlnode_shape(
 		throw std::runtime_error(mrpt::format(
 			"%s Error: <shape> node requires 3 or more <pt>X Y</pt> "
 			"entries.",
-			function_name_context));
+			functionNameContext));
 }

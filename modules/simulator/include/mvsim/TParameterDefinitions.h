@@ -50,7 +50,8 @@ struct TParamEntry
 	 */
 	void parse(
 		const std::string& str, const std::string& varName,
-		const char* function_name_context = "") const;
+		const std::map<std::string, std::string>& variableNamesValues = {},
+		const char* functionNameContext = "") const;
 };
 
 /** Container mapping a list of parameter names to their type definitions and

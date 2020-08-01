@@ -92,8 +92,10 @@ bool Simulable::parseSimulable(const rapidxml::xml_node<char>* node)
 	params["publish_pose_topic"] = TParamEntry("%s", &publishPoseTopic_);
 	params["publish_pose_period"] = TParamEntry("%lf", &publishPosePeriod_);
 
+	const std::map<std::string, std::string> varValues = {{"NAME", m_name}};
+
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*node, params);
+	parse_xmlnode_children_as_param(*node, params, varValues);
 
 	return true;
 	MRPT_END

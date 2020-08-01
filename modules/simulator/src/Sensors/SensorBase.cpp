@@ -17,6 +17,8 @@
 #include <sstream>  // std::stringstream
 #include <string>
 
+#include "xml_utils.h"
+
 using namespace mvsim;
 
 TClassFactory_sensors mvsim::classFactory_sensors;
@@ -76,4 +78,22 @@ SensorBase::Ptr SensorBase::factory(
 			"[SensorBase::factory] Unknown sensor type '%s'", root->name()));
 
 	return we;
+}
+
+bool SensorBase::parseSensorPublish(
+	const rapidxml::xml_node<char>* node,
+	const std::map<std::string, std::string>& varValues)
+{
+	MRPT_START
+
+	if (node == nullptr) return false;
+
+	TParameterDefinitions params;
+	params["publish_topic"] = TParamEntry("%s", &publishTopic_);
+
+	// Parse XML params:
+	parse_xmlnode_children_as_param(*node, params, varValues);
+
+	return true;
+	MRPT_END
 }

@@ -69,7 +69,7 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 	const double INERTIA_NOT_SET = -1.;
 	this->Iyy = INERTIA_NOT_SET;
 
-	parse_xmlnode_attribs(*xml_node, m_params, "[Wheel]");
+	parse_xmlnode_attribs(*xml_node, m_params, {}, "[Wheel]");
 
 	// If not manually overrided, calc automatically:
 	if (Iyy == INERTIA_NOT_SET) this->recalcInertia();

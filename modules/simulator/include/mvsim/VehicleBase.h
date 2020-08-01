@@ -105,8 +105,6 @@ class VehicleBase : public VisualObject, public Simulable
 		return m_loggers[logger_name];
 	}
 
-	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
-	const std::string& getName() const { return m_name; }
 	/** Get the 2D shape of the vehicle chassis, as set from the config file
 	 * (only used for collision detection) */
 	const mrpt::math::TPolygon2D& getChassisShape() const
@@ -156,9 +154,6 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void invoke_motor_controllers(
 		const TSimulContext& context,
 		std::vector<double>& out_force_per_wheel) = 0;
-
-	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
-	std::string m_name;
 
 	/** user-supplied index number: must be set/get'ed with setVehicleIndex()
 	 * getVehicleIndex() (default=0) */
