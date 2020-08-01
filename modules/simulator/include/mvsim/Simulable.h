@@ -85,9 +85,15 @@ class Simulable
 	 * (ground-truth) */
 	const mrpt::math::TTwist2D& getVelocity() const { return m_dq; }
 
+	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
+	const std::string& getName() const { return m_name; }
+
 	virtual void registerOnServer(mvsim::Client& c);
 
    protected:
+	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
+	std::string m_name;
+
 	/** Derived classes must store here the body of the physical element (e.g.
 	 * chassis).
 	 * This is used by \a simul_post_timestep() to extract the block

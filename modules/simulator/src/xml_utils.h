@@ -26,7 +26,8 @@ namespace mvsim
 void parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node,
 	const TParameterDefinitions& params,
-	const char* function_name_context = "");
+	const std::map<std::string, std::string>& variableNamesValues = {},
+	const char* functionNameContext = "");
 
 /** Check whether the given XML node name matches any of the param list
  * \return false if no match found
@@ -35,22 +36,24 @@ void parse_xmlnode_attribs(
 bool parse_xmlnode_as_param(
 	const rapidxml::xml_node<char>& xml_node,
 	const TParameterDefinitions& params,
-	const char* function_name_context = "");
+	const std::map<std::string, std::string>& variableNamesValues = {},
+	const char* functionNameContext = "");
 
 /** Call \a parse_xmlnode_as_param() for all children nodes of the given node.
  */
 void parse_xmlnode_children_as_param(
 	const rapidxml::xml_node<char>& xml_node,
 	const TParameterDefinitions& params,
-	const char* function_name_context = "");
+	const std::map<std::string, std::string>& variableNamesValues = {},
+	const char* functionNameContext = "");
 
 template <class NODE_LIST>
 void parse_xmlnodelist_children_as_param(
 	NODE_LIST& lst_nodes, const TParameterDefinitions& params,
-	const char* function_name_context = "")
+	const char* functionNameContext = "")
 {
 	for (auto& node : lst_nodes)
-		parse_xmlnode_children_as_param(*node, params, function_name_context);
+		parse_xmlnode_children_as_param(*node, params, functionNameContext);
 }
 
 // Bits:
@@ -70,5 +73,5 @@ mrpt::math::TPose2D parseXYPHI(
  */
 void parse_xmlnode_shape(
 	const rapidxml::xml_node<char>& xml_node, mrpt::math::TPolygon2D& out_poly,
-	const char* function_name_context = "");
+	const char* functionNameContext = "");
 }  // namespace mvsim

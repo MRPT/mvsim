@@ -27,7 +27,7 @@ using namespace std;
 
 void World::TGUI_Options::parse_from(const rapidxml::xml_node<char>& node)
 {
-	parse_xmlnode_children_as_param(node, params, "[World::TGUI_Options]");
+	parse_xmlnode_children_as_param(node, params, {}, "[World::TGUI_Options]");
 }
 
 // Text labels unique IDs:

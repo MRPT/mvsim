@@ -114,6 +114,10 @@
 			<nrays>181</nrays>
 			<range_std_noise>0.01</range_std_noise>
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
+			<publish>
+			  <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
+			</publish>
+
 		</sensor>
 
 		<!--  Custom visualization model -->
@@ -137,7 +141,7 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 		
 		<publish>
-		  <publish_pose_topic>/r1/pose</publish_pose_topic>
+		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
 		  <publish_pose_period>50e-3</publish_pose_period>
 		</publish>
 	</vehicle>
@@ -147,11 +151,10 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<publish>
-		  <publish_pose_topic>/r2/pose</publish_pose_topic>
+		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
 		  <publish_pose_period>50e-3</publish_pose_period>
 		</publish>
 	</vehicle>
-
 
 
 	<!-- ======================================
@@ -202,14 +205,14 @@
 	<block class="square_obstacle">
 		<init_pose>6 5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<publish>
-		  <publish_pose_topic>/obstacle1/pose</publish_pose_topic>
+		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
 		  <publish_pose_period>50e-3</publish_pose_period>
 		</publish>
 	</block>
 	<block class="obstacle_table">
 		<init_pose>7 7 45</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<publish>
-		  <publish_pose_topic>/obstacle2/pose</publish_pose_topic>
+		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
 		  <publish_pose_period>50e-3</publish_pose_period>
 		</publish>
 	</block>

@@ -85,7 +85,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		attribs["color"] = TParamEntry("%color", &this->m_chassis_color);
 
 		parse_xmlnode_attribs(
-			*xml_chassis, attribs,
+			*xml_chassis, attribs, {},
 			"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
 
 		// Shape node (optional, fallback to default shape if none found)
@@ -129,7 +129,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &m_max_steer_ang);
 
 		parse_xmlnode_children_as_param(
-			*xml_node, ack_ps,
+			*xml_node, ack_ps, {},
 			"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
 
 		// Front-left:
@@ -154,7 +154,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		attribs["type"] = TParamEntry("%s", &diff_type);
 
 		parse_xmlnode_attribs(
-			*xml_drive, attribs,
+			*xml_drive, attribs, {},
 			"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
 
 		for (size_t i = 0; i < DifferentialType::DIFF_MAX; ++i)
@@ -180,7 +180,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 			TParamEntry("%lf", &m_RearLRBias);
 
 		parse_xmlnode_children_as_param(
-			*xml_drive, drive_params,
+			*xml_drive, drive_params, {},
 			"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
 	}
 
