@@ -73,10 +73,7 @@ struct InfoPerService
 };
 struct InfoPerSubscribedTopic
 {
-	InfoPerSubscribedTopic(zmq::context_t& c) : context(c)
-	{
-		MRPT_TODO("Launch thread!");
-	}
+	InfoPerSubscribedTopic(zmq::context_t& c) : context(c) {}
 	~InfoPerSubscribedTopic()
 	{
 		if (topicThread.joinable()) topicThread.join();
@@ -229,6 +226,9 @@ void Client::shutdown() noexcept
 #endif
 
 	if (serviceInvokerThread_.joinable()) serviceInvokerThread_.join();
+	if (topicUpdatesThread_.joinable()) topicUpdatesThread_.join();
+	zmq_->subscribedTopics.clear();
+	zmq_->offeredServices.clear();
 
 #endif
 }
@@ -790,11 +790,20 @@ void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
 		for (;;)
 		{
 			//  Wait for next update from server:
-			zmq::message_t m = mvsim::receiveMessage(s);
+			const zmq::message_t m = mvsim::receiveMessage(s);
 
-			// parse it:
-			std::cout << "RX topic " << ipt.topicName << " len:" << m.size()
-					  << "\n";
+			// Send to subscriber callbacks:
+			try
+			{
+				for (auto callback : ipt.callbacks) callback(m);
+			}
+			catch (const std::exception& e)
+			{
+				MRPT_LOG_ERROR_STREAM(
+					"Exception in topic `"
+					<< ipt.topicName
+					<< "` subscription callback:" << mrpt::exception_to_str(e));
+			}
 		}
 	}
 	catch (const zmq::error_t& e)
@@ -804,8 +813,9 @@ void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
 			// This simply means someone called
 			// requestMainThreadTermination(). Just exit silently.
 			MRPT_LOG_INFO_STREAM(
-				"internalTopicSubscribeThread about to exit for ZMQ term "
-				"signal.");
+				"[" << nodeName_
+					<< "] Client topic subscribe thread about to exit for ZMQ "
+					   "term signal.");
 		}
 		else
 		{

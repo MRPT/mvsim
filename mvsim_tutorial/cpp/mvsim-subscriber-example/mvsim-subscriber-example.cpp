@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 {
 	try
 	{
-		mvsim::Client client;
+		mvsim::Client client("mvsim-subscriber-example");
 		client.setVerbosityLevel(mrpt::system::LVL_DEBUG);
 
 		client.connect();
