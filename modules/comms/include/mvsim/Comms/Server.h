@@ -34,6 +34,9 @@
 
 namespace mvsim
 {
+  /** \addtogroup mvsim_comms_module
+   * @{ */
+
 class World;
 
 /** This class creates a parallel thread and listens for incoming connections
@@ -210,5 +213,6 @@ class Server : public mrpt::system::COutputLogger
 
 	unsigned int serverPortNo_ = MVSIM_PORTNO_MAIN_REP;
 };
+/** @} */
 
 }  // namespace mvsim

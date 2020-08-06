@@ -25,6 +25,9 @@ class MessageLite;
 
 namespace mvsim
 {
+/** \addtogroup mvsim_comms_module
+ * @{ */
+
 /** Sends a ZMQ message comprising:
  * - std::string with the protobuf message type name.
  * - std::string with the binary serialization of the message itself.
@@ -108,7 +111,9 @@ struct overloaded : Ts...
 
 /** Based on https://en.cppreference.com/w/cpp/utility/variant/visit */
 template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
+overloaded(Ts...)->overloaded<Ts...>;
+
+/** @} */
 
 }  // namespace mvsim
 #endif
