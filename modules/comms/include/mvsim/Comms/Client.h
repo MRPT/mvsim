@@ -41,6 +41,8 @@ namespace mvsim
  * are done via ZMQ sockets.
  *
  * See: https://mvsimulator.readthedocs.io/
+ *
+ * \ingroup mvsim_comms_module
  */
 class Client : public mrpt::system::COutputLogger
 {

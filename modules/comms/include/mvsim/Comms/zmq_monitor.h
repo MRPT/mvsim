@@ -21,6 +21,9 @@
 
 namespace mvsim
 {
+/** \addtogroup mvsim_comms_module
+ * @{ */
+
 class SocketMonitor : public zmq::monitor_t
 {
    public:
@@ -83,6 +86,8 @@ class SocketMonitor : public zmq::monitor_t
 
 	std::thread runningMonitor_;
 };
+
+/** @} */
 
 }  // namespace mvsim
 
