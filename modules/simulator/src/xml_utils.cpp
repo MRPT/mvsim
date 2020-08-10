@@ -19,6 +19,7 @@
 #include <mvsim/basic_types.h>
 
 #include <cstdio>
+
 #include "parse_utils.h"
 
 using namespace rapidxml;
@@ -39,13 +40,8 @@ void TParamEntry::parse(
 	// "%s" ==> std::strings
 	if (std::string(frmt) == std::string("%s"))
 	{
-		char auxStr[512];
-		if (1 != ::sscanf(str.c_str(), frmt, auxStr))
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing '%s'='%s' (Expected format:'%s')",
-				functionNameContext, varName.c_str(), str.c_str(), frmt));
 		std::string& val2 = *reinterpret_cast<std::string*>(val);
-		val2 = mrpt::system::trim(auxStr);
+		val2 = mrpt::system::trim(str);
 	}
 	// "%lf_deg" ==> mrpt::DEG2RAD()
 	else if (std::string(frmt) == std::string("%lf_deg"))
@@ -190,7 +186,7 @@ void mvsim::parse_xmlnode_children_as_param(
 	{
 		parse_xmlnode_as_param(
 			*node, params, variableNamesValues, functionNameContext);
-		node = node->next_sibling(nullptr);  // Move on to next node
+		node = node->next_sibling(nullptr);	 // Move on to next node
 	}
 }
 
