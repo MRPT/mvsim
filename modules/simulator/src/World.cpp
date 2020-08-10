@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/system/filesystem.h>  // filePathSeparatorsToNative()
+#include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
@@ -111,7 +111,7 @@ void World::internal_one_timestep(double dt)
 			m_timlogger, "timestep.1.dynamics_integrator");
 
 		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
-		m_simul_time += dt;  // Avance time
+		m_simul_time += dt;	 // Avance time
 	}
 
 	// 3) Save dynamical state and post-step processing:
@@ -221,10 +221,10 @@ void World::connectToServer()
 				MRPT_TODO("switch to map<string>. Add name to Simulable");
 				if (auto itV = m_vehicles.find(sId); itV != m_vehicles.end())
 				{
-					itV->second->setPose({req.pose().x(), req.pose().y(),
-										  req.pose().z(), req.pose().yaw(),
-										  req.pose().pitch(),
-										  req.pose().roll()});
+					itV->second->setPose(
+						{req.pose().x(), req.pose().y(), req.pose().z(),
+						 req.pose().yaw(), req.pose().pitch(),
+						 req.pose().roll()});
 					ans.set_success(true);
 				}
 				else
@@ -233,4 +233,14 @@ void World::connectToServer()
 				}
 				return ans;
 			}));
+}
+
+void World::insertBlock(const Block::Ptr& block)
+{
+	// Assign each block an "index" number
+	block->setBlockIndex(m_blocks.size());
+
+	// make sure the name is not duplicated:
+	m_blocks.insert(BlockList::value_type(block->getName(), block));
+	m_simulableObjects.push_back(std::dynamic_pointer_cast<Simulable>(block));
 }

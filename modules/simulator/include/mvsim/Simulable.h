@@ -14,6 +14,7 @@
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/basic_types.h>
+
 #include <shared_mutex>
 
 namespace mvsim
@@ -88,7 +89,13 @@ class Simulable
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 	const std::string& getName() const { return m_name; }
 
+	/** Changes object name (e.g. "r1", "veh1") */
+	void setName(const std::string& s) { m_name = s; }
+
 	virtual void registerOnServer(mvsim::Client& c);
+
+	const b2Body* b2d_body() const { return m_b2d_body; }
+	b2Body* b2d_body() { return m_b2d_body; }
 
    protected:
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
@@ -117,7 +124,7 @@ class Simulable
 
 	/** If not empty, publish the pose on this topic */
 	std::string publishPoseTopic_;
-	double publishPosePeriod_ = 100e-3;  //! Publish period [seconds]
+	double publishPosePeriod_ = 100e-3;	 //! Publish period [seconds]
 	double publishPoseLastTime_ = 0;
 };
 }  // namespace mvsim
