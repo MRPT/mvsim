@@ -185,6 +185,8 @@ class World : public mrpt::system::COutputLogger
 	 */
 	std::string resolvePath(const std::string& in_path) const;
 
+	std::string xmlPathToActualPath(const std::string& modelURI) const;
+
 	/** @} */
 
 	/** \name Visitors API
@@ -311,5 +313,7 @@ class World : public mrpt::system::COutputLogger
 
 	mrpt::system::CTimeLogger m_timlogger;
 	mrpt::system::CTicTac m_timer_iteration;
+
+	void processLoadWalls(const rapidxml::xml_node<char>& node);
 };
 }  // namespace mvsim

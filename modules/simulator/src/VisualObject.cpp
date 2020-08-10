@@ -78,24 +78,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 
 	if (modelURI.empty()) return false;
 
-	std::string localFileName;
-
-	if (modelURI.substr(0, 7) == "http://" ||
-		modelURI.substr(0, 8) == "https://")
-	{
-		MRPT_TODO("Retrieve models from online sources");
-		THROW_EXCEPTION("To do: online models");
-		// localFileName = xx;
-	}
-	else if (modelURI.substr(0, 7) == "file://")
-	{
-		localFileName = modelURI.substr(7);
-	}
-	else
-		localFileName = modelURI;
-
-	localFileName = m_world->resolvePath(localFileName);
-
+	const std::string localFileName = m_world->xmlPathToActualPath(modelURI);
 	ASSERT_FILE_EXISTS_(localFileName);
 
 	m_customVisual = mrpt::opengl::CSetOfObjects::Create();

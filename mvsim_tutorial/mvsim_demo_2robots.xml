@@ -219,5 +219,13 @@
 		</publish>
 	</block>
 
+	<!-- ======================================
+	      Walls
+	     ====================================== -->
+	<walls>
+	  <model_uri>testWalls.dxf</model_uri>
+	  <scale>1.0</scale>
+	  <wallThickness>0.10</wallThickness>
+	</walls>
 
 </mvsim_world>
