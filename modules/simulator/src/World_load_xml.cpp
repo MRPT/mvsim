@@ -8,11 +8,11 @@
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/system/filesystem.h>  // extractFileDirectory()
+#include <mrpt/system/filesystem.h>	 // extractFileDirectory()
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
-#include <iostream>  // for debugging
+#include <iostream>	 // for debugging
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
@@ -114,13 +114,7 @@ void World::load_from_XML(
 		else if (!strcmp(node->name(), "block"))
 		{
 			Block::Ptr block = Block::factory(this, node);
-			// Assign each block an "index" number
-			block->setBlockIndex(m_blocks.size());
-
-			// make sure the name is not duplicated:
-			m_blocks.insert(BlockList::value_type(block->getName(), block));
-			m_simulableObjects.push_back(
-				std::dynamic_pointer_cast<Simulable>(block));
+			insertBlock(block);
 		}
 		// <block:class> entries:
 		else if (!strcmp(node->name(), "block:class"))
@@ -135,7 +129,7 @@ void World::load_from_XML(
 		// <walls> </walls> params:
 		else if (!strcmp(node->name(), "walls"))
 		{
-			processLoadWalls(*node);
+			process_load_walls(*node);
 		}
 		else
 		{

@@ -70,16 +70,28 @@ class Block : public VisualObject, public Simulable
 
 	/** Get the 2D shape of the block, as set from the config file (only used
 	 * for collision detection) */
-	const mrpt::math::TPolygon2D& getBlockShape() const { return m_block_poly; }
+	const mrpt::math::TPolygon2D& blockShape() const { return m_block_poly; }
+
+	void blockShape(const mrpt::math::TPolygon2D& p)
+	{
+		m_block_poly = p;
+		updateMaxRadiusFromPoly();
+	}
+
 	/** Set the block index in the World */
 	void setBlockIndex(size_t idx) { m_block_index = idx; }
 	/** Get the block index in the World */
 	size_t getBlockIndex() const { return m_block_index; }
 
-   protected:
-	// Protected ctor for class factory
 	Block(World* parent);
 
+	double ground_friction() const { return m_ground_friction; }
+	void ground_friction(double newValue) { m_ground_friction = newValue; }
+
+	double mass() const { return m_mass; }
+	void mass(double newValue) { m_mass = newValue; }
+
+   protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
 	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
@@ -99,7 +111,7 @@ class Block : public VisualObject, public Simulable
 	mrpt::img::TColor m_block_color;
 	mrpt::math::TPoint2D m_block_com;  //!< In local coordinates
 
-	double m_lateral_friction;  //!< Default: 0.5
+	double m_lateral_friction;	//!< Default: 0.5
 	double m_ground_friction;  //!< Default: 0.5
 	double m_restitution;  //!< Deault: 0.01
 
@@ -125,5 +137,5 @@ class Block : public VisualObject, public Simulable
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
-};  // end Block
+};	// end Block
 }  // namespace mvsim

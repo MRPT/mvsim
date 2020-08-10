@@ -110,8 +110,8 @@ class World : public mrpt::system::COutputLogger
 
 	struct TUpdateGUIParams
 	{
-		TGUIKeyEvent keyevent;  //!< Keystrokes in the window are returned here.
-		std::string msg_lines;  //!< Messages to show
+		TGUIKeyEvent keyevent;	//!< Keystrokes in the window are returned here.
+		std::string msg_lines;	//!< Messages to show
 
 		TUpdateGUIParams() = default;
 	};
@@ -259,7 +259,7 @@ class World : public mrpt::system::COutputLogger
 		int refresh_fps = 20;
 		bool ortho = false;
 		bool show_forces = false;
-		double force_scale = 0.01;  //!< In meters/Newton
+		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
 		double fov_deg = 60.0;
 		/** Name of the vehicle to follow (empty=none) */
@@ -281,7 +281,7 @@ class World : public mrpt::system::COutputLogger
 		void parse_from(const rapidxml::xml_node<char>& node);
 	};
 
-	TGUI_Options m_gui_options;  //!< Some of these options are only used the
+	TGUI_Options m_gui_options;	 //!< Some of these options are only used the
 								 //! first time the GUI window is created.
 
 	// -------- World contents ----------
@@ -314,6 +314,7 @@ class World : public mrpt::system::COutputLogger
 	mrpt::system::CTimeLogger m_timlogger;
 	mrpt::system::CTicTac m_timer_iteration;
 
-	void processLoadWalls(const rapidxml::xml_node<char>& node);
+	void process_load_walls(const rapidxml::xml_node<char>& node);
+	void insertBlock(const Block::Ptr& block);
 };
 }  // namespace mvsim

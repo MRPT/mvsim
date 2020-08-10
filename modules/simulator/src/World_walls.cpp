@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/exceptions.h>
+#include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/system/filesystem.h>
 #include <mvsim/World.h>
@@ -21,7 +22,99 @@
 using namespace mvsim;
 using namespace std;
 
-void World::processLoadWalls(const rapidxml::xml_node<char>& node)
+struct WallProperties
+{
+	double height = 2.0;
+	double thickness = 0.10;
+};
+
+static Block::Ptr create_wall_segment(
+	World* parent, const mrpt::math::TPoint3D& rawEnd1,
+	const mrpt::math::TPoint3D& rawEnd2, const WallProperties& wp,
+	mrpt::maps::CSimplePointsMap& allPts)
+{
+	Block::Ptr b = std::make_shared<Block>(parent);
+
+	{
+		static int cnt = 0;
+		b->setName(mrpt::format("wall_%i", ++cnt));
+	}
+
+	float pt1Dist = std::numeric_limits<float>::max(),
+		  pt2Dist = std::numeric_limits<float>::max();
+
+	if (!allPts.empty())
+	{
+		allPts.kdTreeClosestPoint2D(rawEnd1.x, rawEnd1.y, pt1Dist);
+		allPts.kdTreeClosestPoint2D(rawEnd2.x, rawEnd2.y, pt2Dist);
+	}
+
+	// Do we need to move these points due to former points already there, to
+	// avoid "collisions"?
+	const bool end1move = pt1Dist < mrpt::square(1.1 * wp.thickness);
+	const bool end2move = pt2Dist < mrpt::square(1.1 * wp.thickness);
+
+	const auto vec12 = rawEnd2 - rawEnd1;
+	ASSERT_(vec12.norm() > 0);
+	const auto u12 = vec12.unitarize();
+
+	const double t_hf = 0.5 * wp.thickness;
+	const double t = 1.01 * wp.thickness;
+
+	const auto end1 = end1move ? (rawEnd1 + u12 * t) : rawEnd1;
+	const auto end2 = end2move ? (rawEnd2 + u12 * (-t)) : rawEnd2;
+
+	const auto ptCenter = (end1 + end2) * 0.5;
+	const double wallLineAngle = std::atan2(vec12.y, vec12.x);
+
+	allPts.insertPoint(rawEnd1);
+	allPts.insertPoint(rawEnd2);
+
+	// initial pose:
+	b->setPose({ptCenter.x, ptCenter.y, 0, wallLineAngle, 0, 0});
+
+	// Shape:
+	{
+		const double l_hf = 0.5 * (end2 - end1).norm();
+
+		ASSERT_(l_hf > 0);
+		ASSERT_(t_hf > 0);
+
+		auto bbmin = mrpt::math::TPoint3D(-l_hf, -t_hf, 0);
+		auto bbmax = mrpt::math::TPoint3D(+l_hf, +t_hf, 0);
+
+		mrpt::math::TPolygon2D p;
+		p.emplace_back(bbmin.x, bbmin.y);
+		p.emplace_back(bbmin.x, bbmax.y);
+		p.emplace_back(bbmax.x, bbmax.y);
+		p.emplace_back(bbmax.x, bbmin.y);
+
+		b->blockShape(p);
+	}
+
+	// make the walls non-movable:
+	b->ground_friction(1e8);
+	b->mass(1e8);
+
+	// Register bodies, fixtures, etc. in Box2D simulator:
+	// ----------------------------------------------------
+	b->create_multibody_system(*parent->getBox2DWorld());
+
+	if (auto bb = b->b2d_body(); bb != nullptr)
+	{
+		// Init pos:
+		const auto q = b->getPose();
+
+		bb->SetTransform(b2Vec2(q.x, q.y), q.yaw);
+		// Init vel:
+		bb->SetLinearVelocity({0, 0});
+		bb->SetAngularVelocity(0);
+	}
+
+	return b;
+}
+
+void World::process_load_walls(const rapidxml::xml_node<char>& node)
 {
 	MRPT_START
 
@@ -30,13 +123,14 @@ void World::processLoadWalls(const rapidxml::xml_node<char>& node)
 
 	std::string wallModelFileName;
 	std::string sTransformation;
-	double wallThickness = 0.10;
 	double scale = 1.0;
+	WallProperties wp;
 
 	TParameterDefinitions params;
 	params["model_uri"] = TParamEntry("%s", &wallModelFileName);
 	params["transformation"] = TParamEntry("%s", &sTransformation);
-	params["wallThickness"] = TParamEntry("%lf", &wallThickness);
+	params["wallThickness"] = TParamEntry("%lf", &wp.thickness);
+	params["wallHeight"] = TParamEntry("%lf", &wp.height);
 	params["scale"] = TParamEntry("%lf", &scale);
 
 	// Parse XML params:
@@ -74,8 +168,18 @@ void World::processLoadWalls(const rapidxml::xml_node<char>& node)
 	tfPts.reserve(points.size());
 	for (const auto& pt : points) tfPts.emplace_back(tf.composePoint(pt));
 
+	// Insert all points for KD-tree lookup:
+	mrpt::maps::CSimplePointsMap ptsMap;
+
 	// Create walls themselves:
-	MRPT_TODO("Continue");
+	ASSERT_(tfPts.size() % 2 == 0);
+	for (size_t i = 0; i < tfPts.size() / 2; i++)
+	{
+		const auto& pt1 = tfPts[i * 2 + 0];
+		const auto& pt2 = tfPts[i * 2 + 1];
+		auto block = create_wall_segment(this, pt1, pt2, wp, ptsMap);
+		insertBlock(block);
+	}
 
 	MRPT_END
 }
