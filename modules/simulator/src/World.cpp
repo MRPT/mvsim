@@ -128,6 +128,26 @@ void World::internal_one_timestep(double dt)
 		(ts > dt ? "timestep_too_slow_alert" : "timestep"), ts);
 }
 
+std::string World::xmlPathToActualPath(const std::string& modelURI) const
+{
+	std::string localFileName;
+	if (modelURI.substr(0, 7) == "http://" ||
+		modelURI.substr(0, 8) == "https://")
+	{
+		MRPT_TODO("Retrieve models from online sources");
+		THROW_EXCEPTION("To do: online models");
+		// localFileName = xx;
+	}
+	else if (modelURI.substr(0, 7) == "file://")
+	{
+		localFileName = modelURI.substr(7);
+	}
+	else
+		localFileName = modelURI;
+
+	return resolvePath(localFileName);
+}
+
 /** Replace macros, prefix the base_path if input filename is relative, etc.
  */
 std::string World::resolvePath(const std::string& s_in) const

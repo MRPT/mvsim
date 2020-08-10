@@ -23,6 +23,8 @@
 using namespace mvsim;
 using namespace std;
 
+MRPT_TODO("Replace if-else chain with a node load registry");
+
 void World::load_from_XML(
 	const std::string& xml_text, const std::string& fileNameForPath)
 {
@@ -129,6 +131,11 @@ void World::load_from_XML(
 		else if (!strcmp(node->name(), "gui"))
 		{
 			m_gui_options.parse_from(*node);
+		}
+		// <walls> </walls> params:
+		else if (!strcmp(node->name(), "walls"))
+		{
+			processLoadWalls(*node);
 		}
 		else
 		{
