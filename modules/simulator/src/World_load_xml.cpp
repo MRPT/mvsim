@@ -8,11 +8,11 @@
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/system/filesystem.h>	 // extractFileDirectory()
+#include <mrpt/system/filesystem.h>  // extractFileDirectory()
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
-#include <iostream>	 // for debugging
+#include <iostream>  // for debugging
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
@@ -23,7 +23,7 @@
 using namespace mvsim;
 using namespace std;
 
-MRPT_TODO("Replace if-else chain with a node load registry");
+MRPT_TODO("Replace if-else chain with a node load registry")
 
 void World::load_from_XML(
 	const std::string& xml_text, const std::string& fileNameForPath)
