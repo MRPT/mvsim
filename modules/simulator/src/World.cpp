@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
+#include <mrpt/system/filesystem.h>  // filePathSeparatorsToNative()
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
@@ -15,6 +15,8 @@
 #include <stdexcept>
 
 #include "GenericAnswer.pb.h"
+#include "SrvGetPose.pb.h"
+#include "SrvGetPoseAnswer.pb.h"
 #include "SrvSetPose.pb.h"
 
 using namespace mvsim;
@@ -111,7 +113,7 @@ void World::internal_one_timestep(double dt)
 			m_timlogger, "timestep.1.dynamics_integrator");
 
 		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
-		m_simul_time += dt;	 // Avance time
+		m_simul_time += dt;  // Avance time
 	}
 
 	// 3) Save dynamical state and post-step processing:
@@ -221,10 +223,10 @@ void World::connectToServer()
 				MRPT_TODO("switch to map<string>. Add name to Simulable");
 				if (auto itV = m_vehicles.find(sId); itV != m_vehicles.end())
 				{
-					itV->second->setPose(
-						{req.pose().x(), req.pose().y(), req.pose().z(),
-						 req.pose().yaw(), req.pose().pitch(),
-						 req.pose().roll()});
+					itV->second->setPose({req.pose().x(), req.pose().y(),
+										  req.pose().z(), req.pose().yaw(),
+										  req.pose().pitch(),
+										  req.pose().roll()});
 					ans.set_success(true);
 				}
 				else
@@ -233,6 +235,38 @@ void World::connectToServer()
 				}
 				return ans;
 			}));
+
+	m_client
+		.advertiseService<mvsim_msgs::SrvGetPose, mvsim_msgs::SrvGetPoseAnswer>(
+			"get_pose",
+			std::function<mvsim_msgs::SrvGetPoseAnswer(
+				const mvsim_msgs::SrvGetPose&)>(
+				[this](const mvsim_msgs::SrvGetPose& req) {
+					std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
+
+					mvsim_msgs::SrvGetPoseAnswer ans;
+					const auto sId = req.objectid();
+
+					MRPT_TODO("switch to map<string>. Add name to Simulable");
+					if (auto itV = m_vehicles.find(sId);
+						itV != m_vehicles.end())
+					{
+						ans.set_success(true);
+						const mrpt::math::TPose3D p = itV->second->getPose();
+						auto* po = ans.mutable_pose();
+						po->set_x(p.x);
+						po->set_y(p.y);
+						po->set_z(p.z);
+						po->set_yaw(p.yaw);
+						po->set_pitch(p.pitch);
+						po->set_roll(p.roll);
+					}
+					else
+					{
+						ans.set_success(false);
+					}
+					return ans;
+				}));
 }
 
 void World::insertBlock(const Block::Ptr& block)

@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SrvGetPose {
+  required string objectId = 1;
+}
