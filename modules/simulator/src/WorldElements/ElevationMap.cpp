@@ -53,6 +53,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	mrpt::math::CMatrixFloat elevation_data;
 	if (!sElevationImgFile.empty())
 	{
+		sElevationImgFile = m_world->resolvePath(sElevationImgFile);
+
 		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(
 				sElevationImgFile, 0 /*force load grayscale*/))
@@ -61,8 +63,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 				sElevationImgFile.c_str()));
 
 		// Scale: [0,1] => [min_z,max_z]
-		imgElev.getAsMatrix(
-			elevation_data);  // Get image normalized in range [0,1]
+		// Get image normalized in range [0,1]
+		imgElev.getAsMatrix(elevation_data);
 		ASSERT_(img_min_z != img_max_z);
 
 		const double vmin = elevation_data.minCoeff();
@@ -74,7 +76,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			elevation_data.rows(), elevation_data.cols());
 		m.setConstant(img_min_z);
 		f += m;
-		elevation_data = f;
+		elevation_data = std::move(f);
 	}
 	else
 	{
@@ -86,6 +88,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	bool has_mesh_image = false;
 	if (!sTextureImgFile.empty())
 	{
+		sTextureImgFile = m_world->resolvePath(sTextureImgFile);
+
 		if (!mesh_image.loadFromFile(sTextureImgFile))
 			throw std::runtime_error(mrpt::format(
 				"[ElevationMap] ERROR: Cannot read texture image '%s'",
@@ -161,21 +165,16 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 		// as seen in local & global coordinates.
 		// (For large tilt angles, may have to run it iteratively...)
 		// -------------------------------------------------------------
-		mrpt::math::TPoint3D dir_down;  // the final downwards direction (unit
-										// vector (0,0,-1)) as seen in vehicle
-										// local frame.
-		for (int iter = 0; iter < 3; iter++)
+		// the final downwards direction (unit vector (0,0,-1)) as seen in
+		// vehicle local frame.
+		mrpt::math::TPoint3D dir_down;
+		for (int iter = 0; iter < 2; iter++)
 		{
 			const mrpt::math::TPose3D& cur_pose = itVeh->second->getPose();
-			const mrpt::poses::CPose3D cur_cpose(cur_pose);  // This object is
-															 // faster for
-															 // repeated point
-															 // projections
+			// This object is faster for repeated point projections
+			const mrpt::poses::CPose3D cur_cpose(cur_pose);
 
 			mrpt::math::TPose3D new_pose = cur_pose;
-
-			// See mrpt::scanmatching::leastSquareErrorRigidTransformation6D()
-			// docs
 			corrs.clear();
 
 			bool out_of_area = false;
@@ -192,9 +191,8 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 				corr.other_z = 0;
 
 				// Global frame
-				mrpt::math::TPoint3D gPt;
-				cur_cpose.composePoint(
-					wheel.x, wheel.y, 0.0, gPt.x, gPt.y, gPt.z);
+				const mrpt::math::TPoint3D gPt =
+					cur_cpose.composePoint({wheel.x, wheel.y, 0.0});
 				float z;
 				if (!getElevationAt(gPt.x /*in*/, gPt.y /*in*/, z /*out*/))
 				{
@@ -272,7 +270,8 @@ void ElevationMap::simul_post_timestep(const TSimulContext& context)
 		"Save all elements positions in prestep, then here scale their "
 		"movements * cos(angle)");
 }
-float calcz(
+
+static float calcz(
 	const mrpt::math::TPoint3Df& p1, const mrpt::math::TPoint3Df& p2,
 	const mrpt::math::TPoint3Df& p3, float x, float y)
 {
@@ -294,21 +293,22 @@ bool ElevationMap::getElevationAt(double x, double y, float& z) const
 	const mrpt::opengl::CMesh* mesh = m_gl_mesh.get();
 	const float x0 = mesh->getxMin();
 	const float y0 = mesh->getyMin();
-	const size_t nCellsX = m_mesh_z_cache.rows();
-	const size_t nCellsY = m_mesh_z_cache.cols();
+	const size_t nCellsX = m_mesh_z_cache.cols();
+	const size_t nCellsY = m_mesh_z_cache.rows();
 
 	// Discretize:
 	const int cx00 = ::floor((x - x0) / m_resolution);
 	const int cy00 = ::floor((y - y0) / m_resolution);
+
 	if (cx00 < 1 || cx00 >= int(nCellsX - 1) || cy00 < 1 ||
 		cy00 >= int(nCellsY - 1))
 		return false;
 
 	// Linear interpolation:
-	const float z00 = m_mesh_z_cache(cx00, cy00);
-	const float z01 = m_mesh_z_cache(cx00, cy00 + 1);
-	const float z10 = m_mesh_z_cache(cx00 + 1, cy00);
-	const float z11 = m_mesh_z_cache(cx00 + 1, cy00 + 1);
+	const float z00 = m_mesh_z_cache(cy00, cx00);
+	const float z01 = m_mesh_z_cache(cy00 + 1, cx00);
+	const float z10 = m_mesh_z_cache(cy00, cx00 + 1);
+	const float z11 = m_mesh_z_cache(cy00 + 1, cx00 + 1);
 
 	//
 	//   p01 ---- p11

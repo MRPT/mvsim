@@ -163,11 +163,16 @@ void World::internalUpdate3DSceneObjects(
 		int txt_y = 4;
 
 		// 1st line: time
+		double cpu_usage_ratio =
+			std::max(1e-10, m_timlogger.getMeanTime("run_simulation.cpu_dt")) /
+			std::max(1e-10, m_timlogger.getMeanTime("run_simulation.dt"));
+
 		gl_scene->getViewport()->addTextMessage(
 			2, 2,
 			mrpt::format(
-				"Time: %s",
-				mrpt::system::formatTimeInterval(this->m_simul_time).c_str()),
+				"Time: %s (CPU usage: %.03f%%)",
+				mrpt::system::formatTimeInterval(this->m_simul_time).c_str(),
+				cpu_usage_ratio * 100.0),
 			ID_GLTEXT_CLOCK);
 		txt_y += txt_h + space_h;
 
