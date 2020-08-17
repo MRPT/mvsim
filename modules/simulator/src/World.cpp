@@ -223,10 +223,22 @@ void World::connectToServer()
 				MRPT_TODO("switch to map<string>. Add name to Simulable");
 				if (auto itV = m_vehicles.find(sId); itV != m_vehicles.end())
 				{
-					itV->second->setPose({req.pose().x(), req.pose().y(),
-										  req.pose().z(), req.pose().yaw(),
-										  req.pose().pitch(),
-										  req.pose().roll()});
+					if (req.has_relativeincrement() && req.relativeincrement())
+					{
+						auto p = mrpt::poses::CPose3D(itV->second->getPose());
+						p = p + mrpt::poses::CPose3D(
+									req.pose().x(), req.pose().y(),
+									req.pose().z(), req.pose().yaw(),
+									req.pose().pitch(), req.pose().roll());
+						itV->second->setPose(p.asTPose());
+					}
+					else
+					{
+						itV->second->setPose({req.pose().x(), req.pose().y(),
+											  req.pose().z(), req.pose().yaw(),
+											  req.pose().pitch(),
+											  req.pose().roll()});
+					}
 					ans.set_success(true);
 				}
 				else
