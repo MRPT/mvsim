@@ -337,7 +337,7 @@ void Block::create_multibody_system(b2World& world)
 {
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
-	bodyDef.type = b2_dynamicBody;
+	bodyDef.type = b2_staticBody;
 
 	m_b2d_body = world.CreateBody(&bodyDef);
 

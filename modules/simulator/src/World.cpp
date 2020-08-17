@@ -69,6 +69,8 @@ void World::clear_all()
 /** Runs the simulation for a given time interval (in seconds) */
 void World::run_simulation(double dt)
 {
+	const double t0 = mrpt::Clock::toDouble(mrpt::Clock::now());
+
 	m_timlogger.registerUserMeasure("run_simulation.dt", dt);
 
 	// sanity checks:
@@ -77,13 +79,17 @@ void World::run_simulation(double dt)
 
 	// Run in time steps:
 	const double end_time = m_simul_time + dt;
-	const double timetol =
-		1e-6;  // tolerance for rounding errors summing time steps
+	// tolerance for rounding errors summing time steps
+	const double timetol = 1e-6;
 	while (m_simul_time < (end_time - timetol))
 	{
 		// Timestep: always "simul_step" for the sake of repeatibility
 		internal_one_timestep(m_simul_timestep);
 	}
+
+	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
+
+	m_timlogger.registerUserMeasure("run_simulation.cpu_dt", t1 - t0);
 }
 
 /** Runs one individual time step */
@@ -126,8 +132,8 @@ void World::internal_one_timestep(double dt)
 	}
 
 	const double ts = m_timer_iteration.Tac();
-	m_timlogger.registerUserMeasure(
-		(ts > dt ? "timestep_too_slow_alert" : "timestep"), ts);
+	m_timlogger.registerUserMeasure("timestep", ts);
+	if (ts > dt) m_timlogger.registerUserMeasure("timestep_too_slow_alert", ts);
 }
 
 std::string World::xmlPathToActualPath(const std::string& modelURI) const
