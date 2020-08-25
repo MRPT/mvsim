@@ -10,4 +10,6 @@ message SrvGetPoseAnswer {
   optional string errorMessage = 2;
 
   optional Pose pose = 3;
+
+  required bool objectIsInCollision = 4;
 }

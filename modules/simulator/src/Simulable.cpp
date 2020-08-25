@@ -15,6 +15,8 @@
 #include <mvsim/World.h>
 #include "xml_utils.h"
 
+#include <Box2D/Dynamics/Contacts/b2Contact.h>
+
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include "TimeStampedPose.pb.h"
 
@@ -55,6 +57,14 @@ void Simulable::simul_post_timestep(  //
 	m_dq.vx = vel(0);
 	m_dq.vy = vel(1);
 	m_dq.omega = w;
+
+	m_isInCollision = false;
+	if (b2ContactEdge* cl = m_b2d_body->GetContactList();
+		cl != nullptr && cl->contact != nullptr && cl->contact->IsTouching())
+	{
+		// We may store with which other bodies it's in collision...
+		m_isInCollision = true;
+	}
 
 	// Optional publish to topics:
 	internalHandlePublish(context);
