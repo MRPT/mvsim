@@ -93,12 +93,14 @@ static Block::Ptr create_wall_segment(
 	}
 
 	// make the walls non-movable:
-	b->ground_friction(1e8);
-	b->mass(1e8);
+	b->ground_friction(1e5);
+	b->mass(1e5);
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
 	b->create_multibody_system(*parent->getBox2DWorld());
+	// This makes the walls non-mobile:
+	b->setIsStatic(true);
 
 	if (auto bb = b->b2d_body(); bb != nullptr)
 	{
