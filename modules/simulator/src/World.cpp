@@ -278,6 +278,9 @@ void World::connectToServer()
 						po->set_yaw(p.yaw);
 						po->set_pitch(p.pitch);
 						po->set_roll(p.roll);
+
+						ans.set_objectisincollision(
+							itV->second->isInCollision());
 					}
 					else
 					{

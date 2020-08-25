@@ -92,6 +92,8 @@ class Simulable
 	/** Changes object name (e.g. "r1", "veh1") */
 	void setName(const std::string& s) { m_name = s; }
 
+	bool isInCollision() const { return m_isInCollision; }
+
 	virtual void registerOnServer(mvsim::Client& c);
 
 	const b2Body* b2d_body() const { return m_b2d_body; }
@@ -122,9 +124,11 @@ class Simulable
 	/** Last time-step velocity (of the ref. point, in global coords) */
 	mrpt::math::TTwist2D m_dq{0, 0, 0};
 
+	bool m_isInCollision = false;
+
 	/** If not empty, publish the pose on this topic */
 	std::string publishPoseTopic_;
-	double publishPosePeriod_ = 100e-3;	 //! Publish period [seconds]
+	double publishPosePeriod_ = 100e-3;  //! Publish period [seconds]
 	double publishPoseLastTime_ = 0;
 };
 }  // namespace mvsim
