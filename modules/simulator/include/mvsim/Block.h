@@ -91,6 +91,9 @@ class Block : public VisualObject, public Simulable
 	double mass() const { return m_mass; }
 	void mass(double newValue) { m_mass = newValue; }
 
+	bool isStatic() const;
+	void setIsStatic(bool b);
+
    protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
@@ -104,6 +107,7 @@ class Block : public VisualObject, public Simulable
 
 	// Block info:
 	double m_mass;
+	bool m_isStatic = false;
 	mrpt::math::TPolygon2D m_block_poly;
 	double m_max_radius;  //!< Automatically computed from m_block_poly upon
 						  //! each change via updateMaxRadiusFromPoly()
@@ -111,7 +115,7 @@ class Block : public VisualObject, public Simulable
 	mrpt::img::TColor m_block_color;
 	mrpt::math::TPoint2D m_block_com;  //!< In local coordinates
 
-	double m_lateral_friction;	//!< Default: 0.5
+	double m_lateral_friction;  //!< Default: 0.5
 	double m_ground_friction;  //!< Default: 0.5
 	double m_restitution;  //!< Deault: 0.01
 
@@ -137,5 +141,5 @@ class Block : public VisualObject, public Simulable
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
-};	// end Block
+};  // end Block
 }  // namespace mvsim

@@ -337,7 +337,7 @@ void Block::create_multibody_system(b2World& world)
 {
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
-	bodyDef.type = b2_staticBody;
+	bodyDef.type = b2_dynamicBody;
 
 	m_b2d_body = world.CreateBody(&bodyDef);
 
@@ -420,4 +420,16 @@ void Block::apply_force(
 	const b2Vec2 wPt =
 		m_b2d_body->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
 	m_b2d_body->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
+}
+
+bool Block::isStatic() const
+{
+	ASSERT_(m_b2d_body);
+	return m_b2d_body->GetType() == b2_staticBody;
+}
+
+void Block::setIsStatic(bool b)
+{
+	ASSERT_(m_b2d_body);
+	m_b2d_body->SetType(b ? b2_staticBody : b2_dynamicBody);
 }
