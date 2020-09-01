@@ -15,6 +15,7 @@
 #include <stdexcept>
 
 #include "GenericAnswer.pb.h"
+#include "SrvGenericObjectStateAnswer.pb.h"
 #include "SrvGetPose.pb.h"
 #include "SrvGetPoseAnswer.pb.h"
 #include "SrvSetPose.pb.h"
@@ -217,13 +218,14 @@ void World::connectToServer()
 
 	// global services:
 	m_client.advertiseService<
-		mvsim_msgs::SrvSetPose, mvsim_msgs::GenericAnswer>(
+		mvsim_msgs::SrvSetPose, mvsim_msgs::SrvGenericObjectStateAnswer>(
 		"set_pose",
-		std::function<mvsim_msgs::GenericAnswer(const mvsim_msgs::SrvSetPose&)>(
+		std::function<mvsim_msgs::SrvGenericObjectStateAnswer(
+			const mvsim_msgs::SrvSetPose&)>(
 			[this](const mvsim_msgs::SrvSetPose& req) {
 				std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
 
-				mvsim_msgs::GenericAnswer ans;
+				mvsim_msgs::SrvGenericObjectStateAnswer ans;
 				const auto sId = req.objectid();
 
 				MRPT_TODO("switch to map<string>. Add name to Simulable");
@@ -246,6 +248,7 @@ void World::connectToServer()
 											  req.pose().roll()});
 					}
 					ans.set_success(true);
+					ans.set_objectisincollision(itV->second->isInCollision());
 				}
 				else
 				{

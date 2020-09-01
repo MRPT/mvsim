@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SrvGenericObjectStateAnswer {
+  /* Should be checked */
+  required bool success = 1;
+
+  optional string errorMessage = 2;
+
+  required bool objectIsInCollision = 4;
+}
