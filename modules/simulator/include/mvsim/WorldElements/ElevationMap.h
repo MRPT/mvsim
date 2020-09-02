@@ -31,6 +31,8 @@ class ElevationMap : public WorldElementBase
 
 	bool getElevationAt(
 		double x, double y, float& z) const;  //!< return false if out of bounds
+	void poses_mutex_lock() override {}
+	void poses_mutex_unlock() override {}
 
    protected:
 	virtual void internalGuiUpdate(

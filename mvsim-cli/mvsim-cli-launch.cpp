@@ -17,12 +17,31 @@
 
 struct TThreadParams
 {
-	mvsim::World* world;
-	volatile bool closing;
-	TThreadParams() : world(NULL), closing(false) {}
+	mvsim::World* world = nullptr;
+	std::mutex closingMtx;
+
+	TThreadParams() = default;
+
+	bool isClosing()
+	{
+		closingMtx.lock();
+		bool ret = closing_;
+		closingMtx.unlock();
+		return ret;
+	}
+	void closing(bool v)
+	{
+		closingMtx.lock();
+		closing_ = v;
+		closingMtx.unlock();
+	}
+
+   private:
+	bool closing_ = false;
 };
 static void mvsim_server_thread_update_GUI(TThreadParams& thread_params);
 mvsim::World::TGUIKeyEvent gui_key_events;
+std::mutex gui_key_events_mtx;
 std::string msg2gui;
 
 int launchSimulation()
@@ -102,7 +121,9 @@ Available options:
 		// ====================================================
 
 		std::string txt2gui_tmp;
+		gui_key_events_mtx.lock();
 		World::TGUIKeyEvent keyevent = gui_key_events;
+		gui_key_events_mtx.unlock();
 
 		// Global keys:
 		switch (keyevent.keycode)
@@ -164,13 +185,16 @@ Available options:
 		}
 
 		// Clear the keystroke buffer
+		gui_key_events_mtx.lock();
 		if (keyevent.keycode != 0) gui_key_events = World::TGUIKeyEvent();
+		gui_key_events_mtx.unlock();
 
 		msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
 
 	}  // end while()
 
-	thread_params.closing = true;
+	thread_params.closing(true);
+
 	thGUI.join();  // TODO: It could break smth
 
 	return 0;
@@ -178,7 +202,7 @@ Available options:
 
 void mvsim_server_thread_update_GUI(TThreadParams& thread_params)
 {
-	while (!thread_params.closing)
+	while (!thread_params.isClosing())
 	{
 		mvsim::World::TUpdateGUIParams guiparams;
 		guiparams.msg_lines = msg2gui;
@@ -187,7 +211,11 @@ void mvsim_server_thread_update_GUI(TThreadParams& thread_params)
 
 		// Send key-strokes to the main thread:
 		if (guiparams.keyevent.keycode != 0)
+		{
+			gui_key_events_mtx.lock();
 			gui_key_events = guiparams.keyevent;
+			gui_key_events_mtx.unlock();
+		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(25));
 	}

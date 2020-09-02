@@ -35,6 +35,9 @@ class Simulable
 	 */
 	virtual void simul_post_timestep(const TSimulContext& context);
 
+	virtual void poses_mutex_lock() = 0;
+	virtual void poses_mutex_unlock() = 0;
+
 	/** Override to register external forces exerted by other WorldElements.
 	 * Force is (fx,fy) in global coordinates. Application point is
 	 * (local_ptx,local_pty) in the body local frame */

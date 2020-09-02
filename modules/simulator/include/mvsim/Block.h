@@ -94,6 +94,9 @@ class Block : public VisualObject, public Simulable
 	bool isStatic() const;
 	void setIsStatic(bool b);
 
+	void poses_mutex_lock() override { m_gui_mtx.lock(); }
+	void poses_mutex_unlock() override { m_gui_mtx.unlock(); }
+
    protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
@@ -140,6 +143,8 @@ class Block : public VisualObject, public Simulable
 	mrpt::opengl::CSetOfLines::Ptr m_gl_forces;
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
+
+	std::mutex m_gui_mtx;
 
 };  // end Block
 }  // namespace mvsim

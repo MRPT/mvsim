@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/poses/CPose2D.h>
@@ -653,6 +654,8 @@ void VehicleBase::create_multibody_system(b2World& world)
 void VehicleBase::internalGuiUpdate(
 	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
+	auto lck = mrpt::lockHelper(m_gui_mtx);
+
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	if (!childrenOnly)
