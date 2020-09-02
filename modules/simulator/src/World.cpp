@@ -226,6 +226,8 @@ void World::connectToServer()
 				std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
 
 				mvsim_msgs::SrvGenericObjectStateAnswer ans;
+				ans.set_objectisincollision(false);
+
 				const auto sId = req.objectid();
 
 				MRPT_TODO("switch to map<string>. Add name to Simulable");
