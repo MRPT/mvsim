@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/random.h>
 #include <mvsim/Sensors/LaserScanner.h>
@@ -88,6 +89,8 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 void LaserScanner::internalGuiUpdate(
 	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
+	auto lck = mrpt::lockHelper(m_gui_mtx);
+
 	// 1st time?
 	if (!m_gl_scan)
 	{
@@ -129,6 +132,8 @@ void LaserScanner::simul_pre_timestep([
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void LaserScanner::simul_post_timestep(const TSimulContext& context)
 {
+	auto lck = mrpt::lockHelper(m_gui_mtx);
+
 	Simulable::simul_post_timestep(context);
 
 	using mrpt::maps::COccupancyGridMap2D;

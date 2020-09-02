@@ -23,6 +23,8 @@ class GroundGrid : public WorldElementBase
 	virtual ~GroundGrid();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
+	void poses_mutex_lock() override {}
+	void poses_mutex_unlock() override {}
 
    protected:
 	virtual void internalGuiUpdate(

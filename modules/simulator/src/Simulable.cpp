@@ -42,6 +42,8 @@ void Simulable::simul_post_timestep(  //
 {
 	if (!m_b2d_body) return;
 
+	poses_mutex_lock();
+
 	// Pos:
 	const b2Vec2& pos = m_b2d_body->GetPosition();
 	const float32 angle = m_b2d_body->GetAngle();
@@ -65,6 +67,8 @@ void Simulable::simul_post_timestep(  //
 		// We may store with which other bodies it's in collision...
 		m_isInCollision = true;
 	}
+
+	poses_mutex_unlock();
 
 	// Optional publish to topics:
 	internalHandlePublish(context);

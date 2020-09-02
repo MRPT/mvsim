@@ -31,6 +31,9 @@ class LaserScanner : public SensorBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
+	void poses_mutex_lock() override {}
+	void poses_mutex_unlock() override {}
+
    protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
@@ -57,8 +60,10 @@ class LaserScanner : public SensorBase
 	mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan;
 	mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan2gui;
 
-	bool m_gui_uptodate;  //!< Whether m_gl_scan has to be updated upon next
-						  //! call of internalGuiUpdate() from m_last_scan2gui
+	/** Whether m_gl_scan has to be updated upon next call of
+	 * internalGuiUpdate() from m_last_scan2gui */
+	bool m_gui_uptodate = false;
+	std::mutex m_gui_mtx;
 	mrpt::opengl::CPlanarLaserScan::Ptr m_gl_scan;
 };
 }  // namespace mvsim

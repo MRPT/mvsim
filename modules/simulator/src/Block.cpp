@@ -9,6 +9,7 @@
 
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/poses/CPose2D.h>
@@ -269,6 +270,8 @@ mrpt::poses::CPose3D Block::internalGuiGetVisualPose()
 void Block::internalGuiUpdate(
 	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
 {
+	auto lck = mrpt::lockHelper(m_gui_mtx);
+
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	if (!childrenOnly)

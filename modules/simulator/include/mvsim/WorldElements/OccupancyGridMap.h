@@ -35,6 +35,9 @@ class OccupancyGridMap : public WorldElementBase
 	const mrpt::maps::COccupancyGridMap2D& getOccGrid() const { return m_grid; }
 	mrpt::maps::COccupancyGridMap2D& getOccGrid() { return m_grid; }
 
+	void poses_mutex_lock() override {}
+	void poses_mutex_unlock() override {}
+
    protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;

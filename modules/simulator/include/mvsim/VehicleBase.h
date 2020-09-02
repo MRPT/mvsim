@@ -54,6 +54,9 @@ class VehicleBase : public VisualObject, public Simulable
 	static void register_vehicle_class(
 		const rapidxml::xml_node<char>* xml_node);
 
+	void poses_mutex_lock() override { m_gui_mtx.lock(); }
+	void poses_mutex_unlock() override { m_gui_mtx.unlock(); }
+
 	// ------- Interface with "World" ------
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
@@ -213,6 +216,8 @@ class VehicleBase : public VisualObject, public Simulable
 	mrpt::opengl::CSetOfLines::Ptr m_gl_forces;
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
+
+	std::mutex m_gui_mtx;
 
    public:  // data logger header entries
 	static constexpr char DL_TIMESTAMP[] = "timestamp";
