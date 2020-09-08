@@ -15,10 +15,10 @@
 #include <stdexcept>
 
 #include "GenericAnswer.pb.h"
-#include "SrvGenericObjectStateAnswer.pb.h"
 #include "SrvGetPose.pb.h"
 #include "SrvGetPoseAnswer.pb.h"
 #include "SrvSetPose.pb.h"
+#include "SrvSetPoseAnswer.pb.h"
 
 using namespace mvsim;
 using namespace std;
@@ -218,14 +218,14 @@ void World::connectToServer()
 
 	// global services:
 	m_client.advertiseService<
-		mvsim_msgs::SrvSetPose, mvsim_msgs::SrvGenericObjectStateAnswer>(
+		mvsim_msgs::SrvSetPose, mvsim_msgs::SrvSetPoseAnswer>(
 		"set_pose",
-		std::function<mvsim_msgs::SrvGenericObjectStateAnswer(
+		std::function<mvsim_msgs::SrvSetPoseAnswer(
 			const mvsim_msgs::SrvSetPose&)>(
 			[this](const mvsim_msgs::SrvSetPose& req) {
 				std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
 
-				mvsim_msgs::SrvGenericObjectStateAnswer ans;
+				mvsim_msgs::SrvSetPoseAnswer ans;
 				ans.set_objectisincollision(false);
 
 				const auto sId = req.objectid();
@@ -241,6 +241,14 @@ void World::connectToServer()
 									req.pose().z(), req.pose().yaw(),
 									req.pose().pitch(), req.pose().roll());
 						itV->second->setPose(p.asTPose());
+
+						auto* absPose = ans.mutable_objectglobalpose();
+						absPose->set_x(p.x());
+						absPose->set_y(p.y());
+						absPose->set_z(p.z());
+						absPose->set_yaw(p.yaw());
+						absPose->set_pitch(p.pitch());
+						absPose->set_roll(p.roll());
 					}
 					else
 					{
