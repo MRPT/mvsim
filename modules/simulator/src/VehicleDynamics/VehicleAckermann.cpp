@@ -211,7 +211,7 @@ void DynamicsAckermann::computeFrontWheelAngles(
 		b2Clamp(std::abs(desired_equiv_steer_ang), 0.0, m_max_steer_ang);
 
 	const bool delta_neg = (desired_equiv_steer_ang < 0);
-	ASSERT_BELOW_(delta, 0.5 * M_PI - 0.01);
+	ASSERT_LT_(delta, 0.5 * M_PI - 0.01);
 	const double cot_do = 1.0 / tan(delta) + 0.5 * w_l;
 	const double cot_di = cot_do - w_l;
 	// delta>0: do->right, di->left wheel
