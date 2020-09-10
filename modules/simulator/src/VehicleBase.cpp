@@ -588,7 +588,7 @@ void VehicleBase::create_multibody_system(b2World& world)
 		// Convert shape into Box2D format:
 		const size_t nPts = m_chassis_poly.size();
 		ASSERT_(nPts >= 3);
-		ASSERT_BELOWEQ_(nPts, (size_t)b2_maxPolygonVertices);
+		ASSERT_LE_(nPts, (size_t)b2_maxPolygonVertices);
 		std::vector<b2Vec2> pts(nPts);
 		for (size_t i = 0; i < nPts; i++)
 			pts[i] = b2Vec2(m_chassis_poly[i].x, m_chassis_poly[i].y);
