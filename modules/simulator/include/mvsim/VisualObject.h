@@ -42,6 +42,7 @@ class VisualObject
 		bbmin = viz_bbmin_;
 		bbmax = viz_bbmax_;
 	}
+	void showBoundingBox(bool show);
 
    protected:
 	bool parseVisual(const rapidxml::xml_node<char>* visual_node);
