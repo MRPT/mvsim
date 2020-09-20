@@ -110,8 +110,8 @@ class World : public mrpt::system::COutputLogger
 
 	struct TUpdateGUIParams
 	{
-		TGUIKeyEvent keyevent;	//!< Keystrokes in the window are returned here.
-		std::string msg_lines;	//!< Messages to show
+		TGUIKeyEvent keyevent;  //!< Keystrokes in the window are returned here.
+		std::string msg_lines;  //!< Messages to show
 
 		TUpdateGUIParams() = default;
 	};
@@ -161,6 +161,10 @@ class World : public mrpt::system::COutputLogger
 	/** Map 'block-name' => block object. See getListOfBlocks()*/
 	using BlockList = std::multimap<std::string, Block::Ptr>;
 
+	/** For convenience, all elements (vehicles, world elements, blocks) are
+	 * also stored here for each look-up by name */
+	using SimulableList = std::multimap<std::string, Simulable::Ptr>;
+
 	/** @} */
 
 	/** \name Access inner working objects
@@ -178,6 +182,12 @@ class World : public mrpt::system::COutputLogger
 	const WorldElementList& getListOfWorldElements() const
 	{
 		return m_world_elements;
+	}
+
+	SimulableList& getListOfSimulableObjects() { return m_simulableObjects; }
+	const SimulableList& getListOfSimulableObjects() const
+	{
+		return m_simulableObjects;
 	}
 
 	mrpt::system::CTimeLogger& getTimeLogger() { return m_timlogger; }
@@ -259,7 +269,7 @@ class World : public mrpt::system::COutputLogger
 		int refresh_fps = 20;
 		bool ortho = false;
 		bool show_forces = false;
-		double force_scale = 0.01;	//!< In meters/Newton
+		double force_scale = 0.01;  //!< In meters/Newton
 		double camera_distance = 80.0;
 		double fov_deg = 60.0;
 		/** Name of the vehicle to follow (empty=none) */
@@ -281,7 +291,7 @@ class World : public mrpt::system::COutputLogger
 		void parse_from(const rapidxml::xml_node<char>& node);
 	};
 
-	TGUI_Options m_gui_options;	 //!< Some of these options are only used the
+	TGUI_Options m_gui_options;  //!< Some of these options are only used the
 								 //! first time the GUI window is created.
 
 	// -------- World contents ----------
@@ -301,7 +311,7 @@ class World : public mrpt::system::COutputLogger
 	// List of all objects above (vehicles, world_elements, blocks), but as
 	// shared_ptr to their Simulable interfaces, so we can easily iterate on
 	// this list only for common tasks:
-	std::vector<std::shared_ptr<Simulable>> m_simulableObjects;
+	SimulableList m_simulableObjects;
 
 	/** Runs one individual time step */
 	void internal_one_timestep(double dt);

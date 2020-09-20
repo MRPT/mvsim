@@ -111,7 +111,7 @@ void World::internal_one_timestep(double dt)
 		mrpt::system::CTimeLoggerEntry tle(m_timlogger, "timestep.0.prestep");
 
 		for (auto& e : m_simulableObjects)
-			if (e) e->simul_pre_timestep(context);
+			if (e.second) e.second->simul_pre_timestep(context);
 	}
 
 	// 2) Run dynamics
@@ -129,7 +129,7 @@ void World::internal_one_timestep(double dt)
 			m_timlogger, "timestep.3.save_dynstate");
 
 		for (auto& e : m_simulableObjects)
-			if (e) e->simul_post_timestep(context);
+			if (e.second) e.second->simul_post_timestep(context);
 	}
 
 	const double ts = m_timer_iteration.Tac();
@@ -212,60 +212,63 @@ void World::connectToServer()
 	// Let objects register topics / services:
 	for (auto& o : m_simulableObjects)
 	{
-		ASSERT_(o);
-		o->registerOnServer(m_client);
+		ASSERT_(o.second);
+		o.second->registerOnServer(m_client);
 	}
 
 	// global services:
-	m_client.advertiseService<
-		mvsim_msgs::SrvSetPose, mvsim_msgs::SrvSetPoseAnswer>(
-		"set_pose",
-		std::function<mvsim_msgs::SrvSetPoseAnswer(
-			const mvsim_msgs::SrvSetPose&)>(
-			[this](const mvsim_msgs::SrvSetPose& req) {
-				std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
+	m_client
+		.advertiseService<mvsim_msgs::SrvSetPose, mvsim_msgs::SrvSetPoseAnswer>(
+			"set_pose",
+			std::function<mvsim_msgs::SrvSetPoseAnswer(
+				const mvsim_msgs::SrvSetPose&)>(
+				[this](const mvsim_msgs::SrvSetPose& req) {
+					std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
 
-				mvsim_msgs::SrvSetPoseAnswer ans;
-				ans.set_objectisincollision(false);
+					mvsim_msgs::SrvSetPoseAnswer ans;
+					ans.set_objectisincollision(false);
 
-				const auto sId = req.objectid();
+					const auto sId = req.objectid();
 
-				MRPT_TODO("switch to map<string>. Add name to Simulable");
-				if (auto itV = m_vehicles.find(sId); itV != m_vehicles.end())
-				{
-					if (req.has_relativeincrement() && req.relativeincrement())
+					if (auto itV = m_simulableObjects.find(sId);
+						itV != m_simulableObjects.end())
 					{
-						auto p = mrpt::poses::CPose3D(itV->second->getPose());
-						p = p + mrpt::poses::CPose3D(
-									req.pose().x(), req.pose().y(),
-									req.pose().z(), req.pose().yaw(),
-									req.pose().pitch(), req.pose().roll());
-						itV->second->setPose(p.asTPose());
+						if (req.has_relativeincrement() &&
+							req.relativeincrement())
+						{
+							auto p =
+								mrpt::poses::CPose3D(itV->second->getPose());
+							p = p + mrpt::poses::CPose3D(
+										req.pose().x(), req.pose().y(),
+										req.pose().z(), req.pose().yaw(),
+										req.pose().pitch(), req.pose().roll());
+							itV->second->setPose(p.asTPose());
 
-						auto* absPose = ans.mutable_objectglobalpose();
-						absPose->set_x(p.x());
-						absPose->set_y(p.y());
-						absPose->set_z(p.z());
-						absPose->set_yaw(p.yaw());
-						absPose->set_pitch(p.pitch());
-						absPose->set_roll(p.roll());
+							auto* absPose = ans.mutable_objectglobalpose();
+							absPose->set_x(p.x());
+							absPose->set_y(p.y());
+							absPose->set_z(p.z());
+							absPose->set_yaw(p.yaw());
+							absPose->set_pitch(p.pitch());
+							absPose->set_roll(p.roll());
+						}
+						else
+						{
+							itV->second->setPose(
+								{req.pose().x(), req.pose().y(), req.pose().z(),
+								 req.pose().yaw(), req.pose().pitch(),
+								 req.pose().roll()});
+						}
+						ans.set_success(true);
+						ans.set_objectisincollision(
+							itV->second->isInCollision());
 					}
 					else
 					{
-						itV->second->setPose({req.pose().x(), req.pose().y(),
-											  req.pose().z(), req.pose().yaw(),
-											  req.pose().pitch(),
-											  req.pose().roll()});
+						ans.set_success(false);
 					}
-					ans.set_success(true);
-					ans.set_objectisincollision(itV->second->isInCollision());
-				}
-				else
-				{
-					ans.set_success(false);
-				}
-				return ans;
-			}));
+					return ans;
+				}));
 
 	m_client
 		.advertiseService<mvsim_msgs::SrvGetPose, mvsim_msgs::SrvGetPoseAnswer>(
@@ -278,9 +281,8 @@ void World::connectToServer()
 					mvsim_msgs::SrvGetPoseAnswer ans;
 					const auto sId = req.objectid();
 
-					MRPT_TODO("switch to map<string>. Add name to Simulable");
-					if (auto itV = m_vehicles.find(sId);
-						itV != m_vehicles.end())
+					if (auto itV = m_simulableObjects.find(sId);
+						itV != m_simulableObjects.end())
 					{
 						ans.set_success(true);
 						const mrpt::math::TPose3D p = itV->second->getPose();
@@ -310,5 +312,8 @@ void World::insertBlock(const Block::Ptr& block)
 
 	// make sure the name is not duplicated:
 	m_blocks.insert(BlockList::value_type(block->getName(), block));
-	m_simulableObjects.push_back(std::dynamic_pointer_cast<Simulable>(block));
+	m_simulableObjects.insert(
+		m_simulableObjects.end(),
+		std::make_pair(
+			block->getName(), std::dynamic_pointer_cast<Simulable>(block)));
 }
