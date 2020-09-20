@@ -67,7 +67,192 @@ void World::internal_GUI_thread()
 			m_world_elements.push_back(we);
 		}
 
-		// Add controls:
+		// Add top menu subwindow:
+		// -----------------------------
+		{
+			auto winMenu = new nanogui::Window(m_gui_win.get(), "");
+			winMenu->setPosition(nanogui::Vector2i(0, 0));
+			winMenu->setLayout(new nanogui::BoxLayout(
+				nanogui::Orientation::Horizontal, nanogui::Alignment::Middle,
+				5));
+			nanogui::Theme* modTheme =
+				new nanogui::Theme(m_gui_win->screen()->nvgContext());
+			modTheme->mWindowHeaderHeight = 1;
+			winMenu->setTheme(modTheme);
+
+			winMenu->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
+				->setCallback([this]() {
+					m_gui_win->setVisible(false);
+					nanogui::leave();
+				});
+
+			winMenu->add<nanogui::Label>("      ");  // separator
+
+			winMenu
+				->add<nanogui::CheckBox>(
+					"Orthogonal view",
+					[&](bool b) {
+						m_gui_win->camera().setCameraProjective(!b);
+					})
+				->setChecked(m_gui_options.ortho);
+
+			std::vector<std::string> lstVehicles;
+			lstVehicles.reserve(m_vehicles.size() + 1);
+
+			lstVehicles.push_back("[none]");  // None
+			for (const auto& v : m_vehicles) lstVehicles.push_back(v.first);
+
+			winMenu->add<nanogui::Label>("Camera follows:");
+			auto cbFollowVeh = winMenu->add<nanogui::ComboBox>(lstVehicles);
+			cbFollowVeh->setSelectedIndex(0);
+			cbFollowVeh->setCallback([this, lstVehicles](int idx) {
+				if (idx == 0)
+					m_gui_options.follow_vehicle.clear();
+				else if (idx <= static_cast<int>(m_vehicles.size()))
+					m_gui_options.follow_vehicle = lstVehicles[idx];
+			});
+		}
+
+		// Add Status window
+		// -----------------------------
+		MRPT_TODO("Add bottom windows bar to restore minimized windows");
+		nanogui::Window* winStatus = nullptr;
+		{
+			nanogui::Window* w = new nanogui::Window(m_gui_win.get(), "Status");
+			winStatus = w;
+
+			w->setPosition(nanogui::Vector2i(10, 45));
+			w->setLayout(new nanogui::BoxLayout(
+				nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
+			w->setFixedWidth(250);
+
+			w->buttonPanel()
+				->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
+				->setCallback([w]() { w->setVisible(false); });
+
+			m_lbCpuUsage = w->add<nanogui::Label>(" ");
+			m_lbStatuses.resize(5);
+			for (size_t i = 0; i < m_lbStatuses.size(); i++)
+				m_lbStatuses[i] = w->add<nanogui::Label>(" ");
+		}
+
+		// Add editor window
+		// -----------------------------
+		nanogui::Window* winEditor = nullptr;
+		{
+			nanogui::Window* w = new nanogui::Window(m_gui_win.get(), "Editor");
+			winEditor = w;
+
+			w->setPosition(nanogui::Vector2i(10, 300));
+			w->setLayout(new nanogui::BoxLayout(
+				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum));
+			w->setFixedWidth(300);
+
+			w->buttonPanel()
+				->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
+				->setCallback([w]() { w->setVisible(false); });
+
+			w->add<nanogui::Label>("Selected object", "sans-bold");
+
+			struct InfoPerObject
+			{
+				nanogui::CheckBox* cb = nullptr;
+				Simulable* simulable = nullptr;
+				VisualObject* visual = nullptr;
+			};
+
+			std::vector<InfoPerObject> m_gui_cbObjects;
+
+			if (!m_simulableObjects.empty())
+			{
+				const int pnWidth = 300, pnHeight = 200,
+						  listWidth = pnWidth / 3;
+
+				auto pn = w->add<nanogui::Widget>();
+				pn->setFixedSize({pnWidth, pnHeight});
+				pn->setLayout(new nanogui::GridLayout(
+					nanogui::Orientation::Horizontal, 3 /*columns */,
+					nanogui::Alignment::Minimum));
+
+				nanogui::VScrollPanel* vscrolls[3] = {
+					pn->add<nanogui::VScrollPanel>(),
+					pn->add<nanogui::VScrollPanel>(),
+					pn->add<nanogui::VScrollPanel>()};
+
+				for (auto vs : vscrolls)
+					vs->setFixedSize({listWidth, pnHeight});
+
+				// vscroll should only have *ONE* child. this is what `wrapper`
+				// is for
+				nanogui::Widget* wrappers[3];
+				std::array<const char*, 3> wrapTitles = {"Vehicles", "Blocks",
+														 "World elements"};
+				for (int i = 0; i < 3; i++)
+				{
+					wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
+					wrappers[i]->add<nanogui::Label>(wrapTitles[i]);
+					wrappers[i]->setFixedSize({listWidth, pnHeight});
+					wrappers[i]->setLayout(new nanogui::GridLayout(
+						nanogui::Orientation::Horizontal, 1 /*columns */,
+						nanogui::Alignment::Minimum));
+				}
+
+				for (const auto& o : m_simulableObjects)
+				{
+					InfoPerObject ipo;
+
+					const auto& name = o.first;
+					bool isVehicle = false;
+					if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
+					{
+						isVehicle = true;
+						ipo.visual = dynamic_cast<VisualObject*>(v);
+					}
+					bool isBlock = false;
+					if (auto v = dynamic_cast<Block*>(o.second.get()); v)
+					{
+						isBlock = true;
+						ipo.visual = dynamic_cast<VisualObject*>(v);
+					}
+					bool isWorldElement = false;
+					if (auto v =
+							dynamic_cast<WorldElementBase*>(o.second.get());
+						v)
+					{
+						isWorldElement = true;
+						ipo.visual = dynamic_cast<VisualObject*>(v);
+					}
+					auto wrapper = isVehicle
+									   ? wrappers[0]
+									   : (isBlock ? wrappers[1] : wrappers[2]);
+
+					std::string label = name;
+					if (label.empty()) label = "(unnamed)";
+
+					auto cb = wrapper->add<nanogui::CheckBox>(label);
+					ipo.cb = cb;
+					ipo.simulable = o.second.get();
+					m_gui_cbObjects.emplace_back(ipo);
+
+					cb->setChecked(false);
+					cb->setCallback([cb, m_gui_cbObjects, ipo](bool check) {
+						// Only mark 1 at once:
+						for (auto& c : m_gui_cbObjects)
+						{
+							c.cb->setChecked(false);
+							c.visual->showBoundingBox(false);
+						}
+						cb->setChecked(check);
+
+						// If checked, show bounding box:
+						if (ipo.visual)
+						{
+							ipo.visual->showBoundingBox(true);
+						}
+					});
+				}
+			}
+		}
 
 		m_gui_win->performLayout();
 		auto& cam = m_gui_win->camera();
@@ -159,22 +344,16 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------------
 	m_timlogger.enter("update_GUI.5.text-msgs");
 	{
-		const int txt_h = 12, space_h = 2;  // font height
-		int txt_y = 4;
-
 		// 1st line: time
 		double cpu_usage_ratio =
 			std::max(1e-10, m_timlogger.getMeanTime("run_simulation.cpu_dt")) /
 			std::max(1e-10, m_timlogger.getMeanTime("run_simulation.dt"));
 
-		gl_scene->getViewport()->addTextMessage(
-			2, 2,
-			mrpt::format(
+		if (m_lbCpuUsage)
+			m_lbCpuUsage->setCaption(mrpt::format(
 				"Time: %s (CPU usage: %.03f%%)",
 				mrpt::system::formatTimeInterval(this->m_simul_time).c_str(),
-				cpu_usage_ratio * 100.0),
-			ID_GLTEXT_CLOCK);
-		txt_y += txt_h + space_h;
+				cpu_usage_ratio * 100.0));
 
 		// User supplied-lines:
 		m_gui_msg_lines_mtx.lock();
@@ -183,11 +362,8 @@ void World::internalUpdate3DSceneObjects(
 
 		if (!msg_lines.empty())
 		{
-			const size_t nLines =
-				std::count(msg_lines.begin(), msg_lines.end(), '\n');
-			txt_y += nLines * (txt_h + space_h);
-			gl_scene->getViewport()->addTextMessage(
-				2, txt_y, msg_lines, ID_GLTEXT_CLOCK + 1);
+			MRPT_TODO("Split lines?");
+			m_lbStatuses[0]->setCaption(msg_lines);
 		}
 	}
 

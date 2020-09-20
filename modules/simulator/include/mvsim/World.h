@@ -320,6 +320,8 @@ class World : public mrpt::system::COutputLogger
 
 	// -------- GUI stuff ----------
 	mrpt::gui::CDisplayWindowGUI::Ptr m_gui_win;
+	nanogui::Label* m_lbCpuUsage = nullptr;
+	std::vector<nanogui::Label*> m_lbStatuses;
 
 	mrpt::system::CTimeLogger m_timlogger;
 	mrpt::system::CTicTac m_timer_iteration;

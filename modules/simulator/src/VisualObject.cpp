@@ -94,12 +94,14 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 
 	auto glBox = mrpt::opengl::CBox::Create();
 	glBox->setWireframe(true);
+	glBox->setName("bbox");
 	glBox->setBoxCorners(bbmin, bbmax);
 	glBox->setVisibility(initialShowBoundingBox);
 	glGroup->insert(glBox);
 
 	glGroup->setScale(modelScale);
 	glGroup->setPose(modelPose);
+	glGroup->setName("group");
 
 	m_customVisual->insert(glGroup);
 
@@ -110,5 +112,22 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	viz_bbmax_ = modelPose.composePoint(bbmax * modelScale);
 
 	return true;
+	MRPT_TRY_END
+}
+
+void VisualObject::showBoundingBox(bool show)
+{
+	MRPT_TRY_START
+	if (!m_customVisual) return;
+	auto glGroup = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+		m_customVisual->getByName("group"));
+	if (!glGroup) return;
+	auto glBBox = glGroup->getByName("bbox");
+	if (!glBBox) return;
+
+	std::cout << "1\n";
+
+	glBBox->setVisibility(show);
+
 	MRPT_TRY_END
 }
