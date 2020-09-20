@@ -24,6 +24,8 @@ class Client;
 class Simulable
 {
    public:
+	using Ptr = std::shared_ptr<Simulable>;
+
 	/** Process right before the integration of dynamic equations for each
 	 * timestep: set action forces from motors, update friction models, etc. */
 	virtual void simul_pre_timestep(const TSimulContext& context);

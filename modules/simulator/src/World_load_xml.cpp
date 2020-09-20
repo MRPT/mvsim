@@ -90,8 +90,10 @@ void World::load_from_XML(
 		{
 			WorldElementBase::Ptr e = WorldElementBase::factory(this, node);
 			m_world_elements.emplace_back(e);
-			m_simulableObjects.push_back(
-				std::dynamic_pointer_cast<Simulable>(e));
+			m_simulableObjects.insert(
+				m_simulableObjects.end(),
+				std::make_pair(
+					e->getName(), std::dynamic_pointer_cast<Simulable>(e)));
 		}
 		// <vehicle> entries:
 		else if (!strcmp(node->name(), "vehicle"))
@@ -102,8 +104,10 @@ void World::load_from_XML(
 
 			MRPT_TODO("Check for duplicated names")
 			m_vehicles.insert(VehicleList::value_type(veh->getName(), veh));
-			m_simulableObjects.push_back(
-				std::dynamic_pointer_cast<Simulable>(veh));
+			m_simulableObjects.insert(
+				m_simulableObjects.end(),
+				std::make_pair(
+					veh->getName(), std::dynamic_pointer_cast<Simulable>(veh)));
 		}
 		// <vehicle:class> entries:
 		else if (!strcmp(node->name(), "vehicle:class"))
