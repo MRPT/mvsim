@@ -45,6 +45,14 @@ void World::internal_GUI_thread()
 	{
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Started.");
 
+		struct InfoPerObject
+		{
+			nanogui::CheckBox* cb = nullptr;
+			Simulable* simulable = nullptr;
+			VisualObject* visual = nullptr;
+		};
+		std::vector<InfoPerObject> gui_cbObjects;
+
 		nanogui::init();
 
 		mrpt::gui::CDisplayWindowGUI_Params cp;
@@ -154,15 +162,6 @@ void World::internal_GUI_thread()
 
 			w->add<nanogui::Label>("Selected object", "sans-bold");
 
-			struct InfoPerObject
-			{
-				nanogui::CheckBox* cb = nullptr;
-				Simulable* simulable = nullptr;
-				VisualObject* visual = nullptr;
-			};
-
-			std::vector<InfoPerObject> m_gui_cbObjects;
-
 			if (!m_simulableObjects.empty())
 			{
 				const int pnWidth = 300, pnHeight = 200,
@@ -232,23 +231,24 @@ void World::internal_GUI_thread()
 					auto cb = wrapper->add<nanogui::CheckBox>(label);
 					ipo.cb = cb;
 					ipo.simulable = o.second.get();
-					m_gui_cbObjects.emplace_back(ipo);
+					gui_cbObjects.emplace_back(ipo);
 
 					cb->setChecked(false);
-					cb->setCallback([cb, m_gui_cbObjects, ipo](bool check) {
+					cb->setCallback([cb, &gui_cbObjects, ipo](bool check) {
 						// Only mark 1 at once:
-						for (auto& c : m_gui_cbObjects)
+						if (check)
 						{
-							c.cb->setChecked(false);
-							c.visual->showBoundingBox(false);
+							for (auto& c : gui_cbObjects)
+							{
+								c.cb->setChecked(false);
+								c.visual->showBoundingBox(false);
+							}
 						}
 						cb->setChecked(check);
 
 						// If checked, show bounding box:
 						if (ipo.visual && check)
-						{
 							ipo.visual->showBoundingBox(true);
-						}
 					});
 				}
 			}

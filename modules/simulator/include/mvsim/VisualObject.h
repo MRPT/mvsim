@@ -57,13 +57,9 @@ class VisualObject
 
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly = false) = 0;
-	virtual mrpt::poses::CPose3D internalGuiGetVisualPose()
-	{
-		throw std::runtime_error(
-			"internalGuiGetVisualPose: not implemented for this class!");
-	}
+	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() { return {}; }
 
    private:
-	mrpt::math::TPoint3D viz_bbmin_{}, viz_bbmax_{};
+	mrpt::math::TPoint3D viz_bbmin_{-1.0, -1.0, .0}, viz_bbmax_{1.0, 1.0, 1.0};
 };
 }  // namespace mvsim

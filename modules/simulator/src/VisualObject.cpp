@@ -28,6 +28,8 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 {
 	using namespace std::string_literals;
 
+	const auto objectPose = internalGuiGetVisualPose();
+
 	if (m_glCustomVisual)
 	{
 		// Assign a unique ID on first call:
@@ -37,14 +39,27 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 			// if needed.
 			m_glCustomVisualId = g_uniqueCustomVisualId++;
 			const auto name = "_autoViz"s + std::to_string(m_glCustomVisualId);
+			std::cout << "AUTO: " << name << "\n";
 			m_glCustomVisual->setName(name);
 			// Add to the 3D scene:
 			scene.insert(m_glCustomVisual);
 		}
 
 		// Update pose:
-		m_glCustomVisual->setPose(internalGuiGetVisualPose());
+		m_glCustomVisual->setPose(objectPose);
 	}
+
+	if (!m_glBoundingBox)
+	{
+		m_glBoundingBox = mrpt::opengl::CSetOfObjects::Create();
+		auto glBox = mrpt::opengl::CBox::Create();
+		glBox->setWireframe(true);
+		glBox->setBoxCorners(viz_bbmin_, viz_bbmax_);
+		glBox->setVisibility(false);
+		m_glBoundingBox->insert(glBox);
+		scene.insert(m_glBoundingBox);
+	}
+	m_glBoundingBox->setPose(objectPose);
 
 	const bool childrenOnly = !!m_glCustomVisual;
 
@@ -91,14 +106,6 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	glModel->getBoundingBox(bbmin, bbmax);
 
 	glGroup->insert(glModel);
-
-	m_glBoundingBox = mrpt::opengl::CSetOfObjects::Create();
-	auto glBox = mrpt::opengl::CBox::Create();
-	glBox->setWireframe(true);
-	glBox->setBoxCorners(bbmin, bbmax);
-	glBox->setVisibility(initialShowBoundingBox);
-	m_glBoundingBox->insert(glBox);
-	glGroup->insert(m_glBoundingBox);
 
 	glGroup->setScale(modelScale);
 	glGroup->setPose(modelPose);
