@@ -48,10 +48,12 @@ void World::internal_GUI_thread()
 		struct InfoPerObject
 		{
 			nanogui::CheckBox* cb = nullptr;
-			Simulable* simulable = nullptr;
+			Simulable::Ptr simulable;
 			VisualObject* visual = nullptr;
 		};
+
 		std::vector<InfoPerObject> gui_cbObjects;
+		Simulable::Ptr gui_selectedObject;
 
 		nanogui::init();
 
@@ -230,11 +232,13 @@ void World::internal_GUI_thread()
 
 					auto cb = wrapper->add<nanogui::CheckBox>(label);
 					ipo.cb = cb;
-					ipo.simulable = o.second.get();
+					ipo.simulable = o.second;
 					gui_cbObjects.emplace_back(ipo);
 
 					cb->setChecked(false);
-					cb->setCallback([cb, &gui_cbObjects, ipo](bool check) {
+					cb->setCallback([cb, &gui_cbObjects, ipo,
+									 &gui_selectedObject](bool check) {
+						gui_selectedObject.reset();
 						// Only mark 1 at once:
 						if (check)
 						{
@@ -248,15 +252,85 @@ void World::internal_GUI_thread()
 
 						// If checked, show bounding box:
 						if (ipo.visual && check)
+						{
+							gui_selectedObject = ipo.simulable;
 							ipo.visual->showBoundingBox(true);
+						}
 					});
 				}
 			}
 
-			auto btnMove = w->add<nanogui::Button>("Move...");
+			auto btnMove = w->add<nanogui::Button>("Click and place...");
 			btnMove->setFlags(nanogui::Button::ToggleButton);
 			btnMove->setCallback([btnMove]() {
 				//
+			});
+			w->add<nanogui::Label>(" ");
+
+			auto btnPlaceCoords =
+				w->add<nanogui::Button>("Replace by coordinates...");
+			btnPlaceCoords->setCallback([&gui_selectedObject, this]() {
+				//
+				if (!gui_selectedObject) return;
+
+				auto* formPose =
+					new nanogui::Window(m_gui_win.get(), "Enter new pose");
+				formPose->setLayout(new nanogui::GridLayout(
+					nanogui::Orientation::Horizontal, 2,
+					nanogui::Alignment::Fill, 5));
+
+				nanogui::TextBox* lbs[3];
+
+				formPose->add<nanogui::Label>("x coordinate:");
+				lbs[0] = formPose->add<nanogui::TextBox>();
+				formPose->add<nanogui::Label>("y coordinate:");
+				lbs[1] = formPose->add<nanogui::TextBox>();
+				formPose->add<nanogui::Label>("Orientation:");
+				lbs[2] = formPose->add<nanogui::TextBox>();
+
+				for (int i = 0; i < 3; i++)
+				{
+					lbs[i]->setEditable(true);
+					lbs[i]->setFixedSize({100, 20});
+					lbs[i]->setValue("0.0");
+					lbs[i]->setUnits(i == 2 ? "[deg]" : "[m]");
+					lbs[i]->setDefaultValue("0.0");
+					lbs[i]->setFontSize(16);
+					lbs[i]->setFormat("[-]?[0-9]*\\.?[0-9]+");
+				}
+
+				const auto pos = gui_selectedObject->getPose();
+				lbs[0]->setValue(std::to_string(pos.x));
+				lbs[1]->setValue(std::to_string(pos.y));
+				lbs[2]->setValue(std::to_string(mrpt::RAD2DEG(pos.yaw)));
+
+				formPose->add<nanogui::Label>("");
+				formPose->add<nanogui::Label>("");
+
+				formPose->add<nanogui::Button>("Cancel")->setCallback(
+					[formPose]() { formPose->dispose(); });
+
+				formPose->add<nanogui::Button>("Accept")->setCallback(
+					[formPose, &gui_selectedObject, lbs]() {
+						gui_selectedObject->setPose(
+							{// X:
+							 std::stod(lbs[0]->value()),
+							 // Y:
+							 std::stod(lbs[1]->value()),
+							 // Z:
+							 .0,
+							 // Yaw
+							 mrpt::DEG2RAD(std::stod(lbs[2]->value())),
+							 // Pitch
+							 0.0,
+							 // Roll:
+							 0.0});
+						formPose->dispose();
+					});
+
+				formPose->setModal(true);
+				formPose->center();
+				formPose->setVisible(true);
 			});
 		}
 
@@ -386,7 +460,8 @@ void World::internalUpdate3DSceneObjects(
 			if (warn1st)
 			{
 				MRPT_LOG_ERROR_FMT(
-					"GUI: Camera set to follow vehicle named '%s' which can't "
+					"GUI: Camera set to follow vehicle named '%s' which "
+					"can't "
 					"be found!",
 					m_gui_options.follow_vehicle.c_str());
 				warn1st = true;
