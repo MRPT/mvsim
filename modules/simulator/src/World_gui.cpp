@@ -245,13 +245,19 @@ void World::internal_GUI_thread()
 						cb->setChecked(check);
 
 						// If checked, show bounding box:
-						if (ipo.visual)
+						if (ipo.visual && check)
 						{
 							ipo.visual->showBoundingBox(true);
 						}
 					});
 				}
 			}
+
+			auto btnMove = w->add<nanogui::Button>("Move...");
+			btnMove->setFlags(nanogui::Button::ToggleButton);
+			btnMove->setCallback([btnMove]() {
+				//
+			});
 		}
 
 		m_gui_win->performLayout();

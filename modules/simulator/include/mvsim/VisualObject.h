@@ -51,8 +51,9 @@ class VisualObject
 
 	/** If not empty, will override the derived-class visualization for this
 	 * object. */
-	std::shared_ptr<mrpt::opengl::CSetOfObjects> m_customVisual;
-	int32_t m_customVisualId = -1;
+	std::shared_ptr<mrpt::opengl::CSetOfObjects> m_glCustomVisual;
+	std::shared_ptr<mrpt::opengl::CSetOfObjects> m_glBoundingBox;
+	int32_t m_glCustomVisualId = -1;
 
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly = false) = 0;

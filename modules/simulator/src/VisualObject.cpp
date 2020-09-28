@@ -28,25 +28,25 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 {
 	using namespace std::string_literals;
 
-	if (m_customVisual)
+	if (m_glCustomVisual)
 	{
 		// Assign a unique ID on first call:
-		if (m_customVisualId < 0)
+		if (m_glCustomVisualId < 0)
 		{
 			// Assign a unique name, so we can localize the object in the scene
 			// if needed.
-			m_customVisualId = g_uniqueCustomVisualId++;
-			const auto name = "_autoViz"s + std::to_string(m_customVisualId);
-			m_customVisual->setName(name);
+			m_glCustomVisualId = g_uniqueCustomVisualId++;
+			const auto name = "_autoViz"s + std::to_string(m_glCustomVisualId);
+			m_glCustomVisual->setName(name);
 			// Add to the 3D scene:
-			scene.insert(m_customVisual);
+			scene.insert(m_glCustomVisual);
 		}
 
 		// Update pose:
-		m_customVisual->setPose(internalGuiGetVisualPose());
+		m_glCustomVisual->setPose(internalGuiGetVisualPose());
 	}
 
-	const bool childrenOnly = m_customVisual.operator bool();
+	const bool childrenOnly = !!m_glCustomVisual;
 
 	internalGuiUpdate(scene, childrenOnly);
 }
@@ -81,7 +81,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	const std::string localFileName = m_world->xmlPathToActualPath(modelURI);
 	ASSERT_FILE_EXISTS_(localFileName);
 
-	m_customVisual = mrpt::opengl::CSetOfObjects::Create();
+	m_glCustomVisual = mrpt::opengl::CSetOfObjects::Create();
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 	auto glModel = mrpt::opengl::CAssimpModel::Create();
 
@@ -92,18 +92,19 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 
 	glGroup->insert(glModel);
 
+	m_glBoundingBox = mrpt::opengl::CSetOfObjects::Create();
 	auto glBox = mrpt::opengl::CBox::Create();
 	glBox->setWireframe(true);
-	glBox->setName("bbox");
 	glBox->setBoxCorners(bbmin, bbmax);
 	glBox->setVisibility(initialShowBoundingBox);
-	glGroup->insert(glBox);
+	m_glBoundingBox->insert(glBox);
+	glGroup->insert(m_glBoundingBox);
 
 	glGroup->setScale(modelScale);
 	glGroup->setPose(modelPose);
 	glGroup->setName("group");
 
-	m_customVisual->insert(glGroup);
+	m_glCustomVisual->insert(glGroup);
 
 	// Auto bounds from visual model bounding-box:
 
@@ -117,17 +118,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 
 void VisualObject::showBoundingBox(bool show)
 {
-	MRPT_TRY_START
-	if (!m_customVisual) return;
-	auto glGroup = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
-		m_customVisual->getByName("group"));
-	if (!glGroup) return;
-	auto glBBox = glGroup->getByName("bbox");
-	if (!glBBox) return;
-
-	std::cout << "1\n";
-
-	glBBox->setVisibility(show);
-
-	MRPT_TRY_END
+	if (!m_glBoundingBox) return;
+	m_glBoundingBox->setVisibility(show);
+	// std::cout << "show: " << show << "\n";
 }
