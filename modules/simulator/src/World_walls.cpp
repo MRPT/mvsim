@@ -37,7 +37,7 @@ static Block::Ptr create_wall_segment(
 
 	{
 		static int cnt = 0;
-		b->setName(mrpt::format("wall_%i", ++cnt));
+		b->setName(mrpt::format("wall_%04i", ++cnt));
 	}
 
 	float pt1Dist = std::numeric_limits<float>::max(),

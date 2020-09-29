@@ -124,7 +124,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		{
 			// Default name:
 			static int cnt = 0;
-			block->m_name = mrpt::format("block%i", ++cnt);
+			block->m_name = mrpt::format("block%03i", ++cnt);
 		}
 	}
 

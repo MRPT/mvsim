@@ -52,8 +52,11 @@ void World::internal_GUI_thread()
 			VisualObject* visual = nullptr;
 		};
 
+		// Buttons that must be {dis,en}abled when there is a selected object:
+		std::vector<nanogui::Button*> btns_selectedOps;
+
 		std::vector<InfoPerObject> gui_cbObjects;
-		Simulable::Ptr gui_selectedObject;
+		InfoPerObject gui_selectedObject;
 
 		nanogui::init();
 
@@ -155,7 +158,8 @@ void World::internal_GUI_thread()
 
 			w->setPosition(nanogui::Vector2i(10, 300));
 			w->setLayout(new nanogui::BoxLayout(
-				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum));
+				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3,
+				3));
 			w->setFixedWidth(300);
 
 			w->buttonPanel()
@@ -236,42 +240,46 @@ void World::internal_GUI_thread()
 					gui_cbObjects.emplace_back(ipo);
 
 					cb->setChecked(false);
-					cb->setCallback([cb, &gui_cbObjects, ipo,
-									 &gui_selectedObject](bool check) {
-						gui_selectedObject.reset();
-						// Only mark 1 at once:
-						if (check)
-						{
-							for (auto& c : gui_cbObjects)
-							{
-								c.cb->setChecked(false);
-								c.visual->showBoundingBox(false);
-							}
-						}
+					cb->setCallback([cb, ipo, &gui_selectedObject,
+									 &btns_selectedOps](bool check) {
+						// deselect former one:
+						if (gui_selectedObject.visual)
+							gui_selectedObject.visual->showBoundingBox(false);
+						if (gui_selectedObject.cb)
+							gui_selectedObject.cb->setChecked(false);
+						gui_selectedObject = InfoPerObject();
+
 						cb->setChecked(check);
 
 						// If checked, show bounding box:
 						if (ipo.visual && check)
 						{
-							gui_selectedObject = ipo.simulable;
+							gui_selectedObject = ipo;
 							ipo.visual->showBoundingBox(true);
 						}
+
+						const bool btnsEnabled = !!gui_selectedObject.simulable;
+						for (auto b : btns_selectedOps)
+							b->setEnabled(btnsEnabled);
 					});
 				}
 			}
 
-			auto btnMove = w->add<nanogui::Button>("Click and place...");
+			w->add<nanogui::Label>(" ");
+
+			auto btnMove = w->add<nanogui::Button>("Click to replace...");
+			btns_selectedOps.push_back(btnMove);
 			btnMove->setFlags(nanogui::Button::ToggleButton);
 			btnMove->setCallback([btnMove]() {
 				//
 			});
-			w->add<nanogui::Label>(" ");
 
 			auto btnPlaceCoords =
 				w->add<nanogui::Button>("Replace by coordinates...");
+			btns_selectedOps.push_back(btnPlaceCoords);
 			btnPlaceCoords->setCallback([&gui_selectedObject, this]() {
 				//
-				if (!gui_selectedObject) return;
+				if (!gui_selectedObject.simulable) return;
 
 				auto* formPose =
 					new nanogui::Window(m_gui_win.get(), "Enter new pose");
@@ -299,7 +307,7 @@ void World::internal_GUI_thread()
 					lbs[i]->setFormat("[-]?[0-9]*\\.?[0-9]+");
 				}
 
-				const auto pos = gui_selectedObject->getPose();
+				const auto pos = gui_selectedObject.simulable->getPose();
 				lbs[0]->setValue(std::to_string(pos.x));
 				lbs[1]->setValue(std::to_string(pos.y));
 				lbs[2]->setValue(std::to_string(mrpt::RAD2DEG(pos.yaw)));
@@ -312,7 +320,7 @@ void World::internal_GUI_thread()
 
 				formPose->add<nanogui::Button>("Accept")->setCallback(
 					[formPose, &gui_selectedObject, lbs]() {
-						gui_selectedObject->setPose(
+						gui_selectedObject.simulable->setPose(
 							{// X:
 							 std::stod(lbs[0]->value()),
 							 // Y:
@@ -332,7 +340,10 @@ void World::internal_GUI_thread()
 				formPose->center();
 				formPose->setVisible(true);
 			});
-		}
+
+			for (auto b : btns_selectedOps) b->setEnabled(false);
+
+		}  // end "editor" window
 
 		m_gui_win->performLayout();
 		auto& cam = m_gui_win->camera();
