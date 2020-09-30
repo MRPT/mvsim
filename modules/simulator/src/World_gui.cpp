@@ -9,6 +9,9 @@
 
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/math/TLine3D.h>
+#include <mrpt/math/TObject3D.h>
+#include <mrpt/math/geometry.h>
 #include <mrpt/opengl/CGridPlaneXY.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mvsim/World.h>
@@ -367,8 +370,10 @@ void World::internal_GUI_thread()
 
 			// Update all GUI elements:
 			ASSERT_(m_gui.gui_win->background_scene);
-
 			internalUpdate3DSceneObjects(m_gui.gui_win->background_scene);
+
+			// handle mouse operations:
+			m_gui.handle_mouse_operations();
 		});
 
 		nanogui::mainloop(m_gui_options.refresh_fps);
@@ -385,6 +390,41 @@ void World::internal_GUI_thread()
 			"[internal_GUI_init] Exception: " << mrpt::exception_to_str(e));
 	}
 	m_gui_thread_running = false;
+}
+
+void World::GUI::handle_mouse_operations()
+{
+	MRPT_START
+	if (!gui_win) return;
+
+	mrpt::opengl::COpenGLViewport::Ptr vp;
+	{
+		auto lck = mrpt::lockHelper(gui_win->background_scene_mtx);
+		vp = gui_win->background_scene->getViewport();
+	}
+	ASSERT_(vp);
+
+	const auto mousePt = gui_win->mousePos();
+	mrpt::math::TLine3D ray;
+	vp->get3DRayForPixelCoord(mousePt.x(), mousePt.y(), ray);
+
+	// Create a 3D plane, e.g. Z=0
+	const auto ground_plane =
+		mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
+
+	// Intersection of the line with the plane:
+	mrpt::math::TObject3D inters;
+	mrpt::math::intersect(ray, ground_plane, inters);
+
+	// Interpret the intersection as a point, if there is an
+	// intersection:
+	if (inters.getPoint(clickedPt))
+	{
+		// Move object to the position picked by the user:
+		// vp->getByClass<CDisk>(0)->setLocation(clickedPt);
+	}
+
+	MRPT_END
 }
 
 void World::internalUpdate3DSceneObjects(
@@ -439,6 +479,8 @@ void World::internalUpdate3DSceneObjects(
 			MRPT_TODO("Split lines?");
 			m_gui.lbStatuses[0]->setCaption(msg_lines);
 		}
+		m_gui.lbStatuses[1]->setCaption(
+			std::string("Mouse: ") + m_gui.clickedPt.asString());
 	}
 
 	m_timlogger.leave("update_GUI.5.text-msgs");
