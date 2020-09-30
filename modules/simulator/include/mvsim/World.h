@@ -318,10 +318,37 @@ class World : public mrpt::system::COutputLogger
 
 	std::mutex m_simulationStepRunningMtx;
 
-	// -------- GUI stuff ----------
-	mrpt::gui::CDisplayWindowGUI::Ptr m_gui_win;
-	nanogui::Label* m_lbCpuUsage = nullptr;
-	std::vector<nanogui::Label*> m_lbStatuses;
+	/** GUI stuff  */
+	struct GUI
+	{
+		GUI(World& parent) : m_parent(parent) {}
+
+		mrpt::gui::CDisplayWindowGUI::Ptr gui_win;
+		nanogui::Label* lbCpuUsage = nullptr;
+		std::vector<nanogui::Label*> lbStatuses;
+
+		struct InfoPerObject
+		{
+			nanogui::CheckBox* cb = nullptr;
+			Simulable::Ptr simulable;
+			VisualObject* visual = nullptr;
+		};
+
+		// Buttons that must be {dis,en}abled when there is a selected object:
+		std::vector<nanogui::Widget*> btns_selectedOps;
+		std::vector<InfoPerObject> gui_cbObjects;
+		InfoPerObject gui_selectedObject;
+
+		void prepare_top_menu();
+		void prepare_status_window();
+		void prepare_editor_window();
+
+	   private:
+		World& m_parent;
+	};
+	GUI m_gui{*this};  //!< gui state
+
+	/** @} */  // end GUI stuff
 
 	mrpt::system::CTimeLogger m_timlogger;
 	mrpt::system::CTicTac m_timer_iteration;

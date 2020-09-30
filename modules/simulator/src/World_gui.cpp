@@ -35,9 +35,260 @@ size_t ID_GLTEXT_CLOCK = 0;
 
 //!< Return true if the GUI window is open, after a previous call to
 //! update_GUI()
-bool World::is_GUI_open() const { return !!m_gui_win; }
+bool World::is_GUI_open() const { return !!m_gui.gui_win; }
 //!< Forces closing the GUI window, if any.
-void World::close_GUI() { m_gui_win.reset(); }
+void World::close_GUI() { m_gui.gui_win.reset(); }
+
+// Add top menu subwindow:
+void World::GUI::prepare_top_menu()
+{
+	auto winMenu = new nanogui::Window(gui_win.get(), "");
+	winMenu->setPosition(nanogui::Vector2i(0, 0));
+	winMenu->setLayout(new nanogui::BoxLayout(
+		nanogui::Orientation::Horizontal, nanogui::Alignment::Middle, 5));
+	nanogui::Theme* modTheme =
+		new nanogui::Theme(gui_win->screen()->nvgContext());
+	modTheme->mWindowHeaderHeight = 1;
+	winMenu->setTheme(modTheme);
+
+	winMenu->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
+		->setCallback([this]() {
+			gui_win->setVisible(false);
+			nanogui::leave();
+		});
+
+	winMenu->add<nanogui::Label>("      ");  // separator
+
+	winMenu
+		->add<nanogui::CheckBox>(
+			"Orthogonal view",
+			[&](bool b) { gui_win->camera().setCameraProjective(!b); })
+		->setChecked(m_parent.m_gui_options.ortho);
+
+	std::vector<std::string> lstVehicles;
+	lstVehicles.reserve(m_parent.m_vehicles.size() + 1);
+
+	lstVehicles.push_back("[none]");  // None
+	for (const auto& v : m_parent.m_vehicles) lstVehicles.push_back(v.first);
+
+	winMenu->add<nanogui::Label>("Camera follows:");
+	auto cbFollowVeh = winMenu->add<nanogui::ComboBox>(lstVehicles);
+	cbFollowVeh->setSelectedIndex(0);
+	cbFollowVeh->setCallback([this, lstVehicles](int idx) {
+		if (idx == 0)
+			m_parent.m_gui_options.follow_vehicle.clear();
+		else if (idx <= static_cast<int>(m_parent.m_vehicles.size()))
+			m_parent.m_gui_options.follow_vehicle = lstVehicles[idx];
+	});
+}
+
+// Add Status window
+void World::GUI::prepare_status_window()
+{
+	nanogui::Window* winStatus = nullptr;
+
+	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Status");
+	winStatus = w;
+
+	w->setPosition(nanogui::Vector2i(10, 45));
+	w->setLayout(new nanogui::BoxLayout(
+		nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
+	w->setFixedWidth(250);
+
+	w->buttonPanel()
+		->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
+		->setCallback([w]() { w->setVisible(false); });
+
+	lbCpuUsage = w->add<nanogui::Label>(" ");
+	lbStatuses.resize(5);
+	for (size_t i = 0; i < lbStatuses.size(); i++)
+		lbStatuses[i] = w->add<nanogui::Label>(" ");
+}
+
+// Add editor window
+void World::GUI::prepare_editor_window()
+{
+	nanogui::Window* winEditor = nullptr;
+
+	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Editor");
+	winEditor = w;
+
+	w->setPosition(nanogui::Vector2i(10, 300));
+	w->setLayout(new nanogui::BoxLayout(
+		nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3, 3));
+	w->setFixedWidth(300);
+
+	w->buttonPanel()
+		->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
+		->setCallback([w]() { w->setVisible(false); });
+
+	w->add<nanogui::Label>("Selected object", "sans-bold");
+
+	if (!m_parent.m_simulableObjects.empty())
+	{
+		const int pnWidth = 300, pnHeight = 200, listWidth = pnWidth / 3;
+
+		auto pn = w->add<nanogui::Widget>();
+		pn->setFixedSize({pnWidth, pnHeight});
+		pn->setLayout(new nanogui::GridLayout(
+			nanogui::Orientation::Horizontal, 3 /*columns */,
+			nanogui::Alignment::Minimum));
+
+		nanogui::VScrollPanel* vscrolls[3] = {pn->add<nanogui::VScrollPanel>(),
+											  pn->add<nanogui::VScrollPanel>(),
+											  pn->add<nanogui::VScrollPanel>()};
+
+		for (auto vs : vscrolls) vs->setFixedSize({listWidth, pnHeight});
+
+		// vscroll should only have *ONE* child. this is what `wrapper`
+		// is for
+		nanogui::Widget* wrappers[3];
+		std::array<const char*, 3> wrapTitles = {"Vehicles", "Blocks",
+												 "World elements"};
+		for (int i = 0; i < 3; i++)
+		{
+			wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
+			wrappers[i]->add<nanogui::Label>(wrapTitles[i]);
+			wrappers[i]->setFixedSize({listWidth, pnHeight});
+			wrappers[i]->setLayout(new nanogui::GridLayout(
+				nanogui::Orientation::Horizontal, 1 /*columns */,
+				nanogui::Alignment::Minimum));
+		}
+
+		for (const auto& o : m_parent.m_simulableObjects)
+		{
+			InfoPerObject ipo;
+
+			const auto& name = o.first;
+			bool isVehicle = false;
+			if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
+			{
+				isVehicle = true;
+				ipo.visual = dynamic_cast<VisualObject*>(v);
+			}
+			bool isBlock = false;
+			if (auto v = dynamic_cast<Block*>(o.second.get()); v)
+			{
+				isBlock = true;
+				ipo.visual = dynamic_cast<VisualObject*>(v);
+			}
+			bool isWorldElement = false;
+			if (auto v = dynamic_cast<WorldElementBase*>(o.second.get()); v)
+			{
+				isWorldElement = true;
+				ipo.visual = dynamic_cast<VisualObject*>(v);
+			}
+			auto wrapper =
+				isVehicle ? wrappers[0] : (isBlock ? wrappers[1] : wrappers[2]);
+
+			std::string label = name;
+			if (label.empty()) label = "(unnamed)";
+
+			auto cb = wrapper->add<nanogui::CheckBox>(label);
+			ipo.cb = cb;
+			ipo.simulable = o.second;
+			gui_cbObjects.emplace_back(ipo);
+
+			cb->setChecked(false);
+			cb->setCallback([cb, ipo, this](bool check) {
+				// deselect former one:
+				if (gui_selectedObject.visual)
+					gui_selectedObject.visual->showBoundingBox(false);
+				if (gui_selectedObject.cb)
+					gui_selectedObject.cb->setChecked(false);
+				gui_selectedObject = InfoPerObject();
+
+				cb->setChecked(check);
+
+				// If checked, show bounding box:
+				if (ipo.visual && check)
+				{
+					gui_selectedObject = ipo;
+					ipo.visual->showBoundingBox(true);
+				}
+
+				const bool btnsEnabled = !!gui_selectedObject.simulable;
+				for (auto b : btns_selectedOps) b->setEnabled(btnsEnabled);
+			});
+		}
+	}
+
+	w->add<nanogui::Label>(" ");
+
+	auto btnMove = w->add<nanogui::Button>("Click to replace...");
+	btns_selectedOps.push_back(btnMove);
+	btnMove->setFlags(nanogui::Button::ToggleButton);
+	btnMove->setCallback([]() {
+		//
+	});
+
+	auto btnPlaceCoords = w->add<nanogui::Button>("Replace by coordinates...");
+	btns_selectedOps.push_back(btnPlaceCoords);
+	btnPlaceCoords->setCallback([this]() {
+		//
+		if (!gui_selectedObject.simulable) return;
+
+		auto* formPose = new nanogui::Window(gui_win.get(), "Enter new pose");
+		formPose->setLayout(new nanogui::GridLayout(
+			nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill, 5));
+
+		nanogui::TextBox* lbs[3];
+
+		formPose->add<nanogui::Label>("x coordinate:");
+		lbs[0] = formPose->add<nanogui::TextBox>();
+		formPose->add<nanogui::Label>("y coordinate:");
+		lbs[1] = formPose->add<nanogui::TextBox>();
+		formPose->add<nanogui::Label>("Orientation:");
+		lbs[2] = formPose->add<nanogui::TextBox>();
+
+		for (int i = 0; i < 3; i++)
+		{
+			lbs[i]->setEditable(true);
+			lbs[i]->setFixedSize({100, 20});
+			lbs[i]->setValue("0.0");
+			lbs[i]->setUnits(i == 2 ? "[deg]" : "[m]");
+			lbs[i]->setDefaultValue("0.0");
+			lbs[i]->setFontSize(16);
+			lbs[i]->setFormat("[-]?[0-9]*\\.?[0-9]+");
+		}
+
+		const auto pos = gui_selectedObject.simulable->getPose();
+		lbs[0]->setValue(std::to_string(pos.x));
+		lbs[1]->setValue(std::to_string(pos.y));
+		lbs[2]->setValue(std::to_string(mrpt::RAD2DEG(pos.yaw)));
+
+		formPose->add<nanogui::Label>("");
+		formPose->add<nanogui::Label>("");
+
+		formPose->add<nanogui::Button>("Cancel")->setCallback(
+			[formPose]() { formPose->dispose(); });
+
+		formPose->add<nanogui::Button>("Accept")->setCallback(
+			[formPose, this, lbs]() {
+				gui_selectedObject.simulable->setPose(
+					{// X:
+					 std::stod(lbs[0]->value()),
+					 // Y:
+					 std::stod(lbs[1]->value()),
+					 // Z:
+					 .0,
+					 // Yaw
+					 mrpt::DEG2RAD(std::stod(lbs[2]->value())),
+					 // Pitch
+					 0.0,
+					 // Roll:
+					 0.0});
+				formPose->dispose();
+			});
+
+		formPose->setModal(true);
+		formPose->center();
+		formPose->setVisible(true);
+	});
+
+	for (auto b : btns_selectedOps) b->setEnabled(false);
+
+}  // end "editor" window
 
 void World::internal_GUI_thread()
 {
@@ -45,32 +296,21 @@ void World::internal_GUI_thread()
 	{
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Started.");
 
-		struct InfoPerObject
-		{
-			nanogui::CheckBox* cb = nullptr;
-			Simulable::Ptr simulable;
-			VisualObject* visual = nullptr;
-		};
-
-		// Buttons that must be {dis,en}abled when there is a selected object:
-		std::vector<nanogui::Button*> btns_selectedOps;
-
-		std::vector<InfoPerObject> gui_cbObjects;
-		InfoPerObject gui_selectedObject;
-
+		// Start GUI:
 		nanogui::init();
 
 		mrpt::gui::CDisplayWindowGUI_Params cp;
 		cp.maximized = m_gui_options.start_maximized;
 
-		m_gui_win = mrpt::gui::CDisplayWindowGUI::Create(
+		m_gui.gui_win = mrpt::gui::CDisplayWindowGUI::Create(
 			"mvsim", m_gui_options.win_w, m_gui_options.win_h, cp);
 
 		// Add a background scene:
 		auto scene = mrpt::opengl::COpenGLScene::Create();
 		{
-			std::lock_guard<std::mutex> lck(m_gui_win->background_scene_mtx);
-			m_gui_win->background_scene = std::move(scene);
+			std::lock_guard<std::mutex> lck(
+				m_gui.gui_win->background_scene_mtx);
+			m_gui.gui_win->background_scene = std::move(scene);
 		}
 
 		// Only if the world is empty: at least introduce a ground grid:
@@ -80,273 +320,16 @@ void World::internal_GUI_thread()
 			m_world_elements.push_back(we);
 		}
 
-		// Add top menu subwindow:
-		// -----------------------------
-		{
-			auto winMenu = new nanogui::Window(m_gui_win.get(), "");
-			winMenu->setPosition(nanogui::Vector2i(0, 0));
-			winMenu->setLayout(new nanogui::BoxLayout(
-				nanogui::Orientation::Horizontal, nanogui::Alignment::Middle,
-				5));
-			nanogui::Theme* modTheme =
-				new nanogui::Theme(m_gui_win->screen()->nvgContext());
-			modTheme->mWindowHeaderHeight = 1;
-			winMenu->setTheme(modTheme);
-
-			winMenu->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
-				->setCallback([this]() {
-					m_gui_win->setVisible(false);
-					nanogui::leave();
-				});
-
-			winMenu->add<nanogui::Label>("      ");  // separator
-
-			winMenu
-				->add<nanogui::CheckBox>(
-					"Orthogonal view",
-					[&](bool b) {
-						m_gui_win->camera().setCameraProjective(!b);
-					})
-				->setChecked(m_gui_options.ortho);
-
-			std::vector<std::string> lstVehicles;
-			lstVehicles.reserve(m_vehicles.size() + 1);
-
-			lstVehicles.push_back("[none]");  // None
-			for (const auto& v : m_vehicles) lstVehicles.push_back(v.first);
-
-			winMenu->add<nanogui::Label>("Camera follows:");
-			auto cbFollowVeh = winMenu->add<nanogui::ComboBox>(lstVehicles);
-			cbFollowVeh->setSelectedIndex(0);
-			cbFollowVeh->setCallback([this, lstVehicles](int idx) {
-				if (idx == 0)
-					m_gui_options.follow_vehicle.clear();
-				else if (idx <= static_cast<int>(m_vehicles.size()))
-					m_gui_options.follow_vehicle = lstVehicles[idx];
-			});
-		}
-
-		// Add Status window
-		// -----------------------------
 		MRPT_TODO("Add bottom windows bar to restore minimized windows");
-		nanogui::Window* winStatus = nullptr;
-		{
-			nanogui::Window* w = new nanogui::Window(m_gui_win.get(), "Status");
-			winStatus = w;
 
-			w->setPosition(nanogui::Vector2i(10, 45));
-			w->setLayout(new nanogui::BoxLayout(
-				nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
-			w->setFixedWidth(250);
+		// Windows:
+		m_gui.prepare_top_menu();
+		m_gui.prepare_status_window();
+		m_gui.prepare_editor_window();
 
-			w->buttonPanel()
-				->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
-				->setCallback([w]() { w->setVisible(false); });
-
-			m_lbCpuUsage = w->add<nanogui::Label>(" ");
-			m_lbStatuses.resize(5);
-			for (size_t i = 0; i < m_lbStatuses.size(); i++)
-				m_lbStatuses[i] = w->add<nanogui::Label>(" ");
-		}
-
-		// Add editor window
-		// -----------------------------
-		nanogui::Window* winEditor = nullptr;
-		{
-			nanogui::Window* w = new nanogui::Window(m_gui_win.get(), "Editor");
-			winEditor = w;
-
-			w->setPosition(nanogui::Vector2i(10, 300));
-			w->setLayout(new nanogui::BoxLayout(
-				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3,
-				3));
-			w->setFixedWidth(300);
-
-			w->buttonPanel()
-				->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
-				->setCallback([w]() { w->setVisible(false); });
-
-			w->add<nanogui::Label>("Selected object", "sans-bold");
-
-			if (!m_simulableObjects.empty())
-			{
-				const int pnWidth = 300, pnHeight = 200,
-						  listWidth = pnWidth / 3;
-
-				auto pn = w->add<nanogui::Widget>();
-				pn->setFixedSize({pnWidth, pnHeight});
-				pn->setLayout(new nanogui::GridLayout(
-					nanogui::Orientation::Horizontal, 3 /*columns */,
-					nanogui::Alignment::Minimum));
-
-				nanogui::VScrollPanel* vscrolls[3] = {
-					pn->add<nanogui::VScrollPanel>(),
-					pn->add<nanogui::VScrollPanel>(),
-					pn->add<nanogui::VScrollPanel>()};
-
-				for (auto vs : vscrolls)
-					vs->setFixedSize({listWidth, pnHeight});
-
-				// vscroll should only have *ONE* child. this is what `wrapper`
-				// is for
-				nanogui::Widget* wrappers[3];
-				std::array<const char*, 3> wrapTitles = {"Vehicles", "Blocks",
-														 "World elements"};
-				for (int i = 0; i < 3; i++)
-				{
-					wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
-					wrappers[i]->add<nanogui::Label>(wrapTitles[i]);
-					wrappers[i]->setFixedSize({listWidth, pnHeight});
-					wrappers[i]->setLayout(new nanogui::GridLayout(
-						nanogui::Orientation::Horizontal, 1 /*columns */,
-						nanogui::Alignment::Minimum));
-				}
-
-				for (const auto& o : m_simulableObjects)
-				{
-					InfoPerObject ipo;
-
-					const auto& name = o.first;
-					bool isVehicle = false;
-					if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
-					{
-						isVehicle = true;
-						ipo.visual = dynamic_cast<VisualObject*>(v);
-					}
-					bool isBlock = false;
-					if (auto v = dynamic_cast<Block*>(o.second.get()); v)
-					{
-						isBlock = true;
-						ipo.visual = dynamic_cast<VisualObject*>(v);
-					}
-					bool isWorldElement = false;
-					if (auto v =
-							dynamic_cast<WorldElementBase*>(o.second.get());
-						v)
-					{
-						isWorldElement = true;
-						ipo.visual = dynamic_cast<VisualObject*>(v);
-					}
-					auto wrapper = isVehicle
-									   ? wrappers[0]
-									   : (isBlock ? wrappers[1] : wrappers[2]);
-
-					std::string label = name;
-					if (label.empty()) label = "(unnamed)";
-
-					auto cb = wrapper->add<nanogui::CheckBox>(label);
-					ipo.cb = cb;
-					ipo.simulable = o.second;
-					gui_cbObjects.emplace_back(ipo);
-
-					cb->setChecked(false);
-					cb->setCallback([cb, ipo, &gui_selectedObject,
-									 &btns_selectedOps](bool check) {
-						// deselect former one:
-						if (gui_selectedObject.visual)
-							gui_selectedObject.visual->showBoundingBox(false);
-						if (gui_selectedObject.cb)
-							gui_selectedObject.cb->setChecked(false);
-						gui_selectedObject = InfoPerObject();
-
-						cb->setChecked(check);
-
-						// If checked, show bounding box:
-						if (ipo.visual && check)
-						{
-							gui_selectedObject = ipo;
-							ipo.visual->showBoundingBox(true);
-						}
-
-						const bool btnsEnabled = !!gui_selectedObject.simulable;
-						for (auto b : btns_selectedOps)
-							b->setEnabled(btnsEnabled);
-					});
-				}
-			}
-
-			w->add<nanogui::Label>(" ");
-
-			auto btnMove = w->add<nanogui::Button>("Click to replace...");
-			btns_selectedOps.push_back(btnMove);
-			btnMove->setFlags(nanogui::Button::ToggleButton);
-			btnMove->setCallback([btnMove]() {
-				//
-			});
-
-			auto btnPlaceCoords =
-				w->add<nanogui::Button>("Replace by coordinates...");
-			btns_selectedOps.push_back(btnPlaceCoords);
-			btnPlaceCoords->setCallback([&gui_selectedObject, this]() {
-				//
-				if (!gui_selectedObject.simulable) return;
-
-				auto* formPose =
-					new nanogui::Window(m_gui_win.get(), "Enter new pose");
-				formPose->setLayout(new nanogui::GridLayout(
-					nanogui::Orientation::Horizontal, 2,
-					nanogui::Alignment::Fill, 5));
-
-				nanogui::TextBox* lbs[3];
-
-				formPose->add<nanogui::Label>("x coordinate:");
-				lbs[0] = formPose->add<nanogui::TextBox>();
-				formPose->add<nanogui::Label>("y coordinate:");
-				lbs[1] = formPose->add<nanogui::TextBox>();
-				formPose->add<nanogui::Label>("Orientation:");
-				lbs[2] = formPose->add<nanogui::TextBox>();
-
-				for (int i = 0; i < 3; i++)
-				{
-					lbs[i]->setEditable(true);
-					lbs[i]->setFixedSize({100, 20});
-					lbs[i]->setValue("0.0");
-					lbs[i]->setUnits(i == 2 ? "[deg]" : "[m]");
-					lbs[i]->setDefaultValue("0.0");
-					lbs[i]->setFontSize(16);
-					lbs[i]->setFormat("[-]?[0-9]*\\.?[0-9]+");
-				}
-
-				const auto pos = gui_selectedObject.simulable->getPose();
-				lbs[0]->setValue(std::to_string(pos.x));
-				lbs[1]->setValue(std::to_string(pos.y));
-				lbs[2]->setValue(std::to_string(mrpt::RAD2DEG(pos.yaw)));
-
-				formPose->add<nanogui::Label>("");
-				formPose->add<nanogui::Label>("");
-
-				formPose->add<nanogui::Button>("Cancel")->setCallback(
-					[formPose]() { formPose->dispose(); });
-
-				formPose->add<nanogui::Button>("Accept")->setCallback(
-					[formPose, &gui_selectedObject, lbs]() {
-						gui_selectedObject.simulable->setPose(
-							{// X:
-							 std::stod(lbs[0]->value()),
-							 // Y:
-							 std::stod(lbs[1]->value()),
-							 // Z:
-							 .0,
-							 // Yaw
-							 mrpt::DEG2RAD(std::stod(lbs[2]->value())),
-							 // Pitch
-							 0.0,
-							 // Roll:
-							 0.0});
-						formPose->dispose();
-					});
-
-				formPose->setModal(true);
-				formPose->center();
-				formPose->setVisible(true);
-			});
-
-			for (auto b : btns_selectedOps) b->setEnabled(false);
-
-		}  // end "editor" window
-
-		m_gui_win->performLayout();
-		auto& cam = m_gui_win->camera();
+		// Finish GUI setup:
+		m_gui.gui_win->performLayout();
+		auto& cam = m_gui.gui_win->camera();
 
 		cam.setCameraPointing(0.0f, .0f, .0f);
 		cam.setCameraProjective(!m_gui_options.ortho);
@@ -354,12 +337,12 @@ void World::internal_GUI_thread()
 
 		// Main GUI loop
 		// ---------------------
-		m_gui_win->drawAll();
-		m_gui_win->setVisible(true);
+		m_gui.gui_win->drawAll();
+		m_gui.gui_win->setVisible(true);
 
 		// Listen for keyboard events:
-		m_gui_win->setKeyboardCallback([&](int key, int /*scancode*/,
-										   int action, int modifiers) {
+		m_gui.gui_win->setKeyboardCallback([&](int key, int /*scancode*/,
+											   int action, int modifiers) {
 			if (action != GLFW_PRESS && action != GLFW_REPEAT) return false;
 
 			auto lck = mrpt::lockHelper(m_lastKeyEvent_mtx);
@@ -379,20 +362,20 @@ void World::internal_GUI_thread()
 
 		// The GUI must be closed from this same thread. Use a shared atomic
 		// bool:
-		m_gui_win->setLoopCallback([&]() {
+		m_gui.gui_win->setLoopCallback([&]() {
 			if (m_gui_thread_must_close) nanogui::leave();
 
 			// Update all GUI elements:
-			ASSERT_(m_gui_win->background_scene);
+			ASSERT_(m_gui.gui_win->background_scene);
 
-			internalUpdate3DSceneObjects(m_gui_win->background_scene);
+			internalUpdate3DSceneObjects(m_gui.gui_win->background_scene);
 		});
 
 		nanogui::mainloop(m_gui_options.refresh_fps);
 
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
 
-		m_gui_win.reset();
+		m_gui.gui_win.reset();
 
 		nanogui::shutdown();
 	}
@@ -440,8 +423,8 @@ void World::internalUpdate3DSceneObjects(
 			std::max(1e-10, m_timlogger.getMeanTime("run_simulation.cpu_dt")) /
 			std::max(1e-10, m_timlogger.getMeanTime("run_simulation.dt"));
 
-		if (m_lbCpuUsage)
-			m_lbCpuUsage->setCaption(mrpt::format(
+		if (m_gui.lbCpuUsage)
+			m_gui.lbCpuUsage->setCaption(mrpt::format(
 				"Time: %s (CPU usage: %.03f%%)",
 				mrpt::system::formatTimeInterval(this->m_simul_time).c_str(),
 				cpu_usage_ratio * 100.0));
@@ -454,7 +437,7 @@ void World::internalUpdate3DSceneObjects(
 		if (!msg_lines.empty())
 		{
 			MRPT_TODO("Split lines?");
-			m_lbStatuses[0]->setCaption(msg_lines);
+			m_gui.lbStatuses[0]->setCaption(msg_lines);
 		}
 	}
 
@@ -481,7 +464,7 @@ void World::internalUpdate3DSceneObjects(
 		else
 		{
 			const mrpt::poses::CPose2D pose = it->second->getCPose2D();
-			m_gui_win->camera().setCameraPointing(pose.x(), pose.y(), 0.0f);
+			m_gui.gui_win->camera().setCameraPointing(pose.x(), pose.y(), 0.0f);
 		}
 	}
 }
@@ -517,7 +500,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 		}
 	}
 
-	if (!m_gui_win)
+	if (!m_gui.gui_win)
 	{
 		MRPT_LOG_THROTTLE_WARN(
 			2.0,
