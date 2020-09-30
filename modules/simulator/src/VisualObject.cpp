@@ -56,6 +56,7 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 			glBox->setWireframe(true);
 			glBox->setBoxCorners(viz_bbmin_, viz_bbmax_);
 			m_glBoundingBox->insert(glBox);
+			m_glBoundingBox->setVisibility(false);
 			scene.insert(m_glBoundingBox);
 		}
 		m_glBoundingBox->setPose(objectPose);
@@ -70,7 +71,6 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 {
 	MRPT_TRY_START
 
-	m_glCustomVisual = mrpt::opengl::CSetOfObjects::Create();
 	m_glBoundingBox = mrpt::opengl::CSetOfObjects::Create();
 
 	if (visual_node == nullptr) return false;
@@ -113,6 +113,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	glGroup->setPose(modelPose);
 	glGroup->setName("group");
 
+	m_glCustomVisual = mrpt::opengl::CSetOfObjects::Create();
 	m_glCustomVisual->insert(glGroup);
 	m_glBoundingBox->setVisibility(initialShowBoundingBox);
 
