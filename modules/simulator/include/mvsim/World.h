@@ -15,6 +15,7 @@
 #include <mrpt/core/format.h>
 #include <mrpt/gui/CDisplayWindowGUI.h>
 #include <mrpt/img/TColor.h>
+#include <mrpt/math/TPoint3D.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTicTac.h>
@@ -339,9 +340,13 @@ class World : public mrpt::system::COutputLogger
 		std::vector<InfoPerObject> gui_cbObjects;
 		InfoPerObject gui_selectedObject;
 
+		mrpt::math::TPoint3D clickedPt{0, 0, 0};
+
 		void prepare_top_menu();
 		void prepare_status_window();
 		void prepare_editor_window();
+
+		void handle_mouse_operations();
 
 	   private:
 		World& m_parent;
