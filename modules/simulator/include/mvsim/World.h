@@ -327,6 +327,7 @@ class World : public mrpt::system::COutputLogger
 		mrpt::gui::CDisplayWindowGUI::Ptr gui_win;
 		nanogui::Label* lbCpuUsage = nullptr;
 		std::vector<nanogui::Label*> lbStatuses;
+		nanogui::Button* btnReplaceObject = nullptr;
 
 		struct InfoPerObject
 		{
