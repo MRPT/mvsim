@@ -218,12 +218,26 @@ void World::GUI::prepare_editor_window()
 
 	w->add<nanogui::Label>(" ");
 
-	auto btnMove = w->add<nanogui::Button>("Click to replace...");
-	btns_selectedOps.push_back(btnMove);
-	btnMove->setFlags(nanogui::Button::ToggleButton);
-	btnMove->setCallback([]() {
-		//
-	});
+	btnReplaceObject = w->add<nanogui::Button>("Click to replace...");
+	btnReplaceObject->setFlags(nanogui::Button::Flags::ToggleButton);
+	btns_selectedOps.push_back(btnReplaceObject);
+
+	{
+		auto pn = w->add<nanogui::Widget>();
+		pn->setLayout(new nanogui::BoxLayout(
+			nanogui::Orientation::Horizontal, nanogui::Alignment::Fill, 2, 2));
+		pn->add<nanogui::Label>("Reorient:");
+		auto slAngle = pn->add<nanogui::Slider>();
+		slAngle->setRange({-M_PI, M_PI});
+		slAngle->setCallback([this](float v) {
+			if (!gui_selectedObject.simulable) return;
+			auto p = gui_selectedObject.simulable->getPose();
+			p.yaw = v;
+			gui_selectedObject.simulable->setPose(p);
+		});
+		slAngle->setFixedWidth(150);
+		btns_selectedOps.push_back(slAngle);
+	}
 
 	auto btnPlaceCoords = w->add<nanogui::Button>("Replace by coordinates...");
 	btns_selectedOps.push_back(btnPlaceCoords);
@@ -423,6 +437,38 @@ void World::GUI::handle_mouse_operations()
 		// Move object to the position picked by the user:
 		// vp->getByClass<CDisk>(0)->setLocation(clickedPt);
 	}
+
+#if MRPT_VERSION >= 0x211
+	const auto screen = gui_win->screen();
+	const bool leftClick = screen->mouseState() == 0x01;
+
+	// Replace object?
+	if (btnReplaceObject && btnReplaceObject->pushed())
+	{
+		static bool isReplacing = false;
+
+		// Start of replace? When the button push is released:
+		if (!isReplacing && !leftClick)
+		{
+			isReplacing = true;
+		}
+		if (gui_selectedObject.simulable)
+		{
+			// btnReplaceObject->screen()->setCursor()
+
+			mrpt::math::TPose3D p = gui_selectedObject.simulable->getPose();
+			p.x = clickedPt.x;
+			p.y = clickedPt.y;
+
+			gui_selectedObject.simulable->setPose(p);
+		}
+		if (isReplacing && leftClick)
+		{
+			isReplacing = false;
+			btnReplaceObject->setPushed(false);
+		}
+	}
+#endif
 
 	MRPT_END
 }
