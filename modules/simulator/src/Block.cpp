@@ -33,17 +33,7 @@ using namespace std;
 static XmlClassesRegistry block_classes_registry("block:class");
 
 // Protected ctor:
-Block::Block(World* parent)
-	: VisualObject(parent),
-	  m_block_index(0),
-	  m_mass(30.0),
-	  m_block_z_min(0.0),
-	  m_block_z_max(1.0),
-	  m_block_color(0x00, 0x00, 0xff),
-	  m_block_com(.0, .0),
-	  m_lateral_friction(0.5),
-	  m_ground_friction(0.5),
-	  m_restitution(0.01)
+Block::Block(World* parent) : VisualObject(parent)
 {
 	// Default shape:
 	m_block_poly.emplace_back(-0.5, -0.5);

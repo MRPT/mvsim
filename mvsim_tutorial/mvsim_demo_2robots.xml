@@ -200,6 +200,26 @@
 		</visual>
 	</block:class>
 
+	<block:class name="nurse_station">
+		<mass>300</mass>
+		<color>#0080ff</color>
+		<zmax>2.0</zmax>
+		<ground_friction>100.0</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>../models/aws_robomaker_hospital_nursesstation_01_visual.dae</model_uri>
+			<model_scale>1.0</model_scale>
+			<model_offset_x>0.0</model_offset_x>
+			<model_offset_y>0.0</model_offset_y>
+			<model_offset_z>0.0</model_offset_z>
+			<model_yaw>0.0</model_yaw>
+			<model_pitch>0.0</model_pitch>
+			<model_roll>00.0</model_roll>
+		</visual>
+	</block:class>
+
 
 	<!-- ========================
 		Obstacle blocks
@@ -219,12 +239,16 @@
 		</publish>
 	</block>
 
+	<block class="nurse_station">
+		<init_pose>15 2 30</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+	</block>
+
 	<!-- ======================================
 	      Walls
 	     ====================================== -->
 	<walls>
+	  <color>#ffff00</color>
 	  <model_uri>testWalls.dxf</model_uri>
-	  <scale>1.0</scale>
 	  <wallThickness>0.10</wallThickness>
 	</walls>
 
