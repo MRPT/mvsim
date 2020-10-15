@@ -76,6 +76,7 @@ class Block : public VisualObject, public Simulable
 	{
 		m_block_poly = p;
 		updateMaxRadiusFromPoly();
+		m_gl_block.reset();  // regenerate 3D view
 	}
 
 	/** Set the block index in the World */
@@ -97,6 +98,13 @@ class Block : public VisualObject, public Simulable
 	void poses_mutex_lock() override { m_gui_mtx.lock(); }
 	void poses_mutex_unlock() override { m_gui_mtx.unlock(); }
 
+	const mrpt::img::TColor block_color() const { return m_block_color; }
+	void block_color(const mrpt::img::TColor& c)
+	{
+		m_block_color = c;
+		m_gl_block.reset();  // regenerate 3D view
+	}
+
    protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
@@ -104,23 +112,23 @@ class Block : public VisualObject, public Simulable
 
 	/** user-supplied index number: must be set/get'ed with setblockIndex()
 	 * getblockIndex() (default=0) */
-	size_t m_block_index;
+	size_t m_block_index = 0;
 
 	std::vector<b2FrictionJoint*> m_friction_joints;
 
 	// Block info:
-	double m_mass;
+	double m_mass = 30.0;
 	bool m_isStatic = false;
 	mrpt::math::TPolygon2D m_block_poly;
 	double m_max_radius;  //!< Automatically computed from m_block_poly upon
 						  //! each change via updateMaxRadiusFromPoly()
-	double m_block_z_min, m_block_z_max;
-	mrpt::img::TColor m_block_color;
-	mrpt::math::TPoint2D m_block_com;  //!< In local coordinates
+	double m_block_z_min = 0.0, m_block_z_max = 1.0;
+	mrpt::img::TColor m_block_color{0x00, 0x00, 0xff};
+	mrpt::math::TPoint2D m_block_com{.0, .0};  //!< In local coordinates
 
-	double m_lateral_friction;  //!< Default: 0.5
-	double m_ground_friction;  //!< Default: 0.5
-	double m_restitution;  //!< Deault: 0.01
+	double m_lateral_friction = 0.5;  //!< Default: 0.5
+	double m_ground_friction = 0.5;  //!< Default: 0.5
+	double m_restitution = 0.01;  //!< Deault: 0.01
 
 	const TParameterDefinitions m_params = {
 		{"mass", {"%lf", &m_mass}},

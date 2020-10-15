@@ -126,6 +126,7 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 	std::string wallModelFileName;
 	std::string sTransformation;
 	double scale = 1.0;
+	mrpt::img::TColor wallColor{0xff323232};
 	WallProperties wp;
 
 	TParameterDefinitions params;
@@ -134,6 +135,7 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 	params["wallThickness"] = TParamEntry("%lf", &wp.thickness);
 	params["wallHeight"] = TParamEntry("%lf", &wp.height);
 	params["scale"] = TParamEntry("%lf", &scale);
+	params["color"] = TParamEntry("%color", &wallColor);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(node, params);
@@ -180,6 +182,7 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 		const auto& pt1 = tfPts[i * 2 + 0];
 		const auto& pt2 = tfPts[i * 2 + 1];
 		auto block = create_wall_segment(this, pt1, pt2, wp, ptsMap);
+		block->block_color(wallColor);
 		insertBlock(block);
 	}
 

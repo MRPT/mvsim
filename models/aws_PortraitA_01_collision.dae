@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset><contributor><author></author><authoring_tool>FBX COLLADA exporter</authoring_tool><comments></comments></contributor><created>2018-10-15T12:19:17Z</created><keywords></keywords><modified>2018-10-15T12:19:17Z</modified><revision></revision><subject></subject><title></title><unit meter="0.010000" name="centimeter"></unit><up_axis>Z_UP</up_axis></asset>
+  <library_geometries>
+    <geometry id="aws_PortraitA_01_collision-lib" name="aws_PortraitA_01_collisionMesh">
+      <mesh>
+        <source id="aws_PortraitA_01_collision-POSITION">
+          <float_array id="aws_PortraitA_01_collision-POSITION-array" count="24">
+0.249407 0.694493 -0.013936
+-0.248737 0.694493 -0.013936
+-0.248737 -0.003218 -0.013936
+0.249407 -0.003218 -0.013936
+0.249407 0.694492 0.014043
+-0.248737 0.694492 0.014043
+-0.248737 -0.003218 0.014043
+0.249407 -0.003218 0.014043
+</float_array>
+          <technique_common>
+            <accessor source="#aws_PortraitA_01_collision-POSITION-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="aws_PortraitA_01_collision-Normal0">
+          <float_array id="aws_PortraitA_01_collision-Normal0-array" count="108">
+0.000000 1.000000 0.000001
+0.000000 1.000000 0.000001
+0.000000 1.000000 0.000001
+0.000000 1.000000 0.000001
+0.000000 1.000000 0.000001
+0.000000 1.000000 0.000001
+-1.000000 0.000000 0.000000
+-1.000000 0.000000 0.000000
+-1.000000 0.000000 0.000000
+-1.000000 0.000000 0.000000
+-1.000000 0.000000 0.000000
+-1.000000 0.000000 0.000000
+0.000000 -1.000000 -0.000001
+0.000000 -1.000000 -0.000001
+0.000000 -1.000000 -0.000001
+0.000000 -1.000000 -0.000001
+0.000000 -1.000000 -0.000001
+0.000000 -1.000000 -0.000001
+1.000000 0.000000 0.000000
+1.000000 0.000000 0.000000
+1.000000 0.000000 0.000000
+1.000000 0.000000 0.000000
+1.000000 0.000000 0.000000
+1.000000 0.000000 0.000000
+0.000000 0.000000 -1.000000
+0.000000 0.000000 -1.000000
+0.000000 0.000000 -1.000000
+0.000000 0.000000 -1.000000
+0.000000 0.000000 -1.000000
+0.000000 0.000000 -1.000000
+0.000000 0.000000 1.000000
+0.000000 0.000000 1.000000
+0.000000 0.000000 1.000000
+0.000000 0.000000 1.000000
+0.000000 0.000000 1.000000
+0.000000 0.000000 1.000000
+</float_array>
+          <technique_common>
+            <accessor source="#aws_PortraitA_01_collision-Normal0-array" count="36" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="aws_PortraitA_01_collision-VERTEX">
+          <input semantic="POSITION" source="#aws_PortraitA_01_collision-POSITION"/>
+        </vertices>
+        <polylist count="12"><input semantic="VERTEX" offset="0" source="#aws_PortraitA_01_collision-VERTEX"/><input semantic="NORMAL" offset="1" source="#aws_PortraitA_01_collision-Normal0"/><vcount>3 3 3 3 3 3 3 3 3 3 3 3 </vcount><p> 5 0 4 1 0 2 5 3 0 4 1 5 5 6 2 7 6 8 2 9 5 10 1 11 7 12 6 13 2 14 7 15 2 16 3 17 4 18 7 19 3 20 4 21 3 22 0 23 3 24 2 25 0 26 2 27 1 28 0 29 4 30 5 31 6 32 4 33 6 34 7 35</p></polylist>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="aws_PortraitA_01_collision" name="aws_PortraitA_01_collision">
+      <node name="aws_PortraitA_01_collision" id="aws_PortraitA_01_collision" sid="aws_PortraitA_01_collision"><matrix sid="matrix">100.000000 0.000000 0.000000 0.000000 0.000000 -0.000004 -100.000000 0.000000 0.000000 100.000000 -0.000004 0.000000 0.000000 0.000000 0.000000 1.000000</matrix><instance_geometry url="#aws_PortraitA_01_collision-lib"/><extra><technique profile="FCOLLADA"><visibility>1.000000</visibility></technique></extra></node>
+      <extra><technique profile="MAX3D"><frame_rate>30.000000</frame_rate></technique><technique profile="FCOLLADA"><start_time>0.000000</start_time><end_time>3.333333</end_time></technique></extra>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#aws_PortraitA_01_collision"></instance_visual_scene>
+  </scene>
+</COLLADA>
