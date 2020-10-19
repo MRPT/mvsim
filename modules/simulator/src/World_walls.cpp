@@ -90,6 +90,9 @@ static Block::Ptr create_wall_segment(
 		p.emplace_back(bbmax.x, bbmin.y);
 
 		b->blockShape(p);
+
+		b->block_z_min(.0);
+		b->block_z_max(wp.height);
 	}
 
 	// make the walls non-movable:

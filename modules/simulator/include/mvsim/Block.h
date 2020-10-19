@@ -105,6 +105,19 @@ class Block : public VisualObject, public Simulable
 		m_gl_block.reset();  // regenerate 3D view
 	}
 
+	double block_z_min() const { return m_block_z_min; }
+	double block_z_max() const { return m_block_z_max; }
+	void block_z_min(double v)
+	{
+		m_block_z_min = v;
+		m_gl_block.reset();  // regenerate 3D view
+	}
+	void block_z_max(double v)
+	{
+		m_block_z_max = v;
+		m_gl_block.reset();  // regenerate 3D view
+	}
+
    protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
