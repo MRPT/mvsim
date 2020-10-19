@@ -45,14 +45,15 @@ void World::close_GUI() { m_gui.gui_win.reset(); }
 // Add top menu subwindow:
 void World::GUI::prepare_top_menu()
 {
-	auto winMenu = new nanogui::Window(gui_win.get(), "");
-	winMenu->setPosition(nanogui::Vector2i(0, 0));
+#if MRPT_VERSION >= 0x211
+	nanogui::Window* winMenu = gui_win->createManagedSubWindow("Control");
+#else
+	nanogui::Window* winMenu = new nanogui::Window(gui_win.get(), "Control");
+#endif
+
+	winMenu->setPosition(nanogui::Vector2i(5, 80));
 	winMenu->setLayout(new nanogui::BoxLayout(
 		nanogui::Orientation::Horizontal, nanogui::Alignment::Middle, 5));
-	nanogui::Theme* modTheme =
-		new nanogui::Theme(gui_win->screen()->nvgContext());
-	modTheme->mWindowHeaderHeight = 1;
-	winMenu->setTheme(modTheme);
 
 	winMenu->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
 		->setCallback([this]() {
@@ -88,19 +89,22 @@ void World::GUI::prepare_top_menu()
 // Add Status window
 void World::GUI::prepare_status_window()
 {
-	nanogui::Window* winStatus = nullptr;
-
+#if MRPT_VERSION >= 0x211
+	nanogui::Window* w = gui_win->createManagedSubWindow("Status");
+#else
 	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Status");
-	winStatus = w;
+#endif
 
-	w->setPosition(nanogui::Vector2i(10, 45));
+	w->setPosition(nanogui::Vector2i(5, 170));
 	w->setLayout(new nanogui::BoxLayout(
 		nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
 	w->setFixedWidth(250);
 
+#if MRPT_VERSION < 0x211
 	w->buttonPanel()
 		->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
 		->setCallback([w]() { w->setVisible(false); });
+#endif
 
 	lbCpuUsage = w->add<nanogui::Label>(" ");
 	lbStatuses.resize(5);
@@ -111,19 +115,22 @@ void World::GUI::prepare_status_window()
 // Add editor window
 void World::GUI::prepare_editor_window()
 {
-	nanogui::Window* winEditor = nullptr;
-
+#if MRPT_VERSION >= 0x211
+	nanogui::Window* w = gui_win->createManagedSubWindow("Editor");
+#else
 	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Editor");
-	winEditor = w;
+#endif
 
-	w->setPosition(nanogui::Vector2i(10, 300));
+	w->setPosition(nanogui::Vector2i(5, 300));
 	w->setLayout(new nanogui::BoxLayout(
 		nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3, 3));
 	w->setFixedWidth(300);
 
+#if MRPT_VERSION < 0x211
 	w->buttonPanel()
 		->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
 		->setCallback([w]() { w->setVisible(false); });
+#endif
 
 	w->add<nanogui::Label>("Selected object", "sans-bold");
 
@@ -336,8 +343,6 @@ void World::internal_GUI_thread()
 			auto we = WorldElementBase::factory(this, nullptr, "groundgrid");
 			m_world_elements.push_back(we);
 		}
-
-		MRPT_TODO("Add bottom windows bar to restore minimized windows");
 
 		// Windows:
 		m_gui.prepare_top_menu();
