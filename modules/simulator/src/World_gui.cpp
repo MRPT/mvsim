@@ -12,6 +12,7 @@
 #include <mrpt/math/TLine3D.h>
 #include <mrpt/math/TObject3D.h>
 #include <mrpt/math/geometry.h>
+#include <mrpt/opengl/CFBORender.h>
 #include <mrpt/opengl/CGridPlaneXY.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mvsim/World.h>
@@ -390,6 +391,30 @@ void World::internal_GUI_thread()
 			// Update all GUI elements:
 			ASSERT_(m_gui.gui_win->background_scene);
 			internalUpdate3DSceneObjects(m_gui.gui_win->background_scene);
+
+#if 0
+			// Quick test for camera sensor first test
+			static mrpt::opengl::CFBORender fbo(800, 640, true);
+			mrpt::img::CImage im;
+
+			auto& cam =
+				m_gui.gui_win->background_scene->getViewport()->getCamera();
+			auto camBackup = cam;
+			cam.set6DOFMode(true);
+			auto p = mrpt::poses::CPose3D(
+				this->m_vehicles.begin()->second->getPose());
+			using namespace mrpt;  // _deg
+			p += mrpt::poses::CPose3D(0, 0, 0, 90.0_deg, 0, 90.0_deg);
+			p += mrpt::poses::CPose3D(0.5, 0, 0.5, 0, 0, 0);
+			cam.setPose(p);
+
+			fbo.getFrame(*m_gui.gui_win->background_scene, im);
+
+			cam = camBackup;
+
+			static int i = 0;
+			im.saveToFile(mrpt::format("camera_%004i.png", i++));
+#endif
 
 			// handle mouse operations:
 			m_gui.handle_mouse_operations();
