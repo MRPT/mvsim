@@ -296,14 +296,14 @@ Write me!
 8. Vehicles and blocks parameters
 -----------------------------------
 
-Vehicles and obstacles blocks share common C++ ``mvsim::Simulable`` and 
+Vehicles and obstacles blocks share common C++ ``mvsim::Simulable`` and
 ``mvsim::VisualObject`` interfaces that provide the common parameters below.
 
 .. note::
 
-   The following parameters can appear in either the {vehicle,block} class 
-   definitions or in a particular instantiation block, depending on whether you 
-   want parameters to be common to all instances or not, respectively. 
+   The following parameters can appear in either the {vehicle,block} class
+   definitions or in a particular instantiation block, depending on whether you
+   want parameters to be common to all instances or not, respectively.
 
 
 Related to topic publication
@@ -328,7 +328,7 @@ Related to visual aspect
 
 Under the ``<visual> </visual>`` tag group:
 
-- **model\_uri**: Path to 3D model file. Can be any file format supported by ASSIMP, 
+- **model\_uri**: Path to 3D model file. Can be any file format supported by ASSIMP,
   like ``.dae``, ``.stl``, etc. If empty, the default visual aspect will be used.
 - **model\_scale**: (Default=1.0) Scale to apply to the 3D model.
 - **model\_offset_x**, **model\_offset_y** , **model\_offset_z**: (Default=0) Offset translation [meters].
@@ -389,3 +389,14 @@ At the moment, following characteristics are logged:
 Loggers support runtime clear and creating new session. The new session
 mode finalizes current log files and starts to write to a new bunch of
 them.
+
+
+Limitations
+~~~~~~~~~~~~
+
+-  A limitation of box2d is that no element can be thinner than 0.05 units, or
+the following assert will be raised while loading the world model:
+
+.. code-block::
+
+	Box2D/Box2D/Collision/Shapes/b2PolygonShape.cpp:158: void b2PolygonShape::Set(const b2Vec2*, int32): Assertion `false' failed.
