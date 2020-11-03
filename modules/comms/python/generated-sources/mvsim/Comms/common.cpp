@@ -4,6 +4,8 @@
 #include <pybind11/pybind11.h>
 #include <functional>
 #include <string>
+#include <pybind11/stl.h>
+
 
 #ifndef BINDER_PYBIND11_TYPE_CASTER
 	#define BINDER_PYBIND11_TYPE_CASTER
@@ -12,7 +14,7 @@
 	PYBIND11_MAKE_OPAQUE(std::shared_ptr<void>);
 #endif
 
-// mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:46
+// mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:49
 struct PyCallBack_mvsim_UnexpectedMessageException : public mvsim::UnexpectedMessageException {
 	using mvsim::UnexpectedMessageException::UnexpectedMessageException;
 
@@ -20,7 +22,7 @@ struct PyCallBack_mvsim_UnexpectedMessageException : public mvsim::UnexpectedMes
 
 void bind_mvsim_Comms_common(std::function< pybind11::module &(std::string const &namespace_) > &M)
 {
-	{ // mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:46
+	{ // mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:49
 		pybind11::class_<mvsim::UnexpectedMessageException, std::shared_ptr<mvsim::UnexpectedMessageException>, PyCallBack_mvsim_UnexpectedMessageException> cl(M("mvsim"), "UnexpectedMessageException", "");
 		cl.def( pybind11::init<const char *>(), pybind11::arg("reason") );
 
