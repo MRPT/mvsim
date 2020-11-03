@@ -687,9 +687,26 @@ void Client::internalTopicUpdatesThread()
 #endif
 }
 
+// Overload for python wrapper
+std::string Client::callService(
+	const std::string& serviceName, const std::string& inputSerializedMsg)
+{
+	MRPT_START
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+
+	std::string outMsgData, outMsgType;
+	doCallService(
+		serviceName, inputSerializedMsg, std::nullopt, outMsgData, outMsgType);
+	return outMsgData;
+#endif
+	MRPT_END
+}
+
 void Client::doCallService(
-	const std::string& serviceName, const google::protobuf::Message& input,
-	google::protobuf::Message& output)
+	const std::string& serviceName, const std::string& inputSerializedMsg,
+	mrpt::optional_ref<google::protobuf::Message> outputMsg,
+	mrpt::optional_ref<std::string> outputSerializedMsg,
+	mrpt::optional_ref<std::string> outputMsgTypeName)
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -722,12 +739,23 @@ void Client::doCallService(
 
 	mvsim_msgs::CallService csMsg;
 	csMsg.set_servicename(serviceName);
-	csMsg.set_serializedinput(input.SerializeAsString());
+	csMsg.set_serializedinput(inputSerializedMsg);
 
 	mvsim::sendMessage(csMsg, srvReqSock);
 
 	const auto m = mvsim::receiveMessage(srvReqSock);
-	mvsim::parseMessage(m, output);
+	if (outputMsg)
+	{
+		mvsim::parseMessage(m, outputMsg.value().get());
+	}
+	if (outputSerializedMsg)
+	{
+		const auto [typeName, serializedData] =
+			internal::parseMessageToParts(m);
+
+		outputSerializedMsg.value().get() = serializedData;
+		if (outputMsgTypeName) outputMsgTypeName.value().get() = typeName;
+	}
 #endif
 	MRPT_END
 }

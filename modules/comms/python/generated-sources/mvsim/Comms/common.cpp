@@ -1,5 +1,6 @@
 #include <mvsim/Comms/common.h>
 #include <sstream> // __str__
+#include <stdexcept>
 
 #include <pybind11/pybind11.h>
 #include <functional>
@@ -18,12 +19,25 @@
 struct PyCallBack_mvsim_UnexpectedMessageException : public mvsim::UnexpectedMessageException {
 	using mvsim::UnexpectedMessageException::UnexpectedMessageException;
 
+	const char * what() const noexcept override { 
+		pybind11::gil_scoped_acquire gil;
+		pybind11::function overload = pybind11::get_overload(static_cast<const mvsim::UnexpectedMessageException *>(this), "what");
+		if (overload) {
+			auto o = overload.operator()<pybind11::return_value_policy::reference>();
+			if (pybind11::detail::cast_is_temporary_value_reference<const char *>::value) {
+				static pybind11::detail::overload_caster_t<const char *> caster;
+				return pybind11::detail::cast_ref<const char *>(std::move(o), caster);
+			}
+			else return pybind11::detail::cast_safe<const char *>(std::move(o));
+		}
+		return runtime_error::what();
+	}
 };
 
 void bind_mvsim_Comms_common(std::function< pybind11::module &(std::string const &namespace_) > &M)
 {
 	{ // mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:49
-		pybind11::class_<mvsim::UnexpectedMessageException, std::shared_ptr<mvsim::UnexpectedMessageException>, PyCallBack_mvsim_UnexpectedMessageException> cl(M("mvsim"), "UnexpectedMessageException", "");
+		pybind11::class_<mvsim::UnexpectedMessageException, std::shared_ptr<mvsim::UnexpectedMessageException>, PyCallBack_mvsim_UnexpectedMessageException, std::runtime_error> cl(M("mvsim"), "UnexpectedMessageException", "");
 		cl.def( pybind11::init<const char *>(), pybind11::arg("reason") );
 
 		cl.def( pybind11::init( [](PyCallBack_mvsim_UnexpectedMessageException const &o){ return new PyCallBack_mvsim_UnexpectedMessageException(o); } ) );

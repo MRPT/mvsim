@@ -3,12 +3,26 @@
 # To test with a local build:
 #
 # export PYTHONPATH=$HOME/code/mvsim/build/lib/:$PYTHONPATH
-# export PYTHONPATH=/tmp/install-mvsim/include/mvsim/:$PYTHONPATH
 
-import pymvsim_comms
+from mvsim_comms import pymvsim_comms
 from mvsim_msgs import SrvSetPose_pb2
 import time
-from math import radians
+import math
+
+
+def setObjectPose(client, objectName, x, y, theta_rad):
+    # Send a set pose request:
+    req = SrvSetPose_pb2.SrvSetPose()
+    req.objectId = objectName  # vehicle/robot/object name in MVSIM
+    req.pose.x = x
+    req.pose.y = y
+    req.pose.z = 0
+    req.pose.yaw = theta_rad
+    req.pose.pitch = 0
+    req.pose.roll = 0 # math.radians(0.0)
+    #ret =
+    client.callService('set_pose', req.SerializeToString())
+
 
 if __name__ == "__main__":
     client = pymvsim_comms.mvsim.Client()
@@ -17,17 +31,8 @@ if __name__ == "__main__":
     client.connect()
     print("Connected successfully.")
 
-    # Send a set pose request:
-    req = SrvSetPose_pb2.SrvSetPose()
-    req.objectId = 'veh1'  # vehicle/robot/object name in MVSIM
-    req.pose.x = 1.0
-    req.pose.y = 1.0
-    req.pose.z = 1.0
-    req.pose.yaw = radians(0.0)
-    req.pose.pitch = radians(0.0)
-    req.pose.roll = radians(0.0)
-    print(req)
-    s = req.SerializeToString()
-    print(s)
-
-    time.sleep(2.0)
+    for i in range(1000):
+        th = i*0.02
+        R = 5
+        setObjectPose(client, 'r1', math.sin(th)*R, R*(1-math.cos(th)), th)
+        time.sleep(0.01)
