@@ -49,11 +49,17 @@ class Client : public mrpt::system::COutputLogger
    public:
 	Client();
 	Client(const std::string& nodeName);
+	// Overload for python wrapper
+	Client(const char* nodeName) : Client(std::string(nodeName)) {}
+	
 	~Client();
 
 	/** @name Main mvsim client communication API
 	 * @{ */
 	void setName(const std::string& nodeName);
+
+	// Overload for python wrapper
+	void setName(const char* nodeName) { setName(std::string(nodeName)); }
 
 	/** Connects to the server in a parallel thread. */
 	void connect();

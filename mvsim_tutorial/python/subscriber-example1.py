@@ -5,7 +5,7 @@ import time
 
 if __name__ == "__main__":
     client = pymvsim_comms.mvsim.Client()
-    # client.setName("listener1")
+    client.setName("tutorial1")
     print("Connecting to server...")
     client.connect()
     print("Connected successfully.")
