@@ -3,9 +3,8 @@
 # To test with a local build:
 #
 # export PYTHONPATH=$HOME/code/mvsim/build/lib/:$PYTHONPATH
-# export PYTHONPATH=/tmp/install-mvsim/include/mvsim/:$PYTHONPATH
 
-import pymvsim_comms
+from mvsim_comms import pymvsim_comms
 import time
 
 if __name__ == "__main__":

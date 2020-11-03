@@ -49,17 +49,12 @@ class Client : public mrpt::system::COutputLogger
    public:
 	Client();
 	Client(const std::string& nodeName);
-	// Overload for python wrapper
-	Client(const char* nodeName) : Client(std::string(nodeName)) {}
-	
+
 	~Client();
 
 	/** @name Main mvsim client communication API
 	 * @{ */
 	void setName(const std::string& nodeName);
-
-	// Overload for python wrapper
-	void setName(const char* nodeName) { setName(std::string(nodeName)); }
 
 	/** Connects to the server in a parallel thread. */
 	void connect();
@@ -92,6 +87,10 @@ class Client : public mrpt::system::COutputLogger
 	void callService(
 		const std::string& serviceName, const INPUT_MSG_T& input,
 		OUTPUT_MSG_T& output);
+
+	// Overload for python wrapper
+	std::string callService(
+		const std::string& serviceName, const std::string& inputSerializedMsg);
 
 	struct InfoPerNode
 	{
@@ -146,8 +145,10 @@ class Client : public mrpt::system::COutputLogger
 		const google::protobuf::Descriptor* descriptor,
 		const topic_callback_t& callback);
 	void doCallService(
-		const std::string& serviceName, const google::protobuf::Message& input,
-		google::protobuf::Message& output);
+		const std::string& serviceName, const std::string& inputSerializedMsg,
+		mrpt::optional_ref<google::protobuf::Message> outputMsg,
+		mrpt::optional_ref<std::string> outputSerializedMsg = std::nullopt,
+		mrpt::optional_ref<std::string> outputMsgTypeName = std::nullopt);
 
 	friend struct internal::InfoPerService;
 	friend struct internal::InfoPerSubscribedTopic;
@@ -192,7 +193,7 @@ void Client::callService(
 	const std::string& serviceName, const INPUT_MSG_T& input,
 	OUTPUT_MSG_T& output)
 {
-	doCallService(serviceName, input, output);
+	doCallService(serviceName, input.SerializeAsString(), output);
 }
 
 }  // namespace mvsim
