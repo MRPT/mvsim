@@ -183,7 +183,7 @@ endif()
 
 # ========================== Install Python libs ==========================
 if (pybind11_FOUND)
-	find_package(PythonLibs REQUIRED)
+	#find_package(PythonLibs REQUIRED) # Needed?
 
 	# Generate setup.py.
 	configure_file(${mvsim_SOURCE_DIR}/modules/setup.py.in
