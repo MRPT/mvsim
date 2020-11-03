@@ -26,12 +26,19 @@ mvsim_common_target_settings(${MODULE_NAME})
 
 if (MVSIM_WITH_PROTOBUF)
 
-	# Make a copy of headers so they appear under the same local 
+	# Make a copy of headers so they appear under the same local
 	# path for both, INSTALL and BUILD interfaces:
 	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mvsim/mvsim-msgs/)
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy ${PROTO_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/mvsim/mvsim-msgs/
 	)
+
+	# Python files:
+	file(MAKE_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy ${PROTO_PY_FILES} ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/
+	)
+	file(COPY python/__init__.py DESTINATION ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
 
 	target_include_directories(${PROJECT_NAME}
 		SYSTEM PUBLIC
@@ -40,13 +47,9 @@ if (MVSIM_WITH_PROTOBUF)
 			$<INSTALL_INTERFACE:include>
 	)
 
-	#message(STATUS "Python_SITELIB: ${Python_SITELIB}")
-	# TODO: Install python files in a better place?
-
 	install(
 	FILES
 	  ${PROTO_HDRS}
-	  ${PROTO_PY_FILES}
 	DESTINATION
 	  ${CMAKE_INSTALL_INCLUDEDIR}/mvsim/mvsim-msgs/
 	)
