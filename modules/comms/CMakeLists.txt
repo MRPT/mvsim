@@ -13,7 +13,7 @@ add_library(${PROJECT_NAME}
 
 source_group(Comms FILES ${Comms_SRCS})
 
-set(PACKAGE_DEPENDENCIES 
+set(PACKAGE_DEPENDENCIES
   mrpt-system
   mrpt-io
   mrpt-serialization
@@ -41,4 +41,14 @@ if (MVSIM_WITH_PYTHON)
 	${PY_SRCS}
 	)
   target_link_libraries(pymvsim_${MODULE_NAME} PUBLIC ${PROJECT_NAME})
+
+  # Python files:
+  file(MAKE_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_${MODULE_NAME}/)
+  add_custom_command(TARGET pymvsim_${MODULE_NAME} POST_BUILD
+	  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pymvsim_${MODULE_NAME}>
+	  ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_${MODULE_NAME}/
+  )
+  file(WRITE ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_${MODULE_NAME}/__init__.py
+  	"from . import *")
+
 endif()

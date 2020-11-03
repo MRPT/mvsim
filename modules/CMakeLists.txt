@@ -48,17 +48,16 @@ endif()
 option(MVSIM_WITH_PYTHON "Build python wrappers" ON)
 if (MVSIM_WITH_PYTHON)
   find_package(pybind11)
-  
+  set(MVSIM_PYTHON_BUILD_DIRECTORY ${mvsim_BINARY_DIR}/python)
+
   if (pybind11_FOUND AND pybind11_VERSION VERSION_LESS 2.2)
 	message(STATUS "Warning: Disabling Python bindings since pybind11 >=2.2 is required but only found version ${pybind11_VERSION}")
 	set(MVSIM_WITH_PYTHON OFF CACHE BOOL "Build python wrappers" FORCE)
 	set(pybind11_FOUND OFF)
   endif()
-  
-  if (pybind11_FOUND)
-	#
-  else()
-		set(MVSIM_WITH_PYTHON OFF CACHE BOOL "Build python wrappers" FORCE)
+
+  if (NOT pybind11_FOUND)
+	  set(MVSIM_WITH_PYTHON OFF CACHE BOOL "Build python wrappers" FORCE)
   endif()
 endif()
 
@@ -80,7 +79,7 @@ function(mvsim_common_target_settings MODULENAME_)
 		  -Wshadow
 		  # -Werror=suggest-override # Removed for protobuf headers in u18.04
 	  )
-  
+
 	  if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
 		  target_compile_options(${TARGETNAME_} PRIVATE
 			  "-O3"
@@ -125,7 +124,7 @@ function(mvsim_common_target_settings MODULENAME_)
   if (MVSIM_WITH_PROTOBUF)
     target_compile_definitions(${TARGETNAME_} PUBLIC MVSIM_HAS_PROTOBUF)
   endif()
-  
+
   if (MVSIM_WITH_ZMQ)
     target_compile_definitions(${TARGETNAME_} PUBLIC MVSIM_HAS_ZMQ)
   endif()
@@ -140,7 +139,7 @@ function(mvsim_common_target_settings MODULENAME_)
   if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   endif()
-  
+
   install(EXPORT ${TARGETNAME_}-targets
 	  FILE ${TARGETNAME_}-targets.cmake
 	  NAMESPACE mvsim::
@@ -182,6 +181,27 @@ if (MVSIM_WITH_PROTOBUF)
 endif()
 
 
+# ========================== Install Python libs ==========================
+if (pybind11_FOUND)
+	find_package(PythonLibs REQUIRED)
+
+	# Generate setup.py.
+	configure_file(${mvsim_SOURCE_DIR}/modules/setup.py.in
+		${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py)
+
+	install(
+	FILES
+	  ${PROTO_PY_FILES}
+	DESTINATION
+	  ${CMAKE_INSTALL_INCLUDEDIR}/mvsim/mvsim-msgs/
+	)
+
+	add_custom_target(python-install
+			COMMAND ${PYTHON_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install
+			DEPENDS mvsim-msgs pymvsim_comms
+			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY})
+endif()
+
 # ========================== Show results ====================================
 message(STATUS "----- Configured libmvsim (version ${PROJECT_VERSION}) ------")
 message(STATUS "MRPT version   : ${MRPT_VERSION}")
@@ -190,4 +210,3 @@ message(STATUS "Protobuf       : ${MVSIM_WITH_PROTOBUF} ${Protobuf_VERSION}")
 message(STATUS "ZeroMQ         : ${MVSIM_WITH_ZMQ} ${ZeroMQ_VERSION}")
 message(STATUS "Python wrappers: ${MVSIM_WITH_PYTHON} (pybind11: ${pybind11_VERSION})")
 message(STATUS "")
-

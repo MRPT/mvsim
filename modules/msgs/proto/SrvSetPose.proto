@@ -1,15 +1,15 @@
 syntax = "proto2";
 
-import "Pose.proto";
-
 package mvsim_msgs;
+
+import "Pose.proto";
 
 message SrvSetPose {
   required string objectId = 1;
 
   required Pose pose = 2;
-  
-  // If set to true, "pose" will be understood as an increment wrt the 
+
+  // If set to true, "pose" will be understood as an increment wrt the
   // current actual pose of the object in the world.
   optional bool relativeIncrement = 3;
 }
