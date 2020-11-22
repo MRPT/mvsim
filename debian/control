@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>
 Build-Depends:
 	debhelper (>= 9.0.0),
+	dh-python,
 	libmrpt-opengl-dev (>= 2.0.0),
 	libmrpt-obs-dev (>= 2.0.0),
 	libmrpt-maps-dev (>= 2.0.0),
@@ -16,7 +17,7 @@ Build-Depends:
 	libzmq3-dev,
 	pybind11-dev (>= 2.2.0),
 	python3-dev,
-Standards-Version: 3.9.8
+Standards-Version: 4.5.0
 
 Package: libmvsim-comms0.3.0
 Architecture: any
@@ -111,10 +112,23 @@ Architecture: any
 Priority: optional
 Depends: ${shlibs:Depends}, ${misc:Depends},
          libmvsim-simulator0.3.0 (= ${binary:Version}),
-		 libmvsim-comms0.3.0 (= ${binary:Version})
+         libmvsim-comms0.3.0 (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - GUI applications
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
  and accurate simulation of typical robot sensors (e.g. laser scanners).
  .
  This package contains the mvsim-cli main application.
+
+Package: python3-mvsim
+Architecture: any
+Section: python
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
+         libmvsim-simulator0.3.0 (= ${binary:Version}),
+         libmvsim-comms0.3.0 (= ${binary:Version})
+Description: Multi vehicle efficient dynamics simulator - python3 bindings
+ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
+ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
+ and accurate simulation of typical robot sensors (e.g. laser scanners).
+ .
+ This package contains the python3 bindings.
