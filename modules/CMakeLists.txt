@@ -183,7 +183,13 @@ endif()
 
 # ========================== Install Python libs ==========================
 if (pybind11_FOUND)
-	#find_package(PythonLibs REQUIRED) # Needed?
+  find_package(Python3 COMPONENTS Interpreter Development)
+  #find_package(PythonInterp REQUIRED)
+  #find_package(PythonLibs REQUIRED)
+
+  set(MVSIM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}"
+      CACHE STRING "The version of Python to build MVSIM wrapper against."
+      FORCE)
 
 	# Generate setup.py.
 	configure_file(${mvsim_SOURCE_DIR}/modules/setup.py.in
@@ -196,10 +202,14 @@ if (pybind11_FOUND)
 	  ${CMAKE_INSTALL_INCLUDEDIR}/mvsim/mvsim-msgs/
 	)
 
+	set(PYTHON_INSTALL_DIRECTORY "${Python3_SITELIB}"
+	CACHE PATH "Install prefix for python modules with 'make python-install'")
+
 	add_custom_target(python-install
-			COMMAND ${PYTHON_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install
+			COMMAND ${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install --prefix=${PYTHON_INSTALL_DIRECTORY}
 			DEPENDS mvsim-msgs pymvsim_comms
 			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY})
+
 endif()
 
 # ========================== Show results ====================================
@@ -209,4 +219,5 @@ message(STATUS "libbox2d       : ${BOX2D_VERSION_STRING}")
 message(STATUS "Protobuf       : ${MVSIM_WITH_PROTOBUF} ${Protobuf_VERSION}")
 message(STATUS "ZeroMQ         : ${MVSIM_WITH_ZMQ} ${ZeroMQ_VERSION}")
 message(STATUS "Python wrappers: ${MVSIM_WITH_PYTHON} (pybind11: ${pybind11_VERSION})")
+message(STATUS "Python version : ${MVSIM_PYTHON_VERSION}")
 message(STATUS "")

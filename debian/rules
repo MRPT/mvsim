@@ -18,18 +18,27 @@ CMAKE_FLAGS = \
 	-DCMAKE_INSTALL_PREFIX=/usr \
 	-DCMAKE_SKIP_RPATH=ON \
 	-DCMAKE_VERBOSE_MAKEFILE=ON \
+	-DPYTHON_INSTALL_DIRECTORY="debian/tmp/usr/" \
 	$(CMAKE_ARCH_FLAGS)
 
 %:
-	dh $@ --buildsystem=cmake --parallel
-#	dh $@ --with python2,python3 --buildsystem=cmake --parallel
+	dh $@ --with python3 --buildsystem=cmake --parallel
 
 override_dh_auto_configure:
+	# For debugging:
+	env
+
 	dh_auto_configure -B $(BUILDDIR) \
 		-- $(CMAKE_FLAGS) \
 		-DCMAKE_SHARED_LINKER_FLAGS_RELEASE="$(LDFLAGS)" \
 		-DBUILD_SHARED_LIBS=ON
 
+override_dh_install:
+	# Install:
+	#dh_auto_build -O--buildsystem=cmake -- install
+
+	# Install python:
+	dh_auto_build -O--buildsystem=cmake -- python-install
 
 override_dh_missing:
 	dh_missing --list-missing
