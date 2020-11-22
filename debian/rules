@@ -33,9 +33,9 @@ override_dh_auto_configure:
 		-DCMAKE_SHARED_LINKER_FLAGS_RELEASE="$(LDFLAGS)" \
 		-DBUILD_SHARED_LIBS=ON
 
-override_dh_install:
+override_dh_auto_install:
 	# Install:
-	#dh_auto_build -O--buildsystem=cmake -- install
+	DESTDIR=$(CURDIR)/debian/tmp  dh_auto_build -O--buildsystem=cmake -- install
 
 	# Install python:
 	dh_auto_build -O--buildsystem=cmake -- python-install
