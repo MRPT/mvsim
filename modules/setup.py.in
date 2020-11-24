@@ -20,6 +20,11 @@ package_data = {
 # Cleaner to read in the contents rather than copy them over.
 readme_contents = open("${mvsim_SOURCE_DIR}/README.md").read()
 
+# Solves the problem of "setup.py install" complaining on being installed into
+# a non-standard location during generation of Debian packages:
+python_install_dir="${PYTHON_INSTALL_DIRECTORY}"
+sys.path.insert(0, python_install_dir)
+
 setup(
     name='mvsim',
     description='Multivehicle Simulator',
