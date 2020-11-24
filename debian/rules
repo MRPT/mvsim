@@ -40,8 +40,10 @@ override_dh_auto_install:
 	dh_auto_build -O--buildsystem=cmake -- python-install
 
 override_dh_install:
-	#echo "DH_INSTALL ========================="
-	#cp -v $(BUILDDIR)/lib/*.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/
+	echo "DH_INSTALL: Correct python installed files"
+	mv -v debian/tmp/usr/lib/python3/dist-packages/mvsim-*/mvsim_* debian/tmp/usr/lib/python3/dist-packages/
+	rm -fr debian/tmp/usr/lib/python3/dist-packages/mvsim-*
+
 	dh_install
 
 override_dh_missing:
