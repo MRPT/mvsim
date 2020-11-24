@@ -22,7 +22,7 @@ CMAKE_FLAGS = \
 	$(CMAKE_ARCH_FLAGS)
 
 %:
-	dh $@ --with python3 --buildsystem=cmake --parallel
+	dh $@ --with python3 --buildsystem=cmake
 
 override_dh_auto_configure:
 	# For debugging:
@@ -33,16 +33,16 @@ override_dh_auto_configure:
 		-DCMAKE_SHARED_LINKER_FLAGS_RELEASE="$(LDFLAGS)" \
 		-DBUILD_SHARED_LIBS=ON
 
-override_dh_auto_install:
-	# Install:
-	DESTDIR=$(CURDIR)/debian/tmp  dh_auto_build -O--buildsystem=cmake -- install
 
+override_dh_auto_install:
+	dh_auto_install -B $(BUILDDIR)
 	# Install python:
 	dh_auto_build -O--buildsystem=cmake -- python-install
 
+override_dh_install:
+	#echo "DH_INSTALL ========================="
+	#cp -v $(BUILDDIR)/lib/*.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/
+	dh_install
+
 override_dh_missing:
 	dh_missing --list-missing
-
-#override_dh_gencontrol:
-#	dh_numpy3 -p python3-mvsim
-#	dh_gencontrol
