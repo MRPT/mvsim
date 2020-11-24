@@ -183,13 +183,18 @@ endif()
 
 # ========================== Install Python libs ==========================
 if (pybind11_FOUND)
-  find_package(Python3 COMPONENTS Interpreter Development)
-  #find_package(PythonInterp REQUIRED)
-  #find_package(PythonLibs REQUIRED)
+	if(NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
+		find_package(Python3 COMPONENTS Interpreter Development)
+	else()
+		# When cmake 3.12 is available everywhere, delete this branch of the if()
+		find_program(Python3_EXECUTABLE NAMES python3)
+		set(Python3_VERSION_MAJOR ${Python_VERSION_MAJOR})
+		set(Python3_VERSION_MINOR ${Python_VERSION_MINOR})
+	endif()
 
-  set(MVSIM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}"
-      CACHE STRING "The version of Python to build MVSIM wrapper against."
-      FORCE)
+  #set(MVSIM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}"
+	#    CACHE STRING "The version of Python to build MVSIM wrapper against."
+	#    FORCE)
 
 	# Generate setup.py.
 	configure_file(${mvsim_SOURCE_DIR}/modules/setup.py.in
@@ -219,5 +224,5 @@ message(STATUS "libbox2d       : ${BOX2D_VERSION_STRING}")
 message(STATUS "Protobuf       : ${MVSIM_WITH_PROTOBUF} ${Protobuf_VERSION}")
 message(STATUS "ZeroMQ         : ${MVSIM_WITH_ZMQ} ${ZeroMQ_VERSION}")
 message(STATUS "Python wrappers: ${MVSIM_WITH_PYTHON} (pybind11: ${pybind11_VERSION})")
-message(STATUS "Python version : ${MVSIM_PYTHON_VERSION}")
+message(STATUS "Python interp  : ${Python3_EXECUTABLE}")
 message(STATUS "")
