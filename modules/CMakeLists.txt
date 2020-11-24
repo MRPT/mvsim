@@ -211,7 +211,7 @@ if (pybind11_FOUND)
 	CACHE PATH "Install prefix for python modules with 'make python-install'")
 
 	add_custom_target(python-install
-			COMMAND ${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install --prefix=${PYTHON_INSTALL_DIRECTORY}
+			COMMAND ${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install --prefix=${PYTHON_INSTALL_DIRECTORY} --install-layout=deb
 			DEPENDS mvsim-msgs pymvsim_comms
 			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY})
 
