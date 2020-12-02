@@ -47,7 +47,19 @@ endif()
 
 option(MVSIM_WITH_PYTHON "Build python wrappers" ON)
 if (MVSIM_WITH_PYTHON)
-  find_package(pybind11)
+	if(NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
+		find_package(Python3 COMPONENTS Interpreter Development)
+	else()
+		# When cmake 3.12 is available everywhere, delete this branch of the if()
+		find_program(Python3_EXECUTABLE NAMES python3)
+		set(Python3_VERSION_MAJOR ${Python_VERSION_MAJOR})
+		set(Python3_VERSION_MINOR ${Python_VERSION_MINOR})
+	endif()
+
+  # Enforce using python3:
+  set(Python_ADDITIONAL_VERSIONS ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
+  set(PYBIND11_PYTHON_VERSION ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
+  find_package(pybind11 CONFIG)
   set(MVSIM_PYTHON_BUILD_DIRECTORY ${mvsim_BINARY_DIR}/python)
 
   if (pybind11_FOUND AND pybind11_VERSION VERSION_LESS 2.2)
@@ -183,15 +195,6 @@ endif()
 
 # ========================== Install Python libs ==========================
 if (pybind11_FOUND)
-	if(NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
-		find_package(Python3 COMPONENTS Interpreter Development)
-	else()
-		# When cmake 3.12 is available everywhere, delete this branch of the if()
-		find_program(Python3_EXECUTABLE NAMES python3)
-		set(Python3_VERSION_MAJOR ${Python_VERSION_MAJOR})
-		set(Python3_VERSION_MINOR ${Python_VERSION_MINOR})
-	endif()
-
   #set(MVSIM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}"
 	#    CACHE STRING "The version of Python to build MVSIM wrapper against."
 	#    FORCE)
