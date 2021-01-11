@@ -420,6 +420,10 @@ void World::internal_GUI_thread()
 			m_gui.handle_mouse_operations();
 		});
 
+		MRPT_LOG_DEBUG_FMT(
+			"[World::internal_GUI_thread] Using GUI FPS=%i.",
+			m_gui_options.refresh_fps);
+
 		nanogui::mainloop(m_gui_options.refresh_fps);
 
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
