@@ -12,6 +12,7 @@
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/version.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/World.h>
 
@@ -105,8 +106,13 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	glModel->loadScene(localFileName);
 
 	mrpt::math::TPoint3D bbmin, bbmax;
+#if MRPT_VERSION >= 0x218
+	const auto bb = glModel->getBoundingBox();
+	bbmin = bb.min;
+	bbmax = bb.max;
+#else
 	glModel->getBoundingBox(bbmin, bbmax);
-
+#endif
 	glGroup->insert(glModel);
 
 	glGroup->setScale(modelScale);
