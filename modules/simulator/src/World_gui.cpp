@@ -9,6 +9,7 @@
 
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/core/round.h>
 #include <mrpt/math/TLine3D.h>
 #include <mrpt/math/TObject3D.h>
 #include <mrpt/math/geometry.h>
@@ -420,11 +421,14 @@ void World::internal_GUI_thread()
 			m_gui.handle_mouse_operations();
 		});
 
-		MRPT_LOG_DEBUG_FMT(
-			"[World::internal_GUI_thread] Using GUI FPS=%i.",
-			m_gui_options.refresh_fps);
+		const int refresh_ms =
+			std::max(1, mrpt::round(1000 / m_gui_options.refresh_fps));
 
-		nanogui::mainloop(m_gui_options.refresh_fps);
+		MRPT_LOG_DEBUG_FMT(
+			"[World::internal_GUI_thread] Using GUI FPS=%i (T=%i ms)",
+			m_gui_options.refresh_fps, refresh_ms);
+
+		nanogui::mainloop(refresh_ms);
 
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
 

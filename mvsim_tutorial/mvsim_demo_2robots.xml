@@ -10,6 +10,7 @@
 		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
 		<cam_distance>35</cam_distance>
 		<fov_deg>35</fov_deg>
+		<refresh_fps>20</refresh_fps>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
@@ -141,7 +142,7 @@
 	<vehicle name="r1" class="small_robot">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
-		
+
 		<publish>
 		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
 		  <publish_pose_period>50e-3</publish_pose_period>
@@ -174,7 +175,7 @@
 			<pt> 1.0 -0.5</pt>
 		</shape>
 	</block:class>
-	
+
 	<block:class name="obstacle_table">
 		<mass>30</mass>
 		<color>#0080ff</color>
