@@ -97,7 +97,16 @@ class Simulable
 	/** Changes object name (e.g. "r1", "veh1") */
 	void setName(const std::string& s) { m_name = s; }
 
+	/** Whether is is in collision right now. \sa  */
 	bool isInCollision() const { return m_isInCollision; }
+
+	/** Whether a collision occurred since the last time this flag was manually
+	 * reset.
+	 * \sa isInCollision(), resetCollisionFlag()  */
+	bool hadCollision() const { return m_hadCollisionFlag; }
+
+	/** Resets the condition reported by hadCollision() */
+	void resetCollisionFlag() { m_hadCollisionFlag = true; }
 
 	virtual void registerOnServer(mvsim::Client& c);
 
@@ -129,11 +138,16 @@ class Simulable
 	/** Last time-step velocity (of the ref. point, in global coords) */
 	mrpt::math::TTwist2D m_dq{0, 0, 0};
 
+	/** Whether is is in collision right now */
 	bool m_isInCollision = false;
+
+	/** Whether a collision occurred since the last time this flag was manually
+	 * reset  */
+	bool m_hadCollisionFlag = false;
 
 	/** If not empty, publish the pose on this topic */
 	std::string publishPoseTopic_;
-	double publishPosePeriod_ = 100e-3;  //! Publish period [seconds]
+	double publishPosePeriod_ = 100e-3;	 //! Publish period [seconds]
 	double publishPoseLastTime_ = 0;
 };
 }  // namespace mvsim
