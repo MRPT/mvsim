@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/system/filesystem.h>  // filePathSeparatorsToNative()
+#include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
@@ -120,7 +120,7 @@ void World::internal_one_timestep(double dt)
 			m_timlogger, "timestep.1.dynamics_integrator");
 
 		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
-		m_simul_time += dt;  // Avance time
+		m_simul_time += dt;	 // Avance time
 	}
 
 	// 3) Save dynamical state and post-step processing:
@@ -261,7 +261,8 @@ void World::connectToServer()
 						}
 						ans.set_success(true);
 						ans.set_objectisincollision(
-							itV->second->isInCollision());
+							itV->second->hadCollision());
+						itV->second->resetCollisionFlag();
 					}
 					else
 					{
@@ -280,6 +281,7 @@ void World::connectToServer()
 
 					mvsim_msgs::SrvGetPoseAnswer ans;
 					const auto sId = req.objectid();
+					ans.set_objectisincollision(false);
 
 					if (auto itV = m_simulableObjects.find(sId);
 						itV != m_simulableObjects.end())
@@ -295,7 +297,8 @@ void World::connectToServer()
 						po->set_roll(p.roll);
 
 						ans.set_objectisincollision(
-							itV->second->isInCollision());
+							itV->second->hadCollision());
+						itV->second->resetCollisionFlag();
 					}
 					else
 					{
