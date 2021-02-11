@@ -105,8 +105,8 @@ class Simulable
 	 * \sa isInCollision(), resetCollisionFlag()  */
 	bool hadCollision() const { return m_hadCollisionFlag; }
 
-	/** Resets the condition reported by hadCollision() */
-	void resetCollisionFlag() { m_hadCollisionFlag = true; }
+	/** Resets the condition reported by hadCollision() to false */
+	void resetCollisionFlag() { m_hadCollisionFlag = false; }
 
 	virtual void registerOnServer(mvsim::Client& c);
 
