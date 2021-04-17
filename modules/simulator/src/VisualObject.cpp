@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/core/get_env.h>
 #include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/COpenGLScene.h>
@@ -68,6 +69,8 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 	internalGuiUpdate(scene, childrenOnly);
 }
 
+std::map<std::string, mrpt::opengl::CAssimpModel::Ptr> gModelsCache;
+
 bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 {
 	MRPT_TRY_START
@@ -101,9 +104,28 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	ASSERT_FILE_EXISTS_(localFileName);
 
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
-	auto glModel = mrpt::opengl::CAssimpModel::Create();
 
-	glModel->loadScene(localFileName);
+	auto glModel = [&]() {
+		if (auto it = gModelsCache.find(localFileName);
+			it != gModelsCache.end())
+			return it->second;
+		else
+		{
+			auto m = gModelsCache[localFileName] =
+				mrpt::opengl::CAssimpModel::Create();
+
+			// En/Dis-able the extra verbosity while loading the 3D model:
+			int loadFlags =
+				mrpt::opengl::CAssimpModel::LoadFlags::RealTimeMaxQuality |
+				mrpt::opengl::CAssimpModel::LoadFlags::FlipUVs;
+
+			if (mrpt::get_env<bool>("MVSIM_LOAD_MODELS_VERBOSE", false))
+				loadFlags |= mrpt::opengl::CAssimpModel::LoadFlags::Verbose;
+
+			m->loadScene(localFileName, loadFlags);
+			return m;
+		}
+	}();
 
 	mrpt::math::TPoint3D bbmin, bbmax;
 #if MRPT_VERSION >= 0x218
