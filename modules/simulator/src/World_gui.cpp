@@ -16,13 +16,12 @@
 #include <mrpt/opengl/CFBORender.h>
 #include <mrpt/opengl/CGridPlaneXY.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/version.h>
 #include <mvsim/World.h>
 
 #include <rapidxml.hpp>
 
 #include "xml_utils.h"
-
-#include <mrpt/version.h>
 #if MRPT_VERSION >= 0x204
 #include <mrpt/system/thread_name.h>
 #endif
@@ -63,7 +62,7 @@ void World::GUI::prepare_top_menu()
 			nanogui::leave();
 		});
 
-	winMenu->add<nanogui::Label>("      ");  // separator
+	winMenu->add<nanogui::Label>("      ");	 // separator
 
 	winMenu
 		->add<nanogui::CheckBox>(
@@ -146,17 +145,17 @@ void World::GUI::prepare_editor_window()
 			nanogui::Orientation::Horizontal, 3 /*columns */,
 			nanogui::Alignment::Minimum));
 
-		nanogui::VScrollPanel* vscrolls[3] = {pn->add<nanogui::VScrollPanel>(),
-											  pn->add<nanogui::VScrollPanel>(),
-											  pn->add<nanogui::VScrollPanel>()};
+		nanogui::VScrollPanel* vscrolls[3] = {
+			pn->add<nanogui::VScrollPanel>(), pn->add<nanogui::VScrollPanel>(),
+			pn->add<nanogui::VScrollPanel>()};
 
 		for (auto vs : vscrolls) vs->setFixedSize({listWidth, pnHeight});
 
 		// vscroll should only have *ONE* child. this is what `wrapper`
 		// is for
 		nanogui::Widget* wrappers[3];
-		std::array<const char*, 3> wrapTitles = {"Vehicles", "Blocks",
-												 "World elements"};
+		std::array<const char*, 3> wrapTitles = {
+			"Vehicles", "Blocks", "World elements"};
 		for (int i = 0; i < 3; i++)
 		{
 			wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
@@ -629,9 +628,9 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 	if (!m_gui.gui_win)
 	{
 		MRPT_LOG_THROTTLE_WARN(
-			2.0,
-			"[World::update_GUI] Ignoring call since GUI window has "
-			"been closed.");
+			5.0,
+			"[World::update_GUI] GUI window has been closed, but note that "
+			"simulation keeps running.");
 		return;
 	}
 
