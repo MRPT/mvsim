@@ -10,7 +10,7 @@
 #include <mrpt/3rdparty/tclap/CmdLine.h>
 #include <mrpt/core/exceptions.h>
 #include <mrpt/system/CTicTac.h>
-#include <mrpt/system/os.h>  // kbhit()
+#include <mrpt/system/os.h>	 // kbhit()
 
 #include <chrono>
 #include <iostream>
@@ -25,7 +25,8 @@ TCLAP::UnlabeledMultiArg<std::string> argCmd(
 	cmd);
 
 TCLAP::ValueArg<std::string> argVerbosity(
-	"v", "verbose", "Verbosity level", false, "INFO", "INFO", cmd);
+	"v", "verbose", "Verbosity level", false, "INFO", "ERROR|WARN|INFO|DEBUG",
+	cmd);
 
 TCLAP::SwitchArg argDetails(
 	"", "details", "Shows details in the specified subcommand", cmd);

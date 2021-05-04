@@ -52,17 +52,18 @@ void World::GUI::prepare_top_menu()
 	nanogui::Window* winMenu = new nanogui::Window(gui_win.get(), "Control");
 #endif
 
-	winMenu->setPosition(nanogui::Vector2i(5, 80));
+	// Place control UI at the top-left corner:
+	gui_win->getSubWindowsUI()->setPosition({1, 1});
+
+	winMenu->setPosition({1, 80});
 	winMenu->setLayout(new nanogui::BoxLayout(
-		nanogui::Orientation::Horizontal, nanogui::Alignment::Middle, 5));
+		nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 5));
 
 	winMenu->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
 		->setCallback([this]() {
 			gui_win->setVisible(false);
 			nanogui::leave();
 		});
-
-	winMenu->add<nanogui::Label>("      ");	 // separator
 
 	winMenu
 		->add<nanogui::CheckBox>(
@@ -96,10 +97,10 @@ void World::GUI::prepare_status_window()
 	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Status");
 #endif
 
-	w->setPosition(nanogui::Vector2i(5, 170));
+	w->setPosition({140, 80});
 	w->setLayout(new nanogui::BoxLayout(
 		nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
-	w->setFixedWidth(250);
+	w->setFixedWidth(270);
 
 #if MRPT_VERSION < 0x211
 	w->buttonPanel()
@@ -117,15 +118,20 @@ void World::GUI::prepare_status_window()
 void World::GUI::prepare_editor_window()
 {
 #if MRPT_VERSION >= 0x211
+#if MRPT_VERSION >= 0x231
+	const auto subwinIdx = gui_win->getSubwindowCount();
+#endif
 	nanogui::Window* w = gui_win->createManagedSubWindow("Editor");
 #else
 	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Editor");
 #endif
 
-	w->setPosition(nanogui::Vector2i(5, 300));
+	const int pnWidth = 250, pnHeight = 200;
+
+	w->setPosition({1, 230});
 	w->setLayout(new nanogui::BoxLayout(
-		nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3, 3));
-	w->setFixedWidth(300);
+		nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 3, 3));
+	w->setFixedWidth(pnWidth);
 
 #if MRPT_VERSION < 0x211
 	w->buttonPanel()
@@ -137,33 +143,36 @@ void World::GUI::prepare_editor_window()
 
 	if (!m_parent.m_simulableObjects.empty())
 	{
-		const int pnWidth = 300, pnHeight = 200, listWidth = pnWidth / 3;
+		auto tab = w->add<nanogui::TabWidget>();
 
-		auto pn = w->add<nanogui::Widget>();
-		pn->setFixedSize({pnWidth, pnHeight});
-		pn->setLayout(new nanogui::GridLayout(
-			nanogui::Orientation::Horizontal, 3 /*columns */,
-			nanogui::Alignment::Minimum));
+		nanogui::Widget* tabs[3] = {
+			tab->createTab("Vehicles"), tab->createTab("Blocks"),
+			tab->createTab("Elements")};
+
+		tab->setActiveTab(0);
+
+		for (auto t : tabs)
+			t->setLayout(new nanogui::BoxLayout(
+				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3,
+				3));
 
 		nanogui::VScrollPanel* vscrolls[3] = {
-			pn->add<nanogui::VScrollPanel>(), pn->add<nanogui::VScrollPanel>(),
-			pn->add<nanogui::VScrollPanel>()};
+			tabs[0]->add<nanogui::VScrollPanel>(),
+			tabs[1]->add<nanogui::VScrollPanel>(),
+			tabs[2]->add<nanogui::VScrollPanel>()};
 
-		for (auto vs : vscrolls) vs->setFixedSize({listWidth, pnHeight});
+		for (auto vs : vscrolls) vs->setFixedSize({pnWidth, pnHeight});
 
 		// vscroll should only have *ONE* child. this is what `wrapper`
 		// is for
 		nanogui::Widget* wrappers[3];
-		std::array<const char*, 3> wrapTitles = {
-			"Vehicles", "Blocks", "World elements"};
 		for (int i = 0; i < 3; i++)
 		{
 			wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
-			wrappers[i]->add<nanogui::Label>(wrapTitles[i]);
-			wrappers[i]->setFixedSize({listWidth, pnHeight});
+			wrappers[i]->setFixedSize({pnWidth, pnHeight});
 			wrappers[i]->setLayout(new nanogui::GridLayout(
 				nanogui::Orientation::Horizontal, 1 /*columns */,
-				nanogui::Alignment::Minimum));
+				nanogui::Alignment::Minimum, 3, 3));
 		}
 
 		for (const auto& o : m_parent.m_simulableObjects)
@@ -312,6 +321,18 @@ void World::GUI::prepare_editor_window()
 	});
 
 	for (auto b : btns_selectedOps) b->setEnabled(false);
+
+		// Minimize subwindow:
+#if MRPT_VERSION >= 0x231
+	gui_win->subwindowMinimize(subwinIdx);
+#else
+	if (auto btnMinimize =
+			dynamic_cast<nanogui::Button*>(w->buttonPanel()->children().at(0));
+		btnMinimize)
+	{
+		btnMinimize->callback()();	// "push" button
+	}
+#endif
 
 }  // end "editor" window
 
