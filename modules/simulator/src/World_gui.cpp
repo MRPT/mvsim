@@ -413,6 +413,8 @@ void World::internal_GUI_thread()
 			ASSERT_(m_gui.gui_win->background_scene);
 			internalUpdate3DSceneObjects(m_gui.gui_win->background_scene);
 
+			internal_process_pending_gui_user_tasks();
+
 #if 0
 			// Quick test for camera sensor first test
 			static mrpt::opengl::CFBORender fbo(800, 640, true);
@@ -529,6 +531,19 @@ void World::GUI::handle_mouse_operations()
 #endif
 
 	MRPT_END
+}
+
+void World::internal_process_pending_gui_user_tasks()
+{
+	m_gui_user_pending_tasks_mtx.lock();
+
+	for (const auto& task : m_gui_user_pending_tasks)
+	{
+		task();
+	}
+	m_gui_user_pending_tasks.clear();
+
+	m_gui_user_pending_tasks_mtx.unlock();
 }
 
 void World::internalUpdate3DSceneObjects(

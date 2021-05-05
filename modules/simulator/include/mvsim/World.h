@@ -111,8 +111,8 @@ class World : public mrpt::system::COutputLogger
 
 	struct TUpdateGUIParams
 	{
-		TGUIKeyEvent keyevent;  //!< Keystrokes in the window are returned here.
-		std::string msg_lines;  //!< Messages to show
+		TGUIKeyEvent keyevent;	//!< Keystrokes in the window are returned here.
+		std::string msg_lines;	//!< Messages to show
 
 		TUpdateGUIParams() = default;
 	};
@@ -126,9 +126,15 @@ class World : public mrpt::system::COutputLogger
 	 */
 	void update_GUI(TUpdateGUIParams* params = nullptr);
 
+	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const
+	{
+		return m_gui.gui_win;
+	}
+
 	void internalUpdate3DSceneObjects(
 		mrpt::opengl::COpenGLScene::Ptr& gl_scene);
 	void internal_GUI_thread();
+	void internal_process_pending_gui_user_tasks();
 
 	std::string m_gui_msg_lines;
 	std::mutex m_gui_msg_lines_mtx;
@@ -138,6 +144,16 @@ class World : public mrpt::system::COutputLogger
 	std::atomic_bool m_gui_thread_running = false;
 	std::atomic_bool m_gui_thread_must_close = false;
 	std::mutex m_gui_thread_start_mtx;
+
+	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f)
+	{
+		m_gui_user_pending_tasks_mtx.lock();
+		m_gui_user_pending_tasks.emplace_back(f);
+		m_gui_user_pending_tasks_mtx.unlock();
+	}
+
+	std::vector<std::function<void(void)>> m_gui_user_pending_tasks;
+	std::mutex m_gui_user_pending_tasks_mtx;
 
 	TGUIKeyEvent m_lastKeyEvent;
 	std::atomic_bool m_lastKeyEventValid = false;
@@ -270,7 +286,7 @@ class World : public mrpt::system::COutputLogger
 		int refresh_fps = 20;
 		bool ortho = false;
 		bool show_forces = false;
-		double force_scale = 0.01;  //!< In meters/Newton
+		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
 		double fov_deg = 60.0;
 		/** Name of the vehicle to follow (empty=none) */
@@ -292,7 +308,7 @@ class World : public mrpt::system::COutputLogger
 		void parse_from(const rapidxml::xml_node<char>& node);
 	};
 
-	TGUI_Options m_gui_options;  //!< Some of these options are only used the
+	TGUI_Options m_gui_options;	 //!< Some of these options are only used the
 								 //! first time the GUI window is created.
 
 	// -------- World contents ----------
