@@ -142,6 +142,9 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	// Limit sensor rate:
 	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period) return;
 
+	auto tle = mrpt::system::CTimeLoggerEntry(
+		m_world->getTimeLogger(), "LaserScanner");
+
 	m_sensor_last_timestamp = context.simul_time;
 
 	// Create an array of scans, each reflecting ranges to one kind of world
