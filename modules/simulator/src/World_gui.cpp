@@ -352,8 +352,10 @@ void World::internal_GUI_thread()
 			"mvsim", m_gui_options.win_w, m_gui_options.win_h, cp);
 
 		// Add a background scene:
-		auto scene = mrpt::opengl::COpenGLScene::Create();
 		{
+			auto scene = mrpt::opengl::COpenGLScene::Create();
+			scene->insert(m_glUserObjs);
+
 			std::lock_guard<std::mutex> lck(
 				m_gui.gui_win->background_scene_mtx);
 			m_gui.gui_win->background_scene = std::move(scene);
@@ -385,35 +387,42 @@ void World::internal_GUI_thread()
 		m_gui.gui_win->setVisible(true);
 
 		// Listen for keyboard events:
-		m_gui.gui_win->setKeyboardCallback([&](int key, int /*scancode*/,
-											   int action, int modifiers) {
-			if (action != GLFW_PRESS && action != GLFW_REPEAT) return false;
+#if MRPT_VERSION >= 0x232
+		m_gui.gui_win->addKeyboardCallback(
+#else
+		m_gui.gui_win->setKeyboardCallback(
+#endif
+			[&](int key, int /*scancode*/, int action, int modifiers) {
+				if (action != GLFW_PRESS && action != GLFW_REPEAT) return false;
 
-			auto lck = mrpt::lockHelper(m_lastKeyEvent_mtx);
+				auto lck = mrpt::lockHelper(m_lastKeyEvent_mtx);
 
-			m_lastKeyEvent.keycode = key;
-			m_lastKeyEvent.modifierShift = (modifiers & GLFW_MOD_SHIFT) != 0;
-			m_lastKeyEvent.modifierCtrl = (modifiers & GLFW_MOD_CONTROL) != 0;
-			m_lastKeyEvent.modifierSuper = (modifiers & GLFW_MOD_SUPER) != 0;
-			m_lastKeyEvent.modifierAlt = (modifiers & GLFW_MOD_ALT) != 0;
+				m_lastKeyEvent.keycode = key;
+				m_lastKeyEvent.modifierShift =
+					(modifiers & GLFW_MOD_SHIFT) != 0;
+				m_lastKeyEvent.modifierCtrl =
+					(modifiers & GLFW_MOD_CONTROL) != 0;
+				m_lastKeyEvent.modifierSuper =
+					(modifiers & GLFW_MOD_SUPER) != 0;
+				m_lastKeyEvent.modifierAlt = (modifiers & GLFW_MOD_ALT) != 0;
 
-			m_lastKeyEventValid = true;
+				m_lastKeyEventValid = true;
 
-			return false;
-		});
+				return false;
+			});
 
 		m_gui_thread_running = true;
 
 		// The GUI must be closed from this same thread. Use a shared atomic
 		// bool:
-		m_gui.gui_win->setLoopCallback([&]() {
-			if (m_gui_thread_must_close) nanogui::leave();
+		auto lambdaLoopCallback = [](World& me) {
+			if (me.m_gui_thread_must_close) nanogui::leave();
 
 			// Update all GUI elements:
-			ASSERT_(m_gui.gui_win->background_scene);
-			internalUpdate3DSceneObjects(m_gui.gui_win->background_scene);
+			ASSERT_(me.m_gui.gui_win->background_scene);
+			me.internalUpdate3DSceneObjects(me.m_gui.gui_win->background_scene);
 
-			internal_process_pending_gui_user_tasks();
+			me.internal_process_pending_gui_user_tasks();
 
 #if 0
 			// Quick test for camera sensor first test
@@ -440,8 +449,23 @@ void World::internal_GUI_thread()
 #endif
 
 			// handle mouse operations:
-			m_gui.handle_mouse_operations();
-		});
+			me.m_gui.handle_mouse_operations();
+
+			// handle user custom 3D visual objects:
+			{
+				const auto lck = mrpt::lockHelper(me.m_gui_user_objects_mtx);
+				// replace list of smart pointers (fast):
+				if (me.m_gui_user_objects)
+					*me.m_glUserObjs = *me.m_gui_user_objects;
+			}
+		};
+
+#if MRPT_VERSION >= 0x232
+		m_gui.gui_win->addLoopCallback(
+#else
+		m_gui.gui_win->setLoopCallback(
+#endif
+			[=]() { lambdaLoopCallback(*this); });
 
 		const int refresh_ms =
 			std::max(1, mrpt::round(1000 / m_gui_options.refresh_fps));
@@ -474,6 +498,7 @@ void World::GUI::handle_mouse_operations()
 	mrpt::opengl::COpenGLViewport::Ptr vp;
 	{
 		auto lck = mrpt::lockHelper(gui_win->background_scene_mtx);
+		if (!gui_win->background_scene) return;
 		vp = gui_win->background_scene->getViewport();
 	}
 	ASSERT_(vp);
