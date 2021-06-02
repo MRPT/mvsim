@@ -131,6 +131,17 @@ class World : public mrpt::system::COutputLogger
 		return m_gui.gui_win;
 	}
 
+	const mrpt::math::TPoint3D& gui_mouse_point() const
+	{
+		return m_gui.clickedPt;
+	}
+
+	/** If !=null, a set of objects to be rendered merged with the default
+	 * visualization. Lock the mutex m_gui_user_objects_mtx while writing.
+	 */
+	mrpt::opengl::CSetOfObjects::Ptr m_gui_user_objects;
+	std::mutex m_gui_user_objects_mtx;
+
 	void internalUpdate3DSceneObjects(
 		mrpt::opengl::COpenGLScene::Ptr& gl_scene);
 	void internal_GUI_thread();
@@ -277,6 +288,11 @@ class World : public mrpt::system::COutputLogger
 
 	/** Path from which to take relative directories. */
 	std::string m_base_path{"."};
+
+	/// This private container will be filled with objects in the public
+	/// m_gui_user_objects
+	mrpt::opengl::CSetOfObjects::Ptr m_glUserObjs =
+		mrpt::opengl::CSetOfObjects::Create();
 
 	// ------- GUI options -----
 	struct TGUI_Options
