@@ -372,7 +372,7 @@ class World : public mrpt::system::COutputLogger
 
 	/** @} */  // end GUI stuff
 
-	mrpt::system::CTimeLogger m_timlogger;
+	mrpt::system::CTimeLogger m_timlogger{true /*enabled*/, "mvsim::World"};
 	mrpt::system::CTicTac m_timer_iteration;
 
 	void process_load_walls(const rapidxml::xml_node<char>& node);
