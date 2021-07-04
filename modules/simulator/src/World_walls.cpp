@@ -51,18 +51,18 @@ static Block::Ptr create_wall_segment(
 
 	// Do we need to move these points due to former points already there, to
 	// avoid "collisions"?
-	const bool end1move = pt1Dist < mrpt::square(1.1 * wp.thickness);
-	const bool end2move = pt2Dist < mrpt::square(1.1 * wp.thickness);
+	const bool end1move = pt1Dist < mrpt::square(1.01 * wp.thickness);
+	const bool end2move = pt2Dist < mrpt::square(1.01 * wp.thickness);
 
 	const auto vec12 = rawEnd2 - rawEnd1;
 	ASSERT_(vec12.norm() > 0);
 	const auto u12 = vec12.unitarize();
 
 	const double t_hf = 0.5 * wp.thickness;
-	const double t = 1.01 * wp.thickness;
+	const double t = 0.5 * wp.thickness;
 
-	const auto end1 = end1move ? (rawEnd1 + u12 * t) : rawEnd1;
-	const auto end2 = end2move ? (rawEnd2 + u12 * (-t)) : rawEnd2;
+	const auto end1 = end1move ? (rawEnd1 + u12 * (-t)) : rawEnd1;
+	const auto end2 = end2move ? (rawEnd2 + u12 * t) : rawEnd2;
 
 	const auto ptCenter = (end1 + end2) * 0.5;
 	const double wallLineAngle = std::atan2(vec12.y, vec12.x);
@@ -129,7 +129,7 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 	std::string wallModelFileName;
 	std::string sTransformation;
 	double scale = 1.0;
-	mrpt::img::TColor wallColor{0xff323232};
+	mrpt::img::TColor wallColor{0x32, 0x32, 0x32, 0xff};
 	WallProperties wp;
 
 	TParameterDefinitions params;
