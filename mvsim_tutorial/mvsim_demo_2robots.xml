@@ -244,13 +244,4 @@
 		<init_pose>15 2 30</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 	</block>
 
-	<!-- ======================================
-	      Walls
-	     ====================================== -->
-	<walls>
-	  <color>#ffff00</color>
-	  <model_uri>testWalls.dxf</model_uri>
-	  <wallThickness>0.10</wallThickness>
-	</walls>
-
 </mvsim_world>
