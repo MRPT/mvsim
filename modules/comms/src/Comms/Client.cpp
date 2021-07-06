@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/exceptions.h>
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/version.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Comms/common.h>
@@ -97,6 +98,7 @@ struct Client::ZMQImpl
 #if defined(MVSIM_HAS_ZMQ)
 	zmq::context_t context{1, ZMQ_MAX_SOCKETS_DFLT};
 	std::optional<zmq::socket_t> mainReqSocket;
+	std::recursive_mutex mainReqSocketMtx;
 	mvsim::SocketMonitor mainReqSocketMonitor;
 
 	std::map<std::string, internal::InfoPerAdvertisedTopic> advertisedTopics;
@@ -143,6 +145,8 @@ void Client::connect()
 		"Client is already running.");
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+
+	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 
 	zmq_->mainReqSocket.emplace(zmq_->context, ZMQ_REQ);
 
@@ -205,6 +209,7 @@ void Client::shutdown() noexcept
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
+	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	if (!zmq_->mainReqSocket->connected()) return;
 
 	try
@@ -236,6 +241,7 @@ void Client::shutdown() noexcept
 void Client::doRegisterClient()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::RegisterNodeRequest rnq;
@@ -262,6 +268,7 @@ void Client::doRegisterClient()
 void Client::doUnregisterClient()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::UnregisterNodeRequest rnq;
@@ -288,6 +295,7 @@ void Client::doUnregisterClient()
 std::vector<Client::InfoPerNode> Client::requestListOfNodes()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::ListNodesRequest req;
@@ -315,6 +323,7 @@ std::vector<Client::InfoPerNode> Client::requestListOfNodes()
 std::vector<Client::InfoPerTopic> Client::requestListOfTopics()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::ListTopicsRequest req;
@@ -384,7 +393,7 @@ void Client::doAdvertiseTopic(
 
 	// Retrieve assigned TCP port:
 	ipat.endpoint = get_zmq_endpoint(ipat.pubSocket);
-	ipat.topicName = topicName;  // redundant in container, but handy.
+	ipat.topicName = topicName;	 // redundant in container, but handy.
 	ipat.descriptor = descriptor;
 
 	MRPT_LOG_DEBUG_FMT(
@@ -399,10 +408,13 @@ void Client::doAdvertiseTopic(
 	req.set_topictypename(ipat.descriptor->full_name());
 	req.set_nodename(nodeName_);
 
+	auto lckMain = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	mvsim::sendMessage(req, *zmq_->mainReqSocket);
 
 	//  Get the reply.
 	const zmq::message_t reply = mvsim::receiveMessage(*zmq_->mainReqSocket);
+	lckMain.unlock();
+
 	mvsim_msgs::GenericAnswer ans;
 	mvsim::parseMessage(reply, ans);
 
@@ -442,7 +454,7 @@ void Client::doAdvertiseService(
 		ZMQ_LAST_ENDPOINT, assignedPort, &assignedPortLen);
 	assignedPort[assignedPortLen] = '\0';
 
-	ips.serviceName = serviceName;  // redundant in container, but handy.
+	ips.serviceName = serviceName;	// redundant in container, but handy.
 	ips.callback = callback;
 	ips.descInput = descIn;
 	ips.descOutput = descOut;
@@ -459,10 +471,12 @@ void Client::doAdvertiseService(
 	req.set_outputtypename(ips.descOutput->full_name());
 	req.set_nodename(nodeName_);
 
+	auto lckMain = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	mvsim::sendMessage(req, *zmq_->mainReqSocket);
 
 	//  Get the reply.
 	const zmq::message_t reply = mvsim::receiveMessage(*zmq_->mainReqSocket);
+	lckMain.unlock();
 	mvsim_msgs::GenericAnswer ans;
 	mvsim::parseMessage(reply, ans);
 
@@ -715,6 +729,7 @@ void Client::doCallService(
 	// TODO: Cache?
 	std::string srvEndpoint;
 	{
+		auto lckMain = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 		zmq::socket_t& s = *zmq_->mainReqSocket;
 
 		mvsim_msgs::GetServiceInfoRequest gsi;
@@ -793,9 +808,11 @@ void Client::doSubscribeTopic(
 	subReq.set_topic(topicName);
 	subReq.set_updatesendpoint(zmq_->topicNotificationsEndPoint);
 
+	auto lckMain = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	mvsim::sendMessage(subReq, *zmq_->mainReqSocket);
 
 	const auto m = mvsim::receiveMessage(*zmq_->mainReqSocket);
+	lckMain.unlock();
 	mvsim_msgs::SubscribeAnswer subAns;
 	mvsim::parseMessage(m, subAns);
 
