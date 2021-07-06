@@ -146,6 +146,8 @@ void Client::connect()
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "connect");
+
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 
 	zmq_->mainReqSocket.emplace(zmq_->context, ZMQ_REQ);
@@ -208,6 +210,7 @@ void Client::connect()
 void Client::shutdown() noexcept
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "shutdown");
 
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	if (!zmq_->mainReqSocket->connected()) return;
@@ -241,6 +244,8 @@ void Client::shutdown() noexcept
 void Client::doRegisterClient()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "doRegisterClient");
+
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	auto& s = *zmq_->mainReqSocket;
 
@@ -268,6 +273,8 @@ void Client::doRegisterClient()
 void Client::doUnregisterClient()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "doUnregisterClient");
+
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	auto& s = *zmq_->mainReqSocket;
 
@@ -295,6 +302,8 @@ void Client::doUnregisterClient()
 std::vector<Client::InfoPerNode> Client::requestListOfNodes()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "requestListOfNodes");
+
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	auto& s = *zmq_->mainReqSocket;
 
@@ -323,6 +332,7 @@ std::vector<Client::InfoPerNode> Client::requestListOfNodes()
 std::vector<Client::InfoPerTopic> Client::requestListOfTopics()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "requestListOfTopics");
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 	auto& s = *zmq_->mainReqSocket;
 
@@ -367,7 +377,7 @@ void Client::doAdvertiseTopic(
 	const google::protobuf::Descriptor* descriptor)
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "doAdvertiseTopic");
 	auto& advTopics = zmq_->advertisedTopics;
 
 	std::unique_lock<std::shared_mutex> lck(zmq_->advertisedTopics_mtx);
@@ -433,7 +443,7 @@ void Client::doAdvertiseService(
 	const google::protobuf::Descriptor* descOut, service_callback_t callback)
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "doAdvertiseService");
 	std::unique_lock<std::shared_mutex> lck(zmq_->offeredServices_mtx);
 
 	auto& services = zmq_->offeredServices;
@@ -498,6 +508,7 @@ void Client::publishTopic(
 	ASSERTMSG_(
 		zmq_ && zmq_->mainReqSocket && zmq_->mainReqSocket->connected(),
 		"Client not connected to Server");
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "publishTopic");
 
 	std::shared_lock<std::shared_mutex> lck(zmq_->advertisedTopics_mtx);
 	auto itIpat = zmq_->advertisedTopics.find(topicName);
@@ -707,6 +718,7 @@ std::string Client::callService(
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "callService");
 
 	std::string outMsgData, outMsgType;
 	doCallService(
@@ -724,11 +736,14 @@ void Client::doCallService(
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "doCallService");
 
 	// 1) Request to the server who is serving this service:
 	// TODO: Cache?
 	std::string srvEndpoint;
 	{
+		mrpt::system::CTimeLoggerEntry tle2(profiler_, "doCallService.getinfo");
+
 		auto lckMain = mrpt::lockHelper(zmq_->mainReqSocketMtx);
 		zmq::socket_t& s = *zmq_->mainReqSocket;
 
@@ -782,6 +797,7 @@ void Client::doSubscribeTopic(
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "doSubscribeTopic");
 	// Register in my internal DB:
 	std::unique_lock<std::shared_mutex> lck(zmq_->subscribedTopics_mtx);
 
