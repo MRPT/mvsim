@@ -10,6 +10,7 @@
 #pragma once
 
 #include <mrpt/system/COutputLogger.h>
+#include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Comms/common.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
@@ -108,6 +109,9 @@ class Client : public mrpt::system::COutputLogger
 
 	/** @} */
 
+	const mrpt::system::CTimeLogger& profiler() const { return profiler_; }
+	void enable_profiler(bool enable) { profiler_.enable(enable); }
+
    private:
 	struct ZMQImpl;
 	std::unique_ptr<ZMQImpl> zmq_;
@@ -117,6 +121,8 @@ class Client : public mrpt::system::COutputLogger
 
 	std::thread serviceInvokerThread_;
 	std::thread topicUpdatesThread_;
+
+	mrpt::system::CTimeLogger profiler_{false, "mvsim::Client"};
 
 	void doRegisterClient();
 	void doUnregisterClient();
