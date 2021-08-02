@@ -205,8 +205,8 @@ void World::runVisitorOnWorldElements(const world_element_visitor_t& v)
 void World::connectToServer()
 {
 	//
-	MRPT_TODO("Allow changing server IP from xml?");
 	m_client.setVerbosityLevel(this->getMinLoggingLevel());
+	m_client.serverHostAddress(m_server_address);
 	m_client.connect();
 
 	// Let objects register topics / services:

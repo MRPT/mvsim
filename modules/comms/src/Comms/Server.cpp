@@ -193,9 +193,7 @@ void Server::db_register_node(const std::string& nodeName)
 {
 	std::unique_lock lck(dbMutex);
 
-	InfoPerNode& ipn =
-		connectedNodes_.emplace_hint(connectedNodes_.end(), nodeName, nodeName)
-			->second;
+	connectedNodes_.emplace_hint(connectedNodes_.end(), nodeName, nodeName);
 }
 
 void Server::db_advertise_topic(
