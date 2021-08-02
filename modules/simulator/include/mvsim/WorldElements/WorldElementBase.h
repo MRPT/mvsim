@@ -20,7 +20,7 @@ class WorldElementBase : public VisualObject, public Simulable
    public:
 	using Ptr = std::shared_ptr<WorldElementBase>;
 
-	WorldElementBase(World* parent) : VisualObject(parent) {}
+	WorldElementBase(World* parent) : VisualObject(parent), Simulable(parent) {}
 	virtual ~WorldElementBase() {}
 	/** Class factory: Creates a world element from XML description of type
 	 * "<element class='*'>...</element>".

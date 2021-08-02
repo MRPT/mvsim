@@ -20,7 +20,7 @@
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-#include <sstream>  // std::stringstream
+#include <sstream>	// std::stringstream
 #include <string>
 
 #include "JointXMLnode.h"
@@ -33,7 +33,7 @@ using namespace std;
 static XmlClassesRegistry block_classes_registry("block:class");
 
 // Protected ctor:
-Block::Block(World* parent) : VisualObject(parent)
+Block::Block(World* parent) : VisualObject(parent), Simulable(parent)
 {
 	// Default shape:
 	m_block_poly.emplace_back(-0.5, -0.5);
@@ -83,7 +83,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	const rapidxml::xml_node<char>* class_root = nullptr;
 	{
 		block_root_node.add(
-			root);  // Always search in root. Also in the class root, if any:
+			root);	// Always search in root. Also in the class root, if any:
 		const xml_attribute<>* block_class = root->first_attribute("class");
 		if (block_class)
 		{
@@ -129,7 +129,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		if (3 != ::sscanf(node->value(), "%lf %lf %lf", &q.x, &q.y, &q.yaw))
 			throw runtime_error(
 				"[Block::factory] Error parsing <init_pose>...</init_pose>");
-		q.yaw *= M_PI / 180.0;  // deg->rad
+		q.yaw *= M_PI / 180.0;	// deg->rad
 		block->setPose(q);
 	}
 
@@ -291,7 +291,7 @@ void Block::internalGuiUpdate(
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
-		scene.insert(m_gl_forces);  // forces are in global coords
+		scene.insert(m_gl_forces);	// forces are in global coords
 	}
 
 	// Other common stuff:
@@ -425,4 +425,10 @@ void Block::setIsStatic(bool b)
 {
 	ASSERT_(m_b2d_body);
 	m_b2d_body->SetType(b ? b2_staticBody : b2_dynamicBody);
+}
+
+// Protected ctor:
+DummyInvisibleBlock::DummyInvisibleBlock(World* parent)
+	: VisualObject(parent), Simulable(parent)
+{
 }

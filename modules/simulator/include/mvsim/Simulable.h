@@ -20,11 +20,14 @@
 namespace mvsim
 {
 class Client;
+class World;
 
 class Simulable
 {
    public:
 	using Ptr = std::shared_ptr<Simulable>;
+
+	Simulable(World* parent) : m_simulable_parent(parent) {}
 
 	/** Process right before the integration of dynamic equations for each
 	 * timestep: set action forces from motors, update friction models, etc. */
@@ -113,6 +116,9 @@ class Simulable
 	const b2Body* b2d_body() const { return m_b2d_body; }
 	b2Body* b2d_body() { return m_b2d_body; }
 
+	World* getSimulableWorldObject() { return m_simulable_parent; }
+	const World* getSimulableWorldObject() const { return m_simulable_parent; }
+
    protected:
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 	std::string m_name;
@@ -129,6 +135,8 @@ class Simulable
 	void internalHandlePublish(const TSimulContext& context);
 
    private:
+	World* m_simulable_parent = nullptr;
+
 	/** protects m_q, m_dq */
 	mutable std::shared_mutex m_q_mtx;
 

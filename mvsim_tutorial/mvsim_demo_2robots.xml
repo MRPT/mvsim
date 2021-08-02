@@ -239,6 +239,21 @@
 		  <publish_pose_period>50e-3</publish_pose_period>
 		</publish>
 	</block>
+	
+	<!-- ========================================================
+		Standalone sensors (placed freely on the environment)
+	     ======================================================== -->
+	<sensor class="laser" name="proximitySensor1">
+		<pose>1.3  -18.3  90.0 </pose>
+		<fov_degrees>30</fov_degrees>
+		<nrays>5</nrays>
+		<range_std_noise>0.01</range_std_noise>
+		<angle_std_noise_deg>0.01</angle_std_noise_deg>
+		<publish>
+		  <publish_topic>/${NAME}</publish_topic>
+		</publish>
+	</sensor>
+
 
 	<block class="nurse_station">
 		<init_pose>15 2 30</init_pose>  <!-- In global coords: x,y, yaw(deg) -->

@@ -99,8 +99,6 @@ class VehicleBase : public VisualObject, public Simulable
 	 * \sa getVelocityLocal() */
 	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const = 0;
 
-	typedef std::vector<SensorBase::Ptr> TListSensors;
-
 	const TListSensors& getSensors() const { return m_sensors; }
 	TListSensors& getSensors() { return m_sensors; }
 	std::shared_ptr<CSVLogger> getLoggerPtr(std::string logger_name)
@@ -175,7 +173,7 @@ class VehicleBase : public VisualObject, public Simulable
 	/** Instance of friction model for the vehicle-to-ground interaction. */
 	FrictionBasePtr m_friction;
 
-	TListSensors m_sensors;  //!< Sensors aboard
+	TListSensors m_sensors;	 //!< Sensors aboard
 
 	/** Updated in simul_pre_timestep() */
 	std::vector<double> m_torque_per_wheel;
@@ -188,7 +186,7 @@ class VehicleBase : public VisualObject, public Simulable
 	double m_chassis_z_min, m_chassis_z_max;
 	mrpt::img::TColor m_chassis_color;
 
-	mrpt::math::TPoint2D m_chassis_com;  //!< In local coordinates (this
+	mrpt::math::TPoint2D m_chassis_com;	 //!< In local coordinates (this
 										 //! excludes the mass of wheels)
 
 	void updateMaxRadiusFromPoly();
@@ -219,7 +217,7 @@ class VehicleBase : public VisualObject, public Simulable
 
 	std::mutex m_gui_mtx;
 
-   public:  // data logger header entries
+   public:	// data logger header entries
 	static constexpr char DL_TIMESTAMP[] = "timestamp";
 	static constexpr char LOGGER_POSE[] = "logger_pose";
 	static constexpr char LOGGER_WHEEL[] = "logger_wheel";
@@ -240,7 +238,7 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr char WL_VEL_Y[] = "velocity_y";
 	static constexpr char WL_FRIC_X[] = "friction_x";
 	static constexpr char WL_FRIC_Y[] = "friction_y";
-};  // end VehicleBase
+};	// end VehicleBase
 
 // Class factory:
 typedef ClassFactory<VehicleBase, World*> TClassFactory_vehicleDynamics;
