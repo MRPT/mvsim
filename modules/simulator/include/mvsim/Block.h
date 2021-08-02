@@ -19,6 +19,7 @@
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/ClassFactory.h>
+#include <mvsim/Sensors/SensorBase.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VisualObject.h>
@@ -76,7 +77,7 @@ class Block : public VisualObject, public Simulable
 	{
 		m_block_poly = p;
 		updateMaxRadiusFromPoly();
-		m_gl_block.reset();  // regenerate 3D view
+		m_gl_block.reset();	 // regenerate 3D view
 	}
 
 	/** Set the block index in the World */
@@ -102,7 +103,7 @@ class Block : public VisualObject, public Simulable
 	void block_color(const mrpt::img::TColor& c)
 	{
 		m_block_color = c;
-		m_gl_block.reset();  // regenerate 3D view
+		m_gl_block.reset();	 // regenerate 3D view
 	}
 
 	double block_z_min() const { return m_block_z_min; }
@@ -110,12 +111,12 @@ class Block : public VisualObject, public Simulable
 	void block_z_min(double v)
 	{
 		m_block_z_min = v;
-		m_gl_block.reset();  // regenerate 3D view
+		m_gl_block.reset();	 // regenerate 3D view
 	}
 	void block_z_max(double v)
 	{
 		m_block_z_max = v;
-		m_gl_block.reset();  // regenerate 3D view
+		m_gl_block.reset();	 // regenerate 3D view
 	}
 
    protected:
@@ -140,7 +141,7 @@ class Block : public VisualObject, public Simulable
 	mrpt::math::TPoint2D m_block_com{.0, .0};  //!< In local coordinates
 
 	double m_lateral_friction = 0.5;  //!< Default: 0.5
-	double m_ground_friction = 0.5;  //!< Default: 0.5
+	double m_ground_friction = 0.5;	 //!< Default: 0.5
 	double m_restitution = 0.01;  //!< Deault: 0.01
 
 	const TParameterDefinitions m_params = {
@@ -167,5 +168,75 @@ class Block : public VisualObject, public Simulable
 
 	std::mutex m_gui_mtx;
 
-};  // end Block
+};	// end Block
+
+/** An invisible block which can be used as an auxiliary anchor object. */
+class DummyInvisibleBlock : public VisualObject, public Simulable
+{
+   public:
+	using Ptr = std::shared_ptr<DummyInvisibleBlock>;
+
+	DummyInvisibleBlock(World* parent);
+
+	/** Class factory: Creates a block from XML description of type
+	 * "<block>...</block>".  */
+	static Ptr factory(World* parent, const rapidxml::xml_node<char>* xml_node);
+	/// \overload
+	static Ptr factory(World* parent, const std::string& xml_text);
+
+	// ------- Interface with "World" ------
+	virtual void simul_pre_timestep(const TSimulContext& context) override
+	{
+		Simulable::simul_pre_timestep(context);
+		for (auto& s : m_sensors) s->simul_pre_timestep(context);
+	}
+	virtual void simul_post_timestep(const TSimulContext& context) override
+	{
+		Simulable::simul_post_timestep(context);
+		for (auto& s : m_sensors) s->simul_post_timestep(context);
+	}
+
+	virtual void apply_force(
+		[[maybe_unused]] const mrpt::math::TVector2D& force,
+		[[maybe_unused]] const mrpt::math::TPoint2D& applyPoint) override
+	{
+	}
+
+	virtual void create_multibody_system(b2World&) {}
+
+	virtual float getMaxBlockRadius() const { return 0; }
+
+	/** Get the block mass */
+	virtual double getMass() const { return 0; }
+
+	void poses_mutex_lock() override {}
+	void poses_mutex_unlock() override {}
+
+	void add_sensor(const SensorBase::Ptr& sensor)
+	{
+		m_sensors.push_back(sensor);
+	}
+
+   protected:
+	virtual void internalGuiUpdate(
+		mrpt::opengl::COpenGLScene& scene,
+		[[maybe_unused]] bool childrenOnly) override
+	{
+		for (auto& s : m_sensors) s->guiUpdate(scene);
+	}
+
+	mrpt::poses::CPose3D internalGuiGetVisualPose() override { return {}; }
+
+	void registerOnServer(mvsim::Client& c) override
+	{
+		// register myself, and my children objects:
+		Simulable::registerOnServer(c);
+		for (auto& sensor : m_sensors) sensor->registerOnServer(c);
+	}
+
+   private:
+	TListSensors m_sensors;	 //!< Sensors aboard
+
+};	// end Block
+
 }  // namespace mvsim

@@ -516,7 +516,7 @@ void Client::publishTopic(
 	ASSERTMSG_(
 		itIpat != zmq_->advertisedTopics.end(),
 		mrpt::format(
-			"Topic `%s` cannot been registered. Missing former call to "
+			"Topic `%s` has not been registered. Missing former call to "
 			"advertiseTopic()?",
 			topicName.c_str()));
 

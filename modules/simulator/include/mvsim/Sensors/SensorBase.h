@@ -16,31 +16,31 @@
 
 namespace mvsim
 {
-class VehicleBase;
+class Simulable;
 
 class SensorBase : public VisualObject, public Simulable
 {
    public:
 	using Ptr = std::shared_ptr<SensorBase>;
 
-	SensorBase(VehicleBase& vehicle);  //!< Ctor takes a ref to the vehicle to
-									   //! which the sensor is attached.
+	SensorBase(Simulable& vehicle);	 //!< Ctor takes a ref to the vehicle to
+									 //! which the sensor is attached.
 	virtual ~SensorBase();
 
 	/** Class factory: Creates a sensor from XML description of type "<sensor
 	 * class='CLASS_NAME'>...</sensor>".  */
 	static SensorBase::Ptr factory(
-		VehicleBase& parent, const rapidxml::xml_node<char>* xml_node);
+		Simulable& parent, const rapidxml::xml_node<char>* xml_node);
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) = 0;
 
-	double m_sensor_period;  //!< Generate one sensor reading every this period
+	double m_sensor_period;	 //!< Generate one sensor reading every this period
 							 //!(in seconds) (Default = 0.1)
 
 	void registerOnServer(mvsim::Client& c) override;
 
    protected:
-	VehicleBase& m_vehicle;  //!< The vehicle this sensor is attached to
+	Simulable& m_vehicle;  //!< The vehicle this sensor is attached to
 
 	/** The last sensor reading timestamp. See  m_sensor_period */
 	double m_sensor_last_timestamp;
@@ -56,14 +56,17 @@ class SensorBase : public VisualObject, public Simulable
 		const TSimulContext& context);
 };
 
+using TListSensors = std::vector<SensorBase::Ptr>;
+
 // Class factory:
-typedef ClassFactory<SensorBase, VehicleBase&, const rapidxml::xml_node<char>*>
-	TClassFactory_sensors;
+using TClassFactory_sensors =
+	ClassFactory<SensorBase, Simulable&, const rapidxml::xml_node<char>*>;
+
 extern TClassFactory_sensors classFactory_sensors;
 
 #define DECLARES_REGISTER_SENSOR(CLASS_NAME) \
 	DECLARES_REGISTER_CLASS2(                \
-		CLASS_NAME, SensorBase, VehicleBase&, const rapidxml::xml_node<char>*)
+		CLASS_NAME, SensorBase, Simulable&, const rapidxml::xml_node<char>*)
 
 #define REGISTER_SENSOR(TEXTUAL_NAME, CLASS_NAME) \
 	REGISTER_CLASS2(                              \

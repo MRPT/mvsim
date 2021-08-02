@@ -8,11 +8,11 @@
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/system/filesystem.h>  // extractFileDirectory()
+#include <mrpt/system/filesystem.h>	 // extractFileDirectory()
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
-#include <iostream>  // for debugging
+#include <iostream>	 // for debugging
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
@@ -40,6 +40,11 @@ void World::load_from_XML(
 
 	// Clear the existing world.
 	this->clear_all();
+
+	// Create anchor object for standalone (environment-attached) sensors:
+	DummyInvisibleBlock::Ptr standaloneSensorHost =
+		std::make_shared<DummyInvisibleBlock>(this);
+	m_simulableObjects.emplace("__standaloneSensorHost", standaloneSensorHost);
 
 	// Parse the XML input:
 	rapidxml::xml_document<> xml;
@@ -90,10 +95,8 @@ void World::load_from_XML(
 		{
 			WorldElementBase::Ptr e = WorldElementBase::factory(this, node);
 			m_world_elements.emplace_back(e);
-			m_simulableObjects.insert(
-				m_simulableObjects.end(),
-				std::make_pair(
-					e->getName(), std::dynamic_pointer_cast<Simulable>(e)));
+			m_simulableObjects.emplace(
+				e->getName(), std::dynamic_pointer_cast<Simulable>(e));
 		}
 		// <vehicle> entries:
 		else if (!strcmp(node->name(), "vehicle"))
@@ -102,17 +105,26 @@ void World::load_from_XML(
 			// Assign each vehicle a unique "index" number
 			veh->setVehicleIndex(m_vehicles.size());
 
-			MRPT_TODO("Check for duplicated names")
+			ASSERTMSG_(
+				m_vehicles.count(veh->getName()) == 0,
+				mrpt::format(
+					"Duplicated vehicle name: '%s'", veh->getName().c_str()));
+
 			m_vehicles.insert(VehicleList::value_type(veh->getName(), veh));
-			m_simulableObjects.insert(
-				m_simulableObjects.end(),
-				std::make_pair(
-					veh->getName(), std::dynamic_pointer_cast<Simulable>(veh)));
+			m_simulableObjects.emplace(
+				veh->getName(), std::dynamic_pointer_cast<Simulable>(veh));
 		}
 		// <vehicle:class> entries:
 		else if (!strcmp(node->name(), "vehicle:class"))
 		{
 			VehicleBase::register_vehicle_class(node);
+		}
+		// top-level <sensor> entries:
+		else if (!strcmp(node->name(), "sensor"))
+		{
+			SensorBase::Ptr sensor =
+				SensorBase::factory(*standaloneSensorHost, node);
+			standaloneSensorHost->add_sensor(sensor);
 		}
 		// <block> entries:
 		else if (!strcmp(node->name(), "block"))

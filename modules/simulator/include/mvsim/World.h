@@ -244,7 +244,7 @@ class World : public mrpt::system::COutputLogger
 	/** \name Optional user hooks
 	  @{*/
 	virtual void onNewObservation(
-		[[maybe_unused]] const VehicleBase& veh,
+		[[maybe_unused]] const Simulable& veh,
 		[[maybe_unused]] const mrpt::obs::CObservation* obs)
 	{
 		/* default: do nothing */

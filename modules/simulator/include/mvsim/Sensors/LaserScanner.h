@@ -22,7 +22,7 @@ class LaserScanner : public SensorBase
 {
 	DECLARES_REGISTER_SENSOR(LaserScanner)
    public:
-	LaserScanner(VehicleBase& parent, const rapidxml::xml_node<char>* root);
+	LaserScanner(Simulable& parent, const rapidxml::xml_node<char>* root);
 	virtual ~LaserScanner();
 
 	// See docs in base class
@@ -38,9 +38,9 @@ class LaserScanner : public SensorBase
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
 
-	int m_z_order;  //!< to help rendering multiple scans
+	int m_z_order;	//!< to help rendering multiple scans
 	mrpt::poses::CPose2D m_sensor_pose_on_veh;
-	std::string m_name;  //!< sensor label/name
+	std::string m_name;	 //!< sensor label/name
 	double m_rangeStdNoise;
 	double m_angleStdNoise;
 	/** Whether all box2d "fixtures" are visible (solid) or not (Default=true)

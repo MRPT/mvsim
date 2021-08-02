@@ -11,11 +11,12 @@
 #include <mvsim/Sensors/LaserScanner.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
+
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-#include <sstream>  // std::stringstream
+#include <sstream>	// std::stringstream
 #include <string>
 
 #include "xml_utils.h"
@@ -41,8 +42,9 @@ void register_all_sensors()
 	REGISTER_SENSOR("laser", LaserScanner)
 }
 
-SensorBase::SensorBase(VehicleBase& vehicle)
-	: VisualObject(vehicle.getWorldObject()),
+SensorBase::SensorBase(Simulable& vehicle)
+	: VisualObject(vehicle.getSimulableWorldObject()),
+	  Simulable(vehicle.getSimulableWorldObject()),
 	  m_sensor_period(0.1),
 	  m_vehicle(vehicle),
 	  m_sensor_last_timestamp(0)
@@ -52,7 +54,7 @@ SensorBase::SensorBase(VehicleBase& vehicle)
 SensorBase::~SensorBase() = default;
 
 SensorBase::Ptr SensorBase::factory(
-	VehicleBase& parent, const rapidxml::xml_node<char>* root)
+	Simulable& parent, const rapidxml::xml_node<char>* root)
 {
 	register_all_sensors();
 

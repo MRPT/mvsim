@@ -23,7 +23,7 @@ using namespace rapidxml;
 int z_order_cnt = 0;
 
 LaserScanner::LaserScanner(
-	VehicleBase& parent, const rapidxml::xml_node<char>* root)
+	Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent),
 	  m_z_order(++z_order_cnt),
 	  m_rangeStdNoise(0.01),
@@ -81,13 +81,16 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Assign a sensible default name/sensor label if none is provided:
 	if (m_name.empty())
 	{
-		const size_t nextIdx = m_vehicle.getSensors().size() + 1;
+		size_t nextIdx = 0;
+		if (auto v = dynamic_cast<VehicleBase*>(&m_vehicle); v)
+			nextIdx = v->getSensors().size() + 1;
+
 		m_name = mrpt::format("laser%u", static_cast<unsigned int>(nextIdx));
 	}
 }
 
 void LaserScanner::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
+	mrpt::opengl::COpenGLScene& scene, [[maybe_unused]] bool childrenOnly)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
@@ -203,8 +206,11 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			for (auto& kv : orgUserData) kv.first->SetUserData(kv.second);
 		};
 
-		makeFixtureInvisible(m_vehicle.get_fixture_chassis());
-		for (auto& f : m_vehicle.get_fixture_wheels()) makeFixtureInvisible(f);
+		if (auto v = dynamic_cast<VehicleBase*>(&m_vehicle); v)
+		{
+			makeFixtureInvisible(v->get_fixture_chassis());
+			for (auto& f : v->get_fixture_wheels()) makeFixtureInvisible(f);
+		}
 
 		// Do Box2D raycasting stuff:
 		// ------------------------------
