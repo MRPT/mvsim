@@ -275,7 +275,10 @@ class World : public mrpt::system::COutputLogger
 	/** Velocity and position iteration count (refer to libbox2d docs) */
 	int m_b2d_vel_iters = 6, m_b2d_pos_iters = 3;
 
+	std::string m_server_address = "localhost";
+
 	const TParameterDefinitions m_other_world_params = {
+		{"server_address", {"%s", &m_server_address}},
 		{"gravity", {"%lf", &m_gravity}},
 		{"simul_timestep", {"%lf", &m_simul_timestep}},
 		{"b2d_vel_iters", {"%i", &m_b2d_vel_iters}},

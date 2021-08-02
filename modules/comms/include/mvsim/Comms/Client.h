@@ -57,7 +57,17 @@ class Client : public mrpt::system::COutputLogger
 	 * @{ */
 	void setName(const std::string& nodeName);
 
-	/** Connects to the server in a parallel thread. */
+	const std::string& serverHostAddress() const { return serverHostAddress_; }
+	void serverHostAddress(const std::string& serverIpOrAddressName)
+	{
+		ASSERT_(!connected());
+		serverHostAddress_ = serverIpOrAddressName;
+	}
+
+	/** Connects to the server in a parallel thread.
+	 *  Default server address is `localhost`, can be changed with
+	 * serverHostAddress().
+	 */
 	void connect();
 
 	/** Whether the client is correctly connected to the server. */

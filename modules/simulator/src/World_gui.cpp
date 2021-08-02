@@ -192,10 +192,10 @@ void World::GUI::prepare_editor_window()
 				isBlock = true;
 				ipo.visual = dynamic_cast<VisualObject*>(v);
 			}
-			bool isWorldElement = false;
+			// bool isWorldElement = false;
 			if (auto v = dynamic_cast<WorldElementBase*>(o.second.get()); v)
 			{
-				isWorldElement = true;
+				// isWorldElement = true;
 				ipo.visual = dynamic_cast<VisualObject*>(v);
 			}
 			auto wrapper =
