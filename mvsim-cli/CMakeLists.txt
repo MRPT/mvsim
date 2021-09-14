@@ -12,6 +12,7 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(
 	${PROJECT_NAME}
 	mvsim::simulator
+	mvsim::msgs
 	mvsim::comms
 	${MRPT_LIBRARIES}  # MRPT libs
 	${BOX2D_LIBRARIES}  # Box2D libs

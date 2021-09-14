@@ -117,6 +117,11 @@ class Client : public mrpt::system::COutputLogger
 	};
 	std::vector<InfoPerTopic> requestListOfTopics();
 
+	using topic_callback_t = std::function<void(const zmq::message_t& /*m*/)>;
+
+	void subscribe_topic_raw(
+		const std::string& topicName, const topic_callback_t& callback);
+
 	/** @} */
 
 	const mrpt::system::CTimeLogger& profiler() const { return profiler_; }
@@ -153,8 +158,6 @@ class Client : public mrpt::system::COutputLogger
 		const google::protobuf::Descriptor* descIn,
 		const google::protobuf::Descriptor* descOut,
 		service_callback_t callback);
-
-	using topic_callback_t = std::function<void(const zmq::message_t& /*m*/)>;
 
 	void doSubscribeTopic(
 		const std::string& topicName,
