@@ -239,6 +239,30 @@
 		  <publish_pose_period>50e-3</publish_pose_period>
 		</publish>
 	</block>
+
+	<!-- Example intangible block, used as a reference for relative pose sensing -->
+	<block  name="blockSensor1">
+		<shape>
+			<pt>-0.05 -0.05</pt>
+			<pt>-0.05  0.05</pt>
+			<pt> 0.05  0.05</pt>
+			<pt> 0.05 -0.05</pt>
+		</shape>
+		
+		<intangible>true</intangible>
+		<zmin>0.0</zmin>
+		<zmax>0.2</zmax>
+	
+		<init_pose>2.5 -12 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<publish>
+		  <publish_pose_period>100e-3</publish_pose_period>
+		  
+		  <!-- Comma separated list of objects, robots, etc. to sense and publish relative poses -->
+		  <publish_relative_pose_objects>r1, r2</publish_relative_pose_objects>
+		  <publish_relative_pose_topic>/relative_pose_readings</publish_relative_pose_topic>
+		</publish>
+	</block>
+
 	
 	<!-- ========================================================
 		Standalone sensors (placed freely on the environment)

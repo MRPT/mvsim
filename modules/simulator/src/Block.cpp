@@ -82,24 +82,25 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	JointXMLnode<> block_root_node;
 	const rapidxml::xml_node<char>* class_root = nullptr;
 	{
-		block_root_node.add(
-			root);	// Always search in root. Also in the class root, if any:
-		const xml_attribute<>* block_class = root->first_attribute("class");
-		if (block_class)
+		// Always search in root. Also in the class root, if any:
+		block_root_node.add(root);
+		if (const xml_attribute<>* block_class = root->first_attribute("class");
+			block_class)
 		{
 			const string sClassName = block_class->value();
-			class_root = block_classes_registry.get(sClassName);
-			if (!class_root)
-				throw runtime_error(mrpt::format(
+			if (class_root = block_classes_registry.get(sClassName);
+				!class_root)
+				THROW_EXCEPTION_FMT(
 					"[Block::factory] Block class '%s' undefined",
-					sClassName.c_str()));
+					sClassName.c_str());
+
 			block_root_node.add(class_root);
 		}
 	}
 
 	// Build object (we don't use class factory for blocks)
 	// ----------------------------------------------------
-	Block::Ptr block = Block::Ptr(new Block(parent));
+	Block::Ptr block = std::make_shared<Block>(parent);
 
 	// Init params
 	// -------------------------------------------------
@@ -298,7 +299,8 @@ void Block::internalGuiUpdate(
 	internal_internalGuiUpdate_forces(scene);
 }
 
-void Block::internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene)
+void Block::internal_internalGuiUpdate_forces(	//
+	[[maybe_unused]] mrpt::opengl::COpenGLScene& scene)
 {
 	if (m_world->m_gui_options.show_forces)
 	{
@@ -328,6 +330,8 @@ void Block::updateMaxRadiusFromPoly()
 /** Create bodies, fixtures, etc. for the dynamical simulation */
 void Block::create_multibody_system(b2World& world)
 {
+	if (m_intangible) return;
+
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
@@ -408,6 +412,7 @@ void Block::create_multibody_system(b2World& world)
 void Block::apply_force(
 	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
+	if (m_intangible) return;
 	ASSERT_(m_b2d_body);
 	// Application point -> world coords
 	const b2Vec2 wPt =
@@ -417,12 +422,14 @@ void Block::apply_force(
 
 bool Block::isStatic() const
 {
+	if (m_intangible) return true;
 	ASSERT_(m_b2d_body);
 	return m_b2d_body->GetType() == b2_staticBody;
 }
 
 void Block::setIsStatic(bool b)
 {
+	if (m_intangible) return;
 	ASSERT_(m_b2d_body);
 	m_b2d_body->SetType(b ? b2_staticBody : b2_dynamicBody);
 }
