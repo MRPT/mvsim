@@ -8,6 +8,10 @@ message TimeStampedPose {
   required double unixTimestamp = 1;
 
   required string objectId = 2;
+  
+  // If empty, the reference is the global frame of reference, the "world".
+  optional string relativeToObjectId = 4;
 
   required Pose pose = 3;
+
 }

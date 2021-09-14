@@ -38,38 +38,40 @@ void Simulable::simul_pre_timestep(	 //
 void Simulable::simul_post_timestep(  //
 	[[maybe_unused]] const TSimulContext& context)
 {
-	if (!m_b2d_body) return;
-
-	poses_mutex_lock();
-
-	// Pos:
-	const b2Vec2& pos = m_b2d_body->GetPosition();
-	const float32 angle = m_b2d_body->GetAngle();
-	m_q.x = pos(0);
-	m_q.y = pos(1);
-	m_q.yaw = angle;
-	// The rest (z,pitch,roll) will be always 0, unless other
-	// world-element modifies them! (e.g. elevation map)
-
-	// Vel:
-	const b2Vec2& vel = m_b2d_body->GetLinearVelocity();
-	const float32 w = m_b2d_body->GetAngularVelocity();
-	m_dq.vx = vel(0);
-	m_dq.vy = vel(1);
-	m_dq.omega = w;
-
-	// Instantaneous collision flag:
-	m_isInCollision = false;
-	if (b2ContactEdge* cl = m_b2d_body->GetContactList();
-		cl != nullptr && cl->contact != nullptr && cl->contact->IsTouching())
+	if (m_b2d_body)
 	{
-		// We may store with which other bodies it's in collision...
-		m_isInCollision = true;
-	}
-	// Reseteable collision flag:
-	m_hadCollisionFlag = m_hadCollisionFlag || m_isInCollision;
+		poses_mutex_lock();
 
-	poses_mutex_unlock();
+		// Pos:
+		const b2Vec2& pos = m_b2d_body->GetPosition();
+		const float32 angle = m_b2d_body->GetAngle();
+		m_q.x = pos(0);
+		m_q.y = pos(1);
+		m_q.yaw = angle;
+		// The rest (z,pitch,roll) will be always 0, unless other
+		// world-element modifies them! (e.g. elevation map)
+
+		// Vel:
+		const b2Vec2& vel = m_b2d_body->GetLinearVelocity();
+		const float32 w = m_b2d_body->GetAngularVelocity();
+		m_dq.vx = vel(0);
+		m_dq.vy = vel(1);
+		m_dq.omega = w;
+
+		// Instantaneous collision flag:
+		m_isInCollision = false;
+		if (b2ContactEdge* cl = m_b2d_body->GetContactList();
+			cl != nullptr && cl->contact != nullptr &&
+			cl->contact->IsTouching())
+		{
+			// We may store with which other bodies it's in collision...
+			m_isInCollision = true;
+		}
+		// Reseteable collision flag:
+		m_hadCollisionFlag = m_hadCollisionFlag || m_isInCollision;
+
+		poses_mutex_unlock();
+	}
 
 	// Optional publish to topics:
 	internalHandlePublish(context);
@@ -107,10 +109,35 @@ bool Simulable::parseSimulable(const rapidxml::xml_node<char>* node)
 	params["publish_pose_topic"] = TParamEntry("%s", &publishPoseTopic_);
 	params["publish_pose_period"] = TParamEntry("%lf", &publishPosePeriod_);
 
+	params["publish_relative_pose_topic"] =
+		TParamEntry("%s", &publishRelativePoseTopic_);
+	std::string listObjects;
+	params["publish_relative_pose_objects"] = TParamEntry("%s", &listObjects);
+
 	const std::map<std::string, std::string> varValues = {{"NAME", m_name}};
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*node, params, varValues);
+
+	if (!listObjects.empty())
+	{
+		mrpt::system::tokenize(
+			mrpt::system::trim(listObjects), " ,",
+			publishRelativePoseOfOtherObjects_);
+
+#if 0
+		std::cout << "[DEBUG] "
+					 "Publishing relative poses of "
+				  << publishRelativePoseOfOtherObjects_.size() << " objects ("
+				  << listObjects << ") to topic " << publishRelativePoseTopic_
+				  << std::endl;
+#endif
+	}
+	ASSERT_(
+		(publishRelativePoseOfOtherObjects_.empty() &&
+		 publishRelativePoseTopic_.empty()) ||
+		(!publishRelativePoseOfOtherObjects_.empty() &&
+		 !publishRelativePoseTopic_.empty()));
 
 	return true;
 	MRPT_END
@@ -121,7 +148,8 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 	std::shared_lock lck(m_q_mtx);
 
 	MRPT_START
-	if (publishPoseTopic_.empty()) return;
+
+	if (publishPoseTopic_.empty() && publishRelativePoseTopic_.empty()) return;
 
 	auto& client = context.world->commsClient();
 
@@ -130,19 +158,63 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 
 	publishPoseLastTime_ = tNow;
 
-	mvsim_msgs::TimeStampedPose msg;
-	msg.set_unixtimestamp(tNow);
-	msg.set_objectid(m_name);
+	if (!publishPoseTopic_.empty())
+	{
+		mvsim_msgs::TimeStampedPose msg;
+		msg.set_unixtimestamp(tNow);
+		msg.set_objectid(m_name);
 
-	auto pose = msg.mutable_pose();
-	pose->set_x(m_q.x);
-	pose->set_y(m_q.y);
-	pose->set_z(.0);
-	pose->set_yaw(m_q.yaw);
-	pose->set_pitch(m_q.pitch);
-	pose->set_roll(m_q.roll);
+		auto pose = msg.mutable_pose();
+		pose->set_x(m_q.x);
+		pose->set_y(m_q.y);
+		pose->set_z(.0);
+		pose->set_yaw(m_q.yaw);
+		pose->set_pitch(m_q.pitch);
+		pose->set_roll(m_q.roll);
 
-	client.publishTopic(publishPoseTopic_, msg);
+		client.publishTopic(publishPoseTopic_, msg);
+	}
+
+	if (!publishRelativePoseTopic_.empty())
+	{
+		mvsim_msgs::TimeStampedPose msg;
+		msg.set_unixtimestamp(tNow);
+		msg.set_relativetoobjectid(m_name);
+
+		const auto& allObjects =
+			getSimulableWorldObject()->getListOfSimulableObjects();
+
+		// detect other objects and publish their relative poses wrt me:
+		for (const auto& otherId : publishRelativePoseOfOtherObjects_)
+		{
+			msg.set_objectid(otherId);
+
+			if (auto itObj = allObjects.find(otherId);
+				itObj != allObjects.end())
+			{
+				const auto relPose = itObj->second->m_q - m_q;
+
+				auto pose = msg.mutable_pose();
+				pose->set_x(relPose.x);
+				pose->set_y(relPose.y);
+				pose->set_z(relPose.z);
+				pose->set_yaw(relPose.yaw);
+				pose->set_pitch(relPose.pitch);
+				pose->set_roll(relPose.roll);
+
+				client.publishTopic(publishRelativePoseTopic_, msg);
+			}
+			else
+			{
+				std::cerr
+					<< "[WARNING] Trying to publish relative pose of '"
+					<< otherId << "' wrt '" << m_name
+					<< "' but could not find any object in the world with "
+					   "the former name."
+					<< std::endl;
+			}
+		}
+	}
 
 	MRPT_END
 }
@@ -155,6 +227,10 @@ void Simulable::registerOnServer(mvsim::Client& c)
 	// Topic:
 	if (!publishPoseTopic_.empty())
 		c.advertiseTopic<mvsim_msgs::TimeStampedPose>(publishPoseTopic_);
+
+	if (!publishRelativePoseTopic_.empty())
+		c.advertiseTopic<mvsim_msgs::TimeStampedPose>(
+			publishRelativePoseTopic_);
 #endif
 
 	MRPT_END

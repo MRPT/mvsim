@@ -155,6 +155,10 @@ class Simulable
 
 	/** If not empty, publish the pose on this topic */
 	std::string publishPoseTopic_;
+
+	std::string publishRelativePoseTopic_;
+	std::vector<std::string> publishRelativePoseOfOtherObjects_;
+
 	double publishPosePeriod_ = 100e-3;	 //! Publish period [seconds]
 	double publishPoseLastTime_ = 0;
 };

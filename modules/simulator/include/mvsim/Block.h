@@ -142,7 +142,11 @@ class Block : public VisualObject, public Simulable
 
 	double m_lateral_friction = 0.5;  //!< Default: 0.5
 	double m_ground_friction = 0.5;	 //!< Default: 0.5
-	double m_restitution = 0.01;  //!< Deault: 0.01
+	double m_restitution = 0.01;  //!< Default: 0.01
+
+	/** If intangible, a block will be rendered visually but will be neither
+	 * detected by sensors, nor collide  */
+	bool m_intangible = false;
 
 	const TParameterDefinitions m_params = {
 		{"mass", {"%lf", &m_mass}},
@@ -151,7 +155,10 @@ class Block : public VisualObject, public Simulable
 		{"ground_friction", {"%lf", &m_ground_friction}},
 		{"lateral_friction", {"%lf", &m_lateral_friction}},
 		{"restitution", {"%lf", &m_restitution}},
-		{"color", {"%color", &m_block_color}}};
+		{"color", {"%color", &m_block_color}},
+		{"intangible", {"%bool", &m_intangible}}
+		//
+	};
 
 	void updateMaxRadiusFromPoly();
 
