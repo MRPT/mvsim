@@ -8,22 +8,27 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/exceptions.h>
+#include <mrpt/system/datetime.h>
 #include <mvsim/Comms/Client.h>
+#include <mvsim/mvsim-msgs/TimeStampedPose.pb.h>
 
 #include "mvsim-cli.h"
 
 static int printCommandsTopic(bool showErrorMsg);
 static int topicList();
+static int topicEcho();
 
 static const std::map<std::string, cmd_t> cliTopicCommands = {
 	{"list", cmd_t(&topicList)},
+	{"echo", cmd_t(&topicEcho)},
 };
 
 int commandTopic()
 {
 	const auto& lstCmds = argCmd.getValue();
 	if (argHelp.isSet()) return printCommandsTopic(false);
-	if (lstCmds.size() != 2) return printCommandsTopic(true);
+	if (lstCmds.size() != 2 && lstCmds.size() != 3)
+		return printCommandsTopic(true);
 
 	// Take second unlabeled argument:
 	const std::string subcommand = lstCmds.at(1);
@@ -82,6 +87,62 @@ int topicList()
 	return 0;
 }
 
+static void echo_TimeStampedPose(const std::string& data)
+{
+	mvsim_msgs::TimeStampedPose out;
+	if (bool ok = out.ParseFromString(data); !ok)
+	{
+		std::cerr << "ERROR: Protobuf could not parse message.\n";
+		return;
+	}
+
+	out.PrintDebugString();
+}
+
+static void callbackSubscribeTopicGeneric(const zmq::message_t& msg)
+{
+	const auto [typeName, serializedData] =
+		mvsim::internal::parseMessageToParts(msg);
+	std::cout << "[" << mrpt::system::dateTimeLocalToString(mrpt::Clock::now())
+			  << "] Received data : \n ";
+	std::cout << " - typeName: " << typeName << "\n";
+	std::cout << " - data: " << serializedData.size() << " bytes\n";
+
+	if (typeName == mvsim_msgs::TimeStampedPose().GetTypeName())
+		echo_TimeStampedPose(serializedData);
+
+	std::cout << std::endl;
+}
+
+int topicEcho()
+{
+	mvsim::Client client;
+
+	client.setMinLoggingLevel(
+		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+			argVerbosity.getValue()));
+
+	const auto& lstCmds = argCmd.getValue();
+	if (lstCmds.size() != 3) return printCommandsTopic(true);
+
+	const auto& topicName = lstCmds.at(2);
+
+	std::cout << "# Connecting to server...\n";
+	client.connect();
+	std::cout << "# Connected.\n";
+
+	std::cout << "# Subscribing to topic '" << topicName
+			  << "'. Press CTRL+C to stop.\n";
+	client.subscribe_topic_raw(topicName, &callbackSubscribeTopicGeneric);
+
+	// loop until user does a CTRL+C
+	for (;;)
+	{
+	}
+
+	return 0;
+}
+
 int printCommandsTopic(bool showErrorMsg)
 {
 	if (showErrorMsg)
@@ -97,6 +158,7 @@ int printCommandsTopic(bool showErrorMsg)
 
     mvsim topic --help            Show this help
     mvsim topic list [--details]  List all advertised topics in the server.
+    mvsim topic echo <topicName>  Subscribe and print a topic.
 
 )XXX");
 

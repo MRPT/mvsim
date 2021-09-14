@@ -790,6 +790,12 @@ void Client::doCallService(
 	MRPT_END
 }
 
+void Client::subscribe_topic_raw(
+	const std::string& topicName, const topic_callback_t& callback)
+{
+	doSubscribeTopic(topicName, nullptr, callback);
+}
+
 void Client::doSubscribeTopic(
 	const std::string& topicName,
 	const google::protobuf::Descriptor* descriptor,
