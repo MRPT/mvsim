@@ -1,26 +1,24 @@
 /**
-  */
+ */
 
-#include "mvsim/mvsim_node_core.h"
-#include <rapidxml_utils.hpp>
-#include <iostream>
-
-#include <mrpt/system/os.h>  // kbhit()
+#include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <mrpt/system/filesystem.h>
-
+#include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt_bridge/laser_scan.h>
 #include <mrpt_bridge/map.h>
 #include <mrpt_bridge/pose.h>
-
-#include <nav_msgs/MapMetaData.h>
+#include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <nav_msgs/GetMap.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <geometry_msgs/PoseArray.h>
-#include <geometry_msgs/Polygon.h>
+#include <nav_msgs/MapMetaData.h>
+#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/LaserScan.h>
 
-#include <nav_msgs/Odometry.h>
-#include <mvsim/WorldElements/OccupancyGridMap.h>
+#include <iostream>
+#include <rapidxml_utils.hpp>
+
+#include "mvsim/mvsim_node_core.h"
 
 /*------------------------------------------------------------------------------
  * MVSimNode()
@@ -75,6 +73,13 @@ MVSimNode::MVSimNode(ros::NodeHandle& n)
 
 	// In case the user didn't set it:
 	m_n.setParam("/use_sim_time", true);
+
+	m_world.registerCallbackOnObservation(
+		[this](
+			const mvsim::Simulable& veh,
+			const mrpt::obs::CObservation::Ptr& obs) {
+			onNewObservation(veh, obs);
+		});
 }
 
 void MVSimNode::loadWorldModel(const std::string& world_xml_file)
@@ -134,7 +139,7 @@ void MVSimNode::spin()
 	double t_new = realtime_tictac_.Tac();
 	double incr_time = realtime_factor_ * (t_new - t_old_);
 
-	if (incr_time < mvsim_world_.get_simul_timestep())  // Just in case the
+	if (incr_time < mvsim_world_.get_simul_timestep())	// Just in case the
 														// computer is *really
 														// fast*...
 		return;
@@ -190,8 +195,7 @@ void MVSimNode::spin()
 					const vec3& vel = it_veh->second->getVelocityLocal();
 					txt2gui_tmp += mrpt::format(
 						"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
-						vel.vals[0], vel.vals[1],
-					    RAD2DEG(vel.vals[2]));
+						vel.vals[0], vel.vals[1], RAD2DEG(vel.vals[2]));
 				}
 				// Get speed: ground truth
 				{
@@ -199,8 +203,7 @@ void MVSimNode::spin()
 						it_veh->second->getVelocityLocalOdoEstimate();
 					txt2gui_tmp += mrpt::format(
 						"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n",
-						vel.vals[0], vel.vals[1],
-					    RAD2DEG(vel.vals[2]));
+						vel.vals[0], vel.vals[1], RAD2DEG(vel.vals[2]));
 				}
 
 				// Generic teleoperation interface for any controller that
@@ -501,7 +504,7 @@ void MVSimNode::spinNotifyROS()
 			// --------------------------------------------
 			const mrpt::math::TPose3D& gh_veh_pose = veh->getPose();
 			const mvsim::vec3& gh_veh_vel =
-				veh->getVelocity();  // [vx,vy,w] in global frame
+				veh->getVelocity();	 // [vx,vy,w] in global frame
 
 			{
 				nav_msgs::Odometry gtOdoMsg;
@@ -563,9 +566,8 @@ void MVSimNode::spinNotifyROS()
 						const tf::Transform tr(
 							tf::createIdentityQuaternion(),
 							tf::Vector3(0, 0, 0));
-						m_tf_br.sendTransform(
-							tf::StampedTransform(
-								tr, m_sim_time, "/map", sOdomName));
+						m_tf_br.sendTransform(tf::StampedTransform(
+							tr, m_sim_time, "/map", sOdomName));
 					}
 				}
 			}
@@ -613,9 +615,8 @@ void MVSimNode::spinNotifyROS()
 					const tf::Transform tr(
 						rot, tf::Vector3(odo_pose.x, odo_pose.y, odo_pose.z));
 
-					m_tf_br.sendTransform(
-						tf::StampedTransform(
-							tr, m_sim_time, sOdomName, sBaseLinkFrame));
+					m_tf_br.sendTransform(tf::StampedTransform(
+						tr, m_sim_time, sOdomName, sBaseLinkFrame));
 				}
 
 				// Apart from TF, publish to the "odom" topic as well
@@ -651,14 +652,8 @@ void MVSimNode::spinNotifyROS()
 
 }  // end spinNotifyROS()
 
-void MVSimNode::MyWorld::onNewObservation(
-	const mvsim::VehicleBase& veh,
-#if MRPT_VERSION >= 0x130
-	const mrpt::obs::CObservation* obs
-#else
-	const mrpt::slam::CObservation* obs
-#endif
-	)
+void MVSimNode::onNewObservation(
+	const mvsim::VehicleBase& veh, const mrpt::obs::CObservation& obs)
 {
 	ROS_ASSERT(obs);
 	ROS_ASSERT(!obs->sensorLabel.empty());
@@ -689,11 +684,10 @@ void MVSimNode::MyWorld::onNewObservation(
 		o->getSensorPose(pose_laser);
 		mrpt_bridge::convert(pose_laser, transform);
 
-		m_parent.m_tf_br.sendTransform(
-			tf::StampedTransform(
-				transform, m_parent.m_sim_time,
-				m_parent.vehVarName("base_link", &veh),  // parent frame
-				sSensorFrameId));
+		m_parent.m_tf_br.sendTransform(tf::StampedTransform(
+			transform, m_parent.m_sim_time,
+			m_parent.vehVarName("base_link", &veh),	 // parent frame
+			sSensorFrameId));
 
 		// Send observation:
 		if (is_1st_pub || pub.getNumSubscribers() > 0)

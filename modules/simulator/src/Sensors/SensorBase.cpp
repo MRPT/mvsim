@@ -110,7 +110,7 @@ void SensorBase::reportNewObservation(
 	const TSimulContext& context)
 {
 	// Notify the world:
-	m_world->onNewObservation(m_vehicle, obs.get());
+	m_world->dispatchOnObservation(m_vehicle, obs);
 
 	// Publish:
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)

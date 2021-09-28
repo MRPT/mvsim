@@ -798,7 +798,7 @@ void Client::subscribe_topic_raw(
 
 void Client::doSubscribeTopic(
 	const std::string& topicName,
-	const google::protobuf::Descriptor* descriptor,
+	[[maybe_unused]] const google::protobuf::Descriptor* descriptor,
 	const topic_callback_t& callback)
 {
 	MRPT_START

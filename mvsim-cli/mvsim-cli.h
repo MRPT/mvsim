@@ -24,8 +24,11 @@ using cmd_t = std::function<int(void)>;
 
 int printListCommands();  // "help"
 int launchStandAloneServer();  // "server"
-int launchSimulation();  // "launch"
-int commandNode();  // "node"
-int commandTopic();  // "topic"
+int launchSimulation();	 // "launch"
+int commandNode();	// "node"
+int commandTopic();	 // "topic"
+
+void setConsoleErrorColor();
+void setConsoleNormalColor();
 
 void commonLaunchServer();

@@ -11,17 +11,16 @@
 
 // Dynamic reconfigure includes.
 #include <dynamic_reconfigure/server.h>
-
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <visualization_msgs/MarkerArray.h>
+
 #include <thread>
 
 // Auto-generated from cfg/ directory.
-#include <mvsim/mvsimNodeConfig.h>
-
 #include <mrpt/utils/CTicTac.h>
 #include <mvsim/mvsim.h>  // the mvsim library
+#include <mvsim/mvsimNodeConfig.h>
 
 #if MRPT_VERSION >= 0x130
 #include <mrpt/obs/CObservation.h>
@@ -48,23 +47,15 @@ class MVSimNode
 	/** Callback function for dynamic reconfigure server */
 	void configCallback(mvsim::mvsimNodeConfig& config, uint32_t level);
 
-	/** Derived class so we can install hooks (virtual methods) */
-	class MyWorld : public mvsim::World
-	{
-		MVSimNode& m_parent;
+	void onNewObservation(
+		const mvsim::VehicleBase& veh, const mrpt::obs::CObservation::Ptr& obs);
 
-	   public:
-		MyWorld(MVSimNode& node) : m_parent(node) {}
-		virtual void onNewObservation(
-			const mvsim::VehicleBase& veh, const CObservation* obs);
-
-	};  // End of MyWorld
-
-	MyWorld mvsim_world_;  //!< The mvsim library simulated world (includes
-						   //! everything: vehicles, obstacles, etc.)
+	/// The mvsim library simulated world (includes everything: vehicles,
+	/// obstacles, etc.)
+	mvsim::World mvsim_world_;
 
 	double realtime_factor_;  //!< (Defaul=1.0) >1: speed-up, <1: slow-down
-	int gui_refresh_period_ms_;  //!< Default:25
+	int gui_refresh_period_ms_;	 //!< Default:25
 	bool m_show_gui;  //!< Default= true
 	bool m_do_fake_localization;  //!< Default=true. Behaves as
 								  //! navigation/fake_localization for each
@@ -79,11 +70,11 @@ class MVSimNode
 
 	// === ROS Publishers ====
 	ros::Publisher m_pub_map_ros,
-		m_pub_map_metadata;  //!< used for simul_map publication
+		m_pub_map_metadata;	 //!< used for simul_map publication
 	ros::Publisher m_pub_clock;
 	tf::TransformBroadcaster m_tf_br;  //!< Use to send data to TF
 	tf2_ros::StaticTransformBroadcaster
-		m_static_tf_br;  //!< For sending STATIC tf
+		m_static_tf_br;	 //!< For sending STATIC tf
 
 	struct TPubSubPerVehicle
 	{
@@ -93,16 +84,16 @@ class MVSimNode
 		ros::Publisher
 			pub_ground_truth;  //!< Publisher of "base_pose_ground_truth" topic
 		ros::Publisher pub_amcl_pose,
-			pub_particlecloud;  //!< Publishers for "fake_localization" topics
+			pub_particlecloud;	//!< Publishers for "fake_localization" topics
 		std::map<std::string, ros::Publisher>
 			pub_sensors;  //!< Map <sensor_label> => publisher
-		ros::Publisher pub_chassis_markers;  //!< "<VEH>/chassis_markers"
+		ros::Publisher pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
 		ros::Publisher pub_chassis_shape;  //!< "<VEH>/chassis_shape"
 		visualization_msgs::MarkerArray chassis_shape_msg;
 	};
 
 	std::vector<TPubSubPerVehicle>
-		m_pubsub_vehicles;  //!< Pubs/Subs for each vehicle. Initialized by
+		m_pubsub_vehicles;	//!< Pubs/Subs for each vehicle. Initialized by
 							//! initPubSubs(), called from
 							//! notifyROSWorldIsUpdated()
 
@@ -134,15 +125,15 @@ class MVSimNode
 	TThreadParams thread_params_;
 	mrpt::system::CTicTac realtime_tictac_;
 
-	double t_old_;  // = realtime_tictac_.Tac();
+	double t_old_;	// = realtime_tictac_.Tac();
 	bool world_init_ok_;  //!< will be true after a success call to
 						  //! loadWorldModel()
 
-	double m_period_ms_publish_tf;  //!< Minimum period between publication of
+	double m_period_ms_publish_tf;	//!< Minimum period between publication of
 									//! TF transforms & /*/odom topics (In ms)
 	mrpt::system::CTicTac m_tim_publish_tf;
 
-	double m_period_ms_teleop_refresh;  //!< Minimum period between update of
+	double m_period_ms_teleop_refresh;	//!< Minimum period between update of
 										//! live info & read of teleop key
 										//! strokes in GUI (In ms)
 	mrpt::system::CTicTac m_tim_teleop_refresh;
@@ -185,6 +176,6 @@ class MVSimNode
 		MVSimNode& m_parent;
 	};
 
-};  // end class
+};	// end class
 
-#endif  // SR_MVSIM_NODE_CORE_H
+#endif	// SR_MVSIM_NODE_CORE_H
