@@ -243,12 +243,22 @@ class World : public mrpt::system::COutputLogger
 
 	/** \name Optional user hooks
 	  @{*/
-	virtual void onNewObservation(
-		[[maybe_unused]] const Simulable& veh,
-		[[maybe_unused]] const mrpt::obs::CObservation* obs)
+
+	using on_observation_callback_t = std::function<void(
+		const Simulable& /*veh*/, const mrpt::obs::CObservation::Ptr& /*obs*/)>;
+
+	void registerCallbackOnObservation(const on_observation_callback_t& f)
 	{
-		/* default: do nothing */
+		m_callbacksOnObservation.emplace_back(f);
 	}
+
+	/** Calls all registered callbacks: */
+	void dispatchOnObservation(
+		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
+	{
+		for (const auto& cb : m_callbacksOnObservation) cb(veh, obs);
+	}
+
 	/** @} */
 
 	/** Connect to server, advertise topics and services, etc. per the world
@@ -263,6 +273,8 @@ class World : public mrpt::system::COutputLogger
 	friend class Block;
 
 	mvsim::Client m_client{"World"};
+
+	std::vector<on_observation_callback_t> m_callbacksOnObservation;
 
 	// -------- World Params ----------
 	/** Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for

@@ -11,6 +11,7 @@
 #include <mrpt/core/exceptions.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/os.h>	 // kbhit()
+#include <mrpt/version.h>
 
 #include <chrono>
 #include <iostream>
@@ -44,6 +45,26 @@ static const std::map<std::string, cmd_t> cliCommands = {
 	{"topic", cmd_t(&commandTopic)},
 };
 
+void setConsoleErrorColor()
+{
+#if MRPT_VERSION >= 0x233
+	mrpt::system::consoleColorAndStyle(
+		mrpt::system::ConsoleForegroundColor::RED);
+#else
+	mrpt::system::setConsoleColor(mrpt::system::CONCOL_RED);
+#endif
+}
+
+void setConsoleNormalColor()
+{
+#if MRPT_VERSION >= 0x233
+	mrpt::system::consoleColorAndStyle(
+		mrpt::system::ConsoleForegroundColor::DEFAULT);
+#else
+	mrpt::system::setConsoleColor(mrpt::system::CONCOL_NORMAL);
+#endif
+}
+
 int main(int argc, char** argv)
 {
 	try
@@ -64,9 +85,9 @@ int main(int argc, char** argv)
 
 		if (!argCmd.isSet() || itCmd == cliCommands.end())
 		{
-			mrpt::system::setConsoleColor(mrpt::system::CONCOL_RED);
+			setConsoleErrorColor();
 			std::cerr << "Error: missing or unknown command.\n";
-			mrpt::system::setConsoleColor(mrpt::system::CONCOL_NORMAL);
+			setConsoleNormalColor();
 			printListCommands();
 			return 1;
 		}

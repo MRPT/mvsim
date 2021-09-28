@@ -62,9 +62,9 @@ int printCommandsNode(bool showErrorMsg)
 {
 	if (showErrorMsg)
 	{
-		mrpt::system::setConsoleColor(mrpt::system::CONCOL_RED);
+		setConsoleErrorColor();
 		std::cerr << "Error: missing or unknown subcommand.\n";
-		mrpt::system::setConsoleColor(mrpt::system::CONCOL_NORMAL);
+		setConsoleNormalColor();
 	}
 
 	fprintf(
