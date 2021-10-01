@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/format.h>
+#include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/Sensors/LaserScanner.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -40,14 +41,13 @@ void register_all_sensors()
 		done = true;
 
 	REGISTER_SENSOR("laser", LaserScanner)
+	REGISTER_SENSOR("rgbd_camera", DepthCameraSensor)
 }
 
 SensorBase::SensorBase(Simulable& vehicle)
 	: VisualObject(vehicle.getSimulableWorldObject()),
 	  Simulable(vehicle.getSimulableWorldObject()),
-	  m_sensor_period(0.1),
-	  m_vehicle(vehicle),
-	  m_sensor_last_timestamp(0)
+	  m_vehicle(vehicle)
 {
 }
 

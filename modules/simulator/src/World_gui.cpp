@@ -13,8 +13,6 @@
 #include <mrpt/math/TLine3D.h>
 #include <mrpt/math/TObject3D.h>
 #include <mrpt/math/geometry.h>
-#include <mrpt/opengl/CFBORender.h>
-#include <mrpt/opengl/CGridPlaneXY.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/version.h>
 #include <mvsim/World.h>
@@ -420,33 +418,13 @@ void World::internal_GUI_thread()
 
 			// Update all GUI elements:
 			ASSERT_(me.m_gui.gui_win->background_scene);
+
+			MRPT_TODO("Split 3D scene into physical and viz objects");
+			me.internalRunSensorsOn3DScene(me.m_gui.gui_win->background_scene);
+
 			me.internalUpdate3DSceneObjects(me.m_gui.gui_win->background_scene);
 
 			me.internal_process_pending_gui_user_tasks();
-
-#if 0
-			// Quick test for camera sensor first test
-			static mrpt::opengl::CFBORender fbo(800, 640, true);
-			mrpt::img::CImage im;
-
-			auto& cam =
-				m_gui.gui_win->background_scene->getViewport()->getCamera();
-			auto camBackup = cam;
-			cam.set6DOFMode(true);
-			auto p = mrpt::poses::CPose3D(
-				this->m_vehicles.begin()->second->getPose());
-			using namespace mrpt;  // _deg
-			p += mrpt::poses::CPose3D(0, 0, 0, 90.0_deg, 0, 90.0_deg);
-			p += mrpt::poses::CPose3D(0.5, 0, 0.5, 0, 0, 0);
-			cam.setPose(p);
-
-			fbo.getFrame(*m_gui.gui_win->background_scene, im);
-
-			cam = camBackup;
-
-			static int i = 0;
-			im.saveToFile(mrpt::format("camera_%004i.png", i++));
-#endif
 
 			// handle mouse operations:
 			me.m_gui.handle_mouse_operations();
@@ -507,7 +485,7 @@ void World::GUI::handle_mouse_operations()
 	mrpt::math::TLine3D ray;
 	vp->get3DRayForPixelCoord(mousePt.x(), mousePt.y(), ray);
 
-	// Create a 3D plane, e.g. Z=0
+	// Create a 3D plane, i.e. Z=0
 	const auto ground_plane =
 		mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
 
@@ -569,6 +547,25 @@ void World::internal_process_pending_gui_user_tasks()
 	m_gui_user_pending_tasks.clear();
 
 	m_gui_user_pending_tasks_mtx.unlock();
+}
+
+void World::internalRunSensorsOn3DScene(
+	mrpt::opengl::COpenGLScene::Ptr& gl_scene)
+{
+	// Update view of vehicles
+	// -----------------------------
+	m_timlogger.enter("internalRunSensorsOn3DScene");
+
+	for (auto& v : m_vehicles)
+	{
+		for (auto& sensor : v.second->getSensors())
+		{
+			if (!sensor) continue;
+			sensor->simulateOn3DScene(*gl_scene);
+		}
+	}
+
+	m_timlogger.leave("internalRunSensorsOn3DScene");
 }
 
 void World::internalUpdate3DSceneObjects(

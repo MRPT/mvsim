@@ -34,16 +34,21 @@ class SensorBase : public VisualObject, public Simulable
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) = 0;
 
-	double m_sensor_period;	 //!< Generate one sensor reading every this period
-							 //!(in seconds) (Default = 0.1)
+	/** Generate one sensor reading every this period [s] (Default = 0.1) */
+	double m_sensor_period = 0.1;
 
 	void registerOnServer(mvsim::Client& c) override;
+
+	virtual void simulateOn3DScene(	 //
+		[[maybe_unused]] mrpt::opengl::COpenGLScene& gl_scene)
+	{
+	}
 
    protected:
 	Simulable& m_vehicle;  //!< The vehicle this sensor is attached to
 
 	/** The last sensor reading timestamp. See  m_sensor_period */
-	double m_sensor_last_timestamp;
+	double m_sensor_last_timestamp = 0;
 
 	std::string publishTopic_;
 

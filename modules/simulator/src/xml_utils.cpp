@@ -126,6 +126,30 @@ void TParamEntry::parse(
 				"%s Error: Unknown format specifier '%s'", functionNameContext,
 				frmt));
 	}
+	// "%pose3d"
+	else if (!strncmp(frmt, "%pose3d", strlen("%pose3d")))
+	{
+		double x, y, z, yawDeg, pitchDeg, rollDeg;
+		int ret = ::sscanf(
+			str.c_str(), "%lf %lf %lf %lf %lf %lf", &x, &y, &z, &yawDeg,
+			&pitchDeg, &rollDeg);
+		if (ret != 6)
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing '%s'='%s' (Expected format:'X Y Z"
+				"YAW_DEG PITCH_DEG ROLL_DEG')",
+				functionNameContext, varName.c_str(), str.c_str()));
+
+		// User provides angles in deg:
+		const auto yaw = mrpt::DEG2RAD(yawDeg);
+		const auto pitch = mrpt::DEG2RAD(pitchDeg);
+		const auto roll = mrpt::DEG2RAD(rollDeg);
+
+		const mrpt::poses::CPose3D p(x, y, yaw);
+
+		mrpt::poses::CPose3D& pp =
+			*reinterpret_cast<mrpt::poses::CPose3D*>(val);
+		pp = mrpt::poses::CPose3D(x, y, z, yaw, pitch, roll);
+	}
 	else
 	{
 		// Generic parse:

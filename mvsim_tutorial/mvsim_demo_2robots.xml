@@ -76,8 +76,11 @@
 			  <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
 			</publish>
 		</sensor>
-	</vehicle:class>
 
+		<sensor class="rgbd_camera" name="camera1">
+			<pose_3d> 0.65  0.0  1.25   90.0 0.0 90.0 </pose_3d>
+		</sensor>
+	</vehicle:class>
 
 	<vehicle:class name="car_ackermann">
 
