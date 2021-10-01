@@ -121,7 +121,8 @@ class Block : public VisualObject, public Simulable
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		bool childrenOnly) override;
 	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
 
 	/** user-supplied index number: must be set/get'ed with setblockIndex()
@@ -226,10 +227,10 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& scene,
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
 		[[maybe_unused]] bool childrenOnly) override
 	{
-		for (auto& s : m_sensors) s->guiUpdate(scene);
+		for (auto& s : m_sensors) s->guiUpdate(viz, physical);
 	}
 
 	mrpt::poses::CPose3D internalGuiGetVisualPose() override { return {}; }

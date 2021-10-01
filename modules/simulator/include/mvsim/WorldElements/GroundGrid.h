@@ -28,7 +28,8 @@ class GroundGrid : public WorldElementBase
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		bool childrenOnly) override;
 
 	bool m_is_floating;
 	std::string m_float_center_at_vehicle_name;

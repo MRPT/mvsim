@@ -29,7 +29,8 @@ class VisualObject
 	virtual ~VisualObject() {}
 	/** Must create a new object in the scene and/or update it according to the
 	 * current state */
-	virtual void guiUpdate(mrpt::opengl::COpenGLScene& scene);
+	virtual void guiUpdate(
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
 
 	World* getWorldObject() { return m_world; }
 	const World* getWorldObject() const { return m_world; }
@@ -56,7 +57,8 @@ class VisualObject
 	int32_t m_glCustomVisualId = -1;
 
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& scene, bool childrenOnly = false) = 0;
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		bool childrenOnly = false) = 0;
 	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() { return {}; }
 
    private:

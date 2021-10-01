@@ -86,7 +86,8 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void DepthCameraSensor::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& scene, [[maybe_unused]] bool childrenOnly)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	[[maybe_unused]] bool childrenOnly)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
@@ -97,7 +98,7 @@ void DepthCameraSensor::internalGuiUpdate(
 		m_gl_obs->setPointSize(2.0f);
 		m_gl_obs->setLocalRepresentativePoint(
 			m_sensor_params.sensorPose.translation());
-		scene.insert(m_gl_obs);
+		viz.insert(m_gl_obs);
 	}
 
 	if (!m_gui_uptodate)
@@ -140,7 +141,7 @@ void DepthCameraSensor::simulateOn3DScene(
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservation3DRangeScan::Create(m_sensor_params);
 
-	// Quick test for camera sensor first test
+	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	if (!m_fbo_renderer)
 		m_fbo_renderer = std::make_shared<mrpt::opengl::CFBORender>(
 			m_sensor_params.cameraParamsIntensity.ncols,
@@ -151,7 +152,6 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	auto& cam = viewport->getCamera();
 
-	auto camBackup = cam;
 	cam.set6DOFMode(true);
 	cam.setProjectiveFromPinhole(m_sensor_params.cameraParamsIntensity);
 
@@ -175,9 +175,6 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	// Convert depth image:
 	// TODO!
-
-	cam = camBackup;  // restore
-	viewport->updateMatricesFromCamera();
 
 	static int i = 0;
 	curObs->intensityImage.saveToFile(mrpt::format("camera_%04i.png", i++));

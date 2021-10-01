@@ -90,7 +90,8 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void OccupancyGridMap::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	bool childrenOnly)
 {
 	using namespace mrpt::math;
 
@@ -98,7 +99,8 @@ void OccupancyGridMap::internalGuiUpdate(
 	if (!m_gl_grid)
 	{
 		m_gl_grid = mrpt::opengl::CSetOfObjects::Create();
-		scene.insert(m_gl_grid);
+		viz.insert(m_gl_grid);
+		physical.insert(m_gl_grid);
 	}
 	if (m_gl_obs_clouds.size() != m_obstacles_for_each_obj.size())
 	{
@@ -122,7 +124,7 @@ void OccupancyGridMap::internalGuiUpdate(
 			{
 				gl_objs = mrpt::opengl::CSetOfObjects::Create();
 				MRPT_TODO("Add a name, and remove old ones in scene, etc.")
-				scene.insert(gl_objs);
+				viz.insert(gl_objs);
 			}
 
 			// Now that we are in a safe thread (with the OpenGL scene lock
@@ -245,7 +247,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &sqrPoly;
 			fixtureDef.restitution = m_restitution;
-			fixtureDef.density = 0;  // Fixed (inf. mass)
+			fixtureDef.density = 0;	 // Fixed (inf. mass)
 			fixtureDef.friction = m_lateral_friction;  // 0.5f;
 
 			// Create fixtures at their place (or disable it if no obstacle has
@@ -262,7 +264,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 				if (!scan->getScanRangeValidity(k))
 				{
 					ipv.collide_fixtures[k].fixture->SetSensor(
-						true);  // Box2D's way of saying: don't collide with
+						true);	// Box2D's way of saying: don't collide with
 								// this!
 					ipv.collide_fixtures[k].fixture->SetUserData(
 						INVISIBLE_FIXTURE_USER_DATA);
@@ -270,7 +272,7 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 				else
 				{
 					ipv.collide_fixtures[k].fixture->SetSensor(
-						false);  // Box2D's way of saying: don't collide with
+						false);	 // Box2D's way of saying: don't collide with
 								 // this!
 					ipv.collide_fixtures[k].fixture->SetUserData(nullptr);
 

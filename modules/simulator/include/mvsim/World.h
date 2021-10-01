@@ -142,10 +142,11 @@ class World : public mrpt::system::COutputLogger
 	mrpt::opengl::CSetOfObjects::Ptr m_gui_user_objects;
 	std::mutex m_gui_user_objects_mtx;
 
-	void internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene::Ptr& gl_scene);
+	void internalRunSensorsOn3DScene(
+		mrpt::opengl::COpenGLScene& physicalObjects);
 
 	void internalUpdate3DSceneObjects(
-		mrpt::opengl::COpenGLScene::Ptr& gl_scene);
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
 	void internal_GUI_thread();
 	void internal_process_pending_gui_user_tasks();
 
@@ -402,6 +403,11 @@ class World : public mrpt::system::COutputLogger
 		World& m_parent;
 	};
 	GUI m_gui{*this};  //!< gui state
+
+	/// 3D scene with all physically observable objects: we will use this
+	/// scene as input to simulated sensors like cameras, where we don't wont
+	/// to see visualization marks, etc.
+	mrpt::opengl::COpenGLScene m_physical_objects;
 
 	/** @} */  // end GUI stuff
 

@@ -26,7 +26,8 @@ using namespace mvsim;
 
 static std::atomic_int32_t g_uniqueCustomVisualId = 0;
 
-void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
+void VisualObject::guiUpdate(
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
 {
 	using namespace std::string_literals;
 
@@ -43,7 +44,7 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 			const auto name = "_autoViz"s + std::to_string(m_glCustomVisualId);
 			m_glCustomVisual->setName(name);
 			// Add to the 3D scene:
-			scene.insert(m_glCustomVisual);
+			viz.insert(m_glCustomVisual);
 		}
 
 		// Update pose:
@@ -59,14 +60,14 @@ void VisualObject::guiUpdate(mrpt::opengl::COpenGLScene& scene)
 			glBox->setBoxCorners(viz_bbmin_, viz_bbmax_);
 			m_glBoundingBox->insert(glBox);
 			m_glBoundingBox->setVisibility(false);
-			scene.insert(m_glBoundingBox);
+			viz.insert(m_glBoundingBox);
 		}
 		m_glBoundingBox->setPose(objectPose);
 	}
 
 	const bool childrenOnly = !!m_glCustomVisual;
 
-	internalGuiUpdate(scene, childrenOnly);
+	internalGuiUpdate(viz, physical, childrenOnly);
 }
 
 std::map<std::string, mrpt::opengl::CAssimpModel::Ptr> gModelsCache;

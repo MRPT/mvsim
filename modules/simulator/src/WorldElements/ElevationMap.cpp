@@ -7,15 +7,16 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CPointCloud.h>
+#include <mrpt/tfest.h>	 // least-squares methods
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/ElevationMap.h>
-#include "xml_utils.h"
 
-#include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/CPointCloud.h>
-#include <mrpt/tfest.h>  // least-squares methods
 #include <rapidxml.hpp>
+
+#include "xml_utils.h"
 
 using namespace rapidxml;
 using namespace mvsim;
@@ -125,7 +126,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void ElevationMap::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	bool childrenOnly)
 {
 	using namespace mrpt::math;
 
@@ -138,7 +140,7 @@ void ElevationMap::internalGuiUpdate(
 	if (m_first_scene_rendering)
 	{
 		m_first_scene_rendering = false;
-		scene.insert(m_gl_mesh);
+		viz.insert(m_gl_mesh);
 	}
 }
 
