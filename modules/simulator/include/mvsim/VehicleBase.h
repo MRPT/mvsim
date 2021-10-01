@@ -149,7 +149,8 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void initLoggers();
 	virtual void writeLogStrings();
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		bool childrenOnly) override;
 	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
 
    protected:
@@ -205,7 +206,8 @@ class VehicleBase : public VisualObject, public Simulable
 
    private:
 	// Called from internalGuiUpdate_common()
-	void internal_internalGuiUpdate_sensors(mrpt::opengl::COpenGLScene& scene);
+	void internal_internalGuiUpdate_sensors(
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
 	// Called from internalGuiUpdate_common()
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 

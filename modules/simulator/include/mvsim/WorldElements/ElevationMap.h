@@ -36,7 +36,8 @@ class ElevationMap : public WorldElementBase
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		bool childrenOnly) override;
 
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */

@@ -40,7 +40,8 @@ class OccupancyGridMap : public WorldElementBase
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		bool childrenOnly) override;
 
 	mrpt::maps::COccupancyGridMap2D m_grid;
 
@@ -77,6 +78,6 @@ class OccupancyGridMap : public WorldElementBase
 
 	bool m_show_grid_collision_points;
 	double m_restitution;  //!< Elastic restitution coef (default: 0.01)
-	double m_lateral_friction;  //!< (Default: 0.5)
+	double m_lateral_friction;	//!< (Default: 0.5)
 };
 }  // namespace mvsim

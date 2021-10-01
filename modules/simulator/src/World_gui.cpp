@@ -354,6 +354,8 @@ void World::internal_GUI_thread()
 			auto scene = mrpt::opengl::COpenGLScene::Create();
 			scene->insert(m_glUserObjs);
 
+			m_physical_objects.insert(m_glUserObjs);
+
 			std::lock_guard<std::mutex> lck(
 				m_gui.gui_win->background_scene_mtx);
 			m_gui.gui_win->background_scene = std::move(scene);
@@ -419,10 +421,17 @@ void World::internal_GUI_thread()
 			// Update all GUI elements:
 			ASSERT_(me.m_gui.gui_win->background_scene);
 
-			MRPT_TODO("Split 3D scene into physical and viz objects");
-			me.internalRunSensorsOn3DScene(me.m_gui.gui_win->background_scene);
+			me.internalUpdate3DSceneObjects(
+				*me.m_gui.gui_win->background_scene, me.m_physical_objects);
 
-			me.internalUpdate3DSceneObjects(me.m_gui.gui_win->background_scene);
+			{
+				auto w = glfwGetCurrentContext();
+				glfwMakeContextCurrent(nullptr);
+
+				me.internalRunSensorsOn3DScene(me.m_physical_objects);
+
+				glfwMakeContextCurrent(w);
+			}
 
 			me.internal_process_pending_gui_user_tasks();
 
@@ -550,7 +559,7 @@ void World::internal_process_pending_gui_user_tasks()
 }
 
 void World::internalRunSensorsOn3DScene(
-	mrpt::opengl::COpenGLScene::Ptr& gl_scene)
+	mrpt::opengl::COpenGLScene& physicalObjects)
 {
 	// Update view of vehicles
 	// -----------------------------
@@ -561,7 +570,7 @@ void World::internalRunSensorsOn3DScene(
 		for (auto& sensor : v.second->getSensors())
 		{
 			if (!sensor) continue;
-			sensor->simulateOn3DScene(*gl_scene);
+			sensor->simulateOn3DScene(physicalObjects);
 		}
 	}
 
@@ -569,13 +578,13 @@ void World::internalRunSensorsOn3DScene(
 }
 
 void World::internalUpdate3DSceneObjects(
-	mrpt::opengl::COpenGLScene::Ptr& gl_scene)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
 {
 	// Update view of map elements
 	// -----------------------------
 	m_timlogger.enter("update_GUI.2.map-elements");
 
-	for (auto& e : m_world_elements) e->guiUpdate(*gl_scene);
+	for (auto& e : m_world_elements) e->guiUpdate(viz, physical);
 
 	m_timlogger.leave("update_GUI.2.map-elements");
 
@@ -583,7 +592,7 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------------
 	m_timlogger.enter("update_GUI.3.vehicles");
 
-	for (auto& v : m_vehicles) v.second->guiUpdate(*gl_scene);
+	for (auto& v : m_vehicles) v.second->guiUpdate(viz, physical);
 
 	m_timlogger.leave("update_GUI.3.vehicles");
 
@@ -591,7 +600,7 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------------
 	m_timlogger.enter("update_GUI.4.blocks");
 
-	for (auto& v : m_blocks) v.second->guiUpdate(*gl_scene);
+	for (auto& v : m_blocks) v.second->guiUpdate(viz, physical);
 
 	m_timlogger.leave("update_GUI.4.blocks");
 

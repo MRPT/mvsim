@@ -90,7 +90,8 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void LaserScanner::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& scene, [[maybe_unused]] bool childrenOnly)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	[[maybe_unused]] bool childrenOnly)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
@@ -104,7 +105,7 @@ void LaserScanner::internalGuiUpdate(
 		// m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.4f);
 
 		m_gl_scan->setLocalRepresentativePoint({0, 0, 0.10f});
-		scene.insert(m_gl_scan);
+		viz.insert(m_gl_scan);
 	}
 
 	if (!m_gui_uptodate)

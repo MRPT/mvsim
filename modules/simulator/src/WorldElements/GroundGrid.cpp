@@ -7,12 +7,13 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/opengl/COpenGLScene.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/GroundGrid.h>
-#include "xml_utils.h"
 
-#include <mrpt/opengl/COpenGLScene.h>
 #include <rapidxml.hpp>
+
+#include "xml_utils.h"
 
 using namespace rapidxml;
 using namespace mvsim;
@@ -37,7 +38,7 @@ GroundGrid::GroundGrid(World* parent, const rapidxml::xml_node<char>* root)
 GroundGrid::~GroundGrid() {}
 void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
-	if (!root) return;  // Assume defaults
+	if (!root) return;	// Assume defaults
 
 	TParameterDefinitions params;
 	params["floating"] = TParamEntry("%bool", &m_is_floating);
@@ -60,7 +61,8 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void GroundGrid::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	bool childrenOnly)
 {
 	using namespace mrpt::math;
 
@@ -73,7 +75,7 @@ void GroundGrid::internalGuiUpdate(
 		m_gl_groundgrid->setColor_u8(m_color);
 		m_gl_groundgrid->setLineWidth(m_line_width);
 
-		scene.insert(m_gl_groundgrid);
+		viz.insert(m_gl_groundgrid);
 	}
 
 	// Update:

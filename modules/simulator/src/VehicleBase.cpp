@@ -541,13 +541,13 @@ mrpt::poses::CPose3D VehicleBase::internalGuiGetVisualPose()
 }
 
 void VehicleBase::internal_internalGuiUpdate_sensors(
-	mrpt::opengl::COpenGLScene& scene)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
 {
-	for (auto& s : m_sensors) s->guiUpdate(scene);
+	for (auto& s : m_sensors) s->guiUpdate(viz, physical);
 }
 
-void VehicleBase::internal_internalGuiUpdate_forces(
-	mrpt::opengl::COpenGLScene& scene)
+void VehicleBase::internal_internalGuiUpdate_forces(  //
+	[[maybe_unused]] mrpt::opengl::COpenGLScene& scene)
 {
 	if (m_world->m_gui_options.show_forces)
 	{
@@ -653,7 +653,8 @@ void VehicleBase::create_multibody_system(b2World& world)
 }
 
 void VehicleBase::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	bool childrenOnly)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
@@ -682,7 +683,7 @@ void VehicleBase::internalGuiUpdate(
 			gl_poly->setColor_u8(m_chassis_color);
 			m_gl_chassis->insert(gl_poly);
 
-			scene.insert(m_gl_chassis);
+			viz.insert(m_gl_chassis);
 		}
 
 		// Update them:
@@ -704,12 +705,12 @@ void VehicleBase::internalGuiUpdate(
 		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
-		scene.insert(m_gl_forces);	// forces are in global coords
+		viz.insert(m_gl_forces);  // forces are in global coords
 	}
 
 	// Other common stuff:
-	internal_internalGuiUpdate_sensors(scene);
-	internal_internalGuiUpdate_forces(scene);
+	internal_internalGuiUpdate_sensors(viz, physical);
+	internal_internalGuiUpdate_forces(viz);
 }
 
 void VehicleBase::initLoggers()

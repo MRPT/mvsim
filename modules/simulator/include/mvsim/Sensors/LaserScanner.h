@@ -36,7 +36,8 @@ class LaserScanner : public SensorBase
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& scene, bool childrenOnly) override;
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		bool childrenOnly) override;
 
 	int m_z_order;	//!< to help rendering multiple scans
 	mrpt::poses::CPose2D m_sensor_pose_on_veh;

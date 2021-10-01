@@ -259,7 +259,8 @@ mrpt::poses::CPose3D Block::internalGuiGetVisualPose()
 }
 
 void Block::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& scene, bool childrenOnly)
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	bool childrenOnly)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
@@ -278,7 +279,8 @@ void Block::internalGuiUpdate(
 			gl_poly->setColor_u8(m_block_color);
 			m_gl_block->insert(gl_poly);
 
-			scene.insert(m_gl_block);
+			viz.insert(m_gl_block);
+			physical.insert(m_gl_block);
 		}
 
 		// Update them:
@@ -292,11 +294,11 @@ void Block::internalGuiUpdate(
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
-		scene.insert(m_gl_forces);	// forces are in global coords
+		viz.insert(m_gl_forces);  // forces are in global coords
 	}
 
 	// Other common stuff:
-	internal_internalGuiUpdate_forces(scene);
+	internal_internalGuiUpdate_forces(viz);
 }
 
 void Block::internal_internalGuiUpdate_forces(	//
