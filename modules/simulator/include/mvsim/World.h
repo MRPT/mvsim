@@ -142,6 +142,8 @@ class World : public mrpt::system::COutputLogger
 	mrpt::opengl::CSetOfObjects::Ptr m_gui_user_objects;
 	std::mutex m_gui_user_objects_mtx;
 
+	void internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene::Ptr& gl_scene);
+
 	void internalUpdate3DSceneObjects(
 		mrpt::opengl::COpenGLScene::Ptr& gl_scene);
 	void internal_GUI_thread();

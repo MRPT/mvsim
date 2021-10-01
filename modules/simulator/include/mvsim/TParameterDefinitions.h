@@ -27,6 +27,8 @@ namespace mvsim
  * mrpt::poses::CPose2D
  *  - "%pose2d_ptr3d" => Expects "X Y YAW_DEG". "Val" is a pointer to
  * mrpt::poses::CPose3D
+ *  - "%pose3d" => Expects "X Y Z YAW_DEG PITCH_DEG ROLL_DEG". "Val" is a
+ * pointer to mrpt::poses::CPose3D
  *  - "%bool" ==> bool*. Values: 'true'/'false' or '1'/'0'
  *
  * \todo Rewrite using std::variant?
