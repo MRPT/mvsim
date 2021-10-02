@@ -164,7 +164,7 @@ void DepthCameraSensor::simulateOn3DScene(
 	cam.setPose(p);
 
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
-	// const float clipMax = 25.0f;
+	const float clipMax = 25.0f;
 	// viewport->setViewportClipDistances(0.1, clipMax);
 
 	viewport->updateMatricesFromCamera();
@@ -173,11 +173,23 @@ void DepthCameraSensor::simulateOn3DScene(
 	m_fbo_renderer->render_RGBD(
 		world3DScene, curObs->intensityImage, depthImage);
 
+	// Show depth:
+	mrpt::img::CImage imDepth;
+	if (!depthImage.empty())
+	{
+		depthImage *= (1.0f / clipMax);
+		imDepth.setFromMatrix(depthImage, true);
+	}
+
 	// Convert depth image:
 	// TODO!
 
+#if 0
 	static int i = 0;
 	curObs->intensityImage.saveToFile(mrpt::format("camera_%04i.png", i++));
+	if (!imDepth.isEmpty())
+		imDepth.saveToFile(mrpt::format("camera_depth_%04i.png", i++));
+#endif
 
 	// Store generated obs:
 	{

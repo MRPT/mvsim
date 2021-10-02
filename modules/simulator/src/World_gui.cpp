@@ -424,14 +424,7 @@ void World::internal_GUI_thread()
 			me.internalUpdate3DSceneObjects(
 				*me.m_gui.gui_win->background_scene, me.m_physical_objects);
 
-			{
-				auto w = glfwGetCurrentContext();
-				glfwMakeContextCurrent(nullptr);
-
-				me.internalRunSensorsOn3DScene(me.m_physical_objects);
-
-				glfwMakeContextCurrent(w);
-			}
+			me.internalRunSensorsOn3DScene(me.m_physical_objects);
 
 			me.internal_process_pending_gui_user_tasks();
 

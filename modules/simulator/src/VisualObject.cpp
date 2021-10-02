@@ -45,6 +45,7 @@ void VisualObject::guiUpdate(
 			m_glCustomVisual->setName(name);
 			// Add to the 3D scene:
 			viz.insert(m_glCustomVisual);
+			physical.insert(m_glCustomVisual);
 		}
 
 		// Update pose:
