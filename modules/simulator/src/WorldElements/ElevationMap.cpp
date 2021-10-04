@@ -23,7 +23,7 @@ using namespace mvsim;
 using namespace std;
 
 ElevationMap::ElevationMap(World* parent, const rapidxml::xml_node<char>* root)
-	: WorldElementBase(parent), m_first_scene_rendering(true), m_resolution(1.0)
+	: WorldElementBase(parent)
 {
 	loadConfigFrom(root);
 }
@@ -46,7 +46,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	mrpt::img::TColor mesh_color(0xa0, 0xe0, 0xa0);
 	params["mesh_color"] = TParamEntry("%color", &mesh_color);
 
-	params["resolution"] = TParamEntry("%lf", &m_resolution);
+	params["resolution"] = TParamEntry("%f", &m_resolution);
 
 	parse_xmlnode_children_as_param(*root, params);
 
@@ -225,8 +225,6 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 			new_pose.pitch = m_optimal_transf.pitch();
 			new_pose.roll = m_optimal_transf.roll();
 
-			// cout << new_pose << endl;
-
 			itVeh->second->setPose(new_pose);
 
 		}  // end iters
@@ -278,8 +276,8 @@ static float calcz(
 	const mrpt::math::TPoint3Df& p1, const mrpt::math::TPoint3Df& p2,
 	const mrpt::math::TPoint3Df& p3, float x, float y)
 {
-	const float det =
-		(p2.x - p3.x) * (p1.y - p3.y) + (p3.y - p2.y) * (p1.x - p3.x);
+	const float det = (p2.x - p3.x) * (p1.y - p3.y) +  //
+					  (p3.y - p2.y) * (p1.x - p3.x);
 	ASSERT_(det != 0.0f);
 
 	const float l1 =

@@ -42,8 +42,8 @@ class ElevationMap : public WorldElementBase
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */
 	mrpt::opengl::CMesh::Ptr m_gl_mesh;
-	bool m_first_scene_rendering;
-	double m_resolution;
+	bool m_first_scene_rendering = true;
+	float m_resolution = 1.0f;
 	/** A copy of elevation data in m_gl_mesh. Coordinate order is (y,x) */
 	mrpt::math::CMatrixFloat m_mesh_z_cache;
 
