@@ -33,21 +33,12 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	m_gui_uptodate = false;
 
-	// Attribs:
-	TParameterDefinitions attribs;
-	attribs["name"] = TParamEntry("%s", &this->m_name);
-
-	parse_xmlnode_attribs(*root, attribs, {}, "[DepthCameraSensor]");
-
-	const std::map<std::string, std::string> varValues = {
-		{"NAME", m_name}, {"PARENT_NAME", m_vehicle.getName()}};
+	SensorBase::loadConfigFrom(root);
+	SensorBase::make_sure_we_have_a_name("camera");
 
 	using namespace mrpt;  // _deg
 	m_sensor_params.sensorPose =
 		mrpt::poses::CPose3D(0, 0, 0.5, 90.0_deg, 0, 90.0_deg);
-
-	m_sensor_params.maxRange = 10.0;  // [m]
-	m_sensor_params.rangeUnits = 1e-3;	// mm units
 
 	{
 		auto& c = m_sensor_params.cameraParamsIntensity;
@@ -58,34 +49,54 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		c.fx(500);
 		c.fy(500);
 	}
+	m_sensor_params.cameraParams = m_sensor_params.cameraParamsIntensity;
 
 	// Other scalar params:
 	TParameterDefinitions params;
 	params["pose_3d"] = TParamEntry("%pose3d", &m_sensor_params.sensorPose);
+	params["relativePoseIntensityWRTDepth"] =
+		TParamEntry("%pose3d", &m_sensor_params.relativePoseIntensityWRTDepth);
 
-	params["sensor_period"] = TParamEntry("%lf", &this->m_sensor_period);
+	auto& depthCam = m_sensor_params.cameraParams;
+	params["depth_cx"] = TParamEntry("%lf", &depthCam.intrinsicParams(0, 2));
+	params["depth_cy"] = TParamEntry("%lf", &depthCam.intrinsicParams(1, 2));
+	params["depth_fx"] = TParamEntry("%lf", &depthCam.intrinsicParams(0, 0));
+	params["depth_fy"] = TParamEntry("%lf", &depthCam.intrinsicParams(1, 1));
+
+	unsigned int depth_ncols = depthCam.ncols, depth_nrows = depthCam.nrows;
+	params["depth_ncols"] = TParamEntry("%u", &depth_ncols);
+	params["depth_nrows"] = TParamEntry("%u", &depth_nrows);
+
+	auto& rgbCam = m_sensor_params.cameraParamsIntensity;
+	params["rgb_cx"] = TParamEntry("%lf", &rgbCam.intrinsicParams(0, 2));
+	params["rgb_cy"] = TParamEntry("%lf", &rgbCam.intrinsicParams(1, 2));
+	params["rgb_fx"] = TParamEntry("%lf", &rgbCam.intrinsicParams(0, 0));
+	params["rgb_fy"] = TParamEntry("%lf", &rgbCam.intrinsicParams(1, 1));
+
+	unsigned int rgb_ncols = depthCam.ncols, rgb_nrows = depthCam.nrows;
+	params["rgb_ncols"] = TParamEntry("%u", &rgb_ncols);
+	params["rgb_nrows"] = TParamEntry("%u", &rgb_nrows);
+
+	params["rgb_clip_min"] = TParamEntry("%f", &m_rgb_clip_min);
+	params["rgb_clip_max"] = TParamEntry("%f", &m_rgb_clip_max);
+	params["depth_clip_min"] = TParamEntry("%f", &m_depth_clip_min);
+	params["depth_clip_max"] = TParamEntry("%f", &m_depth_clip_max);
+	params["depth_resolution"] = TParamEntry("%f", &m_depth_resolution);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*root, params, varValues);
+	parse_xmlnode_children_as_param(*root, params, m_varValues);
 
-	// Parse common sensor XML params:
-	this->parseSensorPublish(root->first_node("publish"), varValues);
+	depthCam.ncols = depth_ncols;
+	depthCam.nrows = depth_nrows;
 
-	// Pass params to the scan2D obj:
-	// m_scan_model.aperture = mrpt::DEG2RAD(fov_deg);
-
-	// Assign a sensible default name/sensor label if none is provided:
-	if (m_name.empty())
-	{
-		size_t nextIdx = 0;
-		if (auto v = dynamic_cast<VehicleBase*>(&m_vehicle); v)
-			nextIdx = v->getSensors().size() + 1;
-
-		m_name = mrpt::format("camera%u", static_cast<unsigned int>(nextIdx));
-	}
+	rgbCam.ncols = rgb_ncols;
+	rgbCam.nrows = rgb_nrows;
 
 	// save sensor label here too:
 	m_sensor_params.sensorLabel = m_name;
+
+	m_sensor_params.maxRange = m_depth_clip_max;
+	m_sensor_params.rangeUnits = m_depth_resolution;
 }
 
 void DepthCameraSensor::internalGuiUpdate(
@@ -134,6 +145,8 @@ void DepthCameraSensor::simul_pre_timestep([
 void DepthCameraSensor::simulateOn3DScene(
 	mrpt::opengl::COpenGLScene& world3DScene)
 {
+	using namespace mrpt;  // _deg
+
 	if (!m_has_to_render.has_value()) return;
 
 	auto lck = mrpt::lockHelper(m_gui_mtx);
@@ -155,27 +168,57 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	auto& cam = viewport->getCamera();
 
+	const auto fixedAxisConventionRot =
+		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
+
+	// ----------------------------------------------------------
+	// RGB first with its camera intrinsics & clip distances
+	// ----------------------------------------------------------
 	cam.set6DOFMode(true);
 	cam.setProjectiveFromPinhole(curObs->cameraParamsIntensity);
+
+	// RGB camera pose:
+	//   vehicle (+) relativePoseOnVehicle (+) relativePoseIntensityWRTDepth
+	//
+	// Note: relativePoseOnVehicle should be (y,p,r)=(-90deg,0,-90deg) to make
+	// the camera to look forward:
+
+	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
+
+	const auto depthSensorPose =
+		vehiclePose + curObs->sensorPose + fixedAxisConventionRot;
+
+	const auto rgbSensorPose = vehiclePose + curObs->sensorPose +
+							   curObs->relativePoseIntensityWRTDepth;
+
+	cam.setPose(rgbSensorPose);
+
+	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
+	viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
+
+	viewport->updateMatricesFromCamera();
+
+	m_fbo_renderer->render_RGB(world3DScene, curObs->intensityImage);
+
+	curObs->hasIntensityImage = true;
+
+	// ----------------------------------------------------------
+	// DEPTH camera next
+	// ----------------------------------------------------------
+	cam.setProjectiveFromPinhole(curObs->cameraParams);
 
 	// Camera pose: vehicle + relativePoseOnVehicle:
 	// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
 	// the camera to look forward:
-	auto p = mrpt::poses::CPose3D(m_vehicle.getPose()) + curObs->sensorPose;
+	cam.setPose(depthSensorPose);
 
-	cam.setPose(p);
-
-	MRPT_TODO("Render twice (RGB and Depth) with different max clip distances");
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
-	// viewport->setViewportClipDistances(0.1, clipMax);
+	viewport->setViewportClipDistances(m_depth_clip_min, m_depth_clip_max);
 
 	viewport->updateMatricesFromCamera();
 
 	mrpt::math::CMatrixFloat depthImage;
-	m_fbo_renderer->render_RGBD(
-		world3DScene, curObs->intensityImage, depthImage);
-
-	curObs->hasIntensityImage = true;
+	m_fbo_renderer->render_depth(world3DScene, depthImage);
 
 	// Convert depth image:
 	curObs->hasRangeImage = true;
@@ -186,13 +229,6 @@ void DepthCameraSensor::simulateOn3DScene(
 	curObs->rangeImage =
 		(depthImage.asEigen().cwiseMin(curObs->maxRange) / curObs->rangeUnits)
 			.cast<uint16_t>();
-
-#if 0
-	static int i = 0;
-	curObs->intensityImage.saveToFile(mrpt::format("camera_%04i.png", i++));
-	if (!imDepth.isEmpty())
-		imDepth.saveToFile(mrpt::format("camera_depth_%04i.png", i++));
-#endif
 
 	// Store generated obs:
 	{

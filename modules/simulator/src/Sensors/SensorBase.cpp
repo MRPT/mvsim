@@ -142,3 +142,34 @@ void SensorBase::registerOnServer(mvsim::Client& c)
 		c.advertiseTopic<mvsim_msgs::GenericObservation>(publishTopic_);
 #endif
 }
+
+void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
+{
+	// Attribs:
+	TParameterDefinitions attribs;
+	attribs["name"] = TParamEntry("%s", &m_name);
+	parse_xmlnode_attribs(*root, attribs, {}, "[SensorBase]");
+
+	m_varValues = {{"NAME", m_name}, {"PARENT_NAME", m_vehicle.getName()}};
+
+	// Parse common sensor XML params:
+	this->parseSensorPublish(root->first_node("publish"), m_varValues);
+
+	TParameterDefinitions params;
+	params["sensor_period"] = TParamEntry("%lf", &m_sensor_period);
+
+	// Parse XML params:
+	parse_xmlnode_children_as_param(*root, params, m_varValues);
+}
+
+void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
+{
+	if (!m_name.empty()) return;
+
+	size_t nextIdx = 0;
+	if (auto v = dynamic_cast<VehicleBase*>(&m_vehicle); v)
+		nextIdx = v->getSensors().size() + 1;
+
+	m_name = mrpt::format(
+		"%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
+}

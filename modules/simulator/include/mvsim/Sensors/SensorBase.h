@@ -32,7 +32,9 @@ class SensorBase : public VisualObject, public Simulable
 	static SensorBase::Ptr factory(
 		Simulable& parent, const rapidxml::xml_node<char>* xml_node);
 
-	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) = 0;
+	/** Loads the parameters common to all sensors. Should be overriden, and
+	 * they call to this base method. */
+	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root);
 
 	/** Generate one sensor reading every this period [s] (Default = 0.1) */
 	double m_sensor_period = 0.1;
@@ -52,6 +54,9 @@ class SensorBase : public VisualObject, public Simulable
 
 	std::string publishTopic_;
 
+	/// Filled in by SensorBase::loadConfigFrom()
+	std::map<std::string, std::string> m_varValues;
+
 	bool parseSensorPublish(
 		const rapidxml::xml_node<char>* node,
 		const std::map<std::string, std::string>& varValues);
@@ -59,6 +64,9 @@ class SensorBase : public VisualObject, public Simulable
 	void reportNewObservation(
 		const std::shared_ptr<mrpt::obs::CObservation>& obs,
 		const TSimulContext& context);
+
+	/// Assign a sensible default name/sensor label if none is provided:
+	void make_sure_we_have_a_name(const std::string& prefix);
 };
 
 using TListSensors = std::vector<SensorBase::Ptr>;
