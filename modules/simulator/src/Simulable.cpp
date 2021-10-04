@@ -240,10 +240,6 @@ void Simulable::registerOnServer(mvsim::Client& c)
 void Simulable::setPose(const mrpt::math::TPose3D& p) const
 {
 	m_q_mtx.lock();
-	m_simulable_parent->physical_objects_mtx().lock();
-
 	const_cast<mrpt::math::TPose3D&>(m_q) = p;
-
-	m_simulable_parent->physical_objects_mtx().unlock();
 	m_q_mtx.unlock();
 }

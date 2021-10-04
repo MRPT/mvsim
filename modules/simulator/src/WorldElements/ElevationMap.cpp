@@ -141,6 +141,7 @@ void ElevationMap::internalGuiUpdate(
 	{
 		m_first_scene_rendering = false;
 		viz.insert(m_gl_mesh);
+		physical.insert(m_gl_mesh);
 	}
 }
 
