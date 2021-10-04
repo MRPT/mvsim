@@ -119,6 +119,8 @@ class Simulable
 	World* getSimulableWorldObject() { return m_simulable_parent; }
 	const World* getSimulableWorldObject() const { return m_simulable_parent; }
 
+	virtual void freeOpenGLResources() {}
+
    protected:
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 	std::string m_name;

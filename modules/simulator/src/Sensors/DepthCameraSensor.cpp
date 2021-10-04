@@ -46,6 +46,9 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	m_sensor_params.sensorPose =
 		mrpt::poses::CPose3D(0, 0, 0.5, 90.0_deg, 0, 90.0_deg);
 
+	m_sensor_params.maxRange = 10.0;  // [m]
+	m_sensor_params.rangeUnits = 1e-3;	// mm units
+
 	{
 		auto& c = m_sensor_params.cameraParamsIntensity;
 		c.ncols = 640;
@@ -153,18 +156,17 @@ void DepthCameraSensor::simulateOn3DScene(
 	auto& cam = viewport->getCamera();
 
 	cam.set6DOFMode(true);
-	cam.setProjectiveFromPinhole(m_sensor_params.cameraParamsIntensity);
+	cam.setProjectiveFromPinhole(curObs->cameraParamsIntensity);
 
 	// Camera pose: vehicle + relativePoseOnVehicle:
 	// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
 	// the camera to look forward:
-	auto p =
-		mrpt::poses::CPose3D(m_vehicle.getPose()) + m_sensor_params.sensorPose;
+	auto p = mrpt::poses::CPose3D(m_vehicle.getPose()) + curObs->sensorPose;
 
 	cam.setPose(p);
 
+	MRPT_TODO("Render twice (RGB and Depth) with different max clip distances");
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
-	const float clipMax = 25.0f;
 	// viewport->setViewportClipDistances(0.1, clipMax);
 
 	viewport->updateMatricesFromCamera();
@@ -173,16 +175,17 @@ void DepthCameraSensor::simulateOn3DScene(
 	m_fbo_renderer->render_RGBD(
 		world3DScene, curObs->intensityImage, depthImage);
 
-	// Show depth:
-	mrpt::img::CImage imDepth;
-	if (!depthImage.empty())
-	{
-		depthImage *= (1.0f / clipMax);
-		imDepth.setFromMatrix(depthImage, true);
-	}
+	curObs->hasIntensityImage = true;
 
 	// Convert depth image:
-	// TODO!
+	curObs->hasRangeImage = true;
+	curObs->range_is_depth = true;
+
+	// float -> uint16_t with "curObs->rangeUnits" units:
+	curObs->rangeImage_setSize(depthImage.rows(), depthImage.cols());
+	curObs->rangeImage =
+		(depthImage.asEigen().cwiseMin(curObs->maxRange) / curObs->rangeUnits)
+			.cast<uint16_t>();
 
 #if 0
 	static int i = 0;
@@ -214,3 +217,5 @@ void DepthCameraSensor::simul_post_timestep(const TSimulContext& context)
 	m_sensor_last_timestamp = context.simul_time;
 	m_has_to_render = context;
 }
+
+void DepthCameraSensor::freeOpenGLResources() { m_fbo_renderer.reset(); }

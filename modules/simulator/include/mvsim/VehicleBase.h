@@ -142,6 +142,11 @@ class VehicleBase : public VisualObject, public Simulable
 		return m_fixture_wheels;
 	}
 
+	void freeOpenGLResources() override
+	{
+		for (auto& sensor : m_sensors) sensor->freeOpenGLResources();
+	}
+
    protected:
 	std::map<std::string, std::shared_ptr<CSVLogger>> m_loggers;
 	std::string m_log_path;

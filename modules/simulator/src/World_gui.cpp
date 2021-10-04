@@ -13,6 +13,7 @@
 #include <mrpt/math/TLine3D.h>
 #include <mrpt/math/TObject3D.h>
 #include <mrpt/math/geometry.h>
+#include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/version.h>
 #include <mvsim/World.h>
@@ -447,6 +448,18 @@ void World::internal_GUI_thread()
 #endif
 			[=]() { lambdaLoopCallback(*this); });
 
+		// Register observation callback:
+		const auto lambdaOnObservation =
+			[this](
+				const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs) {
+				// obs->getDescriptionAsText(std::cout);
+				this->enqueue_task_to_run_in_gui_thread(
+					[this, obs]() { internal_gui_on_observation(obs); });
+			};
+
+		this->registerCallbackOnObservation(lambdaOnObservation);
+
+		// ============= Mainloop =============
 		const int refresh_ms =
 			std::max(1, mrpt::round(1000 / m_gui_options.refresh_fps));
 
@@ -458,6 +471,18 @@ void World::internal_GUI_thread()
 
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
 
+		// Make sure opengl resources are freed from this thread, not from the
+		// main one upon destruction of the last ref to shared_ptr's to opengl
+		// classes.
+		{
+			auto lck = mrpt::lockHelper(m_gui.gui_win->background_scene_mtx);
+			if (m_gui.gui_win->background_scene)
+				m_gui.gui_win->background_scene->freeOpenGLResources();
+		}
+		for (auto& obj : m_simulableObjects) obj.second->freeOpenGLResources();
+		VisualObject::FreeOpenGLResources();
+
+		// Now, destroy window:
 		m_gui.gui_win.reset();
 
 		nanogui::shutdown();
@@ -712,4 +737,86 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 		guiparams->keyevent = std::move(m_lastKeyEvent);
 		m_lastKeyEventValid = false;
 	}
+}
+
+// This method is ensured to be run in the GUI thread
+void World::internal_gui_on_observation(const mrpt::obs::CObservation::Ptr& obs)
+{
+	if (!obs) return;
+
+	if (auto obs3D =
+			std::dynamic_pointer_cast<mrpt::obs::CObservation3DRangeScan>(obs);
+		obs3D)
+	{
+		internal_gui_on_observation_3Dscan(obs3D);
+	}
+}
+
+void World::internal_gui_on_observation_3Dscan(
+	const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs)
+{
+	using namespace std::string_literals;
+
+	if (!m_gui.gui_win || !obs) return;
+
+	if (obs->hasIntensityImage)
+	{
+		internal_gui_on_image(obs->sensorLabel + "_rgb"s, obs->intensityImage);
+	}
+	if (obs->hasRangeImage)
+	{
+		mrpt::math::CMatrixFloat d;
+		d = obs->rangeImage.asEigen().cast<float>() *
+			(obs->rangeUnits / obs->maxRange);
+
+		mrpt::img::CImage imDepth;
+		imDepth.setFromMatrix(d, true /* in range [0,1] */);
+
+		internal_gui_on_image(obs->sensorLabel + "_depth"s, imDepth);
+	}
+}
+
+void World::internal_gui_on_image(
+	const std::string& label, const mrpt::img::CImage& im)
+{
+	mrpt::gui::MRPT2NanoguiGLCanvas* glControl;
+
+	// Once creation:
+	if (!m_gui_obs_viz.count(label))
+	{
+		auto& w = m_gui_obs_viz[label] =
+			m_gui.gui_win->createManagedSubWindow(label);
+
+		w->setLayout(new nanogui::GridLayout(
+			nanogui::Orientation::Vertical, 1, nanogui::Alignment::Fill, 2, 2));
+
+		// Guess window size:
+		int winW = im.getWidth(), winH = im.getHeight();
+
+		// Guess if we need to decimate subwindow size:
+		while (winW > 512 || winH > 512)
+		{
+			winW /= 2;
+			winH /= 2;
+		}
+
+		glControl = w->add<mrpt::gui::MRPT2NanoguiGLCanvas>();
+		glControl->setSize({winW, winH});
+		glControl->setFixedSize({winW, winH});
+
+		auto lck = mrpt::lockHelper(glControl->scene_mtx);
+
+		glControl->scene = mrpt::opengl::COpenGLScene::Create();
+		m_gui.gui_win->performLayout();
+	}
+
+	// Update from sensor data:
+	auto& w = m_gui_obs_viz[label];
+
+	glControl =
+		dynamic_cast<mrpt::gui::MRPT2NanoguiGLCanvas*>(w->children().at(1));
+	ASSERT_(glControl != nullptr);
+
+	auto lck = mrpt::lockHelper(glControl->scene_mtx);
+	glControl->scene->getViewport()->setImageView(im);
 }

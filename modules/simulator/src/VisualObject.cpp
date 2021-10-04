@@ -71,7 +71,9 @@ void VisualObject::guiUpdate(
 	internalGuiUpdate(viz, physical, childrenOnly);
 }
 
-std::map<std::string, mrpt::opengl::CAssimpModel::Ptr> gModelsCache;
+static std::map<std::string, mrpt::opengl::CAssimpModel::Ptr> gModelsCache;
+
+void VisualObject::FreeOpenGLResources() { gModelsCache.clear(); }
 
 bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 {

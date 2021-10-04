@@ -45,6 +45,8 @@ class VisualObject
 	}
 	void showBoundingBox(bool show);
 
+	static void FreeOpenGLResources();
+
    protected:
 	bool parseVisual(const rapidxml::xml_node<char>* visual_node);
 
