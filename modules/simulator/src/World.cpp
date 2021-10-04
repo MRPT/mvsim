@@ -128,6 +128,8 @@ void World::internal_one_timestep(double dt)
 		mrpt::system::CTimeLoggerEntry tle(
 			m_timlogger, "timestep.3.save_dynstate");
 
+		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+
 		for (auto& e : m_simulableObjects)
 			if (e.second) e.second->simul_post_timestep(context);
 	}

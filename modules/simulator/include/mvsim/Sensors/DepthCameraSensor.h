@@ -60,7 +60,7 @@ class DepthCameraSensor : public SensorBase
 	/** Whether m_gl_scan has to be updated upon next call of
 	 * internalGuiUpdate() from m_last_scan2gui */
 	bool m_gui_uptodate = false;
-	std::mutex m_gui_mtx;
+	std::recursive_mutex m_gui_mtx;
 	mrpt::opengl::CPointCloudColoured::Ptr m_gl_obs;
 	std::optional<TSimulContext> m_has_to_render;
 

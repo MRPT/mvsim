@@ -684,6 +684,7 @@ void VehicleBase::internalGuiUpdate(
 			m_gl_chassis->insert(gl_poly);
 
 			viz.insert(m_gl_chassis);
+			physical.insert(m_gl_chassis);
 		}
 
 		// Update them:

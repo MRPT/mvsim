@@ -222,7 +222,7 @@ class VehicleBase : public VisualObject, public Simulable
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
-	std::mutex m_gui_mtx;
+	std::recursive_mutex m_gui_mtx;
 
    public:	// data logger header entries
 	static constexpr char DL_TIMESTAMP[] = "timestamp";
