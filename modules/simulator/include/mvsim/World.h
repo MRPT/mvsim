@@ -273,6 +273,8 @@ class World : public mrpt::system::COutputLogger
 	mvsim::Client& commsClient() { return m_client; }
 	const mvsim::Client& commsClient() const { return m_client; }
 
+	auto& physical_objects_mtx() { return m_physical_objects_mtx; }
+
    private:
 	friend class VehicleBase;
 	friend class Block;
@@ -410,6 +412,7 @@ class World : public mrpt::system::COutputLogger
 	/// scene as input to simulated sensors like cameras, where we don't wont
 	/// to see visualization marks, etc.
 	mrpt::opengl::COpenGLScene m_physical_objects;
+	std::recursive_mutex m_physical_objects_mtx;
 
 	void internal_gui_on_observation(const mrpt::obs::CObservation::Ptr& obs);
 	void internal_gui_on_observation_3Dscan(

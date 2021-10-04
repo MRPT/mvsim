@@ -35,12 +35,12 @@ void Simulable::simul_pre_timestep(	 //
 	m_b2d_body->SetAngularVelocity(m_dq.omega);
 }
 
-void Simulable::simul_post_timestep(  //
-	[[maybe_unused]] const TSimulContext& context)
+void Simulable::simul_post_timestep(const TSimulContext& context)
 {
 	if (m_b2d_body)
 	{
 		poses_mutex_lock();
+		// m_simulable_parent->physical_objects_mtx().lock();
 
 		// Pos:
 		const b2Vec2& pos = m_b2d_body->GetPosition();
@@ -70,6 +70,7 @@ void Simulable::simul_post_timestep(  //
 		// Reseteable collision flag:
 		m_hadCollisionFlag = m_hadCollisionFlag || m_isInCollision;
 
+		// m_simulable_parent->physical_objects_mtx().unlock();
 		poses_mutex_unlock();
 	}
 
@@ -234,4 +235,15 @@ void Simulable::registerOnServer(mvsim::Client& c)
 #endif
 
 	MRPT_END
+}
+
+void Simulable::setPose(const mrpt::math::TPose3D& p) const
+{
+	m_q_mtx.lock();
+	m_simulable_parent->physical_objects_mtx().lock();
+
+	const_cast<mrpt::math::TPose3D&>(m_q) = p;
+
+	m_simulable_parent->physical_objects_mtx().unlock();
+	m_q_mtx.unlock();
 }

@@ -73,12 +73,7 @@ class Simulable
 
 	/** Manually override vehicle pose (Use with caution!) (purposely set a
 	 * "const")*/
-	void setPose(const mrpt::math::TPose3D& p) const
-	{
-		m_q_mtx.lock();
-		const_cast<mrpt::math::TPose3D&>(m_q) = p;
-		m_q_mtx.unlock();
-	}
+	void setPose(const mrpt::math::TPose3D& p) const;
 
 	void setTwist(const mrpt::math::TTwist2D& dq) const
 	{

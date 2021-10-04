@@ -422,10 +422,14 @@ void World::internal_GUI_thread()
 			// Update all GUI elements:
 			ASSERT_(me.m_gui.gui_win->background_scene);
 
+			auto lckPhys = mrpt::lockHelper(me.m_physical_objects_mtx);
+
 			me.internalUpdate3DSceneObjects(
 				*me.m_gui.gui_win->background_scene, me.m_physical_objects);
 
 			me.internalRunSensorsOn3DScene(me.m_physical_objects);
+
+			lckPhys.unlock();
 
 			me.internal_process_pending_gui_user_tasks();
 
@@ -600,11 +604,12 @@ void World::internalUpdate3DSceneObjects(
 {
 	// Update view of map elements
 	// -----------------------------
-	m_timlogger.enter("update_GUI.2.map-elements");
+	auto tle = mrpt::system::CTimeLoggerEntry(
+		m_timlogger, "update_GUI.2.map-elements");
 
 	for (auto& e : m_world_elements) e->guiUpdate(viz, physical);
 
-	m_timlogger.leave("update_GUI.2.map-elements");
+	tle.stop();
 
 	// Update view of vehicles
 	// -----------------------------
