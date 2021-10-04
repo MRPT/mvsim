@@ -109,6 +109,8 @@ void SensorBase::reportNewObservation(
 	const std::shared_ptr<mrpt::obs::CObservation>& obs,
 	const TSimulContext& context)
 {
+	if (!obs) return;
+
 	// Notify the world:
 	m_world->dispatchOnObservation(m_vehicle, obs);
 
@@ -129,6 +131,19 @@ void SensorBase::reportNewObservation(
 		context.world->commsClient().publishTopic(publishTopic_, msg);
 	}
 #endif
+
+	// Save to .rawlog:
+	if (!m_save_to_rawlog.empty())
+	{
+		if (!m_rawlog_io)
+		{
+			m_rawlog_io = std::make_shared<mrpt::io::CFileGZOutputStream>(
+				m_save_to_rawlog);
+		}
+
+		auto arch = mrpt::serialization::archiveFrom(*m_rawlog_io);
+		arch << *obs;
+	}
 }
 
 void SensorBase::registerOnServer(mvsim::Client& c)
@@ -157,6 +172,7 @@ void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	TParameterDefinitions params;
 	params["sensor_period"] = TParamEntry("%lf", &m_sensor_period);
+	params["save_to_rawlog"] = TParamEntry("%s", &m_save_to_rawlog);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, m_varValues);

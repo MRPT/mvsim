@@ -9,10 +9,13 @@
 
 #pragma once
 
+#include <mrpt/io/CFileGZOutputStream.h>
 #include <mrpt/obs/obs_frwds.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
+
+#include <memory>
 
 namespace mvsim
 {
@@ -36,9 +39,6 @@ class SensorBase : public VisualObject, public Simulable
 	 * they call to this base method. */
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root);
 
-	/** Generate one sensor reading every this period [s] (Default = 0.1) */
-	double m_sensor_period = 0.1;
-
 	void registerOnServer(mvsim::Client& c) override;
 
 	virtual void simulateOn3DScene(	 //
@@ -48,6 +48,12 @@ class SensorBase : public VisualObject, public Simulable
 
    protected:
 	Simulable& m_vehicle;  //!< The vehicle this sensor is attached to
+
+	/** Generate one sensor reading every this period [s] (Default = 0.1) */
+	double m_sensor_period = 0.1;
+
+	std::string m_save_to_rawlog;
+	std::shared_ptr<mrpt::io::CFileGZOutputStream> m_rawlog_io;
 
 	/** The last sensor reading timestamp. See  m_sensor_period */
 	double m_sensor_last_timestamp = 0;
