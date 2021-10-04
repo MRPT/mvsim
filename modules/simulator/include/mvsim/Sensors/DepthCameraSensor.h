@@ -39,6 +39,8 @@ class DepthCameraSensor : public SensorBase
 
 	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
 
+	void freeOpenGLResources() override;
+
    protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,

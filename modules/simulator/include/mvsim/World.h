@@ -14,9 +14,11 @@
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
 #include <mrpt/gui/CDisplayWindowGUI.h>
+#include <mrpt/img/CImage.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/obs/CObservation.h>
+#include <mrpt/obs/obs_frwds.h>
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
@@ -408,6 +410,15 @@ class World : public mrpt::system::COutputLogger
 	/// scene as input to simulated sensors like cameras, where we don't wont
 	/// to see visualization marks, etc.
 	mrpt::opengl::COpenGLScene m_physical_objects;
+
+	void internal_gui_on_observation(const mrpt::obs::CObservation::Ptr& obs);
+	void internal_gui_on_observation_3Dscan(
+		const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs);
+
+	void internal_gui_on_image(
+		const std::string& label, const mrpt::img::CImage& im);
+
+	std::map<std::string, nanogui::Window*> m_gui_obs_viz;	//!< by sensorLabel
 
 	/** @} */  // end GUI stuff
 
