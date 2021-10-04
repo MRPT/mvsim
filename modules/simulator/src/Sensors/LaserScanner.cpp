@@ -34,18 +34,13 @@ LaserScanner::LaserScanner(
 }
 
 LaserScanner::~LaserScanner() {}
+
 void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	m_gui_uptodate = false;
 
-	// Attribs:
-	TParameterDefinitions attribs;
-	attribs["name"] = TParamEntry("%s", &this->m_name);
-
-	parse_xmlnode_attribs(*root, attribs, {}, "[LaserScanner]");
-
-	const std::map<std::string, std::string> varValues = {
-		{"NAME", m_name}, {"PARENT_NAME", m_vehicle.getName()}};
+	SensorBase::loadConfigFrom(root);
+	SensorBase::make_sure_we_have_a_name("laser");
 
 	// Other scalar params:
 	int nRays = 181;
@@ -69,24 +64,13 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		TParamEntry("%bool", &this->m_viz_visiblePoints);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*root, params, varValues);
-
-	// Parse common sensor XML params:
-	this->parseSensorPublish(root->first_node("publish"), varValues);
+	parse_xmlnode_children_as_param(*root, params, m_varValues);
 
 	// Pass params to the scan2D obj:
 	m_scan_model.aperture = mrpt::DEG2RAD(fov_deg);
 	m_scan_model.resizeScan(nRays);
 
-	// Assign a sensible default name/sensor label if none is provided:
-	if (m_name.empty())
-	{
-		size_t nextIdx = 0;
-		if (auto v = dynamic_cast<VehicleBase*>(&m_vehicle); v)
-			nextIdx = v->getSensors().size() + 1;
-
-		m_name = mrpt::format("laser%u", static_cast<unsigned int>(nextIdx));
-	}
+	m_scan_model.sensorLabel = m_name;
 }
 
 void LaserScanner::internalGuiUpdate(

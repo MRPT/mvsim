@@ -78,7 +78,34 @@
 		</sensor>
 
 		<sensor class="rgbd_camera" name="camera1">
-			<pose_3d> 0.65  0.0  1.25   90.0 0.0 90.0 </pose_3d>
+		
+			<!--
+			 * pose_3d: Pose of the depth sensor on the robot (+X forward)
+			 * relativePoseIntensityWRTDepth: RGB camera wrt depth sensor (+Z forward, and possibly an offset)
+			 See: https://docs.mrpt.org/reference/latest/class_mrpt_obs_CObservation3DRangeScan.html
+			-->
+			<pose_3d> 0.65  0.0  1.00   0.0 0.0 0.0</pose_3d>
+			<relativePoseIntensityWRTDepth>0.0 0.0 0.0  -90.0 0.0 -90.0</relativePoseIntensityWRTDepth>
+
+			<depth_ncols>640</depth_ncols>
+			<depth_nrows>480</depth_nrows>
+			<depth_cx>320</depth_cx>
+			<depth_cy>120</depth_cy>
+			<depth_fx>200</depth_fx>
+			<depth_fy>200</depth_fy>
+			<depth_resolution>1e-3</depth_resolution>
+			<depth_clip_min>0.01</depth_clip_min>
+			<depth_clip_max>10.0</depth_clip_max>
+
+			<rgb_ncols>640</rgb_ncols>
+			<rgb_nrows>480</rgb_nrows>
+			<rgb_cx>320</rgb_cx>
+			<rgb_cy>120</rgb_cy>
+			<rgb_fx>200</rgb_fx>
+			<rgb_fy>200</rgb_fy>
+			<rgb_clip_min>1e-2</rgb_clip_min>
+			<rgb_clip_max>1e+4</rgb_clip_max>
+
 		</sensor>
 	</vehicle:class>
 
