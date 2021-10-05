@@ -357,6 +357,9 @@ void World::internal_GUI_thread()
 
 			m_physical_objects.insert(m_glUserObjs);
 
+			scene->getViewport()->lightParameters().ambient = {
+				0.5f, 0.5f, 0.5f, 1.0f};
+
 			std::lock_guard<std::mutex> lck(
 				m_gui.gui_win->background_scene_mtx);
 			m_gui.gui_win->background_scene = std::move(scene);
