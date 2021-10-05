@@ -13,6 +13,7 @@
 #include <mrpt/math/TPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/version.h>
 #include <mvsim/Block.h>
 #include <mvsim/World.h>
 
@@ -277,6 +278,12 @@ void Block::internalGuiUpdate(
 				m_block_poly, m_block_z_max - m_block_z_min);
 			gl_poly->setLocation(0, 0, m_block_z_min);
 			gl_poly->setColor_u8(m_block_color);
+
+// Hide back faces:
+#if MRPT_VERSION >= 0x240
+			// gl_poly->cullFaces(mrpt::opengl::TCullFace::FRONT);
+#endif
+
 			m_gl_block->insert(gl_poly);
 
 			viz.insert(m_gl_block);

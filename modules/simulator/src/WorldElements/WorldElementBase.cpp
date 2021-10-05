@@ -10,12 +10,14 @@
 #include <mrpt/core/format.h>
 #include <mvsim/WorldElements/ElevationMap.h>
 #include <mvsim/WorldElements/GroundGrid.h>
+#include <mvsim/WorldElements/HorizontalPlane.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
+
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-#include <sstream>  // std::stringstream
+#include <sstream>	// std::stringstream
 #include <string>
 
 using namespace mvsim;
@@ -35,6 +37,7 @@ void register_all_world_elements()
 	REGISTER_WORLD_ELEMENT("ground_grid", GroundGrid)
 	REGISTER_WORLD_ELEMENT("occupancy_grid", OccupancyGridMap)
 	REGISTER_WORLD_ELEMENT("elevation_map", ElevationMap)
+	REGISTER_WORLD_ELEMENT("horizontal_plane", HorizontalPlane)
 }
 
 WorldElementBase::Ptr WorldElementBase::factory(
@@ -72,7 +75,7 @@ WorldElementBase::Ptr WorldElementBase::factory(
 	if (!we)
 		throw runtime_error(mrpt::format(
 			"[WorldElementBase::factory] Unknown world element type '%s'",
-			root->name()));
+			root ? root->name() : "(root=nullptr)"));
 
 	return we;
 }
