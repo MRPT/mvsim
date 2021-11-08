@@ -1,9 +1,8 @@
 
+#include <mrpt/obs/CObservation2DRangeScan.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/mvsim-msgs/GenericObservation.pb.h>
 #include <mvsim/mvsim-msgs/TimeStampedPose.pb.h>
-
-#include <mrpt/obs/CObservation2DRangeScan.h>
 
 #include <chrono>
 #include <iostream>
@@ -27,8 +26,7 @@ void mySensorCallback(const mvsim_msgs::GenericObservation& o)
 		std::dynamic_pointer_cast<mrpt::obs::CObservation>(obj);
 	ASSERT_(obs);
 
-	std::cout << "sensor callback: " << obs->getDescriptionAsTextValue()
-			  << "\n";
+	std::cout << "sensor callback: " << obs->asString() << "\n";
 }
 
 int main(int argc, char** argv)
