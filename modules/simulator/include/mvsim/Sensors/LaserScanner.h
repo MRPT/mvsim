@@ -41,7 +41,6 @@ class LaserScanner : public SensorBase
 
 	int m_z_order;	//!< to help rendering multiple scans
 	mrpt::poses::CPose2D m_sensor_pose_on_veh;
-	std::string m_name;	 //!< sensor label/name
 	double m_rangeStdNoise;
 	double m_angleStdNoise;
 	/** Whether all box2d "fixtures" are visible (solid) or not (Default=true)
