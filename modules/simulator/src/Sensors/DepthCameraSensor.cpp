@@ -100,7 +100,8 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void DepthCameraSensor::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	mrpt::opengl::COpenGLScene& viz,
+	[[maybe_unused]] mrpt::opengl::COpenGLScene& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);

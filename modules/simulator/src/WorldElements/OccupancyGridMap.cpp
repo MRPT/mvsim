@@ -13,6 +13,7 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/serialization/CArchive.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/version.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 
@@ -110,7 +111,11 @@ void OccupancyGridMap::internalGuiUpdate(
 	// 1st call OR gridmap changed?
 	if (!m_gui_uptodate)
 	{
+#if MRPT_VERSION >= 0x240
+		m_grid.getVisualizationInto(*m_gl_grid);
+#else
 		m_grid.getAs3DObject(m_gl_grid);
+#endif
 		m_gui_uptodate = true;
 	}
 
