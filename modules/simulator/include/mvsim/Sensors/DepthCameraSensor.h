@@ -69,5 +69,8 @@ class DepthCameraSensor : public SensorBase
 	float m_rgb_clip_min = 1e-2, m_rgb_clip_max = 1e+4;
 	float m_depth_clip_min = 0.1, m_depth_clip_max = 15.0;
 	float m_depth_resolution = 1e-3;
+
+	float m_depth_noise_sigma = 1e-3;
+	bool m_show_3d_pointcloud = false;
 };
 }  // namespace mvsim

@@ -418,8 +418,8 @@ class World : public mrpt::system::COutputLogger
 	void internal_gui_on_observation_3Dscan(
 		const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs);
 
-	void internal_gui_on_image(
-		const std::string& label, const mrpt::img::CImage& im);
+	mrpt::math::TPoint2D internal_gui_on_image(
+		const std::string& label, const mrpt::img::CImage& im, int winPosX);
 
 	std::map<std::string, nanogui::Window*> m_gui_obs_viz;	//!< by sensorLabel
 

@@ -125,6 +125,9 @@
 			<rgb_fy>200</rgb_fy>
 			<rgb_clip_min>1e-2</rgb_clip_min>
 			<rgb_clip_max>1e+4</rgb_clip_max>
+			
+			<depth_noise_sigma>1e-3</depth_noise_sigma>
+			<show_3d_pointcloud>true</show_3d_pointcloud>
 
 		</sensor>
 	</vehicle:class>
