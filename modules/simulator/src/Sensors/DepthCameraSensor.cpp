@@ -36,10 +36,14 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	SensorBase::loadConfigFrom(root);
 	SensorBase::make_sure_we_have_a_name("camera");
 
+	m_fbo_renderer_depth.reset();
+	m_fbo_renderer_rgb.reset();
+
 	using namespace mrpt;  // _deg
 	m_sensor_params.sensorPose =
 		mrpt::poses::CPose3D(0, 0, 0.5, 90.0_deg, 0, 90.0_deg);
 
+	// Default values:
 	{
 		auto& c = m_sensor_params.cameraParamsIntensity;
 		c.ncols = 640;
@@ -159,11 +163,16 @@ void DepthCameraSensor::simulateOn3DScene(
 	auto curObs = mrpt::obs::CObservation3DRangeScan::Create(m_sensor_params);
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
-	if (!m_fbo_renderer)
-		m_fbo_renderer = std::make_shared<mrpt::opengl::CFBORender>(
+	if (!m_fbo_renderer_rgb)
+		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(
 			m_sensor_params.cameraParamsIntensity.ncols,
 			m_sensor_params.cameraParamsIntensity.nrows,
 			true /* skip GLUT window */);
+
+	if (!m_fbo_renderer_depth)
+		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
+			m_sensor_params.cameraParams.ncols,
+			m_sensor_params.cameraParams.nrows, true /* skip GLUT window */);
 
 	auto viewport = world3DScene.getViewport();
 
@@ -197,9 +206,7 @@ void DepthCameraSensor::simulateOn3DScene(
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 	viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
 
-	viewport->updateMatricesFromCamera();
-
-	m_fbo_renderer->render_RGB(world3DScene, curObs->intensityImage);
+	m_fbo_renderer_rgb->render_RGB(world3DScene, curObs->intensityImage);
 
 	curObs->hasIntensityImage = true;
 
@@ -216,10 +223,8 @@ void DepthCameraSensor::simulateOn3DScene(
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 	viewport->setViewportClipDistances(m_depth_clip_min, m_depth_clip_max);
 
-	viewport->updateMatricesFromCamera();
-
 	mrpt::math::CMatrixFloat depthImage;
-	m_fbo_renderer->render_depth(world3DScene, depthImage);
+	m_fbo_renderer_depth->render_depth(world3DScene, depthImage);
 
 	// Convert depth image:
 	curObs->hasRangeImage = true;
@@ -255,4 +260,8 @@ void DepthCameraSensor::simul_post_timestep(const TSimulContext& context)
 	m_has_to_render = context;
 }
 
-void DepthCameraSensor::freeOpenGLResources() { m_fbo_renderer.reset(); }
+void DepthCameraSensor::freeOpenGLResources()
+{
+	m_fbo_renderer_depth.reset();
+	m_fbo_renderer_rgb.reset();
+}
