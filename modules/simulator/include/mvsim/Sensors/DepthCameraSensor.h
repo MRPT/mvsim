@@ -55,7 +55,9 @@ class DepthCameraSensor : public SensorBase
 	mrpt::obs::CObservation3DRangeScan::Ptr m_last_obs;
 	mrpt::obs::CObservation3DRangeScan::Ptr m_last_obs2gui;
 
-	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer;
+	// Note: we need 2 to support different resolutions for RGB vs Depth.
+	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_rgb,
+		m_fbo_renderer_depth;
 
 	/** Whether m_gl_scan has to be updated upon next call of
 	 * internalGuiUpdate() from m_last_scan2gui */
