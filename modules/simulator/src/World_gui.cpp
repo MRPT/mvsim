@@ -767,9 +767,12 @@ void World::internal_gui_on_observation_3Dscan(
 
 	if (!m_gui.gui_win || !obs) return;
 
+	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
+
 	if (obs->hasIntensityImage)
 	{
-		internal_gui_on_image(obs->sensorLabel + "_rgb"s, obs->intensityImage);
+		rgbImageWinSize = internal_gui_on_image(
+			obs->sensorLabel + "_rgb"s, obs->intensityImage, 5);
 	}
 	if (obs->hasRangeImage)
 	{
@@ -780,12 +783,13 @@ void World::internal_gui_on_observation_3Dscan(
 		mrpt::img::CImage imDepth;
 		imDepth.setFromMatrix(d, true /* in range [0,1] */);
 
-		internal_gui_on_image(obs->sensorLabel + "_depth"s, imDepth);
+		internal_gui_on_image(
+			obs->sensorLabel + "_depth"s, imDepth, 5 + 5 + rgbImageWinSize.x);
 	}
 }
 
-void World::internal_gui_on_image(
-	const std::string& label, const mrpt::img::CImage& im)
+mrpt::math::TPoint2D World::internal_gui_on_image(
+	const std::string& label, const mrpt::img::CImage& im, int winPosX)
 {
 	mrpt::gui::MRPT2NanoguiGLCanvas* glControl;
 
@@ -812,6 +816,10 @@ void World::internal_gui_on_image(
 		glControl->setSize({winW, winH});
 		glControl->setFixedSize({winW, winH});
 
+		static std::map<int, int> numGuiWindows;
+		w->setPosition(
+			{winPosX, 20 + (numGuiWindows[winPosX]++) * (winH + 10)});
+
 		auto lck = mrpt::lockHelper(glControl->scene_mtx);
 
 		glControl->scene = mrpt::opengl::COpenGLScene::Create();
@@ -827,4 +835,6 @@ void World::internal_gui_on_image(
 
 	auto lck = mrpt::lockHelper(glControl->scene_mtx);
 	glControl->scene->getViewport()->setImageView(im);
+
+	return mrpt::math::TPoint2D(w->size().x(), w->size().y());
 }

@@ -87,6 +87,9 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["depth_clip_max"] = TParamEntry("%f", &m_depth_clip_max);
 	params["depth_resolution"] = TParamEntry("%f", &m_depth_resolution);
 
+	params["depth_noise_sigma"] = TParamEntry("%f", &m_depth_noise_sigma);
+	params["show_3d_pointcloud"] = TParamEntry("%bool", &m_show_3d_pointcloud);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, m_varValues);
 
@@ -120,7 +123,7 @@ void DepthCameraSensor::internalGuiUpdate(
 		viz.insert(m_gl_obs);
 	}
 
-	if (!m_gui_uptodate)
+	if (!m_gui_uptodate && m_show_3d_pointcloud)
 	{
 		{
 			std::lock_guard<std::mutex> csl(m_last_obs_cs);
@@ -229,6 +232,26 @@ void DepthCameraSensor::simulateOn3DScene(
 	// Convert depth image:
 	curObs->hasRangeImage = true;
 	curObs->range_is_depth = true;
+
+	// Add random noise:
+	if (m_depth_noise_sigma > 0)
+	{
+		auto& rng = mrpt::random::getRandomGenerator();
+
+		float* d = depthImage.data();
+		const size_t N = depthImage.size();
+		for (size_t i = 0; i < N; i++)
+		{
+			if (d[i] == 0) continue;  // it was an invalid ray return.
+
+			const float dNoisy =
+				d[i] + rng.drawGaussian1D(0, m_depth_noise_sigma);
+
+			if (dNoisy < 0 || dNoisy > curObs->maxRange) continue;
+
+			d[i] = dNoisy;
+		}
+	}
 
 	// float -> uint16_t with "curObs->rangeUnits" units:
 	curObs->rangeImage_setSize(depthImage.rows(), depthImage.cols());
