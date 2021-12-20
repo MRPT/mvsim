@@ -165,6 +165,9 @@ void DepthCameraSensor::simulateOn3DScene(
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservation3DRangeScan::Create(m_sensor_params);
 
+	// Set timestamp:
+	curObs->timestamp = mrpt::Clock::now();
+
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	if (!m_fbo_renderer_rgb)
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(
