@@ -90,6 +90,8 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["depth_noise_sigma"] = TParamEntry("%f", &m_depth_noise_sigma);
 	params["show_3d_pointcloud"] = TParamEntry("%bool", &m_show_3d_pointcloud);
 
+	params["ambient_light"] = TParamEntry("%f", &m_ambient_light);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, m_varValues);
 
@@ -211,6 +213,8 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 	viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
+	viewport->lightParameters().ambient = {
+		m_ambient_light, m_ambient_light, m_ambient_light, 1.0f};
 
 	m_fbo_renderer_rgb->render_RGB(world3DScene, curObs->intensityImage);
 
