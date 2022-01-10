@@ -24,11 +24,7 @@ int z_order_cnt = 0;
 
 LaserScanner::LaserScanner(
 	Simulable& parent, const rapidxml::xml_node<char>* root)
-	: SensorBase(parent),
-	  m_z_order(++z_order_cnt),
-	  m_rangeStdNoise(0.01),
-	  m_angleStdNoise(mrpt::DEG2RAD(0.01)),
-	  m_see_fixtures(true)
+	: SensorBase(parent), m_z_order(++z_order_cnt)
 {
 	this->loadConfigFrom(root);
 }
@@ -54,14 +50,14 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["height"] = TParamEntry("%lf", &m_scan_model.sensorPose.z());
 	params["range_std_noise"] = TParamEntry("%lf", &m_rangeStdNoise);
 	params["angle_std_noise_deg"] = TParamEntry("%lf_deg", &m_angleStdNoise);
-	params["sensor_period"] = TParamEntry("%lf", &this->m_sensor_period);
-	params["bodies_visible"] = TParamEntry("%bool", &this->m_see_fixtures);
+	params["sensor_period"] = TParamEntry("%lf", &m_sensor_period);
+	params["bodies_visible"] = TParamEntry("%bool", &m_see_fixtures);
 
-	params["viz_pointSize"] = TParamEntry("%f", &this->m_viz_pointSize);
-	params["viz_visiblePlane"] =
-		TParamEntry("%bool", &this->m_viz_visiblePlane);
-	params["viz_visiblePoints"] =
-		TParamEntry("%bool", &this->m_viz_visiblePoints);
+	params["viz_pointSize"] = TParamEntry("%f", &m_viz_pointSize);
+	params["viz_visiblePlane"] = TParamEntry("%bool", &m_viz_visiblePlane);
+	params["viz_visiblePoints"] = TParamEntry("%bool", &m_viz_visiblePoints);
+
+	params["raytrace_3d"] = TParamEntry("%bool", &m_raytrace_3d);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, m_varValues);
@@ -121,7 +117,6 @@ void LaserScanner::simul_pre_timestep([
 void LaserScanner::simul_post_timestep(const TSimulContext& context)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
-
 	Simulable::simul_post_timestep(context);
 
 	using mrpt::maps::COccupancyGridMap2D;
@@ -130,10 +125,18 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	// Limit sensor rate:
 	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period) return;
 
+	m_sensor_last_timestamp = context.simul_time;
+
+	// 3D raytrace sensor mode?
+	if (m_raytrace_3d)
+	{
+		m_has_to_render = context;
+		return;
+	}
+	// 2D mode (go on in this function):
+
 	auto tle = mrpt::system::CTimeLoggerEntry(
 		m_world->getTimeLogger(), "LaserScanner");
-
-	m_sensor_last_timestamp = context.simul_time;
 
 	// Create an array of scans, each reflecting ranges to one kind of world
 	// objects.
@@ -261,7 +264,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			m_world->getBox2DWorld()->RayCast(&callback, sensorPt, endPt);
 			scan.setScanRangeValidity(i, callback.m_hit);
 
-			float range = scan.getScanRange(i);
+			float range = 0;
 			if (callback.m_hit)
 			{
 				// Hit:
@@ -315,6 +318,180 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	}
 
 	SensorBase::reportNewObservation(m_last_scan, context);
+	m_gui_uptodate = false;
+}
+
+void LaserScanner::freeOpenGLResources()
+{
+	// Free fbo:
+	m_fbo_renderer_depth.reset();
+}
+
+void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
+{
+	using namespace mrpt;  // _deg
+
+	if (!m_has_to_render.has_value()) return;
+
+	auto lck = mrpt::lockHelper(m_gui_mtx);
+
+	auto tle = mrpt::system::CTimeLoggerEntry(
+		m_world->getTimeLogger(), "LaserScanner_raytrace");
+
+	// Start making a copy of the pattern observation:
+	auto curObs = mrpt::obs::CObservation2DRangeScan::Create(m_scan_model);
+
+	const size_t nRays = m_scan_model.getScanSize();
+	const double maxRange = m_scan_model.maxRange;
+
+	curObs->timestamp = mrpt::system::now();
+	curObs->sensorLabel = m_name;
+
+	curObs->resizeScanAndAssign(nRays, maxRange, false);
+
+	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
+	constexpr int FBO_NROWS = 1;
+	constexpr int FBO_NCOLS = 300;
+	constexpr double camModel_FOV = 90.0_deg;
+	mrpt::img::TCamera camModel;
+	camModel.ncols = FBO_NCOLS;
+	camModel.nrows = FBO_NROWS;
+	camModel.cx(camModel.ncols / 2.0);
+	camModel.cy(camModel.nrows / 2.0);
+	camModel.fx(FBO_NCOLS / 2);	 // 2*45=90 deg FOV
+	camModel.fy(camModel.fx());
+
+	if (!m_fbo_renderer_depth)
+		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
+			FBO_NCOLS, FBO_NROWS, true /* skip GLUT window */);
+
+	auto viewport = world3DScene.getViewport();
+
+	auto& cam = viewport->getCamera();
+
+	const auto fixedAxisConventionRot =
+		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
+
+	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
+
+	// ----------------------------------------------------------
+	// Decompose the 2D lidar FOV into "n" depth camera images,
+	// of 90deg FOV each.
+	// ----------------------------------------------------------
+	const auto firstAngle = curObs->getScanAngle(0);  // wrt sensorPose
+	const auto lastAngle = curObs->getScanAngle(curObs->getScanSize() - 1);
+	const bool scanIsCW = (lastAngle > firstAngle);
+	ASSERT_NEAR_(std::abs(lastAngle - firstAngle), curObs->aperture, 1e-3);
+
+	const unsigned int numRenders =
+		std::ceil((curObs->aperture / camModel_FOV) - 1e-3);
+	const auto numRaysPerRender = mrpt::round(
+		nRays * std::min<double>(1.0, (camModel_FOV / curObs->aperture)));
+
+	ASSERT_(numRaysPerRender > 0);
+
+	// Precomputed LUT of bearings to pixel coordinates:
+	//                    cx - u
+	//  tan(bearing) = --------------
+	//                      fx
+	//
+	thread_local std::vector<size_t> angleIdx2pixelIdx;
+	thread_local std::vector<float> angleIdx2secant;
+	if (angleIdx2pixelIdx.empty())
+	{
+		angleIdx2pixelIdx.resize(numRaysPerRender);
+		angleIdx2secant.resize(numRaysPerRender);
+
+		for (int i = 0; i < numRaysPerRender; i++)
+		{
+			const auto ang = (scanIsCW ? -1 : 1) *
+							 (camModel_FOV * 0.5 -
+							  i * camModel_FOV / (numRaysPerRender - 1));
+
+			const auto pixelIdx = mrpt::saturate_val<int>(
+				mrpt::round(camModel.cx() - camModel.fx() * std::tan(ang)), 0,
+				camModel.ncols - 1);
+
+			angleIdx2pixelIdx.at(i) = pixelIdx;
+			angleIdx2secant.at(i) = 1.0f / std::cos(ang);
+		}
+	}
+
+	// ----------------------------------------------------------
+	// "DEPTH camera" to generate lidar readings:
+	// ----------------------------------------------------------
+	cam.set6DOFMode(true);
+	cam.setProjectiveFromPinhole(camModel);
+
+	viewport->setViewportClipDistances(0.01, curObs->maxRange);
+	mrpt::math::CMatrixFloat depthImage;
+
+	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
+	{
+		const double thisRenderMidAngle =
+			firstAngle +
+			(45.0_deg + 90.0_deg * renderIdx) * (scanIsCW ? 1 : -1);
+
+		const auto depthSensorPose = vehiclePose + curObs->sensorPose +
+									 mrpt::poses::CPose3D::FromYawPitchRoll(
+										 thisRenderMidAngle, 0.0, 0.0) +
+									 fixedAxisConventionRot;
+
+		// Camera pose: vehicle + relativePoseOnVehicle:
+		// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
+		// the camera to look forward:
+		cam.setPose(depthSensorPose);
+
+		m_fbo_renderer_depth->render_depth(world3DScene, depthImage);
+
+		// Add random noise:
+		if (m_rangeStdNoise > 0)
+		{
+			auto& rng = mrpt::random::getRandomGenerator();
+
+			float* d = depthImage.data();
+			const size_t N = depthImage.size();
+			for (size_t i = 0; i < N; i++)
+			{
+				if (d[i] == 0) continue;  // it was an invalid ray return.
+
+				const float dNoisy =
+					d[i] + rng.drawGaussian1D(0, m_rangeStdNoise);
+
+				if (dNoisy < 0 || dNoisy > curObs->maxRange) continue;
+
+				d[i] = dNoisy;
+			}
+		}
+
+		// Convert depth into range and store into scan observation:
+		for (int i = 0; i < numRaysPerRender; i++)
+		{
+			const auto scanRayIdx = numRaysPerRender * renderIdx + i;
+			// done with full scan range?
+			if (scanRayIdx >= curObs->getScanSize()) break;
+
+			const auto u = angleIdx2pixelIdx.at(i);
+
+			const float d = depthImage(0, u);
+			const float range = d * angleIdx2secant.at(i);
+
+			if (range <= 0 || range >= curObs->maxRange) continue;	// invalid
+
+			curObs->setScanRange(scanRayIdx, range);
+			curObs->setScanRangeValidity(scanRayIdx, true);
+		}
+	}
+
+	// Store generated obs:
+	{
+		std::lock_guard<std::mutex> csl(m_last_scan_cs);
+		m_last_scan = std::move(curObs);
+		m_last_scan2gui = m_last_scan;
+	}
+
+	SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
 
 	m_gui_uptodate = false;
+	m_has_to_render.reset();
 }

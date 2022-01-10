@@ -10,6 +10,7 @@
 #pragma once
 
 #include <mrpt/obs/CObservation2DRangeScan.h>
+#include <mrpt/opengl/CFBORender.h>
 #include <mrpt/opengl/CPlanarLaserScan.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/Sensors/SensorBase.h>
@@ -34,6 +35,9 @@ class LaserScanner : public SensorBase
 	void poses_mutex_lock() override {}
 	void poses_mutex_unlock() override {}
 
+	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
+	void freeOpenGLResources() override;
+
    protected:
 	virtual void internalGuiUpdate(
 		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
@@ -41,11 +45,15 @@ class LaserScanner : public SensorBase
 
 	int m_z_order;	//!< to help rendering multiple scans
 	mrpt::poses::CPose2D m_sensor_pose_on_veh;
-	double m_rangeStdNoise;
-	double m_angleStdNoise;
+	double m_rangeStdNoise = 0.01;
+	double m_angleStdNoise = mrpt::DEG2RAD(0.01);
 	/** Whether all box2d "fixtures" are visible (solid) or not (Default=true)
 	 */
-	bool m_see_fixtures;
+	bool m_see_fixtures = true;
+
+	/** If enabled, use realistic 3D depth measurement using the scene 3D model,
+	 * instead of 2D "fixtures" used for collisions. */
+	bool m_raytrace_3d = false;
 
 	bool m_viz_visiblePlane = false;
 	bool m_viz_visiblePoints = false;
@@ -63,7 +71,11 @@ class LaserScanner : public SensorBase
 	/** Whether m_gl_scan has to be updated upon next call of
 	 * internalGuiUpdate() from m_last_scan2gui */
 	bool m_gui_uptodate = false;
+
 	std::recursive_mutex m_gui_mtx;
 	mrpt::opengl::CPlanarLaserScan::Ptr m_gl_scan;
+
+	std::optional<TSimulContext> m_has_to_render;
+	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_depth;
 };
 }  // namespace mvsim
