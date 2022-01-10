@@ -58,6 +58,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["viz_visiblePoints"] = TParamEntry("%bool", &m_viz_visiblePoints);
 
 	params["raytrace_3d"] = TParamEntry("%bool", &m_raytrace_3d);
+	params["ignore_parent_body"] = TParamEntry("%bool", &m_ignore_parent_body);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, m_varValues);
@@ -426,6 +427,15 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	viewport->setViewportClipDistances(0.01, curObs->maxRange);
 	mrpt::math::CMatrixFloat depthImage;
 
+	// make owner's own body invisible?
+	auto visVeh = dynamic_cast<VisualObject*>(&m_vehicle);
+	bool formerVisVehState = true;
+	if (visVeh && m_ignore_parent_body)
+	{
+		formerVisVehState = visVeh->customVisualVisible();
+		visVeh->customVisualVisible(false);
+	}
+
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
 		const double thisRenderMidAngle =
@@ -482,6 +492,9 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			curObs->setScanRangeValidity(scanRayIdx, true);
 		}
 	}
+
+	if (visVeh && m_ignore_parent_body)
+		visVeh->customVisualVisible(formerVisVehState);
 
 	// Store generated obs:
 	{
