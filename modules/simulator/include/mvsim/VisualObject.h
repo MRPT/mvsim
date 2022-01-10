@@ -35,6 +35,9 @@ class VisualObject
 	World* getWorldObject() { return m_world; }
 	const World* getWorldObject() const { return m_world; }
 
+	void customVisualVisible(const bool visible);
+	bool customVisualVisible() const;
+
 	/** Returns bounding boxes, as loaded by parseVisual() from an XML config
 	 * file. */
 	void getVisualModelBoundingBox(

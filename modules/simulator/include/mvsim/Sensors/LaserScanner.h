@@ -55,6 +55,8 @@ class LaserScanner : public SensorBase
 	 * instead of 2D "fixtures" used for collisions. */
 	bool m_raytrace_3d = false;
 
+	bool m_ignore_parent_body = false;
+
 	bool m_viz_visiblePlane = false;
 	bool m_viz_visiblePoints = false;
 	float m_viz_pointSize = 3.0f;

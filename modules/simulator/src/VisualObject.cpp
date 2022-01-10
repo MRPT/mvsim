@@ -88,6 +88,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	mrpt::math::TPose3D modelPose;
 	bool initialShowBoundingBox = false;
 
+	std::string modelCull = "NONE";
+
 	TParameterDefinitions params;
 	params["model_uri"] = TParamEntry("%s", &modelURI);
 	params["model_scale"] = TParamEntry("%lf", &modelScale);
@@ -98,6 +100,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	params["model_pitch"] = TParamEntry("%lf_deg", &modelPose.pitch);
 	params["model_roll"] = TParamEntry("%lf_deg", &modelPose.roll);
 	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
+	params["model_cull_faces"] = TParamEntry("%s", &modelCull);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*visual_node, params);
@@ -127,6 +130,13 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 				loadFlags |= mrpt::opengl::CAssimpModel::LoadFlags::Verbose;
 
 			m->loadScene(localFileName, loadFlags);
+
+#if MRPT_VERSION >= 0x240
+			m->cullFaces(
+				mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
+					modelCull));
+#endif
+
 			return m;
 		}
 	}();
@@ -163,4 +173,16 @@ void VisualObject::showBoundingBox(bool show)
 {
 	if (!m_glBoundingBox) return;
 	m_glBoundingBox->setVisibility(show);
+}
+
+void VisualObject::customVisualVisible(const bool visible)
+{
+	if (!m_glCustomVisual) return;
+
+	m_glCustomVisual->setVisibility(visible);
+}
+
+bool VisualObject::customVisualVisible() const
+{
+	return m_glCustomVisual && m_glCustomVisual->isVisible();
 }
