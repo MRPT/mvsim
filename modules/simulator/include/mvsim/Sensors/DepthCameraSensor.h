@@ -74,5 +74,9 @@ class DepthCameraSensor : public SensorBase
 
 	float m_depth_noise_sigma = 1e-3;
 	bool m_show_3d_pointcloud = false;
+
+	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
+		m_gl_sensor_origin_corner;
+	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov, m_gl_sensor_frustum;
 };
 }  // namespace mvsim

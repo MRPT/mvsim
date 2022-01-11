@@ -76,6 +76,9 @@ class LaserScanner : public SensorBase
 
 	std::recursive_mutex m_gui_mtx;
 	mrpt::opengl::CPlanarLaserScan::Ptr m_gl_scan;
+	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
+		m_gl_sensor_origin_corner;
+	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov;
 
 	std::optional<TSimulContext> m_has_to_render;
 	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_depth;

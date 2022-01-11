@@ -9,6 +9,7 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
 #include <mvsim/Sensors/LaserScanner.h>
 #include <mvsim/VehicleBase.h>
@@ -88,6 +89,41 @@ void LaserScanner::internalGuiUpdate(
 		m_gl_scan->setLocalRepresentativePoint({0, 0, 0.10f});
 		viz.insert(m_gl_scan);
 	}
+	if (!m_gl_sensor_origin)
+	{
+		m_gl_sensor_origin = mrpt::opengl::CSetOfObjects::Create();
+		m_gl_sensor_origin_corner =
+			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+
+		m_gl_sensor_origin->insert(m_gl_sensor_origin_corner);
+
+		m_gl_sensor_origin->setVisibility(false);
+		viz.insert(m_gl_sensor_origin);
+		SensorBase::RegisterSensorOriginViz(m_gl_sensor_origin);
+	}
+	if (!m_gl_sensor_fov)
+	{
+		m_gl_sensor_fov = mrpt::opengl::CSetOfObjects::Create();
+
+		auto fovScan = mrpt::opengl::CPlanarLaserScan::Create();
+		fovScan->enablePoints(false);
+		fovScan->enableSurface(true);
+
+		mrpt::obs::CObservation2DRangeScan s = m_scan_model;
+		const float f = 0.30f;
+		for (size_t i = 0; i < s.getScanSize(); i++)
+		{
+			s.setScanRange(i, f);
+			s.setScanRangeValidity(i, true);
+		}
+		fovScan->setScan(s);
+
+		m_gl_sensor_fov->insert(fovScan);
+
+		m_gl_sensor_fov->setVisibility(false);
+		viz.insert(m_gl_sensor_fov);
+		SensorBase::RegisterSensorFOVViz(m_gl_sensor_fov);
+	}
 
 	if (!m_gui_uptodate)
 	{
@@ -96,6 +132,8 @@ void LaserScanner::internalGuiUpdate(
 			if (m_last_scan2gui)
 			{
 				m_gl_scan->setScan(*m_last_scan2gui);
+				m_gl_sensor_origin_corner->setPose(m_last_scan2gui->sensorPose);
+
 				m_last_scan2gui.reset();
 			}
 		}
@@ -107,10 +145,13 @@ void LaserScanner::internalGuiUpdate(
 	const mrpt::poses::CPose2D& p = m_vehicle.getCPose2D();
 	m_gl_scan->setPose(mrpt::poses::CPose3D(
 		p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
+
+	m_gl_sensor_fov->setPose(p);
+	m_gl_sensor_origin->setPose(p);
 }
 
-void LaserScanner::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void LaserScanner::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 
@@ -186,12 +227,14 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		// Avoid the lidar seeing the vehicle owns shape:
 		std::map<b2Fixture*, void*> orgUserData;
 
-		auto makeFixtureInvisible = [&](b2Fixture* f) {
+		auto makeFixtureInvisible = [&](b2Fixture* f)
+		{
 			if (!f) return;
 			orgUserData[f] = f->GetUserData();
 			f->SetUserData(INVISIBLE_FIXTURE_USER_DATA);
 		};
-		auto undoInvisibleFixtures = [&]() {
+		auto undoInvisibleFixtures = [&]()
+		{
 			for (auto& kv : orgUserData) kv.first->SetUserData(kv.second);
 		};
 

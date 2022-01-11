@@ -397,7 +397,7 @@ class World : public mrpt::system::COutputLogger
 
 		mrpt::math::TPoint3D clickedPt{0, 0, 0};
 
-		void prepare_top_menu();
+		void prepare_control_window();
 		void prepare_status_window();
 		void prepare_editor_window();
 
