@@ -44,6 +44,34 @@ void register_all_sensors()
 	REGISTER_SENSOR("rgbd_camera", DepthCameraSensor)
 }
 
+static auto gAllSensorsOriginViz = mrpt::opengl::CSetOfObjects::Create();
+static auto gAllSensorsFOVViz = mrpt::opengl::CSetOfObjects::Create();
+static std::mutex gAllSensorVizMtx;
+
+mrpt::opengl::CSetOfObjects::Ptr SensorBase::GetAllSensorsOriginViz()
+{
+	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
+	return gAllSensorsOriginViz;
+}
+
+mrpt::opengl::CSetOfObjects::Ptr SensorBase::GetAllSensorsFOVViz()
+{
+	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
+	return gAllSensorsFOVViz;
+}
+
+void SensorBase::RegisterSensorFOVViz(const mrpt::opengl::CSetOfObjects::Ptr& o)
+{
+	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
+	gAllSensorsFOVViz->insert(o);
+}
+void SensorBase::RegisterSensorOriginViz(
+	const mrpt::opengl::CSetOfObjects::Ptr& o)
+{
+	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
+	gAllSensorsOriginViz->insert(o);
+}
+
 SensorBase::SensorBase(Simulable& vehicle)
 	: VisualObject(vehicle.getSimulableWorldObject()),
 	  Simulable(vehicle.getSimulableWorldObject()),

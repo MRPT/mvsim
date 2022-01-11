@@ -8,7 +8,9 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/opengl/CFrustum.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/VehicleBase.h>
@@ -125,17 +127,55 @@ void DepthCameraSensor::internalGuiUpdate(
 		viz.insert(m_gl_obs);
 	}
 
-	if (!m_gui_uptodate && m_show_3d_pointcloud)
+	if (!m_gl_sensor_origin)
+	{
+		m_gl_sensor_origin = mrpt::opengl::CSetOfObjects::Create();
+		m_gl_sensor_origin_corner =
+			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+
+		m_gl_sensor_origin->insert(m_gl_sensor_origin_corner);
+
+		m_gl_sensor_origin->setVisibility(false);
+		viz.insert(m_gl_sensor_origin);
+		SensorBase::RegisterSensorOriginViz(m_gl_sensor_origin);
+	}
+	if (!m_gl_sensor_fov)
+	{
+		m_gl_sensor_fov = mrpt::opengl::CSetOfObjects::Create();
+		m_gl_sensor_fov->setVisibility(false);
+		viz.insert(m_gl_sensor_fov);
+		SensorBase::RegisterSensorFOVViz(m_gl_sensor_fov);
+	}
+
+	if (!m_gui_uptodate)
 	{
 		{
 			std::lock_guard<std::mutex> csl(m_last_obs_cs);
 			if (m_last_obs2gui)
 			{
-				mrpt::obs::T3DPointsProjectionParams pp;
-				pp.takeIntoAccountSensorPoseOnRobot = true;
-				m_last_obs2gui->unprojectInto(*m_gl_obs, pp);
+				if (m_show_3d_pointcloud)
+				{
+					mrpt::obs::T3DPointsProjectionParams pp;
+					pp.takeIntoAccountSensorPoseOnRobot = true;
+					m_last_obs2gui->unprojectInto(*m_gl_obs, pp);
+					// m_gl_obs->recolorizeByCoordinate() ...??
+				}
 
-				// m_gl_obs->recolorizeByCoordinate() ...??
+				m_gl_sensor_origin_corner->setPose(m_last_obs2gui->sensorPose);
+
+				if (!m_gl_sensor_frustum)
+				{
+					m_gl_sensor_frustum = mrpt::opengl::CSetOfObjects::Create();
+
+					const float frustumScale = 0.4e-3;
+					auto frustum = mrpt::opengl::CFrustum::Create(
+						m_last_obs2gui->cameraParams, frustumScale);
+
+					m_gl_sensor_frustum->insert(frustum);
+					m_gl_sensor_fov->insert(m_gl_sensor_frustum);
+				}
+
+				m_gl_sensor_frustum->setPose(m_last_obs2gui->sensorPose);
 
 				m_last_obs2gui.reset();
 			}
@@ -144,11 +184,15 @@ void DepthCameraSensor::internalGuiUpdate(
 	}
 
 	// Move with vehicle:
-	m_gl_obs->setPose(m_vehicle.getPose());
+	const auto& p = m_vehicle.getPose();
+
+	m_gl_obs->setPose(p);
+	m_gl_sensor_fov->setPose(p);
+	m_gl_sensor_origin->setPose(p);
 }
 
-void DepthCameraSensor::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void DepthCameraSensor::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 

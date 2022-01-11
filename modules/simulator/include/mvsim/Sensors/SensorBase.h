@@ -11,6 +11,7 @@
 
 #include <mrpt/io/CFileGZOutputStream.h>
 #include <mrpt/obs/obs_frwds.h>
+#include <mrpt/opengl/opengl_frwds.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
@@ -45,6 +46,16 @@ class SensorBase : public VisualObject, public Simulable
 		[[maybe_unused]] mrpt::opengl::COpenGLScene& gl_scene)
 	{
 	}
+
+	// Get all sensors visuals API:
+	static std::shared_ptr<mrpt::opengl::CSetOfObjects>
+		GetAllSensorsOriginViz();
+
+	static std::shared_ptr<mrpt::opengl::CSetOfObjects> GetAllSensorsFOVViz();
+	static void RegisterSensorFOVViz(
+		const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
+	static void RegisterSensorOriginViz(
+		const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
 
    protected:
 	Simulable& m_vehicle;  //!< The vehicle this sensor is attached to
