@@ -22,7 +22,9 @@ In Ubuntu, this will install all requirements:
    libmrpt-gui-dev libmrpt-tfest-dev \
    protobuf-compiler \
    libzmq3-dev \
-   pybind11-dev
+   pybind11-dev \
+   libprotobuf-dev \
+   libpython3-dev 
 
 
 Compile as usual:
