@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming  (0.3.0)
---------------
+0.3.0 (2022-03-04)
+------------------
 * RGBD camera simulation
 * MRPT 2.x is now required to build mvsim.
 * Update build dep to mrpt2
