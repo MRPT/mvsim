@@ -70,6 +70,23 @@ MVSimNode::MVSimNode(ros::NodeHandle& n)
 		});
 }
 
+void MVSimNode::launch_mvsim_server()
+{
+	ASSERT_(!mvsim_server_);
+
+	// Start network server:
+	mvsim_server_ = std::make_shared<mvsim::Server>();
+
+#if 0
+	 if (argPort.isSet()) server->listenningPort(argPort.getValue());
+	mvsim_server_->setMinLoggingLevel(
+		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+			argVerbosity.getValue()));
+#endif
+
+	mvsim_server_->start();
+}
+
 void MVSimNode::loadWorldModel(const std::string& world_xml_file)
 {
 	ROS_INFO("[MVSimNode] Loading world file: %s", world_xml_file.c_str());
@@ -241,22 +258,20 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 
 // Visitor: Vehicles
 // ----------------------------------------
-void MVSimNode::MVSimVisitor_notifyROSWorldIsUpdated::visit(
-	mvsim::VehicleBase* obj)
+void MVSimNode::visit_vehicle(mvsim::VehicleBase& veh)
 {
-}  // end visit(Vehicles)
+	//
+}
 
 // Visitor: World elements
 // ----------------------------------------
-void MVSimNode::MVSimVisitor_notifyROSWorldIsUpdated::visit(
-	mvsim::WorldElementBase* obj)
+void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 {
 	// GridMaps --------------
-	if (dynamic_cast<mvsim::OccupancyGridMap*>(obj))
+	if (mvsim::OccupancyGridMap* grid =
+			dynamic_cast<mvsim::OccupancyGridMap*>(&obj);
+		grid)
 	{
-		mvsim::OccupancyGridMap* grid =
-			dynamic_cast<mvsim::OccupancyGridMap*>(obj);
-
 		nav_msgs::OccupancyGrid ros_map;
 		mrpt_bridge::convert(grid->getOccGrid(), ros_map);
 
@@ -264,8 +279,8 @@ void MVSimNode::MVSimVisitor_notifyROSWorldIsUpdated::visit(
 		ros_map.header.stamp = ros::Time::now();
 		ros_map.header.seq = loop_count++;
 
-		parent_.pub_map_ros_.publish(ros_map);
-		parent_.pub_map_metadata_.publish(ros_map.info);
+		pub_map_ros_.publish(ros_map);
+		pub_map_metadata_.publish(ros_map.info);
 
 	}  // end gridmap
 
@@ -274,10 +289,11 @@ void MVSimNode::MVSimVisitor_notifyROSWorldIsUpdated::visit(
 // ROS: Publish grid map for visualization purposes:
 void MVSimNode::notifyROSWorldIsUpdated()
 {
-	MVSimVisitor_notifyROSWorldIsUpdated myvisitor(*this);
+	mvsim_world_.runVisitorOnWorldElements(
+		[this](mvsim::WorldElementBase& obj) { visit_world_elements(obj); });
 
-	mvsim_world_.runVisitorOnWorldElements(myvisitor);
-	mvsim_world_.runVisitorOnVehicles(myvisitor);
+	mvsim_world_.runVisitorOnVehicles(
+		[this](mvsim::VehicleBase& v) { visit_vehicle(v); });
 
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
@@ -645,7 +661,10 @@ void MVSimNode::onNewObservation(
 	ROS_ASSERT(obs);
 	ROS_ASSERT(!obs->sensorLabel.empty());
 
-	const auto& veh = dynamic_cast<const mvsim::VehicleBase&>(sim);
+	const auto& vehPtr = dynamic_cast<const mvsim::VehicleBase*>(&sim);
+	if (!vehPtr) return;  // for example, if obs from invisible aux block.
+
+	const auto& veh = *vehPtr;
 
 	TPubSubPerVehicle& pubs = m_pubsub_vehicles[veh.getVehicleIndex()];
 
@@ -703,12 +722,14 @@ void MVSimNode::onNewObservation(
 std::string MVSimNode::vehVarName(
 	const std::string& sVarName, const mvsim::VehicleBase& veh) const
 {
+	using namespace std::string_literals;
+
 	if (mvsim_world_.getListOfVehicles().size() == 1)
 	{
-		return std::string("/") + sVarName;
+		return sVarName;
 	}
 	else
 	{
-		return std::string("/") + veh.getName() + std::string("/") + sVarName;
+		return veh.getName() + std::string("/") + sVarName;
 	}
 }
