@@ -30,5 +30,9 @@
   <depend>message_generation</depend>
   <depend>message_runtime</depend>
   <depend>box2d-dev</depend>
+  <depend>libzmq3-dev</depend>
+  <depend>libzmqpp-dev</depend>
+  <depend>boost</depend>
+  <depend>protobuf-dev</depend>
 
 </package>
