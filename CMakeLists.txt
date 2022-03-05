@@ -13,11 +13,14 @@ cmake_minimum_required(VERSION 3.1)
 # CMake file for the library target
 project(mvsim)
 # Project name must match the ROS package name.
-
 set(MVSIM_VERSION  0.3.0)
 
 find_package(Threads)
 include(GNUInstallDirs)
+
+if (POLICY CMP0057)
+	cmake_policy(SET CMP0057 NEW) # IN_LIST (needed by pybind11 cmake scripts)
+endif()
 
 # ------------------------------------------------------------------
 #                              IMPORTANT NOTE
