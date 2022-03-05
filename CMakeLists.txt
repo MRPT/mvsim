@@ -44,7 +44,7 @@ find_package(catkin
 	)
 
 set(BUILD_FOR_ROS FALSE)
-if (${catkin_FOUND} AND ${mrpt_bridge_FOUND})
+if (catkin_FOUND AND mrpt_bridge_FOUND)
 	set(BUILD_FOR_ROS TRUE)
 	message(STATUS " ==== multivehicle-simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
 	add_definitions(-DMVSIM_HAS_ROS)
