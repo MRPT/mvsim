@@ -44,7 +44,7 @@ find_package(catkin
 	)
 
 set(BUILD_FOR_ROS FALSE)
-if (${catkin_FOUND})
+if (${catkin_FOUND} AND ${mrpt_bridge_FOUND})
 	set(BUILD_FOR_ROS TRUE)
 	message(STATUS " ==== multivehicle-simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
 	add_definitions(-DMVSIM_HAS_ROS)
@@ -196,9 +196,11 @@ if (BUILD_FOR_ROS)
 	)
 
 	#add dynamic reconfigure api
-	generate_dynamic_reconfigure_options(
-	  cfg/mvsimNode.cfg
-	)
+	if (dynamic_reconfigure_FOUND)
+		generate_dynamic_reconfigure_options(
+			cfg/mvsimNode.cfg
+			)
+	endif()
 
 	###################################
 	## catkin specific configuration ##
@@ -225,7 +227,7 @@ if (BUILD_FOR_ROS)
 	## Specify additional locations of header files
 	## Your package locations should be listed before other locations
 	include_directories("mvsim_node_src/include" ${catkin_INCLUDE_DIRS})
-	include_directories(${BOX2D_INCLUDE_DIR}) # Required by mvsim lib
+	#include_directories(${BOX2D_INCLUDE_DIR}) # Required by mvsim lib
 
 	###########
 	## Build ##
@@ -241,7 +243,7 @@ if (BUILD_FOR_ROS)
 	## as an example, message headers may need to be generated before nodes
 	add_dependencies(mvsim_node
 		mvsim_gencfg
-		mvsim # the simulator lib
+		#mvsim # the simulator lib
 		)
 
 	# make sure configure headers are built before any node using them
@@ -252,9 +254,11 @@ if (BUILD_FOR_ROS)
 	## Specify libraries to link a library or executable target against
 	target_link_libraries(
 		mvsim_node
-		mvsim::mvsim  # the simulator lib
+		mvsim::simulator
+		mvsim::msgs
+		mvsim::comms
+		${MRPT_LIBRARIES}  # MRPT libs
 		${BOX2D_LIBRARIES}  # Box2D libs
-		${MRPT_LIBRARIES}
 		${catkin_LIBRARIES}
 		${CMAKE_THREAD_LIBS_INIT}
 	)
