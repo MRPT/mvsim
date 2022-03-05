@@ -7,7 +7,8 @@
 #include <dynamic_reconfigure/server.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/system/CTicTac.h>
-#include <mvsim/mvsim.h>  // the mvsim library
+#include <mvsim/Comms/Server.h>
+#include <mvsim/World.h>
 #include <mvsim/mvsimNodeConfig.h>
 #include <ros/ros.h>
 #include <ros/time.h>
@@ -28,6 +29,8 @@ class MVSimNode
 	/** Destructor. */
 	~MVSimNode();
 
+	void launch_mvsim_server();
+
 	void loadWorldModel(const std::string& world_xml_file);
 
 	void spin();  //!< Process pending msgs, run real-time simulation, etc.
@@ -47,14 +50,16 @@ class MVSimNode
 	int gui_refresh_period_ms_ = 50;
 	bool show_gui_ = true;	//!< Default= true
 
-	/// Default=true. Behaves as navigation/fake_localization for each vehicle
-	/// without the need to launch additional nodes.
+	/// Default=true. Behaves as navigation/fake_localization for each
+	/// vehicle without the need to launch additional nodes.
 	bool do_fake_localization_ = true;
 
 	//!< (Default=0.1) Time tolerance for published TFs
 	double m_transform_tolerance = 0.1;
 
    protected:
+	std::shared_ptr<mvsim::Server> mvsim_server_;
+
 	ros::NodeHandle& n_;
 	ros::NodeHandle localn_{"~"};
 
@@ -84,8 +89,8 @@ class MVSimNode
 		visualization_msgs::MarkerArray chassis_shape_msg;
 	};
 
-	/// Pubs/Subs for each vehicle. Initialized by initPubSubs(), called from
-	/// notifyROSWorldIsUpdated()
+	/// Pubs/Subs for each vehicle. Initialized by initPubSubs(), called
+	/// from notifyROSWorldIsUpdated()
 	std::vector<TPubSubPerVehicle> m_pubsub_vehicles;
 
 	/** Initialize all pub/subs required for each vehicle, for the specific
@@ -119,14 +124,14 @@ class MVSimNode
 	/// will be true after a success call to loadWorldModel()
 	bool world_init_ok_ = false;
 
-	/// Minimum period between publication of TF transforms & /*/odom topics (In
-	/// ms)
+	/// Minimum period between publication of TF transforms & /*/odom topics
+	/// (In ms)
 	double period_ms_publish_tf_ = 20;
 
 	mrpt::system::CTicTac tim_publish_tf_;
 
-	/// Minimum period between update of live info & read of teleop key strokes
-	/// in GUI (In ms)
+	/// Minimum period between update of live info & read of teleop key
+	/// strokes in GUI (In ms)
 	double period_ms_teleop_refresh_ = 100;
 	mrpt::system::CTicTac tim_teleop_refresh_;
 
@@ -138,15 +143,15 @@ class MVSimNode
 	std::thread thGUI_;
 	static void thread_update_GUI(TThreadParams& thread_params);
 
-	/** Publish relevant stuff whenever a new world model is loaded (grid maps,
-	 * etc.) */
+	/** Publish relevant stuff whenever a new world model is loaded (grid
+	 * maps, etc.) */
 	void notifyROSWorldIsUpdated();
 
 	/** Publish everything to be published at each simulation iteration */
 	void spinNotifyROS();
 
-	/** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than one
-	 * vehicle in the World, or "/<VAR_NAME>" otherwise. */
+	/** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than
+	 * one vehicle in the World, or "/<VAR_NAME>" otherwise. */
 	std::string vehVarName(
 		const std::string& sVarName, const mvsim::VehicleBase& veh) const;
 
@@ -154,19 +159,8 @@ class MVSimNode
 		const std::string& frame_id, const std::string& child_frame_id,
 		const tf::Transform& tx, const ros::Time& stamp);
 
-	struct MVSimVisitor_notifyROSWorldIsUpdated
-		: public mvsim::World::vehicle_visitor_t,
-		  public mvsim::World::world_element_visitor_t
-	{
-		void visit(mvsim::VehicleBase* obj);
-		void visit(mvsim::WorldElementBase* obj);
-
-		MVSimVisitor_notifyROSWorldIsUpdated(MVSimNode& parent)
-			: parent_(parent)
-		{
-		}
-		MVSimNode& parent_;
-	};
+	void visit_world_elements(mvsim::WorldElementBase& obj);
+	void visit_vehicle(mvsim::VehicleBase& veh);
 
 };	// end class
 

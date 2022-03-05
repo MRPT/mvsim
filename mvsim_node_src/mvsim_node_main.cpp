@@ -1,5 +1,5 @@
 /**
-  */
+ */
 
 #include "mvsim/mvsim_node_core.h"
 
@@ -29,8 +29,14 @@ int main(int argc, char** argv)
 	private_node_handle_.param("simul_rate", rate, 100);
 	private_node_handle_.param("world_file", world_file, std::string(""));
 
+	// Launch mvsim:
+	node.launch_mvsim_server();
+
 	// Init world model:
 	if (!world_file.empty()) node.loadWorldModel(world_file);
+
+	// Attach world as a mvsim communications node:
+	node.mvsim_world_.connectToServer();
 
 	// Set up a dynamic reconfigure server.
 	// Do this before parameter server, else some of the parameter server
@@ -39,14 +45,6 @@ int main(int argc, char** argv)
 	dynamic_reconfigure::Server<mvsim::mvsimNodeConfig>::CallbackType cb;
 	cb = boost::bind(&MVSimNode::configCallback, &node, _1, _2);
 	dr_srv.setCallback(cb);
-
-	// Create a publisher and name the topic.
-	// ros::Publisher pub_message =
-	// n.advertise<node_example::NodeExampleData>("example", 10);
-	// Name the topic, message queue, callback function with class name, and
-	// object containing callback function.
-	// ros::Subscriber sub_message = n.subscribe("example", 1000,
-	// &NodeExample::messageCallback, node_example);
 
 	// Tell ROS how fast to run this node.
 	ros::Rate r(rate);
