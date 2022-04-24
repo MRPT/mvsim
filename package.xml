@@ -33,6 +33,7 @@
   <depend>libzmq3-dev</depend>
   <depend>libzmqpp-dev</depend>
   <depend>boost</depend>
+  <depend>pybind11-dev</depend>
   <depend>protobuf-dev</depend>
 
 </package>
