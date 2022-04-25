@@ -7,14 +7,16 @@
 MultiVehicle simulator (libmvsim)
 ======================================
 Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
-It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and accurate simulation of typical robot sensors (e.g. laser scanners).
+It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and accurate simulation of typical robot sensors (e.g. 2D and 3D lidars).
 
 This package includes the C++ library `mvsim`, a standalone app and a ROS node.
 
 License: 3-clause BSD License
-Copyright (C) 2014-2020 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
+Copyright (C) 2014-2022 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
 [![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
+
+[![screenshot-demo-2robots](docs/imgs/screenshot-demo-2robots.png)]
 
 Docs
 ----------
@@ -34,6 +36,9 @@ Main features
     * Ackermann steering with mechanical differentials of full grade.
   * Sensors:
     * Laser scanners: Robots see each other, their own bodies, etc.
+    * RGB cameras
+    * Depth cameras
   * Interface to vehicles: Choose among:
     * Raw access to forces and motor torques.
     * Twist commands (using internal controllers).
+
