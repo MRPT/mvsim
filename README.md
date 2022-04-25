@@ -16,7 +16,7 @@ Copyright (C) 2014-2022 Jose Luis Blanco <jlblanco@ual.es> (University of Almeri
 
 [![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
 
-[![screenshot-demo-2robots]](docs/imgs/screenshot-demo-2robots.png)
+![screenshot-demo-2robots](docs/imgs/screenshot-demo-2robots.png)
 
 Docs
 ----------
