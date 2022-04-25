@@ -9,7 +9,7 @@
     * libmvsim/mvsim/mvsim_version.h
     * CHANGELOG.rst
    -->
-  <version>0.3.0</version>
+  <version>0.3.1</version>
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
   <license>BSD</license>

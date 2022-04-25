@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2022-04-25)
+------------------
 * update 2 robots demo
 * Add pybind11 as build dep
 * fix ros node compilation
