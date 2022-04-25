@@ -2,6 +2,19 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update 2 robots demo
+* Add pybind11 as build dep
+* fix ros node compilation
+* fix build w/o ros
+* Fix compilation of the ROS1 node against the latest mvsim libraries
+* Fix cmake policy error in pybind11
+* Add missing ros deps
+* Add missing build dep box2d-dev
+* Update README.md
+* Contributors: Jose Luis Blanco Claraco, Jose Luis Blanco-Claraco
+
 0.3.0 (2022-03-04)
 ------------------
 * RGBD camera simulation
