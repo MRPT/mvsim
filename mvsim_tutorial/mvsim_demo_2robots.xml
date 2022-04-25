@@ -18,17 +18,21 @@
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->
-	<element class="occupancy_grid">
-		<!-- File can be an image or an MRPT .gridmap file -->
+<!--	<element class="occupancy_grid">
 		<file>mvsim_demo_world1.png</file>
-
-		<!-- The rest of params are ignored if file is an MRPT gridmap -->
 		<resolution>0.5</resolution>
-
 		<centerpixel_x>100</centerpixel_x>
 		<centerpixel_y>100</centerpixel_y>
-
-		<!--<show_collisions>true</show_collisions>-->
+	</element>
+-->
+	<!-- ground -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-20</x_min>
+		<y_min>-20</y_min>
+		<x_max> 20</x_max>
+		<y_max> 20</y_max>
+		<z>0.0</z>
 	</element>
 
 	<!-- ground grid (for visual reference) -->
@@ -72,6 +76,7 @@
 			<nrays>181</nrays>
 			<range_std_noise>0.01</range_std_noise>
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
+			<raytrace_3d>true</raytrace_3d>
 			<publish>
 			  <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
 			</publish>
@@ -152,6 +157,7 @@
 			<nrays>181</nrays>
 			<range_std_noise>0.01</range_std_noise>
 			<angle_std_noise_deg>0.01</angle_std_noise_deg>
+			<raytrace_3d>true</raytrace_3d>
 			<publish>
 			  <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
 			</publish>
