@@ -150,8 +150,8 @@ void LaserScanner::internalGuiUpdate(
 	m_gl_sensor_origin->setPose(p);
 }
 
-void LaserScanner::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
+void LaserScanner::simul_pre_timestep([
+	[maybe_unused]] const TSimulContext& context)
 {
 }
 
@@ -227,14 +227,12 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		// Avoid the lidar seeing the vehicle owns shape:
 		std::map<b2Fixture*, void*> orgUserData;
 
-		auto makeFixtureInvisible = [&](b2Fixture* f)
-		{
+		auto makeFixtureInvisible = [&](b2Fixture* f) {
 			if (!f) return;
 			orgUserData[f] = f->GetUserData();
 			f->SetUserData(INVISIBLE_FIXTURE_USER_DATA);
 		};
-		auto undoInvisibleFixtures = [&]()
-		{
+		auto undoInvisibleFixtures = [&]() {
 			for (auto& kv : orgUserData) kv.first->SetUserData(kv.second);
 		};
 
@@ -297,7 +295,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		const double AA =
 			(scan.rightToLeft ? 1.0 : -1.0) * (scan.aperture / (nRays - 1));
 
-		auto& rnd = mrpt::random::getRandomGenerator();
+		// Each thread must create its own rng:
+		thread_local mrpt::random::CRandomGenerator rnd;
 
 		for (size_t i = 0; i < nRays; i++, A += AA)
 		{
@@ -500,7 +499,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		// Add random noise:
 		if (m_rangeStdNoise > 0)
 		{
-			auto& rng = mrpt::random::getRandomGenerator();
+			// Each thread must create its own rng:
+			thread_local mrpt::random::CRandomGenerator rng;
 
 			float* d = depthImage.data();
 			const size_t N = depthImage.size();
