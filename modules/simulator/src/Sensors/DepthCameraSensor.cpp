@@ -191,8 +191,8 @@ void DepthCameraSensor::internalGuiUpdate(
 	m_gl_sensor_origin->setPose(p);
 }
 
-void DepthCameraSensor::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
+void DepthCameraSensor::simul_pre_timestep([
+	[maybe_unused]] const TSimulContext& context)
 {
 }
 
@@ -287,7 +287,8 @@ void DepthCameraSensor::simulateOn3DScene(
 	// Add random noise:
 	if (m_depth_noise_sigma > 0)
 	{
-		auto& rng = mrpt::random::getRandomGenerator();
+		// Each thread must create its own rng:
+		thread_local mrpt::random::CRandomGenerator rng;
 
 		float* d = depthImage.data();
 		const size_t N = depthImage.size();
