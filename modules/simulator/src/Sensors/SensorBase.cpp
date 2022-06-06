@@ -23,7 +23,7 @@
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-#include "GenericObservation.pb.h"
+#include <mvsim/mvsim-msgs/GenericObservation.pb.h>
 #endif
 
 using namespace mvsim;

@@ -16,7 +16,7 @@
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-#include "TimeStampedPose.pb.h"
+#include <mvsim/mvsim-msgs/TimeStampedPose.pb.h>
 
 #endif
 

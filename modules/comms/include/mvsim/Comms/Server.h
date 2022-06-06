@@ -21,14 +21,14 @@
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-#include "AdvertiseServiceRequest.pb.h"
-#include "AdvertiseTopicRequest.pb.h"
-#include "GetServiceInfoRequest.pb.h"
-#include "ListNodesRequest.pb.h"
-#include "ListTopicsRequest.pb.h"
-#include "RegisterNodeRequest.pb.h"
-#include "SubscribeRequest.pb.h"
-#include "UnregisterNodeRequest.pb.h"
+#include <mvsim/mvsim-msgs/AdvertiseServiceRequest.pb.h>
+#include <mvsim/mvsim-msgs/AdvertiseTopicRequest.pb.h>
+#include <mvsim/mvsim-msgs/GetServiceInfoRequest.pb.h>
+#include <mvsim/mvsim-msgs/ListNodesRequest.pb.h>
+#include <mvsim/mvsim-msgs/ListTopicsRequest.pb.h>
+#include <mvsim/mvsim-msgs/RegisterNodeRequest.pb.h>
+#include <mvsim/mvsim-msgs/SubscribeRequest.pb.h>
+#include <mvsim/mvsim-msgs/UnregisterNodeRequest.pb.h>
 
 #endif
 
