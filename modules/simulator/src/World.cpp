@@ -14,11 +14,11 @@
 #include <map>
 #include <stdexcept>
 
-#include "GenericAnswer.pb.h"
-#include "SrvGetPose.pb.h"
-#include "SrvGetPoseAnswer.pb.h"
-#include "SrvSetPose.pb.h"
-#include "SrvSetPoseAnswer.pb.h"
+#include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetPose.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetPoseAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetPose.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
 
 using namespace mvsim;
 using namespace std;

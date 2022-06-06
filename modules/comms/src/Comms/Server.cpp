@@ -18,17 +18,17 @@
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <zmq.hpp>
 
-#include "GenericAnswer.pb.h"
-#include "GetServiceInfoAnswer.pb.h"
-#include "ListNodesAnswer.pb.h"
-#include "ListNodesRequest.pb.h"
-#include "ListTopicsAnswer.pb.h"
-#include "ListTopicsRequest.pb.h"
-#include "RegisterNodeAnswer.pb.h"
-#include "RegisterNodeRequest.pb.h"
-#include "SubscribeAnswer.pb.h"
-#include "SubscribeRequest.pb.h"
-#include "UnregisterNodeRequest.pb.h"
+#include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
+#include <mvsim/mvsim-msgs/GetServiceInfoAnswer.pb.h>
+#include <mvsim/mvsim-msgs/ListNodesAnswer.pb.h>
+#include <mvsim/mvsim-msgs/ListNodesRequest.pb.h>
+#include <mvsim/mvsim-msgs/ListTopicsAnswer.pb.h>
+#include <mvsim/mvsim-msgs/ListTopicsRequest.pb.h>
+#include <mvsim/mvsim-msgs/RegisterNodeAnswer.pb.h>
+#include <mvsim/mvsim-msgs/RegisterNodeRequest.pb.h>
+#include <mvsim/mvsim-msgs/SubscribeAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SubscribeRequest.pb.h>
+#include <mvsim/mvsim-msgs/UnregisterNodeRequest.pb.h>
 
 #endif
 

@@ -282,3 +282,4 @@ docs/requirements.txt
 docs/myenv
 *.autosave
 docs/html
+.vscode
