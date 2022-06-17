@@ -34,12 +34,14 @@ if (MVSIM_WITH_PROTOBUF)
 	)
 
 	# Python files:
-	file(MAKE_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
-	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy ${PROTO_PY_FILES} ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/
-	)
-	file(COPY python/__init__.py DESTINATION ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
-
+	if (MVSIM_WITH_PYTHON)
+		file(MAKE_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
+		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy ${PROTO_PY_FILES} ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/
+		)
+		file(COPY python/__init__.py DESTINATION ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
+	endif()
+	
 	target_include_directories(${PROJECT_NAME}
 		SYSTEM PUBLIC
 			#$<BUILD_INTERFACE:${Protobuf_INCLUDE_DIRS}>
