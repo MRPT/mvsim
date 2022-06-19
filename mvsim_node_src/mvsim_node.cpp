@@ -4,16 +4,17 @@
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <mrpt/ros1bridge/laser_scan.h>
+#include <mrpt/ros1bridge/map.h>
+#include <mrpt/ros1bridge/pose.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
-#include <mrpt_bridge/laser_scan.h>
-#include <mrpt_bridge/map.h>
-#include <mrpt_bridge/pose.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <nav_msgs/GetMap.h>
 #include <nav_msgs/MapMetaData.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/LaserScan.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <iostream>
 #include <rapidxml_utils.hpp>
@@ -24,10 +25,7 @@
  * MVSimNode()
  * Constructor.
  *----------------------------------------------------------------------------*/
-MVSimNode::MVSimNode(ros::NodeHandle& n)
-	: n_(n),
-	  tf_br_(),
-	  tfIdentity_(tf::createIdentityQuaternion(), tf::Point(0, 0, 0))
+MVSimNode::MVSimNode(ros::NodeHandle& n) : n_(n)
 {
 	// Launch GUI thread:
 	thread_params_.obj = this;
@@ -273,7 +271,7 @@ void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 		grid)
 	{
 		nav_msgs::OccupancyGrid ros_map;
-		mrpt_bridge::convert(grid->getOccGrid(), ros_map);
+		mrpt::ros1bridge::toROS(grid->getOccGrid(), ros_map);
 
 		static size_t loop_count = 0;
 		ros_map.header.stamp = ros::Time::now();
@@ -316,13 +314,13 @@ void MVSimNode::notifyROSWorldIsUpdated()
 
 void MVSimNode::sendStaticTF(
 	const std::string& frame_id, const std::string& child_frame_id,
-	const tf::Transform& txf, const ros::Time& stamp)
+	const tf2::Transform& txf, const ros::Time& stamp)
 {
 	geometry_msgs::TransformStamped tx;
 	tx.header.frame_id = frame_id;
 	tx.child_frame_id = child_frame_id;
 	tx.header.stamp = stamp;
-	tf::transformTFToMsg(txf, tx.transform);
+	tx.transform = tf2::toMsg(txf);
 	static_tf_br_.sendTransform(tx);
 }
 
@@ -410,11 +408,12 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			wheel_shape_msg.color.b = w.color.B / 255.0;
 
 			// Set local pose of the wheel wrt the vehicle:
-			tf::Matrix3x3 rot;
-			rot.setEulerYPR(w.yaw, 0, 0);
-			tf::poseTFToMsg(
-				tf::Transform(rot, tf::Vector3(w.x, w.y, 0)),
-				wheel_shape_msg.pose);
+			tf2::Quaternion quat;
+			quat.setEuler(w.yaw, 0, 0);
+
+			tf2::toMsg(
+				tf2::Vector3(w.x, w.y, 0), wheel_shape_msg.pose.position);
+			wheel_shape_msg.pose.orientation = tf2::toMsg(quat);
 		}  // end for each wheel
 
 		// Publish Initial pose
@@ -514,9 +513,9 @@ void MVSimNode::spinNotifyROS()
 				gtOdoMsg.pose.pose.position.y = gh_veh_pose.y;
 				gtOdoMsg.pose.pose.position.z = gh_veh_pose.z;
 
-				tf::Quaternion quat;
+				tf2::Quaternion quat;
 				quat.setEuler(
-					gh_veh_pose.roll, gh_veh_pose.pitch, gh_veh_pose.yaw);
+					gh_veh_pose.yaw, gh_veh_pose.pitch, gh_veh_pose.roll);
 
 				gtOdoMsg.pose.pose.orientation.x = quat.x();
 				gtOdoMsg.pose.pose.orientation.y = quat.y();
@@ -564,11 +563,15 @@ void MVSimNode::spinNotifyROS()
 						MRPT_TODO(
 							"Save initial pose for each vehicle, set odometry "
 							"from that pose");
-						const tf::Transform tr(
-							tf::createIdentityQuaternion(),
-							tf::Vector3(0, 0, 0));
-						tf_br_.sendTransform(tf::StampedTransform(
-							tr, sim_time_, "/map", sOdomName));
+
+						geometry_msgs::TransformStamped tx;
+						tx.header.frame_id = "/map";
+						tx.child_frame_id = sOdomName;
+						tx.header.stamp = sim_time_;
+						tx.transform =
+							tf2::toMsg(tf2::Transform::getIdentity());
+
+						tf_br_.sendTransform(tx);
 					}
 				}
 			}
@@ -593,11 +596,13 @@ void MVSimNode::spinNotifyROS()
 					const mvsim::Wheel& w = veh->getWheelInfo(j);
 
 					// Set local pose of the wheel wrt the vehicle:
-					tf::Matrix3x3 rot;
-					rot.setEulerYPR(w.yaw, 0, 0);
-					tf::poseTFToMsg(
-						tf::Transform(rot, tf::Vector3(w.x, w.y, 0)),
-						wheel_shape_msg.pose);
+					tf2::Quaternion q;
+					q.setEuler(w.yaw, 0, 0);
+					wheel_shape_msg.pose.orientation = tf2::toMsg(q);
+					tf2::toMsg(
+						tf2::Vector3(w.x, w.y, 0),
+						wheel_shape_msg.pose.position);
+
 				}  // end for each wheel
 
 				// Publish Initial pose
@@ -610,14 +615,13 @@ void MVSimNode::spinNotifyROS()
 				const mrpt::math::TPose3D odo_pose = gh_veh_pose;
 
 				{
-					tf::Matrix3x3 rot;
-					rot.setEulerYPR(
-						odo_pose.yaw, odo_pose.pitch, odo_pose.roll);
-					const tf::Transform tr(
-						rot, tf::Vector3(odo_pose.x, odo_pose.y, odo_pose.z));
-
-					tf_br_.sendTransform(tf::StampedTransform(
-						tr, sim_time_, sOdomName, sBaseLinkFrame));
+					geometry_msgs::TransformStamped tx;
+					tx.header.frame_id = sOdomName;
+					tx.child_frame_id = sBaseLinkFrame;
+					tx.header.stamp = sim_time_;
+					tx.transform = tf2::toMsg(
+						mrpt::ros1bridge::toROS_tfTransform(odo_pose));
+					tf_br_.sendTransform(tx);
 				}
 
 				// Apart from TF, publish to the "odom" topic as well
@@ -629,8 +633,8 @@ void MVSimNode::spinNotifyROS()
 					odoMsg.pose.pose.position.y = odo_pose.y;
 					odoMsg.pose.pose.position.z = odo_pose.z;
 
-					tf::Quaternion quat;
-					quat.setEuler(odo_pose.roll, odo_pose.pitch, odo_pose.yaw);
+					tf2::Quaternion quat;
+					quat.setEuler(odo_pose.yaw, odo_pose.pitch, odo_pose.roll);
 
 					odoMsg.pose.pose.orientation.x = quat.x();
 					odoMsg.pose.pose.orientation.y = quat.y();
@@ -686,14 +690,18 @@ void MVSimNode::onNewObservation(
 		const std::string sSensorFrameId = vehVarName(obs->sensorLabel, veh);
 
 		// Send TF:
-		mrpt::poses::CPose3D pose_laser;
-		tf::Transform transform;
-		o->getSensorPose(pose_laser);
-		mrpt_bridge::convert(pose_laser, transform);
+		mrpt::poses::CPose3D sensorPose;
+		o->getSensorPose(sensorPose);
 
-		tf_br_.sendTransform(tf::StampedTransform(
-			transform, sim_time_, vehVarName("base_link", veh),	 // parent frame
-			sSensorFrameId));
+		tf2::Transform transform =
+			mrpt::ros1bridge::toROS_tfTransform(sensorPose);
+
+		geometry_msgs::TransformStamped tfStmp;
+		tfStmp.transform = tf2::toMsg(transform);
+		tfStmp.child_frame_id = sSensorFrameId;
+		tfStmp.header.frame_id = vehVarName("base_link", veh);
+		tfStmp.header.stamp = sim_time_;
+		tf_br_.sendTransform(tfStmp);
 
 		// Send observation:
 		if (is_1st_pub || pub.getNumSubscribers() > 0)
@@ -701,7 +709,7 @@ void MVSimNode::onNewObservation(
 			// Convert observation MRPT -> ROS
 			geometry_msgs::Pose msg_pose_laser;
 			sensor_msgs::LaserScan msg_laser;
-			mrpt_bridge::convert(*o, msg_laser, msg_pose_laser);
+			mrpt::ros1bridge::toROS(*o, msg_laser, msg_pose_laser);
 
 			// Force usage of simulation time:
 			msg_laser.header.stamp = sim_time_;

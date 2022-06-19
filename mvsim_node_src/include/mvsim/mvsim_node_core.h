@@ -5,6 +5,7 @@
 #define SR_MVSIM_NODE_CORE_H
 
 #include <dynamic_reconfigure/server.h>
+#include <geometry_msgs/Twist.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/system/CTicTac.h>
 #include <mvsim/Comms/Server.h>
@@ -13,8 +14,9 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <rosgraph_msgs/Clock.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <thread>
@@ -67,7 +69,7 @@ class MVSimNode
 	/// used for simul_map publication
 	ros::Publisher pub_map_ros_, pub_map_metadata_;
 	ros::Publisher pub_clock_;
-	tf::TransformBroadcaster tf_br_;  //!< Use to send data to TF
+	tf2_ros::TransformBroadcaster tf_br_;  //!< Use to send data to TF
 
 	/// For sending STATIC tf
 	tf2_ros::StaticTransformBroadcaster static_tf_br_;
@@ -108,7 +110,9 @@ class MVSimNode
 	ros::Time sim_time_;  //!< Current simulation time
 	ros::Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
 	ros::Duration base_watchdog_timeout_;
-	const tf::Transform tfIdentity_;  //!< Unit transform (const, once)
+
+	/// Unit transform (const, once)
+	const tf2::Transform tfIdentity_ = tf2::Transform::getIdentity();
 
 	struct TThreadParams
 	{
@@ -157,7 +161,7 @@ class MVSimNode
 
 	void sendStaticTF(
 		const std::string& frame_id, const std::string& child_frame_id,
-		const tf::Transform& tx, const ros::Time& stamp);
+		const tf2::Transform& tx, const ros::Time& stamp);
 
 	void visit_world_elements(mvsim::WorldElementBase& obj);
 	void visit_vehicle(mvsim::VehicleBase& veh);

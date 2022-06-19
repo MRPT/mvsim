@@ -8,7 +8,17 @@
 # |   See COPYING                                                           |
 # +-------------------------------------------------------------------------+
 
-cmake_minimum_required(VERSION 3.1)
+if("$ENV{ROS_VERSION}" STREQUAL "2")
+	cmake_minimum_required(VERSION 3.8)
+	set(DETECTED_ROS2 TRUE)
+elseif("$ENV{ROS_VERSION}" STREQUAL "1")
+	cmake_minimum_required(VERSION 3.1)
+	set(DETECTED_ROS1 TRUE)
+	set (CMAKE_CXX_STANDARD 14)
+else()
+	cmake_minimum_required(VERSION 3.1)
+endif()
+project(mrpt_msgs)
 
 # CMake file for the library target
 project(mvsim)
@@ -33,23 +43,28 @@ endif()
 # CMake to configure the project accordingly.
 # ------------------------------------------------------------------
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin
-#        REQUIRED  # mvsim can be built with or without ROS, as an standalong lib
-	QUIET
-	COMPONENTS
-	roscpp tf mrpt_bridge dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs dynamic_reconfigure message_generation
-	)
-
 set(BUILD_FOR_ROS FALSE)
-if (catkin_FOUND AND mrpt_bridge_FOUND)
+if (DETECTED_ROS1)
 	set(BUILD_FOR_ROS TRUE)
-	message(STATUS " ==== multivehicle-simulator: ROS' catkin detected. ROS nodes will be built. ===== ")
-	add_definitions(-DMVSIM_HAS_ROS)
+
+	# Find catkin macros and libraries
+	# if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+	# is used, also find other catkin packages
+	find_package(catkin
+		REQUIRED
+		COMPONENTS
+		roscpp tf2 dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs dynamic_reconfigure message_generation
+		tf2_geometry_msgs
+	)
+	find_package(mrpt-ros1bridge REQUIRED)
 endif()
 
+# TODO: Detect and handle ROS2
+
+if (BUILD_FOR_ROS)
+	message(STATUS " ==== multivehicle-simulator: ROS$ENV{ROS_VERSION} detected. ROS nodes will be built. ===== ")
+	add_definitions(-DMVSIM_HAS_ROS)
+endif()
 
 # --------------------------
 # Build options
@@ -98,7 +113,7 @@ endif()
 # --------------------------
 # Dependency: MRPT
 # --------------------------
-find_package(MRPT REQUIRED COMPONENTS opengl obs maps gui tfest serialization tclap)
+find_package(MRPT REQUIRED COMPONENTS opengl obs maps gui tfest serialization tclap ros1bridge)
 # Defines: MRPT_LIBRARIES -> libs to link against
 
 # --------------------------
@@ -165,7 +180,7 @@ add_subdirectory(mvsim-cli)
 # -----------------------------------------------------------------------------
 #                                   ROS SEGMENT
 # -----------------------------------------------------------------------------
-if (BUILD_FOR_ROS)
+if (BUILD_FOR_ROS AND DETECTED_ROS1)
 	################################################
 	## Declare ROS messages, services and actions ##
 	################################################
@@ -215,6 +230,7 @@ if (BUILD_FOR_ROS)
 	catkin_package(
 	  CATKIN_DEPENDS
 			dynamic_reconfigure message_runtime nav_msgs roscpp std_msgs sensor_msgs visualization_msgs
+			tf2 tf2_geometry_msgs
 	#  INCLUDE_DIRS include
 	#  LIBRARIES mrpt_localization
 	#  DEPENDS mrpt
@@ -299,9 +315,3 @@ if (BUILD_FOR_ROS)
 
 endif() # BUILD_FOR_ROS
 
-
-# -----------------------------------------------------------------------------
-#                                MOOS/OpenMORA SEGMENT
-# -----------------------------------------------------------------------------
-#if(xxx)
-#endif() #
