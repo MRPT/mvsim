@@ -43,6 +43,7 @@ endif()
 # CMake to configure the project accordingly.
 # ------------------------------------------------------------------
 
+# ROS1:
 set(BUILD_FOR_ROS FALSE)
 if (DETECTED_ROS1)
 	set(BUILD_FOR_ROS TRUE)
@@ -56,10 +57,18 @@ if (DETECTED_ROS1)
 		roscpp tf2 dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs dynamic_reconfigure message_generation
 		tf2_geometry_msgs
 	)
-	find_package(mrpt-ros1bridge REQUIRED)
+	set(MRPT_ROS_X_BRIDGE_LIB_NAME ros1bridge)
 endif()
 
-# TODO: Detect and handle ROS2
+# ROS2:
+if (DETECTED_ROS2)
+	set(BUILD_FOR_ROS TRUE)
+
+	find_package(rclcpp REQUIRED)
+
+	set(MRPT_ROS_X_BRIDGE_LIB_NAME ros2bridge)
+endif()
+
 
 if (BUILD_FOR_ROS)
 	message(STATUS " ==== multivehicle-simulator: ROS$ENV{ROS_VERSION} detected. ROS nodes will be built. ===== ")
@@ -113,7 +122,11 @@ endif()
 # --------------------------
 # Dependency: MRPT
 # --------------------------
-find_package(MRPT REQUIRED COMPONENTS opengl obs maps gui tfest serialization tclap ros1bridge)
+find_package(MRPT REQUIRED
+	COMPONENTS
+		opengl obs maps gui tfest serialization tclap 
+		${MRPT_ROS_X_BRIDGE_LIB_NAME}  # will be ros{1,2}bridge or empty if non-ROS build.
+	)
 # Defines: MRPT_LIBRARIES -> libs to link against
 
 # --------------------------
