@@ -14,7 +14,7 @@ target_link_libraries(
 	mvsim::simulator
 	mvsim::msgs
 	mvsim::comms
-	${MRPT_LIBRARIES}  # MRPT libs
+	mrpt::tclap
 	${BOX2D_LIBRARIES}  # Box2D libs
 	${CMAKE_THREAD_LIBS_INIT}
 	)
