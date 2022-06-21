@@ -2,6 +2,19 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Install models/ subdirectory too
+* Changes towards building for both ros1 & ros2
+* Copyright date bump
+* Fix build and dependencies for ROS1.
+* Fix build w/o python
+* Fix consistent include path for installed targets
+* BUGFIX: Fix random SIGSEGV due to unsafe shared global object for random number generation
+* Fix no installation of mvsim_msgs python module
+* Fix demo robot starts out of the map
+* Contributors: Jose Luis Blanco-Claraco
+
 0.3.1 (2022-04-25)
 ------------------
 * update 2 robots demo
