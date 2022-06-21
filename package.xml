@@ -28,8 +28,6 @@
   
   <!-- COMMON DEPS -->
   <depend>mrpt2</depend>
-  <depend>std_msgs</depend>
-  <depend>dynamic_reconfigure</depend>
   <depend>sensor_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>nav_msgs</depend>
@@ -44,18 +42,13 @@
 
   <!-- ROS1 -->
   <depend           condition="$ROS_VERSION == 1">roscpp</depend>
+  <depend           condition="$ROS_VERSION == 1">dynamic_reconfigure</depend>
   <test_depend      condition="$ROS_VERSION == 1">gtest</test_depend>
-  <build_depend condition="$ROS_VERSION == 1">message_generation</build_depend>
-  <exec_depend  condition="$ROS_VERSION == 1">message_runtime</exec_depend>
   
   <!-- ROS2 -->
   <test_depend      condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
   <test_depend      condition="$ROS_VERSION == 2">ament_lint_common</test_depend>
   <build_depend     condition="$ROS_VERSION == 2">ament_cmake_xmllint</build_depend>
-  <build_depend    condition="$ROS_VERSION == 2">rosidl_default_generators</build_depend>
-  <exec_depend     condition="$ROS_VERSION == 2">rosidl_default_runtime</exec_depend>
-
-  <member_of_group condition="$ROS_VERSION == 2">rosidl_interface_packages</member_of_group>
 
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>

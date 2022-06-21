@@ -1,23 +1,40 @@
-/**
- */
+/*+-------------------------------------------------------------------------+
+  |                       MultiVehicle simulator (libmvsim)                 |
+  |                                                                         |
+  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
+  | Distributed under 3-clause BSD License                                  |
+  |   See COPYING                                                           |
+  +-------------------------------------------------------------------------+ */
 
-#ifndef SR_MVSIM_NODE_CORE_H
-#define SR_MVSIM_NODE_CORE_H
+#pragma once
 
+#if PACKAGE_ROS_VERSION == 1
 #include <dynamic_reconfigure/server.h>
+#include <mvsim/mvsimNodeConfig.h>
+#endif
+
 #include <geometry_msgs/Twist.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/system/CTicTac.h>
 #include <mvsim/Comms/Server.h>
 #include <mvsim/World.h>
-#include <mvsim/mvsimNodeConfig.h>
-#include <ros/ros.h>
-#include <ros/time.h>
-#include <rosgraph_msgs/Clock.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
+
+#if PACKAGE_ROS_VERSION == 1
+#include <ros/ros.h>
+#include <ros/time.h>
+#include <rosgraph_msgs/Clock.h>
 #include <visualization_msgs/MarkerArray.h>
+#else
+#include <visualization_msgs/msg/marker_array.hpp>
+
+#include "rclcpp/clock.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/time_source.hpp"
+#endif
 
 #include <thread>
 
@@ -27,7 +44,12 @@ class MVSimNode
 {
    public:
 	/** Constructor. */
+#if PACKAGE_ROS_VERSION == 1
 	MVSimNode(ros::NodeHandle& n);
+#else
+	MVSimNode(rclcpp::Node::SharedPtr& n);
+#endif
+
 	/** Destructor. */
 	~MVSimNode();
 
@@ -37,8 +59,10 @@ class MVSimNode
 
 	void spin();  //!< Process pending msgs, run real-time simulation, etc.
 
+#if PACKAGE_ROS_VERSION == 1
 	/** Callback function for dynamic reconfigure server */
 	void configCallback(mvsim::mvsimNodeConfig& config, uint32_t level);
+#endif
 
 	void onNewObservation(
 		const mvsim::Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
@@ -62,17 +86,33 @@ class MVSimNode
    protected:
 	std::shared_ptr<mvsim::Server> mvsim_server_;
 
+#if PACKAGE_ROS_VERSION == 1
 	ros::NodeHandle& n_;
 	ros::NodeHandle localn_{"~"};
+#else
+	rclcpp::Node::SharedPtr n_;
+#endif
 
 	// === ROS Publishers ====
 	/// used for simul_map publication
+#if PACKAGE_ROS_VERSION == 1
 	ros::Publisher pub_map_ros_, pub_map_metadata_;
 	ros::Publisher pub_clock_;
-	tf2_ros::TransformBroadcaster tf_br_;  //!< Use to send data to TF
+#else
+	rclcpp::Publisher pub_map_ros_, pub_map_metadata_;
+	rclcpp::TimeSource ts_{n_};
+	rclcpp::Clock::SharedPtr clock_ =
+		std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
 
-	/// For sending STATIC tf
+#endif
+
+#if PACKAGE_ROS_VERSION == 1
+	tf2_ros::TransformBroadcaster tf_br_;  //!< Use to send data to TF
 	tf2_ros::StaticTransformBroadcaster static_tf_br_;
+#else
+	tf2_ros::TransformBroadcaster tf_br_{n_};  //!< Use to send data to TF
+	tf2_ros::StaticTransformBroadcaster static_tf_br_{n_};
+#endif
 
 	struct TPubSubPerVehicle
 	{
@@ -88,7 +128,12 @@ class MVSimNode
 
 		ros::Publisher pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
 		ros::Publisher pub_chassis_shape;  //!< "<VEH>/chassis_shape"
+
+#if PACKAGE_ROS_VERSION == 1
 		visualization_msgs::MarkerArray chassis_shape_msg;
+#else
+		visualization_msgs::msg::MarkerArray chassis_shape_msg;
+#endif
 	};
 
 	/// Pubs/Subs for each vehicle. Initialized by initPubSubs(), called
@@ -167,5 +212,3 @@ class MVSimNode
 	void visit_vehicle(mvsim::VehicleBase& veh);
 
 };	// end class
-
-#endif	// SR_MVSIM_NODE_CORE_H

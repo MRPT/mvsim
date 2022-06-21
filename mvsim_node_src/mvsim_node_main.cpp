@@ -1,5 +1,11 @@
-/**
- */
+/*+-------------------------------------------------------------------------+
+  |                       MultiVehicle simulator (libmvsim)                 |
+  |                                                                         |
+  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
+  | Distributed under 3-clause BSD License                                  |
+  |   See COPYING                                                           |
+  +-------------------------------------------------------------------------+ */
 
 #include "mvsim/mvsim_node_core.h"
 
@@ -11,8 +17,14 @@
 int main(int argc, char** argv)
 {
 	// Set up ROS.
+#if PACKAGE_ROS_VERSION == 1
 	ros::init(argc, argv, "mvsim");
 	ros::NodeHandle n;
+#else
+	rclcpp::init(argc, argv);
+	auto n = rclcpp::Node::make_shared("mvsim");
+
+#endif
 
 	// Create a "Node" object.
 	MVSimNode node(n);
@@ -38,6 +50,7 @@ int main(int argc, char** argv)
 	// Attach world as a mvsim communications node:
 	node.mvsim_world_.connectToServer();
 
+#if PACKAGE_ROS_VERSION == 1
 	// Set up a dynamic reconfigure server.
 	// Do this before parameter server, else some of the parameter server
 	// values can be overwritten.
@@ -45,6 +58,7 @@ int main(int argc, char** argv)
 	dynamic_reconfigure::Server<mvsim::mvsimNodeConfig>::CallbackType cb;
 	cb = boost::bind(&MVSimNode::configCallback, &node, _1, _2);
 	dr_srv.setCallback(cb);
+#endif
 
 	// Tell ROS how fast to run this node.
 	ros::Rate r(rate);

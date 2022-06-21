@@ -1,20 +1,45 @@
-/**
- */
+/*+-------------------------------------------------------------------------+
+  |                       MultiVehicle simulator (libmvsim)                 |
+  |                                                                         |
+  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
+  | Distributed under 3-clause BSD License                                  |
+  |   See COPYING                                                           |
+  +-------------------------------------------------------------------------+ */
 
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <mrpt/ros1bridge/laser_scan.h>
-#include <mrpt/ros1bridge/map.h>
-#include <mrpt/ros1bridge/pose.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mvsim/WorldElements/OccupancyGridMap.h>
+#include <sensor_msgs/LaserScan.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+#if PACKAGE_ROS_VERSION == 1
+#include <mrpt/ros1bridge/laser_scan.h>
+#include <mrpt/ros1bridge/map.h>
+#include <mrpt/ros1bridge/pose.h>
 #include <nav_msgs/GetMap.h>
 #include <nav_msgs/MapMetaData.h>
 #include <nav_msgs/Odometry.h>
-#include <sensor_msgs/LaserScan.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+// usings:
+using Msg_OccupancyGrid = nav_msgs::OccupancyGrid;
+using Msg_MapMetaData = nav_msgs::MapMetaData;
+using Msg_TransformStamped = geometry_msgs::TransformStamped;
+#else
+#include <mrpt/ros2bridge/laser_scan.h>
+#include <mrpt/ros2bridge/map.h>
+#include <mrpt/ros2bridge/pose.h>
+
+#include <nav_msgs/msg/map_meta_data.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/srv/get_map.hpp>
+// usings:
+using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
+using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
+using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
+#endif
 
 #include <iostream>
 #include <rapidxml_utils.hpp>
@@ -25,20 +50,35 @@
  * MVSimNode()
  * Constructor.
  *----------------------------------------------------------------------------*/
-MVSimNode::MVSimNode(ros::NodeHandle& n) : n_(n)
+#if PACKAGE_ROS_VERSION == 1
+MVSimNode::MVSimNode(ros::NodeHandle& n)
+#else
+MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
+#endif
+	: n_(n)
 {
+#if PACKAGE_ROS_VERSION == 2
+	ts.attachClock(clock_);
+#endif
+
 	// Launch GUI thread:
 	thread_params_.obj = this;
 	thGUI_ =
 		std::thread(&MVSimNode::thread_update_GUI, std::ref(thread_params_));
 
 	// Init ROS publishers:
+#if PACKAGE_ROS_VERSION == 1
 	pub_clock_ = n_.advertise<rosgraph_msgs::Clock>("/clock", 10);
 
-	pub_map_ros_ = n_.advertise<nav_msgs::OccupancyGrid>(
+	pub_map_ros_ = n_.advertise<Msg_OccupancyGrid>(
 		"simul_map", 1 /*queue len*/, true /*latch*/);
-	pub_map_metadata_ = n_.advertise<nav_msgs::MapMetaData>(
+	pub_map_metadata_ = n_.advertise<Msg_MapMetaData>(
 		"simul_map_metadata", 1 /*queue len*/, true /*latch*/);
+#else
+	pub_map_ros_ = n_->create_publisher<Msg_OccupancyGrid>("simul_map", 10);
+	pub_map_metadata_ = n_->create_publisher<Msg_MapMetaData>(
+		"simul_map_metadata", 1 /*queue len*/);
+#endif
 
 	sim_time_.fromSec(0.0);
 	base_last_cmd_.fromSec(0.0);
@@ -114,6 +154,7 @@ MVSimNode::~MVSimNode()
 	thGUI_.join();
 }
 
+#if PACKAGE_ROS_VERSION == 1
 /*------------------------------------------------------------------------------
  * configCallback()
  * Callback function for dynamic reconfigure server.
@@ -128,6 +169,7 @@ void MVSimNode::configCallback(mvsim::mvsimNodeConfig& config, uint32_t level)
 	if (mvsim_world_.is_GUI_open() && !config.show_gui)
 		mvsim_world_.close_GUI();
 }
+#endif
 
 // Process pending msgs, run real-time simulation, etc.
 void MVSimNode::spin()
@@ -270,12 +312,20 @@ void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 			dynamic_cast<mvsim::OccupancyGridMap*>(&obj);
 		grid)
 	{
-		nav_msgs::OccupancyGrid ros_map;
+		Msg_OccupancyGrid ros_map;
+#if PACKAGE_ROS_VERSION == 1
 		mrpt::ros1bridge::toROS(grid->getOccGrid(), ros_map);
+#else
+		mrpt::ros2bridge::toROS(grid->getOccGrid(), ros_map);
+#endif
 
+#if PACKAGE_ROS_VERSION == 1
 		static size_t loop_count = 0;
 		ros_map.header.stamp = ros::Time::now();
 		ros_map.header.seq = loop_count++;
+#else
+		ros_map.header.stamp = clock_->now();
+#endif
 
 		pub_map_ros_.publish(ros_map);
 		pub_map_metadata_.publish(ros_map.info);
@@ -316,7 +366,7 @@ void MVSimNode::sendStaticTF(
 	const std::string& frame_id, const std::string& child_frame_id,
 	const tf2::Transform& txf, const ros::Time& stamp)
 {
-	geometry_msgs::TransformStamped tx;
+	Msg_TransformStamped tx;
 	tx.header.frame_id = frame_id;
 	tx.child_frame_id = child_frame_id;
 	tx.header.stamp = stamp;
@@ -564,7 +614,7 @@ void MVSimNode::spinNotifyROS()
 							"Save initial pose for each vehicle, set odometry "
 							"from that pose");
 
-						geometry_msgs::TransformStamped tx;
+						Msg_TransformStamped tx;
 						tx.header.frame_id = "/map";
 						tx.child_frame_id = sOdomName;
 						tx.header.stamp = sim_time_;
@@ -615,7 +665,7 @@ void MVSimNode::spinNotifyROS()
 				const mrpt::math::TPose3D odo_pose = gh_veh_pose;
 
 				{
-					geometry_msgs::TransformStamped tx;
+					Msg_TransformStamped tx;
 					tx.header.frame_id = sOdomName;
 					tx.child_frame_id = sBaseLinkFrame;
 					tx.header.stamp = sim_time_;
@@ -696,7 +746,7 @@ void MVSimNode::onNewObservation(
 		tf2::Transform transform =
 			mrpt::ros1bridge::toROS_tfTransform(sensorPose);
 
-		geometry_msgs::TransformStamped tfStmp;
+		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
 		tfStmp.child_frame_id = sSensorFrameId;
 		tfStmp.header.frame_id = vehVarName("base_link", veh);
