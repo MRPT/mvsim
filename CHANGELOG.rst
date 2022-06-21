@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.2 (2022-06-21)
+------------------
 * Install models/ subdirectory too
 * Changes towards building for both ros1 & ros2
 * Copyright date bump
