@@ -359,7 +359,7 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	}
 
 	// Publish the static transform /world -> /map
-	sendStaticTF("/world", "/map", tfIdentity_, sim_time_);
+	sendStaticTF("world", "map", tfIdentity_, sim_time_);
 }
 
 void MVSimNode::sendStaticTF(
@@ -592,7 +592,7 @@ void MVSimNode::spinNotifyROS()
 							.pub_particlecloud.getNumSubscribers() > 0)
 					{
 						particleCloud.header.stamp = sim_time_;
-						particleCloud.header.frame_id = "/map";
+						particleCloud.header.frame_id = "map";
 						particleCloud.poses.resize(1);
 						particleCloud.poses[0] = gtOdoMsg.pose.pose;
 						m_pubsub_vehicles[i].pub_particlecloud.publish(
@@ -615,7 +615,7 @@ void MVSimNode::spinNotifyROS()
 							"from that pose");
 
 						Msg_TransformStamped tx;
-						tx.header.frame_id = "/map";
+						tx.header.frame_id = "map";
 						tx.child_frame_id = sOdomName;
 						tx.header.stamp = sim_time_;
 						tx.transform =
