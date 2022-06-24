@@ -2,6 +2,13 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove trailing '/' in tf frame names for consistency with modern conventions.
+* Rename COPYING -> LICENSE
+* Towards supporting ROS2
+* Contributors: Jose Luis Blanco-Claraco
+
 0.3.2 (2022-06-21)
 ------------------
 * Install models/ subdirectory too
