@@ -14,7 +14,7 @@
 		<param name="ini_file" value="$(find mrpt_localization)/tutorial/pf-localization.ini"/> 
 		<param name="map_file" value="$(find mvsim)/mvsim_tutorial/uma_campus.gridmap.gz"/> 
 		<param name="odom_frame_id" value="odom"/> 
-		<param name="global_frame_id" value="/map"/> 
+		<param name="global_frame_id" value="map"/> 
 		<param name="base_frame_id" value="base_link"/> 
 		<param name="map_update_skip" value="50"/> 
 		<param name="particlecloud_update_skip" value="1"/> 
