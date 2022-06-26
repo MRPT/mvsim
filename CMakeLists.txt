@@ -56,7 +56,6 @@ if (DETECTED_ROS2)
 	set(BUILD_FOR_ROS TRUE)
 
 	find_package(rclcpp REQUIRED)
-	find_package(mrpt-ros2bridge REQUIRED)
 endif()
 
 
@@ -64,6 +63,67 @@ if (BUILD_FOR_ROS)
 	message(STATUS " ==== multivehicle-simulator: ROS$ENV{ROS_VERSION} detected. ROS nodes will be built. ===== ")
 	add_definitions(-DMVSIM_HAS_ROS)
 endif()
+
+
+# -----------------------------------------------------------------------------
+#  ROS1
+# -----------------------------------------------------------------------------
+if (BUILD_FOR_ROS AND DETECTED_ROS1)
+	# Find catkin macros and libraries
+	# if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+	# is used, also find other catkin packages
+	find_package(catkin
+		REQUIRED
+		COMPONENTS
+		roscpp tf2 dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs
+		tf2_geometry_msgs
+	)
+	find_package(mrpt-ros1bridge REQUIRED)
+
+	#add dynamic reconfigure api
+	if (dynamic_reconfigure_FOUND)
+		generate_dynamic_reconfigure_options(
+			cfg/mvsimNode.cfg
+			)
+	endif()
+
+	###################################
+	## catkin specific configuration ##
+	###################################
+	## The catkin_package macro generates cmake config files for your package
+	## Declare things to be passed to dependent projects
+	## INCLUDE_DIRS: uncomment this if you package contains header files
+	## LIBRARIES: libraries you create in this project that dependent projects also need
+	## CATKIN_DEPENDS: catkin_packages dependent projects also need
+	## DEPENDS: system dependencies of this project that dependent projects also need
+
+	catkin_package(
+	  CATKIN_DEPENDS
+			dynamic_reconfigure nav_msgs roscpp sensor_msgs visualization_msgs
+			tf2 tf2_geometry_msgs
+	#  INCLUDE_DIRS include
+	#  LIBRARIES mrpt_localization
+	#  DEPENDS mrpt
+	)
+endif()
+
+# -----------------------------------------------------------------------------
+#  ROS2
+# -----------------------------------------------------------------------------
+if (BUILD_FOR_ROS AND DETECTED_ROS2)
+	# find dependencies
+	find_package(ament_cmake REQUIRED)
+	find_package(geometry_msgs REQUIRED)
+	find_package(tf2 REQUIRED)
+	find_package(nav_msgs REQUIRED)
+	find_package(sensor_msgs REQUIRED)
+	find_package(visualization_msgs REQUIRED)
+	find_package(tf2_geometry_msgs REQUIRED)
+
+	find_package(mrpt-ros2bridge REQUIRED)
+
+endif()
+
 
 # --------------------------
 # Build options
@@ -178,65 +238,6 @@ add_subdirectory(modules)
 # --------------------------
 add_subdirectory(mvsim-cli)
 
-# -----------------------------------------------------------------------------
-#  ROS1
-# -----------------------------------------------------------------------------
-if (BUILD_FOR_ROS AND DETECTED_ROS1)
-	# Find catkin macros and libraries
-	# if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-	# is used, also find other catkin packages
-	find_package(catkin
-		REQUIRED
-		COMPONENTS
-		roscpp tf2 dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs
-		tf2_geometry_msgs
-	)
-	find_package(mrpt-ros1bridge REQUIRED)
-
-	#add dynamic reconfigure api
-	if (dynamic_reconfigure_FOUND)
-		generate_dynamic_reconfigure_options(
-			cfg/mvsimNode.cfg
-			)
-	endif()
-
-	###################################
-	## catkin specific configuration ##
-	###################################
-	## The catkin_package macro generates cmake config files for your package
-	## Declare things to be passed to dependent projects
-	## INCLUDE_DIRS: uncomment this if you package contains header files
-	## LIBRARIES: libraries you create in this project that dependent projects also need
-	## CATKIN_DEPENDS: catkin_packages dependent projects also need
-	## DEPENDS: system dependencies of this project that dependent projects also need
-
-	catkin_package(
-	  CATKIN_DEPENDS
-			dynamic_reconfigure nav_msgs roscpp sensor_msgs visualization_msgs
-			tf2 tf2_geometry_msgs
-	#  INCLUDE_DIRS include
-	#  LIBRARIES mrpt_localization
-	#  DEPENDS mrpt
-	)
-endif()
-
-# -----------------------------------------------------------------------------
-#  ROS2
-# -----------------------------------------------------------------------------
-if (BUILD_FOR_ROS AND DETECTED_ROS2)
-	# find dependencies
-	find_package(ament_cmake REQUIRED)
-	find_package(geometry_msgs REQUIRED)
-	find_package(tf2 REQUIRED)
-	find_package(nav_msgs REQUIRED)
-	find_package(sensor_msgs REQUIRED)
-	find_package(visualization_msgs REQUIRED)
-	find_package(tf2_geometry_msgs REQUIRED)
-
-	find_package(mrpt-ros2bridge REQUIRED)
-
-endif()
-
 if (BUILD_FOR_ROS)
 	###########
 	## Build ##
@@ -286,7 +287,7 @@ if (BUILD_FOR_ROS)
 			add_dependencies(mvsim_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 		endif()
 	elseif(ROS_2)
-		ament_target_dependencies($mvsim_node 
+		ament_target_dependencies(mvsim_node
 			rclcpp
 			geometry_msgs
 			nav_msgs
