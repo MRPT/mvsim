@@ -286,7 +286,7 @@ if (BUILD_FOR_ROS)
 		target_include_directories(mvsim_node PUBLIC ${catkin_INCLUDE_DIRS})
 	endif()
 
-	if (ROS_1)
+	if (DETECTED_ROS1)
 		add_dependencies(mvsim_node
 			mvsim_gencfg
 		)
@@ -301,7 +301,7 @@ if (BUILD_FOR_ROS)
 		if (${PROJECT_NAME}_EXPORTED_TARGETS})
 			add_dependencies(mvsim_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 		endif()
-	elseif(ROS_2)
+	elseif(DETECTED_ROS2)
 		ament_target_dependencies(mvsim_node
 			rclcpp
 			geometry_msgs
