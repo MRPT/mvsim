@@ -103,9 +103,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	mvsim_world_.registerCallbackOnObservation(
 		[this](
 			const mvsim::Simulable& veh,
-			const mrpt::obs::CObservation::Ptr& obs) {
-			onNewObservation(veh, obs);
-		});
+			const mrpt::obs::CObservation::Ptr& obs)
+		{ onNewObservation(veh, obs); });
 }
 
 void MVSimNode::launch_mvsim_server()
@@ -337,11 +336,11 @@ void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 // ROS: Publish grid map for visualization purposes:
 void MVSimNode::notifyROSWorldIsUpdated()
 {
-	mvsim_world_.runVisitorOnWorldElements(
-		[this](mvsim::WorldElementBase& obj) { visit_world_elements(obj); });
+	mvsim_world_.runVisitorOnWorldElements([this](mvsim::WorldElementBase& obj)
+										   { visit_world_elements(obj); });
 
-	mvsim_world_.runVisitorOnVehicles(
-		[this](mvsim::VehicleBase& v) { visit_vehicle(v); });
+	mvsim_world_.runVisitorOnVehicles([this](mvsim::VehicleBase& v)
+									  { visit_vehicle(v); });
 
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
