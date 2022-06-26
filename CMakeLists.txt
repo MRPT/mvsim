@@ -8,24 +8,39 @@
 # |   See COPYING                                                           |
 # +-------------------------------------------------------------------------+
 
+cmake_minimum_required(VERSION 3.9) # for CMAKE_MATCH_1
+
 if("$ENV{ROS_VERSION}" STREQUAL "2")
-	cmake_minimum_required(VERSION 3.8)
 	set(DETECTED_ROS2 TRUE)
 	set(PACKAGE_ROS_VERSION 2)
 elseif("$ENV{ROS_VERSION}" STREQUAL "1")
-	cmake_minimum_required(VERSION 3.1)
 	set(DETECTED_ROS1 TRUE)
 	set(PACKAGE_ROS_VERSION 1)
 	set (CMAKE_CXX_STANDARD 14)
-else()
-	cmake_minimum_required(VERSION 3.1)
 endif()
 project(mrpt_msgs)
 
 # CMake file for the library target
 project(mvsim)
-# Project name must match the ROS package name.
-set(MVSIM_VERSION  0.3.0)
+
+#----
+# Extract version from package.xml
+# Example line:" <version>0.3.2</version>"
+file(READ package.xml contentPackageXML)
+string(REGEX MATCH "<version>([0-9\.]*)</version>" _ ${contentPackageXML})
+set(MVSIM_VERSION ${CMAKE_MATCH_1})
+message(STATUS "MVSIM version: ${MVSIM_VERSION} (detected in package.xml)")
+string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${MVSIM_VERSION})
+set(MVSIM_MAJOR_VERSION ${CMAKE_MATCH_1})
+set(MVSIM_MINOR_VERSION ${CMAKE_MATCH_2})
+set(MVSIM_PATCH_VERSION ${CMAKE_MATCH_3})
+#TODO: Avoid overwritting source dir.
+configure_file(
+	cmake/mvsim_version.h.in
+	${CMAKE_CURRENT_SOURCE_DIR}/modules/simulator/include/mvsim/mvsim_version.h
+	@ONLY
+	)
+#----
 
 find_package(Threads)
 include(GNUInstallDirs)
