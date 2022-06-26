@@ -283,7 +283,7 @@ if (BUILD_FOR_ROS)
 	if (catkin_INCLUDE_DIRS)
 		# Specify additional locations of header files
 		# Your package locations should be listed before other locations
-		target_include_directories(mvsim_node PRIVATE ${catkin_INCLUDE_DIRS})
+		target_include_directories(mvsim_node PUBLIC ${catkin_INCLUDE_DIRS})
 	endif()
 
 	if (ROS_1)
