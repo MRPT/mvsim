@@ -7,9 +7,6 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PoseArray.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mvsim/WorldElements/OccupancyGridMap.h>
@@ -17,6 +14,9 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #if PACKAGE_ROS_VERSION == 1
+#include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <mrpt/ros1bridge/laser_scan.h>
 #include <mrpt/ros1bridge/map.h>
 #include <mrpt/ros1bridge/pose.h>
@@ -46,6 +46,12 @@ using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
 
 #include "mvsim/mvsim_node_core.h"
 
+#if PACKAGE_ROS_VERSION == 1
+namespace mrpt2ros = mrpt::ros1bridge;
+#else
+namespace mrpt2ros = mrpt::ros2bridge;
+#endif
+
 /*------------------------------------------------------------------------------
  * MVSimNode()
  * Constructor.
@@ -58,7 +64,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	: n_(n)
 {
 #if PACKAGE_ROS_VERSION == 2
-	ts.attachClock(clock_);
+	clock_ = n_->get_clock();
+	ts_.attachClock(clock_);
 #endif
 
 	// Launch GUI thread:
@@ -80,14 +87,19 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 		"simul_map_metadata", 1 /*queue len*/);
 #endif
 
+#if PACKAGE_ROS_VERSION == 1
 	sim_time_.fromSec(0.0);
 	base_last_cmd_.fromSec(0.0);
+#else
+	sim_time_ = rclcpp::Time(0);
+	base_last_cmd_ = rclcpp::Time(0);
+#endif
 
 	// Node parameters:
+#if PACKAGE_ROS_VERSION == 1
 	double t;
 	if (!localn_.getParam("base_watchdog_timeout", t)) t = 0.2;
 	base_watchdog_timeout_.fromSec(t);
-
 	localn_.param("realtime_factor", realtime_factor_, 1.0);
 	localn_.param(
 		"gui_refresh_period", gui_refresh_period_ms_, gui_refresh_period_ms_);
@@ -99,12 +111,30 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	// In case the user didn't set it:
 	n_.setParam("/use_sim_time", true);
+#else
+	double t;
+	base_watchdog_timeout_ = std::chrono::milliseconds(
+		1000 * n_->get_parameter_or("base_watchdog_timeout", t, 0.2));
+
+	n_->get_parameter_or("realtime_factor", realtime_factor_, 1.0);
+	n_->get_parameter_or(
+		"gui_refresh_period", gui_refresh_period_ms_, gui_refresh_period_ms_);
+	n_->get_parameter_or("show_gui", show_gui_, show_gui_);
+	n_->get_parameter_or(
+		"period_ms_publish_tf", period_ms_publish_tf_, period_ms_publish_tf_);
+	n_->get_parameter_or(
+		"do_fake_localization", do_fake_localization_, do_fake_localization_);
+
+	// In case the user didn't set it:
+	n_->set_parameter({"use_sim_time", true});
+#endif
 
 	mvsim_world_.registerCallbackOnObservation(
 		[this](
 			const mvsim::Simulable& veh,
-			const mrpt::obs::CObservation::Ptr& obs)
-		{ onNewObservation(veh, obs); });
+			const mrpt::obs::CObservation::Ptr& obs) {
+			onNewObservation(veh, obs);
+		});
 }
 
 void MVSimNode::launch_mvsim_server()
@@ -126,17 +156,17 @@ void MVSimNode::launch_mvsim_server()
 
 void MVSimNode::loadWorldModel(const std::string& world_xml_file)
 {
-	ROS_INFO("[MVSimNode] Loading world file: %s", world_xml_file.c_str());
-	ROS_ASSERT_MSG(
-		mrpt::system::fileExists(world_xml_file),
-		"[MVSimNode::loadWorldModel] File does not exist!: '%s'",
+	RCLCPP_INFO(
+		n_->get_logger(), "[MVSimNode] Loading world file: %s",
 		world_xml_file.c_str());
+
+	ASSERT_FILE_EXISTS_(world_xml_file);
 
 	// Load from XML:
 	rapidxml::file<> fil_xml(world_xml_file.c_str());
 	mvsim_world_.load_from_XML(fil_xml.data(), world_xml_file);
 
-	ROS_INFO("[MVSimNode] World file load done.");
+	RCLCPP_INFO(n_->get_logger(), "[MVSimNode] World file load done.");
 	world_init_ok_ = true;
 
 	// Notify the ROS system about the good news:
@@ -297,7 +327,7 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 
 // Visitor: Vehicles
 // ----------------------------------------
-void MVSimNode::visit_vehicle(mvsim::VehicleBase& veh)
+void MVSimNode::visit_vehicle([[maybe_unused]] mvsim::VehicleBase& veh)
 {
 	//
 }
@@ -312,11 +342,7 @@ void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 		grid)
 	{
 		Msg_OccupancyGrid ros_map;
-#if PACKAGE_ROS_VERSION == 1
-		mrpt::ros1bridge::toROS(grid->getOccGrid(), ros_map);
-#else
-		mrpt::ros2bridge::toROS(grid->getOccGrid(), ros_map);
-#endif
+		mrpt2ros::toROS(grid->getOccGrid(), ros_map);
 
 #if PACKAGE_ROS_VERSION == 1
 		static size_t loop_count = 0;
@@ -326,8 +352,15 @@ void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 		ros_map.header.stamp = clock_->now();
 #endif
 
-		pub_map_ros_.publish(ros_map);
-		pub_map_metadata_.publish(ros_map.info);
+#if PACKAGE_ROS_VERSION == 1
+		auto& pubMap = pub_map_ros_;
+		auto& pubMapMeta = pub_map_metadata_;
+#else
+		auto& pubMap = *pub_map_ros_;
+		auto& pubMapMeta = *pub_map_metadata_;
+#endif
+		pubMap.publish(ros_map);
+		pubMapMeta.publish(ros_map.info);
 
 	}  // end gridmap
 
@@ -336,11 +369,11 @@ void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 // ROS: Publish grid map for visualization purposes:
 void MVSimNode::notifyROSWorldIsUpdated()
 {
-	mvsim_world_.runVisitorOnWorldElements([this](mvsim::WorldElementBase& obj)
-										   { visit_world_elements(obj); });
+	mvsim_world_.runVisitorOnWorldElements(
+		[this](mvsim::WorldElementBase& obj) { visit_world_elements(obj); });
 
-	mvsim_world_.runVisitorOnVehicles([this](mvsim::VehicleBase& v)
-									  { visit_vehicle(v); });
+	mvsim_world_.runVisitorOnVehicles(
+		[this](mvsim::VehicleBase& v) { visit_vehicle(v); });
 
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
@@ -363,7 +396,13 @@ void MVSimNode::notifyROSWorldIsUpdated()
 
 void MVSimNode::sendStaticTF(
 	const std::string& frame_id, const std::string& child_frame_id,
-	const tf2::Transform& txf, const ros::Time& stamp)
+	const tf2::Transform& txf,
+#if PACKAGE_ROS_VERSION == 1
+	const ros::Time& stamp
+#else
+	const rclcpp::Time& stamp
+#endif
+)
 {
 	Msg_TransformStamped tx;
 	tx.header.frame_id = frame_id;
@@ -505,7 +544,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 }
 
 void MVSimNode::onROSMsgCmdVel(
-	const geometry_msgs::Twist::ConstPtr& cmd, mvsim::VehicleBase* veh)
+	const Msg_Twist::ConstPtr& cmd, mvsim::VehicleBase* veh)
 {
 	mvsim::ControllerBaseInterface* controller = veh->getControllerInterface();
 
@@ -668,8 +707,8 @@ void MVSimNode::spinNotifyROS()
 					tx.header.frame_id = sOdomName;
 					tx.child_frame_id = sBaseLinkFrame;
 					tx.header.stamp = sim_time_;
-					tx.transform = tf2::toMsg(
-						mrpt::ros1bridge::toROS_tfTransform(odo_pose));
+					tx.transform =
+						tf2::toMsg(mrpt2ros::toROS_tfTransform(odo_pose));
 					tf_br_.sendTransform(tx);
 				}
 
@@ -711,8 +750,8 @@ void MVSimNode::onNewObservation(
 {
 	using mrpt::obs::CObservation2DRangeScan;
 
-	ROS_ASSERT(obs);
-	ROS_ASSERT(!obs->sensorLabel.empty());
+	ASSERT_(obs);
+	ASSERT_(!obs->sensorLabel.empty());
 
 	const auto& vehPtr = dynamic_cast<const mvsim::VehicleBase*>(&sim);
 	if (!vehPtr) return;  // for example, if obs from invisible aux block.
@@ -742,8 +781,7 @@ void MVSimNode::onNewObservation(
 		mrpt::poses::CPose3D sensorPose;
 		o->getSensorPose(sensorPose);
 
-		tf2::Transform transform =
-			mrpt::ros1bridge::toROS_tfTransform(sensorPose);
+		tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
@@ -758,7 +796,7 @@ void MVSimNode::onNewObservation(
 			// Convert observation MRPT -> ROS
 			geometry_msgs::Pose msg_pose_laser;
 			sensor_msgs::LaserScan msg_laser;
-			mrpt::ros1bridge::toROS(*o, msg_laser, msg_pose_laser);
+			mrpt2ros::toROS(*o, msg_laser, msg_pose_laser);
 
 			// Force usage of simulation time:
 			msg_laser.header.stamp = sim_time_;

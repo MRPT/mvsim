@@ -23,15 +23,16 @@ int main(int argc, char** argv)
 #else
 	rclcpp::init(argc, argv);
 	auto n = rclcpp::Node::make_shared("mvsim");
-
 #endif
 
 	// Create a "Node" object.
 	MVSimNode node(n);
 
 	// Declare variables that can be modified by launch file or command line.
-	int rate;
 	std::string world_file;
+
+#if PACKAGE_ROS_VERSION == 1
+	int rate = 100;
 
 	// Initialize node parameters from launch file or command line.
 	// Use a private node handle so that multiple instances of the node can be
@@ -40,6 +41,9 @@ int main(int argc, char** argv)
 	ros::NodeHandle private_node_handle_("~");
 	private_node_handle_.param("simul_rate", rate, 100);
 	private_node_handle_.param("world_file", world_file, std::string(""));
+#else
+	n->get_parameter("world_file", world_file);
+#endif
 
 	// Launch mvsim:
 	node.launch_mvsim_server();
@@ -61,6 +65,7 @@ int main(int argc, char** argv)
 #endif
 
 	// Tell ROS how fast to run this node.
+#if PACKAGE_ROS_VERSION == 1
 	ros::Rate r(rate);
 
 	// Main loop.
@@ -70,6 +75,10 @@ int main(int argc, char** argv)
 		ros::spinOnce();
 		r.sleep();
 	}
+#else
+	rclcpp::spin(n);
+	rclcpp::shutdown();
+#endif
 
 	return 0;
 

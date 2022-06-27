@@ -14,7 +14,6 @@
 #include <mvsim/mvsimNodeConfig.h>
 #endif
 
-#include <geometry_msgs/Twist.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/system/CTicTac.h>
 #include <mvsim/Comms/Server.h>
@@ -24,11 +23,18 @@
 #include <tf2_ros/transform_broadcaster.h>
 
 #if PACKAGE_ROS_VERSION == 1
+#include <geometry_msgs/Twist.h>
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <rosgraph_msgs/Clock.h>
 #include <visualization_msgs/MarkerArray.h>
 #else
+#include <geometry_msgs/msg/polygon.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <nav_msgs/msg/map_meta_data.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include "rclcpp/clock.hpp"
@@ -71,6 +77,13 @@ class MVSimNode
 	/// obstacles, etc.)
 	mvsim::World mvsim_world_;
 
+// Helper types to work with ROS1/ROS2:
+#if PACKAGE_ROS_VERSION == 1
+	using Msg_Twist = geometry_msgs::Twist;
+#else
+	using Msg_Twist = geometry_msgs::msg::Twist;
+#endif
+
 	/// (Defaul=1.0) >1: speed-up, <1: slow-down
 	double realtime_factor_ = 1.0;
 	int gui_refresh_period_ms_ = 50;
@@ -99,11 +112,10 @@ class MVSimNode
 	ros::Publisher pub_map_ros_, pub_map_metadata_;
 	ros::Publisher pub_clock_;
 #else
-	rclcpp::Publisher pub_map_ros_, pub_map_metadata_;
+	rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_ros_;
+	rclcpp::Publisher<nav_msgs::msg::MapMetaData>::SharedPtr pub_map_metadata_;
 	rclcpp::TimeSource ts_{n_};
-	rclcpp::Clock::SharedPtr clock_ =
-		std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
-
+	rclcpp::Clock::SharedPtr clock_;
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -116,6 +128,7 @@ class MVSimNode
 
 	struct TPubSubPerVehicle
 	{
+#if PACKAGE_ROS_VERSION == 1
 		ros::Subscriber sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
 		ros::Publisher pub_odom;  //!< Publisher of "odom" topic
 		ros::Publisher pub_ground_truth;  //!< "base_pose_ground_truth" topic
@@ -129,9 +142,31 @@ class MVSimNode
 		ros::Publisher pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
 		ros::Publisher pub_chassis_shape;  //!< "<VEH>/chassis_shape"
 
-#if PACKAGE_ROS_VERSION == 1
 		visualization_msgs::MarkerArray chassis_shape_msg;
 #else
+		/// Subscribers vehicle's "cmd_vel" topic
+		rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel;
+		/// Publisher of "odom" topic
+		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom;
+		/// "base_pose_ground_truth" topic
+		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_ground_truth;
+
+		/// "fake_localization" pubs:
+		rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::
+			SharedPtr pub_amcl_pose;
+		rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr
+			pub_particlecloud;
+
+		/// Map <sensor_label> => publisher
+		std::map<std::string, rclcpp::PublisherBase::SharedPtr> pub_sensors;
+
+		/// "<VEH>/chassis_markers"
+		rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
+			pub_chassis_markers;
+		/// "<VEH>/chassis_shape"
+		rclcpp::Publisher<geometry_msgs::msg::Polygon>::SharedPtr
+			pub_chassis_shape;
+
 		visualization_msgs::msg::MarkerArray chassis_shape_msg;
 #endif
 	};
@@ -148,13 +183,20 @@ class MVSimNode
 
 	// === ROS Hooks ====
 	void onROSMsgCmdVel(
-		const geometry_msgs::Twist::ConstPtr& cmd, mvsim::VehicleBase* veh);
+		const Msg_Twist::ConstPtr& cmd, mvsim::VehicleBase* veh);
 	// === End ROS Hooks====
 
+#if PACKAGE_ROS_VERSION == 1
 	rosgraph_msgs::Clock clockMsg_;
 	ros::Time sim_time_;  //!< Current simulation time
 	ros::Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
 	ros::Duration base_watchdog_timeout_;
+#else
+
+	rclcpp::Time sim_time_;	 //!< Current simulation time
+	rclcpp::Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
+	rclcpp::Duration base_watchdog_timeout_ = std::chrono::seconds(1);
+#endif
 
 	/// Unit transform (const, once)
 	const tf2::Transform tfIdentity_ = tf2::Transform::getIdentity();
@@ -206,7 +248,13 @@ class MVSimNode
 
 	void sendStaticTF(
 		const std::string& frame_id, const std::string& child_frame_id,
-		const tf2::Transform& tx, const ros::Time& stamp);
+		const tf2::Transform& tx,
+#if PACKAGE_ROS_VERSION == 1
+		const ros::Time& stamp
+#else
+		const rclcpp::Time& stamp
+#endif
+	);
 
 	void visit_world_elements(mvsim::WorldElementBase& obj);
 	void visit_vehicle(mvsim::VehicleBase& veh);
