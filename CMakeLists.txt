@@ -300,7 +300,7 @@ if (BUILD_FOR_ROS)
 		)
 
 		target_link_libraries(mvsim_node 
-			PRIVATE
+			#PRIVATE  # ros catkin already used the plain signature, we cannot use this here...
 			${catkin_LIBRARIES}
 			mrpt::ros1bridge
 		)
