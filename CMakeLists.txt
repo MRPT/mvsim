@@ -200,9 +200,13 @@ set(EMBEDDED_Box2D_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/Box2D/Box2D")
 # 1st) Try to locate it via CMake (installed in the system or precompiled somewhere)
 set(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
 find_package(Box2D QUIET) # Quiet in a 1st try...
-# Defines:
 
-if (NOT Box2D_FOUND OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
+# Since ubuntu jammy, its name changed:
+if (NOT Box2D_FOUND)
+	find_package(box2d QUIET) # Defines: box2d::box2d
+endif()
+
+if ((NOT Box2D_FOUND AND NOT box2d_FOUND) OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
 	# Use embedded version:
 	# Override some defaults in the embedded project:
 	set(BOX2D_INSTALL ON CACHE BOOL "Install Box2D libs, includes, and CMake scripts" FORCE) # IMPORTANT: This must be ON to enable parsing Box2D's .cmake.in file!!
@@ -239,8 +243,12 @@ if (Box2D_FOUND)
 	if ("" STREQUAL "${BOX2D_LIBRARIES}")
 		set(BOX2D_LIBRARIES Box2D)
 	endif()
-endif()
 
+	# For the latest version:
+	if (TARGET box2d::box2d)
+		set(BOX2D_LIBRARIES box2d::box2d)
+	endif()
+endif()
 
 
 # --------------------------
