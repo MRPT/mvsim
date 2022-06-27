@@ -321,7 +321,7 @@ if (BUILD_FOR_ROS)
 		)
 
 		target_link_libraries(mvsim_node
-			PRIVATE
+			#PRIVATE  # ros ament already used the plain signature, we cannot use this here...
 			mrpt::ros2bridge
 		)
 	endif()
@@ -333,7 +333,7 @@ if (BUILD_FOR_ROS)
 	# Specify libraries to link a library or executable target against
 	target_link_libraries(
 		mvsim_node
-	PRIVATE
+		#PRIVATE  # ros ament already used the plain signature, we cannot use this here...
 		mvsim::simulator
 		mvsim::msgs
 		mvsim::comms
@@ -343,9 +343,9 @@ if (BUILD_FOR_ROS)
 	)
 
 	if (DETECTED_ROS1)
-		target_link_libraries(mvsim_node PRIVATE mrpt::ros1bridge)
+		target_link_libraries(mvsim_node mrpt::ros1bridge)
 	else()
-		target_link_libraries(mvsim_node PRIVATE mrpt::ros2bridge)
+		target_link_libraries(mvsim_node mrpt::ros2bridge)
 	endif()
 
 	#############
