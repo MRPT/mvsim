@@ -77,13 +77,6 @@ class MVSimNode
 	/// obstacles, etc.)
 	mvsim::World mvsim_world_;
 
-// Helper types to work with ROS1/ROS2:
-#if PACKAGE_ROS_VERSION == 1
-	using Msg_Twist = geometry_msgs::Twist;
-#else
-	using Msg_Twist = geometry_msgs::msg::Twist;
-#endif
-
 	/// (Defaul=1.0) >1: speed-up, <1: slow-down
 	double realtime_factor_ = 1.0;
 	int gui_refresh_period_ms_ = 50;
@@ -183,7 +176,12 @@ class MVSimNode
 
 	// === ROS Hooks ====
 	void onROSMsgCmdVel(
-		const Msg_Twist::ConstPtr& cmd, mvsim::VehicleBase* veh);
+#if PACKAGE_ROS_VERSION == 1
+		const geometry_msgs::Twist::ConstPtr& cmd,
+#else
+		const geometry_msgs::msg::Twist::ConstSharedPtr cmd,
+#endif
+		mvsim::VehicleBase* veh);
 	// === End ROS Hooks====
 
 #if PACKAGE_ROS_VERSION == 1

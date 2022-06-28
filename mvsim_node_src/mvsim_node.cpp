@@ -10,7 +10,6 @@
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mvsim/WorldElements/OccupancyGridMap.h>
-#include <sensor_msgs/LaserScan.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #if PACKAGE_ROS_VERSION == 1
@@ -23,10 +22,12 @@
 #include <nav_msgs/GetMap.h>
 #include <nav_msgs/MapMetaData.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/LaserScan.h>
 // usings:
 using Msg_OccupancyGrid = nav_msgs::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::TransformStamped;
+using Msg_LaserScan = sensor_msgs::LaserScan;
 #else
 #include <mrpt/ros2bridge/laser_scan.h>
 #include <mrpt/ros2bridge/map.h>
@@ -35,10 +36,12 @@ using Msg_TransformStamped = geometry_msgs::TransformStamped;
 #include <nav_msgs/msg/map_meta_data.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/srv/get_map.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 // usings:
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
+using Msg_LaserScan = sensor_msgs::msg::LaserScan;
 #endif
 
 #include <iostream>
@@ -50,6 +53,12 @@ using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
 namespace mrpt2ros = mrpt::ros1bridge;
 #else
 namespace mrpt2ros = mrpt::ros2bridge;
+#endif
+
+#if PACKAGE_ROS_VERSION == 1
+#define ROS12_INFO(...) ROS_INFO(__VA_ARGS__)
+#else
+#define ROS12_INFO(...) RCLCPP_INFO(n_->get_logger(), __VA_ARGS__)
 #endif
 
 /*------------------------------------------------------------------------------
@@ -156,9 +165,7 @@ void MVSimNode::launch_mvsim_server()
 
 void MVSimNode::loadWorldModel(const std::string& world_xml_file)
 {
-	RCLCPP_INFO(
-		n_->get_logger(), "[MVSimNode] Loading world file: %s",
-		world_xml_file.c_str());
+	ROS12_INFO("[MVSimNode] Loading world file: %s", world_xml_file.c_str());
 
 	ASSERT_FILE_EXISTS_(world_xml_file);
 
@@ -166,7 +173,7 @@ void MVSimNode::loadWorldModel(const std::string& world_xml_file)
 	rapidxml::file<> fil_xml(world_xml_file.c_str());
 	mvsim_world_.load_from_XML(fil_xml.data(), world_xml_file);
 
-	RCLCPP_INFO(n_->get_logger(), "[MVSimNode] World file load done.");
+	ROS12_INFO("[MVSimNode] World file load done.");
 	world_init_ok_ = true;
 
 	// Notify the ROS system about the good news:
@@ -188,7 +195,7 @@ MVSimNode::~MVSimNode()
  * configCallback()
  * Callback function for dynamic reconfigure server.
  *----------------------------------------------------------------------------*/
-void MVSimNode::configCallback(mvsim::mvsimNodeConfig& config, uint32_t level)
+void MVSimNode::configCallback(mvsim::mvsimNodeConfig& config,[[maybe_unused]] uint32_t level)
 {
 	// Set class variables to new values. They should match what is input at the
 	// dynamic reconfigure GUI.
@@ -417,10 +424,19 @@ void MVSimNode::sendStaticTF(
 void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 {
 	// sub: <VEH>/cmd_vel
+#if PACKAGE_ROS_VERSION == 1
 	pubsubs.sub_cmd_vel = n_.subscribe<geometry_msgs::Twist>(
 		vehVarName("cmd_vel", *veh), 10,
 		boost::bind(&MVSimNode::onROSMsgCmdVel, this, _1, veh));
+#else
+	using std::placeholders::_1;
 
+	pubsubs.sub_cmd_vel = n_->create_subscription<geometry_msgs::msg::Twist>(
+		vehVarName("cmd_vel", *veh), 10,
+		std::bind(&MVSimNode::onROSMsgCmdVel, this, _1, veh));
+#endif
+
+#if PACKAGE_ROS_VERSION == 1
 	// pub: <VEH>/odom
 	pubsubs.pub_odom =
 		n_.advertise<nav_msgs::Odometry>(vehVarName("odom", *veh), 10);
@@ -428,20 +444,38 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	// pub: <VEH>/base_pose_ground_truth
 	pubsubs.pub_ground_truth = n_.advertise<nav_msgs::Odometry>(
 		vehVarName("base_pose_ground_truth", *veh), 10);
+#else
+	// pub: <VEH>/odom
+	pubsubs.pub_odom = n_->create_publisher<nav_msgs::msg::Odometry>(
+		vehVarName("odom", *veh), 10);
+	// pub: <VEH>/base_pose_ground_truth
+	pubsubs.pub_ground_truth = n_->create_publisher<nav_msgs::msg::Odometry>(
+		vehVarName("base_pose_ground_truth", *veh), 10);
+#endif
 
 	// pub: <VEH>/chassis_markers
 	{
+#if PACKAGE_ROS_VERSION == 1
 		pubsubs.pub_chassis_markers =
 			n_.advertise<visualization_msgs::MarkerArray>(
 				vehVarName("chassis_markers", *veh), 5, true /*latch*/);
+#else
+		rclcpp::QoS qosLatched(rclcpp::KeepLast(5));
+		qosLatched.durability(rmw_qos_durability_policy_t::
+								  RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
+		pubsubs.pub_chassis_markers =
+			n_->create_publisher<visualization_msgs::msg::MarkerArray>(
+				vehVarName("chassis_markers", *veh), qosLatched);
+#endif
 		const mrpt::math::TPolygon2D& poly = veh->getChassisShape();
 
 		// Create one "ROS marker" for each wheel + 1 for the chassis:
-		visualization_msgs::MarkerArray& msg_shapes = pubsubs.chassis_shape_msg;
+		auto& msg_shapes = pubsubs.chassis_shape_msg;
 		msg_shapes.markers.resize(1 + veh->getNumWheels());
 
 		// [0] Chassis shape:
-		visualization_msgs::Marker& chassis_shape_msg = msg_shapes.markers[0];
+		auto& chassis_shape_msg = msg_shapes.markers[0];
 
 		chassis_shape_msg.action = visualization_msgs::Marker::MODIFY;
 		chassis_shape_msg.type = visualization_msgs::Marker::LINE_STRIP;
@@ -468,8 +502,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		// [1:N] Wheel shapes
 		for (size_t i = 0; i < veh->getNumWheels(); i++)
 		{
-			visualization_msgs::Marker& wheel_shape_msg =
-				msg_shapes.markers[1 + i];
+			auto& wheel_shape_msg = msg_shapes.markers[1 + i];
 			const mvsim::Wheel& w = veh->getWheelInfo(i);
 
 			const double lx = w.diameter * 0.5, ly = w.width * 0.5;
@@ -505,7 +538,11 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		}  // end for each wheel
 
 		// Publish Initial pose
+#if PACKAGE_ROS_VERSION == 1
 		pubsubs.pub_chassis_markers.publish(msg_shapes);
+#else
+		pubsubs.pub_chassis_markers->publish(msg_shapes);
+#endif
 	}
 
 	// pub: <VEH>/chassis_polygon
@@ -544,7 +581,12 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 }
 
 void MVSimNode::onROSMsgCmdVel(
-	const Msg_Twist::ConstPtr& cmd, mvsim::VehicleBase* veh)
+#if PACKAGE_ROS_VERSION == 1
+	const geometry_msgs::Twist::ConstPtr& cmd,
+#else
+	const geometry_msgs::msg::Twist::ConstSharedPtr cmd,
+#endif
+	mvsim::VehicleBase* veh)
 {
 	mvsim::ControllerBaseInterface* controller = veh->getControllerInterface();
 
@@ -794,8 +836,13 @@ void MVSimNode::onNewObservation(
 		if (is_1st_pub || pub.getNumSubscribers() > 0)
 		{
 			// Convert observation MRPT -> ROS
+#if PACKAGE_ROS_VERSION == 1
 			geometry_msgs::Pose msg_pose_laser;
 			sensor_msgs::LaserScan msg_laser;
+#else
+			geometry_msgs::msg::Pose msg_pose_laser;
+			sensor_msgs::msg::LaserScan msg_laser;
+#endif
 			mrpt2ros::toROS(*o, msg_laser, msg_pose_laser);
 
 			// Force usage of simulation time:

@@ -29,13 +29,16 @@ class ControllerBaseInterface
 		std::string append_gui_lines;
 	};
 
-	virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out)
+	virtual void teleop_interface(
+		[[maybe_unused]] const TeleopInput& in,
+		[[maybe_unused]] TeleopOutput& out)
 	{ /*default: do nothing*/
 	}
 
 	/** Accept a Twist command. \return true if the controller supports this
 	 * kind of commands, false otherwise */
-	virtual bool setTwistCommand(const double vx, const double wz)
+	virtual bool setTwistCommand(
+		[[maybe_unused]] const double vx, [[maybe_unused]] const double wz)
 	{
 		return false; /* default: no */
 	}
@@ -96,7 +99,8 @@ class ControllerBaseTempl : public ControllerBaseInterface
 		typename VEH_DYNAMICS::TControllerOutput& co) = 0;
 
 	/** Override to load class-specific options from the <controller> node */
-	virtual void load_config(const rapidxml::xml_node<char>& node)
+	virtual void load_config(  //
+		[[maybe_unused]] const rapidxml::xml_node<char>& node)
 	{ /*default: do nothing*/
 	}
 
