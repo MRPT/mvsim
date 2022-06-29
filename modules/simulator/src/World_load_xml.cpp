@@ -16,6 +16,7 @@
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
+#include <rapidxml_utils.hpp>
 #include <stdexcept>
 
 #include "xml_utils.h"
@@ -24,6 +25,12 @@ using namespace mvsim;
 using namespace std;
 
 MRPT_TODO("Replace if-else chain with a node load registry")
+
+void World::load_from_XML_file(const std::string& xmlFileNamePath)
+{
+	rapidxml::file<> fil_xml(xmlFileNamePath.c_str());
+	load_from_XML(fil_xml.data(), xmlFileNamePath.c_str());
+}
 
 void World::load_from_XML(
 	const std::string& xml_text, const std::string& fileNameForPath)
