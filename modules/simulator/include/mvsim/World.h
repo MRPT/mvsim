@@ -54,6 +54,14 @@ class World : public mrpt::system::COutputLogger
 
 	/** Load an entire world description into this object from a specification
 	 * in XML format.
+	 * \param[in] xmlFileNamePath The relative or full path to the XML file.
+	 * \exception std::exception On any error, with what() giving a descriptive
+	 * error message
+	 */
+	void load_from_XML_file(const std::string& xmlFileNamePath);
+
+	/** Load an entire world description into this object from a specification
+	 * in XML format.
 	 * \param[in] fileNameForPath Optionally, provide the full path to an XML
 	 * file from which to take relative paths.
 	 * \exception std::exception On any error, with what() giving a descriptive
