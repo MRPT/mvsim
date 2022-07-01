@@ -35,6 +35,9 @@ class Wheel
 	 * coords) */
 	double x = 0, y = -0.5, yaw = 0;
 
+	/** Pose of the wheel wrt the chassis ref point (in local coords) */
+	mrpt::math::TPose3D pose() const { return {x, y, 0, yaw, 0, 0}; }
+
 	/** Length(diameter) and width of the wheel rectangle [m] */
 	double diameter = .4, width = .2;
 	double mass = 2.0;	//!< [kg]
