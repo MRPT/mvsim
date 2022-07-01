@@ -91,9 +91,14 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	pub_map_metadata_ = n_.advertise<Msg_MapMetaData>(
 		"simul_map_metadata", 1 /*queue len*/, true /*latch*/);
 #else
-	pub_map_ros_ = n_->create_publisher<Msg_OccupancyGrid>("simul_map", 10);
-	pub_map_metadata_ = n_->create_publisher<Msg_MapMetaData>(
-		"simul_map_metadata", 1 /*queue len*/);
+	rclcpp::QoS qosLatched(rclcpp::KeepLast(10));
+	qosLatched.durability(
+		rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
+	pub_map_ros_ =
+		n_->create_publisher<Msg_OccupancyGrid>("simul_map", qosLatched);
+	pub_map_metadata_ =
+		n_->create_publisher<Msg_MapMetaData>("simul_map_metadata", qosLatched);
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -195,7 +200,8 @@ MVSimNode::~MVSimNode()
  * configCallback()
  * Callback function for dynamic reconfigure server.
  *----------------------------------------------------------------------------*/
-void MVSimNode::configCallback(mvsim::mvsimNodeConfig& config,[[maybe_unused]] uint32_t level)
+void MVSimNode::configCallback(
+	mvsim::mvsimNodeConfig& config, [[maybe_unused]] uint32_t level)
 {
 	// Set class variables to new values. They should match what is input at the
 	// dynamic reconfigure GUI.
@@ -477,8 +483,14 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		// [0] Chassis shape:
 		auto& chassis_shape_msg = msg_shapes.markers[0];
 
+#if PACKAGE_ROS_VERSION == 1
 		chassis_shape_msg.action = visualization_msgs::Marker::MODIFY;
 		chassis_shape_msg.type = visualization_msgs::Marker::LINE_STRIP;
+#else
+		chassis_shape_msg.action = visualization_msgs::msg::Marker::MODIFY;
+		chassis_shape_msg.type = visualization_msgs::msg::Marker::LINE_STRIP;
+#endif
+
 		chassis_shape_msg.header.frame_id = vehVarName("base_link", *veh);
 		chassis_shape_msg.ns = "mvsim.chassis_shape";
 		chassis_shape_msg.id = veh->getVehicleIndex();
@@ -529,12 +541,8 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			wheel_shape_msg.color.b = w.color.B / 255.0;
 
 			// Set local pose of the wheel wrt the vehicle:
-			tf2::Quaternion quat;
-			quat.setEuler(w.yaw, 0, 0);
+			wheel_shape_msg.pose = mrpt2ros::toROS_Pose(w.pose());
 
-			tf2::toMsg(
-				tf2::Vector3(w.x, w.y, 0), wheel_shape_msg.pose.position);
-			wheel_shape_msg.pose.orientation = tf2::toMsg(quat);
 		}  // end for each wheel
 
 		// Publish Initial pose
@@ -547,11 +555,23 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 	// pub: <VEH>/chassis_polygon
 	{
+#if PACKAGE_ROS_VERSION == 1
 		pubsubs.pub_chassis_shape = n_.advertise<geometry_msgs::Polygon>(
 			vehVarName("chassis_polygon", *veh), 1, true /*latch*/);
 
-		// Do the first (and unique) publish:
 		geometry_msgs::Polygon poly_msg;
+#else
+		rclcpp::QoS qosLatched(rclcpp::KeepLast(1));
+		qosLatched.durability(rmw_qos_durability_policy_t::
+								  RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
+		pubsubs.pub_chassis_shape =
+			n_->create_publisher<geometry_msgs::msg::Polygon>(
+				vehVarName("chassis_polygon", *veh), qosLatched);
+
+		geometry_msgs::msg::Polygon poly_msg;
+#endif
+		// Do the first (and unique) publish:
 		const mrpt::math::TPolygon2D& poly = veh->getChassisShape();
 		poly_msg.points.resize(poly.size());
 		for (size_t i = 0; i < poly.size(); i++)
@@ -560,11 +580,16 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			poly_msg.points[i].y = poly[i].y;
 			poly_msg.points[i].z = 0;
 		}
+#if PACKAGE_ROS_VERSION == 1
 		pubsubs.pub_chassis_shape.publish(poly_msg);
+#else
+		pubsubs.pub_chassis_shape->publish(poly_msg);
+#endif
 	}
 
 	if (do_fake_localization_)
 	{
+#if PACKAGE_ROS_VERSION == 1
 		// pub: <VEH>/amcl_pose
 		pubsubs.pub_amcl_pose =
 			n_.advertise<geometry_msgs::PoseWithCovarianceStamped>(
@@ -572,6 +597,16 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		// pub: <VEH>/particlecloud
 		pubsubs.pub_particlecloud = n_.advertise<geometry_msgs::PoseArray>(
 			vehVarName("particlecloud", *veh), 1);
+#else
+		// pub: <VEH>/amcl_pose
+		pubsubs.pub_amcl_pose =
+			n_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+				vehVarName("amcl_pose", *veh), 1);
+		// pub: <VEH>/particlecloud
+		pubsubs.pub_particlecloud =
+			n_->create_publisher<geometry_msgs::msg::PoseArray>(
+				vehVarName("particlecloud", *veh), 1);
+#endif
 	}
 
 	// STATIC Identity transform <VEH>/base_link -> <VEH>/base_footprint
@@ -595,10 +630,17 @@ void MVSimNode::onROSMsgCmdVel(
 
 	if (!ctrlAcceptTwist)
 	{
-		ROS_DEBUG_THROTTLE(
-			5.0,
+#if PACKAGE_ROS_VERSION == 1
+		ROS_WARN_THROTTLE(
+			1.0,
 			"*Warning* Vehicle's controller ['%s'] refuses Twist commands!",
 			veh->getName().c_str());
+#else
+		RCLCPP_WARN_THROTTLE(
+			n_->get_logger(), *n_->get_clock(), 1.0,
+			"*Warning* Vehicle's controller ['%s'] refuses Twist commands!",
+			veh->getName().c_str());
+#endif
 	}
 }
 
@@ -610,9 +652,13 @@ void MVSimNode::spinNotifyROS()
 
 	// Get current simulation time (for messages) and publish "/clock"
 	// ----------------------------------------------------------------
+#if PACKAGE_ROS_VERSION == 1
 	sim_time_.fromSec(mvsim_world_.get_simul_time());
 	clockMsg_.clock = sim_time_;
 	pub_clock_.publish(clockMsg_);
+#else
+	sim_time_ = n_->get_clock()->now();
+#endif
 
 	// Publish all TFs for each vehicle:
 	// ---------------------------------------------------------------------
@@ -621,7 +667,7 @@ void MVSimNode::spinNotifyROS()
 		tim_publish_tf_.Tic();
 
 		size_t i = 0;
-		ROS_ASSERT(m_pubsub_vehicles.size() == vehs.size());
+		ASSERT_EQUAL_(m_pubsub_vehicles.size(), vehs.size());
 
 		for (auto it = vehs.begin(); it != vehs.end(); ++it, ++i)
 		{
@@ -637,20 +683,14 @@ void MVSimNode::spinNotifyROS()
 			const auto& gh_veh_vel = veh->getVelocity();
 
 			{
+#if PACKAGE_ROS_VERSION == 1
 				nav_msgs::Odometry gtOdoMsg;
+#else
+				nav_msgs::msg::Odometry gtOdoMsg;
+#endif
 
-				gtOdoMsg.pose.pose.position.x = gh_veh_pose.x;
-				gtOdoMsg.pose.pose.position.y = gh_veh_pose.y;
-				gtOdoMsg.pose.pose.position.z = gh_veh_pose.z;
+				gtOdoMsg.pose.pose = mrpt2ros::toROS_Pose(gh_veh_pose);
 
-				tf2::Quaternion quat;
-				quat.setEuler(
-					gh_veh_pose.yaw, gh_veh_pose.pitch, gh_veh_pose.roll);
-
-				gtOdoMsg.pose.pose.orientation.x = quat.x();
-				gtOdoMsg.pose.pose.orientation.y = quat.y();
-				gtOdoMsg.pose.pose.orientation.z = quat.z();
-				gtOdoMsg.pose.pose.orientation.w = quat.w();
 				gtOdoMsg.twist.twist.linear.x = gh_veh_vel.vx;
 				gtOdoMsg.twist.twist.linear.y = gh_veh_vel.vy;
 				gtOdoMsg.twist.twist.linear.z = 0;
@@ -660,16 +700,17 @@ void MVSimNode::spinNotifyROS()
 				gtOdoMsg.header.frame_id = sOdomName;
 				gtOdoMsg.child_frame_id = sBaseLinkFrame;
 
+#if PACKAGE_ROS_VERSION == 1
 				m_pubsub_vehicles[i].pub_ground_truth.publish(gtOdoMsg);
-
+#else
+				m_pubsub_vehicles[i].pub_ground_truth->publish(gtOdoMsg);
+#endif
 				if (do_fake_localization_)
 				{
 					geometry_msgs::PoseWithCovarianceStamped currentPos;
 					geometry_msgs::PoseArray particleCloud;
 
 					// topic: <Ri>/particlecloud
-					if (m_pubsub_vehicles[i]
-							.pub_particlecloud.getNumSubscribers() > 0)
 					{
 						particleCloud.header.stamp = sim_time_;
 						particleCloud.header.frame_id = "map";
@@ -680,8 +721,6 @@ void MVSimNode::spinNotifyROS()
 					}
 
 					// topic: <Ri>/amcl_pose
-					if (m_pubsub_vehicles[i].pub_amcl_pose.getNumSubscribers() >
-						0)
 					{
 						currentPos.header = gtOdoMsg.header;
 						currentPos.pose.pose = gtOdoMsg.pose.pose;
@@ -709,8 +748,6 @@ void MVSimNode::spinNotifyROS()
 			// 2) Chassis markers (for rviz visualization)
 			// --------------------------------------------
 			// pub: <VEH>/chassis_markers
-			if (m_pubsub_vehicles[i].pub_chassis_markers.getNumSubscribers() >
-				0)
 			{
 				visualization_msgs::MarkerArray& msg_shapes =
 					m_pubsub_vehicles[i].chassis_shape_msg;
@@ -755,7 +792,6 @@ void MVSimNode::spinNotifyROS()
 				}
 
 				// Apart from TF, publish to the "odom" topic as well
-				if (m_pubsub_vehicles[i].pub_odom.getNumSubscribers() > 0)
 				{
 					nav_msgs::Odometry odoMsg;
 
