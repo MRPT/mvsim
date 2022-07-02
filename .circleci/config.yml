@@ -14,6 +14,8 @@ jobs:
             apt install build-essential g++ cmake libbox2d-dev libmrpt-dev -yq
             apt install protobuf-compiler libprotobuf-dev libzmq3-dev -yq
       - checkout
+      - run: git submodule sync
+      - run: git submodule update --init --recursive
       - run:
           name: Generate cmake files
           command: |
@@ -34,6 +36,8 @@ jobs:
             apt install build-essential g++ cmake libbox2d-dev libmrpt-dev -yq
             apt install protobuf-compiler libprotobuf-dev libzmq3-dev -yq
       - checkout
+      - run: git submodule sync
+      - run: git submodule update --init --recursive
       - run:
           name: Generate cmake files
           command: |
@@ -54,6 +58,8 @@ jobs:
             apt install build-essential clang cmake libbox2d-dev libmrpt-dev -yq
             apt install protobuf-compiler libprotobuf-dev libzmq3-dev -yq
       - checkout
+      - run: git submodule sync
+      - run: git submodule update --init --recursive
       - run:
           name: Generate cmake files
           environment:
