@@ -7,6 +7,8 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/core/round.h>
+
 #include "mvsim/mvsim_node_core.h"
 
 /*------------------------------------------------------------------------------
@@ -31,8 +33,9 @@ int main(int argc, char** argv)
 	// Declare variables that can be modified by launch file or command line.
 	std::string world_file;
 
-#if PACKAGE_ROS_VERSION == 1
 	int rate = 100;
+
+#if PACKAGE_ROS_VERSION == 1
 
 	// Initialize node parameters from launch file or command line.
 	// Use a private node handle so that multiple instances of the node can be
@@ -43,6 +46,9 @@ int main(int argc, char** argv)
 	private_node_handle_.param("world_file", world_file, std::string(""));
 #else
 	n->get_parameter("world_file", world_file);
+	n->get_parameter("simul_rate", rate);
+	ASSERT_(rate > 0);
+	const auto periodMs = mrpt::round(1e6 / static_cast<double>(rate));
 #endif
 
 	// Launch mvsim:
@@ -76,6 +82,11 @@ int main(int argc, char** argv)
 		r.sleep();
 	}
 #else
+	auto ros_clock = rclcpp::Clock::make_shared();
+	auto timer_ = rclcpp::create_timer(
+		n, ros_clock, std::chrono::microseconds(periodMs),
+		[&]() { node.spin(); });
+
 	rclcpp::spin(n);
 	rclcpp::shutdown();
 #endif
