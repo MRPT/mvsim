@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include <Box2D/Dynamics/b2Body.h>
-#include <Box2D/Dynamics/b2World.h>
+#include <box2d/b2_body.h>
+#include <box2d/b2_world.h>
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
 #include <mrpt/gui/CDisplayWindowGUI.h>

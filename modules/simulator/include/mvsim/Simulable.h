@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <Box2D/Dynamics/b2Body.h>
+#include <box2d/b2_body.h>
 #include <mrpt/math/TPoint2D.h>
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>

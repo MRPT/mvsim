@@ -13,15 +13,13 @@
 #include <mrpt/math/TPoint2D.h>
 #include <mrpt/math/TPose2D.h>
 #include <mrpt/math/TTwist2D.h>
+
+#include <cstdint>	// uintptr_t
 #include <string>
 
 class b2World;
 class b2Body;
 class b2Fixture;
-
-#define INVISIBLE_FIXTURE_USER_DATA \
-	(reinterpret_cast<void*>(       \
-		-1))  //!< Used to signal a Box2D fixture as "invisible" to sensors.
 
 namespace rapidxml
 {
@@ -57,8 +55,11 @@ struct TSimulContext
 {
 	b2World* b2_world = nullptr;
 	World* world = nullptr;
-	double simul_time = 0;  //!< Current time in the simulated world
-	double dt = 0;  //!< timestep
+	double simul_time = 0;	//!< Current time in the simulated world
+	double dt = 0;	//!< timestep
 };
+
+/// Used to signal a Box2D fixture as "invisible" to sensors.
+constexpr uintptr_t INVISIBLE_FIXTURE_USER_DATA = 1;
 
 }  // namespace mvsim

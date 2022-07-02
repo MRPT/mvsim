@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <Box2D/Dynamics/Contacts/b2Contact.h>
+#include <box2d/b2_contact.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
@@ -44,7 +44,7 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 
 		// Pos:
 		const b2Vec2& pos = m_b2d_body->GetPosition();
-		const float32 angle = m_b2d_body->GetAngle();
+		const float angle = m_b2d_body->GetAngle();
 		m_q.x = pos(0);
 		m_q.y = pos(1);
 		m_q.yaw = angle;
@@ -53,7 +53,7 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 
 		// Vel:
 		const b2Vec2& vel = m_b2d_body->GetLinearVelocity();
-		const float32 w = m_b2d_body->GetAngularVelocity();
+		const float w = m_b2d_body->GetAngularVelocity();
 		m_dq.vx = vel(0);
 		m_dq.vy = vel(1);
 		m_dq.omega = w;
