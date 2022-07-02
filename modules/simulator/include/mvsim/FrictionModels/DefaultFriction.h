@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
+#include <box2d/b2_friction_joint.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/TParameterDefinitions.h>
 

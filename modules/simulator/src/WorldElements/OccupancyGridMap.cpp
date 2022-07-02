@@ -271,15 +271,14 @@ void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
 					ipv.collide_fixtures[k].fixture->SetSensor(
 						true);	// Box2D's way of saying: don't collide with
 								// this!
-					ipv.collide_fixtures[k].fixture->SetUserData(
-						INVISIBLE_FIXTURE_USER_DATA);
+					ipv.collide_fixtures[k].fixture->GetUserData().pointer =
+						INVISIBLE_FIXTURE_USER_DATA;
 				}
 				else
 				{
-					ipv.collide_fixtures[k].fixture->SetSensor(
-						false);	 // Box2D's way of saying: don't collide with
-								 // this!
-					ipv.collide_fixtures[k].fixture->SetUserData(nullptr);
+					// Box2D's way of saying: don't collide with this!
+					ipv.collide_fixtures[k].fixture->SetSensor(false);
+					ipv.collide_fixtures[k].fixture->GetUserData().pointer = 0;
 
 					b2PolygonShape* poly = dynamic_cast<b2PolygonShape*>(
 						ipv.collide_fixtures[k].fixture->GetShape());

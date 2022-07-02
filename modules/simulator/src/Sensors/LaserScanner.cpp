@@ -225,15 +225,16 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		CObservation2DRangeScan& scan = lstScans.back();
 
 		// Avoid the lidar seeing the vehicle owns shape:
-		std::map<b2Fixture*, void*> orgUserData;
+		std::map<b2Fixture*, uintptr_t> orgUserData;
 
 		auto makeFixtureInvisible = [&](b2Fixture* f) {
 			if (!f) return;
-			orgUserData[f] = f->GetUserData();
-			f->SetUserData(INVISIBLE_FIXTURE_USER_DATA);
+			orgUserData[f] = f->GetUserData().pointer;
+			f->GetUserData().pointer = INVISIBLE_FIXTURE_USER_DATA;
 		};
 		auto undoInvisibleFixtures = [&]() {
-			for (auto& kv : orgUserData) kv.first->SetUserData(kv.second);
+			for (auto& kv : orgUserData)
+				kv.first->GetUserData().pointer = kv.second;
 		};
 
 		if (auto v = dynamic_cast<VehicleBase*>(&m_vehicle); v)
@@ -249,12 +250,12 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		{
 		   public:
 			RayCastClosestCallback() : m_see_fixtures(true), m_hit(false) {}
-			float32 ReportFixture(
+			float ReportFixture(
 				b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal,
-				float32 fraction) override
+				float fraction) override
 			{
-				if (!m_see_fixtures ||
-					fixture->GetUserData() == INVISIBLE_FIXTURE_USER_DATA)
+				if (!m_see_fixtures || fixture->GetUserData().pointer ==
+										   INVISIBLE_FIXTURE_USER_DATA)
 				{
 					// By returning -1, we instruct the calling code to ignore
 					// this fixture and
