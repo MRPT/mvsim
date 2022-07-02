@@ -238,6 +238,9 @@ if (NOT box2d_FOUND)
 	set(box2d_DIR "${EMBEDDED_box2d_DIR}" CACHE PATH "Path to box2d CMake config file" FORCE)
 	mark_as_advanced(box2d_DIR)
 	find_package(box2d CONFIG QUIET)
+
+    # install the embedded copy too (we need box2d-config.cmake, etc.)
+    install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} --build \"${EMBEDDED_box2d_BUILD_DIR}\" --target install)")
 endif()
 
 if (NOT box2d_FOUND)
