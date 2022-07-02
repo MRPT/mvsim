@@ -195,28 +195,53 @@ find_package(mrpt-tfest REQUIRED)
 # --------------------------
 # Dependency: Box2D
 # --------------------------
-set(EMBEDDED_box2d_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/box2d/box2d")
+set(EMBEDDED_box2d_BUILD_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/box2d/")
+set(EMBEDDED_box2d_INSTALL_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/box2d/install/")
+set(EMBEDDED_box2d_DIR "${EMBEDDED_box2d_INSTALL_DIR}/lib/cmake/box2d/")
 
 # 1st) Try to locate it via CMake (installed in the system or precompiled somewhere)
 # Since box2d 2.4.1, the name changed "Box2D" -> "box2d". We now only support the version >=2.4.x
 # for compatibility with modern Ubuntu distros:
 find_package(box2d QUIET) # Defines: box2d::box2d
 
-if (NOT box2d_FOUND OR "${box2d_DIR}" STREQUAL "${EMBEDDED_box2d_DIR}")
-	# Override some defaults in the embedded project:
-	option(BOX2D_BUILD_DOCS "Install Box2D documentation" OFF)
-	#option(BOX2D_BUILD_SHARED "Build Box2D shared libraries" OFF)
-	#option(BOX2D_BUILD_STATIC "Build Box2D static libraries" ON)
-	mark_as_advanced(BOX2D_INSTALL_DOC)
+if (NOT box2d_FOUND)
+	message(STATUS "--- Running CMake on external submodule 'box2d'...")
+	file(MAKE_DIRECTORY "${EMBEDDED_box2d_BUILD_DIR}")
+	if(NOT ${CMAKE_VERSION} VERSION_LESS "3.15")
+		set(echo_flag COMMAND_ECHO STDOUT)
+	endif()
+	execute_process(COMMAND
+		${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" "${${PROJECT_NAME}_SOURCE_DIR}/externals/box2d"
+		-DBOX2D_BUILD_DOCS=OFF
+		-DBOX2D_BUILD_TESTBED=OFF
+		-DBOX2D_BUILD_UNIT_TESTS=OFF
+		-DCMAKE_INSTALL_PREFIX=${EMBEDDED_box2d_INSTALL_DIR}
+	RESULT_VARIABLE result
+	WORKING_DIRECTORY "${EMBEDDED_box2d_BUILD_DIR}"
+	${echo_flag}
+	)
+	if(result)
+		message(FATAL_ERROR "CMake step for box2d failed: ${result}")
+	endif()
 
-	add_subdirectory(externals/box2d)
+	execute_process(COMMAND
+		${CMAKE_COMMAND} --build ${EMBEDDED_box2d_BUILD_DIR} --target install
+	RESULT_VARIABLE result
+	${echo_flag}
+	)
+	if(result)
+		message(FATAL_ERROR "CMake make install step for box2d failed: ${result}")
+	endif()
+	message(STATUS "--- End running CMake")
 
-	set_property(TARGET box2d PROPERTY POSITION_INDEPENDENT_CODE ON)
+	# Search again:
+	set(box2d_DIR "${EMBEDDED_box2d_DIR}" CACHE PATH "Path to box2d CMake config file" FORCE)
+	mark_as_advanced(box2d_DIR)
+	find_package(box2d CONFIG QUIET)
+endif()
 
-	# 2nd attempt: Fatal error if not found:
-	message(STATUS "INFO: box2d library not found in the system. Using embedded copy.")
-	set(box2d_DIR "${EMBEDDED_box2d_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
-	find_package(box2d REQUIRED)
+if (NOT box2d_FOUND)
+    message(FATAL_ERROR "box2d not found, neither as system library nor git submodule. Check error messages above for possible reasons.")
 endif()
 
 if (box2d_FOUND)
