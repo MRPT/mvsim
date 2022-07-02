@@ -240,6 +240,16 @@ if (NOT box2d_FOUND)
 	find_package(box2d CONFIG QUIET)
 
     # install the embedded copy too (we need box2d-config.cmake, etc.)
+	execute_process(COMMAND
+		${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" "${${PROJECT_NAME}_SOURCE_DIR}/externals/box2d"
+		-DBOX2D_BUILD_DOCS=OFF
+		-DBOX2D_BUILD_TESTBED=OFF
+		-DBOX2D_BUILD_UNIT_TESTS=OFF
+		-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+	RESULT_VARIABLE result
+	WORKING_DIRECTORY "${EMBEDDED_box2d_BUILD_DIR}"
+	${echo_flag}
+	)
     install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} --build \"${EMBEDDED_box2d_BUILD_DIR}\" --target install)")
 endif()
 
