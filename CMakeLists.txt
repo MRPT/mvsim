@@ -195,61 +195,33 @@ find_package(mrpt-tfest REQUIRED)
 # --------------------------
 # Dependency: Box2D
 # --------------------------
-set(EMBEDDED_Box2D_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/Box2D/Box2D")
+set(EMBEDDED_box2d_DIR "${${PROJECT_NAME}_BINARY_DIR}/externals/box2d/box2d")
 
 # 1st) Try to locate it via CMake (installed in the system or precompiled somewhere)
-set(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
-find_package(Box2D QUIET) # Quiet in a 1st try...
+# Since box2d 2.4.1, the name changed "Box2D" -> "box2d". We now only support the version >=2.4.x
+# for compatibility with modern Ubuntu distros:
+find_package(box2d QUIET) # Defines: box2d::box2d
 
-# Since ubuntu jammy, its name changed:
-if (NOT Box2D_FOUND)
-	find_package(box2d QUIET) # Defines: box2d::box2d
-endif()
-
-if ((NOT Box2D_FOUND AND NOT box2d_FOUND) OR "${Box2D_DIR}" STREQUAL "${EMBEDDED_Box2D_DIR}")
-	# Use embedded version:
+if (NOT box2d_FOUND OR "${box2d_DIR}" STREQUAL "${EMBEDDED_box2d_DIR}")
 	# Override some defaults in the embedded project:
-	set(BOX2D_INSTALL ON CACHE BOOL "Install Box2D libs, includes, and CMake scripts" FORCE) # IMPORTANT: This must be ON to enable parsing Box2D's .cmake.in file!!
-	option(BOX2D_INSTALL_DOC "Install Box2D documentation" OFF)
-	option(BOX2D_BUILD_SHARED "Build Box2D shared libraries" OFF)
-	option(BOX2D_BUILD_STATIC "Build Box2D static libraries" ON)
-	option(BOX2D_BUILD_EXAMPLES "Build Box2D examples" OFF)
-	mark_as_advanced(BOX2D_INSTALL)
+	option(BOX2D_BUILD_DOCS "Install Box2D documentation" OFF)
+	#option(BOX2D_BUILD_SHARED "Build Box2D shared libraries" OFF)
+	#option(BOX2D_BUILD_STATIC "Build Box2D static libraries" ON)
 	mark_as_advanced(BOX2D_INSTALL_DOC)
-	mark_as_advanced(BOX2D_BUILD_SHARED)
-	mark_as_advanced(BOX2D_BUILD_STATIC)
-	mark_as_advanced(BOX2D_BUILD_EXAMPLES)
 
-	add_subdirectory(externals/Box2D)
+	add_subdirectory(externals/box2d)
 
-	set_property(TARGET Box2D PROPERTY POSITION_INDEPENDENT_CODE ON)
+	set_property(TARGET box2d PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 	# 2nd attempt: Fatal error if not found:
-	message(STATUS "INFO: Box2D library not found in the system. Using embedded copy.")
-	set(Box2D_DIR "${EMBEDDED_Box2D_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
-	find_package(Box2D REQUIRED)
-
-	# It seems BOX2D doesn't return the correct #include dir (???):
-	set(BOX2D_INCLUDE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/externals/Box2D/")
+	message(STATUS "INFO: box2d library not found in the system. Using embedded copy.")
+	set(box2d_DIR "${EMBEDDED_box2d_DIR}" CACHE PATH "Path to Box2D CMake config file" FORCE)
+	find_package(box2d REQUIRED)
 endif()
 
-if (Box2D_FOUND)
-	#message(STATUS "BOX2D_INCLUDE_DIR: ${BOX2D_INCLUDE_DIR}")
-	if (NOT "" STREQUAL "${BOX2D_INCLUDE_DIR}")
-		include_directories("${BOX2D_INCLUDE_DIR}")
-	endif()
-
-	# It seems this var is not always set (!?)
-	if ("" STREQUAL "${BOX2D_LIBRARIES}")
-		set(BOX2D_LIBRARIES Box2D)
-	endif()
-
-	# For the latest version:
-	if (TARGET box2d::box2d)
-		set(BOX2D_LIBRARIES box2d::box2d)
-	endif()
+if (box2d_FOUND)
+	set(BOX2D_LIBRARIES box2d::box2d)
 endif()
-
 
 # --------------------------
 #  Main library modules
