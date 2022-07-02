@@ -27,7 +27,6 @@
 using Msg_OccupancyGrid = nav_msgs::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::TransformStamped;
-using Msg_LaserScan = sensor_msgs::LaserScan;
 #else
 #include <mrpt/ros2bridge/laser_scan.h>
 #include <mrpt/ros2bridge/map.h>
@@ -41,7 +40,6 @@ using Msg_LaserScan = sensor_msgs::LaserScan;
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
-using Msg_LaserScan = sensor_msgs::msg::LaserScan;
 #endif
 
 #include <iostream>
@@ -439,7 +437,9 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 	pubsubs.sub_cmd_vel = n_->create_subscription<geometry_msgs::msg::Twist>(
 		vehVarName("cmd_vel", *veh), 10,
-		std::bind(&MVSimNode::onROSMsgCmdVel, this, _1, veh));
+		[this, veh](const geometry_msgs::msg::Twist::SharedPtr msg) {
+			return this->onROSMsgCmdVel(msg, veh);
+		});
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -619,7 +619,7 @@ void MVSimNode::onROSMsgCmdVel(
 #if PACKAGE_ROS_VERSION == 1
 	const geometry_msgs::Twist::ConstPtr& cmd,
 #else
-	const geometry_msgs::msg::Twist::ConstSharedPtr cmd,
+	const geometry_msgs::msg::Twist::SharedPtr cmd,
 #endif
 	mvsim::VehicleBase* veh)
 {
@@ -707,8 +707,13 @@ void MVSimNode::spinNotifyROS()
 #endif
 				if (do_fake_localization_)
 				{
+#if PACKAGE_ROS_VERSION == 1
 					geometry_msgs::PoseWithCovarianceStamped currentPos;
 					geometry_msgs::PoseArray particleCloud;
+#else
+					geometry_msgs::msg::PoseWithCovarianceStamped currentPos;
+					geometry_msgs::msg::PoseArray particleCloud;
+#endif
 
 					// topic: <Ri>/particlecloud
 					{
@@ -716,15 +721,24 @@ void MVSimNode::spinNotifyROS()
 						particleCloud.header.frame_id = "map";
 						particleCloud.poses.resize(1);
 						particleCloud.poses[0] = gtOdoMsg.pose.pose;
+#if PACKAGE_ROS_VERSION == 1
 						m_pubsub_vehicles[i].pub_particlecloud.publish(
 							particleCloud);
+#else
+						m_pubsub_vehicles[i].pub_particlecloud->publish(
+							particleCloud);
+#endif
 					}
 
 					// topic: <Ri>/amcl_pose
 					{
 						currentPos.header = gtOdoMsg.header;
 						currentPos.pose.pose = gtOdoMsg.pose.pose;
+#if PACKAGE_ROS_VERSION == 1
 						m_pubsub_vehicles[i].pub_amcl_pose.publish(currentPos);
+#else
+						m_pubsub_vehicles[i].pub_amcl_pose->publish(currentPos);
+#endif
 					}
 
 					// TF: /map -> <Ri>/odom
@@ -749,31 +763,30 @@ void MVSimNode::spinNotifyROS()
 			// --------------------------------------------
 			// pub: <VEH>/chassis_markers
 			{
-				visualization_msgs::MarkerArray& msg_shapes =
-					m_pubsub_vehicles[i].chassis_shape_msg;
-				ROS_ASSERT(
-					msg_shapes.markers.size() == (1 + veh->getNumWheels()));
+				// visualization_msgs::MarkerArray
+				auto& msg_shapes = m_pubsub_vehicles[i].chassis_shape_msg;
+				ASSERT_EQUAL_(
+					msg_shapes.markers.size(), (1 + veh->getNumWheels()));
 
 				// [0] Chassis shape: static no need to update.
 				// [1:N] Wheel shapes: may move
 				for (size_t j = 0; j < veh->getNumWheels(); j++)
 				{
-					visualization_msgs::Marker& wheel_shape_msg =
-						msg_shapes.markers[1 + j];
+					// visualization_msgs::Marker
+					auto& wheel_shape_msg = msg_shapes.markers[1 + j];
 					const mvsim::Wheel& w = veh->getWheelInfo(j);
 
 					// Set local pose of the wheel wrt the vehicle:
-					tf2::Quaternion q;
-					q.setEuler(w.yaw, 0, 0);
-					wheel_shape_msg.pose.orientation = tf2::toMsg(q);
-					tf2::toMsg(
-						tf2::Vector3(w.x, w.y, 0),
-						wheel_shape_msg.pose.position);
+					wheel_shape_msg.pose = mrpt2ros::toROS_Pose(w.pose());
 
 				}  // end for each wheel
 
 				// Publish Initial pose
+#if PACKAGE_ROS_VERSION == 1
 				m_pubsub_vehicles[i].pub_chassis_markers.publish(msg_shapes);
+#else
+				m_pubsub_vehicles[i].pub_chassis_markers->publish(msg_shapes);
+#endif
 			}
 
 			// 3) odometry transform
@@ -793,19 +806,12 @@ void MVSimNode::spinNotifyROS()
 
 				// Apart from TF, publish to the "odom" topic as well
 				{
+#if PACKAGE_ROS_VERSION == 1
 					nav_msgs::Odometry odoMsg;
-
-					odoMsg.pose.pose.position.x = odo_pose.x;
-					odoMsg.pose.pose.position.y = odo_pose.y;
-					odoMsg.pose.pose.position.z = odo_pose.z;
-
-					tf2::Quaternion quat;
-					quat.setEuler(odo_pose.yaw, odo_pose.pitch, odo_pose.roll);
-
-					odoMsg.pose.pose.orientation.x = quat.x();
-					odoMsg.pose.pose.orientation.y = quat.y();
-					odoMsg.pose.pose.orientation.z = quat.z();
-					odoMsg.pose.pose.orientation.w = quat.w();
+#else
+					nav_msgs::msg::Odometry odoMsg;
+#endif
+					odoMsg.pose.pose = mrpt2ros::toROS_Pose(odo_pose);
 
 					// first, we'll populate the header for the odometry msg
 					odoMsg.header.stamp = sim_time_;
@@ -813,7 +819,11 @@ void MVSimNode::spinNotifyROS()
 					odoMsg.child_frame_id = sBaseLinkFrame;
 
 					// publish:
+#if PACKAGE_ROS_VERSION == 1
 					m_pubsub_vehicles[i].pub_odom.publish(odoMsg);
+#else
+					m_pubsub_vehicles[i].pub_odom->publish(odoMsg);
+#endif
 				}
 			}
 
@@ -841,7 +851,7 @@ void MVSimNode::onNewObservation(
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub =
 		pubs.pub_sensors.find(obs->sensorLabel) == pubs.pub_sensors.end();
-	ros::Publisher& pub = pubs.pub_sensors[obs->sensorLabel];
+	auto& pub = pubs.pub_sensors[obs->sensorLabel];
 
 	// Observation: 2d laser scans
 	// -----------------------------
@@ -850,8 +860,22 @@ void MVSimNode::onNewObservation(
 		o)
 	{
 		if (is_1st_pub)
+		{
+#if PACKAGE_ROS_VERSION == 1
 			pub = n_.advertise<sensor_msgs::LaserScan>(
 				vehVarName(obs->sensorLabel, veh), 10);
+#else
+			pub = n_->create_publisher<sensor_msgs::msg::LaserScan>(
+				vehVarName(obs->sensorLabel, veh), 10);
+#endif
+		}
+
+#if PACKAGE_ROS_VERSION == 2
+		rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr pubLidar =
+			std::dynamic_pointer_cast<
+				rclcpp::Publisher<sensor_msgs::msg::LaserScan>>(pub);
+		ASSERT_(pubLidar);
+#endif
 
 		const std::string sSensorFrameId = vehVarName(obs->sensorLabel, veh);
 
@@ -869,7 +893,6 @@ void MVSimNode::onNewObservation(
 		tf_br_.sendTransform(tfStmp);
 
 		// Send observation:
-		if (is_1st_pub || pub.getNumSubscribers() > 0)
 		{
 			// Convert observation MRPT -> ROS
 #if PACKAGE_ROS_VERSION == 1
@@ -885,7 +908,11 @@ void MVSimNode::onNewObservation(
 			msg_laser.header.stamp = sim_time_;
 			msg_laser.header.frame_id = sSensorFrameId;
 
+#if PACKAGE_ROS_VERSION == 1
 			pub.publish(msg_laser);
+#else
+			pubLidar->publish(msg_laser);
+#endif
 		}
 	}
 	else

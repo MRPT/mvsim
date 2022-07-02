@@ -384,5 +384,20 @@ if (BUILD_FOR_ROS)
 		models
 		DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 	)
+
+	# Mark executables and/or libraries for installation
+	if (DETECTED_ROS2)
+		#ament_export_dependencies(mrpt-gui)
+
+		# Export old-style CMake variables
+		#ament_export_include_directories("include/${PROJECT_NAME}")
+		#ament_export_libraries(${PROJECT_NAME})
+
+		# Export modern CMake targets
+		#ament_export_targets(export_${PROJECT_NAME})
+		ament_package()
+	endif()
+
+	
 endif() # BUILD_FOR_ROS
 
