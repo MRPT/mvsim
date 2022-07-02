@@ -230,7 +230,7 @@ if (DETECTED_ROS1)
 	message(STATUS "  - rclcpp [req]              : ${rclcpp_FOUND}")
 endif()
 
-message(STATUS "libbox2d       : ${BOX2D_VERSION_STRING}")
+message(STATUS "libbox2d       : ${box2d_VERSION}")
 message(STATUS "Protobuf       : ${MVSIM_WITH_PROTOBUF} ${Protobuf_VERSION}")
 message(STATUS "ZeroMQ         : ${MVSIM_WITH_ZMQ} ${ZeroMQ_VERSION}")
 message(STATUS "Python wrappers: ${MVSIM_WITH_PYTHON} (pybind11: ${pybind11_VERSION})")
