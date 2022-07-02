@@ -42,6 +42,7 @@ set(PACKAGE_DEPENDENCIES
   mrpt-maps
   mrpt-gui
   mvsim-comms
+  box2d
   )
 mvsim_common_target_settings(${MODULE_NAME})
 
@@ -52,7 +53,7 @@ target_link_libraries(${PROJECT_NAME}
 #	${CMAKE_THREAD_LIBS_INIT}
 #	${Protobuf_LIBRARIES}
 #	${ZeroMQ_LIBRARY}
- PUBLIC
+PUBLIC
 	mrpt::obs
 	mrpt::opengl
 	mrpt::maps
