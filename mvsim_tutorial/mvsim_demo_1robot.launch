@@ -1,7 +1,7 @@
 <!-- ROS1 launch file -->
 <?xml version="1.0"?>
 <launch>
-	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/mvsim_demo_1robot.xml" />
+	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/mvsim_demo_1robot.world.xml" />
 	<arg name="mvsim_do_fake_localization" default="true"/>
 
 	<node pkg="mvsim" type="mvsim_node" name="mvsim_simulator" output="screen">
