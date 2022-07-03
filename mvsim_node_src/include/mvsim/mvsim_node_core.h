@@ -42,6 +42,7 @@
 #include "rclcpp/time_source.hpp"
 #endif
 
+#include <atomic>
 #include <thread>
 
 /** A class to wrap libmvsim as a ROS node
@@ -201,9 +202,10 @@ class MVSimNode
 
 	struct TThreadParams
 	{
-		MVSimNode* obj;
-		volatile bool closing;
-		TThreadParams() : obj(NULL), closing(false) {}
+		TThreadParams() = default;
+
+		MVSimNode* obj = nullptr;
+		std::atomic_bool closing{false};
 	};
 	TThreadParams thread_params_;
 	mrpt::system::CTicTac realtime_tictac_;

@@ -13,7 +13,7 @@
 
 /*------------------------------------------------------------------------------
  * main()
- * Main function to set up ROS node.
+ * Main function to set up ROS node->
  *----------------------------------------------------------------------------*/
 
 int main(int argc, char** argv)
@@ -30,13 +30,13 @@ int main(int argc, char** argv)
 	try
 	{
 		// Create a "Node" object.
-		MVSimNode node(n);
+		std::shared_ptr<MVSimNode> node = std::make_shared<MVSimNode>(n);
 
 		// Declare variables that can be modified by launch file or command
 		// line.
 		std::string world_file;
 
-		int rate = 100;
+		double rate = 100.0;
 
 #if PACKAGE_ROS_VERSION == 1
 
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 		// Use a private node handle so that multiple instances of the node can
 		// be run simultaneously while using different parameters.
 		ros::NodeHandle private_node_handle_("~");
-		private_node_handle_.param("simul_rate", rate, 100);
+		private_node_handle_.param("simul_rate", rate, 100.0);
 		private_node_handle_.param("world_file", world_file, std::string(""));
 #else
 		n->get_parameter("world_file", world_file);
@@ -54,13 +54,13 @@ int main(int argc, char** argv)
 #endif
 
 		// Launch mvsim:
-		node.launch_mvsim_server();
+		node->launch_mvsim_server();
 
 		// Init world model:
-		if (!world_file.empty()) node.loadWorldModel(world_file);
+		if (!world_file.empty()) node->loadWorldModel(world_file);
 
 		// Attach world as a mvsim communications node:
-		node.mvsim_world_.connectToServer();
+		node->mvsim_world_.connectToServer();
 
 #if PACKAGE_ROS_VERSION == 1
 		// Set up a dynamic reconfigure server.
@@ -72,14 +72,14 @@ int main(int argc, char** argv)
 		dr_srv.setCallback(cb);
 #endif
 
-		// Tell ROS how fast to run this node.
+		// Tell ROS how fast to run this node->
 #if PACKAGE_ROS_VERSION == 1
 		ros::Rate r(rate);
 
 		// Main loop.
 		while (n.ok())
 		{
-			node.spin();
+			node->spin();
 			ros::spinOnce();
 			r.sleep();
 		}
@@ -87,7 +87,13 @@ int main(int argc, char** argv)
 		auto ros_clock = rclcpp::Clock::make_shared();
 		auto timer_ = rclcpp::create_timer(
 			n, ros_clock, std::chrono::microseconds(periodMs),
-			[&]() { node.spin(); });
+			[&]() { node->spin(); });
+
+		rclcpp::on_shutdown([&]() {
+			std::cout << "[rclcpp::on_shutdown] Destroying MVSIM node..."
+					  << std::endl;
+			node.reset();
+		});
 
 		rclcpp::spin(n);
 		rclcpp::shutdown();
