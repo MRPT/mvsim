@@ -254,7 +254,7 @@ class MVSimNode
 #endif
 	);
 
-	void visit_world_elements(mvsim::WorldElementBase& obj);
-	void visit_vehicle(mvsim::VehicleBase& veh);
+	void publishWorldElements(mvsim::WorldElementBase& obj);
+	void publishVehicles(mvsim::VehicleBase& veh);
 
 };	// end class
