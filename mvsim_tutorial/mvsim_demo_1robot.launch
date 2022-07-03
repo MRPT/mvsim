@@ -1,3 +1,4 @@
+<!-- ROS1 launch file -->
 <?xml version="1.0"?>
 <launch>
 	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/mvsim_demo_1robot.xml" />
@@ -9,5 +10,4 @@
 	</node>
 
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find mvsim)/mvsim_tutorial/mvsim_demo_1robot.rviz"/>
-
 </launch>

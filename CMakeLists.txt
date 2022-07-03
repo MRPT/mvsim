@@ -366,9 +366,9 @@ if (BUILD_FOR_ROS)
 	# Mark executables and/or libraries for installation
 	if (DETECTED_ROS2)
 		set(CATKIN_PACKAGE_LIB_DESTINATION lib)
-		set(CATKIN_PACKAGE_BIN_DESTINATION bin)
+		set(CATKIN_PACKAGE_BIN_DESTINATION lib/${PROJECT_NAME})
 		set(CATKIN_PACKAGE_INCLUDE_DESTINATION include)
-		set(CATKIN_PACKAGE_SHARE_DESTINATION share)
+		set(CATKIN_PACKAGE_SHARE_DESTINATION share/${PROJECT_NAME})
 	endif()
 
 	# Mark executables and/or libraries for installation

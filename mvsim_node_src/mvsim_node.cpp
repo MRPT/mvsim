@@ -151,6 +151,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 void MVSimNode::launch_mvsim_server()
 {
+	ROS12_INFO("[MVSimNode] launch_mvsim_server()");
+
 	ASSERT_(!mvsim_server_);
 
 	// Start network server:
