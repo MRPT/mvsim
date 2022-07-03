@@ -79,12 +79,26 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	n_->declare_parameter<std::string>("world_file", "default.world.xml");
 	n_->declare_parameter<double>("simul_rate", 100);
 	n_->declare_parameter<double>("base_watchdog_timeout", 0.2);
+	{
+		double t;
+		base_watchdog_timeout_ = std::chrono::milliseconds(
+			1000 * n_->get_parameter_or("base_watchdog_timeout", t, 0.2));
+	}
 
-	n_->declare_parameter<double>("realtime_factor", 1.0);
-	n_->declare_parameter<double>("gui_refresh_period", 50);
-	n_->declare_parameter<bool>("show_gui", true);
-	n_->declare_parameter<double>("period_ms_publish_tf", 20);
-	n_->declare_parameter<bool>("do_fake_localization", false);
+	realtime_factor_ =
+		n_->declare_parameter<double>("realtime_factor", realtime_factor_);
+
+	gui_refresh_period_ms_ = n_->declare_parameter<double>(
+		"gui_refresh_period", gui_refresh_period_ms_);
+
+	show_gui_ = n_->declare_parameter<bool>("show_gui", show_gui_);
+
+	period_ms_publish_tf_ = n_->declare_parameter<double>(
+		"period_ms_publish_tf", period_ms_publish_tf_);
+
+	do_fake_localization_ = n_->declare_parameter<bool>(
+		"do_fake_localization", do_fake_localization_);
+
 	// n_->declare_parameter("use_sim_time"); // already declared error?
 #endif
 
@@ -136,22 +150,6 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	// In case the user didn't set it:
 	n_.setParam("/use_sim_time", true);
-#else
-	double t;
-	base_watchdog_timeout_ = std::chrono::milliseconds(
-		1000 * n_->get_parameter_or("base_watchdog_timeout", t, 0.2));
-
-	n_->get_parameter_or("realtime_factor", realtime_factor_, 1.0);
-	n_->get_parameter_or(
-		"gui_refresh_period", gui_refresh_period_ms_, gui_refresh_period_ms_);
-	n_->get_parameter_or("show_gui", show_gui_, show_gui_);
-	n_->get_parameter_or(
-		"period_ms_publish_tf", period_ms_publish_tf_, period_ms_publish_tf_);
-	n_->get_parameter_or(
-		"do_fake_localization", do_fake_localization_, do_fake_localization_);
-
-	// In case the user didn't set it:
-	// n_->set_parameter({"use_sim_time", true});
 #endif
 
 	mvsim_world_.registerCallbackOnObservation(
@@ -205,7 +203,7 @@ void MVSimNode::loadWorldModel(const std::string& world_xml_file)
 MVSimNode::~MVSimNode()
 {
 	thread_params_.closing = true;
-	thGUI_.join();
+	if (thGUI_.joinable()) thGUI_.join();
 }
 
 #if PACKAGE_ROS_VERSION == 1
