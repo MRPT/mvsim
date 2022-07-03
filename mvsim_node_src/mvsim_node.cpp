@@ -76,15 +76,15 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	ts_.attachClock(clock_);
 
 	// ROS2: needs to declare parameters:
-	n_->declare_parameter("world_file");
-	n_->declare_parameter("simul_rate", 100);
-	n_->declare_parameter("base_watchdog_timeout", 0.2);
+	n_->declare_parameter<std::string>("world_file", "default.world.xml");
+	n_->declare_parameter<double>("simul_rate", 100);
+	n_->declare_parameter<double>("base_watchdog_timeout", 0.2);
 
-	n_->declare_parameter("realtime_factor", 1.0);
-	n_->declare_parameter("gui_refresh_period", 50);
-	n_->declare_parameter("show_gui", true);
-	n_->declare_parameter("period_ms_publish_tf", 20);
-	n_->declare_parameter("do_fake_localization", false);
+	n_->declare_parameter<double>("realtime_factor", 1.0);
+	n_->declare_parameter<double>("gui_refresh_period", 50);
+	n_->declare_parameter<bool>("show_gui", true);
+	n_->declare_parameter<double>("period_ms_publish_tf", 20);
+	n_->declare_parameter<bool>("do_fake_localization", false);
 	// n_->declare_parameter("use_sim_time"); // already declared error?
 #endif
 
