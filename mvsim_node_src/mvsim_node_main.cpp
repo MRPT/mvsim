@@ -27,70 +27,84 @@ int main(int argc, char** argv)
 	auto n = rclcpp::Node::make_shared("mvsim");
 #endif
 
-	// Create a "Node" object.
-	MVSimNode node(n);
-
-	// Declare variables that can be modified by launch file or command line.
-	std::string world_file;
-
-	int rate = 100;
-
-#if PACKAGE_ROS_VERSION == 1
-
-	// Initialize node parameters from launch file or command line.
-	// Use a private node handle so that multiple instances of the node can be
-	// run simultaneously
-	// while using different parameters.
-	ros::NodeHandle private_node_handle_("~");
-	private_node_handle_.param("simul_rate", rate, 100);
-	private_node_handle_.param("world_file", world_file, std::string(""));
-#else
-	n->get_parameter("world_file", world_file);
-	n->get_parameter("simul_rate", rate);
-	ASSERT_(rate > 0);
-	const auto periodMs = mrpt::round(1e6 / static_cast<double>(rate));
-#endif
-
-	// Launch mvsim:
-	node.launch_mvsim_server();
-
-	// Init world model:
-	if (!world_file.empty()) node.loadWorldModel(world_file);
-
-	// Attach world as a mvsim communications node:
-	node.mvsim_world_.connectToServer();
-
-#if PACKAGE_ROS_VERSION == 1
-	// Set up a dynamic reconfigure server.
-	// Do this before parameter server, else some of the parameter server
-	// values can be overwritten.
-	dynamic_reconfigure::Server<mvsim::mvsimNodeConfig> dr_srv;
-	dynamic_reconfigure::Server<mvsim::mvsimNodeConfig>::CallbackType cb;
-	cb = boost::bind(&MVSimNode::configCallback, &node, _1, _2);
-	dr_srv.setCallback(cb);
-#endif
-
-	// Tell ROS how fast to run this node.
-#if PACKAGE_ROS_VERSION == 1
-	ros::Rate r(rate);
-
-	// Main loop.
-	while (n.ok())
+	try
 	{
-		node.spin();
-		ros::spinOnce();
-		r.sleep();
-	}
-#else
-	auto ros_clock = rclcpp::Clock::make_shared();
-	auto timer_ = rclcpp::create_timer(
-		n, ros_clock, std::chrono::microseconds(periodMs),
-		[&]() { node.spin(); });
+		// Create a "Node" object.
+		MVSimNode node(n);
 
-	rclcpp::spin(n);
-	rclcpp::shutdown();
+		// Declare variables that can be modified by launch file or command
+		// line.
+		std::string world_file;
+
+		int rate = 100;
+
+#if PACKAGE_ROS_VERSION == 1
+
+		// Initialize node parameters from launch file or command line.
+		// Use a private node handle so that multiple instances of the node can
+		// be run simultaneously while using different parameters.
+		ros::NodeHandle private_node_handle_("~");
+		private_node_handle_.param("simul_rate", rate, 100);
+		private_node_handle_.param("world_file", world_file, std::string(""));
+#else
+		n->get_parameter("world_file", world_file);
+		n->get_parameter("simul_rate", rate);
+		ASSERT_(rate > 0);
+		const auto periodMs = mrpt::round(1e6 / static_cast<double>(rate));
 #endif
 
-	return 0;
+		// Launch mvsim:
+		node.launch_mvsim_server();
+
+		// Init world model:
+		if (!world_file.empty()) node.loadWorldModel(world_file);
+
+		// Attach world as a mvsim communications node:
+		node.mvsim_world_.connectToServer();
+
+#if PACKAGE_ROS_VERSION == 1
+		// Set up a dynamic reconfigure server.
+		// Do this before parameter server, else some of the parameter server
+		// values can be overwritten.
+		dynamic_reconfigure::Server<mvsim::mvsimNodeConfig> dr_srv;
+		dynamic_reconfigure::Server<mvsim::mvsimNodeConfig>::CallbackType cb;
+		cb = boost::bind(&MVSimNode::configCallback, &node, _1, _2);
+		dr_srv.setCallback(cb);
+#endif
+
+		// Tell ROS how fast to run this node.
+#if PACKAGE_ROS_VERSION == 1
+		ros::Rate r(rate);
+
+		// Main loop.
+		while (n.ok())
+		{
+			node.spin();
+			ros::spinOnce();
+			r.sleep();
+		}
+#else
+		auto ros_clock = rclcpp::Clock::make_shared();
+		auto timer_ = rclcpp::create_timer(
+			n, ros_clock, std::chrono::microseconds(periodMs),
+			[&]() { node.spin(); });
+
+		rclcpp::spin(n);
+		rclcpp::shutdown();
+#endif
+
+		return 0;
+	}
+	catch (const std::exception& e)
+	{
+#if PACKAGE_ROS_VERSION == 1
+		std::cerr << e.what() << std::endl;
+#else
+		RCLCPP_ERROR_STREAM(
+			n->get_logger(), "Exception in main node body:\n"
+								 << e.what());
+#endif
+		return 1;
+	}
 
 }  // end main()
