@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/system/CTicTac.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mvsim/WorldElements/OccupancyGridMap.h>
@@ -73,6 +74,18 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 #if PACKAGE_ROS_VERSION == 2
 	clock_ = n_->get_clock();
 	ts_.attachClock(clock_);
+
+	// ROS2: needs to declare parameters:
+	n_->declare_parameter("world_file");
+	n_->declare_parameter("simul_rate", 100);
+	n_->declare_parameter("base_watchdog_timeout", 0.2);
+
+	n_->declare_parameter("realtime_factor", 1.0);
+	n_->declare_parameter("gui_refresh_period", 50);
+	n_->declare_parameter("show_gui", true);
+	n_->declare_parameter("period_ms_publish_tf", 20);
+	n_->declare_parameter("do_fake_localization", false);
+	// n_->declare_parameter("use_sim_time"); // already declared error?
 #endif
 
 	// Launch GUI thread:
@@ -84,19 +97,19 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 #if PACKAGE_ROS_VERSION == 1
 	pub_clock_ = n_.advertise<rosgraph_msgs::Clock>("/clock", 10);
 
-	pub_map_ros_ = n_.advertise<Msg_OccupancyGrid>(
+	pub_map_ros_ = n_.advertise<nav_msgs::OccupancyGrid>(
 		"simul_map", 1 /*queue len*/, true /*latch*/);
-	pub_map_metadata_ = n_.advertise<Msg_MapMetaData>(
+	pub_map_metadata_ = n_.advertise<nav_msgs::MapMetaData>(
 		"simul_map_metadata", 1 /*queue len*/, true /*latch*/);
 #else
 	rclcpp::QoS qosLatched(rclcpp::KeepLast(10));
 	qosLatched.durability(
 		rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
 
-	pub_map_ros_ =
-		n_->create_publisher<Msg_OccupancyGrid>("simul_map", qosLatched);
-	pub_map_metadata_ =
-		n_->create_publisher<Msg_MapMetaData>("simul_map_metadata", qosLatched);
+	pub_map_ros_ = n_->create_publisher<nav_msgs::msg::OccupancyGrid>(
+		"simul_map", qosLatched);
+	pub_map_metadata_ = n_->create_publisher<nav_msgs::msg::MapMetaData>(
+		"simul_map_metadata", qosLatched);
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -138,7 +151,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 		"do_fake_localization", do_fake_localization_, do_fake_localization_);
 
 	// In case the user didn't set it:
-	n_->set_parameter({"use_sim_time", true});
+	// n_->set_parameter({"use_sim_time", true});
 #endif
 
 	mvsim_world_.registerCallbackOnObservation(
@@ -316,46 +329,59 @@ void MVSimNode::spin()
  *----------------------------------------------------------------------------*/
 void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 {
-	using namespace mvsim;
-
-	MVSimNode* obj = thread_params.obj;
-
-	while (!thread_params.closing)
+	try
 	{
-		if (obj->world_init_ok_ && obj->show_gui_)
+		using namespace mvsim;
+
+		MVSimNode* obj = thread_params.obj;
+
+		while (!thread_params.closing)
 		{
-			World::TUpdateGUIParams guiparams;
-			guiparams.msg_lines = obj->msg2gui_;
+			if (obj->world_init_ok_ && obj->show_gui_)
+			{
+				World::TUpdateGUIParams guiparams;
+				guiparams.msg_lines = obj->msg2gui_;
 
-			obj->mvsim_world_.update_GUI(&guiparams);
+				obj->mvsim_world_.update_GUI(&guiparams);
 
-			// Send key-strokes to the main thread:
-			if (guiparams.keyevent.keycode != 0)
-				obj->gui_key_events_ = guiparams.keyevent;
+				// Send key-strokes to the main thread:
+				if (guiparams.keyevent.keycode != 0)
+					obj->gui_key_events_ = guiparams.keyevent;
+			}
+			std::this_thread::sleep_for(
+				std::chrono::milliseconds(obj->gui_refresh_period_ms_));
 		}
-		std::this_thread::sleep_for(
-			std::chrono::milliseconds(obj->gui_refresh_period_ms_));
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "[MVSimNode::thread_update_GUI] Exception:\n" << e.what();
 	}
 }
 
 // Visitor: Vehicles
 // ----------------------------------------
-void MVSimNode::visit_vehicle([[maybe_unused]] mvsim::VehicleBase& veh)
+void MVSimNode::publishVehicles([[maybe_unused]] mvsim::VehicleBase& veh)
 {
 	//
 }
 
 // Visitor: World elements
 // ----------------------------------------
-void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
+void MVSimNode::publishWorldElements(mvsim::WorldElementBase& obj)
 {
 	// GridMaps --------------
 	if (mvsim::OccupancyGridMap* grid =
 			dynamic_cast<mvsim::OccupancyGridMap*>(&obj);
 		grid)
 	{
-		Msg_OccupancyGrid ros_map;
-		mrpt2ros::toROS(grid->getOccGrid(), ros_map);
+		static Msg_OccupancyGrid ros_map;
+		static mvsim::OccupancyGridMap* cachedGrid = nullptr;
+
+		if (cachedGrid != grid)
+		{
+			cachedGrid = grid;
+			mrpt2ros::toROS(grid->getOccGrid(), ros_map);
+		}
 
 #if PACKAGE_ROS_VERSION == 1
 		static size_t loop_count = 0;
@@ -363,6 +389,7 @@ void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 		ros_map.header.seq = loop_count++;
 #else
 		ros_map.header.stamp = clock_->now();
+		ros_map.header.frame_id = "map";
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -382,11 +409,22 @@ void MVSimNode::visit_world_elements(mvsim::WorldElementBase& obj)
 // ROS: Publish grid map for visualization purposes:
 void MVSimNode::notifyROSWorldIsUpdated()
 {
-	mvsim_world_.runVisitorOnWorldElements(
-		[this](mvsim::WorldElementBase& obj) { visit_world_elements(obj); });
+#if PACKAGE_ROS_VERSION == 2
+	// In ROS1 latching works so we only need to do this once, here.
+	// In ROS2,latching doesn't work, we must re-publish on a regular basis...
+	static mrpt::system::CTicTac lastMapPublished;
+	if (lastMapPublished.Tac() > 2.0)
+	{
+		mvsim_world_.runVisitorOnWorldElements(
+			[this](mvsim::WorldElementBase& obj) {
+				publishWorldElements(obj);
+			});
+		lastMapPublished.Tic();
+	}
+#endif
 
 	mvsim_world_.runVisitorOnVehicles(
-		[this](mvsim::VehicleBase& v) { visit_vehicle(v); });
+		[this](mvsim::VehicleBase& v) { publishVehicles(v); });
 
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
@@ -660,6 +698,13 @@ void MVSimNode::spinNotifyROS()
 	pub_clock_.publish(clockMsg_);
 #else
 	sim_time_ = n_->get_clock()->now();
+	MRPT_TODO("Publish /clock for ROS2 too?");
+#endif
+
+#if PACKAGE_ROS_VERSION == 2
+	// In ROS2,latching doesn't work, we must re-publish on a regular basis...
+	mvsim_world_.runVisitorOnWorldElements(
+		[this](mvsim::WorldElementBase& obj) { publishWorldElements(obj); });
 #endif
 
 	// Publish all TFs for each vehicle:
