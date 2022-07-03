@@ -17,7 +17,7 @@ def generate_launch_description():
     # args that can be set from the command line or a default will be used
     world_file_launch_arg = DeclareLaunchArgument(
         "world_file", default_value=TextSubstitution(
-            text=os.path.join(mvsimDir, 'mvsim_tutorial', 'mvsim_demo_1robot.xml')))
+            text=os.path.join(mvsimDir, 'mvsim_tutorial', 'mvsim_demo_1robot.world.xml')))
 
     mvsim_node = Node(
         package='mvsim',

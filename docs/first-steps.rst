@@ -9,7 +9,7 @@ standalone simulator applications to get used to MVSIM.
 
 .. code-block:: bash
 
-    build/bin/mvsim-server mvsim_tutorial/mvsim_demo_2robots.xml
+    build/bin/mvsim-server mvsim_tutorial/mvsim_demo_2robots.world.xml
 
 You should see the GUI of a demo world with two robots equipped with a 2D
 lidar, scanning a model defined by means of an occupancy grid map and a couple

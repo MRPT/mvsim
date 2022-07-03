@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/mvsim_slam.xml" />
+	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/mvsim_slam.world.xml" />
 
 	<node pkg="mvsim" type="mvsim_node" name="mvsim_simulator" output="screen">
 		<param name="world_file" value="$(arg world_file)"/>    
