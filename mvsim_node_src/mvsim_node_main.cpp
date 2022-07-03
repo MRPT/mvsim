@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 		// values can be overwritten.
 		dynamic_reconfigure::Server<mvsim::mvsimNodeConfig> dr_srv;
 		dynamic_reconfigure::Server<mvsim::mvsimNodeConfig>::CallbackType cb;
-		cb = boost::bind(&MVSimNode::configCallback, &node, _1, _2);
+		cb = boost::bind(&MVSimNode::configCallback, node.get(), _1, _2);
 		dr_srv.setCallback(cb);
 #endif
 
