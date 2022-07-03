@@ -1,9 +1,18 @@
 #!/bin/bash
 # Usage: ./generate-python comms
 
+PYBIND11_VERSION=$(dpkg -s pybind11-dev | grep '^Version:' | cut -d " " -f2)
+SYSTEM_PYBIND11_MM_VERSION=$(echo $PYBIND11_VERSION | cut -d. -f1).$(echo $PYBIND11_VERSION | cut -d. -f2)
+
+PYBIND11_MM_VERSION=${PYBIND11_MM_VERSION:-$SYSTEM_PYBIND11_MM_VERSION}
+
+echo "System PYBIND11_VERSION: $PYBIND11_VERSION (Used for wrapper: $PYBIND11_MM_VERSION)"
+
+mkdir -p $1/python/generated-sources-pybind${PYBIND11_MM_VERSION}
+
 $HOME/code/binder/build/source/binder \
 	--root-module=pymvsim_$1 \
-	--prefix $1/python/generated-sources/ \
+	--prefix $1/python/generated-sources-pybind${PYBIND11_MM_VERSION}/ \
 	--bind pymvsim_$1 \
 	-config python.conf \
 	$1/python/all_$1_headers.hpp \
@@ -20,3 +29,4 @@ $HOME/code/binder/build/source/binder \
 	-I/home/jlblanco/code/mrpt/libs/serialization/include/ \
 	-I/home/jlblanco/code/mrpt/libs/rtti/include/ \
 	-I/home/jlblanco/code/mrpt/libs/serialization/include/ \
+	-I/home/jlblanco/code/mrpt/libs/containers/include/ \
