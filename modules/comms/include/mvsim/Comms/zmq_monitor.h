@@ -49,7 +49,15 @@ class SocketMonitor : public zmq::monitor_t
 			}
 			catch (const std::exception& e)
 			{
-				std::cerr << "[MySocketMonitor] Error: " << e.what() << "\n";
+				if (zmq_errno() == ETERM)
+				{
+					// Not a real error, just we are shutting down.
+				}
+				else
+				{
+					std::cerr << "[MySocketMonitor] Error: " << e.what()
+							  << " (zmq_errno=" << zmq_errno() << ")\n";
+				}
 			}
 		});
 	}
