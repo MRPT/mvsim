@@ -47,7 +47,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	mrpt::img::TColor mesh_color(0xa0, 0xe0, 0xa0);
 	params["mesh_color"] = TParamEntry("%color", &mesh_color);
 
-	params["resolution"] = TParamEntry("%f", &m_resolution);
+	params["resolution"] = TParamEntry("%f", &resolution_);
+	params["debug_show_contact_points"] =
+		TParamEntry("%bool", &debugShowContactPoints_);
 
 	parse_xmlnode_children_as_param(*root, params);
 
@@ -100,30 +102,38 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 
 	// Build mesh:
-	m_gl_mesh = mrpt::opengl::CMesh::Create();
+	gl_mesh_ = mrpt::opengl::CMesh::Create();
 
-	m_gl_mesh->enableTransparency(false);
+	gl_mesh_->enableTransparency(false);
 
 	if (has_mesh_image)
 	{
 		ASSERT_EQUAL_(mesh_image.getWidth(), (size_t)elevation_data.cols());
 		ASSERT_EQUAL_(mesh_image.getHeight(), (size_t)elevation_data.rows());
 
-		m_gl_mesh->assignImageAndZ(mesh_image, elevation_data);
+		gl_mesh_->assignImageAndZ(mesh_image, elevation_data);
 	}
 	else
 	{
-		m_gl_mesh->setZ(elevation_data);
-		m_gl_mesh->setColor_u8(mesh_color);
+		gl_mesh_->setZ(elevation_data);
+		gl_mesh_->setColor_u8(mesh_color);
 	}
 
 	// Save copy for calcs:
-	m_mesh_z_cache = elevation_data;
+	meshCacheZ_ = elevation_data;
 
 	// Extension: X,Y
-	const double LX = (elevation_data.cols() - 1) * m_resolution;
-	const double LY = (elevation_data.rows() - 1) * m_resolution;
-	m_gl_mesh->setGridLimits(-0.5 * LX, 0.5 * LX, -0.5 * LY, 0.5 * LY);
+	const double LX = (elevation_data.cols() - 1) * resolution_;
+	const double LY = (elevation_data.rows() - 1) * resolution_;
+
+	// Important: the yMin/yMax in the next line are swapped to handle
+	// the "+y" different direction in image and map coordinates, it is not
+	// a bug:
+	gl_mesh_->setGridLimits(-0.5 * LX, 0.5 * LX, +0.5 * LY, -0.5 * LY);
+
+	gl_debugWheelsContactPoints_ = mrpt::opengl::CPointCloud::Create();
+	gl_debugWheelsContactPoints_->enableVariablePointSize(false);
+	gl_debugWheelsContactPoints_->setPointSize(7.0f);
 }
 
 void ElevationMap::internalGuiUpdate(
@@ -133,16 +143,18 @@ void ElevationMap::internalGuiUpdate(
 	using namespace mrpt::math;
 
 	ASSERTMSG_(
-		m_gl_mesh,
+		gl_mesh_,
 		"ERROR: Can't render Mesh before loading it! Have you called "
 		"loadConfigFrom() first?");
 
 	// 1st time call?? -> Create objects
-	if (m_first_scene_rendering)
+	if (firstSceneRendering_)
 	{
-		m_first_scene_rendering = false;
-		viz.insert(m_gl_mesh);
-		physical.insert(m_gl_mesh);
+		firstSceneRendering_ = false;
+		viz.insert(gl_mesh_);
+		physical.insert(gl_mesh_);
+
+		viz.insert(gl_debugWheelsContactPoints_);
 	}
 }
 
@@ -153,7 +165,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 	// 2) Apply gravity force
 	const double gravity = getWorldObject()->get_gravity();
 
-	ASSERT_(m_gl_mesh);
+	ASSERT_(gl_mesh_);
 
 	const World::VehicleList& lstVehs = this->m_world->getListOfVehicles();
 	for (World::VehicleList::const_iterator itVeh = lstVehs.begin();
@@ -179,7 +191,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 			const mrpt::poses::CPose3D cur_cpose(cur_pose);
 
 			mrpt::math::TPose3D new_pose = cur_pose;
-			corrs.clear();
+			corrs_.clear();
 
 			bool out_of_area = false;
 			for (size_t iW = 0; !out_of_area && iW < nWheels; iW++)
@@ -218,7 +230,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 				corr.this_z = z;
 #endif
 
-				corrs.push_back(corr);
+				corrs_.push_back(corr);
 			}
 			if (out_of_area) continue;
 
@@ -227,21 +239,50 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 			mrpt::poses::CPose3DQuat tmpl;
 
 			mrpt::tfest::se3_l2(
-				corrs, tmpl, transf_scale, true /*force scale unity*/);
+				corrs_, tmpl, transf_scale, true /*force scale unity*/);
 
-			m_optimal_transf = mrpt::poses::CPose3D(tmpl);
-			new_pose.z = m_optimal_transf.z();
-			new_pose.yaw = m_optimal_transf.yaw();
-			new_pose.pitch = m_optimal_transf.pitch();
-			new_pose.roll = m_optimal_transf.roll();
+			optimalTf_ = mrpt::poses::CPose3D(tmpl);
+
+#if 0
+			std::cout << "iter: " << iter << " poseErr:"
+					  << std::sqrt(corrs.overallSquareError(m_optimal_transf))
+					  << " p:" << m_optimal_transf << "\n";
+#endif
+
+			new_pose.z = optimalTf_.z();
+			new_pose.yaw = optimalTf_.yaw();
+			new_pose.pitch = optimalTf_.pitch();
+			new_pose.roll = optimalTf_.roll();
 
 			itVeh->second->setPose(new_pose);
 
 		}  // end iters
 
+		// debug contact points:
+		if (debugShowContactPoints_)
+		{
+			gl_debugWheelsContactPoints_->clear();
+			for (const auto& c : corrs_)
+				gl_debugWheelsContactPoints_->insertPoint(c.global);
+
+#if 0
+			// DEBUG:
+			for (float x = -60; x < 60; x += 0.5)
+				for (float y = -60; y < 60; y += 0.5)
+				{
+					float z;
+					if (!getElevationAt(x /*in*/, y /*in*/, z /*out*/))
+						continue;
+					gl_debugWheelsContactPoints_->insertPoint(x, y, z);
+				}
+			debugShowContactPoints_ = false;
+#endif
+		}
+
+		// compute "down" direction:
 		{
 			mrpt::poses::CPose3D rot_only;
-			rot_only.setRotationMatrix(m_optimal_transf.getRotationMatrix());
+			rot_only.setRotationMatrix(optimalTf_.getRotationMatrix());
 			rot_only.inverseComposePoint(
 				.0, .0, -1.0, dir_down.x, dir_down.y, dir_down.z);
 		}
@@ -301,25 +342,32 @@ static float calcz(
 
 bool ElevationMap::getElevationAt(double x, double y, float& z) const
 {
-	const mrpt::opengl::CMesh* mesh = m_gl_mesh.get();
+	const mrpt::opengl::CMesh* mesh = gl_mesh_.get();
+
 	const float x0 = mesh->getxMin();
 	const float y0 = mesh->getyMin();
-	const size_t nCellsX = m_mesh_z_cache.cols();
-	const size_t nCellsY = m_mesh_z_cache.rows();
+	const float x1 = mesh->getxMax();
+	const float y1 = mesh->getyMax();
+
+	const size_t nCellsX = meshCacheZ_.rows();
+	const size_t nCellsY = meshCacheZ_.cols();
+
+	const float sCellX = (x1 - x0) / (nCellsX - 1);
+	const float sCellY = (y1 - y0) / (nCellsY - 1);
 
 	// Discretize:
-	const int cx00 = ::floor((x - x0) / m_resolution);
-	const int cy00 = ::floor((y - y0) / m_resolution);
+	const int cx00 = ::floor((x - x0) / sCellX);
+	const int cy00 = ::floor((y - y0) / sCellY);
 
 	if (cx00 < 1 || cx00 >= int(nCellsX - 1) || cy00 < 1 ||
 		cy00 >= int(nCellsY - 1))
 		return false;
 
 	// Linear interpolation:
-	const float z00 = m_mesh_z_cache(cy00, cx00);
-	const float z01 = m_mesh_z_cache(cy00 + 1, cx00);
-	const float z10 = m_mesh_z_cache(cy00, cx00 + 1);
-	const float z11 = m_mesh_z_cache(cy00 + 1, cx00 + 1);
+	const float z00 = meshCacheZ_(cx00, cy00);
+	const float z01 = meshCacheZ_(cx00, cy00 + 1);
+	const float z10 = meshCacheZ_(cx00 + 1, cy00);
+	const float z11 = meshCacheZ_(cx00 + 1, cy00 + 1);
 
 	//
 	//   p01 ---- p11
@@ -327,12 +375,12 @@ bool ElevationMap::getElevationAt(double x, double y, float& z) const
 	//   p00 ---- p10
 	//
 	const mrpt::math::TPoint3Df p00(.0f, .0f, z00);
-	const mrpt::math::TPoint3Df p01(.0f, m_resolution, z01);
-	const mrpt::math::TPoint3Df p10(m_resolution, .0f, z10);
-	const mrpt::math::TPoint3Df p11(m_resolution, m_resolution, z11);
+	const mrpt::math::TPoint3Df p01(.0f, sCellY, z01);
+	const mrpt::math::TPoint3Df p10(sCellX, .0f, z10);
+	const mrpt::math::TPoint3Df p11(sCellX, sCellY, z11);
 
-	const float lx = x - (x0 + cx00 * m_resolution);
-	const float ly = y - (y0 + cy00 * m_resolution);
+	const float lx = x - (x0 + cx00 * sCellX);
+	const float ly = y - (y0 + cy00 * sCellY);
 
 	if (ly >= lx)
 		z = calcz(p00, p01, p11, lx, ly);
