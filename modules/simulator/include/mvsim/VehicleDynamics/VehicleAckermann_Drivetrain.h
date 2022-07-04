@@ -111,10 +111,10 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 
 		// See base docs.
-		virtual bool setTwistCommand(const double vx, const double wz) override
+		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override
 		{
-			setpoint_lin_speed = vx;
-			setpoint_ang_speed = wz;
+			setpoint_lin_speed = t.vx;
+			setpoint_ang_speed = t.omega;
 			return true;
 		}
 

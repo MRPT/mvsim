@@ -37,8 +37,7 @@ class ControllerBaseInterface
 
 	/** Accept a Twist command. \return true if the controller supports this
 	 * kind of commands, false otherwise */
-	virtual bool setTwistCommand(
-		[[maybe_unused]] const double vx, [[maybe_unused]] const double wz)
+	virtual bool setTwistCommand([[maybe_unused]] const mrpt::math::TTwist2D& t)
 	{
 		return false; /* default: no */
 	}
