@@ -53,8 +53,7 @@ endif()
 #
 #  This package can be built as:
 #  1) Standalone lib+app
-#  2) ROS node(s)
-#  3) MOOS module for OpenMORA
+#  2) ROS1 or ROS2 node(s)
 # Depending on what packages are found, this script will instruct
 # CMake to configure the project accordingly.
 # ------------------------------------------------------------------
