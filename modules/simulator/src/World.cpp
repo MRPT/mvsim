@@ -303,7 +303,7 @@ void World::connectToServer()
 						const auto t = itV->second->getTwist();
 						auto* tw = ans.mutable_twist();
 						tw->set_vx(t.vx);
-						tw->set_vx(t.vy);
+						tw->set_vy(t.vy);
 						tw->set_vz(0);
 						tw->set_wx(0);
 						tw->set_wy(0);
