@@ -26,7 +26,7 @@ using namespace std;
 ElevationMap::ElevationMap(World* parent, const rapidxml::xml_node<char>* root)
 	: WorldElementBase(parent)
 {
-	loadConfigFrom(root);
+	ElevationMap::loadConfigFrom(root);
 }
 
 ElevationMap::~ElevationMap() {}
@@ -210,7 +210,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 
 #if MRPT_VERSION >= 0x240
 				corr.globalIdx = iW;
-				corr.local = mrpt::math::TPoint3D(gPt.x, gPt.y, z);
+				corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, z);
 #else
 				corr.this_idx = iW;
 				corr.this_x = gPt.x;
