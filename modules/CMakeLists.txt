@@ -221,7 +221,7 @@ endif()
 
 # ========================== Show results ====================================
 message(STATUS "----- Configured libmvsim (version ${PROJECT_VERSION}) ------")
-message(STATUS "MRPT version   : ${MRPT_VERSION}")
+message(STATUS "MRPT version   : ${mrpt-maps_VERSION}")
 message(STATUS "BUILD_FOR_ROS  : ${BUILD_FOR_ROS} (ROS_VERSION: " $ENV{ROS_VERSION} ")")
 if (DETECTED_ROS1)
 	message(STATUS "  - catkin [req]              : ${catkin_FOUND}")
