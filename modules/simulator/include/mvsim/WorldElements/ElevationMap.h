@@ -41,15 +41,19 @@ class ElevationMap : public WorldElementBase
 
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */
-	mrpt::opengl::CMesh::Ptr m_gl_mesh;
-	bool m_first_scene_rendering = true;
-	float m_resolution = 1.0f;
-	/** A copy of elevation data in m_gl_mesh. Coordinate order is (y,x) */
-	mrpt::math::CMatrixFloat m_mesh_z_cache;
+	mrpt::opengl::CMesh::Ptr gl_mesh_;
+	std::shared_ptr<mrpt::opengl::CPointCloud> gl_debugWheelsContactPoints_;
+	bool firstSceneRendering_ = true;
+	float resolution_ = 1.0f;
+	
+	/** A copy of elevation data in m_gl_mesh. Coordinate order is (x,y) */
+	mrpt::math::CMatrixFloat meshCacheZ_;
+	
+	bool debugShowContactPoints_ = false;
 
    private:
 	// temp vars (declared here to avoid reallocs):
-	mrpt::tfest::TMatchingPairList corrs;
-	mrpt::poses::CPose3D m_optimal_transf;
+	mrpt::tfest::TMatchingPairList corrs_;
+	mrpt::poses::CPose3D optimalTf_;
 };
 }  // namespace mvsim
