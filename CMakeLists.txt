@@ -18,7 +18,6 @@ elseif("$ENV{ROS_VERSION}" STREQUAL "1")
 	set(PACKAGE_ROS_VERSION 1)
 	set (CMAKE_CXX_STANDARD 14)
 endif()
-project(mrpt_msgs)
 
 # CMake file for the library target
 project(mvsim)
