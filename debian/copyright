@@ -7,8 +7,8 @@ Files: *
 Copyright: 2014-2020, Jose Luis Blanco Claraco
 License: BSD-3-clause
 
-Files: externals/Box2D/*
-Copyright: 2006-2013, Erin Catto
+Files: externals/box2d/*
+Copyright: 2006-2022, Erin Catto
 License: Expat
 
 

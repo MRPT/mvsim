@@ -1,5 +1,5 @@
-mvsim (0.3.0) bionic; urgency=medium
+mvsim (0.3.2) focal; urgency=medium
 
   * New upstream release.
 
- -- Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>  Fri, 29 May 2020 16:03:59 +0200
+ -- Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>  Fri, 4 Jul 2022 11:23:00 +0200
