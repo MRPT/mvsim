@@ -25,9 +25,6 @@
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
 #include <google/protobuf/text_format.h>
-
-#include <zmq.hpp>
-
 #include <mvsim/mvsim-msgs/AdvertiseServiceRequest.pb.h>
 #include <mvsim/mvsim-msgs/AdvertiseTopicRequest.pb.h>
 #include <mvsim/mvsim-msgs/CallService.pb.h>
@@ -43,6 +40,8 @@
 #include <mvsim/mvsim-msgs/SubscribeAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SubscribeRequest.pb.h>
 #include <mvsim/mvsim-msgs/UnregisterNodeRequest.pb.h>
+
+#include <zmq.hpp>
 
 #endif
 
