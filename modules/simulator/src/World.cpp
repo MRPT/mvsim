@@ -9,16 +9,15 @@
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mvsim/World.h>
-
-#include <algorithm>  // count()
-#include <map>
-#include <stdexcept>
-
 #include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPoseAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
+
+#include <algorithm>  // count()
+#include <map>
+#include <stdexcept>
 
 using namespace mvsim;
 using namespace std;
@@ -297,6 +296,15 @@ void World::connectToServer()
 						po->set_yaw(p.yaw);
 						po->set_pitch(p.pitch);
 						po->set_roll(p.roll);
+
+						const auto t = itV->second->getTwist();
+						auto* tw = ans.mutable_twist();
+						tw->set_vx(t.vx);
+						tw->set_vx(t.vy);
+						tw->set_vz(0);
+						tw->set_wx(0);
+						tw->set_wy(0);
+						tw->set_wz(t.omega);
 
 						ans.set_objectisincollision(
 							itV->second->hadCollision());
