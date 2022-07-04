@@ -663,8 +663,8 @@ void MVSimNode::onROSMsgCmdVel(
 {
 	mvsim::ControllerBaseInterface* controller = veh->getControllerInterface();
 
-	const bool ctrlAcceptTwist =
-		controller->setTwistCommand(cmd->linear.x, cmd->angular.z);
+	const bool ctrlAcceptTwist = controller->setTwistCommand(
+		{cmd->linear.x, cmd->linear.y, cmd->angular.z});
 
 	if (!ctrlAcceptTwist)
 	{

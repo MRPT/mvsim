@@ -7,11 +7,14 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/math/TTwist2D.h>
 #include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mvsim/World.h>
 #include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPoseAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetControllerTwist.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetControllerTwistAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
 
@@ -316,6 +319,60 @@ void World::connectToServer()
 					}
 					return ans;
 				}));
+
+	m_client.advertiseService<
+		mvsim_msgs::SrvSetControllerTwist,
+		mvsim_msgs::SrvSetControllerTwistAnswer>(
+		"set_controller_twist",
+		std::function<mvsim_msgs::SrvSetControllerTwistAnswer(
+			const mvsim_msgs::SrvSetControllerTwist&)>(
+			[this](const mvsim_msgs::SrvSetControllerTwist& req) {
+				std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
+
+				mvsim_msgs::SrvSetControllerTwistAnswer ans;
+				ans.set_success(false);
+
+				const auto sId = req.objectid();
+
+				auto itV = m_simulableObjects.find(sId);
+				if (itV == m_simulableObjects.end())
+				{
+					ans.set_errormessage("objectId not found");
+					return ans;
+				}
+
+				auto veh = std::dynamic_pointer_cast<VehicleBase>(itV->second);
+				if (!veh)
+				{
+					ans.set_errormessage("objectId is not of VehicleBase type");
+					return ans;
+				}
+
+				mvsim::ControllerBaseInterface* controller =
+					veh->getControllerInterface();
+				if (!controller)
+				{
+					ans.set_errormessage(
+						"objectId vehicle seems not to have any controller");
+					return ans;
+				}
+
+				const mrpt::math::TTwist2D t(
+					req.twistsetpoint().vx(), req.twistsetpoint().vy(),
+					req.twistsetpoint().wz());
+
+				const bool ctrlAcceptTwist = controller->setTwistCommand(t);
+				if (!ctrlAcceptTwist)
+				{
+					ans.set_errormessage(
+						"objectId vehicle controller did not accept the twist "
+						"command");
+					return ans;
+				}
+
+				ans.set_success(true);
+				return ans;
+			}));
 }
 
 void World::insertBlock(const Block::Ptr& block)
