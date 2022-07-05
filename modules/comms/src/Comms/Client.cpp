@@ -726,6 +726,17 @@ std::string Client::callService(
 #endif
 	MRPT_END
 }
+/// Overload for python wrapper
+void Client::subscribeTopic(
+	const std::string& topicName,
+	const std::function<void(const std::string& /*serializedMsg*/)>& callback)
+{
+	MRPT_START
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	THROW_EXCEPTION("TO DO");
+#endif
+	MRPT_END
+}
 
 void Client::doCallService(
 	const std::string& serviceName, const std::string& inputSerializedMsg,
