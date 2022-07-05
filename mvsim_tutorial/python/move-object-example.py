@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
-# To test with a local build:
+# ---------------------------------------------------------------------
+# This example shows how to:
+# - Call a MVSIM service.
+# - Use it to move an object in an arbitrary way.
 #
+# Install python3-mvsim, or test with a local build with:
 # export PYTHONPATH=$HOME/code/mvsim/build/lib/:$PYTHONPATH
+# ---------------------------------------------------------------------
 
 from mvsim_comms import pymvsim_comms
 from mvsim_msgs import SrvSetPose_pb2
