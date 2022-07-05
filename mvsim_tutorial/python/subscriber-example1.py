@@ -13,4 +13,8 @@ if __name__ == "__main__":
     print("Connecting to server...")
     client.connect()
     print("Connected successfully.")
+
+    # Subscribe to "/r1/pose"
+    # client.subscribeTopic()
+
     time.sleep(2.0)

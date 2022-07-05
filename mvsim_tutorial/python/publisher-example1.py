@@ -19,8 +19,8 @@ def setObjectPose(client, objectName, x, y, theta_rad):
     req.pose.z = 0
     req.pose.yaw = theta_rad
     req.pose.pitch = 0
-    req.pose.roll = 0 # math.radians(0.0)
-    #ret =
+    req.pose.roll = 0  # math.radians(0.0)
+    # ret =
     client.callService('set_pose', req.SerializeToString())
 
 

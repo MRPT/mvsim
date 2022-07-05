@@ -2,24 +2,24 @@
 #include <sstream> // __str__
 #include <stdexcept>
 
-#include <pybind11/pybind11.h>
 #include <functional>
+#include <pybind11/pybind11.h>
 #include <string>
 #include <pybind11/stl.h>
 
 
 #ifndef BINDER_PYBIND11_TYPE_CASTER
 	#define BINDER_PYBIND11_TYPE_CASTER
-	PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
-	PYBIND11_DECLARE_HOLDER_TYPE(T, T*);
-	PYBIND11_MAKE_OPAQUE(std::shared_ptr<void>);
+	PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>)
+	PYBIND11_DECLARE_HOLDER_TYPE(T, T*)
+	PYBIND11_MAKE_OPAQUE(std::shared_ptr<void>)
 #endif
 
 // mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:49
 struct PyCallBack_mvsim_UnexpectedMessageException : public mvsim::UnexpectedMessageException {
 	using mvsim::UnexpectedMessageException::UnexpectedMessageException;
 
-	const char * what() const noexcept override { 
+	const char * what() const noexcept override {
 		pybind11::gil_scoped_acquire gil;
 		pybind11::function overload = pybind11::get_overload(static_cast<const mvsim::UnexpectedMessageException *>(this), "what");
 		if (overload) {
