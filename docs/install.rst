@@ -9,7 +9,7 @@ Dependencies:
 - A decent C++17 compiler.
 - CMake >= 3.1
 - MRPT (>=2.0.0): In Windows, build from sources or install precompiled binaries.
-- Box2D: Will use an embedded copy if no system version is found.
+- Box2D (>=2.4): It will use an embedded copy (git submodule) if no (or too old) system version is found.
 
 In Ubuntu, this will install all requirements:
 
@@ -18,7 +18,7 @@ In Ubuntu, this will install all requirements:
  sudo apt install \
    build-essential cmake g++ \
    libbox2d-dev \
-   libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev \
+   libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev libmrpt-tclap-dev \
    libmrpt-gui-dev libmrpt-tfest-dev \
    protobuf-compiler \
    libzmq3-dev \
@@ -47,6 +47,6 @@ Either install as a precompiled package:
 
     sudo apt install ros-$ROS_DISTRO-mvsim
 
-Or build from sources, by cloning into a catkin workspace and build as usual.
+Or build from sources, by cloning into a catkin or colcon workspace and build as usual.
 
 Usage: See docs and tutorials in https://wiki.ros.org/mvsim
