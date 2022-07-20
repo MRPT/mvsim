@@ -15,6 +15,7 @@
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/ElevationMap.h>
 
+#include <limits>
 #include <rapidxml.hpp>
 
 #include "xml_utils.h"
@@ -43,6 +44,12 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	double img_min_z = 0.0, img_max_z = 5.0;
 	params["elevation_image_min_z"] = TParamEntry("%lf", &img_min_z);
 	params["elevation_image_max_z"] = TParamEntry("%lf", &img_max_z);
+
+	double corner_min_x = std::numeric_limits<double>::max();
+	double corner_min_y = std::numeric_limits<double>::max();
+
+	params["corner_min_x"] = TParamEntry("%lf", &corner_min_x);
+	params["corner_min_y"] = TParamEntry("%lf", &corner_min_y);
 
 	mrpt::img::TColor mesh_color(0xa0, 0xe0, 0xa0);
 	params["mesh_color"] = TParamEntry("%color", &mesh_color);
@@ -126,10 +133,17 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	const double LX = (elevation_data.cols() - 1) * resolution_;
 	const double LY = (elevation_data.rows() - 1) * resolution_;
 
+	if (corner_min_x == std::numeric_limits<double>::max())
+		corner_min_x = -0.5 * LX;
+
+	if (corner_min_y == std::numeric_limits<double>::max())
+		corner_min_y = -0.5 * LY;
+
 	// Important: the yMin/yMax in the next line are swapped to handle
 	// the "+y" different direction in image and map coordinates, it is not
 	// a bug:
-	gl_mesh_->setGridLimits(-0.5 * LX, 0.5 * LX, -0.5 * LY, +0.5 * LY);
+	gl_mesh_->setGridLimits(
+		corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
 
 	gl_debugWheelsContactPoints_ = mrpt::opengl::CPointCloud::Create();
 	gl_debugWheelsContactPoints_->enableVariablePointSize(false);

@@ -20,7 +20,7 @@ using namespace std;
 
 // Ctor:
 DynamicsDifferential::DynamicsDifferential(World* parent)
-	: VehicleBase(parent, 2 /*num wheels*/)
+	: VehicleBase(parent, 3 /*num wheels*/)
 {
 	using namespace mrpt::math;
 
@@ -75,20 +75,24 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	}
 
 	// <l_wheel ...>, <r_wheel ...>
-	const char* w_names[2] = {"l_wheel", "r_wheel"};
-	const double w_default_y[2] = {0.5, -0.5};
+	const char* w_names[3] = {"l_wheel", "r_wheel", "caster_wheel"};
+	const double w_default_x[3] = {0, 0, 0.5};
+	const double w_default_y[3] = {0.5, -0.5};
 	m_wheels_info.clear();
-	m_wheels_info.resize(2);  // reset default values
+	m_wheels_info.resize(3);  // reset default values
 
 	// Load common params:
-	for (size_t i = 0; i < 2; i++)
+	for (size_t i = 0; i < 3; i++)
 	{
 		const rapidxml::xml_node<char>* xml_wheel =
 			xml_node->first_node(w_names[i]);
 		if (xml_wheel)
 			m_wheels_info[i].loadFromXML(xml_wheel);
 		else
+		{
+			m_wheels_info[i].x = w_default_x[i];
 			m_wheels_info[i].y = w_default_y[i];
+		}
 	}
 
 	// Vehicle controller:
@@ -131,7 +135,7 @@ void DynamicsDifferential::invoke_motor_controllers(
 	const TSimulContext& context, std::vector<double>& out_torque_per_wheel)
 {
 	// Longitudinal forces at each wheel:
-	out_torque_per_wheel.assign(2, 0.0);
+	out_torque_per_wheel.assign(2 /*active wheels*/ + 1 /* caster wheel*/, 0.0);
 
 	if (m_controller)
 	{
