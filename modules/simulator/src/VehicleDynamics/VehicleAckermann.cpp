@@ -92,10 +92,10 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	//<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
 	//<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
 	const char* w_names[4] = {
-		"rl_wheel",  // 0
-		"rr_wheel",  // 1
-		"fl_wheel",  // 2
-		"fr_wheel"  // 3
+		"rl_wheel",	 // 0
+		"rr_wheel",	 // 1
+		"fl_wheel",	 // 2
+		"fr_wheel"	// 3
 	};
 	// Load common params:
 	for (size_t i = 0; i < 4; i++)

@@ -102,10 +102,10 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 	//<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
 	//<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
 	const char* w_names[4] = {
-		"rl_wheel",  // 0
-		"rr_wheel",  // 1
-		"fl_wheel",  // 2
-		"fr_wheel"  // 3
+		"rl_wheel",	 // 0
+		"rr_wheel",	 // 1
+		"fl_wheel",	 // 2
+		"fr_wheel"	// 3
 	};
 	// Load common params:
 	for (size_t i = 0; i < 4; i++)
@@ -142,7 +142,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 
 	// Drivetrain parameters
 	// Watch the order of DifferentialType enum!
-	const char* drive_names[6] = {"open_front",   "open_rear",   "open_4wd",
+	const char* drive_names[6] = {"open_front",	  "open_rear",	 "open_4wd",
 								  "torsen_front", "torsen_rear", "torsen_4wd"};
 
 	const rapidxml::xml_node<char>* xml_drive =

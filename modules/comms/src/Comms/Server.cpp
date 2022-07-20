@@ -16,8 +16,6 @@
 #endif
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-#include <zmq.hpp>
-
 #include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
 #include <mvsim/mvsim-msgs/GetServiceInfoAnswer.pb.h>
 #include <mvsim/mvsim-msgs/ListNodesAnswer.pb.h>
@@ -29,6 +27,8 @@
 #include <mvsim/mvsim-msgs/SubscribeAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SubscribeRequest.pb.h>
 #include <mvsim/mvsim-msgs/UnregisterNodeRequest.pb.h>
+
+#include <zmq.hpp>
 
 #endif
 

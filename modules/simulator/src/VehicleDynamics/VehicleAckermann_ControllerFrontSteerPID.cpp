@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -59,7 +60,7 @@ void DynamicsAckermann::ControllerFrontSteerPID::control_step(
 	m_twist_control.max_torque = max_torque;
 
 	m_twist_control.control_step(ci, co);
-	co.steer_ang = setpoint_steer_ang;  // Mainly for the case of v=0
+	co.steer_ang = setpoint_steer_ang;	// Mainly for the case of v=0
 }
 
 void DynamicsAckermann::ControllerFrontSteerPID::load_config(

@@ -15,7 +15,7 @@ struct PID_Controller
 	PID_Controller();
 
 	double KP, KI, KD;
-	double max_out;  //!< For clamping (0=no clamp)
+	double max_out;	 //!< For clamping (0=no clamp)
 
 	/** err = desired-actual, dt=ellapsed time in secs */
 	double compute(double err, double dt);
