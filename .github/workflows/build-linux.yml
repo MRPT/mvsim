@@ -20,13 +20,11 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          # 20.04 
           ubuntu-20.04-clang-ppa-mrpt,
           ubuntu-20.04-gcc-ppa-mrpt,
-          # 22.04 
-          #ubuntu-22.04-gcc,
-          #ubuntu-22.04-clang,
-          #ubuntu-22.04-gcc-ppa-mrpt,
+          ubuntu-22.04-gcc,
+          ubuntu-22.04-clang,
+          ubuntu-22.04-gcc-ppa-mrpt,
         ]
 
         build_type: [ Release ]
