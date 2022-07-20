@@ -163,7 +163,15 @@ VehicleBase::Ptr VehicleBase::factory(
 			mrpt::system::LVL_DEBUG,
 			mrpt::format("XML parser: including file: '%s'", absFile.c_str()));
 
-		const auto [xml, nRoot] = readXmlAndGetRoot(absFile);
+		std::map<std::string, std::string> vars;
+		for (auto attr = n->first_attribute(); attr;
+			 attr = attr->next_attribute())
+		{
+			if (strcmp(attr->name(), "file") == 0) continue;
+			vars[attr->name()] = attr->value();
+		}
+
+		const auto [xml, nRoot] = readXmlAndGetRoot(absFile, vars);
 		// the XML document object must exist during this whole function scope
 		scopedLifeDocs.emplace_back(xml);
 

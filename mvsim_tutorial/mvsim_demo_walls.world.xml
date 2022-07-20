@@ -1,32 +1,46 @@
 <mvsim_world version="1.0">
 	<!-- General simulation options -->
 	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
-	
+
 	<!-- GUI options -->
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
 		<cam_distance>35</cam_distance>
 		<fov_deg>35</fov_deg>
+		<refresh_fps>20</refresh_fps>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
-	
+
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->
-	<element class="occupancy_grid">
-		<!-- File can be an image or an MRPT .gridmap file -->
-		<file>mvsim_demo_world1.png</file>
-		
-		<!--<show_collisions>true</show_collisions>-->
-	</element>
-		
 	<!-- ground grid (for visual reference) -->
 	<element class="ground_grid">
 		<floating>true</floating>
 	</element>
-	
+
+	<!-- ground -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-20</x_min>
+		<y_min>-20</y_min>
+		<x_max> 20</x_max>
+		<y_max> 20</y_max>
+		<z>0.0</z>
+	</element>
+
+	<!-- ceiling -->
+	<element class="horizontal_plane">
+		<cull_face>FRONT</cull_face>
+		<x_min>-20</x_min>
+		<y_min>-20</y_min>
+		<x_max> 20</x_max>
+		<y_max> 20</y_max>
+		<z>3.5</z>
+	</element>
+
 
 	<!-- =============================
 		   Vehicle classes definition
@@ -34,12 +48,27 @@
 	<include file="robot_definitions/ackermann.vehicle.xml" />
 
 	<!-- ========================
-		   Vehicle(s) definition 
+		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="car_ackermann">
-		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>5 10 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<!-- Sensors -->
+		<include file="robot_definitions/front_lidar.sensor.xml" />
+		<include file="robot_definitions/rgbd_camera.sensor.xml" 
+			sensor_x="1.5"
+			sensor_z="1.4"
+		/>
 	</vehicle>
 
-	
+	<!-- ======================================
+	      Walls
+	     ====================================== -->
+	<walls>
+	  <color>#505050</color>
+	  <model_uri>testWalls.dae</model_uri>
+	  <wallThickness>0.10</wallThickness>
+	</walls>
+
 </mvsim_world>
