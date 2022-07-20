@@ -14,7 +14,7 @@ set +e
 set +x
 
 DIRS_IN="mvsim_node_src modules/comms/include modules/comms/src modules/simulator"
-DIRS_OUT=""
+DIRS_OUT="externals"
 LANGS=cpp
 FORMAT_CODE_BIN=".circleci/clang_git_format/format_code.py"
 
