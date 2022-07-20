@@ -12,7 +12,7 @@
 #include <mvsim/ClassFactory.h>
 #include <mvsim/CsvLogger.h>
 #include <mvsim/Wheel.h>
-#include <mvsim/basic_types.h>  // fwrd decls.
+#include <mvsim/basic_types.h>	// fwrd decls.
 
 namespace mvsim
 {
@@ -34,7 +34,7 @@ class FrictionBase
 	{
 		const TSimulContext& context;
 		Wheel& wheel;
-		double weight;  //!< Weight on this wheel from the car chassis
+		double weight;	//!< Weight on this wheel from the car chassis
 						//!(Newtons), excluding the weight of the wheel itself.
 		double motor_torque;  //!< The force applied by the motor to the wheel
 							  //!(Nm). Negative means backwards, which makes the

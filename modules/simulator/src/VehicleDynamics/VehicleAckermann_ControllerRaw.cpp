@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
+
 #include "xml_utils.h"
 
 using namespace mvsim;

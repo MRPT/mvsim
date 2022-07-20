@@ -12,6 +12,7 @@
 #include <mvsim/World.h>
 
 #include <rapidxml.hpp>
+
 #include "xml_utils.h"
 
 using namespace mvsim;

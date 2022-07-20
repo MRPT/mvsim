@@ -8,10 +8,12 @@
   +-------------------------------------------------------------------------+ */
 
 #include "parse_utils.h"
+
 #include <mrpt/core/exceptions.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>
 #include <mrpt/system/string_utils.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
