@@ -28,6 +28,24 @@
             <max_torque>600</max_torque>
         </controller>
 
+        <!-- Available types: 
+            open_front
+            open_rear
+            open_4wd
+            torsen_front
+            torsen_rear
+            torsen_4wd -->
+        <drivetrain type="torsen_4wd">
+            <front_rear_split>0.5</front_rear_split>
+            <front_rear_bias>1.5</front_rear_bias>
+
+            <front_left_right_split>0.5</front_left_right_split>
+            <front_left_right_bias>1.5</front_left_right_bias>
+
+            <rear_left_right_split>0.5</rear_left_right_split>
+            <rear_left_right_bias>1.5</rear_left_right_bias>
+        </drivetrain>
+
     </dynamics>
 
     <!-- Friction force simulation -->
@@ -36,4 +54,11 @@
         <C_damping>10</C_damping>
     </friction>
 
+    <!--<friction class="wardiagnemma">
+        <mu>0.7</mu>
+        <C_damping>10</C_damping>
+        <A_roll>50</A_roll>
+        <R1>0.0075</R1>
+        <R2>0.02</R2>
+    </friction>-->
 </vehicle:class>

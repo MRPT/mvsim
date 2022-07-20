@@ -33,10 +33,13 @@ void World::load_from_XML_file(const std::string& xmlFileNamePath)
 }
 
 void World::load_from_XML(
-	const std::string& xml_text, const std::string& fileNameForPath)
+	const std::string& xml_text_org, const std::string& fileNameForPath)
 {
 	using namespace std;
 	using namespace rapidxml;
+
+	// parse environment variables:
+	const std::string xml_text = mvsim::parse_variables(xml_text_org, {});
 
 	// Extract base path of file:
 	m_base_path =
@@ -175,7 +178,15 @@ void World::internal_recursive_parse_XML(
 		MRPT_LOG_DEBUG_STREAM(
 			"XML parser: including file: '" << absFile << "'");
 
-		const auto [xml, root] = readXmlAndGetRoot(absFile);
+		std::map<std::string, std::string> vars;
+		for (auto attr = node->first_attribute(); attr;
+			 attr = attr->next_attribute())
+		{
+			if (strcmp(attr->name(), "file") == 0) continue;
+			vars[attr->name()] = attr->value();
+		}
+
+		const auto [xml, root] = readXmlAndGetRoot(absFile, vars);
 
 		// recursive parse:
 		const auto newBasePath =

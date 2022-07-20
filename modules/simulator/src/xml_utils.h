@@ -37,7 +37,18 @@ std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
 		const std::string& xmlData, const std::string& pathToFile);
 
 std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> readXmlAndGetRoot(
-	const std::string& pathToFile);
+	const std::string& pathToFile,
+	const std::map<std::string, std::string>& variables);
+
+/**
+ * Replaces: Variables are first searched in the "<include />" attributes,
+ * or as environment variables if not found.
+ *
+ * - `${VAR}`: var contents. Throw on undefined var.
+ * - `${VAR|DEFAULT}`: var contents, or DEFAULT if undefined.
+ */
+std::string parse_variables(
+	const std::string& in, const std::map<std::string, std::string>& variables);
 
 void parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node,
