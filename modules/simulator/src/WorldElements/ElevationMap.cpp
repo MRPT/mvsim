@@ -129,7 +129,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Important: the yMin/yMax in the next line are swapped to handle
 	// the "+y" different direction in image and map coordinates, it is not
 	// a bug:
-	gl_mesh_->setGridLimits(-0.5 * LX, 0.5 * LX, +0.5 * LY, -0.5 * LY);
+	gl_mesh_->setGridLimits(-0.5 * LX, 0.5 * LX, -0.5 * LY, +0.5 * LY);
 
 	gl_debugWheelsContactPoints_ = mrpt::opengl::CPointCloud::Create();
 	gl_debugWheelsContactPoints_->enableVariablePointSize(false);
