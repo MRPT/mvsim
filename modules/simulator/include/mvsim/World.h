@@ -438,5 +438,10 @@ class World : public mrpt::system::COutputLogger
 
 	void process_load_walls(const rapidxml::xml_node<char>& node);
 	void insertBlock(const Block::Ptr& block);
+
+	/// This will parse a main XML file, or its included
+	void internal_recursive_parse_XML(
+		const void* /*rapidxml::xml_node<>* */ node,
+		const std::string& currentBasePath);
 };
 }  // namespace mvsim

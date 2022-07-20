@@ -12,9 +12,11 @@
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
 #include <mrpt/img/TColor.h>
+#include <mrpt/io/vector_loadsave.h>  // file_get_contents()
 #include <mrpt/math/TPolygon2D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/system/filesystem.h>
 #include <mrpt/system/string_utils.h>
 #include <mvsim/basic_types.h>
 
@@ -272,4 +274,52 @@ void mvsim::parse_xmlnode_shape(
 			"%s Error: <shape> node requires 3 or more <pt>X Y</pt> "
 			"entries.",
 			functionNameContext));
+}
+
+std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
+	mvsim::readXmlTextAndGetRoot(
+		const std::string& xmlData, const std::string& pathToFile)
+{
+	using namespace rapidxml;
+	using namespace std::string_literals;
+
+	char* input_str = const_cast<char*>(xmlData.c_str());
+	auto xml = std::make_shared<rapidxml::xml_document<>>();
+	try
+	{
+		xml->parse<0>(input_str);
+	}
+	catch (rapidxml::parse_error& e)
+	{
+		unsigned int line =
+			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
+		throw std::runtime_error(mrpt::format(
+			"XML parse error (Line %u): %s", static_cast<unsigned>(line),
+			e.what()));
+	}
+
+	// Sanity check:
+	xml_node<>* root = xml->first_node();
+	ASSERTMSG_(
+		root, "XML parse error: No root node found (empty file '"s +
+				  pathToFile + "'?)"s);
+	return {xml, root};
+}
+
+std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> mvsim::readXmlAndGetRoot(
+	const std::string& pathToFile)
+{
+	using namespace rapidxml;
+	using namespace std::string_literals;
+
+	ASSERT_FILE_EXISTS_(pathToFile);
+
+	auto xmlDoc = std::make_shared<XML_Doc_Data>();
+
+	xmlDoc->documentData = mrpt::io::file_get_contents(pathToFile);
+	auto [xml, root] = readXmlTextAndGetRoot(xmlDoc->documentData, pathToFile);
+
+	xmlDoc->doc = std::move(xml);
+
+	return {xmlDoc, root};
 }

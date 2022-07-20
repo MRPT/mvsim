@@ -14,6 +14,7 @@
 #include <map>
 #include <rapidxml.hpp>
 #include <string>
+#include <tuple>
 
 // Fwd decl:
 namespace mrpt::math
@@ -23,6 +24,21 @@ class TPolygon2D;
 
 namespace mvsim
 {
+struct XML_Doc_Data
+{
+	using Ptr = std::shared_ptr<XML_Doc_Data>;
+
+	std::string documentData;
+	std::shared_ptr<rapidxml::xml_document<>> doc;
+};
+
+std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
+	readXmlTextAndGetRoot(
+		const std::string& xmlData, const std::string& pathToFile);
+
+std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> readXmlAndGetRoot(
+	const std::string& pathToFile);
+
 void parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node,
 	const TParameterDefinitions& params,
