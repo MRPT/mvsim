@@ -12,6 +12,7 @@
 #include <mvsim/basic_types.h>
 
 #include <map>
+#include <memory>
 #include <rapidxml.hpp>
 #include <string>
 #include <tuple>
