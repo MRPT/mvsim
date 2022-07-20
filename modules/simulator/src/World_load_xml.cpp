@@ -33,13 +33,10 @@ void World::load_from_XML_file(const std::string& xmlFileNamePath)
 }
 
 void World::load_from_XML(
-	const std::string& xml_text_org, const std::string& fileNameForPath)
+	const std::string& xml_text, const std::string& fileNameForPath)
 {
 	using namespace std;
 	using namespace rapidxml;
-
-	// parse environment variables:
-	const std::string xml_text = mvsim::parse_variables(xml_text_org, {});
 
 	// Extract base path of file:
 	m_base_path =
