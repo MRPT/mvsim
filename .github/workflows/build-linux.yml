@@ -34,7 +34,7 @@ jobs:
             compiler: clang
             install_mrpt_ppa: ON
 
-          - name: ubuntu-20.04-clang-ppa-mrpt
+          - name: ubuntu-20.04-gcc-ppa-mrpt
             os: ubuntu-20.04
             compiler: gcc
             install_mrpt_ppa: ON
