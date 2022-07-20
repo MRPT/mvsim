@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -54,9 +55,10 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 
 	// Desired velocities for each wheel:
 	std::vector<mrpt::math::TPoint2D>
-		desired_wheel_vels;  // In local vehicle frame
+		desired_wheel_vels;	 // In local vehicle frame
 	m_veh.getWheelsVelocityLocal(
-		desired_wheel_vels, mrpt::math::TTwist2D(setpoint_lin_speed, 0.0, setpoint_ang_speed));
+		desired_wheel_vels,
+		mrpt::math::TTwist2D(setpoint_lin_speed, 0.0, setpoint_ang_speed));
 
 	ASSERT_(desired_wheel_vels.size() == 4);
 
@@ -86,7 +88,7 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	double act_vel_fl, act_vel_fr;
 	{
 		std::vector<mrpt::math::TPoint2D>
-			odo_wheel_vels;  // In local vehicle frame
+			odo_wheel_vels;	 // In local vehicle frame
 		m_veh.getWheelsVelocityLocal(
 			odo_wheel_vels, m_veh.getVelocityLocalOdoEstimate());
 		ASSERT_(odo_wheel_vels.size() == 4);
@@ -125,7 +127,7 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	co.rr_torque = .0;
 	co.fl_torque = -m_PID[0].compute(
 		vel_fl - act_vel_fl,
-		ci.context.dt);  // "-" because \tau<0 makes robot moves forwards.
+		ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
 	co.fr_torque = -m_PID[1].compute(vel_fr - act_vel_fr, ci.context.dt);
 }
 

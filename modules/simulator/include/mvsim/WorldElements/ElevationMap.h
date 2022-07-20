@@ -45,10 +45,10 @@ class ElevationMap : public WorldElementBase
 	std::shared_ptr<mrpt::opengl::CPointCloud> gl_debugWheelsContactPoints_;
 	bool firstSceneRendering_ = true;
 	float resolution_ = 1.0f;
-	
+
 	/** A copy of elevation data in m_gl_mesh. Coordinate order is (x,y) */
 	mrpt::math::CMatrixFloat meshCacheZ_;
-	
+
 	bool debugShowContactPoints_ = false;
 
    private:

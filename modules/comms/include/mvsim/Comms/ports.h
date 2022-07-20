@@ -11,9 +11,9 @@
 
 namespace mvsim
 {
-  /** \addtogroup mvsim_comms_module
-    * @{ */
+/** \addtogroup mvsim_comms_module
+ * @{ */
 
 constexpr unsigned int MVSIM_PORTNO_MAIN_REP = 23700;
 
-}
+}  // namespace mvsim

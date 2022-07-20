@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -61,7 +62,7 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 
 	co.wheel_torque_l = -m_PID[0].compute(
 		vel_l - act_vel_l,
-		ci.context.dt);  // "-" because \tau<0 makes robot moves forwards.
+		ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
 	co.wheel_torque_r = -m_PID[1].compute(vel_r - act_vel_r, ci.context.dt);
 }
 
