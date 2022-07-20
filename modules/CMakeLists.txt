@@ -46,6 +46,11 @@ if (MVSIM_WITH_ZMQ)
 endif()
 
 option(MVSIM_WITH_PYTHON "Build python wrappers" ON)
+if (MVSIM_WITH_PYTHON AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+	set(MVSIM_WITH_PYTHON OFF CACHE BOOL "Build python wrappers" FORCE)
+	message(STATUS "*WARNING* Disabling Python wrappers: not supported if built using clang (it leads to pybind11-generated code errors)")
+endif()
+
 if (MVSIM_WITH_PYTHON)
 	if(NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
 		find_package(Python3 COMPONENTS Interpreter Development)

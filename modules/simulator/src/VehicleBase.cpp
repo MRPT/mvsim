@@ -11,6 +11,7 @@
 #include <mrpt/math/TPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/system/filesystem.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/VehicleBase.h>
@@ -143,9 +144,48 @@ VehicleBase::Ptr VehicleBase::factory(
 	//  in the set of "root" + "class_root" XML nodes:
 	// --------------------------------------------------------------------------------
 	JointXMLnode<> veh_root_node;
+
+	std::vector<XML_Doc_Data::Ptr> scopedLifeDocs;
+
+	// Solve includes:
+	for (auto n = root->first_node(); n; n = n->next_sibling())
 	{
-		veh_root_node.add(
-			root);	// Always search in root. Also in the class root, if any:
+		if (strcmp(n->name(), "include") != 0) continue;
+
+		auto fileAttrb = n->first_attribute("file");
+		ASSERTMSG_(
+			fileAttrb,
+			"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
+
+		const std::string relFile = fileAttrb->value();
+		const auto absFile = parent->resolvePath(relFile);
+		parent->logStr(
+			mrpt::system::LVL_DEBUG,
+			mrpt::format("XML parser: including file: '%s'", absFile.c_str()));
+
+		std::map<std::string, std::string> vars;
+		for (auto attr = n->first_attribute(); attr;
+			 attr = attr->next_attribute())
+		{
+			if (strcmp(attr->name(), "file") == 0) continue;
+			vars[attr->name()] = attr->value();
+		}
+
+		const auto [xml, nRoot] = readXmlAndGetRoot(absFile, vars);
+		// the XML document object must exist during this whole function scope
+		scopedLifeDocs.emplace_back(xml);
+
+		// recursive parse:
+		const auto newBasePath =
+			mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
+
+		veh_root_node.add(nRoot->parent());
+	}
+
+	// ---
+	{
+		// Always search in root. Also in the class root, if any:
+		veh_root_node.add(root);
 
 		const xml_attribute<>* veh_class = root->first_attribute("class");
 		if (veh_class)

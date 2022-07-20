@@ -12,8 +12,10 @@
 #include <mvsim/basic_types.h>
 
 #include <map>
+#include <memory>
 #include <rapidxml.hpp>
 #include <string>
+#include <tuple>
 
 // Fwd decl:
 namespace mrpt::math
@@ -23,6 +25,32 @@ class TPolygon2D;
 
 namespace mvsim
 {
+struct XML_Doc_Data
+{
+	using Ptr = std::shared_ptr<XML_Doc_Data>;
+
+	std::string documentData;
+	std::shared_ptr<rapidxml::xml_document<>> doc;
+};
+
+std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
+	readXmlTextAndGetRoot(
+		const std::string& xmlData, const std::string& pathToFile);
+
+std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> readXmlAndGetRoot(
+	const std::string& pathToFile,
+	const std::map<std::string, std::string>& variables);
+
+/**
+ * Replaces: Variables are first searched in the "<include />" attributes,
+ * or as environment variables if not found.
+ *
+ * - `${VAR}`: var contents. Throw on undefined var.
+ * - `${VAR|DEFAULT}`: var contents, or DEFAULT if undefined.
+ */
+std::string parse_variables(
+	const std::string& in, const std::map<std::string, std::string>& variables);
+
 void parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node,
 	const TParameterDefinitions& params,
