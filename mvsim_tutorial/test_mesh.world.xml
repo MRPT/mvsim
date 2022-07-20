@@ -22,8 +22,8 @@
 		<resolution>1.0</resolution>
 		<elevation_image>elevation_mesh2.png</elevation_image>
 		<elevation_image_min_z>0</elevation_image_min_z>
-		<elevation_image_max_z>2</elevation_image_max_z>
-		<!-- <texture_image>elevation_mesh2.png</texture_image> -->
+		<elevation_image_max_z>0.75</elevation_image_max_z>
+		<texture_image>elevation_mesh2.png</texture_image>
 		
 		<mesh_color>#a0e0a0</mesh_color> <!-- Used only if mesh_image is not provided -->
 	</element>
@@ -43,7 +43,10 @@
 
 		<!-- Sensors -->
 		<include file="robot_definitions/front_lidar.sensor.xml" />
-		<include file="robot_definitions/rgbd_camera.sensor.xml" />
+		<include file="robot_definitions/rgbd_camera.sensor.xml"
+				sensor_x="1.5"
+				sensor_z="1.5"
+		/>
 	</vehicle>
 	
 </mvsim_world>
