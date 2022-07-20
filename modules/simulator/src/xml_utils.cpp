@@ -12,9 +12,11 @@
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
 #include <mrpt/img/TColor.h>
+#include <mrpt/io/vector_loadsave.h>  // file_get_contents()
 #include <mrpt/math/TPolygon2D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/system/filesystem.h>
 #include <mrpt/system/string_utils.h>
 #include <mvsim/basic_types.h>
 
@@ -272,4 +274,146 @@ void mvsim::parse_xmlnode_shape(
 			"%s Error: <shape> node requires 3 or more <pt>X Y</pt> "
 			"entries.",
 			functionNameContext));
+}
+
+std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
+	mvsim::readXmlTextAndGetRoot(
+		const std::string& xmlData, const std::string& pathToFile)
+{
+	using namespace rapidxml;
+	using namespace std::string_literals;
+
+	// Parse:
+	char* input_str = const_cast<char*>(xmlData.c_str());
+	auto xml = std::make_shared<rapidxml::xml_document<>>();
+	try
+	{
+		xml->parse<0>(input_str);
+	}
+	catch (rapidxml::parse_error& e)
+	{
+		unsigned int line =
+			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
+		throw std::runtime_error(mrpt::format(
+			"XML parse error (Line %u): %s", static_cast<unsigned>(line),
+			e.what()));
+	}
+
+	// Sanity check:
+	xml_node<>* root = xml->first_node();
+	ASSERTMSG_(
+		root, "XML parse error: No root node found (empty file '"s +
+				  pathToFile + "'?)"s);
+	return {xml, root};
+}
+
+std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> mvsim::readXmlAndGetRoot(
+	const std::string& pathToFile,
+	const std::map<std::string, std::string>& variables)
+{
+	using namespace rapidxml;
+	using namespace std::string_literals;
+
+	ASSERT_FILE_EXISTS_(pathToFile);
+
+	auto xmlDoc = std::make_shared<XML_Doc_Data>();
+
+	xmlDoc->documentData = mvsim::parse_variables(
+		mrpt::io::file_get_contents(pathToFile), variables);
+	auto [xml, root] = readXmlTextAndGetRoot(xmlDoc->documentData, pathToFile);
+
+	xmlDoc->doc = std::move(xml);
+
+	return {xmlDoc, root};
+}
+
+static std::string::size_type findClosing(
+	size_t pos, const std::string& s, const char searchEndChar,
+	const char otherStartChar)
+{
+	int openEnvs = 1;
+	for (; pos < s.size(); pos++)
+	{
+		const char ch = s[pos];
+		if (ch == otherStartChar)
+			openEnvs++;
+		else if (ch == searchEndChar)
+		{
+			openEnvs--;
+			if (openEnvs == 0)
+			{
+				return pos;
+			}
+		}
+	}
+
+	// not found:
+	return std::string::npos;
+}
+
+// "foo|bar" -> {"foo","bar"}
+static std::tuple<std::string, std::string> splitVerticalBar(
+	const std::string& s)
+{
+	const auto posBar = s.find("|");
+	if (posBar == std::string::npos) return {s, {}};
+
+	return {s.substr(0, posBar), s.substr(posBar + 1)};
+}
+
+static std::string parseVars(
+	const std::string& text,
+	const std::map<std::string, std::string>& variables)
+{
+	MRPT_TRY_START
+
+	const auto start = text.find("${");
+	if (start == std::string::npos) return text;
+
+	const std::string pre = text.substr(0, start);
+	const std::string post = text.substr(start + 2);
+
+	const auto post_end = findClosing(0, post, '}', '{');
+	if (post_end == std::string::npos)
+	{
+		THROW_EXCEPTION_FMT(
+			"Column=%u: Cannot find matching `}` for `${` in: `%s`",
+			static_cast<unsigned int>(start), text.c_str());
+	}
+
+	const auto varnameOrg = post.substr(0, post_end);
+
+	const auto [varname, defaultValue] = splitVerticalBar(varnameOrg);
+
+	std::string varvalue;
+	if (auto itVal = variables.find(varname); itVal != variables.end())
+	{
+		varvalue = itVal->second;
+	}
+	else if (const char* v = ::getenv(varname.c_str()); v != nullptr)
+	{
+		varvalue = std::string(v);
+	}
+	else
+	{
+		if (!defaultValue.empty())
+		{
+			varvalue = defaultValue;
+		}
+		else
+		{
+			THROW_EXCEPTION_FMT(
+				"MVSIM parseVars(): Undefined variable: ${%s}",
+				varname.c_str());
+		}
+	}
+
+	return parseVars(pre + varvalue + post.substr(post_end + 1), variables);
+	MRPT_TRY_END
+}
+
+std::string mvsim::parse_variables(
+	const std::string& in, const std::map<std::string, std::string>& variables)
+{
+	return parseVars(in, variables);
 }

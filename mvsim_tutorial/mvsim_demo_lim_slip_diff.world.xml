@@ -27,90 +27,12 @@
 		<floating>true</floating>
 	</element>
 	
+
 	<!-- =============================
-		   Vehicle classes definition 
+		   Vehicle classes definition
 	     ============================= -->
-	<vehicle:class name="car_ackermann">
-		
-		<!--  Dynamical model -->
-		<dynamics class="ackermann_drivetrain">
-			<!-- Params -->
-			<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
-			<rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
-			<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
-			<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
-			<f_wheels_x>1.3</f_wheels_x>
-			<f_wheels_d>2.0</f_wheels_d>
-			<max_steer_ang_deg>30.0</max_steer_ang_deg>
-			
-			<chassis mass="800.0" zmin="0.15" zmax="1.2">
-			</chassis>
-			
-			 <!-- Available types: 
-			      open_front
-			      open_rear
-			      open_4wd
-			      torsen_front
-			      torsen_rear
-			      torsen_4wd -->
+	<include file="robot_definitions/ackermann.vehicle.xml" />
 
-			<drivetrain type="torsen_4wd">
-				<front_rear_split>0.5</front_rear_split>
-				<front_rear_bias>1.5</front_rear_bias>
-
-				<front_left_right_split>0.5</front_left_right_split>
-				<front_left_right_bias>1.5</front_left_right_bias>
-
-				<rear_left_right_split>0.5</rear_left_right_split>
-				<rear_left_right_bias>1.5</rear_left_right_bias>
-			</drivetrain>
-
-			<!--   Motor controller 
-			<controller class="raw">
-				<torque>0</torque>
-				<steer_ang_deg>0</steer_ang_deg>
-			</controller>		-->
-
-			<!--   Motor controller -->
-			<controller class="front_steer_pid">
-				<!-- Params -->
-				<KP>2500</KP>  <KI>90</KI> <KD>0</KD>
-				<V>0.0</V><W>0</W>
-				<max_torque>600</max_torque>
-			</controller>		
-
-
-			
-		</dynamics>
-				
-		<!-- Friction force simulation -->
-		<friction class="wardiagnemma">
-			<mu>0.7</mu>
-			<C_damping>10</C_damping>
-			<A_roll>50</A_roll>
-			<R1>0.0075</R1>
-			<R2>0.02</R2>
-		</friction>
-		
-		<!-- Sensors: -->
-		<sensor class="laser" name="laser1">
-			<pose> 1.80  0.0  0.0 </pose>
-			<fov_degrees>180</fov_degrees>
-			<nrays>181</nrays>
-			<range_std_noise>0.01</range_std_noise>
-			<angle_std_noise_deg>0.01</angle_std_noise_deg>
-		</sensor>
-		<sensor class="laser" name="laser2">
-			<pose> -1.0  0.0  180.0 </pose>
-			<fov_degrees>180</fov_degrees>
-			<sensor_period>0.05</sensor_period>
-			<nrays>181</nrays>
-			<range_std_noise>0.01</range_std_noise>
-			<angle_std_noise_deg>0.01</angle_std_noise_deg>
-		</sensor>
-		
-	</vehicle:class>
-	
 	<!-- ========================
 		   Vehicle(s) definition 
 	     ======================== -->

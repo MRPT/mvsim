@@ -22,65 +22,31 @@
 		<resolution>1.0</resolution>
 		<elevation_image>elevation_mesh2.png</elevation_image>
 		<elevation_image_min_z>0</elevation_image_min_z>
-		<elevation_image_max_z>2</elevation_image_max_z>
-		<!-- <texture_image>elevation_mesh2.png</texture_image> -->
+		<elevation_image_max_z>0.75</elevation_image_max_z>
+		<texture_image>elevation_mesh2.png</texture_image>
 		
 		<mesh_color>#a0e0a0</mesh_color> <!-- Used only if mesh_image is not provided -->
 	</element>
 	
 	
 	<!-- =============================
-		   Vehicle classes definition 
+		   Vehicle classes definition
 	     ============================= -->
-	<vehicle:class name="car_ackermann">
-		
-		<!--  Dynamical model -->
-		<dynamics class="ackermann">
-			<!-- Params -->
-			<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
-			<rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
-			<fl_wheel mass="6.0" width="0.30" diameter="0.62" />
-			<fr_wheel mass="6.0" width="0.30" diameter="0.62" />
-			<f_wheels_x>1.3</f_wheels_x>
-			<f_wheels_d>2.0</f_wheels_d>
-			<max_steer_ang_deg>30.0</max_steer_ang_deg>
-			
-			<chassis mass="800.0" zmin="0.15" zmax="1.2">
-			</chassis>
-			
-			<!--   Motor controller -->
-			<controller class="twist_front_steer_pid">
-				<!-- Params -->
-				<KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
-				<V>0.0</V><W>0</W>
-				<max_torque>800</max_torque>
-			</controller>			
-			
-		</dynamics>
-				
-		<!-- Friction force simulation -->
-		<friction class="default">
-			<mu>1.0</mu>
-			<C_damping>10</C_damping>
-		</friction>
-		
-		<!-- Sensors: -->
-		<sensor class="laser" name="laser1">
-			<pose> 1.60  0.0  0.0 </pose>
-			<fov_degrees>180</fov_degrees>
-			<nrays>181</nrays>
-			<range_std_noise>0.01</range_std_noise>
-			<angle_std_noise_deg>0.01</angle_std_noise_deg>
-		</sensor>
-		
-	</vehicle:class>
-		 
+	<include file="robot_definitions/ackermann.vehicle.xml" />
+
 	<!-- ========================
-		   Vehicle(s) definition 
+		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="car_ackermann">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<!-- Sensors -->
+		<include file="robot_definitions/front_lidar.sensor.xml" />
+		<include file="robot_definitions/rgbd_camera.sensor.xml"
+				sensor_x="1.5"
+				sensor_z="1.5"
+		/>
 	</vehicle>
 	
 </mvsim_world>
