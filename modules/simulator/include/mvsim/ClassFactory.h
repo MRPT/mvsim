@@ -9,6 +9,7 @@
 #pragma once
 
 #include <mvsim/basic_types.h>
+
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -69,7 +70,7 @@ class ClassFactory
 
    private:
 	std::map<std::string, TClassData> m_classes;
-};  // namespace mvsim
+};	// namespace mvsim
 
 #define DECLARES_REGISTER_CLASS1(CLASS_NAME, BASE_CLASS, ARG1) \
    public:                                                     \

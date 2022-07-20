@@ -111,7 +111,7 @@ struct overloaded : Ts...
 
 /** Based on https://en.cppreference.com/w/cpp/utility/variant/visit */
 template <class... Ts>
-overloaded(Ts...)->overloaded<Ts...>;
+overloaded(Ts...) -> overloaded<Ts...>;
 
 /** @} */
 
