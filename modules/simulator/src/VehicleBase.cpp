@@ -171,7 +171,7 @@ VehicleBase::Ptr VehicleBase::factory(
 		const auto newBasePath =
 			mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
 
-		veh_root_node.add(nRoot);
+		veh_root_node.add(nRoot->parent());
 	}
 
 	// ---
