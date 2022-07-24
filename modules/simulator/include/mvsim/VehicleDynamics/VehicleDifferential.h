@@ -9,12 +9,16 @@
 
 #pragma once
 
+#include <mrpt/math/TPoint2D.h>
 #include <mvsim/PID_Controller.h>
 #include <mvsim/VehicleBase.h>
 
 namespace mvsim
 {
-/** Implementation of differential-driven vehicles.
+/** Implementation of differential-driven vehicles with only two wheels.
+ * Simplified model for pure planar scenarios only, do not use with ramps.
+ * For that, use Differential or Ackermann models with 3 or 4 wheels.
+ *
  * \sa class factory in VehicleBase::factory
  */
 class DynamicsDifferential : public VehicleBase
@@ -27,7 +31,30 @@ class DynamicsDifferential : public VehicleBase
 		WHEEL_R = 1
 	};
 
-	DynamicsDifferential(World* parent);
+	struct ConfigPerWheel
+	{
+		ConfigPerWheel() = default;
+		ConfigPerWheel(
+			const std::string& _name, const mrpt::math::TPoint2D& _pos)
+			: name(_name), pos(_pos)
+		{
+		}
+
+		std::string name;
+		mrpt::math::TPoint2D pos;
+	};
+
+	DynamicsDifferential(World* parent)
+		: DynamicsDifferential(
+			  parent, {
+						  {"l_wheel", {0.0, 0.5}},
+						  {"r_wheel", {0.0, -0.5}},
+					  })
+	{
+	}
+
+	DynamicsDifferential(
+		World* parent, const std::vector<ConfigPerWheel>& cfgPerWheel);
 
 	/** @name Controllers
 		@{ */
@@ -36,10 +63,13 @@ class DynamicsDifferential : public VehicleBase
 	{
 		TSimulContext context;
 	};
+
 	struct TControllerOutput
 	{
-		double wheel_torque_l, wheel_torque_r;
-		TControllerOutput() : wheel_torque_l(0), wheel_torque_r(0) {}
+		TControllerOutput() = default;
+
+		double wheel_torque_l = 0;
+		double wheel_torque_r = 0;
 	};
 
 	/** Virtual base for controllers of vehicles of type DynamicsDifferential */
@@ -119,7 +149,44 @@ class DynamicsDifferential : public VehicleBase
 		const TSimulContext& context,
 		std::vector<double>& out_force_per_wheel) override;
 
+	/// Defined at ctor time:
+	const std::vector<ConfigPerWheel> m_configPerWheel;
+
    private:
 	ControllerBasePtr m_controller;	 //!< The installed controller
 };
+
+class DynamicsDifferential_3_wheels : public DynamicsDifferential
+{
+	DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential_3_wheels)
+
+   public:
+	DynamicsDifferential_3_wheels(World* parent)
+		: DynamicsDifferential(
+			  parent, {
+						  {"l_wheel", {0.0, 0.5}},
+						  {"r_wheel", {0.0, -0.5}},
+						  {"caster_wheel", {0.5, 0.0}},
+					  })
+	{
+	}
+};
+
+class DynamicsDifferential_4_wheels : public DynamicsDifferential
+{
+	DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential_4_wheels)
+
+   public:
+	DynamicsDifferential_4_wheels(World* parent)
+		: DynamicsDifferential(
+			  parent, {
+						  {"l_wheel", {0.0, 0.5}},
+						  {"r_wheel", {0.0, -0.5}},
+						  {"l_caster_wheel", {0.5, 0.5}},
+						  {"r_caster_wheel", {0.5, -0.5}},
+					  })
+	{
+	}
+};
+
 }  // namespace mvsim
