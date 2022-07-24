@@ -19,8 +19,10 @@ using namespace mvsim;
 using namespace std;
 
 // Ctor:
-DynamicsDifferential::DynamicsDifferential(World* parent)
-	: VehicleBase(parent, 3 /*num wheels*/)
+DynamicsDifferential::DynamicsDifferential(
+	World* parent, const std::vector<ConfigPerWheel>& cfgPerWheel)
+	: VehicleBase(parent, cfgPerWheel.size() /*num wheels*/),
+	  m_configPerWheel(cfgPerWheel)
 {
 	using namespace mrpt::math;
 
@@ -40,7 +42,7 @@ DynamicsDifferential::DynamicsDifferential(World* parent)
 	updateMaxRadiusFromPoly();
 
 	m_fixture_chassis = nullptr;
-	for (int i = 0; i < 2; i++) m_fixture_wheels[i] = nullptr;
+	for (auto& fw : m_fixture_wheels) fw = nullptr;
 }
 
 /** The derived-class part of load_params_from_xml() */
@@ -75,23 +77,27 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	}
 
 	// <l_wheel ...>, <r_wheel ...>
-	const char* w_names[3] = {"l_wheel", "r_wheel", "caster_wheel"};
-	const double w_default_x[3] = {0, 0, 0.5};
-	const double w_default_y[3] = {0.5, -0.5};
+
+	// reset default values
+	const auto nW = getNumWheels();
 	m_wheels_info.clear();
-	m_wheels_info.resize(3);  // reset default values
+	m_wheels_info.resize(nW);
+
+	ASSERT_EQUAL_(getNumWheels(), m_configPerWheel.size());
 
 	// Load common params:
-	for (size_t i = 0; i < 3; i++)
+	for (size_t i = 0; i < getNumWheels(); i++)
 	{
+		const auto& cpw = m_configPerWheel.at(i);
+
 		const rapidxml::xml_node<char>* xml_wheel =
-			xml_node->first_node(w_names[i]);
+			xml_node->first_node(cpw.name.c_str());
 		if (xml_wheel)
 			m_wheels_info[i].loadFromXML(xml_wheel);
 		else
 		{
-			m_wheels_info[i].x = w_default_x[i];
-			m_wheels_info[i].y = w_default_y[i];
+			m_wheels_info[i].x = cpw.pos.x;
+			m_wheels_info[i].y = cpw.pos.y;
 		}
 	}
 
@@ -135,7 +141,7 @@ void DynamicsDifferential::invoke_motor_controllers(
 	const TSimulContext& context, std::vector<double>& out_torque_per_wheel)
 {
 	// Longitudinal forces at each wheel:
-	out_torque_per_wheel.assign(2 /*active wheels*/ + 1 /* caster wheel*/, 0.0);
+	out_torque_per_wheel.assign(getNumWheels(), 0.0);
 
 	if (m_controller)
 	{

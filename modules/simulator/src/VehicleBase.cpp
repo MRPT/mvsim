@@ -49,6 +49,10 @@ void register_all_veh_dynamics()
 		done = true;
 
 	REGISTER_VEHICLE_DYNAMICS("differential", DynamicsDifferential)
+	REGISTER_VEHICLE_DYNAMICS(
+		"differential_3_wheels", DynamicsDifferential_3_wheels)
+	REGISTER_VEHICLE_DYNAMICS(
+		"differential_4_wheels", DynamicsDifferential_4_wheels)
 	REGISTER_VEHICLE_DYNAMICS("ackermann", DynamicsAckermann)
 	REGISTER_VEHICLE_DYNAMICS(
 		"ackermann_drivetrain", DynamicsAckermannDrivetrain)
