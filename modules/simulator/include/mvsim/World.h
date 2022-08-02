@@ -245,12 +245,16 @@ class World : public mrpt::system::COutputLogger
 
 	using vehicle_visitor_t = std::function<void(VehicleBase&)>;
 	using world_element_visitor_t = std::function<void(WorldElementBase&)>;
+	using block_visitor_t = std::function<void(Block&)>;
 
 	/** Run the user-provided visitor on each vehicle */
 	void runVisitorOnVehicles(const vehicle_visitor_t& v);
 
 	/** Run the user-provided visitor on each world element */
 	void runVisitorOnWorldElements(const world_element_visitor_t& v);
+
+	/** Run the user-provided visitor on each world block */
+	void runVisitorOnBlocks(const block_visitor_t& v);
 
 	/** @} */
 
