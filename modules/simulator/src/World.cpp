@@ -192,18 +192,22 @@ std::string World::resolvePath(const std::string& s_in) const
 	return mrpt::system::filePathSeparatorsToNative(ret);
 }
 
-/** Run the user-provided visitor on each vehicle */
 void World::runVisitorOnVehicles(const vehicle_visitor_t& v)
 {
 	for (auto& veh : m_vehicles)
 		if (veh.second) v(*veh.second);
 }
 
-/** Run the user-provided visitor on each world element */
 void World::runVisitorOnWorldElements(const world_element_visitor_t& v)
 {
 	for (auto& we : m_world_elements)
 		if (we) v(*we);
+}
+
+void World::runVisitorOnBlocks(const block_visitor_t& v)
+{
+	for (auto& b : m_blocks)
+		if (b.second) v(*b.second);
 }
 
 void World::connectToServer()
