@@ -15,6 +15,7 @@
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/TParameterDefinitions.h>
+#include <mvsim/VisualObject.h>
 #include <mvsim/basic_types.h>
 
 namespace mvsim
@@ -22,14 +23,15 @@ namespace mvsim
 class DefaultFriction;
 class VehicleBase;
 class DynamicsDifferential;
+class World;
 
 /** Common info for 2D wheels, for usage in derived classes.
  * Wheels are modeled as a mass with a rectangular shape.
  */
-class Wheel
+class Wheel : public VisualObject
 {
    public:
-	Wheel();
+	Wheel(World* world);
 
 	/** Location of the wheel wrt the chassis ref point [m,rad] (in local
 	 * coords) */

@@ -12,6 +12,7 @@
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mvsim/Wheel.h>
+#include <mvsim/World.h>
 
 #include <rapidxml.hpp>
 
@@ -20,7 +21,7 @@
 using namespace mvsim;
 using namespace std;
 
-Wheel::Wheel() { recalcInertia(); }
+Wheel::Wheel(World* world) : VisualObject(world) { recalcInertia(); }
 
 void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 {
@@ -52,17 +53,14 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 	// <l_wheel pos="0.0 -0.5 [OPTIONAL_ANG]" mass="2.0" width="0.10"
 	// diameter="0.30" />
 	// pos:
+	if (const auto attr = xml_node->first_attribute("pos");
+		attr && attr->value())
 	{
-		const rapidxml::xml_attribute<char>* attr =
-			xml_node->first_attribute("pos");
-		if (attr && attr->value())
-		{
-			const std::string sAttr = attr->value();
-			mrpt::math::TPose2D v = parseXYPHI(sAttr, true);
-			this->x = v.x;
-			this->y = v.y;
-			this->yaw = v.phi;
-		}
+		const std::string sAttr = attr->value();
+		mrpt::math::TPose2D v = parseXYPHI(sAttr, true);
+		this->x = v.x;
+		this->y = v.y;
+		this->yaw = v.phi;
 	}
 
 	// Detect if inertia is manually set:
@@ -73,6 +71,9 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 
 	// If not manually overrided, calc automatically:
 	if (Iyy == INERTIA_NOT_SET) this->recalcInertia();
+
+	// parse custom visual stuff:
+	this->parseVisual(xml_node->first_node("visual"));
 }
 
 // Recompute Iyy from mass, diameter and height.
