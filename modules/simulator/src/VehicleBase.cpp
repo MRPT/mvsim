@@ -720,9 +720,8 @@ void VehicleBase::internalGuiUpdate(
 				m_gl_chassis->insert(m_gl_wheels[i]);
 			}
 			// Robot shape:
-			mrpt::opengl::CPolyhedron::Ptr gl_poly =
-				mrpt::opengl::CPolyhedron::CreateCustomPrism(
-					m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
+			auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
+				m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
 			gl_poly->setLocation(0, 0, m_chassis_z_min);
 			gl_poly->setColor_u8(m_chassis_color);
 			m_gl_chassis->insert(gl_poly);
