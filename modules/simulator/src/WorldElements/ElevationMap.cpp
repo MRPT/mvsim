@@ -130,8 +130,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	meshCacheZ_ = elevation_data;
 
 	// Extension: X,Y
-	const double LX = (elevation_data.cols() - 1) * resolution_;
-	const double LY = (elevation_data.rows() - 1) * resolution_;
+	const double LX = (elevation_data.rows() - 1) * resolution_;
+	const double LY = (elevation_data.cols() - 1) * resolution_;
 
 	if (corner_min_x == std::numeric_limits<double>::max())
 		corner_min_x = -0.5 * LX;
