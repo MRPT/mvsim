@@ -1,0 +1,43 @@
+<mvsim_world version="1.0">
+	<!-- General simulation options -->
+	<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>35</cam_distance>
+		<fov_deg>35</fov_deg>
+		<refresh_fps>20</refresh_fps>
+		<!-- <follow_vehicle>r1</follow_vehicle> -->
+	</gui>
+
+
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+	<element class="occupancy_grid">
+		<file>mvsim_demo_world1.png</file>
+		<resolution>0.5</resolution>
+		<centerpixel_x>100</centerpixel_x>
+		<centerpixel_y>100</centerpixel_y>
+	</element>
+
+	<!-- =============================
+		   Vehicle classes definition
+	     ============================= -->
+	<include file="robot_definitions/jackal.vehicle.xml" />
+
+	<!-- ========================
+		   Vehicle(s) definition
+	     ======================== -->
+	<vehicle name="r1" class="jackal">
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<!-- Sensors -->
+		<include file="robot_definitions/front_lidar.sensor.xml" />
+		<include file="robot_definitions/rear_lidar.sensor.xml" />
+	</vehicle>
+
+</mvsim_world>

@@ -89,6 +89,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	bool initialShowBoundingBox = false;
 
 	std::string modelCull = "NONE";
+	mrpt::img::TColor modelColor = mrpt::img::TColor::white();
 
 	TParameterDefinitions params;
 	params["model_uri"] = TParamEntry("%s", &modelURI);
@@ -101,6 +102,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	params["model_roll"] = TParamEntry("%lf_deg", &modelPose.roll);
 	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
 	params["model_cull_faces"] = TParamEntry("%s", &modelCull);
+	params["model_color"] = TParamEntry("%color", &modelColor);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*visual_node, params);
@@ -126,6 +128,13 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 				mrpt::opengl::CAssimpModel::LoadFlags::RealTimeMaxQuality |
 				mrpt::opengl::CAssimpModel::LoadFlags::FlipUVs;
 
+#if MRPT_VERSION >= 0x250
+			if (modelColor != mrpt::img::TColor::white())
+				loadFlags |=
+					mrpt::opengl::CAssimpModel::LoadFlags::IgnoreMaterialColor;
+
+			m->setColor_u8(modelColor);
+#endif
 			if (mrpt::get_env<bool>("MVSIM_LOAD_MODELS_VERBOSE", false))
 				loadFlags |= mrpt::opengl::CAssimpModel::LoadFlags::Verbose;
 
