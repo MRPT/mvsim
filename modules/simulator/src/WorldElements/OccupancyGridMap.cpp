@@ -33,11 +33,12 @@ OccupancyGridMap::OccupancyGridMap(
 	  m_restitution(0.01),
 	  m_lateral_friction(0.5)
 {
-	loadConfigFrom(root);
+	doLoadConfigFrom(root);
 }
 
 OccupancyGridMap::~OccupancyGridMap() {}
-void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
+
+void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	m_gui_uptodate = false;
 
@@ -51,8 +52,19 @@ void OccupancyGridMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	const string sFileExt =
 		mrpt::system::extractFileExtension(sFile, true /*ignore gz*/);
 
-	// MRPT gridmaps format:
-	if (sFileExt == "gridmap")
+	// ROS YAML map files:
+	if (sFileExt == "yaml")
+	{
+#if MRPT_VERSION >= 0x250
+		bool ok = m_grid.loadFromROSMapServerYAML(sFile);
+		ASSERTMSG_(
+			ok,
+			mrpt::format("Error loading ROS map file: '%s'", sFile.c_str()));
+#else
+		THROW_EXCEPTION("Loading ROS YAML map files requires MRPT>=2.5.0");
+#endif
+	}
+	else if (sFileExt == "gridmap")
 	{
 		mrpt::io::CFileGZInputStream fi(sFile);
 		auto f = mrpt::serialization::archiveFrom(fi);
