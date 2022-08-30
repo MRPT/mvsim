@@ -74,8 +74,9 @@
 
 		<!-- Sensors -->
 		<include file="robot_definitions/front_lidar.sensor.xml" />
+		<!-- Sensors -->
+		<include sensor_x="2.0" file="robot_definitions/camera.sensor.xml" />
 	</vehicle>
-
 
 	<!-- ======================================
 	      Obstacle blocks classes definition

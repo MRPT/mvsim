@@ -14,6 +14,7 @@
 #include <mrpt/math/TObject3D.h>
 #include <mrpt/math/geometry.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
+#include <mrpt/obs/CObservationImage.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/version.h>
 #include <mvsim/World.h>
@@ -468,8 +469,9 @@ void World::internal_GUI_thread()
 			[this](
 				const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs) {
 				// obs->getDescriptionAsText(std::cout);
-				this->enqueue_task_to_run_in_gui_thread(
-					[this, obs]() { internal_gui_on_observation(obs); });
+				this->enqueue_task_to_run_in_gui_thread([this, obs, &veh]() {
+					internal_gui_on_observation(veh, obs);
+				});
 			};
 
 		this->registerCallbackOnObservation(lambdaOnObservation);
@@ -756,7 +758,8 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 }
 
 // This method is ensured to be run in the GUI thread
-void World::internal_gui_on_observation(const mrpt::obs::CObservation::Ptr& obs)
+void World::internal_gui_on_observation(
+	const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
 	if (!obs) return;
 
@@ -764,11 +767,18 @@ void World::internal_gui_on_observation(const mrpt::obs::CObservation::Ptr& obs)
 			std::dynamic_pointer_cast<mrpt::obs::CObservation3DRangeScan>(obs);
 		obs3D)
 	{
-		internal_gui_on_observation_3Dscan(obs3D);
+		internal_gui_on_observation_3Dscan(veh, obs3D);
+	}
+	else if (auto obsIm =
+				 std::dynamic_pointer_cast<mrpt::obs::CObservationImage>(obs);
+			 obsIm)
+	{
+		internal_gui_on_observation_image(veh, obsIm);
 	}
 }
 
 void World::internal_gui_on_observation_3Dscan(
+	const Simulable& veh,
 	const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs)
 {
 	using namespace std::string_literals;
@@ -780,7 +790,8 @@ void World::internal_gui_on_observation_3Dscan(
 	if (obs->hasIntensityImage)
 	{
 		rgbImageWinSize = internal_gui_on_image(
-			obs->sensorLabel + "_rgb"s, obs->intensityImage, 5);
+			veh.getName() + "/"s + obs->sensorLabel + "_rgb"s,
+			obs->intensityImage, 5);
 	}
 	if (obs->hasRangeImage)
 	{
@@ -792,8 +803,23 @@ void World::internal_gui_on_observation_3Dscan(
 		imDepth.setFromMatrix(d, true /* in range [0,1] */);
 
 		internal_gui_on_image(
-			obs->sensorLabel + "_depth"s, imDepth, 5 + 5 + rgbImageWinSize.x);
+			veh.getName() + "/"s + obs->sensorLabel + "_depth"s, imDepth,
+			5 + 5 + rgbImageWinSize.x);
 	}
+}
+
+void World::internal_gui_on_observation_image(
+	const Simulable& veh,
+	const std::shared_ptr<mrpt::obs::CObservationImage>& obs)
+{
+	using namespace std::string_literals;
+
+	if (!m_gui.gui_win || !obs || obs->image.isEmpty()) return;
+
+	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
+
+	rgbImageWinSize = internal_gui_on_image(
+		veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->image, 5);
 }
 
 mrpt::math::TPoint2D World::internal_gui_on_image(
