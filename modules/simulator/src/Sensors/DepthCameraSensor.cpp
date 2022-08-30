@@ -63,6 +63,9 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["relativePoseIntensityWRTDepth"] =
 		TParamEntry("%pose3d", &m_sensor_params.relativePoseIntensityWRTDepth);
 
+	params["sense_depth"] = TParamEntry("%bool", &m_sense_depth);
+	params["sense_rgb"] = TParamEntry("%bool", &m_sense_rgb);
+
 	auto& depthCam = m_sensor_params.cameraParams;
 	params["depth_cx"] = TParamEntry("%lf", &depthCam.intrinsicParams(0, 2));
 	params["depth_cy"] = TParamEntry("%lf", &depthCam.intrinsicParams(1, 2));
@@ -215,13 +218,13 @@ void DepthCameraSensor::simulateOn3DScene(
 	curObs->timestamp = mrpt::Clock::now();
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
-	if (!m_fbo_renderer_rgb)
+	if (!m_fbo_renderer_rgb && m_sense_rgb)
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(
 			m_sensor_params.cameraParamsIntensity.ncols,
 			m_sensor_params.cameraParamsIntensity.nrows,
 			true /* skip GLUT window */);
 
-	if (!m_fbo_renderer_depth)
+	if (!m_fbo_renderer_depth && m_sense_depth)
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
 			m_sensor_params.cameraParams.ncols,
 			m_sensor_params.cameraParams.nrows, true /* skip GLUT window */);
@@ -255,61 +258,75 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	cam.setPose(rgbSensorPose);
 
-	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
-	viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
-	viewport->lightParameters().ambient = {
-		m_ambient_light, m_ambient_light, m_ambient_light, 1.0f};
+	if (m_fbo_renderer_rgb)
+	{
+		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
+		viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
+		viewport->lightParameters().ambient = {
+			m_ambient_light, m_ambient_light, m_ambient_light, 1.0f};
 
-	m_fbo_renderer_rgb->render_RGB(world3DScene, curObs->intensityImage);
+		m_fbo_renderer_rgb->render_RGB(world3DScene, curObs->intensityImage);
 
-	curObs->hasIntensityImage = true;
+		curObs->hasIntensityImage = true;
+	}
+	else
+	{
+		curObs->hasIntensityImage = false;
+	}
 
 	// ----------------------------------------------------------
 	// DEPTH camera next
 	// ----------------------------------------------------------
-	cam.setProjectiveFromPinhole(curObs->cameraParams);
-
-	// Camera pose: vehicle + relativePoseOnVehicle:
-	// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
-	// the camera to look forward:
-	cam.setPose(depthSensorPose);
-
-	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
-	viewport->setViewportClipDistances(m_depth_clip_min, m_depth_clip_max);
-
-	mrpt::math::CMatrixFloat depthImage;
-	m_fbo_renderer_depth->render_depth(world3DScene, depthImage);
-
-	// Convert depth image:
-	curObs->hasRangeImage = true;
-	curObs->range_is_depth = true;
-
-	// Add random noise:
-	if (m_depth_noise_sigma > 0)
+	if (m_fbo_renderer_depth)
 	{
-		// Each thread must create its own rng:
-		thread_local mrpt::random::CRandomGenerator rng;
+		cam.setProjectiveFromPinhole(curObs->cameraParams);
 
-		float* d = depthImage.data();
-		const size_t N = depthImage.size();
-		for (size_t i = 0; i < N; i++)
+		// Camera pose: vehicle + relativePoseOnVehicle:
+		// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
+		// the camera to look forward:
+		cam.setPose(depthSensorPose);
+
+		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
+		viewport->setViewportClipDistances(m_depth_clip_min, m_depth_clip_max);
+
+		mrpt::math::CMatrixFloat depthImage;
+		m_fbo_renderer_depth->render_depth(world3DScene, depthImage);
+
+		// Convert depth image:
+		curObs->hasRangeImage = true;
+		curObs->range_is_depth = true;
+
+		// Add random noise:
+		if (m_depth_noise_sigma > 0)
 		{
-			if (d[i] == 0) continue;  // it was an invalid ray return.
+			// Each thread must create its own rng:
+			thread_local mrpt::random::CRandomGenerator rng;
 
-			const float dNoisy =
-				d[i] + rng.drawGaussian1D(0, m_depth_noise_sigma);
+			float* d = depthImage.data();
+			const size_t N = depthImage.size();
+			for (size_t i = 0; i < N; i++)
+			{
+				if (d[i] == 0) continue;  // it was an invalid ray return.
 
-			if (dNoisy < 0 || dNoisy > curObs->maxRange) continue;
+				const float dNoisy =
+					d[i] + rng.drawGaussian1D(0, m_depth_noise_sigma);
 
-			d[i] = dNoisy;
+				if (dNoisy < 0 || dNoisy > curObs->maxRange) continue;
+
+				d[i] = dNoisy;
+			}
 		}
-	}
 
-	// float -> uint16_t with "curObs->rangeUnits" units:
-	curObs->rangeImage_setSize(depthImage.rows(), depthImage.cols());
-	curObs->rangeImage =
-		(depthImage.asEigen().cwiseMin(curObs->maxRange) / curObs->rangeUnits)
-			.cast<uint16_t>();
+		// float -> uint16_t with "curObs->rangeUnits" units:
+		curObs->rangeImage_setSize(depthImage.rows(), depthImage.cols());
+		curObs->rangeImage = (depthImage.asEigen().cwiseMin(curObs->maxRange) /
+							  curObs->rangeUnits)
+								 .cast<uint16_t>();
+	}
+	else
+	{
+		curObs->hasRangeImage = false;
+	}
 
 	// Store generated obs:
 	{
