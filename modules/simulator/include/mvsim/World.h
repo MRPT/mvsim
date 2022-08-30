@@ -18,6 +18,7 @@
 #include <mrpt/img/TColor.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/obs/CObservation.h>
+#include <mrpt/obs/CObservationImage.h>
 #include <mrpt/obs/obs_frwds.h>
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTicTac.h>
@@ -426,9 +427,14 @@ class World : public mrpt::system::COutputLogger
 	mrpt::opengl::COpenGLScene m_physical_objects;
 	std::recursive_mutex m_physical_objects_mtx;
 
-	void internal_gui_on_observation(const mrpt::obs::CObservation::Ptr& obs);
+	void internal_gui_on_observation(
+		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 	void internal_gui_on_observation_3Dscan(
+		const Simulable& veh,
 		const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs);
+	void internal_gui_on_observation_image(
+		const Simulable& veh,
+		const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
 
 	mrpt::math::TPoint2D internal_gui_on_image(
 		const std::string& label, const mrpt::img::CImage& im, int winPosX);

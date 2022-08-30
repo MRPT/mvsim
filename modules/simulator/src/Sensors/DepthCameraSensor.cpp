@@ -15,7 +15,6 @@
 #include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
-#include <mvsim/WorldElements/OccupancyGridMap.h>
 
 #include "xml_utils.h"
 
