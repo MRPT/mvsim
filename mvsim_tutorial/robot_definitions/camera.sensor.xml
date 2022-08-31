@@ -12,9 +12,9 @@
     <ncols>640</ncols>
     <nrows>480</nrows>
     <cx>320</cx>
-    <cy>120</cy>
-    <fx>200</fx>
-    <fy>200</fy>
+    <cy>240</cy>
+    <fx>400</fx>
+    <fy>400</fy>
     <clip_min>1e-2</clip_min>
     <clip_max>1e+4</clip_max>
 

@@ -61,6 +61,7 @@
 		<!-- Sensors -->
 		<include file="robot_definitions/front_lidar.sensor.xml" 
 		  sensor_x="1.0"
+		  raytrace_3d="true"
 		  />
 		<include file="robot_definitions/rgbd_camera.sensor.xml" />
 	</vehicle>
@@ -75,7 +76,9 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="robot_definitions/front_lidar.sensor.xml" />
+		<include file="robot_definitions/front_lidar.sensor.xml" 
+		  raytrace_3d="true"
+		/>
 		<!-- Sensors -->
 		<include file="robot_definitions/camera.sensor.xml" 
 		  sensor_x="2.0"

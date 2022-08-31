@@ -1,7 +1,9 @@
 <sensor class="laser" name="laser1">
     <pose> ${sensor_x|1.80}  ${sensor_y|0.0}  ${sensor_yaw|0.0} </pose>
     <fov_degrees>180</fov_degrees>
+    <sensor_period>0.05</sensor_period>
     <nrays>181</nrays>
     <range_std_noise>0.01</range_std_noise>
     <angle_std_noise_deg>0.01</angle_std_noise_deg>
+    <raytrace_3d>${raytrace_3d|false}</raytrace_3d>
 </sensor>
