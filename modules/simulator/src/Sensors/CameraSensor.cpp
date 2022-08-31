@@ -229,7 +229,11 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 void CameraSensor::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
-	if (SensorBase::should_simulate_sensor(context)) m_has_to_render = context;
+	if (SensorBase::should_simulate_sensor(context))
+	{
+		m_has_to_render = context;
+		m_world->mark_as_pending_running_sensors_on_3D_scene();
+	}
 }
 
 void CameraSensor::freeOpenGLResources() { m_fbo_renderer_rgb.reset(); }

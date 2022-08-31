@@ -600,19 +600,15 @@ void World::internal_process_pending_gui_user_tasks()
 void World::internalRunSensorsOn3DScene(
 	mrpt::opengl::COpenGLScene& physicalObjects)
 {
-	// Update view of vehicles
-	// -----------------------------
 	auto tle = mrpt::system::CTimeLoggerEntry(
 		m_timlogger, "internalRunSensorsOn3DScene");
 
 	for (auto& v : m_vehicles)
-	{
 		for (auto& sensor : v.second->getSensors())
-		{
-			if (!sensor) continue;
-			sensor->simulateOn3DScene(physicalObjects);
-		}
-	}
+			if (sensor) sensor->simulateOn3DScene(physicalObjects);
+
+	// clear the flag of pending 3D simulation required:
+	clear_pending_running_sensors_on_3D_scene();
 }
 
 void World::internalUpdate3DSceneObjects(
