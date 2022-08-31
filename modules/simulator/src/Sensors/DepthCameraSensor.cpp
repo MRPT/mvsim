@@ -247,7 +247,7 @@ void DepthCameraSensor::simulateOn3DScene(
 	// Note: relativePoseOnVehicle should be (y,p,r)=(-90deg,0,-90deg) to make
 	// the camera to look forward:
 
-	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
+	const auto vehiclePose = m_vehicle_pose_at_last_timestamp;
 
 	const auto depthSensorPose =
 		vehiclePose + curObs->sensorPose + fixedAxisConventionRot;
@@ -344,11 +344,7 @@ void DepthCameraSensor::simulateOn3DScene(
 void DepthCameraSensor::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
-
-	// Limit sensor rate:
-	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period) return;
-	m_sensor_last_timestamp = context.simul_time;
-	m_has_to_render = context;
+	if (SensorBase::should_simulate_sensor(context)) m_has_to_render = context;
 }
 
 void DepthCameraSensor::freeOpenGLResources()

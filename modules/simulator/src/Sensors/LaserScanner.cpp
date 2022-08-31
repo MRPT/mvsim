@@ -72,7 +72,8 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void LaserScanner::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	mrpt::opengl::COpenGLScene& viz,
+	[[maybe_unused]] mrpt::opengl::COpenGLScene& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
@@ -161,20 +162,25 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 	Simulable::simul_post_timestep(context);
 
+	if (SensorBase::should_simulate_sensor(context))
+	{
+		if (m_raytrace_3d)
+		{
+			// Will run upon next async call of simulateOn3DScene()
+			m_has_to_render = context;
+		}
+		else
+		{
+			// 2D mode:
+			internal_simulate_lidar_2d_mode(context);
+		}
+	}
+}
+
+void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
+{
 	using mrpt::maps::COccupancyGridMap2D;
 	using mrpt::obs::CObservation2DRangeScan;
-
-	// Limit sensor rate:
-	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period) return;
-	m_sensor_last_timestamp = context.simul_time;
-
-	// 3D raytrace sensor mode?
-	if (m_raytrace_3d)
-	{
-		m_has_to_render = context;
-		return;
-	}
-	// 2D mode (go on in this function):
 
 	auto tle = mrpt::system::CTimeLoggerEntry(
 		m_world->getTimeLogger(), "LaserScanner");
@@ -188,7 +194,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	const double maxRange = m_scan_model.maxRange;
 
 	// Get pose of the robot:
-	const mrpt::poses::CPose2D& vehPose = m_vehicle.getCPose2D();
+	const mrpt::poses::CPose2D vehPose =
+		mrpt::poses::CPose2D(m_vehicle_pose_at_last_timestamp);
 
 	// grid maps:
 	// -------------
@@ -248,7 +255,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		class RayCastClosestCallback : public b2RayCastCallback
 		{
 		   public:
-			RayCastClosestCallback() : m_see_fixtures(true), m_hit(false) {}
+			RayCastClosestCallback() = default;
+
 			float ReportFixture(
 				b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal,
 				float fraction) override
@@ -274,10 +282,10 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 				return fraction;
 			}
 
-			bool m_see_fixtures;
-			bool m_hit;
-			b2Vec2 m_point;
-			b2Vec2 m_normal;
+			bool m_see_fixtures = true;
+			bool m_hit = false;
+			b2Vec2 m_point{0, 0};
+			b2Vec2 m_normal{0, 0};
 		};
 
 		const mrpt::poses::CPose2D sensorPose =
@@ -415,7 +423,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
 
-	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
+	const auto vehiclePose = m_vehicle_pose_at_last_timestamp;
 
 	// ----------------------------------------------------------
 	// Decompose the 2D lidar FOV into "n" depth camera images,

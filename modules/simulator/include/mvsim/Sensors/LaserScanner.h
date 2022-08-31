@@ -43,6 +43,9 @@ class LaserScanner : public SensorBase
 		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
 		bool childrenOnly) override;
 
+	// when not using the 3D raytrace mode.
+	void internal_simulate_lidar_2d_mode(const TSimulContext& context);
+
 	int m_z_order;	//!< to help rendering multiple scans
 	mrpt::poses::CPose2D m_sensor_pose_on_veh;
 	double m_rangeStdNoise = 0.01;
