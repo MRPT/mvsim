@@ -1,5 +1,5 @@
 <sensor class="laser" name="laser2">
-    <pose> -1.0  0.0  180.0 </pose>
+    <pose> ${sensor_x|-1.0}  ${sensor_y|0.0}  ${sensor_yaw|180.0} </pose>
     <fov_degrees>180</fov_degrees>
     <sensor_period>0.05</sensor_period>
     <nrays>181</nrays>

@@ -59,7 +59,9 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="robot_definitions/front_lidar.sensor.xml" />
+		<include file="robot_definitions/front_lidar.sensor.xml" 
+		  sensor_x="1.0"
+		  />
 		<include file="robot_definitions/rgbd_camera.sensor.xml" />
 	</vehicle>
 
@@ -75,7 +77,9 @@
 		<!-- Sensors -->
 		<include file="robot_definitions/front_lidar.sensor.xml" />
 		<!-- Sensors -->
-		<include sensor_x="2.0" file="robot_definitions/camera.sensor.xml" />
+		<include file="robot_definitions/camera.sensor.xml" 
+		  sensor_x="2.0"
+		/>
 	</vehicle>
 
 	<!-- ======================================
