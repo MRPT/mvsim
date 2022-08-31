@@ -166,7 +166,6 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 	// Limit sensor rate:
 	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period) return;
-
 	m_sensor_last_timestamp = context.simul_time;
 
 	// 3D raytrace sensor mode?
