@@ -12,6 +12,7 @@
 #include <mrpt/io/CFileGZOutputStream.h>
 #include <mrpt/obs/obs_frwds.h>
 #include <mrpt/opengl/opengl_frwds.h>
+#include <mrpt/poses/CPose3D.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
@@ -58,6 +59,16 @@ class SensorBase : public VisualObject, public Simulable
 		const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
 
    protected:
+	/** Should be called within each derived class simul_post_timestep() method
+	 *  to update m_sensor_last_timestamp and check if the sensor should be
+	 * simulated now, given the current simulation time, and the sensor rate in
+	 * m_sensor_period. It also updates m_vehicle_pose_at_last_timestamp.
+	 *
+	 * \return true if it is now time to simulate a new sensor reading,
+	 *         false otherwise.
+	 */
+	bool should_simulate_sensor(const TSimulContext& context);
+
 	Simulable& m_vehicle;  //!< The vehicle this sensor is attached to
 
 	/** Generate one sensor reading every this period [s] (Default = 0.1) */
@@ -68,6 +79,11 @@ class SensorBase : public VisualObject, public Simulable
 
 	/** The last sensor reading timestamp. See  m_sensor_period */
 	double m_sensor_last_timestamp = 0;
+
+	/** Whenever m_sensor_last_timestamp is updated, the vehicle pose will be
+	 * stored here, so we have the exact vehicle pose at that timestamp for
+	 * sensors that run on an async thread (i.e. opengl rendering) */
+	mrpt::poses::CPose3D m_vehicle_pose_at_last_timestamp;
 
 	std::string publishTopic_;
 
