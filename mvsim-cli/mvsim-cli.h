@@ -23,6 +23,7 @@ extern TCLAP::SwitchArg argDetails;
 using cmd_t = std::function<int(void)>;
 
 int printListCommands();  // "help"
+void printVersion();  // "--version"
 int launchStandAloneServer();  // "server"
 int launchSimulation();	 // "launch"
 int commandNode();	// "node"
