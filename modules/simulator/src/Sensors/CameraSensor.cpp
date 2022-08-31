@@ -131,7 +131,12 @@ void CameraSensor::internalGuiUpdate(
 					m_gl_sensor_fov->insert(m_gl_sensor_frustum);
 				}
 
-				m_gl_sensor_frustum->setPose(m_last_obs2gui->sensorPose());
+				using namespace mrpt;  // _deg
+
+				m_gl_sensor_frustum->setPose(
+					m_last_obs2gui->cameraPose +
+					(-mrpt::poses::CPose3D::FromYawPitchRoll(
+						-90.0_deg, 0.0_deg, -90.0_deg)));
 
 				m_last_obs2gui.reset();
 			}
