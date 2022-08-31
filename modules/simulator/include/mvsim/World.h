@@ -167,6 +167,29 @@ class World : public mrpt::system::COutputLogger
 	void internal_GUI_thread();
 	void internal_process_pending_gui_user_tasks();
 
+	std::mutex m_pendingRunSensorsOn3DSceneMtx;
+	bool m_pendingRunSensorsOn3DScene = false;
+
+	void mark_as_pending_running_sensors_on_3D_scene()
+	{
+		m_pendingRunSensorsOn3DSceneMtx.lock();
+		m_pendingRunSensorsOn3DScene = true;
+		m_pendingRunSensorsOn3DSceneMtx.unlock();
+	}
+	void clear_pending_running_sensors_on_3D_scene()
+	{
+		m_pendingRunSensorsOn3DSceneMtx.lock();
+		m_pendingRunSensorsOn3DScene = false;
+		m_pendingRunSensorsOn3DSceneMtx.unlock();
+	}
+	bool pending_running_sensors_on_3D_scene()
+	{
+		m_pendingRunSensorsOn3DSceneMtx.lock();
+		bool ret = m_pendingRunSensorsOn3DScene;
+		m_pendingRunSensorsOn3DSceneMtx.unlock();
+		return ret;
+	}
+
 	std::string m_gui_msg_lines;
 	std::mutex m_gui_msg_lines_mtx;
 

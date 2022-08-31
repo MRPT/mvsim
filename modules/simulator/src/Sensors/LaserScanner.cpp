@@ -168,6 +168,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		{
 			// Will run upon next async call of simulateOn3DScene()
 			m_has_to_render = context;
+			m_world->mark_as_pending_running_sensors_on_3D_scene();
 		}
 		else
 		{

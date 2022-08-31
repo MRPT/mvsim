@@ -1,6 +1,6 @@
 <mvsim_world version="1.0">
 	<!-- General simulation options -->
-	<simul_timestep>0.010</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<simul_timestep>0.020</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
 	<b2d_vel_iters>3</b2d_vel_iters>
 	<b2d_pos_iters>3</b2d_pos_iters>
 
@@ -50,7 +50,7 @@
 		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="small_robot">
-		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>17 0 90.0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<publish>
