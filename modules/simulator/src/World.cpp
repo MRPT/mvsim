@@ -90,8 +90,14 @@ void World::run_simulation(double dt)
 	const double timetol = 1e-6;
 	while (m_simul_time < (end_time - timetol))
 	{
-		// Timestep: always "simul_step" for the sake of repeatibility
-		internal_one_timestep(m_simul_timestep);
+		// Timestep: always "simul_step" for the sake of repeatibility,
+		// except if requested to run a shorter step:
+		const double remainingTime = end_time - m_simul_time;
+		if (remainingTime < 0) break;
+
+		internal_one_timestep(
+			remainingTime > m_simul_timestep ? m_simul_timestep
+											 : remainingTime);
 	}
 
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
