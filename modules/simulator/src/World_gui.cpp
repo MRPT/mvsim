@@ -362,9 +362,11 @@ void World::internal_GUI_thread()
 		// Add a background scene:
 		{
 			auto scene = mrpt::opengl::COpenGLScene::Create();
-			scene->insert(m_glUserObjs);
 
-			m_physical_objects.insert(m_glUserObjs);
+			// add the placeholders for user-provided objects, both for pure
+			// visualization only, and physical objects:
+			scene->insert(m_glUserObjsViz);
+			m_physical_objects.insert(m_glUserObjsPhysical);
 
 			scene->getViewport()->lightParameters().ambient = {
 				0.5f, 0.5f, 0.5f, 1.0f};
@@ -434,7 +436,7 @@ void World::internal_GUI_thread()
 			// Update all GUI elements:
 			ASSERT_(me.m_gui.gui_win->background_scene);
 
-			auto lckPhys = mrpt::lockHelper(me.m_physical_objects_mtx);
+			auto lckPhys = mrpt::lockHelper(me.physical_objects_mtx());
 
 			me.internalUpdate3DSceneObjects(
 				*me.m_gui.gui_win->background_scene, me.m_physical_objects);
@@ -452,8 +454,10 @@ void World::internal_GUI_thread()
 			{
 				const auto lck = mrpt::lockHelper(me.m_gui_user_objects_mtx);
 				// replace list of smart pointers (fast):
-				if (me.m_gui_user_objects)
-					*me.m_glUserObjs = *me.m_gui_user_objects;
+				if (me.m_gui_user_objects_physical)
+					*me.m_glUserObjsPhysical = *me.m_gui_user_objects_physical;
+				if (me.m_gui_user_objects_viz)
+					*me.m_glUserObjsViz = *me.m_gui_user_objects_viz;
 			}
 		};
 
@@ -598,7 +602,8 @@ void World::internalRunSensorsOn3DScene(
 {
 	// Update view of vehicles
 	// -----------------------------
-	m_timlogger.enter("internalRunSensorsOn3DScene");
+	auto tle = mrpt::system::CTimeLoggerEntry(
+		m_timlogger, "internalRunSensorsOn3DScene");
 
 	for (auto& v : m_vehicles)
 	{
@@ -608,8 +613,6 @@ void World::internalRunSensorsOn3DScene(
 			sensor->simulateOn3DScene(physicalObjects);
 		}
 	}
-
-	m_timlogger.leave("internalRunSensorsOn3DScene");
 }
 
 void World::internalUpdate3DSceneObjects(

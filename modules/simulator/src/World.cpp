@@ -74,6 +74,10 @@ void World::run_simulation(double dt)
 {
 	const double t0 = mrpt::Clock::toDouble(mrpt::Clock::now());
 
+	// Define start of simulation time:
+	if (!m_simul_start_wallclock_time.has_value())
+		m_simul_start_wallclock_time = t0;
+
 	m_timlogger.registerUserMeasure("run_simulation.dt", dt);
 
 	// sanity checks:

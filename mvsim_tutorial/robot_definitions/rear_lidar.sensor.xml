@@ -5,4 +5,5 @@
     <nrays>181</nrays>
     <range_std_noise>0.01</range_std_noise>
     <angle_std_noise_deg>0.01</angle_std_noise_deg>
+    <raytrace_3d>${raytrace_3d|false}</raytrace_3d>
 </sensor>

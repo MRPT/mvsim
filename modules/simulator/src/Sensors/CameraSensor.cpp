@@ -171,7 +171,7 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	auto curObs = mrpt::obs::CObservationImage::Create(m_sensor_params);
 
 	// Set timestamp:
-	curObs->timestamp = mrpt::Clock::now();
+	curObs->timestamp = m_world->get_simul_timestamp();
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	if (!m_fbo_renderer_rgb)

@@ -76,30 +76,33 @@ class World : public mrpt::system::COutputLogger
 	/** \name Simulation execution
 	  @{*/
 
-	double get_simul_time() const
-	{
-		return m_simul_time;
-	}  //!< Simulation wall-clock time
+	/** Seconds since start of simulation. \sa get_simul_timestamp() */
+	double get_simul_time() const { return m_simul_time; }
 
-	double get_simul_timestep() const
+	/** Get the current simulation full timestamp, computed as the
+	 *  real wall clock timestamp at the beginning of the simulation,
+	 *  plus the number of seconds simulation has run.
+	 *  \sa get_simul_time()
+	 */
+	mrpt::Clock::time_point get_simul_timestamp() const
 	{
-		return m_simul_timestep;
-	}  //!< Simulation fixed-time interval for numerical integration
-	void set_simul_timestep(double timestep)
-	{
-		m_simul_timestep = timestep;
-	}  //!< Simulation fixed-time interval for numerical integration
+		ASSERT_(m_simul_start_wallclock_time.has_value());
+		return mrpt::Clock::fromDouble(
+			m_simul_time + m_simul_start_wallclock_time.value());
+	}
 
-	double get_gravity() const
-	{
-		return m_gravity;
-	}  //!< Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights
-	   //! for friction, etc.
-	void set_gravity(double accel)
-	{
-		m_gravity = accel;
-	}  //!< Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights
-	   //! for friction, etc.
+	/// Simulation fixed-time interval for numerical integration
+	double get_simul_timestep() const { return m_simul_timestep; }
+	/// Simulation fixed-time interval for numerical integration
+	void set_simul_timestep(double timestep) { m_simul_timestep = timestep; }
+
+	/// Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
+	/// friction, etc.
+	double get_gravity() const { return m_gravity; }
+
+	/// Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
+	/// friction, etc.
+	void set_gravity(double accel) { m_gravity = accel; }
 
 	/** Runs the simulation for a given time interval (in seconds)
 	 * \note The minimum simulation time is the timestep set (e.g. via
@@ -149,8 +152,11 @@ class World : public mrpt::system::COutputLogger
 
 	/** If !=null, a set of objects to be rendered merged with the default
 	 * visualization. Lock the mutex m_gui_user_objects_mtx while writing.
+	 * There are two sets of objects: "viz" for visualization only, "physical"
+	 * for objects which should be detected by sensors.
 	 */
-	mrpt::opengl::CSetOfObjects::Ptr m_gui_user_objects;
+	mrpt::opengl::CSetOfObjects::Ptr m_gui_user_objects_physical,
+		m_gui_user_objects_viz;
 	std::mutex m_gui_user_objects_mtx;
 
 	void internalRunSensorsOn3DScene(
@@ -320,13 +326,16 @@ class World : public mrpt::system::COutputLogger
 	/** In seconds, real simulation time since beginning (may be different than
 	 * wall-clock time because of time warp, etc.) */
 	double m_simul_time = 0;
+	std::optional<double> m_simul_start_wallclock_time;
 
 	/** Path from which to take relative directories. */
 	std::string m_base_path{"."};
 
 	/// This private container will be filled with objects in the public
 	/// m_gui_user_objects
-	mrpt::opengl::CSetOfObjects::Ptr m_glUserObjs =
+	mrpt::opengl::CSetOfObjects::Ptr m_glUserObjsPhysical =
+		mrpt::opengl::CSetOfObjects::Create();
+	mrpt::opengl::CSetOfObjects::Ptr m_glUserObjsViz =
 		mrpt::opengl::CSetOfObjects::Create();
 
 	// ------- GUI options -----

@@ -335,7 +335,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 	auto lastScan = CObservation2DRangeScan::Create(m_scan_model);
 
-	lastScan->timestamp = mrpt::system::now();
+	lastScan->timestamp = m_world->get_simul_timestamp();
 	lastScan->sensorLabel = m_name;
 
 	lastScan->resizeScanAndAssign(nRays, maxRange, false);
@@ -388,7 +388,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const size_t nRays = m_scan_model.getScanSize();
 	const double maxRange = m_scan_model.maxRange;
 
-	curObs->timestamp = mrpt::system::now();
+	curObs->timestamp = m_world->get_simul_timestamp();
 	curObs->sensorLabel = m_name;
 
 	curObs->resizeScanAndAssign(nRays, maxRange, false);
