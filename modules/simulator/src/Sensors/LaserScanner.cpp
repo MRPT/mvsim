@@ -385,10 +385,15 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (!m_has_to_render.has_value()) return;
 
+	auto tleWhole = mrpt::system::CTimeLoggerEntry(
+		m_world->getTimeLogger(), "sensor.2Dlidar");
+
+	auto tle1 = mrpt::system::CTimeLoggerEntry(
+		m_world->getTimeLogger(), "sensor.2Dlidar.acqGuiMtx");
+
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
-	auto tle = mrpt::system::CTimeLoggerEntry(
-		m_world->getTimeLogger(), "LaserScanner_raytrace");
+	tle1.stop();
 
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservation2DRangeScan::Create(m_scan_model);
@@ -550,12 +555,20 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// Store generated obs:
 	{
+		auto tle3 = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.2Dlidar.acqObsMtx");
+
 		std::lock_guard<std::mutex> csl(m_last_scan_cs);
 		m_last_scan = std::move(curObs);
 		m_last_scan2gui = m_last_scan;
 	}
 
-	SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
+	{
+		auto tlePub = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.2Dlidar.report");
+
+		SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
+	}
 
 	m_gui_uptodate = false;
 	m_has_to_render.reset();
