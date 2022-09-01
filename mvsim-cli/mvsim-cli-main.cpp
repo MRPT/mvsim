@@ -30,6 +30,12 @@ TCLAP::ValueArg<std::string> argVerbosity(
 	"v", "verbose", "Verbosity level", false, "INFO", "ERROR|WARN|INFO|DEBUG",
 	cmd);
 
+TCLAP::SwitchArg argFullProfiler(
+	"", "full-profiler",
+	"Enable saving *all* timing data, dumping it to a file at the end of the "
+	"program.",
+	cmd);
+
 TCLAP::SwitchArg argDetails(
 	"", "details", "Shows details in the specified subcommand", cmd);
 
