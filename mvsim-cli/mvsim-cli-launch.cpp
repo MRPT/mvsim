@@ -61,6 +61,7 @@ int launchSimulation()
 
 Available options:
   -v, --verbosity      Set verbosity level: DEBUG, INFO (default), WARN, ERROR
+  --full-profiler      Enable full profiling (generates file with all timings)
 )XXX");
 		return 0;
 	}
@@ -75,6 +76,8 @@ Available options:
 	world.setMinLoggingLevel(
 		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
 			argVerbosity.getValue()));
+
+	if (argFullProfiler.isSet()) world.getTimeLogger().enableKeepWholeHistory();
 
 	// Load from XML:
 	rapidxml::file<> fil_xml(sXMLfilename.c_str());
@@ -94,7 +97,7 @@ Available options:
 	double t_old = tictac.Tac();
 	double REALTIME_FACTOR = 1.0;
 	bool do_exit = false;
-	size_t teleop_idx_veh = 0;  // Index of the vehicle to teleop
+	size_t teleop_idx_veh = 0;	// Index of the vehicle to teleop
 
 	while (!do_exit && !mrpt::system::os::kbhit())
 	{
@@ -189,13 +192,21 @@ Available options:
 		if (keyevent.keycode != 0) gui_key_events = World::TGUIKeyEvent();
 		gui_key_events_mtx.unlock();
 
-		msg2gui = txt2gui_tmp;  // send txt msgs to show in the GUI
+		msg2gui = txt2gui_tmp;	// send txt msgs to show in the GUI
 
 	}  // end while()
 
 	thread_params.closing(true);
 
 	thGUI.join();  // TODO: It could break smth
+
+	// save full profiling, if enabled:
+	if (world.getTimeLogger().isEnabledKeepWholeHistory())
+	{
+		const std::string sFil = "mvsim_profiler.m";
+		std::cout << "\n***SAVING PROFILER DATA TO***: " << sFil << std::endl;
+		world.getTimeLogger().saveToMFile(sFil);
+	}
 
 	return 0;
 }
