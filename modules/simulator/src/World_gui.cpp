@@ -488,7 +488,13 @@ void World::internal_GUI_thread()
 			"[World::internal_GUI_thread] Using GUI FPS=%i (T=%i ms)",
 			m_gui_options.refresh_fps, refresh_ms);
 
+#if MRPT_VERSION >= 0x253
+		const int idleLoopTasks_ms = 10;
+
+		nanogui::mainloop(idleLoopTasks_ms, refresh_ms);
+#else
 		nanogui::mainloop(refresh_ms);
+#endif
 
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
 

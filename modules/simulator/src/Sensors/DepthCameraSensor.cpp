@@ -205,10 +205,15 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	if (!m_has_to_render.has_value()) return;
 
+	auto tleWhole =
+		mrpt::system::CTimeLoggerEntry(m_world->getTimeLogger(), "sensor.RGBD");
+
+	auto tle1 = mrpt::system::CTimeLoggerEntry(
+		m_world->getTimeLogger(), "sensor.RGBD.acqGuiMtx");
+
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
-	auto tle = mrpt::system::CTimeLoggerEntry(
-		m_world->getTimeLogger(), "DepthCameraSensor");
+	tle1.stop();
 
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservation3DRangeScan::Create(m_sensor_params);
@@ -218,15 +223,25 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	if (!m_fbo_renderer_rgb && m_sense_rgb)
+	{
+		auto tle2 = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.RGBD.createFBO");
+
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(
 			m_sensor_params.cameraParamsIntensity.ncols,
 			m_sensor_params.cameraParamsIntensity.nrows,
 			true /* skip GLUT window */);
+	}
 
 	if (!m_fbo_renderer_depth && m_sense_depth)
+	{
+		auto tle2 = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.RGBD.createFBO");
+
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
 			m_sensor_params.cameraParams.ncols,
 			m_sensor_params.cameraParams.nrows, true /* skip GLUT window */);
+	}
 
 	auto viewport = world3DScene.getViewport();
 
@@ -259,6 +274,9 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	if (m_fbo_renderer_rgb)
 	{
+		auto tle2 = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.RGBD.renderRGB");
+
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
 		viewport->lightParameters().ambient = {
@@ -278,6 +296,9 @@ void DepthCameraSensor::simulateOn3DScene(
 	// ----------------------------------------------------------
 	if (m_fbo_renderer_depth)
 	{
+		auto tle2 = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.RGBD.renderD");
+
 		cam.setProjectiveFromPinhole(curObs->cameraParams);
 
 		// Camera pose: vehicle + relativePoseOnVehicle:
@@ -329,12 +350,20 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	// Store generated obs:
 	{
+		auto tle3 = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.RGBD.acqObsMtx");
+
 		std::lock_guard<std::mutex> csl(m_last_obs_cs);
 		m_last_obs = std::move(curObs);
 		m_last_obs2gui = m_last_obs;
 	}
 
-	SensorBase::reportNewObservation(m_last_obs, *m_has_to_render);
+	{
+		auto tlePub = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.RGBD.report");
+
+		SensorBase::reportNewObservation(m_last_obs, *m_has_to_render);
+	}
 
 	m_gui_uptodate = false;
 	m_has_to_render.reset();
