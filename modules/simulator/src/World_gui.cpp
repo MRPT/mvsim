@@ -105,10 +105,10 @@ void World::GUI::prepare_status_window()
 	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Status");
 #endif
 
-	w->setPosition({140, 80});
+	w->setPosition({5, 255});
 	w->setLayout(new nanogui::BoxLayout(
 		nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
-	w->setFixedWidth(270);
+	w->setFixedWidth(320);
 
 #if MRPT_VERSION < 0x211
 	w->buttonPanel()
@@ -117,7 +117,7 @@ void World::GUI::prepare_status_window()
 #endif
 
 	lbCpuUsage = w->add<nanogui::Label>(" ");
-	lbStatuses.resize(5);
+	lbStatuses.resize(9);
 	for (size_t i = 0; i < lbStatuses.size(); i++)
 		lbStatuses[i] = w->add<nanogui::Label>(" ");
 }
@@ -665,13 +665,17 @@ void World::internalUpdate3DSceneObjects(
 		const std::string msg_lines = m_gui_msg_lines;
 		m_gui_msg_lines_mtx.unlock();
 
+		int nextStatusLine = 0;
 		if (!msg_lines.empty())
 		{
-			MRPT_TODO("Split lines?");
-			m_gui.lbStatuses[0]->setCaption(msg_lines);
+			// split lines:
+			std::vector<std::string> lines;
+			mrpt::system::tokenize(msg_lines, "\r\n", lines);
+			for (const auto& l : lines)
+				m_gui.lbStatuses.at(nextStatusLine++)->setCaption(l);
 		}
-		m_gui.lbStatuses[1]->setCaption(
-			std::string("Mouse: ") + m_gui.clickedPt.asString());
+		m_gui.lbStatuses.at(nextStatusLine++)
+			->setCaption(std::string("Mouse: ") + m_gui.clickedPt.asString());
 	}
 
 	m_timlogger.leave("update_GUI.5.text-msgs");
