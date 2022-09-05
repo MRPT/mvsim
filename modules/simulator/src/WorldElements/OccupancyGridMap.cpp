@@ -112,6 +112,7 @@ void OccupancyGridMap::internalGuiUpdate(
 	if (!m_gl_grid)
 	{
 		m_gl_grid = mrpt::opengl::CSetOfObjects::Create();
+		m_gl_grid->setName("OccupancyGridMap");
 		viz.insert(m_gl_grid);
 		physical.insert(m_gl_grid);
 	}
@@ -140,6 +141,7 @@ void OccupancyGridMap::internalGuiUpdate(
 			if (!gl_objs)
 			{
 				gl_objs = mrpt::opengl::CSetOfObjects::Create();
+				gl_objs->setName("OccupancyGridMap.obstacles");
 				MRPT_TODO("Add a name, and remove old ones in scene, etc.")
 				viz.insert(gl_objs);
 			}

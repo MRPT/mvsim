@@ -33,6 +33,7 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 		mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
 
 	auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
+	gl_wheel_frame->setName("gl_wheel_frame");
 	gl_wheel_frame->insert(gl_wheel);
 	{
 		mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
