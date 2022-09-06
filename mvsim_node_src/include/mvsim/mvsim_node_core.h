@@ -14,8 +14,10 @@
 #include <mvsim/mvsimNodeConfig.h>
 #endif
 
+#include <mrpt/core/WorkerThreadsPool.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/system/CTicTac.h>
+#include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Comms/Server.h>
 #include <mvsim/World.h>
 #include <tf2/LinearMath/Transform.h>
@@ -78,6 +80,9 @@ class MVSimNode
 	/// obstacles, etc.)
 	mvsim::World mvsim_world_;
 
+	mrpt::WorkerThreadsPool ros_publisher_workers_{
+		3 /*threads*/, mrpt::WorkerThreadsPool::POLICY_DROP_OLD};
+
 	/// (Defaul=1.0) >1: speed-up, <1: slow-down
 	double realtime_factor_ = 1.0;
 	int gui_refresh_period_ms_ = 50;
@@ -104,7 +109,7 @@ class MVSimNode
 	/// used for simul_map publication
 #if PACKAGE_ROS_VERSION == 1
 	ros::Publisher pub_map_ros_, pub_map_metadata_;
-	ros::Publisher pub_clock_;
+	// ros::Publisher pub_clock_;
 #else
 	rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_ros_;
 	rclcpp::Publisher<nav_msgs::msg::MapMetaData>::SharedPtr pub_map_metadata_;
@@ -186,13 +191,12 @@ class MVSimNode
 	// === End ROS Hooks====
 
 #if PACKAGE_ROS_VERSION == 1
-	rosgraph_msgs::Clock clockMsg_;
-	ros::Time sim_time_;  //!< Current simulation time
+	// rosgraph_msgs::Clock clockMsg_;
+	// ros::Time sim_time_;  //!< Current simulation time
 	ros::Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
 	ros::Duration base_watchdog_timeout_;
 #else
-
-	rclcpp::Time sim_time_;	 //!< Current simulation time
+	// rclcpp::Time sim_time_;	 //!< Current simulation time
 	rclcpp::Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
 	rclcpp::Duration base_watchdog_timeout_ = std::chrono::seconds(1);
 #endif
@@ -255,6 +259,14 @@ class MVSimNode
 		const rclcpp::Time& stamp
 #endif
 	);
+
+#if PACKAGE_ROS_VERSION == 1
+	ros::Time myNow() const;
+#else
+	rclcpp::Time myNow() const;
+#endif
+
+	mrpt::system::CTimeLogger profiler_{true /*enabled*/, "mvsim_node"};
 
 	void publishWorldElements(mvsim::WorldElementBase& obj);
 	void publishVehicles(mvsim::VehicleBase& veh);
