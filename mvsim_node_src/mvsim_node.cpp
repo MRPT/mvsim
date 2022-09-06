@@ -109,7 +109,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	// Init ROS publishers:
 #if PACKAGE_ROS_VERSION == 1
-	pub_clock_ = n_.advertise<rosgraph_msgs::Clock>("/clock", 10);
+	// pub_clock_ = n_.advertise<rosgraph_msgs::Clock>("/clock", 10);
 
 	pub_map_ros_ = n_.advertise<nav_msgs::OccupancyGrid>(
 		"simul_map", 1 /*queue len*/, true /*latch*/);
@@ -127,10 +127,10 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
-	sim_time_.fromSec(0.0);
+	// sim_time_.fromSec(0.0);
 	base_last_cmd_.fromSec(0.0);
 #else
-	sim_time_ = rclcpp::Time(0);
+	// sim_time_ = rclcpp::Time(0);
 	base_last_cmd_ = rclcpp::Time(0);
 #endif
 
@@ -156,7 +156,15 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 		[this](
 			const mvsim::Simulable& veh,
 			const mrpt::obs::CObservation::Ptr& obs) {
-			onNewObservation(veh, obs);
+			mrpt::system::CTimeLoggerEntry tle(
+				profiler_, "lambda_onNewObservation");
+
+			const mvsim::Simulable* vehPtr = &veh;
+			const mrpt::obs::CObservation::Ptr obsCopy = obs;
+			auto fut =
+				ros_publisher_workers_.enqueue([this, vehPtr, obsCopy]() {
+					onNewObservation(*vehPtr, obsCopy);
+				});
 		});
 }
 
@@ -440,8 +448,14 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	}
 
 	// Publish the static transform /world -> /map
-	sendStaticTF("world", "map", tfIdentity_, sim_time_);
+	sendStaticTF("world", "map", tfIdentity_, myNow());
 }
+
+#if PACKAGE_ROS_VERSION == 1
+ros::Time MVSimNode::myNow() const { return ros::Time::now(); }
+#else
+rclcpp::Time MVSimNode::myNow() const { return n_->get_clock()->now(); }
+#endif
 
 void MVSimNode::sendStaticTF(
 	const std::string& frame_id, const std::string& child_frame_id,
@@ -650,7 +664,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	// STATIC Identity transform <VEH>/base_link -> <VEH>/base_footprint
 	sendStaticTF(
 		vehVarName("base_link", *veh), vehVarName("base_footprint", *veh),
-		tfIdentity_, sim_time_);
+		tfIdentity_, myNow());
 }
 
 void MVSimNode::onROSMsgCmdVel(
@@ -691,12 +705,12 @@ void MVSimNode::spinNotifyROS()
 	// Get current simulation time (for messages) and publish "/clock"
 	// ----------------------------------------------------------------
 #if PACKAGE_ROS_VERSION == 1
-	sim_time_.fromSec(mvsim_world_.get_simul_time());
-	clockMsg_.clock = sim_time_;
-	pub_clock_.publish(clockMsg_);
+	// sim_time_.fromSec(mvsim_world_.get_simul_time());
+	// clockMsg_.clock = sim_time_;
+	// pub_clock_.publish(clockMsg_);
 #else
-	sim_time_ = n_->get_clock()->now();
-	MRPT_TODO("Publish /clock for ROS2 too?");
+	// sim_time_ = n_->get_clock()->now();
+	// MRPT_TODO("Publish /clock for ROS2 too?");
 #endif
 
 #if PACKAGE_ROS_VERSION == 2
@@ -741,7 +755,7 @@ void MVSimNode::spinNotifyROS()
 				gtOdoMsg.twist.twist.linear.z = 0;
 				gtOdoMsg.twist.twist.angular.z = gh_veh_vel.omega;
 
-				gtOdoMsg.header.stamp = sim_time_;
+				gtOdoMsg.header.stamp = myNow();
 				gtOdoMsg.header.frame_id = sOdomName;
 				gtOdoMsg.child_frame_id = sBaseLinkFrame;
 
@@ -762,7 +776,7 @@ void MVSimNode::spinNotifyROS()
 
 					// topic: <Ri>/particlecloud
 					{
-						particleCloud.header.stamp = sim_time_;
+						particleCloud.header.stamp = myNow();
 						particleCloud.header.frame_id = "map";
 						particleCloud.poses.resize(1);
 						particleCloud.poses[0] = gtOdoMsg.pose.pose;
@@ -795,7 +809,7 @@ void MVSimNode::spinNotifyROS()
 						Msg_TransformStamped tx;
 						tx.header.frame_id = "map";
 						tx.child_frame_id = sOdomName;
-						tx.header.stamp = sim_time_;
+						tx.header.stamp = myNow();
 						tx.transform =
 							tf2::toMsg(tf2::Transform::getIdentity());
 
@@ -843,7 +857,7 @@ void MVSimNode::spinNotifyROS()
 					Msg_TransformStamped tx;
 					tx.header.frame_id = sOdomName;
 					tx.child_frame_id = sBaseLinkFrame;
-					tx.header.stamp = sim_time_;
+					tx.header.stamp = myNow();
 					tx.transform =
 						tf2::toMsg(mrpt2ros::toROS_tfTransform(odo_pose));
 					tf_br_.sendTransform(tx);
@@ -859,7 +873,7 @@ void MVSimNode::spinNotifyROS()
 					odoMsg.pose.pose = mrpt2ros::toROS_Pose(odo_pose);
 
 					// first, we'll populate the header for the odometry msg
-					odoMsg.header.stamp = sim_time_;
+					odoMsg.header.stamp = myNow();
 					odoMsg.header.frame_id = sOdomName;
 					odoMsg.child_frame_id = sBaseLinkFrame;
 
@@ -881,6 +895,8 @@ void MVSimNode::spinNotifyROS()
 void MVSimNode::onNewObservation(
 	const mvsim::Simulable& sim, const mrpt::obs::CObservation::Ptr& obs)
 {
+	mrpt::system::CTimeLoggerEntry tle(profiler_, "onNewObservation");
+
 	using mrpt::obs::CObservation2DRangeScan;
 
 	ASSERT_(obs);
@@ -934,7 +950,7 @@ void MVSimNode::onNewObservation(
 		tfStmp.transform = tf2::toMsg(transform);
 		tfStmp.child_frame_id = sSensorFrameId;
 		tfStmp.header.frame_id = vehVarName("base_link", veh);
-		tfStmp.header.stamp = sim_time_;
+		tfStmp.header.stamp = myNow();
 		tf_br_.sendTransform(tfStmp);
 
 		// Send observation:
@@ -950,7 +966,7 @@ void MVSimNode::onNewObservation(
 			mrpt2ros::toROS(*o, msg_laser, msg_pose_laser);
 
 			// Force usage of simulation time:
-			msg_laser.header.stamp = sim_time_;
+			msg_laser.header.stamp = myNow();
 			msg_laser.header.frame_id = sSensorFrameId;
 
 #if PACKAGE_ROS_VERSION == 1
