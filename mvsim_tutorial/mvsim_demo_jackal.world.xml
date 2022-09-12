@@ -26,7 +26,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="robot_definitions/jackal.vehicle.xml" />
+	<include file="definitions/jackal.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -36,8 +36,8 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<!-- Sensors -->
-		<include file="robot_definitions/front_lidar.sensor.xml" />
-		<include file="robot_definitions/rear_lidar.sensor.xml" />
+		<include file="definitions/front_lidar.sensor.xml" />
+		<include file="definitions/rear_lidar.sensor.xml" />
 	</vehicle>
 
 </mvsim_world>

@@ -43,8 +43,8 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="robot_definitions/ackermann.vehicle.xml" />
-	<include file="robot_definitions/small_robot.vehicle.xml" />
+	<include file="definitions/ackermann.vehicle.xml" />
+	<include file="definitions/small_robot.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -59,11 +59,11 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="robot_definitions/front_lidar.sensor.xml" 
+		<include file="definitions/front_lidar.sensor.xml" 
 		  sensor_x="1.0"
 		  raytrace_3d="true"
 		  />
-		<include file="robot_definitions/rgbd_camera.sensor.xml" />
+		<include file="definitions/rgbd_camera.sensor.xml" />
 	</vehicle>
 
 	<vehicle name="r2" class="car_ackermann">
@@ -76,11 +76,11 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="robot_definitions/front_lidar.sensor.xml" 
+		<include file="definitions/front_lidar.sensor.xml" 
 		  raytrace_3d="true"
 		/>
 		<!-- Sensors -->
-		<include file="robot_definitions/camera.sensor.xml" 
+		<include file="definitions/camera.sensor.xml" 
 		  sensor_x="2.0"
 		/>
 	</vehicle>
