@@ -31,7 +31,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="robot_definitions/ackermann.vehicle.xml" />
+	<include file="definitions/ackermann.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition 
