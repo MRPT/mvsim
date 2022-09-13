@@ -408,14 +408,14 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	constexpr int FBO_NROWS = 1;
-	constexpr int FBO_NCOLS = 300;
-	constexpr double camModel_FOV = 90.0_deg;
+	constexpr int FBO_NCOLS = 500;
+	constexpr double camModel_FOV = 150.0_deg;
 	mrpt::img::TCamera camModel;
 	camModel.ncols = FBO_NCOLS;
 	camModel.nrows = FBO_NROWS;
 	camModel.cx(camModel.ncols / 2.0);
 	camModel.cy(camModel.nrows / 2.0);
-	camModel.fx(FBO_NCOLS / 2);	 // 2*45=90 deg FOV
+	camModel.fx(camModel.cx() / tan(camModel_FOV * 0.5));  // tan(FOV/2)=cx/fx
 	camModel.fy(camModel.fx());
 
 	if (!m_fbo_renderer_depth)
@@ -495,8 +495,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
 		const double thisRenderMidAngle =
-			firstAngle +
-			(45.0_deg + 90.0_deg * renderIdx) * (scanIsCW ? 1 : -1);
+			firstAngle + (camModel_FOV / 2.0 + camModel_FOV * renderIdx) *
+							 (scanIsCW ? 1 : -1);
 
 		const auto depthSensorPose = vehiclePose + curObs->sensorPose +
 									 mrpt::poses::CPose3D::FromYawPitchRoll(
