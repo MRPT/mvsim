@@ -322,30 +322,6 @@ void DepthCameraSensor::simulateOn3DScene(
 		curObs.hasRangeImage = true;
 		curObs.range_is_depth = true;
 
-		// Add random noise:
-		if (m_depth_noise_sigma > 0)
-		{
-			auto tle2noise = mrpt::system::CTimeLoggerEntry(
-				m_world->getTimeLogger(), "sensor.RGBD.renderD_noise");
-
-			// Each thread must create its own rng:
-			thread_local mrpt::random::CRandomGenerator rng;
-
-			float* d = m_depthImage.data();
-			const size_t N = m_depthImage.size();
-			for (size_t i = 0; i < N; i++)
-			{
-				if (d[i] == 0) continue;  // it was an invalid ray return.
-
-				const float dNoisy =
-					d[i] + rng.drawGaussian1D(0, m_depth_noise_sigma);
-
-				if (dNoisy < 0 || dNoisy > curObs.maxRange) continue;
-
-				d[i] = dNoisy;
-			}
-		}
-
 		auto tle2cnv = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.renderD_cast");
 
@@ -356,6 +332,49 @@ void DepthCameraSensor::simulateOn3DScene(
 								.cast<uint16_t>();
 
 		tle2cnv.stop();
+
+		// Add random noise:
+		if (m_depth_noise_sigma > 0)
+		{
+			// Each thread must create its own rng:
+			thread_local mrpt::random::CRandomGenerator rng;
+			thread_local std::vector<int16_t> noiseSeq;
+			thread_local size_t noiseIdx = 0;
+			constexpr size_t noiseLen = 7823;  // prime
+			if (noiseSeq.empty())
+			{
+				noiseSeq.reserve(noiseLen);
+				for (size_t i = 0; i < noiseLen; i++)
+				{
+					noiseSeq.push_back(static_cast<int16_t>(mrpt::round(
+						rng.drawGaussian1D(0.0, m_depth_noise_sigma) /
+						curObs.rangeUnits)));
+				}
+			}
+
+			auto tle2noise = mrpt::system::CTimeLoggerEntry(
+				m_world->getTimeLogger(), "sensor.RGBD.renderD_noise");
+
+			uint16_t* d = curObs.rangeImage.data();
+			const size_t N = curObs.rangeImage.size();
+
+			const int16_t maxRangeInts =
+				static_cast<int16_t>(curObs.maxRange / curObs.rangeUnits);
+
+			for (size_t i = 0; i < N; i++)
+			{
+				if (d[i] == 0) continue;  // it was an invalid ray return.
+
+				const int16_t dNoisy =
+					static_cast<int16_t>(d[i]) + noiseSeq[noiseIdx++];
+
+				if (noiseIdx >= noiseLen) noiseIdx = 0;
+
+				if (dNoisy > maxRangeInts) continue;
+
+				d[i] = static_cast<uint16_t>(dNoisy);
+			}
+		}
 	}
 	else
 	{

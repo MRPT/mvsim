@@ -13,6 +13,7 @@
 
     <sense_depth>${sense_depth|true}</sense_depth>
     <sense_rgb>${sense_rgb|true}</sense_rgb>
+    
 
     <depth_ncols>640</depth_ncols>
     <depth_nrows>480</depth_nrows>
@@ -23,6 +24,7 @@
     <depth_resolution>1e-3</depth_resolution>
     <depth_clip_min>0.01</depth_clip_min>
     <depth_clip_max>15.0</depth_clip_max>
+    <depth_noise_sigma>${depth_noise_sigma|0.05}</depth_noise_sigma>
 
     <rgb_ncols>640</rgb_ncols>
     <rgb_nrows>480</rgb_nrows>
