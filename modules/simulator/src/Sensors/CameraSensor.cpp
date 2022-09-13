@@ -162,10 +162,10 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (!m_has_to_render.has_value()) return;
 
-	auto lck = mrpt::lockHelper(m_gui_mtx);
+	auto tleWhole =
+		mrpt::system::CTimeLoggerEntry(m_world->getTimeLogger(), "sensor.RGB");
 
-	auto tle = mrpt::system::CTimeLoggerEntry(
-		m_world->getTimeLogger(), "CameraSensor");
+	auto lck = mrpt::lockHelper(m_gui_mtx);
 
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservationImage::Create(m_sensor_params);
@@ -205,12 +205,17 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	ASSERT_(m_fbo_renderer_rgb);
 
+	auto tle2 = mrpt::system::CTimeLoggerEntry(
+		m_world->getTimeLogger(), "sensor.RGB.render");
+
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 	viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
 	viewport->lightParameters().ambient = {
 		m_ambient_light, m_ambient_light, m_ambient_light, 1.0f};
 
 	m_fbo_renderer_rgb->render_RGB(world3DScene, curObs->image);
+
+	tle2.stop();
 
 	// Store generated obs:
 	{

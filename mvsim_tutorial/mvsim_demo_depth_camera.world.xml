@@ -46,8 +46,13 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="definitions/camera.sensor.xml" 
+		<include file="definitions/front_lidar.sensor.xml" 
 		  sensor_x="1.0"
+		  raytrace_3d="true"
+		  sensor_period_sec="0.10"
+		  />
+
+		<include file="definitions/rgbd_camera.sensor.xml" 
 		  sensor_period_sec="0.10"
 		  />
 
