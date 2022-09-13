@@ -508,11 +508,19 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		// the camera to look forward:
 		cam.setPose(depthSensorPose);
 
+		auto tleRender = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.2Dlidar.renderSubScan");
+
 		m_fbo_renderer_depth->render_depth(world3DScene, depthImage);
+
+		tleRender.stop();
 
 		// Add random noise:
 		if (m_rangeStdNoise > 0)
 		{
+			auto tleStore = mrpt::system::CTimeLoggerEntry(
+				m_world->getTimeLogger(), "sensor.2Dlidar.noise");
+
 			// Each thread must create its own rng:
 			thread_local mrpt::random::CRandomGenerator rng;
 
@@ -531,6 +539,9 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			}
 		}
 
+		auto tleStore = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.2Dlidar.storeObs");
+
 		// Convert depth into range and store into scan observation:
 		for (int i = 0; i < numRaysPerRender; i++)
 		{
@@ -548,6 +559,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			curObs->setScanRange(scanRayIdx, range);
 			curObs->setScanRangeValidity(scanRayIdx, true);
 		}
+		tleStore.stop();
 	}
 
 	if (visVeh && m_ignore_parent_body)
