@@ -276,8 +276,7 @@ class MVSimNode
 		const mvsim::VehicleBase& veh,
 		const mrpt::obs::CObservation2DRangeScan& obs);
 	void internalOn(
-		const mvsim::VehicleBase& veh,
-		const mrpt::obs::CObservationImage& obs);
+		const mvsim::VehicleBase& veh, const mrpt::obs::CObservationImage& obs);
 	void internalOn(
 		const mvsim::VehicleBase& veh,
 		const mrpt::obs::CObservation3DRangeScan& obs);
