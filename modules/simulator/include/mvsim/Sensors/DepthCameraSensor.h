@@ -91,5 +91,7 @@ class DepthCameraSensor : public SensorBase
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
 		m_gl_sensor_origin_corner;
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov, m_gl_sensor_frustum;
+
+	mrpt::math::CMatrixFloat m_depthImage;	// to avoid memory allocs
 };
 }  // namespace mvsim
