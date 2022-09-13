@@ -25,7 +25,7 @@ DepthCameraSensor::DepthCameraSensor(
 	Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent)
 {
-	this->loadConfigFrom(root);
+	DepthCameraSensor::loadConfigFrom(root);
 }
 
 DepthCameraSensor::~DepthCameraSensor() {}
