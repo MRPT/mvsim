@@ -16,6 +16,7 @@
 
 #include <mrpt/core/WorkerThreadsPool.h>
 #include <mrpt/obs/CObservation.h>
+#include <mrpt/obs/obs_frwds.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Comms/Server.h>
@@ -270,5 +271,15 @@ class MVSimNode
 
 	void publishWorldElements(mvsim::WorldElementBase& obj);
 	void publishVehicles(mvsim::VehicleBase& veh);
+
+	void internalOn(
+		const mvsim::VehicleBase& veh,
+		const mrpt::obs::CObservation2DRangeScan& obs);
+	void internalOn(
+		const mvsim::VehicleBase& veh,
+		const mrpt::obs::CObservationImage& obs);
+	void internalOn(
+		const mvsim::VehicleBase& veh,
+		const mrpt::obs::CObservation3DRangeScan& obs);
 
 };	// end class

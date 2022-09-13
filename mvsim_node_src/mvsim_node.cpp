@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
@@ -17,26 +18,34 @@
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <mrpt/ros1bridge/image.h>
 #include <mrpt/ros1bridge/laser_scan.h>
 #include <mrpt/ros1bridge/map.h>
+#include <mrpt/ros1bridge/point_cloud2.h>
 #include <mrpt/ros1bridge/pose.h>
 #include <nav_msgs/GetMap.h>
 #include <nav_msgs/MapMetaData.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/PointCloud2.h>
 // usings:
 using Msg_OccupancyGrid = nav_msgs::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::TransformStamped;
 #else
+#include <mrpt/ros2bridge/image.h>
 #include <mrpt/ros2bridge/laser_scan.h>
 #include <mrpt/ros2bridge/map.h>
+#include <mrpt/ros2bridge/point_cloud2.h>
 #include <mrpt/ros2bridge/pose.h>
 
 #include <nav_msgs/msg/map_meta_data.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/srv/get_map.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 // usings:
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
@@ -56,8 +65,10 @@ namespace mrpt2ros = mrpt::ros2bridge;
 
 #if PACKAGE_ROS_VERSION == 1
 #define ROS12_INFO(...) ROS_INFO(__VA_ARGS__)
+#define ROS12_ERROR(...) ROS_ERROR(__VA_ARGS__)
 #else
 #define ROS12_INFO(...) RCLCPP_INFO(n_->get_logger(), __VA_ARGS__)
+#define ROS12_ERROR(...) RCLCPP_ERROR(n_->get_logger(), __VA_ARGS__)
 #endif
 
 /*------------------------------------------------------------------------------
@@ -156,15 +167,28 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 		[this](
 			const mvsim::Simulable& veh,
 			const mrpt::obs::CObservation::Ptr& obs) {
+			if (!obs) return;
+
 			mrpt::system::CTimeLoggerEntry tle(
 				profiler_, "lambda_onNewObservation");
 
 			const mvsim::Simulable* vehPtr = &veh;
 			const mrpt::obs::CObservation::Ptr obsCopy = obs;
-			auto fut =
-				ros_publisher_workers_.enqueue([this, vehPtr, obsCopy]() {
+			auto fut = ros_publisher_workers_.enqueue([this, vehPtr,
+													   obsCopy]() {
+				try
+				{
 					onNewObservation(*vehPtr, obsCopy);
-				});
+				}
+				catch (const std::exception& e)
+				{
+					ROS12_ERROR(
+						"[MVSimNode] Error processing observation with label  "
+						"'%s':\n%s",
+						obsCopy ? obsCopy->sensorLabel.c_str() : "(nullptr)",
+						e.what());
+				}
+			});
 		});
 }
 
@@ -904,81 +928,45 @@ void MVSimNode::onNewObservation(
 
 	const auto& vehPtr = dynamic_cast<const mvsim::VehicleBase*>(&sim);
 	if (!vehPtr) return;  // for example, if obs from invisible aux block.
-
 	const auto& veh = *vehPtr;
 
-	TPubSubPerVehicle& pubs = m_pubsub_vehicles[veh.getVehicleIndex()];
-
-	// Create the publisher the first time an observation arrives:
-	const bool is_1st_pub =
-		pubs.pub_sensors.find(obs->sensorLabel) == pubs.pub_sensors.end();
-	auto& pub = pubs.pub_sensors[obs->sensorLabel];
-
+	// -----------------------------
 	// Observation: 2d laser scans
 	// -----------------------------
-	if (const CObservation2DRangeScan* o =
+	if (const auto* o2DLidar =
 			dynamic_cast<const CObservation2DRangeScan*>(obs.get());
-		o)
+		o2DLidar)
 	{
-		if (is_1st_pub)
-		{
-#if PACKAGE_ROS_VERSION == 1
-			pub = n_.advertise<sensor_msgs::LaserScan>(
-				vehVarName(obs->sensorLabel, veh), 10);
-#else
-			pub = n_->create_publisher<sensor_msgs::msg::LaserScan>(
-				vehVarName(obs->sensorLabel, veh), 10);
-#endif
-		}
-
-#if PACKAGE_ROS_VERSION == 2
-		rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr pubLidar =
-			std::dynamic_pointer_cast<
-				rclcpp::Publisher<sensor_msgs::msg::LaserScan>>(pub);
-		ASSERT_(pubLidar);
-#endif
-
-		const std::string sSensorFrameId = vehVarName(obs->sensorLabel, veh);
-
-		// Send TF:
-		mrpt::poses::CPose3D sensorPose;
-		o->getSensorPose(sensorPose);
-
-		tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
-
-		Msg_TransformStamped tfStmp;
-		tfStmp.transform = tf2::toMsg(transform);
-		tfStmp.child_frame_id = sSensorFrameId;
-		tfStmp.header.frame_id = vehVarName("base_link", veh);
-		tfStmp.header.stamp = myNow();
-		tf_br_.sendTransform(tfStmp);
-
-		// Send observation:
-		{
-			// Convert observation MRPT -> ROS
-#if PACKAGE_ROS_VERSION == 1
-			geometry_msgs::Pose msg_pose_laser;
-			sensor_msgs::LaserScan msg_laser;
-#else
-			geometry_msgs::msg::Pose msg_pose_laser;
-			sensor_msgs::msg::LaserScan msg_laser;
-#endif
-			mrpt2ros::toROS(*o, msg_laser, msg_pose_laser);
-
-			// Force usage of simulation time:
-			msg_laser.header.stamp = myNow();
-			msg_laser.header.frame_id = sSensorFrameId;
-
-#if PACKAGE_ROS_VERSION == 1
-			pub.publish(msg_laser);
-#else
-			pubLidar->publish(msg_laser);
-#endif
-		}
+		internalOn(veh, *o2DLidar);
+	}
+	else if (const auto* oImage =
+				 dynamic_cast<const mrpt::obs::CObservationImage*>(obs.get());
+			 oImage)
+	{
+		internalOn(veh, *oImage);
+	}
+	else if (const auto* oRGBD =
+				 dynamic_cast<const mrpt::obs::CObservation3DRangeScan*>(
+					 obs.get());
+			 oRGBD)
+	{
+		internalOn(veh, *oRGBD);
 	}
 	else
 	{
 		// Don't know how to emit this observation to ROS!
+#if PACKAGE_ROS_VERSION == 1
+		ROS_WARN_STREAM_THROTTLE(
+			1.0, "Do not know how to publish this observation to ROS: '"
+					 << obs->sensorLabel
+					 << "', class: " << obs->GetRuntimeClass()->className);
+#else
+		RCLCPP_WARN_STREAM_THROTTLE(
+			n_->get_logger(), *n_->get_clock(), 1.0,
+			"Do not know how to publish this observation to ROS: '"
+				<< obs->sensorLabel
+				<< "', class: " << obs->GetRuntimeClass()->className);
+#endif
 	}
 
 }  // end of onNewObservation()
@@ -997,5 +985,277 @@ std::string MVSimNode::vehVarName(
 	else
 	{
 		return veh.getName() + std::string("/") + sVarName;
+	}
+}
+
+void MVSimNode::internalOn(
+	const mvsim::VehicleBase& veh,
+	const mrpt::obs::CObservation2DRangeScan& obs)
+{
+	TPubSubPerVehicle& pubs = m_pubsub_vehicles[veh.getVehicleIndex()];
+
+	// Create the publisher the first time an observation arrives:
+	const bool is_1st_pub =
+		pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
+	auto& pub = pubs.pub_sensors[obs.sensorLabel];
+
+	if (is_1st_pub)
+	{
+#if PACKAGE_ROS_VERSION == 1
+		pub = n_.advertise<sensor_msgs::LaserScan>(
+			vehVarName(obs.sensorLabel, veh), 10);
+#else
+		pub = n_->create_publisher<sensor_msgs::msg::LaserScan>(
+			vehVarName(obs.sensorLabel, veh), 10);
+#endif
+	}
+
+#if PACKAGE_ROS_VERSION == 2
+	rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr pubLidar =
+		std::dynamic_pointer_cast<
+			rclcpp::Publisher<sensor_msgs::msg::LaserScan>>(pub);
+	ASSERT_(pubLidar);
+#endif
+
+	const std::string sSensorFrameId = vehVarName(obs.sensorLabel, veh);
+
+	// Send TF:
+	mrpt::poses::CPose3D sensorPose;
+	obs.getSensorPose(sensorPose);
+
+	tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+
+	Msg_TransformStamped tfStmp;
+	tfStmp.transform = tf2::toMsg(transform);
+	tfStmp.child_frame_id = sSensorFrameId;
+	tfStmp.header.frame_id = vehVarName("base_link", veh);
+	tfStmp.header.stamp = myNow();
+	tf_br_.sendTransform(tfStmp);
+
+	// Send observation:
+	{
+		// Convert observation MRPT -> ROS
+#if PACKAGE_ROS_VERSION == 1
+		geometry_msgs::Pose msg_pose_laser;
+		sensor_msgs::LaserScan msg_laser;
+#else
+		geometry_msgs::msg::Pose msg_pose_laser;
+		sensor_msgs::msg::LaserScan msg_laser;
+#endif
+		mrpt2ros::toROS(obs, msg_laser, msg_pose_laser);
+
+		// Force usage of simulation time:
+		msg_laser.header.stamp = myNow();
+		msg_laser.header.frame_id = sSensorFrameId;
+
+#if PACKAGE_ROS_VERSION == 1
+		pub.publish(msg_laser);
+#else
+		pubLidar->publish(msg_laser);
+#endif
+	}
+}
+
+void MVSimNode::internalOn(
+	const mvsim::VehicleBase& veh, const mrpt::obs::CObservationImage& obs)
+{
+	TPubSubPerVehicle& pubs = m_pubsub_vehicles[veh.getVehicleIndex()];
+
+	// Create the publisher the first time an observation arrives:
+	const bool is_1st_pub =
+		pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
+	auto& pub = pubs.pub_sensors[obs.sensorLabel];
+
+	if (is_1st_pub)
+	{
+#if PACKAGE_ROS_VERSION == 1
+		pub = n_.advertise<sensor_msgs::Image>(
+			vehVarName(obs.sensorLabel, veh), 10);
+#else
+		pub = n_->create_publisher<sensor_msgs::msg::Image>(
+			vehVarName(obs.sensorLabel, veh), 10);
+#endif
+	}
+
+#if PACKAGE_ROS_VERSION == 2
+	rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pubImg =
+		std::dynamic_pointer_cast<rclcpp::Publisher<sensor_msgs::msg::Image>>(
+			pub);
+	ASSERT_(pubImg);
+#endif
+
+	const std::string sSensorFrameId = vehVarName(obs.sensorLabel, veh);
+
+	// Send TF:
+	mrpt::poses::CPose3D sensorPose;
+	obs.getSensorPose(sensorPose);
+
+	tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+
+	Msg_TransformStamped tfStmp;
+	tfStmp.transform = tf2::toMsg(transform);
+	tfStmp.child_frame_id = sSensorFrameId;
+	tfStmp.header.frame_id = vehVarName("base_link", veh);
+	tfStmp.header.stamp = myNow();
+	tf_br_.sendTransform(tfStmp);
+
+	// Send observation:
+	{
+		// Convert observation MRPT -> ROS
+#if PACKAGE_ROS_VERSION == 1
+		sensor_msgs::Image msg_img;
+		std_msgs::Header msg_header;
+#else
+		sensor_msgs::msg::Image msg_img;
+		std_msgs::msg::Header msg_header;
+#endif
+		msg_header.stamp = myNow();
+		msg_header.frame_id = sSensorFrameId;
+
+		msg_img = mrpt2ros::toROS(obs.image, msg_header);
+
+#if PACKAGE_ROS_VERSION == 1
+		pub.publish(msg_img);
+#else
+		pubImg->publish(msg_img);
+#endif
+	}
+}
+
+void MVSimNode::internalOn(
+	const mvsim::VehicleBase& veh,
+	const mrpt::obs::CObservation3DRangeScan& obs)
+{
+	using namespace std::string_literals;
+
+	TPubSubPerVehicle& pubs = m_pubsub_vehicles[veh.getVehicleIndex()];
+
+	const auto lbPoints = obs.sensorLabel + "_points"s;
+	const auto lbImage = obs.sensorLabel + "_image"s;
+
+	// Create the publisher the first time an observation arrives:
+	const bool is_1st_pub =
+		pubs.pub_sensors.find(lbPoints) == pubs.pub_sensors.end();
+
+	auto& pubPts = pubs.pub_sensors[lbPoints];
+	auto& pubImg = pubs.pub_sensors[lbImage];
+
+	if (is_1st_pub)
+	{
+#if PACKAGE_ROS_VERSION == 1
+		pubPts = n_.advertise<sensor_msgs::PointCloud2>(
+			vehVarName(lbPoints, veh), 10);
+		pubImg = n_.advertise<sensor_msgs::Image>(vehVarName(lbImage, veh), 10);
+#else
+		pubImg = n_->create_publisher<sensor_msgs::msg::Image>(
+			vehVarName(lbImage, veh), 10);
+		pubPts = n_->create_publisher<sensor_msgs::msg::PointCloud2>(
+			vehVarName(lbPoints, veh), 10);
+#endif
+	}
+
+#if PACKAGE_ROS_VERSION == 2
+	rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubPoints =
+		std::dynamic_pointer_cast<
+			rclcpp::Publisher<sensor_msgs::msg::PointCloud2>>(pubPts);
+	ASSERT_(pubPoints);
+
+	rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pubImage =
+		std::dynamic_pointer_cast<rclcpp::Publisher<sensor_msgs::msg::Image>>(
+			pubImg);
+	ASSERT_(pubImage);
+#endif
+
+	const std::string sSensorFrameId_image = vehVarName(lbImage, veh);
+	const std::string sSensorFrameId_points = vehVarName(lbPoints, veh);
+
+	const auto now = myNow();
+
+	// IMAGE
+	// --------
+	if (obs.hasIntensityImage)
+	{
+		// Send TF:
+		mrpt::poses::CPose3D sensorPose =
+			obs.sensorPose + obs.relativePoseIntensityWRTDepth;
+
+		tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+
+		Msg_TransformStamped tfStmp;
+		tfStmp.transform = tf2::toMsg(transform);
+		tfStmp.child_frame_id = sSensorFrameId_image;
+		tfStmp.header.frame_id = vehVarName("base_link", veh);
+		tfStmp.header.stamp = now;
+		tf_br_.sendTransform(tfStmp);
+
+		// Send observation:
+		{
+			// Convert observation MRPT -> ROS
+#if PACKAGE_ROS_VERSION == 1
+			sensor_msgs::Image msg_img;
+			std_msgs::Header msg_header;
+#else
+			sensor_msgs::msg::Image msg_img;
+			std_msgs::msg::Header msg_header;
+#endif
+			msg_header.stamp = now;
+			msg_header.frame_id = sSensorFrameId_image;
+
+			msg_img = mrpt2ros::toROS(obs.intensityImage, msg_header);
+
+#if PACKAGE_ROS_VERSION == 1
+			pubImg.publish(msg_img);
+#else
+			pubImage->publish(msg_img);
+#endif
+		}
+	}
+
+	// POINTS
+	// --------
+	if (obs.hasRangeImage)
+	{
+		// Send TF:
+		mrpt::poses::CPose3D sensorPose = obs.sensorPose;
+
+		tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+
+		Msg_TransformStamped tfStmp;
+		tfStmp.transform = tf2::toMsg(transform);
+		tfStmp.child_frame_id = sSensorFrameId_points;
+		tfStmp.header.frame_id = vehVarName("base_link", veh);
+		tfStmp.header.stamp = now;
+		tf_br_.sendTransform(tfStmp);
+
+		// Send observation:
+		{
+			// Convert observation MRPT -> ROS
+#if PACKAGE_ROS_VERSION == 1
+			sensor_msgs::PointCloud2 msg_pts;
+			std_msgs::Header msg_header;
+#else
+			sensor_msgs::msg::PointCloud2 msg_pts;
+			std_msgs::msg::Header msg_header;
+#endif
+			msg_header.stamp = now;
+			msg_header.frame_id = sSensorFrameId_points;
+
+			mrpt::obs::T3DPointsProjectionParams pp;
+			pp.takeIntoAccountSensorPoseOnRobot = false;
+
+			mrpt::maps::CSimplePointsMap pts;
+			const_cast<mrpt::obs::CObservation3DRangeScan&>(obs).unprojectInto(
+				pts, pp);
+
+			mrpt2ros::toROS(pts, msg_header, msg_pts);
+
+			ROS_INFO_STREAM("pts: " << msg_pts);
+
+#if PACKAGE_ROS_VERSION == 1
+			pubPts.publish(msg_pts);
+#else
+			pubPoints->publish(msg_pts);
+#endif
+		}
 	}
 }

@@ -147,23 +147,29 @@ void World::internal_one_timestep(double dt)
 	}
 
 	// 4) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
+	mrpt::system::CTimeLoggerEntry tle4(
+		m_timlogger, "timestep.4.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
-		for (int i = 0; i < 100 && pending_running_sensors_on_3D_scene(); i++)
+		for (int i = 0; i < 10 && pending_running_sensors_on_3D_scene(); i++)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 		if (pending_running_sensors_on_3D_scene())
 		{
+#if 0
 			MRPT_LOG_WARN(
 				"Timeout waiting for async sensors to be simulated in opengl "
 				"thread.");
+#endif
+			m_timlogger.registerUserMeasure("timestep.timeout_3D_sensors", 1.0);
 		}
 	}
+	tle4.stop();
 
 	const double ts = m_timer_iteration.Tac();
 	m_timlogger.registerUserMeasure("timestep", ts);
-	if (ts > dt) m_timlogger.registerUserMeasure("timestep_too_slow_alert", ts);
+	if (ts > dt) m_timlogger.registerUserMeasure("timestep.too_slow_alert", ts);
 }
 
 std::string World::xmlPathToActualPath(const std::string& modelURI) const
