@@ -216,10 +216,12 @@ void DepthCameraSensor::simulateOn3DScene(
 	tle1.stop();
 
 	// Start making a copy of the pattern observation:
-	auto curObs = mrpt::obs::CObservation3DRangeScan::Create(m_sensor_params);
+	auto curObsPtr =
+		mrpt::obs::CObservation3DRangeScan::Create(m_sensor_params);
+	auto& curObs = *curObsPtr;
 
 	// Set timestamp:
-	curObs->timestamp = m_world->get_simul_timestamp();
+	curObs.timestamp = m_world->get_simul_timestamp();
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	if (!m_fbo_renderer_rgb && m_sense_rgb)
@@ -254,7 +256,7 @@ void DepthCameraSensor::simulateOn3DScene(
 	// RGB first with its camera intrinsics & clip distances
 	// ----------------------------------------------------------
 	cam.set6DOFMode(true);
-	cam.setProjectiveFromPinhole(curObs->cameraParamsIntensity);
+	cam.setProjectiveFromPinhole(curObs.cameraParamsIntensity);
 
 	// RGB camera pose:
 	//   vehicle (+) relativePoseOnVehicle (+) relativePoseIntensityWRTDepth
@@ -265,10 +267,10 @@ void DepthCameraSensor::simulateOn3DScene(
 	const auto vehiclePose = m_vehicle_pose_at_last_timestamp;
 
 	const auto depthSensorPose =
-		vehiclePose + curObs->sensorPose + fixedAxisConventionRot;
+		vehiclePose + curObs.sensorPose + fixedAxisConventionRot;
 
-	const auto rgbSensorPose = vehiclePose + curObs->sensorPose +
-							   curObs->relativePoseIntensityWRTDepth;
+	const auto rgbSensorPose =
+		vehiclePose + curObs.sensorPose + curObs.relativePoseIntensityWRTDepth;
 
 	cam.setPose(rgbSensorPose);
 
@@ -282,13 +284,13 @@ void DepthCameraSensor::simulateOn3DScene(
 		viewport->lightParameters().ambient = {
 			m_ambient_light, m_ambient_light, m_ambient_light, 1.0f};
 
-		m_fbo_renderer_rgb->render_RGB(world3DScene, curObs->intensityImage);
+		m_fbo_renderer_rgb->render_RGB(world3DScene, curObs.intensityImage);
 
-		curObs->hasIntensityImage = true;
+		curObs.hasIntensityImage = true;
 	}
 	else
 	{
-		curObs->hasIntensityImage = false;
+		curObs.hasIntensityImage = false;
 	}
 
 	// ----------------------------------------------------------
@@ -299,7 +301,7 @@ void DepthCameraSensor::simulateOn3DScene(
 		auto tle2 = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.renderD");
 
-		cam.setProjectiveFromPinhole(curObs->cameraParams);
+		cam.setProjectiveFromPinhole(curObs.cameraParams);
 
 		// Camera pose: vehicle + relativePoseOnVehicle:
 		// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
@@ -309,21 +311,28 @@ void DepthCameraSensor::simulateOn3DScene(
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(m_depth_clip_min, m_depth_clip_max);
 
-		mrpt::math::CMatrixFloat depthImage;
-		m_fbo_renderer_depth->render_depth(world3DScene, depthImage);
+		auto tle2c = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.RGBD.renderD_core");
+
+		m_fbo_renderer_depth->render_depth(world3DScene, m_depthImage);
+
+		tle2c.stop();
 
 		// Convert depth image:
-		curObs->hasRangeImage = true;
-		curObs->range_is_depth = true;
+		curObs.hasRangeImage = true;
+		curObs.range_is_depth = true;
 
 		// Add random noise:
 		if (m_depth_noise_sigma > 0)
 		{
+			auto tle2noise = mrpt::system::CTimeLoggerEntry(
+				m_world->getTimeLogger(), "sensor.RGBD.renderD_noise");
+
 			// Each thread must create its own rng:
 			thread_local mrpt::random::CRandomGenerator rng;
 
-			float* d = depthImage.data();
-			const size_t N = depthImage.size();
+			float* d = m_depthImage.data();
+			const size_t N = m_depthImage.size();
 			for (size_t i = 0; i < N; i++)
 			{
 				if (d[i] == 0) continue;  // it was an invalid ray return.
@@ -331,21 +340,26 @@ void DepthCameraSensor::simulateOn3DScene(
 				const float dNoisy =
 					d[i] + rng.drawGaussian1D(0, m_depth_noise_sigma);
 
-				if (dNoisy < 0 || dNoisy > curObs->maxRange) continue;
+				if (dNoisy < 0 || dNoisy > curObs.maxRange) continue;
 
 				d[i] = dNoisy;
 			}
 		}
 
-		// float -> uint16_t with "curObs->rangeUnits" units:
-		curObs->rangeImage_setSize(depthImage.rows(), depthImage.cols());
-		curObs->rangeImage = (depthImage.asEigen().cwiseMin(curObs->maxRange) /
-							  curObs->rangeUnits)
-								 .cast<uint16_t>();
+		auto tle2cnv = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.RGBD.renderD_cast");
+
+		// float -> uint16_t with "curObs.rangeUnits" units:
+		curObs.rangeImage_setSize(m_depthImage.rows(), m_depthImage.cols());
+		curObs.rangeImage = (m_depthImage.asEigen().cwiseMin(curObs.maxRange) /
+							 curObs.rangeUnits)
+								.cast<uint16_t>();
+
+		tle2cnv.stop();
 	}
 	else
 	{
-		curObs->hasRangeImage = false;
+		curObs.hasRangeImage = false;
 	}
 
 	// Store generated obs:
@@ -354,7 +368,7 @@ void DepthCameraSensor::simulateOn3DScene(
 			m_world->getTimeLogger(), "sensor.RGBD.acqObsMtx");
 
 		std::lock_guard<std::mutex> csl(m_last_obs_cs);
-		m_last_obs = std::move(curObs);
+		m_last_obs = std::move(curObsPtr);
 		m_last_obs2gui = m_last_obs;
 	}
 
