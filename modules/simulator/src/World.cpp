@@ -151,13 +151,13 @@ void World::internal_one_timestep(double dt)
 		m_timlogger, "timestep.4.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
-		for (int i = 0; i < 10 && pending_running_sensors_on_3D_scene(); i++)
+		for (int i = 0; i < 1000 && pending_running_sensors_on_3D_scene(); i++)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 		if (pending_running_sensors_on_3D_scene())
 		{
-#if 0
+#if 1
 			MRPT_LOG_WARN(
 				"Timeout waiting for async sensors to be simulated in opengl "
 				"thread.");
