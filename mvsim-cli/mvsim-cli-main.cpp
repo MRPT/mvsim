@@ -12,6 +12,7 @@
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
+#include <mvsim/mvsim_version.h>
 
 #include <chrono>
 #include <iostream>
@@ -29,8 +30,17 @@ TCLAP::ValueArg<std::string> argVerbosity(
 	"v", "verbose", "Verbosity level", false, "INFO", "ERROR|WARN|INFO|DEBUG",
 	cmd);
 
+TCLAP::SwitchArg argFullProfiler(
+	"", "full-profiler",
+	"Enable saving *all* timing data, dumping it to a file at the end of the "
+	"program.",
+	cmd);
+
 TCLAP::SwitchArg argDetails(
 	"", "details", "Shows details in the specified subcommand", cmd);
+
+TCLAP::SwitchArg argVersion(
+	"", "version", "Shows program version and exits", cmd);
 
 TCLAP::SwitchArg argHelp(
 	"h", "help", "Shows more detailed help for command", cmd);
@@ -75,6 +85,12 @@ int main(int argc, char** argv)
 			return 1;
 		}
 
+		if (argVersion.isSet())
+		{
+			printVersion();
+			return 0;
+		}
+
 		// Take first unlabeled argument:
 		std::string command;
 		if (const auto& lst = argCmd.getValue(); !lst.empty())
@@ -85,9 +101,12 @@ int main(int argc, char** argv)
 
 		if (!argCmd.isSet() || itCmd == cliCommands.end())
 		{
-			setConsoleErrorColor();
-			std::cerr << "Error: missing or unknown command.\n";
-			setConsoleNormalColor();
+			if (!argHelp.isSet())
+			{
+				setConsoleErrorColor();
+				std::cerr << "Error: missing or unknown command.\n";
+				setConsoleNormalColor();
+			}
 			printListCommands();
 			return 1;
 		}
@@ -107,15 +126,20 @@ int printListCommands()
 {
 	fprintf(
 		stderr,
-		R"XXX(mvsim: A lightweight multivehicle simulation environment.
+		R"XXX(mvsim v%s: A lightweight multivehicle simulation environment.
 
 Available commands:
     mvsim launch <WORLD.xml>  Start a comm. server and simulates a world.
     mvsim server              Start a standalone communication server.
     mvsim node                List connected nodes, etc.
     mvsim topic               Inspect, publish, etc. topics.
+    mvsim --version           Shows program version.
+    mvsim --help              Shows this information.
 
 Or use `mvsim <COMMAND> --help` for further options
-)XXX");
+)XXX",
+		MVSIM_VERSION);
 	return 0;
 }
+
+void printVersion() { std::cout << "mvsim v" << MVSIM_VERSION << std::endl; }

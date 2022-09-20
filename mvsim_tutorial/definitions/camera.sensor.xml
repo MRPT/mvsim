@@ -1,0 +1,21 @@
+<sensor class="camera" name="camera1">
+    <!--
+        * pose_3d: Pose of the RGB camera sensor on the robot (+Z forward)
+        See: https://docs.mrpt.org/reference/latest/class_mrpt_obs_CObservationImage.html
+    -->
+    <pose_3d> ${sensor_x|0.65}  ${sensor_y|0.0}  ${sensor_z|1.0}  ${sensor_yaw|-90.0} ${sensor_pitch|0} ${sensor_roll|-90.0}</pose_3d>
+
+    <sensor_period>${sensor_period_sec|0.1}</sensor_period>
+
+    <!-- <save_to_rawlog>camera.rawlog</save_to_rawlog> -->
+
+    <ncols>640</ncols>
+    <nrows>480</nrows>
+    <cx>320</cx>
+    <cy>240</cy>
+    <fx>400</fx>
+    <fy>400</fy>
+    <clip_min>1e-2</clip_min>
+    <clip_max>1e+4</clip_max>
+
+</sensor>

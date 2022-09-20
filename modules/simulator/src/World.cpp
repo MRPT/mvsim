@@ -74,6 +74,10 @@ void World::run_simulation(double dt)
 {
 	const double t0 = mrpt::Clock::toDouble(mrpt::Clock::now());
 
+	// Define start of simulation time:
+	if (!m_simul_start_wallclock_time.has_value())
+		m_simul_start_wallclock_time = t0;
+
 	m_timlogger.registerUserMeasure("run_simulation.dt", dt);
 
 	// sanity checks:
@@ -86,8 +90,14 @@ void World::run_simulation(double dt)
 	const double timetol = 1e-6;
 	while (m_simul_time < (end_time - timetol))
 	{
-		// Timestep: always "simul_step" for the sake of repeatibility
-		internal_one_timestep(m_simul_timestep);
+		// Timestep: always "simul_step" for the sake of repeatibility,
+		// except if requested to run a shorter step:
+		const double remainingTime = end_time - m_simul_time;
+		if (remainingTime < 0) break;
+
+		internal_one_timestep(
+			remainingTime > m_simul_timestep ? m_simul_timestep
+											 : remainingTime);
 	}
 
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
@@ -136,9 +146,30 @@ void World::internal_one_timestep(double dt)
 			if (e.second) e.second->simul_post_timestep(context);
 	}
 
+	// 4) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
+	mrpt::system::CTimeLoggerEntry tle4(
+		m_timlogger, "timestep.4.wait_3D_sensors");
+	if (pending_running_sensors_on_3D_scene())
+	{
+		for (int i = 0; i < 1000 && pending_running_sensors_on_3D_scene(); i++)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		if (pending_running_sensors_on_3D_scene())
+		{
+#if 1
+			MRPT_LOG_WARN(
+				"Timeout waiting for async sensors to be simulated in opengl "
+				"thread.");
+#endif
+			m_timlogger.registerUserMeasure("timestep.timeout_3D_sensors", 1.0);
+		}
+	}
+	tle4.stop();
+
 	const double ts = m_timer_iteration.Tac();
 	m_timlogger.registerUserMeasure("timestep", ts);
-	if (ts > dt) m_timlogger.registerUserMeasure("timestep_too_slow_alert", ts);
+	if (ts > dt) m_timlogger.registerUserMeasure("timestep.too_slow_alert", ts);
 }
 
 std::string World::xmlPathToActualPath(const std::string& modelURI) const
@@ -185,9 +216,6 @@ std::string World::resolvePath(const std::string& s_in) const
 	}
 	else
 		ret = s;
-
-	// Expand macros: (TODO)
-	// -------------------
 
 	return mrpt::system::filePathSeparatorsToNative(ret);
 }

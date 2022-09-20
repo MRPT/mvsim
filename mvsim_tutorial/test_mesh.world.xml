@@ -32,7 +32,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="robot_definitions/ackermann.vehicle.xml" />
+	<include file="definitions/ackermann.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -42,8 +42,8 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<!-- Sensors -->
-		<include file="robot_definitions/front_lidar.sensor.xml" />
-		<include file="robot_definitions/rgbd_camera.sensor.xml"
+		<include file="definitions/front_lidar.sensor.xml" />
+		<include file="definitions/rgbd_camera.sensor.xml"
 				sensor_x="1.5"
 				sensor_z="1.5"
 		/>

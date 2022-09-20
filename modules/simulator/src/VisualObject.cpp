@@ -80,6 +80,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	MRPT_TRY_START
 
 	m_glBoundingBox = mrpt::opengl::CSetOfObjects::Create();
+	m_glBoundingBox->setName("bbox");
 
 	if (visual_node == nullptr) return false;
 
@@ -165,6 +166,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	glGroup->setName("group");
 
 	m_glCustomVisual = mrpt::opengl::CSetOfObjects::Create();
+	m_glCustomVisual->setName("glCustomVisual");
 	m_glCustomVisual->insert(glGroup);
 	m_glBoundingBox->setVisibility(initialShowBoundingBox);
 
