@@ -63,6 +63,10 @@ class Wheel : public VisualObject
 	void getAs3DObject(mrpt::opengl::CSetOfObjects& obj);
 	void loadFromXML(const rapidxml::xml_node<char>* xml_node);
 
+	void internalGuiUpdate(
+		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		bool childrenOnly = false) override;
+
 	double getPhi() const
 	{
 		return phi;
