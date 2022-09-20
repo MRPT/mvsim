@@ -19,10 +19,12 @@ extern TCLAP::ValueArg<std::string> argVerbosity;
 extern TCLAP::ValueArg<int> argPort;
 extern TCLAP::SwitchArg argHelp;
 extern TCLAP::SwitchArg argDetails;
+extern TCLAP::SwitchArg argFullProfiler;
 
 using cmd_t = std::function<int(void)>;
 
 int printListCommands();  // "help"
+void printVersion();  // "--version"
 int launchStandAloneServer();  // "server"
 int launchSimulation();	 // "launch"
 int commandNode();	// "node"

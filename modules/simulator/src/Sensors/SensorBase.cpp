@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/format.h>
+#include <mvsim/Sensors/CameraSensor.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/Sensors/LaserScanner.h>
 #include <mvsim/VehicleBase.h>
@@ -42,6 +43,7 @@ void register_all_sensors()
 
 	REGISTER_SENSOR("laser", LaserScanner)
 	REGISTER_SENSOR("rgbd_camera", DepthCameraSensor)
+	REGISTER_SENSOR("camera", CameraSensor)
 }
 
 static auto gAllSensorsOriginViz = mrpt::opengl::CSetOfObjects::Create();
@@ -216,4 +218,16 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 
 	m_name = mrpt::format(
 		"%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
+}
+
+bool SensorBase::should_simulate_sensor(const TSimulContext& context)
+{
+	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period)
+		return false;
+
+	m_sensor_last_timestamp = context.simul_time;
+	m_vehicle_pose_at_last_timestamp =
+		mrpt::poses::CPose3D(m_vehicle.getPose());
+
+	return true;
 }

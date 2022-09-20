@@ -40,7 +40,7 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 	if (m_b2d_body)
 	{
 		poses_mutex_lock();
-		// m_simulable_parent->physical_objects_mtx().lock();
+		// m_simulable_parent->physical_objects_mtx(): already locked by caller
 
 		// Pos:
 		const b2Vec2& pos = m_b2d_body->GetPosition();
@@ -70,7 +70,6 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		// Reseteable collision flag:
 		m_hadCollisionFlag = m_hadCollisionFlag || m_isInCollision;
 
-		// m_simulable_parent->physical_objects_mtx().unlock();
 		poses_mutex_unlock();
 	}
 

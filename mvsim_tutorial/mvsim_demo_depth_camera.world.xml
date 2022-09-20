@@ -1,0 +1,113 @@
+<mvsim_world version="1.0">
+	<!-- General simulation options -->
+	<simul_timestep>0.025</simul_timestep> <!-- Simulation fixed-time interval for numerical integration -->
+	<b2d_vel_iters>3</b2d_vel_iters>
+	<b2d_pos_iters>3</b2d_pos_iters>
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>35</cam_distance>
+		<fov_deg>35</fov_deg>
+		<refresh_fps>20</refresh_fps>
+		<!-- <follow_vehicle>r1</follow_vehicle> -->
+	</gui>
+
+
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+	<!-- ground -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-20</x_min>
+		<y_min>-20</y_min>
+		<x_max> 20</x_max>
+		<y_max> 20</y_max>
+		<z>0.0</z>
+	</element>
+
+	<!-- =============================
+		   Vehicle classes definition
+	     ============================= -->
+	<include file="definitions/small_robot.vehicle.xml" />
+
+	<!-- ========================
+		   Vehicle(s) definition
+	     ======================== -->
+	<vehicle name="r1" class="small_robot">
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<publish>
+		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
+		  <publish_pose_period>50e-3</publish_pose_period>
+		</publish>
+
+		<!-- Sensors -->
+		<include file="definitions/front_lidar.sensor.xml" 
+		  sensor_x="1.0"
+		  raytrace_3d="true"
+		  sensor_period_sec="0.10"
+		  />
+
+		<include file="definitions/rgbd_camera.sensor.xml" 
+		  sensor_period_sec="0.10"
+		  />
+
+	</vehicle>
+
+	<!-- ======================================
+	      Obstacle blocks classes definition
+	     ====================================== -->
+	<block:class name="square_obstacle">
+		<mass>20</mass>
+		<color>#0080ff</color>
+		<zmax>1.5</zmax>
+		<ground_friction>0.3</ground_friction>
+		<shape>
+			<pt>-1.0 -0.6</pt>
+			<pt>-1.0  0.6</pt>
+			<pt> 1.0  0.5</pt>
+			<pt> 1.0 -0.5</pt>
+		</shape>
+	</block:class>
+
+
+	<block:class name="nurse_station">
+		<mass>300</mass>
+		<color>#0080ff</color>
+		<zmax>2.0</zmax>
+		<ground_friction>100.0</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>../models/aws_robomaker_hospital_nursesstation_01_visual.dae</model_uri>
+			<model_scale>1.0</model_scale>
+			<model_offset_x>0.0</model_offset_x>
+			<model_offset_y>0.0</model_offset_y>
+			<model_offset_z>0.0</model_offset_z>
+			<model_yaw>0.0</model_yaw>
+			<model_pitch>0.0</model_pitch>
+			<model_roll>00.0</model_roll>
+		</visual>
+	</block:class>
+
+	<!-- ========================
+		Obstacle blocks
+	     ======================== -->
+	<block class="square_obstacle">
+		<init_pose>6 5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<publish>
+		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
+		  <publish_pose_period>50e-3</publish_pose_period>
+		</publish>
+	</block>
+
+	<block class="nurse_station">
+		<init_pose>10 0 -90</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+	</block>
+
+</mvsim_world>

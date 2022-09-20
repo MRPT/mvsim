@@ -72,7 +72,8 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void LaserScanner::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	mrpt::opengl::COpenGLScene& viz,
+	[[maybe_unused]] mrpt::opengl::COpenGLScene& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
@@ -161,21 +162,26 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 	Simulable::simul_post_timestep(context);
 
+	if (SensorBase::should_simulate_sensor(context))
+	{
+		if (m_raytrace_3d)
+		{
+			// Will run upon next async call of simulateOn3DScene()
+			m_has_to_render = context;
+			m_world->mark_as_pending_running_sensors_on_3D_scene();
+		}
+		else
+		{
+			// 2D mode:
+			internal_simulate_lidar_2d_mode(context);
+		}
+	}
+}
+
+void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
+{
 	using mrpt::maps::COccupancyGridMap2D;
 	using mrpt::obs::CObservation2DRangeScan;
-
-	// Limit sensor rate:
-	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period) return;
-
-	m_sensor_last_timestamp = context.simul_time;
-
-	// 3D raytrace sensor mode?
-	if (m_raytrace_3d)
-	{
-		m_has_to_render = context;
-		return;
-	}
-	// 2D mode (go on in this function):
 
 	auto tle = mrpt::system::CTimeLoggerEntry(
 		m_world->getTimeLogger(), "LaserScanner");
@@ -189,7 +195,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	const double maxRange = m_scan_model.maxRange;
 
 	// Get pose of the robot:
-	const mrpt::poses::CPose2D& vehPose = m_vehicle.getCPose2D();
+	const mrpt::poses::CPose2D vehPose =
+		mrpt::poses::CPose2D(m_vehicle_pose_at_last_timestamp);
 
 	// grid maps:
 	// -------------
@@ -249,7 +256,8 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 		class RayCastClosestCallback : public b2RayCastCallback
 		{
 		   public:
-			RayCastClosestCallback() : m_see_fixtures(true), m_hit(false) {}
+			RayCastClosestCallback() = default;
+
 			float ReportFixture(
 				b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal,
 				float fraction) override
@@ -275,10 +283,10 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 				return fraction;
 			}
 
-			bool m_see_fixtures;
-			bool m_hit;
-			b2Vec2 m_point;
-			b2Vec2 m_normal;
+			bool m_see_fixtures = true;
+			bool m_hit = false;
+			b2Vec2 m_point{0, 0};
+			b2Vec2 m_normal{0, 0};
 		};
 
 		const mrpt::poses::CPose2D sensorPose =
@@ -335,7 +343,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 	auto lastScan = CObservation2DRangeScan::Create(m_scan_model);
 
-	lastScan->timestamp = mrpt::system::now();
+	lastScan->timestamp = m_world->get_simul_timestamp();
 	lastScan->sensorLabel = m_name;
 
 	lastScan->resizeScanAndAssign(nRays, maxRange, false);
@@ -377,10 +385,15 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (!m_has_to_render.has_value()) return;
 
+	auto tleWhole = mrpt::system::CTimeLoggerEntry(
+		m_world->getTimeLogger(), "sensor.2Dlidar");
+
+	auto tle1 = mrpt::system::CTimeLoggerEntry(
+		m_world->getTimeLogger(), "sensor.2Dlidar.acqGuiMtx");
+
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
-	auto tle = mrpt::system::CTimeLoggerEntry(
-		m_world->getTimeLogger(), "LaserScanner_raytrace");
+	tle1.stop();
 
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservation2DRangeScan::Create(m_scan_model);
@@ -388,21 +401,21 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const size_t nRays = m_scan_model.getScanSize();
 	const double maxRange = m_scan_model.maxRange;
 
-	curObs->timestamp = mrpt::system::now();
+	curObs->timestamp = m_world->get_simul_timestamp();
 	curObs->sensorLabel = m_name;
 
 	curObs->resizeScanAndAssign(nRays, maxRange, false);
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	constexpr int FBO_NROWS = 1;
-	constexpr int FBO_NCOLS = 300;
-	constexpr double camModel_FOV = 90.0_deg;
+	constexpr int FBO_NCOLS = 500;
+	constexpr double camModel_FOV = 150.0_deg;
 	mrpt::img::TCamera camModel;
 	camModel.ncols = FBO_NCOLS;
 	camModel.nrows = FBO_NROWS;
 	camModel.cx(camModel.ncols / 2.0);
 	camModel.cy(camModel.nrows / 2.0);
-	camModel.fx(FBO_NCOLS / 2);	 // 2*45=90 deg FOV
+	camModel.fx(camModel.cx() / tan(camModel_FOV * 0.5));  // tan(FOV/2)=cx/fx
 	camModel.fy(camModel.fx());
 
 	if (!m_fbo_renderer_depth)
@@ -416,7 +429,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
 
-	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
+	const auto vehiclePose = m_vehicle_pose_at_last_timestamp;
 
 	// ----------------------------------------------------------
 	// Decompose the 2D lidar FOV into "n" depth camera images,
@@ -482,8 +495,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
 		const double thisRenderMidAngle =
-			firstAngle +
-			(45.0_deg + 90.0_deg * renderIdx) * (scanIsCW ? 1 : -1);
+			firstAngle + (camModel_FOV / 2.0 + camModel_FOV * renderIdx) *
+							 (scanIsCW ? 1 : -1);
 
 		const auto depthSensorPose = vehiclePose + curObs->sensorPose +
 									 mrpt::poses::CPose3D::FromYawPitchRoll(
@@ -495,11 +508,19 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		// the camera to look forward:
 		cam.setPose(depthSensorPose);
 
+		auto tleRender = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.2Dlidar.renderSubScan");
+
 		m_fbo_renderer_depth->render_depth(world3DScene, depthImage);
+
+		tleRender.stop();
 
 		// Add random noise:
 		if (m_rangeStdNoise > 0)
 		{
+			auto tleStore = mrpt::system::CTimeLoggerEntry(
+				m_world->getTimeLogger(), "sensor.2Dlidar.noise");
+
 			// Each thread must create its own rng:
 			thread_local mrpt::random::CRandomGenerator rng;
 
@@ -518,6 +539,9 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			}
 		}
 
+		auto tleStore = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.2Dlidar.storeObs");
+
 		// Convert depth into range and store into scan observation:
 		for (int i = 0; i < numRaysPerRender; i++)
 		{
@@ -535,6 +559,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			curObs->setScanRange(scanRayIdx, range);
 			curObs->setScanRangeValidity(scanRayIdx, true);
 		}
+		tleStore.stop();
 	}
 
 	if (visVeh && m_ignore_parent_body)
@@ -542,12 +567,20 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// Store generated obs:
 	{
+		auto tle3 = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.2Dlidar.acqObsMtx");
+
 		std::lock_guard<std::mutex> csl(m_last_scan_cs);
 		m_last_scan = std::move(curObs);
 		m_last_scan2gui = m_last_scan;
 	}
 
-	SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
+	{
+		auto tlePub = mrpt::system::CTimeLoggerEntry(
+			m_world->getTimeLogger(), "sensor.2Dlidar.report");
+
+		SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
+	}
 
 	m_gui_uptodate = false;
 	m_has_to_render.reset();

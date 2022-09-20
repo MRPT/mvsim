@@ -710,6 +710,7 @@ void VehicleBase::internalGuiUpdate(
 		if (!m_gl_chassis)
 		{
 			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
+			m_gl_chassis->setName("vehicle_chassis_"s + m_name);
 
 			// Wheels shape:
 			m_gl_wheels.resize(nWs);
