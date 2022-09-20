@@ -83,15 +83,11 @@ constexpr char VehicleBase::WL_FRIC_Y[];
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	: VisualObject(parent),
 	  Simulable(parent),
-	  m_vehicle_index(0),
-	  m_chassis_mass(15.0),
-	  m_chassis_z_min(0.05),
-	  m_chassis_z_max(0.6),
-	  m_chassis_color(0xff, 0x00, 0x00),
-	  m_chassis_com(.0, .0),
-	  m_wheels_info(nWheels),
 	  m_fixture_wheels(nWheels, nullptr)
 {
+	// Create wheels:
+	for (size_t i = 0; i < nWheels; i++) m_wheels_info.emplace_back(parent);
+
 	// Default shape:
 	m_chassis_poly.emplace_back(-0.4, -0.5);
 	m_chassis_poly.emplace_back(-0.4, 0.5);
@@ -704,6 +700,7 @@ void VehicleBase::internalGuiUpdate(
 
 	// 1st time call?? -> Create objects
 	// ----------------------------------
+	MRPT_TODO("Wheels as children!!");
 	if (!childrenOnly)
 	{
 		const size_t nWs = this->getNumWheels();

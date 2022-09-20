@@ -10,8 +10,8 @@
     <!--  Dynamical model -->
     <dynamics class="differential">
         <!-- Params -->
-        <l_wheel pos="0.0  0.5" mass="4.0" width="0.20" diameter="0.40" />
-        <r_wheel pos="0.0 -0.5" mass="4.0" width="0.20" diameter="0.40" />
+        <l_wheel pos="0.13  0.16" mass="1.0" width="0.09" diameter="0.09" />
+        <r_wheel pos="0.13 -0.16" mass="1.0" width="0.09" diameter="0.09" />
         <chassis mass="10.0" zmin="0.05" zmax="0.5">
         </chassis>
 
@@ -34,13 +34,8 @@
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->
     <visual>
-        <model_uri>../models/jackal_description/meshes/jackal-base.stl</model_uri>
-        <model_color>#808080</model_color>
-        <model_scale>1.0</model_scale>
-        <model_offset_x>0.0</model_offset_x>
-        <model_offset_y>0.0</model_offset_y>
-        <model_offset_z>0.0</model_offset_z>
-        <model_yaw>90.0</model_yaw>
+        <model_uri>../models/jackal_description/jackal.dae</model_uri>
+        <model_yaw>0.0</model_yaw>
         <model_pitch>0.0</model_pitch>
         <model_roll>90.0</model_roll>
     </visual>

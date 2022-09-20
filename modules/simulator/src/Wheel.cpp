@@ -27,24 +27,31 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 {
 	obj.clear();
 
-	auto gl_wheel = mrpt::opengl::CCylinder::Create(
-		0.5 * diameter, 0.5 * diameter, this->width, 15);
-	gl_wheel->setColor_u8(color);
-	gl_wheel->setPose(
-		mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
-
-	auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
-	gl_wheel_frame->setName("gl_wheel_frame");
-	gl_wheel_frame->insert(gl_wheel);
+	if (m_glCustomVisual)
 	{
-		mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
-			mrpt::opengl::stock_objects::CornerXYZSimple(0.9 * diameter, 2.0);
-		gl_wheel_frame->insert(gl_xyz);
+		obj.insert(m_glCustomVisual);
+	}
+	else
+	{
+		auto gl_wheel = mrpt::opengl::CCylinder::Create(
+			0.5 * diameter, 0.5 * diameter, this->width, 15);
+		gl_wheel->setColor_u8(color);
+		gl_wheel->setPose(
+			mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
+
+		auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
+		gl_wheel_frame->setName("gl_wheel_frame");
+		gl_wheel_frame->insert(gl_wheel);
+		{
+			mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
+				mrpt::opengl::stock_objects::CornerXYZSimple(
+					0.9 * diameter, 2.0);
+			gl_wheel_frame->insert(gl_xyz);
+		}
+		obj.insert(gl_wheel_frame);
 	}
 
 	obj.setPose(mrpt::math::TPose3D(x, y, 0.5 * diameter, yaw, 0.0, 0.0));
-
-	obj.insert(gl_wheel_frame);
 }
 
 void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
@@ -82,4 +89,11 @@ void Wheel::recalcInertia()
 {
 	// Iyy = m*r^2 / 2
 	Iyy = mass * (0.25 * diameter * diameter) * 0.5;
+}
+
+void Wheel::internalGuiUpdate(
+	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	bool childrenOnly)
+{
+	// nothing to do, already done in getAs3DObject()
 }

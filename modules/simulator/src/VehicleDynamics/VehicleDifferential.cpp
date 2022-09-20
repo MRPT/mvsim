@@ -81,7 +81,8 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	// reset default values
 	const auto nW = getNumWheels();
 	m_wheels_info.clear();
-	m_wheels_info.resize(nW);
+	// Create wheels:
+	for (size_t i = 0; i < nW; i++) m_wheels_info.emplace_back(m_world);
 
 	ASSERT_EQUAL_(getNumWheels(), m_configPerWheel.size());
 
