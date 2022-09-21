@@ -700,44 +700,44 @@ void VehicleBase::internalGuiUpdate(
 
 	// 1st time call?? -> Create objects
 	// ----------------------------------
-	MRPT_TODO("Wheels as children!!");
-	if (!childrenOnly)
+	const size_t nWs = this->getNumWheels();
+	if (!m_gl_chassis)
 	{
-		const size_t nWs = this->getNumWheels();
-		if (!m_gl_chassis)
-		{
-			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
-			m_gl_chassis->setName("vehicle_chassis_"s + m_name);
+		m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
+		m_gl_chassis->setName("vehicle_chassis_"s + m_name);
 
-			// Wheels shape:
-			m_gl_wheels.resize(nWs);
-			for (size_t i = 0; i < nWs; i++)
-			{
-				m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
-				this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
-				m_gl_chassis->insert(m_gl_wheels[i]);
-			}
+		// Wheels shape:
+		m_gl_wheels.resize(nWs);
+		for (size_t i = 0; i < nWs; i++)
+		{
+			m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
+			this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
+			m_gl_chassis->insert(m_gl_wheels[i]);
+		}
+
+		if (!childrenOnly)
+		{
 			// Robot shape:
 			auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
 				m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
 			gl_poly->setLocation(0, 0, m_chassis_z_min);
 			gl_poly->setColor_u8(m_chassis_color);
 			m_gl_chassis->insert(gl_poly);
-
-			viz.insert(m_gl_chassis);
-			physical.insert(m_gl_chassis);
 		}
 
-		// Update them:
-		// ----------------------------------
-		m_gl_chassis->setPose(getPose());
+		viz.insert(m_gl_chassis);
+		physical.insert(m_gl_chassis);
+	}
 
-		for (size_t i = 0; i < nWs; i++)
-		{
-			const Wheel& w = getWheelInfo(i);
-			m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
-				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
-		}
+	// Update them:
+	// ----------------------------------
+	m_gl_chassis->setPose(getPose());
+
+	for (size_t i = 0; i < nWs; i++)
+	{
+		const Wheel& w = getWheelInfo(i);
+		m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
+			w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
 	}
 
 	// Init on first use:
