@@ -10,8 +10,8 @@
     <!--  Dynamical model -->
     <dynamics class="differential">
         <!-- Params -->
-        <l_wheel pos="0.13e-10  0.16" mass="1.0" width="0.20" diameter="0.20" />
-        <r_wheel pos="0.13e-10 -0.16" mass="1.0" width="0.20" diameter="0.20" />
+        <l_wheel pos="0.14  0.16" mass="1.0" width="0.07" diameter="0.17" />
+        <r_wheel pos="0.14 -0.16" mass="1.0" width="0.07" diameter="0.17" />
         <chassis mass="10.0" zmin="0.05" zmax="0.5">
         </chassis>
 
@@ -27,7 +27,7 @@
 
     <!-- Friction force simulation -->
     <friction class="default">
-        <mu>0.9</mu>
+        <mu>1.0</mu>
         <C_damping>0.1</C_damping>
     </friction>
 
