@@ -10,8 +10,12 @@
     <!--  Dynamical model -->
     <dynamics class="differential">
         <!-- Params -->
-        <l_wheel pos="0.14  0.16" mass="1.0" width="0.07" diameter="0.17" />
-        <r_wheel pos="0.14 -0.16" mass="1.0" width="0.07" diameter="0.17" />
+        <l_wheel pos="0.13  0.16" mass="1.0" width="0.07" diameter="0.20">
+          <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+        </l_wheel>
+        <r_wheel pos="0.13 -0.16" mass="1.0" width="0.07" diameter="0.20">
+          <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+        </r_wheel>
         <chassis mass="10.0" zmin="0.05" zmax="0.5">
         </chassis>
 
