@@ -39,5 +39,12 @@ override_dh_auto_install:
 	# Install python:
 	dh_auto_build -O--buildsystem=cmake -- python-install
 
+	# If we have libbox2d < 2.4 (or none), install the custom, embedded version of it:
+	pwd
+	ls -l
+	echo "usr/lib/*/libbox2d.a" >> debian/libmvsim-simulator-dev.install
+	echo "usr/lib/*/cmake/box2d/*" >> debian/libmvsim-simulator-dev.install
+	echo "usr/include/box2d/" >> debian/libmvsim-simulator-dev.install
+
 override_dh_missing:
 	dh_missing --list-missing
