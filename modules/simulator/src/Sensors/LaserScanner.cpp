@@ -48,6 +48,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["fov_degrees"] = TParamEntry("%lf", &fov_deg);
 	params["nrays"] = TParamEntry("%i", &nRays);
 	params["pose"] = TParamEntry("%pose2d_ptr3d", &m_scan_model.sensorPose);
+	params["pose_3d"] = TParamEntry("%pose3d", &m_scan_model.sensorPose);
 	params["height"] = TParamEntry("%lf", &m_scan_model.sensorPose.z());
 	params["range_std_noise"] = TParamEntry("%lf", &m_rangeStdNoise);
 	params["angle_std_noise_deg"] = TParamEntry("%lf_deg", &m_angleStdNoise);
