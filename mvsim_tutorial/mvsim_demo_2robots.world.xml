@@ -59,10 +59,7 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="definitions/front_lidar.sensor.xml" 
-		  sensor_x="1.0"
-		  raytrace_3d="true"
-		  />
+		<include file="definitions/lidar2d.sensor.xml" sensor_x="1.8" sensor_yaw="0" sensor_name="laser1" raytrace_3d="true" />
 		<include file="definitions/rgbd_camera.sensor.xml" />
 	</vehicle>
 
@@ -76,9 +73,7 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="definitions/front_lidar.sensor.xml" 
-		  raytrace_3d="true"
-		/>
+		<include file="definitions/lidar2d.sensor.xml" sensor_x="1.8" sensor_yaw="0" sensor_name="laser1" raytrace_3d="true" />
 		<!-- Sensors -->
 		<include file="definitions/camera.sensor.xml" 
 		  sensor_x="2.0"
