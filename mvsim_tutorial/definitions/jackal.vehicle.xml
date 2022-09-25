@@ -8,15 +8,23 @@
 <vehicle:class name="jackal">
 
     <!--  Dynamical model -->
-    <dynamics class="differential">
+    <dynamics class="differential_4_wheels">
         <!-- Params -->
-        <l_wheel pos="0.13  0.16" mass="1.0" width="0.07" diameter="0.20">
+        <lf_wheel pos="0.13  0.16" mass="1.0" width="0.03" diameter="0.20">
           <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
-        </l_wheel>
-        <r_wheel pos="0.13 -0.16" mass="1.0" width="0.07" diameter="0.20">
+        </lf_wheel>
+        <rf_wheel pos="0.13 -0.16" mass="1.0" width="0.03" diameter="0.20">
           <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
-        </r_wheel>
-        <chassis mass="10.0" zmin="0.05" zmax="0.5">
+        </rf_wheel>
+        <lr_wheel pos="-0.13  0.16" mass="1.0" width="0.03" diameter="0.20">
+          <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+        </lr_wheel>
+        <rr_wheel pos="-0.13 -0.16" mass="1.0" width="0.03" diameter="0.20">
+          <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+        </rr_wheel>
+
+
+        <chassis mass="10.0" zmin="0.05" zmax="0.25">
         </chassis>
 
         <!--   Motor controller -->
@@ -31,7 +39,7 @@
 
     <!-- Friction force simulation -->
     <friction class="default">
-        <mu>1.0</mu>
+        <mu>0.8</mu>
         <C_damping>0.1</C_damping>
     </friction>
 

@@ -118,15 +118,14 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
-				m_controller =
-					ControllerBasePtr(new ControllerRawForces(*this));
+				m_controller = std::make_shared<ControllerRawForces>(*this);
 			else if (sCtrlClass == ControllerTwistPID::class_name())
-				m_controller = ControllerBasePtr(new ControllerTwistPID(*this));
+				m_controller = std::make_shared<ControllerTwistPID>(*this);
 			else
-				throw runtime_error(mrpt::format(
+				THROW_EXCEPTION_FMT(
 					"[DynamicsDifferential] Unknown 'class'='%s' in "
 					"<controller> XML node",
-					sCtrlClass.c_str()));
+					sCtrlClass.c_str());
 
 			m_controller->load_config(*xml_control);
 		}
@@ -134,7 +133,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 
 	// Default controller:
 	if (!m_controller)
-		m_controller = ControllerBasePtr(new ControllerRawForces(*this));
+		m_controller = ControllerBase::Ptr(new ControllerRawForces(*this));
 }
 
 // See docs in base class:
@@ -142,7 +141,9 @@ void DynamicsDifferential::invoke_motor_controllers(
 	const TSimulContext& context, std::vector<double>& out_torque_per_wheel)
 {
 	// Longitudinal forces at each wheel:
-	out_torque_per_wheel.assign(getNumWheels(), 0.0);
+	auto& otpw = out_torque_per_wheel;
+
+	otpw.assign(getNumWheels(), 0.0);
 
 	if (m_controller)
 	{
@@ -151,9 +152,26 @@ void DynamicsDifferential::invoke_motor_controllers(
 		ci.context = context;
 		TControllerOutput co;
 		m_controller->control_step(ci, co);
+
 		// Take its output:
-		out_torque_per_wheel[WHEEL_L] = co.wheel_torque_l;
-		out_torque_per_wheel[WHEEL_R] = co.wheel_torque_r;
+		switch (getNumWheels())
+		{
+			case 2:
+				otpw[WHEEL_L] = co.wheel_torque_l;
+				otpw[WHEEL_R] = co.wheel_torque_r;
+				break;
+			case 3:
+				otpw[WHEEL_L] = co.wheel_torque_l;
+				otpw[WHEEL_R] = co.wheel_torque_r;
+				otpw[WHEEL_CASTER_FRONT] = 0;
+				break;
+			case 4:
+				otpw[WHEEL_LR] = co.wheel_torque_l;
+				otpw[WHEEL_RR] = co.wheel_torque_r;
+				break;
+			default:
+				THROW_EXCEPTION("Unexpected number of wheels!");
+		};
 	}
 }
 

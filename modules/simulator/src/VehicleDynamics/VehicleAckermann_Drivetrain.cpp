@@ -201,13 +201,13 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
 				m_controller =
-					ControllerBasePtr(new ControllerRawForces(*this));
+					ControllerBase::Ptr(new ControllerRawForces(*this));
 			else if (sCtrlClass == ControllerTwistFrontSteerPID::class_name())
 				m_controller =
-					ControllerBasePtr(new ControllerTwistFrontSteerPID(*this));
+					ControllerBase::Ptr(new ControllerTwistFrontSteerPID(*this));
 			else if (sCtrlClass == ControllerFrontSteerPID::class_name())
 				m_controller =
-					ControllerBasePtr(new ControllerFrontSteerPID(*this));
+					ControllerBase::Ptr(new ControllerFrontSteerPID(*this));
 			else
 				throw runtime_error(mrpt::format(
 					"[DynamicsAckermannDrivetrain] Unknown 'class'='%s' in "
@@ -219,7 +219,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 	}
 	// Default controller:
 	if (!m_controller)
-		m_controller = ControllerBasePtr(new ControllerRawForces(*this));
+		m_controller = ControllerBase::Ptr(new ControllerRawForces(*this));
 }
 
 // See docs in base class:
