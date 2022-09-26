@@ -28,30 +28,32 @@ void DynamicsDifferential::ControllerRawForces::teleop_interface(
 {
 	ControllerBase::teleop_interface(in, out);
 
+	const double dt = setpoint_teleop_steps;
+
 	switch (in.keycode)
 	{
 		case 'W':
 		case 'w':
-			setpoint_wheel_torque_l -= 0.5;
-			setpoint_wheel_torque_r -= 0.5;
+			setpoint_wheel_torque_l -= dt;
+			setpoint_wheel_torque_r -= dt;
 			break;
 
 		case 'S':
 		case 's':
-			setpoint_wheel_torque_l += 0.5;
-			setpoint_wheel_torque_r += 0.5;
+			setpoint_wheel_torque_l += dt;
+			setpoint_wheel_torque_r += dt;
 			break;
 
 		case 'A':
 		case 'a':
-			setpoint_wheel_torque_l += 0.5;
-			setpoint_wheel_torque_r -= 0.5;
+			setpoint_wheel_torque_l += dt;
+			setpoint_wheel_torque_r -= dt;
 			break;
 
 		case 'D':
 		case 'd':
-			setpoint_wheel_torque_l -= 0.5;
-			setpoint_wheel_torque_r += 0.5;
+			setpoint_wheel_torque_l -= dt;
+			setpoint_wheel_torque_r += dt;
 			break;
 
 		case ' ':

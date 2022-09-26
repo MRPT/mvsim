@@ -86,16 +86,16 @@ class DynamicsDifferential : public VehicleBase
 	class ControllerRawForces : public ControllerBase
 	{
 	   public:
-		ControllerRawForces(DynamicsDifferential& veh)
-			: ControllerBase(veh),
-			  setpoint_wheel_torque_l(0),
-			  setpoint_wheel_torque_r(0)
-		{
-		}
+		ControllerRawForces(DynamicsDifferential& veh) : ControllerBase(veh) {}
+
 		static const char* class_name() { return "raw"; }
+
 		//!< Directly set these values to tell the controller the desired
 		//! setpoints
-		double setpoint_wheel_torque_l, setpoint_wheel_torque_r;
+		double setpoint_wheel_torque_l = 0, setpoint_wheel_torque_r = 0;
+
+		double setpoint_teleop_steps = 5e-2;
+
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
 			DynamicsDifferential::TControllerOutput& co) override;
@@ -110,19 +110,26 @@ class DynamicsDifferential : public VehicleBase
 	   public:
 		ControllerTwistPID(DynamicsDifferential& veh);
 		static const char* class_name() { return "twist_pid"; }
-		//!< Directly set these values to tell the controller the desired
-		//! setpoints
-		double setpoint_lin_speed,
-			setpoint_ang_speed;	 //!< desired velocities (m/s) and (rad/s)
+
+		/** Directly set these values to tell the controller the desired
+		 * setpoints.
+		 * desired velocities (m/s) and (rad/s) */
+		double setpoint_lin_speed = 0, setpoint_ang_speed = 0;
+
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
 			DynamicsDifferential::TControllerOutput& co) override;
+
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(
 			const TeleopInput& in, TeleopOutput& out) override;
 
-		double KP, KI, KD;	//!< PID controller parameters
-		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
+		/// PID controller parameters
+		double KP = 10, KI = 0, KD = 0;
+
+		/// Maximum abs. value torque (for clamp) [Nm]
+		double max_torque = 100;
+
 		// See base docs.
 		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override
 		{
@@ -132,8 +139,8 @@ class DynamicsDifferential : public VehicleBase
 		}
 
 	   private:
-		double m_distWheels;
-		PID_Controller m_PID[2];
+		double m_distWheels = 0;
+		std::array<PID_Controller, 2> m_PIDs;
 	};
 
 	const ControllerBase::Ptr& getController() const { return m_controller; }
