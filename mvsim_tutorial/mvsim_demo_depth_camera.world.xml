@@ -50,6 +50,7 @@
 
 		<include file="definitions/rgbd_camera.sensor.xml" 
 		  sensor_period_sec="0.10"
+		  show_3d_pointcloud="true"
 		  />
 
 	</vehicle>

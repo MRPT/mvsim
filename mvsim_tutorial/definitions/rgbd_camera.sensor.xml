@@ -14,6 +14,7 @@
     <sense_depth>${sense_depth|true}</sense_depth>
     <sense_rgb>${sense_rgb|true}</sense_rgb>
     
+    <show_3d_pointcloud>${show_3d_pointcloud|false}</show_3d_pointcloud>
 
     <depth_ncols>640</depth_ncols>
     <depth_nrows>480</depth_nrows>
