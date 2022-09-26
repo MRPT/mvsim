@@ -119,6 +119,10 @@ void DepthCameraSensor::internalGuiUpdate(
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
+	auto glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+		viz.getByName("group_sensors_viz"));
+	ASSERT_(glVizSensors);
+
 	// 1st time?
 	if (!m_gl_obs)
 	{
@@ -126,7 +130,7 @@ void DepthCameraSensor::internalGuiUpdate(
 		m_gl_obs->setPointSize(2.0f);
 		m_gl_obs->setLocalRepresentativePoint(
 			m_sensor_params.sensorPose.translation());
-		viz.insert(m_gl_obs);
+		glVizSensors->insert(m_gl_obs);
 	}
 
 	if (!m_gl_sensor_origin)
@@ -153,7 +157,7 @@ void DepthCameraSensor::internalGuiUpdate(
 	{
 		{
 			std::lock_guard<std::mutex> csl(m_last_obs_cs);
-			if (m_last_obs2gui)
+			if (m_last_obs2gui && glVizSensors->isVisible())
 			{
 				if (m_show_3d_pointcloud)
 				{

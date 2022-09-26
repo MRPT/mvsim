@@ -89,6 +89,17 @@ void World::GUI::prepare_control_window()
 		 m_parent.m_gui_options.show_forces = b;
 	 })->setChecked(m_parent.m_gui_options.show_forces);
 
+	w->add<nanogui::CheckBox>("View sensor pointclouds", [&](bool b) {
+		 std::lock_guard<std::mutex> lck(gui_win->background_scene_mtx);
+
+		 auto glVizSensors =
+			 std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+				 gui_win->background_scene->getByName("group_sensors_viz"));
+		 ASSERT_(glVizSensors);
+
+		 glVizSensors->setVisibility(b);
+	 })->setChecked(true);
+
 	w->add<nanogui::CheckBox>("View sensor poses", [&](bool b) {
 		 const auto& objs = SensorBase::GetAllSensorsOriginViz();
 		 for (const auto& o : *objs) o->setVisibility(b);
@@ -374,6 +385,13 @@ void World::internal_GUI_thread()
 
 			scene->getViewport()->lightParameters().ambient = {
 				0.5f, 0.5f, 0.5f, 1.0f};
+
+			// Create group for sensor viz:
+			{
+				auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
+				glVizSensors->setName("group_sensors_viz");
+				scene->insert(glVizSensors);
+			}
 
 			std::lock_guard<std::mutex> lck(
 				m_gui.gui_win->background_scene_mtx);

@@ -79,6 +79,10 @@ void LaserScanner::internalGuiUpdate(
 {
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
+	auto glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+		viz.getByName("group_sensors_viz"));
+	ASSERT_(glVizSensors);
+
 	// 1st time?
 	if (!m_gl_scan)
 	{
@@ -89,7 +93,8 @@ void LaserScanner::internalGuiUpdate(
 		// m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.4f);
 
 		m_gl_scan->setLocalRepresentativePoint({0, 0, 0.10f});
-		viz.insert(m_gl_scan);
+
+		glVizSensors->insert(m_gl_scan);
 	}
 	if (!m_gl_sensor_origin)
 	{
@@ -127,7 +132,7 @@ void LaserScanner::internalGuiUpdate(
 		SensorBase::RegisterSensorFOVViz(m_gl_sensor_fov);
 	}
 
-	if (!m_gui_uptodate)
+	if (!m_gui_uptodate && glVizSensors->isVisible())
 	{
 		{
 			std::lock_guard<std::mutex> csl(m_last_scan_cs);
