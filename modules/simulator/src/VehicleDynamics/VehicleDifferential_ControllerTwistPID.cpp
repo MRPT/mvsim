@@ -126,9 +126,11 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 		}
 		break;
 	};
-	out.append_gui_lines +=
-		"[Controller=" + string(class_name()) +
-		"] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
+	out.append_gui_lines += "[Controller=" + string(class_name()) +
+							"] Teleop keys:\n"
+							"w/s=forward/backward.\n"
+							"a/d=left/right.\n"
+							"spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
 		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_lin_speed,
 		180.0 / M_PI * setpoint_ang_speed);
