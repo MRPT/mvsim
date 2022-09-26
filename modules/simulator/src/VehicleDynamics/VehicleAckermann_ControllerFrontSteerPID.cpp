@@ -112,8 +112,10 @@ void DynamicsAckermann::ControllerFrontSteerPID::teleop_interface(
 			break;
 	};
 	out.append_gui_lines += "[Controller=" + string(class_name()) +
-							"] Teleop keys: w/s=incr/decr lin speed. "
-							"a/d=left/right steering. spacebar=stop.\n";
+							"] Teleop keys:\n"
+							"w/s=incr/decr lin speed.\n"
+							"a/d=left/right steering.\n"
+							"spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
 		"setpoint: v=%.03f steer=%.03f deg\n", setpoint_lin_speed,
 		setpoint_steer_ang * 180.0 / M_PI);

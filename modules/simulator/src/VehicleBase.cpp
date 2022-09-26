@@ -83,15 +83,11 @@ constexpr char VehicleBase::WL_FRIC_Y[];
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	: VisualObject(parent),
 	  Simulable(parent),
-	  m_vehicle_index(0),
-	  m_chassis_mass(15.0),
-	  m_chassis_z_min(0.05),
-	  m_chassis_z_max(0.6),
-	  m_chassis_color(0xff, 0x00, 0x00),
-	  m_chassis_com(.0, .0),
-	  m_wheels_info(nWheels),
 	  m_fixture_wheels(nWheels, nullptr)
 {
+	// Create wheels:
+	for (size_t i = 0; i < nWheels; i++) m_wheels_info.emplace_back(parent);
+
 	// Default shape:
 	m_chassis_poly.emplace_back(-0.4, -0.5);
 	m_chassis_poly.emplace_back(-0.4, 0.5);
@@ -704,44 +700,44 @@ void VehicleBase::internalGuiUpdate(
 
 	// 1st time call?? -> Create objects
 	// ----------------------------------
-	if (!childrenOnly)
+	const size_t nWs = this->getNumWheels();
+	if (!m_gl_chassis)
 	{
-		const size_t nWs = this->getNumWheels();
-		if (!m_gl_chassis)
-		{
-			m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
-			m_gl_chassis->setName("vehicle_chassis_"s + m_name);
+		m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
+		m_gl_chassis->setName("vehicle_chassis_"s + m_name);
 
-			// Wheels shape:
-			m_gl_wheels.resize(nWs);
-			for (size_t i = 0; i < nWs; i++)
-			{
-				m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
-				this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
-				m_gl_chassis->insert(m_gl_wheels[i]);
-			}
+		// Wheels shape:
+		m_gl_wheels.resize(nWs);
+		for (size_t i = 0; i < nWs; i++)
+		{
+			m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
+			this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
+			m_gl_chassis->insert(m_gl_wheels[i]);
+		}
+
+		if (!childrenOnly)
+		{
 			// Robot shape:
-			mrpt::opengl::CPolyhedron::Ptr gl_poly =
-				mrpt::opengl::CPolyhedron::CreateCustomPrism(
-					m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
+			auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
+				m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
 			gl_poly->setLocation(0, 0, m_chassis_z_min);
 			gl_poly->setColor_u8(m_chassis_color);
 			m_gl_chassis->insert(gl_poly);
-
-			viz.insert(m_gl_chassis);
-			physical.insert(m_gl_chassis);
 		}
 
-		// Update them:
-		// ----------------------------------
-		m_gl_chassis->setPose(getPose());
+		viz.insert(m_gl_chassis);
+		physical.insert(m_gl_chassis);
+	}
 
-		for (size_t i = 0; i < nWs; i++)
-		{
-			const Wheel& w = getWheelInfo(i);
-			m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
-				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
-		}
+	// Update them:
+	// ----------------------------------
+	m_gl_chassis->setPose(getPose());
+
+	for (size_t i = 0; i < nWs; i++)
+	{
+		const Wheel& w = getWheelInfo(i);
+		m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
+			w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
 	}
 
 	// Init on first use:

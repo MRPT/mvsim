@@ -48,6 +48,8 @@ template <class VEH_DYNAMICS>
 class ControllerBaseTempl : public ControllerBaseInterface
 {
    public:
+	using Ptr = std::shared_ptr<ControllerBaseTempl<VEH_DYNAMICS>>;
+
 	ControllerBaseTempl(VEH_DYNAMICS& veh) : m_veh(veh) {}
 	virtual ~ControllerBaseTempl() {}
 	/** This is to handle basic need of all the controllers.*/

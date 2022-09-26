@@ -174,7 +174,7 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** user-supplied index number: must be set/get'ed with setVehicleIndex()
 	 * getVehicleIndex() (default=0) */
-	size_t m_vehicle_index;
+	size_t m_vehicle_index = 0;
 
 	/** Instance of friction model for the vehicle-to-ground interaction. */
 	FrictionBasePtr m_friction;
@@ -185,15 +185,20 @@ class VehicleBase : public VisualObject, public Simulable
 	std::vector<double> m_torque_per_wheel;
 
 	// Chassis info:
-	double m_chassis_mass;
+	double m_chassis_mass = 15.0;
 	mrpt::math::TPolygon2D m_chassis_poly;
-	double m_max_radius;  //!< Automatically computed from m_chassis_poly upon
-						  //! each change via updateMaxRadiusFromPoly()
-	double m_chassis_z_min, m_chassis_z_max;
-	mrpt::img::TColor m_chassis_color;
 
-	mrpt::math::TPoint2D m_chassis_com;	 //!< In local coordinates (this
-										 //! excludes the mass of wheels)
+	/** Automatically computed from m_chassis_poly upon each change via
+	 * updateMaxRadiusFromPoly() */
+	double m_max_radius = 0.1;
+
+	double m_chassis_z_min = 0.05, m_chassis_z_max = 0.6;
+
+	mrpt::img::TColor m_chassis_color{0xff, 0x00, 0x00};
+
+	/** center of mass. in local coordinates (this excludes the mass of wheels)
+	 */
+	mrpt::math::TPoint2D m_chassis_com{0, 0};
 
 	void updateMaxRadiusFromPoly();
 

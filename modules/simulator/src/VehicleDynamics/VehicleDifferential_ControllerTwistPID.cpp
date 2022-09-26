@@ -16,18 +16,13 @@ using namespace std;
 
 DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(
 	DynamicsDifferential& veh)
-	: ControllerBase(veh),
-	  setpoint_lin_speed(0),
-	  setpoint_ang_speed(0),
-	  KP(100),
-	  KI(0),
-	  KD(0),
-	  max_torque(100.0)
+	: ControllerBase(veh)
 {
 	// Get distance between wheels:
 	// Warning: the controller *assumes* that both wheels are parallel (as it's
 	// a rule in differential robots!!)
 	m_distWheels = m_veh.m_wheels_info[0].y - m_veh.m_wheels_info[1].y;
+	ASSERT_(m_distWheels > 0);
 }
 
 // See base class docs
@@ -38,32 +33,46 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	// For each wheel:
 	// 1) Compute desired velocity set-point (in m/s)
 	// 2) Run the PI/PID for that wheel independently (in newtons)
-	const double vel_l =
+	const double spVelL =
 		setpoint_lin_speed - 0.5 * setpoint_ang_speed * m_distWheels;
-	const double vel_r =
+	const double spVelR =
 		setpoint_lin_speed + 0.5 * setpoint_ang_speed * m_distWheels;
 
 	// Compute each wheel actual velocity (from an "odometry" estimation of
 	// velocity, not ground-truth!):
 	const mrpt::math::TTwist2D vehVelOdo = m_veh.getVelocityLocalOdoEstimate();
-	const double act_vel_l =
-		vehVelOdo.vx - 0.5 * vehVelOdo.omega * m_distWheels;
-	const double act_vel_r =
-		vehVelOdo.vx + 0.5 * vehVelOdo.omega * m_distWheels;
+	const double actVelL = vehVelOdo.vx - 0.5 * vehVelOdo.omega * m_distWheels;
+	const double actVelR = vehVelOdo.vx + 0.5 * vehVelOdo.omega * m_distWheels;
 
 	// Apply controller:
-	for (int i = 0; i < 2; i++)
+	for (auto& pid : m_PIDs)
 	{
-		m_PID[i].KP = KP;
-		m_PID[i].KI = KI;
-		m_PID[i].KD = KD;
-		m_PID[i].max_out = max_torque;
+		pid.KP = KP;
+		pid.KI = KI;
+		pid.KD = KD;
+		pid.max_out = max_torque;
 	}
 
-	co.wheel_torque_l = -m_PID[0].compute(
-		vel_l - act_vel_l,
-		ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
-	co.wheel_torque_r = -m_PID[1].compute(vel_r - act_vel_r, ci.context.dt);
+	// "-" because \tau<0 makes robot moves forwards.
+	const double followErrorL = spVelL - actVelL;
+	const double followErrorR = spVelR - actVelR;
+
+	const double zeroThres = 0.05;	// m/s
+
+	if (std::abs(spVelL) < zeroThres &&	 //
+		std::abs(spVelR) < zeroThres &&	 //
+		std::abs(spVelR) < zeroThres &&	 //
+		std::abs(spVelR) < zeroThres)
+	{
+		co.wheel_torque_l = 0;
+		co.wheel_torque_r = 0;
+		for (auto& pid : m_PIDs) pid.reset();
+	}
+	else
+	{
+		co.wheel_torque_l = -m_PIDs[0].compute(followErrorL, ci.context.dt);
+		co.wheel_torque_r = -m_PIDs[1].compute(followErrorR, ci.context.dt);
+	}
 }
 
 void DynamicsDifferential::ControllerTwistPID::load_config(
@@ -110,13 +119,18 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 			break;
 
 		case ' ':
+		{
 			setpoint_lin_speed = 0.0;
 			setpoint_ang_speed = 0.0;
-			break;
+			for (auto& pid : m_PIDs) pid.reset();
+		}
+		break;
 	};
-	out.append_gui_lines +=
-		"[Controller=" + string(class_name()) +
-		"] Teleop keys: w/s=forward/backward. a/d=left/right. spacebar=stop.\n";
+	out.append_gui_lines += "[Controller=" + string(class_name()) +
+							"] Teleop keys:\n"
+							"w/s=forward/backward.\n"
+							"a/d=left/right.\n"
+							"spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
 		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_lin_speed,
 		180.0 / M_PI * setpoint_ang_speed);

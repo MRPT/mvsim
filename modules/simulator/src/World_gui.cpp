@@ -65,10 +65,6 @@ void World::GUI::prepare_control_window()
 			nanogui::leave();
 		});
 
-	w->add<nanogui::CheckBox>("Orthogonal view", [&](bool b) {
-		 gui_win->camera().setCameraProjective(!b);
-	 })->setChecked(m_parent.m_gui_options.ortho);
-
 	std::vector<std::string> lstVehicles;
 	lstVehicles.reserve(m_parent.m_vehicles.size() + 1);
 
@@ -84,6 +80,25 @@ void World::GUI::prepare_control_window()
 		else if (idx <= static_cast<int>(m_parent.m_vehicles.size()))
 			m_parent.m_gui_options.follow_vehicle = lstVehicles[idx];
 	});
+
+	w->add<nanogui::CheckBox>("Orthogonal view", [&](bool b) {
+		 gui_win->camera().setCameraProjective(!b);
+	 })->setChecked(m_parent.m_gui_options.ortho);
+
+	w->add<nanogui::CheckBox>("View forces", [&](bool b) {
+		 m_parent.m_gui_options.show_forces = b;
+	 })->setChecked(m_parent.m_gui_options.show_forces);
+
+	w->add<nanogui::CheckBox>("View sensor pointclouds", [&](bool b) {
+		 std::lock_guard<std::mutex> lck(gui_win->background_scene_mtx);
+
+		 auto glVizSensors =
+			 std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+				 gui_win->background_scene->getByName("group_sensors_viz"));
+		 ASSERT_(glVizSensors);
+
+		 glVizSensors->setVisibility(b);
+	 })->setChecked(true);
 
 	w->add<nanogui::CheckBox>("View sensor poses", [&](bool b) {
 		 const auto& objs = SensorBase::GetAllSensorsOriginViz();
@@ -117,7 +132,7 @@ void World::GUI::prepare_status_window()
 #endif
 
 	lbCpuUsage = w->add<nanogui::Label>(" ");
-	lbStatuses.resize(9);
+	lbStatuses.resize(12);
 	for (size_t i = 0; i < lbStatuses.size(); i++)
 		lbStatuses[i] = w->add<nanogui::Label>(" ");
 }
@@ -370,6 +385,13 @@ void World::internal_GUI_thread()
 
 			scene->getViewport()->lightParameters().ambient = {
 				0.5f, 0.5f, 0.5f, 1.0f};
+
+			// Create group for sensor viz:
+			{
+				auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
+				glVizSensors->setName("group_sensors_viz");
+				scene->insert(glVizSensors);
+			}
 
 			std::lock_guard<std::mutex> lck(
 				m_gui.gui_win->background_scene_mtx);

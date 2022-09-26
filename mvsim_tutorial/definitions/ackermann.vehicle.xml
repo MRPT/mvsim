@@ -17,7 +17,7 @@
         <f_wheels_d>2.0</f_wheels_d>
         <max_steer_ang_deg>30.0</max_steer_ang_deg>
 
-        <chassis mass="800.0" zmin="0.15" zmax="1.2">
+        <chassis mass="800.0" zmin="0.15" zmax="0.40">
         </chassis>
 
         <!--   Motor controller -->
