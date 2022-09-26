@@ -27,8 +27,16 @@ class DynamicsDifferential : public VehicleBase
    public:
 	enum
 	{
+		// common to all:
 		WHEEL_L = 0,
-		WHEEL_R = 1
+		WHEEL_R = 1,
+		// 3 wheels:
+		WHEEL_CASTER_FRONT = 2,
+		// 4 wheels:
+		WHEEL_LR = 0,
+		WHEEL_RR = 1,
+		WHEEL_LF = 2,
+		WHEEL_RF = 3
 	};
 
 	struct ConfigPerWheel
@@ -73,22 +81,21 @@ class DynamicsDifferential : public VehicleBase
 	};
 
 	/** Virtual base for controllers of vehicles of type DynamicsDifferential */
-	typedef ControllerBaseTempl<DynamicsDifferential> ControllerBase;
-	typedef std::shared_ptr<ControllerBase> ControllerBasePtr;
+	using ControllerBase = ControllerBaseTempl<DynamicsDifferential>;
 
 	class ControllerRawForces : public ControllerBase
 	{
 	   public:
-		ControllerRawForces(DynamicsDifferential& veh)
-			: ControllerBase(veh),
-			  setpoint_wheel_torque_l(0),
-			  setpoint_wheel_torque_r(0)
-		{
-		}
+		ControllerRawForces(DynamicsDifferential& veh) : ControllerBase(veh) {}
+
 		static const char* class_name() { return "raw"; }
+
 		//!< Directly set these values to tell the controller the desired
 		//! setpoints
-		double setpoint_wheel_torque_l, setpoint_wheel_torque_r;
+		double setpoint_wheel_torque_l = 0, setpoint_wheel_torque_r = 0;
+
+		double setpoint_teleop_steps = 5e-2;
+
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
 			DynamicsDifferential::TControllerOutput& co) override;
@@ -103,19 +110,26 @@ class DynamicsDifferential : public VehicleBase
 	   public:
 		ControllerTwistPID(DynamicsDifferential& veh);
 		static const char* class_name() { return "twist_pid"; }
-		//!< Directly set these values to tell the controller the desired
-		//! setpoints
-		double setpoint_lin_speed,
-			setpoint_ang_speed;	 //!< desired velocities (m/s) and (rad/s)
+
+		/** Directly set these values to tell the controller the desired
+		 * setpoints.
+		 * desired velocities (m/s) and (rad/s) */
+		double setpoint_lin_speed = 0, setpoint_ang_speed = 0;
+
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
 			DynamicsDifferential::TControllerOutput& co) override;
+
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(
 			const TeleopInput& in, TeleopOutput& out) override;
 
-		double KP, KI, KD;	//!< PID controller parameters
-		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
+		/// PID controller parameters
+		double KP = 10, KI = 0, KD = 0;
+
+		/// Maximum abs. value torque (for clamp) [Nm]
+		double max_torque = 100;
+
 		// See base docs.
 		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override
 		{
@@ -125,12 +139,12 @@ class DynamicsDifferential : public VehicleBase
 		}
 
 	   private:
-		double m_distWheels;
-		PID_Controller m_PID[2];
+		double m_distWheels = 0;
+		std::array<PID_Controller, 2> m_PIDs;
 	};
 
-	const ControllerBasePtr& getController() const { return m_controller; }
-	ControllerBasePtr& getController() { return m_controller; }
+	const ControllerBase::Ptr& getController() const { return m_controller; }
+	ControllerBase::Ptr& getController() { return m_controller; }
 	virtual ControllerBaseInterface* getControllerInterface() override
 	{
 		return m_controller.get();
@@ -153,7 +167,7 @@ class DynamicsDifferential : public VehicleBase
 	const std::vector<ConfigPerWheel> m_configPerWheel;
 
    private:
-	ControllerBasePtr m_controller;	 //!< The installed controller
+	ControllerBase::Ptr m_controller;  //!< The installed controller
 };
 
 class DynamicsDifferential_3_wheels : public DynamicsDifferential
@@ -180,10 +194,10 @@ class DynamicsDifferential_4_wheels : public DynamicsDifferential
 	DynamicsDifferential_4_wheels(World* parent)
 		: DynamicsDifferential(
 			  parent, {
-						  {"l_wheel", {0.0, 0.5}},
-						  {"r_wheel", {0.0, -0.5}},
-						  {"l_caster_wheel", {0.5, 0.5}},
-						  {"r_caster_wheel", {0.5, -0.5}},
+						  {"lr_wheel", {0.0, 0.5}},
+						  {"rr_wheel", {0.0, -0.5}},
+						  {"lf_wheel", {0.5, 0.5}},
+						  {"rf_wheel", {0.5, -0.5}},
 					  })
 	{
 	}

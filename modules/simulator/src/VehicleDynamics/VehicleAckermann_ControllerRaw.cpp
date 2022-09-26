@@ -83,8 +83,10 @@ void DynamicsAckermann::ControllerRawForces::teleop_interface(
 			break;
 	};
 	out.append_gui_lines += "[Controller=" + string(class_name()) +
-							"] Teleop keys: w/s=incr/decr torques. "
-							"a/d=left/right steering. spacebar=stop.\n";
+							"] Teleop keys:\n"
+							"w/s=incr/decr torques.\n"
+							"a/d=left/right steering.\n"
+							"spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
 		"setpoint: t=%.03f steer=%.03f deg\n", setpoint_wheel_torque_l,
 		setpoint_steer_ang * 180.0 / M_PI);

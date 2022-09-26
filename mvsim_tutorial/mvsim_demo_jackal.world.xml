@@ -18,7 +18,7 @@
 	     ======================== -->
 	<element class="occupancy_grid">
 		<file>mvsim_demo_world1.png</file>
-		<resolution>0.5</resolution>
+		<resolution>0.1</resolution>
 		<centerpixel_x>100</centerpixel_x>
 		<centerpixel_y>100</centerpixel_y>
 	</element>
@@ -36,8 +36,29 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<!-- Sensors -->
-		<include file="definitions/front_lidar.sensor.xml" />
-		<include file="definitions/rear_lidar.sensor.xml" />
+		<include file="definitions/lidar2d.sensor.xml" sensor_x="0.2" sensor_z="0.28" sensor_yaw="0" sensor_name="laser1" />
+		<include file="definitions/lidar2d.sensor.xml" sensor_x="-0.2" sensor_z="0.28" sensor_yaw="180" sensor_name="laser2" />
 	</vehicle>
+
+	<!-- ======================================
+	      Obstacle blocks classes definition
+	     ====================================== -->
+	<block:class name="square_obstacle">
+		<mass>20</mass>
+		<color>#0080ff</color>
+		<zmax>0.5</zmax>
+		<ground_friction>0.3</ground_friction>
+		<shape>
+			<pt>-0.4 -0.4</pt>
+			<pt>-0.5  0.3</pt>
+			<pt> 0.3  0.3</pt>
+			<pt> 0.2 -0.25</pt>
+		</shape>
+	</block:class>
+
+	<block class="square_obstacle"> <init_pose>6 5 45</init_pose> </block>
+	<block class="square_obstacle"> <init_pose>10 -3 -90</init_pose> </block>
+	<block class="square_obstacle"> <init_pose>3 -4 -45</init_pose> </block>
+	<block class="square_obstacle"> <init_pose>5 1 0</init_pose> </block>
 
 </mvsim_world>

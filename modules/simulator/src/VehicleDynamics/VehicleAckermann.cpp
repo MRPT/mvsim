@@ -146,26 +146,24 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
-				m_controller =
-					ControllerBasePtr(new ControllerRawForces(*this));
+				m_controller = std::make_shared<ControllerRawForces>(*this);
 			else if (sCtrlClass == ControllerTwistFrontSteerPID::class_name())
 				m_controller =
-					ControllerBasePtr(new ControllerTwistFrontSteerPID(*this));
+					std::make_shared<ControllerTwistFrontSteerPID>(*this);
 			else if (sCtrlClass == ControllerFrontSteerPID::class_name())
-				m_controller =
-					ControllerBasePtr(new ControllerFrontSteerPID(*this));
+				m_controller = std::make_shared<ControllerFrontSteerPID>(*this);
 			else
-				throw runtime_error(mrpt::format(
+				THROW_EXCEPTION_FMT(
 					"[DynamicsAckermann] Unknown 'class'='%s' in "
 					"<controller> XML node",
-					sCtrlClass.c_str()));
+					sCtrlClass.c_str());
 
 			m_controller->load_config(*xml_control);
 		}
 	}
 	// Default controller:
 	if (!m_controller)
-		m_controller = ControllerBasePtr(new ControllerRawForces(*this));
+		m_controller = ControllerBase::Ptr(new ControllerRawForces(*this));
 }
 
 // See docs in base class:

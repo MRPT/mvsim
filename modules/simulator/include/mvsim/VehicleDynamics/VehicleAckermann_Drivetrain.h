@@ -70,8 +70,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 
 	/** Virtual base for controllers of vehicles of type DynamicsAckermannLSDiff
 	 */
-	typedef ControllerBaseTempl<DynamicsAckermannDrivetrain> ControllerBase;
-	typedef std::shared_ptr<ControllerBase> ControllerBasePtr;
+	using ControllerBase = ControllerBaseTempl<DynamicsAckermannDrivetrain>;
 
 	class ControllerRawForces : public ControllerBase
 	{
@@ -147,8 +146,8 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		double m_r2f_L;
 	};
 
-	const ControllerBasePtr& getController() const { return m_controller; }
-	ControllerBasePtr& getController() { return m_controller; }
+	const ControllerBase::Ptr& getController() const { return m_controller; }
+	ControllerBase::Ptr& getController() { return m_controller; }
 	virtual ControllerBaseInterface* getControllerInterface() override
 	{
 		return m_controller.get();
@@ -183,7 +182,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		std::vector<double>& out_force_per_wheel) override;
 
    private:
-	ControllerBasePtr m_controller;	 //!< The installed controller
+	ControllerBase::Ptr m_controller;  //!< The installed controller
 
 	double m_max_steer_ang;	 //!< The maximum steering angle (rad). Determines
 							 //! min turning radius
