@@ -65,10 +65,6 @@ void World::GUI::prepare_control_window()
 			nanogui::leave();
 		});
 
-	w->add<nanogui::CheckBox>("Orthogonal view", [&](bool b) {
-		 gui_win->camera().setCameraProjective(!b);
-	 })->setChecked(m_parent.m_gui_options.ortho);
-
 	std::vector<std::string> lstVehicles;
 	lstVehicles.reserve(m_parent.m_vehicles.size() + 1);
 
@@ -84,6 +80,14 @@ void World::GUI::prepare_control_window()
 		else if (idx <= static_cast<int>(m_parent.m_vehicles.size()))
 			m_parent.m_gui_options.follow_vehicle = lstVehicles[idx];
 	});
+
+	w->add<nanogui::CheckBox>("Orthogonal view", [&](bool b) {
+		 gui_win->camera().setCameraProjective(!b);
+	 })->setChecked(m_parent.m_gui_options.ortho);
+
+	w->add<nanogui::CheckBox>("View forces", [&](bool b) {
+		 m_parent.m_gui_options.show_forces = b;
+	 })->setChecked(m_parent.m_gui_options.show_forces);
 
 	w->add<nanogui::CheckBox>("View sensor poses", [&](bool b) {
 		 const auto& objs = SensorBase::GetAllSensorsOriginViz();

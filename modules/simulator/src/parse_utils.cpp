@@ -131,6 +131,9 @@ static std::string parseCmdRuns(const std::string& text)
 	MRPT_TRY_END
 }
 
+MRPT_TODO(
+	"Add a '$f{xxx}' parser for exprtk, and define random() user function");
+
 std::string mvsim::parse(
 	const std::string& input,
 	const std::map<std::string, std::string>& variableNamesValues)
