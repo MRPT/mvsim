@@ -168,6 +168,8 @@ void DynamicsDifferential::invoke_motor_controllers(
 			case 4:
 				otpw[WHEEL_LR] = co.wheel_torque_l;
 				otpw[WHEEL_RR] = co.wheel_torque_r;
+				otpw[WHEEL_LF] = co.wheel_torque_l;
+				otpw[WHEEL_RF] = co.wheel_torque_r;
 				break;
 			default:
 				THROW_EXCEPTION("Unexpected number of wheels!");
