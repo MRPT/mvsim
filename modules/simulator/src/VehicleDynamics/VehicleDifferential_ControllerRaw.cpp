@@ -61,7 +61,8 @@ void DynamicsDifferential::ControllerRawForces::teleop_interface(
 			break;
 	};
 	out.append_gui_lines += "[Controller=" + string(class_name()) +
-							"] Teleop keys: w/s=incr/decr both torques. "
+							"] Teleop keys:\n"
+							"w/s=incr/decr both torques.\n"
 							"a/d=left/right. spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
 		"setpoint: tl=%.03f tr=%.03f deg\n", setpoint_wheel_torque_l,

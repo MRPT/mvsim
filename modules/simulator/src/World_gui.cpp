@@ -117,7 +117,7 @@ void World::GUI::prepare_status_window()
 #endif
 
 	lbCpuUsage = w->add<nanogui::Label>(" ");
-	lbStatuses.resize(9);
+	lbStatuses.resize(12);
 	for (size_t i = 0; i < lbStatuses.size(); i++)
 		lbStatuses[i] = w->add<nanogui::Label>(" ");
 }
