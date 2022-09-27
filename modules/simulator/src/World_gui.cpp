@@ -98,7 +98,7 @@ void World::GUI::prepare_control_window()
 		 ASSERT_(glVizSensors);
 
 		 glVizSensors->setVisibility(b);
-	 })->setChecked(true);
+	 })->setChecked(m_parent.m_gui_options.show_sensor_points);
 
 	w->add<nanogui::CheckBox>("View sensor poses", [&](bool b) {
 		 const auto& objs = SensorBase::GetAllSensorsOriginViz();
@@ -390,6 +390,7 @@ void World::internal_GUI_thread()
 			{
 				auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
 				glVizSensors->setName("group_sensors_viz");
+				glVizSensors->setVisibility(m_gui_options.show_sensor_points);
 				scene->insert(glVizSensors);
 			}
 

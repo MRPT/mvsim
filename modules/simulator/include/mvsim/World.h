@@ -369,6 +369,7 @@ class World : public mrpt::system::COutputLogger
 		int refresh_fps = 20;
 		bool ortho = false;
 		bool show_forces = false;
+		bool show_sensor_points = true;
 		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
 		double fov_deg = 60.0;
@@ -380,6 +381,7 @@ class World : public mrpt::system::COutputLogger
 			{"win_h", {"%u", &win_h}},
 			{"ortho", {"%bool", &ortho}},
 			{"show_forces", {"%bool", &show_forces}},
+			{"show_sensor_points", {"%bool", &show_sensor_points}},
 			{"force_scale", {"%lf", &force_scale}},
 			{"fov_deg", {"%lf", &fov_deg}},
 			{"follow_vehicle", {"%s", &follow_vehicle}},
