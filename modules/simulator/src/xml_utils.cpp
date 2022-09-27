@@ -171,12 +171,13 @@ void mvsim::parse_xmlnode_attribs(
 {
 	for (const auto& param : params)
 	{
-		const rapidxml::xml_attribute<char>* attr =
-			xml_node.first_attribute(param.first.c_str());
-		if (attr && attr->value())
+		if (auto attr = xml_node.first_attribute(param.first.c_str());
+			attr && attr->value())
+		{
 			param.second.parse(
 				attr->value(), attr->name(), variableNamesValues,
 				functionNameContext);
+		}
 	}
 }
 
@@ -216,11 +217,6 @@ void mvsim::parse_xmlnode_children_as_param(
 	}
 }
 
-/** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and
- * returns
- * a mrpt::math::TTwist2D with [x,y,phi] with angle in radians. Raises an
- * exception upon malformed string.
- */
 mrpt::math::TPose2D mvsim::parseXYPHI(
 	const std::string& s, bool allow_missing_angle,
 	double default_angle_radians)

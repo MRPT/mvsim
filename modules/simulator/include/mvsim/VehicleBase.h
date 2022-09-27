@@ -202,17 +202,18 @@ class VehicleBase : public VisualObject, public Simulable
 
 	void updateMaxRadiusFromPoly();
 
-	// Wheels info:
-	std::vector<Wheel> m_wheels_info;  //!< The fixed size of this vector is set
-									   //! upon construction. Derived classes
-									   //! must define the order of the wheels,
-									   //! e.g. [0]=rear left, etc.
+	/** Wheels info.  The fixed size of this vector is set upon construction.
+	 *  Derived classes must define the order of the wheels, e.g. [0]=rear left,
+	 * etc.
+	 */
+	std::deque<Wheel> m_wheels_info;
 
 	// Box2D elements:
 	b2Fixture* m_fixture_chassis;  //!< Created at
-	std::vector<b2Fixture*> m_fixture_wheels;  //!< [0]:rear-left, etc.
-											   //!(depending on derived class).
-											   //! Size set at constructor.
+
+	/** [0]:rear-left, etc. (depending on derived class). Size set at
+	 * constructor. */
+	std::vector<b2Fixture*> m_fixture_wheels;
 
    private:
 	// Called from internalGuiUpdate_common()

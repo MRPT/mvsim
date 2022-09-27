@@ -45,9 +45,12 @@ void VisualObject::guiUpdate(
 			m_glCustomVisualId = g_uniqueCustomVisualId++;
 			const auto name = "_autoViz"s + std::to_string(m_glCustomVisualId);
 			m_glCustomVisual->setName(name);
+
 			// Add to the 3D scene:
-			viz.insert(m_glCustomVisual);
-			physical.insert(m_glCustomVisual);
+			if (m_insertCustomVizIntoViz) viz.insert(m_glCustomVisual);
+
+			if (m_insertCustomVizIntoPhysical)
+				physical.insert(m_glCustomVisual);
 		}
 
 		// Update pose:

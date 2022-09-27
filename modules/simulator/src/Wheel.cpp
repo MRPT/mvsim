@@ -97,3 +97,19 @@ void Wheel::internalGuiUpdate(
 {
 	// nothing to do, already done in getAs3DObject()
 }
+
+std::string Wheel::asString() const
+{
+	std::stringstream ss;
+	ss << "Pose on vehicle: " << pose().asString() << "\n"
+	   << "Diameter: " << diameter << "\n"
+	   << "Width: " << width << "\n"
+	   << "Mass: " << mass << "\n"
+	   << "Iyy: " << Iyy << "\n"
+	   << "Kinematic status: phi:" << mrpt::RAD2DEG(phi)
+	   << " deg "
+		  " w:"
+	   << mrpt::RAD2DEG(w) << " deg/s\n";
+
+	return ss.str();
+}

@@ -200,8 +200,8 @@ void DepthCameraSensor::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_sensor_params.sensorPose.asTPose());
 }
 
-void DepthCameraSensor::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void DepthCameraSensor::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 
@@ -221,6 +221,8 @@ void DepthCameraSensor::simulateOn3DScene(
 	auto lck = mrpt::lockHelper(m_gui_mtx);
 
 	tle1.stop();
+
+	if (m_glCustomVisual) m_glCustomVisual->setVisibility(false);
 
 	// Start making a copy of the pattern observation:
 	auto curObsPtr =
@@ -404,6 +406,8 @@ void DepthCameraSensor::simulateOn3DScene(
 
 		SensorBase::reportNewObservation(m_last_obs, *m_has_to_render);
 	}
+
+	if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
 
 	m_gui_uptodate = false;
 	m_has_to_render.reset();

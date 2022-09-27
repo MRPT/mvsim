@@ -160,8 +160,8 @@ void LaserScanner::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_scan_model.sensorPose);
 }
 
-void LaserScanner::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void LaserScanner::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 
@@ -404,6 +404,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	tle1.stop();
 
+	if (m_glCustomVisual) m_glCustomVisual->setVisibility(false);
+
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservation2DRangeScan::Create(m_scan_model);
 
@@ -590,6 +592,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 		SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
 	}
+
+	if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
 
 	m_gui_uptodate = false;
 	m_has_to_render.reset();

@@ -28,8 +28,8 @@ class SensorBase : public VisualObject, public Simulable
    public:
 	using Ptr = std::shared_ptr<SensorBase>;
 
-	SensorBase(Simulable& vehicle);	 //!< Ctor takes a ref to the vehicle to
-									 //! which the sensor is attached.
+	/** Ctor takes a ref to the vehicle to which the sensor is attached. */
+	SensorBase(Simulable& vehicle);
 	virtual ~SensorBase();
 
 	/** Class factory: Creates a sensor from XML description of type "<sensor

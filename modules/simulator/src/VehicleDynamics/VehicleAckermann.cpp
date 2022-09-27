@@ -100,9 +100,17 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	// Load common params:
 	for (size_t i = 0; i < 4; i++)
 	{
-		const rapidxml::xml_node<char>* xml_wheel =
-			xml_node->first_node(w_names[i]);
-		if (xml_wheel) m_wheels_info[i].loadFromXML(xml_wheel);
+		if (auto xml_wheel = xml_node->first_node(w_names[i]); xml_wheel)
+		{
+			m_wheels_info[i].loadFromXML(xml_wheel);
+		}
+		else
+		{
+			m_world->logFmt(
+				mrpt::system::LVL_WARN,
+				"No XML entry '%s' found: using defaults for wheel #%u",
+				w_names[i], static_cast<unsigned int>(i));
+		}
 	}
 
 	//<f_wheels_x>1.3</f_wheels_x>
@@ -163,7 +171,7 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	}
 	// Default controller:
 	if (!m_controller)
-		m_controller = ControllerBase::Ptr(new ControllerRawForces(*this));
+		m_controller = std::make_shared<ControllerRawForces>(*this);
 }
 
 // See docs in base class:

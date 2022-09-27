@@ -18,4 +18,5 @@
     <clip_min>1e-2</clip_min>
     <clip_max>1e+4</clip_max>
 
+    <visual> <model_uri>../models/simple_camera.dae</model_uri> </visual>
 </sensor>
