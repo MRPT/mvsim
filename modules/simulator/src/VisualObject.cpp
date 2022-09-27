@@ -26,6 +26,8 @@ using namespace mvsim;
 
 static std::atomic_int32_t g_uniqueCustomVisualId = 0;
 
+VisualObject::~VisualObject() = default;
+
 void VisualObject::guiUpdate(
 	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
 {

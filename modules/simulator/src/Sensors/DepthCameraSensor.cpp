@@ -195,6 +195,9 @@ void DepthCameraSensor::internalGuiUpdate(
 	m_gl_obs->setPose(p);
 	m_gl_sensor_fov->setPose(p);
 	m_gl_sensor_origin->setPose(p);
+
+	if (m_glCustomVisual)
+		m_glCustomVisual->setPose(p + m_sensor_params.sensorPose.asTPose());
 }
 
 void DepthCameraSensor::simul_pre_timestep([

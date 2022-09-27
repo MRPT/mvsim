@@ -23,8 +23,8 @@
           <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </rr_wheel>
 
-
         <chassis mass="10.0" zmin="0.05" zmax="0.25">
+            <shape_from_visual/> <!-- automatic size from 3D model file -->
         </chassis>
 
         <!--   Motor controller -->

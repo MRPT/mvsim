@@ -26,7 +26,9 @@ class VisualObject
 {
    public:
 	VisualObject(World* parent) : m_world(parent) {}
-	virtual ~VisualObject() {}
+
+	virtual ~VisualObject();
+
 	/** Must create a new object in the scene and/or update it according to the
 	 * current state */
 	virtual void guiUpdate(

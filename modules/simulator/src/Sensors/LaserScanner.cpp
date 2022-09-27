@@ -147,14 +147,17 @@ void LaserScanner::internalGuiUpdate(
 		m_gui_uptodate = true;
 	}
 
+	const mrpt::poses::CPose2D& p = m_vehicle.getCPose2D();
 	const double z_incrs = 10e-3;  // for m_z_order
 	const double z_offset = 1e-2;
-	const mrpt::poses::CPose2D& p = m_vehicle.getCPose2D();
 	m_gl_scan->setPose(mrpt::poses::CPose3D(
 		p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
 
 	m_gl_sensor_fov->setPose(p);
 	m_gl_sensor_origin->setPose(p);
+
+	if (m_glCustomVisual)
+		m_glCustomVisual->setPose(p + m_scan_model.sensorPose);
 }
 
 void LaserScanner::simul_pre_timestep([
