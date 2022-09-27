@@ -200,8 +200,8 @@ void DepthCameraSensor::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_sensor_params.sensorPose.asTPose());
 }
 
-void DepthCameraSensor::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
+void DepthCameraSensor::simul_pre_timestep([
+	[maybe_unused]] const TSimulContext& context)
 {
 }
 
