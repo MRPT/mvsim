@@ -79,11 +79,6 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	// <l_wheel ...>, <r_wheel ...>
 
 	// reset default values
-	const auto nW = getNumWheels();
-	m_wheels_info.clear();
-	// Create wheels:
-	for (size_t i = 0; i < nW; i++) m_wheels_info.emplace_back(m_world);
-
 	ASSERT_EQUAL_(getNumWheels(), m_configPerWheel.size());
 
 	// Load common params:
@@ -133,7 +128,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 
 	// Default controller:
 	if (!m_controller)
-		m_controller = ControllerBase::Ptr(new ControllerRawForces(*this));
+		m_controller = std::make_shared<ControllerRawForces>(*this);
 }
 
 // See docs in base class:

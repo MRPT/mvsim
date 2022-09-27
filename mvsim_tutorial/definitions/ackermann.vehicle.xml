@@ -8,16 +8,18 @@
 <vehicle:class name="car_ackermann">
     <!--  Dynamical model -->
     <dynamics class="ackermann">
-        <!-- Params -->
+        <!-- Rear wheels -->
         <rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
         <rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
+        
+        <!-- Front wheels -->
         <fl_wheel mass="6.0" width="0.30" diameter="0.62" />
         <fr_wheel mass="6.0" width="0.30" diameter="0.62" />
         <f_wheels_x>1.3</f_wheels_x>
         <f_wheels_d>2.0</f_wheels_d>
         <max_steer_ang_deg>30.0</max_steer_ang_deg>
 
-        <chassis mass="800.0" zmin="0.15" zmax="0.40">
+        <chassis mass="800.0" zmin="0.15" zmax="1.00">
         </chassis>
 
         <!--   Motor controller -->

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
+<!-- ROS1 launch file. See *.launch.py files for ROS2 launch files -->
 <launch>
-
 	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/mvsim_demo_depth_camera.world.xml" />
 
 	<node pkg="mvsim" type="mvsim_node" name="mvsim_simulator" output="screen">

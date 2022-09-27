@@ -1,5 +1,5 @@
-<!-- ROS1 launch file -->
 <?xml version="1.0"?>
+<!-- ROS1 launch file. See *.launch.py files for ROS2 launch files -->
 <launch>
 	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/mvsim_demo_1robot.world.xml" />
 	<arg name="mvsim_do_fake_localization" default="true"/>

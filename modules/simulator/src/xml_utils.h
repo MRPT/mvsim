@@ -87,8 +87,7 @@ void parse_xmlnodelist_children_as_param(
 // Bits:
 
 /** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and
- * returns
- * a mrpt::math::TTwist2D with [x,y,phi] with angle in radians. Raises an
+ * returns a mrpt::math::TPose2D with [x,y,phi] with angle in radians. Raises an
  * exception upon malformed string.
  */
 mrpt::math::TPose2D parseXYPHI(

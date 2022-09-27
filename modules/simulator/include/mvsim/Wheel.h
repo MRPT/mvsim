@@ -58,6 +58,10 @@ class Wheel : public VisualObject
 		{"color", {"%color", &color}},
 		{"inertia", {"%lf", &Iyy}}};
 
+	/** Generates a human-readable description of the wheel parameters and
+	 * kinematic status */
+	std::string asString() const;
+
 	// methods ----
 
 	void getAs3DObject(mrpt::opengl::CSetOfObjects& obj);

@@ -32,21 +32,27 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/ackermann.vehicle.xml" />
+	<include file="definitions/jackal.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
 	     ======================== -->
-	<vehicle name="r1" class="car_ackermann">
+	<vehicle name="r1" class="jackal">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml" sensor_x="1.8" sensor_z="1.0" sensor_yaw="0" sensor_name="laser1" raytrace_3d="true" />
+		<include file="definitions/lidar2d.sensor.xml" 
+		  sensor_x="0.15" sensor_z="0.33" sensor_yaw="0" sensor_name="laser1" 
+		/>
+		<include file="definitions/lidar2d.sensor.xml"
+		  sensor_x="-0.17" sensor_z="0.25" sensor_yaw="180" sensor_name="laser2" 
+		/>
 
-		<include file="definitions/rgbd_camera.sensor.xml"
-				sensor_x="1.5"
-				sensor_z="1.5"
+		<include file="definitions/rgbd_camera.sensor.xml" 
+		  sensor_x="0.22" sensor_z="0.29"
+		  sensor_period_sec="0.10"
+		  show_3d_pointcloud="true"
 		/>
 	</vehicle>
 	

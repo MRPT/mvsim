@@ -45,7 +45,11 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml" sensor_x="0.6" sensor_z="1.0" sensor_yaw="0" sensor_name="laser1" />
+		<include file="definitions/lidar2d.sensor.xml" 
+		  sensor_x="0.5" sensor_y="0" sensor_z="0.61" sensor_yaw="0"
+		  sensor_name="laser1"
+		  raytrace_3d="false"
+		/>
 	</vehicle>
 
 </mvsim_world>

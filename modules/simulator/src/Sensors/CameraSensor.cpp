@@ -154,8 +154,8 @@ void CameraSensor::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_sensor_params.cameraPose.asTPose());
 }
 
-void CameraSensor::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void CameraSensor::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 
@@ -169,6 +169,8 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		mrpt::system::CTimeLoggerEntry(m_world->getTimeLogger(), "sensor.RGB");
 
 	auto lck = mrpt::lockHelper(m_gui_mtx);
+
+	if (m_glCustomVisual) m_glCustomVisual->setVisibility(false);
 
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservationImage::Create(m_sensor_params);
@@ -228,6 +230,8 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	}
 
 	SensorBase::reportNewObservation(m_last_obs, *m_has_to_render);
+
+	if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
 
 	m_gui_uptodate = false;
 	m_has_to_render.reset();
