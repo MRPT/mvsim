@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2022-09-27)
+------------------
 * Major new release with tons of new features.
 * New sensors: RGB, depth, RGB+D cameras
 * Support for ROS1 and ROS2.
