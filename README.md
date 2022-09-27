@@ -24,6 +24,24 @@ Docs
 ----------
   * [Main documentation site](https://mvsimulator.readthedocs.io/en/latest/)
   * https://wiki.ros.org/mvsim
+  
+Launch demos
+--------------
+
+Standalone:
+
+    mvsim launch mvsim_tutorial/mvsim_demo_2robots.world.xml
+    
+    mvsim launch mvsim_tutorial/test_mesh.world.xml
+
+
+ROS1:
+
+    roslaunch mvsim mvsim_demo_depth_camera.launch
+
+ROS2:
+
+    ros2 launch mvsim mvsim_demo_depth_camera.launch.py
 
 Main features
 --------------
