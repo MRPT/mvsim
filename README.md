@@ -16,9 +16,9 @@ This package includes the C++ library `mvsim`, a standalone app and a ROS node.
 License: 3-clause BSD License
 Copyright (C) 2014-2022 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
-[![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
+![screenshot-demo-2robots](docs/imgs/mvsim_screenshot_ros1_depth_camera_demo.png)
 
-![screenshot-demo-2robots](docs/imgs/screenshot-demo-2robots.png)
+[![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
 
 Docs
 ----------
