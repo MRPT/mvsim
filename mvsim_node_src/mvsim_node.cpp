@@ -1249,8 +1249,6 @@ void MVSimNode::internalOn(
 
 			mrpt2ros::toROS(pts, msg_header, msg_pts);
 
-			ROS_INFO_STREAM("pts: " << msg_pts);
-
 #if PACKAGE_ROS_VERSION == 1
 			pubPts.publish(msg_pts);
 #else
