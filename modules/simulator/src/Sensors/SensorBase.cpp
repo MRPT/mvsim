@@ -114,6 +114,9 @@ SensorBase::Ptr SensorBase::factory(
 		throw runtime_error(mrpt::format(
 			"[SensorBase::factory] Unknown sensor type '%s'", root->name()));
 
+	// parse the optional visual model:
+	we->parseVisual(root->first_node("visual"));
+
 	return we;
 }
 
