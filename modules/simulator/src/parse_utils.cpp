@@ -10,6 +10,7 @@
 #include "parse_utils.h"
 
 #include <mrpt/core/exceptions.h>
+#include <mrpt/core/get_env.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>
 #include <mrpt/system/string_utils.h>
@@ -17,6 +18,9 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+
+thread_local const bool MVSIM_VERBOSE_PARSE =
+	mrpt::get_env<bool>("MVSIM_VERBOSE_PARSE", false);
 
 using namespace mvsim;
 
@@ -149,6 +153,12 @@ std::string mvsim::parse(
 		// might generate another kind of expression:
 		if (s == prevValue) break;
 		prevValue = s;
+	}
+
+	if (MVSIM_VERBOSE_PARSE)
+	{
+		std::cout << "[mvsim::parse] Input : '" << input << "'\n";
+		std::cout << "[mvsim::parse] Output: '" << s << "'\n";
 	}
 
 	return s;
