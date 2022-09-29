@@ -19,6 +19,7 @@
 #include <rapidxml_utils.hpp>
 #include <stdexcept>
 
+#include "parse_utils.h"
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -170,7 +171,8 @@ void World::internal_recursive_parse_XML(
 			fileAttrb,
 			"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
 
-		const std::string relFile = fileAttrb->value();
+		const std::string relFile = mvsim::parse(fileAttrb->value(), {});
+
 		const auto absFile = this->resolvePath(relFile);
 		MRPT_LOG_DEBUG_STREAM(
 			"XML parser: including file: '" << absFile << "'");

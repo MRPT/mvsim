@@ -29,6 +29,7 @@
 
 #include "JointXMLnode.h"
 #include "XMLClassesRegistry.h"
+#include "parse_utils.h"
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -157,7 +158,7 @@ VehicleBase::Ptr VehicleBase::factory(
 			fileAttrb,
 			"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
 
-		const std::string relFile = fileAttrb->value();
+		const std::string relFile = mvsim::parse(fileAttrb->value(), {});
 		const auto absFile = parent->resolvePath(relFile);
 		parent->logStr(
 			mrpt::system::LVL_DEBUG,
