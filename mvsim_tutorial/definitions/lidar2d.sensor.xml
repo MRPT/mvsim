@@ -1,6 +1,6 @@
 <sensor class="laser" name="${sensor_name|laser1}">
     <pose_3d> ${sensor_x|1.80}  ${sensor_y|0.0}  ${sensor_z|0.7}  ${sensor_yaw|0.0} 0.0 0.0</pose_3d>
-    <fov_degrees>180</fov_degrees>
+    <fov_degrees>${fov_degrees|180}</fov_degrees>
     <sensor_period>${sensor_period_sec|0.05}</sensor_period>
     <nrays>181</nrays>
     <range_std_noise>0.01</range_std_noise>
