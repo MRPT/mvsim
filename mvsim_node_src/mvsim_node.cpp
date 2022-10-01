@@ -559,6 +559,9 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		// [0] Chassis shape:
 		auto& chassis_shape_msg = msg_shapes.markers[0];
 
+		chassis_shape_msg.pose =
+			mrpt2ros::toROS_Pose(mrpt::poses::CPose3D::Identity());
+
 #if PACKAGE_ROS_VERSION == 1
 		chassis_shape_msg.action = visualization_msgs::Marker::MODIFY;
 		chassis_shape_msg.type = visualization_msgs::Marker::LINE_STRIP;
@@ -594,7 +597,10 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			const mvsim::Wheel& w = veh->getWheelInfo(i);
 
 			const double lx = w.diameter * 0.5, ly = w.width * 0.5;
-			wheel_shape_msg = chassis_shape_msg;  // Init values
+
+			// Init values. Copy the contents from the chassis msg
+			wheel_shape_msg = msg_shapes.markers[0];
+
 			chassis_shape_msg.ns = mrpt::format(
 				"mvsim.chassis_shape.wheel%u", static_cast<unsigned int>(i));
 			wheel_shape_msg.points.resize(5);
@@ -618,7 +624,6 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 			// Set local pose of the wheel wrt the vehicle:
 			wheel_shape_msg.pose = mrpt2ros::toROS_Pose(w.pose());
-
 		}  // end for each wheel
 
 		// Publish Initial pose
