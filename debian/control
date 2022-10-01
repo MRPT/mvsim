@@ -20,10 +20,10 @@ Build-Depends:
 	python3-setuptools,
 Standards-Version: 4.5.0
 
-Package: libmvsim-comms0.3
+Package: libmvsim-comms0.4
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         libmvsim-msgs0.3 (= ${binary:Version})
+         libmvsim-msgs0.4 (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - communications
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
@@ -34,7 +34,7 @@ Description: Multi vehicle efficient dynamics simulator - communications
 Package: libmvsim-comms-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         libmvsim-comms0.3 (= ${binary:Version}),
+         libmvsim-comms0.4 (= ${binary:Version}),
          libprotobuf-dev, libmrpt-core-dev
 Description: Multi vehicle efficient dynamics simulator - comms dev package
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
@@ -45,7 +45,7 @@ Description: Multi vehicle efficient dynamics simulator - comms dev package
  cmake files.
 
 
-Package: libmvsim-msgs0.3
+Package: libmvsim-msgs0.4
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Multi vehicle efficient dynamics simulator - messages
@@ -58,7 +58,7 @@ Description: Multi vehicle efficient dynamics simulator - messages
 Package: libmvsim-msgs-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         libmvsim-msgs0.3 (= ${binary:Version}),
+         libmvsim-msgs0.4 (= ${binary:Version}),
          libprotobuf-dev
 Description: Multi vehicle efficient dynamics simulator - messages dev package
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
@@ -69,10 +69,10 @@ Description: Multi vehicle efficient dynamics simulator - messages dev package
  cmake files, and the .proto message definition files.
 
 
-Package: libmvsim-simulator0.3
+Package: libmvsim-simulator0.4
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         libmvsim-comms0.3 (= ${binary:Version})
+         libmvsim-comms0.4 (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - simulator
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
@@ -83,7 +83,7 @@ Description: Multi vehicle efficient dynamics simulator - simulator
 Package: libmvsim-simulator-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         libmvsim-simulator0.3 (= ${binary:Version}),
+         libmvsim-simulator0.4 (= ${binary:Version}),
          libmrpt-maps-dev
 Description: Multi vehicle efficient dynamics simulator - simulator dev package
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
@@ -112,8 +112,8 @@ Package: mvsim-apps
 Architecture: any
 Priority: optional
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         libmvsim-simulator0.3 (= ${binary:Version}),
-         libmvsim-comms0.3 (= ${binary:Version})
+         libmvsim-simulator0.4 (= ${binary:Version}),
+         libmvsim-comms0.4 (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - GUI applications
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
@@ -125,8 +125,8 @@ Package: python3-mvsim
 Architecture: any
 Section: python
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
-         libmvsim-simulator0.3 (= ${binary:Version}),
-         libmvsim-comms0.3 (= ${binary:Version})
+         libmvsim-simulator0.4 (= ${binary:Version}),
+         libmvsim-comms0.4 (= ${binary:Version})
 Description: Multi vehicle efficient dynamics simulator - python3 bindings
  Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
  It is tailored to analysis of vehicle dynamics, wheel-ground contact forces
