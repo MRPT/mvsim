@@ -872,7 +872,7 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 		int winW = im.getWidth(), winH = im.getHeight();
 
 		// Guess if we need to decimate subwindow size:
-		while (winW > 512 || winH > 512)
+		while (winW >= 512 || winH >= 512)
 		{
 			winW /= 2;
 			winH /= 2;
