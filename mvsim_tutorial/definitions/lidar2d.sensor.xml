@@ -6,6 +6,7 @@
     <range_std_noise>0.01</range_std_noise>
     <angle_std_noise_deg>0.01</angle_std_noise_deg>
     <raytrace_3d>${raytrace_3d|false}</raytrace_3d>
+    <maxRange>${maxRange|30.0}</maxRange>
     
     <visual> <model_uri>../models/hokuyo_utm30.dae</model_uri> </visual>
 </sensor>
