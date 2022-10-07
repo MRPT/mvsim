@@ -51,6 +51,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["pose_3d"] = TParamEntry("%pose3d", &m_scan_model.sensorPose);
 	params["height"] = TParamEntry("%lf", &m_scan_model.sensorPose.z());
 	params["range_std_noise"] = TParamEntry("%lf", &m_rangeStdNoise);
+	params["maxRange"] = TParamEntry("%f", &m_scan_model.maxRange);
 	params["angle_std_noise_deg"] = TParamEntry("%lf_deg", &m_angleStdNoise);
 	params["sensor_period"] = TParamEntry("%lf", &m_sensor_period);
 	params["bodies_visible"] = TParamEntry("%bool", &m_see_fixtures);
@@ -68,6 +69,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Pass params to the scan2D obj:
 	m_scan_model.aperture = mrpt::DEG2RAD(fov_deg);
 	m_scan_model.resizeScan(nRays);
+	m_scan_model.stdError = m_rangeStdNoise;
 
 	m_scan_model.sensorLabel = m_name;
 }
