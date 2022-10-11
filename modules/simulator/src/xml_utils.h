@@ -14,6 +14,7 @@
 #include <map>
 #include <memory>
 #include <rapidxml.hpp>
+#include <set>
 #include <string>
 #include <tuple>
 
@@ -39,7 +40,8 @@ std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
 
 std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> readXmlAndGetRoot(
 	const std::string& pathToFile,
-	const std::map<std::string, std::string>& variables);
+	const std::map<std::string, std::string>& variables,
+	const std::set<std::string>& varsRetain = {});
 
 /**
  * Replaces: Variables are first searched in the "<include />" attributes,
@@ -49,7 +51,8 @@ std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> readXmlAndGetRoot(
  * - `${VAR|DEFAULT}`: var contents, or DEFAULT if undefined.
  */
 std::string parse_variables(
-	const std::string& in, const std::map<std::string, std::string>& variables);
+	const std::string& in, const std::map<std::string, std::string>& variables,
+	const std::set<std::string>& varsRetain);
 
 void parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node,

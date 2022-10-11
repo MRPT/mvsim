@@ -21,6 +21,7 @@
 #include <sstream>	// std::stringstream
 #include <string>
 
+#include "parse_utils.h"
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -128,11 +129,24 @@ bool SensorBase::parseSensorPublish(
 
 	if (node == nullptr) return false;
 
-	TParameterDefinitions params;
-	params["publish_topic"] = TParamEntry("%s", &publishTopic_);
-
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*node, params, varValues);
+	{
+		TParameterDefinitions params;
+		params["publish_topic"] = TParamEntry("%s", &publishTopic_);
+
+		parse_xmlnode_children_as_param(*node, params, varValues);
+	}
+
+	// Parse the "enabled" attribute:
+	{
+		bool publishEnabled = true;
+		TParameterDefinitions auxPar;
+		auxPar["enabled"] = TParamEntry("%bool", &publishEnabled);
+		parse_xmlnode_attribs(*node, auxPar, varValues);
+
+		// Reset publish topic if enabled==false
+		if (!publishEnabled) publishTopic_.clear();
+	}
 
 	return true;
 	MRPT_END

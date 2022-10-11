@@ -38,4 +38,9 @@
 
     <visual> <model_uri>../models/simple_camera.dae</model_uri> <model_pitch>90</model_pitch> </visual>
 
+    <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
+    <publish enabled="${sensor_publish|false}">
+        <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
+    </publish>
+
 </sensor>

@@ -85,6 +85,7 @@ class SensorBase : public VisualObject, public Simulable
 	 * sensors that run on an async thread (i.e. opengl rendering) */
 	mrpt::poses::CPose3D m_vehicle_pose_at_last_timestamp;
 
+	/** Publish to MVSIM ZMQ topic stream, if not empty (default) */
 	std::string publishTopic_;
 
 	/// Filled in by SensorBase::loadConfigFrom()

@@ -60,10 +60,11 @@
 
 		<!-- Sensors -->
 		<include file="definitions/lidar2d.sensor.xml" 
-		  sensor_x="0.5" sensor_y="0" sensor_z="0.70" sensor_yaw="0" sensor_name="laser1" raytrace_3d="true" 
+			sensor_x="0.5" sensor_y="0" sensor_z="0.70" sensor_yaw="0" sensor_name="laser1" raytrace_3d="true" 
+			sensor_publish="true"
 		/>
 		<include file="definitions/rgbd_camera.sensor.xml"
-		  sensor_x="0.6" sensor_y="0" sensor_z="0.65" 
+			sensor_x="0.6" sensor_y="0" sensor_z="0.65"
 		/>
 	</vehicle>
 
@@ -77,9 +78,15 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml" raytrace_3d="true" sensor_x="1.7" sensor_z="1.01" sensor_yaw="0" sensor_name="laser1" />
+		<include file="definitions/lidar2d.sensor.xml"
+			raytrace_3d="true" sensor_x="1.7" sensor_z="1.01" sensor_yaw="0" sensor_name="laser1"
+			sensor_publish="true"
+		/>
 		<!-- Sensors -->
-		<include file="definitions/camera.sensor.xml" sensor_x="1.9" sensor_z="0.5" />
+		<include file="definitions/camera.sensor.xml"
+			sensor_x="1.9" sensor_z="0.5"
+			sensor_publish="true"
+		/>
 	</vehicle>
 
 	<!-- ======================================
