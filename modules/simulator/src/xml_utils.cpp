@@ -305,7 +305,8 @@ std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
 
 std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> mvsim::readXmlAndGetRoot(
 	const std::string& pathToFile,
-	const std::map<std::string, std::string>& variables)
+	const std::map<std::string, std::string>& variables,
+	const std::set<std::string>& varsRetain)
 {
 	using namespace rapidxml;
 	using namespace std::string_literals;
@@ -315,7 +316,7 @@ std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> mvsim::readXmlAndGetRoot(
 	auto xmlDoc = std::make_shared<XML_Doc_Data>();
 
 	xmlDoc->documentData = mvsim::parse_variables(
-		mrpt::io::file_get_contents(pathToFile), variables);
+		mrpt::io::file_get_contents(pathToFile), variables, varsRetain);
 	auto [xml, root] = readXmlTextAndGetRoot(xmlDoc->documentData, pathToFile);
 
 	xmlDoc->doc = std::move(xml);
@@ -359,11 +360,12 @@ static std::tuple<std::string, std::string> splitVerticalBar(
 
 static std::string parseVars(
 	const std::string& text,
-	const std::map<std::string, std::string>& variables)
+	const std::map<std::string, std::string>& variables,
+	const std::set<std::string>& varsRetain, const size_t searchStartPos = 0)
 {
 	MRPT_TRY_START
 
-	const auto start = text.find("${");
+	const auto start = text.find("${", searchStartPos);
 	if (start == std::string::npos) return text;
 
 	const std::string pre = text.substr(0, start);
@@ -380,6 +382,12 @@ static std::string parseVars(
 	const auto varnameOrg = post.substr(0, post_end);
 
 	const auto [varname, defaultValue] = splitVerticalBar(varnameOrg);
+
+	if (varsRetain.count(varname) != 0)
+	{
+		// Skip replacing this one:
+		return parseVars(text, variables, varsRetain, start + 2);
+	}
 
 	std::string varvalue;
 	if (auto itVal = variables.find(varname); itVal != variables.end())
@@ -404,12 +412,14 @@ static std::string parseVars(
 		}
 	}
 
-	return parseVars(pre + varvalue + post.substr(post_end + 1), variables);
+	return parseVars(
+		pre + varvalue + post.substr(post_end + 1), variables, varsRetain);
 	MRPT_TRY_END
 }
 
 std::string mvsim::parse_variables(
-	const std::string& in, const std::map<std::string, std::string>& variables)
+	const std::string& in, const std::map<std::string, std::string>& variables,
+	const std::set<std::string>& varsRetain)
 {
-	return parseVars(in, variables);
+	return parseVars(in, variables, varsRetain);
 }

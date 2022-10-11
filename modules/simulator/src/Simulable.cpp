@@ -105,6 +105,8 @@ bool Simulable::parseSimulable(const rapidxml::xml_node<char>* node)
 
 	if (node == nullptr) return false;
 
+	// Parse XML params:
+
 	TParameterDefinitions params;
 	params["publish_pose_topic"] = TParamEntry("%s", &publishPoseTopic_);
 	params["publish_pose_period"] = TParamEntry("%lf", &publishPosePeriod_);
@@ -116,8 +118,18 @@ bool Simulable::parseSimulable(const rapidxml::xml_node<char>* node)
 
 	const std::map<std::string, std::string> varValues = {{"NAME", m_name}};
 
-	// Parse XML params:
 	parse_xmlnode_children_as_param(*node, params, varValues);
+
+	// Parse the "enabled" attribute:
+	{
+		bool publishEnabled = true;
+		TParameterDefinitions auxPar;
+		auxPar["enabled"] = TParamEntry("%bool", &publishEnabled);
+		parse_xmlnode_attribs(*node, auxPar, varValues);
+
+		// Reset publish topic if enabled==false
+		if (!publishEnabled) publishPoseTopic_.clear();
+	}
 
 	if (!listObjects.empty())
 	{

@@ -172,7 +172,13 @@ VehicleBase::Ptr VehicleBase::factory(
 			vars[attr->name()] = attr->value();
 		}
 
-		const auto [xml, nRoot] = readXmlAndGetRoot(absFile, vars);
+		// Delay the replacement of this variable (used in Sensors) until "veh"
+		// is constructed and we actually have a name:
+		std::set<std::string> varsRetain = {
+			"NAME" /*sensor name*/, "PARENT_NAME" /*vehicle name*/};
+
+		const auto [xml, nRoot] = readXmlAndGetRoot(absFile, vars, varsRetain);
+
 		// the XML document object must exist during this whole function scope
 		scopedLifeDocs.emplace_back(xml);
 

@@ -9,4 +9,9 @@
     <maxRange>${maxRange|30.0}</maxRange>
     
     <visual> <model_uri>../models/hokuyo_utm30.dae</model_uri> </visual>
+
+    <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
+    <publish enabled="${sensor_publish|false}">
+        <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
+    </publish>
 </sensor>
