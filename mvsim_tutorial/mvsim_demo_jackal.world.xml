@@ -69,11 +69,16 @@
 	<block class="square_obstacle"> <init_pose>6 5 45</init_pose> </block>
 	<block class="square_obstacle"> <init_pose>10 -3 -90</init_pose> </block>
 	<block class="square_obstacle"> <init_pose>3 -4 -45</init_pose> </block>
+
 	<block class="square_obstacle">
 		<init_pose>5 1 0</init_pose>
 
 		<animation type="keyframes">
-			<time_pose>0.0   </time_pose>
+			<time_pose>0.0  -1  0  30</time_pose>
+			<time_pose>2.0  -1 -1 -10</time_pose>
+			<time_pose>4.0   1 -1 -50</time_pose>
+			<time_pose>4.5   1  1  40</time_pose>
+			<time_pose>5.0  -1  0  30</time_pose>
 		</animation>
 	</block>
 

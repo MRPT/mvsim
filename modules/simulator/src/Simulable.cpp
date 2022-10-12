@@ -13,6 +13,8 @@
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/World.h>
 
+#include <cmath>  // fmod()
+
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -26,6 +28,22 @@ void Simulable::simul_pre_timestep(	 //
 	[[maybe_unused]] const TSimulContext& context)
 {
 	if (!m_b2d_body) return;
+
+	// Follow animation, if enabled:
+	if (m_anim_keyframes_path && !m_anim_keyframes_path->empty())
+	{
+		auto& poseSeq = m_anim_keyframes_path.value();
+
+		mrpt::math::TPose3D q;
+		bool interOk = false;
+		const double tMax = mrpt::Clock::toDouble(poseSeq.rbegin()->first);
+
+		poseSeq.interpolate(
+			mrpt::Clock::fromDouble(std::fmod(context.simul_time, tMax)), q,
+			interOk);
+
+		if (interOk) this->setPose(m_initial_q + q);
+	}
 
 	// Pos:
 	m_b2d_body->SetTransform(b2Vec2(m_q.x, m_q.y), m_q.yaw);
@@ -104,6 +122,7 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode)
 	MRPT_START
 
 	using namespace rapidxml;
+	using namespace std::string_literals;
 
 	// -------------------------------------
 	// (Mandatory) initial pose:
@@ -197,7 +216,41 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode)
 
 	// Parse animation effects:
 	// ----------------------------
-	//
+	if (auto nAnim = rootNode.first_node("animation"); nAnim)
+	{
+		auto aType = nAnim->first_attribute("type");
+		ASSERTMSG_(aType, "<animation> tag requires a type=\"...\" attribute");
+		const std::string sType = aType->value();
+
+		if (sType == "keyframes")
+		{
+			auto& poseSeq = m_anim_keyframes_path.emplace();
+			poseSeq.setInterpolationMethod(mrpt::poses::imLinearSlerp);
+
+			for (auto n = nAnim->first_node(); n; n = n->next_sibling())
+			{
+				if (strcmp(n->name(), "time_pose") != 0)
+					continue;  // ignore unknowns
+
+				mrpt::math::TPose3D p;
+				double t = 0;
+				if (4 !=
+					::sscanf(
+						n->value(), "%lf %lf %lf %lf", &t, &p.x, &p.y, &p.yaw))
+					THROW_EXCEPTION_FMT(
+						"Error parsing <time_pose>:\n%s", n->value());
+				p.yaw *= M_PI / 180.0;	// deg->rad
+
+				poseSeq.insert(mrpt::Clock::fromDouble(t), p);
+			}
+
+			// m_anim_keyframes_path->saveToTextFile(m_name + "_path.txt"s);
+		}
+		else
+		{
+			THROW_EXCEPTION_FMT("Invalid animation type='%s'", sType.c_str());
+		}
+	}
 
 	return true;
 	MRPT_END
