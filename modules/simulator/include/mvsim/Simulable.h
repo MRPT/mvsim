@@ -13,6 +13,7 @@
 #include <mrpt/math/TPoint2D.h>
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/poses/CPose3DInterpolator.h>
 #include <mvsim/JointXMLnode.h>
 #include <mvsim/basic_types.h>
 
@@ -144,8 +145,13 @@ class Simulable
 	/** Last time-step velocity (of the ref. point, in global coords) */
 	mrpt::math::TTwist2D m_dq{0, 0, 0};
 
+	// ============ ANIMATION VARIABLES ============
 	/** Initial pose, per configuration XML world file */
 	mrpt::math::TPose3D m_initial_q = mrpt::math::TPose3D::Identity();
+
+	std::optional<mrpt::poses::CPose3DInterpolator> m_anim_keyframes_path;
+
+	// ============ END OF ANIMATION VARIABLES ============
 
 	/** Whether is is in collision right now */
 	bool m_isInCollision = false;
