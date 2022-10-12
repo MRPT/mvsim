@@ -10,6 +10,7 @@
 
 #include <rapidxml.hpp>
 #include <stdexcept>
+#include <vector>
 
 namespace mvsim
 {
@@ -25,7 +26,8 @@ class JointXMLnode
 
    public:
 	void add(const rapidxml::xml_node<Ch>* node) { m_nodes.push_back(node); }
-	const rapidxml::xml_node<Ch>* first_node(const char* name)
+
+	const rapidxml::xml_node<Ch>* first_node(const char* name) const
 	{
 		const rapidxml::xml_node<Ch>* ret = nullptr;
 		for (const auto& node : m_nodes)

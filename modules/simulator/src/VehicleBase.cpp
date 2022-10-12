@@ -14,6 +14,7 @@
 #include <mrpt/system/filesystem.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
 #include <mvsim/FrictionModels/FrictionBase.h>
+#include <mvsim/JointXMLnode.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
@@ -27,7 +28,6 @@
 #include <sstream>	// std::stringstream
 #include <string>
 
-#include "JointXMLnode.h"
 #include "XMLClassesRegistry.h"
 #include "parse_utils.h"
 #include "xml_utils.h"
@@ -247,47 +247,13 @@ VehicleBase::Ptr VehicleBase::factory(
 		}
 	}
 
-	// (Mandatory) initial pose:
-	{
-		const xml_node<>* node = veh_root_node.first_node("init_pose");
-		if (!node)
-			throw runtime_error(
-				"[VehicleBase::factory] Missing XML node <init_pose>");
-
-		mrpt::math::TPose3D p;
-		if (3 != ::sscanf(node->value(), "%lf %lf %lf", &p.x, &p.y, &p.yaw))
-			throw runtime_error(
-				"[VehicleBase::factory] Error parsing "
-				"<init_pose>...</init_pose>");
-		p.yaw *= M_PI / 180.0;	// deg->rad
-
-		veh->setPose(p);
-	}
-
-	// (Optional) initial vel:
-	{
-		const xml_node<>* node = veh_root_node.first_node("init_vel");
-		if (node)
-		{
-			mrpt::math::TTwist2D dq;
-			if (3 !=
-				::sscanf(
-					node->value(), "%lf %lf %lf", &dq.vx, &dq.vy, &dq.omega))
-				throw runtime_error(
-					"[VehicleBase::factory] Error parsing "
-					"<init_vel>...</init_vel>");
-			dq.omega *= M_PI / 180.0;  // deg->rad
-
-			// Convert twist (velocity) from local -> global coords:
-			dq.rotate(veh->getPose().yaw);
-			veh->setTwist(dq);
-		}
-	}
+	// Common setup for simulable objects:
+	// -----------------------------------------------------------
+	veh->parseSimulable(veh_root_node);
 
 	// Custom visualization 3D model:
 	// -----------------------------------------------------------
 	veh->parseVisual(veh_root_node.first_node("visual"));
-	veh->parseSimulable(veh_root_node.first_node("publish"));
 
 	// Initialize class-specific params (mass, chassis shape, etc.)
 	// ---------------------------------------------------------------

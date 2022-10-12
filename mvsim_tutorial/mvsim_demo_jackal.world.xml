@@ -69,6 +69,12 @@
 	<block class="square_obstacle"> <init_pose>6 5 45</init_pose> </block>
 	<block class="square_obstacle"> <init_pose>10 -3 -90</init_pose> </block>
 	<block class="square_obstacle"> <init_pose>3 -4 -45</init_pose> </block>
-	<block class="square_obstacle"> <init_pose>5 1 0</init_pose> </block>
+	<block class="square_obstacle">
+		<init_pose>5 1 0</init_pose>
+
+		<animation type="keyframes">
+			<time_pose>0.0   </time_pose>
+		</animation>
+	</block>
 
 </mvsim_world>

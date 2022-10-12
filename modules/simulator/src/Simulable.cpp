@@ -99,43 +99,85 @@ mrpt::poses::CPose2D Simulable::getCPose2D() const
 	return {m_q.x, m_q.y, m_q.yaw};
 }
 
-bool Simulable::parseSimulable(const rapidxml::xml_node<char>* node)
+bool Simulable::parseSimulable(const JointXMLnode<>& rootNode)
 {
 	MRPT_START
 
-	if (node == nullptr) return false;
+	using namespace rapidxml;
 
-	// Parse XML params:
-
-	TParameterDefinitions params;
-	params["publish_pose_topic"] = TParamEntry("%s", &publishPoseTopic_);
-	params["publish_pose_period"] = TParamEntry("%lf", &publishPosePeriod_);
-
-	params["publish_relative_pose_topic"] =
-		TParamEntry("%s", &publishRelativePoseTopic_);
-	std::string listObjects;
-	params["publish_relative_pose_objects"] = TParamEntry("%s", &listObjects);
-
-	const std::map<std::string, std::string> varValues = {{"NAME", m_name}};
-
-	parse_xmlnode_children_as_param(*node, params, varValues);
-
-	// Parse the "enabled" attribute:
+	// -------------------------------------
+	// (Mandatory) initial pose:
+	// -------------------------------------
+	if (const xml_node<>* nPose = rootNode.first_node("init_pose"); nPose)
 	{
-		bool publishEnabled = true;
-		TParameterDefinitions auxPar;
-		auxPar["enabled"] = TParamEntry("%bool", &publishEnabled);
-		parse_xmlnode_attribs(*node, auxPar, varValues);
+		mrpt::math::TPose3D p;
+		if (3 != ::sscanf(nPose->value(), "%lf %lf %lf", &p.x, &p.y, &p.yaw))
+			THROW_EXCEPTION_FMT(
+				"Error parsing <init_pose>%s</init_pose>", nPose->value());
+		p.yaw *= M_PI / 180.0;	// deg->rad
 
-		// Reset publish topic if enabled==false
-		if (!publishEnabled) publishPoseTopic_.clear();
+		this->setPose(p);
+		m_initial_q = p;  // save it for later usage in some animations, etc.
+	}
+	else
+	{
+		THROW_EXCEPTION(
+			"Missing required XML node <init_pose>x y phi</init_pose>");
 	}
 
-	if (!listObjects.empty())
+	// -------------------------------------
+	// (Optional) initial vel:
+	// -------------------------------------
+	if (const xml_node<>* nInitVel = rootNode.first_node("init_vel"); nInitVel)
 	{
-		mrpt::system::tokenize(
-			mrpt::system::trim(listObjects), " ,",
-			publishRelativePoseOfOtherObjects_);
+		mrpt::math::TTwist2D dq;
+		if (3 !=
+			::sscanf(
+				nInitVel->value(), "%lf %lf %lf", &dq.vx, &dq.vy, &dq.omega))
+			THROW_EXCEPTION_FMT(
+				"Error parsing <init_vel>%s</init_vel>", nInitVel->value());
+		dq.omega *= M_PI / 180.0;  // deg->rad
+
+		// Convert twist (velocity) from local -> global coords:
+		dq.rotate(this->getPose().yaw);
+		this->setTwist(dq);
+	}
+
+	// -------------------------------------
+	// Parse <publish> XML tag
+	// -------------------------------------
+	if (auto node = rootNode.first_node("publish"); node)
+	{
+		TParameterDefinitions params;
+		params["publish_pose_topic"] = TParamEntry("%s", &publishPoseTopic_);
+		params["publish_pose_period"] = TParamEntry("%lf", &publishPosePeriod_);
+
+		params["publish_relative_pose_topic"] =
+			TParamEntry("%s", &publishRelativePoseTopic_);
+		std::string listObjects;
+		params["publish_relative_pose_objects"] =
+			TParamEntry("%s", &listObjects);
+
+		const std::map<std::string, std::string> varValues = {{"NAME", m_name}};
+
+		parse_xmlnode_children_as_param(*node, params, varValues);
+
+		// Parse the "enabled" attribute:
+		{
+			bool publishEnabled = true;
+			TParameterDefinitions auxPar;
+			auxPar["enabled"] = TParamEntry("%bool", &publishEnabled);
+			parse_xmlnode_attribs(*node, auxPar, varValues);
+
+			// Reset publish topic if enabled==false
+			if (!publishEnabled) publishPoseTopic_.clear();
+		}
+
+		if (!listObjects.empty())
+		{
+			mrpt::system::tokenize(
+				mrpt::system::trim(listObjects), " ,",
+				publishRelativePoseOfOtherObjects_);
 
 #if 0
 		std::cout << "[DEBUG] "
@@ -144,12 +186,18 @@ bool Simulable::parseSimulable(const rapidxml::xml_node<char>* node)
 				  << listObjects << ") to topic " << publishRelativePoseTopic_
 				  << std::endl;
 #endif
-	}
-	ASSERT_(
-		(publishRelativePoseOfOtherObjects_.empty() &&
-		 publishRelativePoseTopic_.empty()) ||
-		(!publishRelativePoseOfOtherObjects_.empty() &&
-		 !publishRelativePoseTopic_.empty()));
+		}
+		ASSERT_(
+			(publishRelativePoseOfOtherObjects_.empty() &&
+			 publishRelativePoseTopic_.empty()) ||
+			(!publishRelativePoseOfOtherObjects_.empty() &&
+			 !publishRelativePoseTopic_.empty()));
+
+	}  // end <publish>
+
+	// Parse animation effects:
+	// ----------------------------
+	//
 
 	return true;
 	MRPT_END
