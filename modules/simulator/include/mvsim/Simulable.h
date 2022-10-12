@@ -13,6 +13,7 @@
 #include <mrpt/math/TPoint2D.h>
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mvsim/JointXMLnode.h>
 #include <mvsim/basic_types.h>
 
 #include <shared_mutex>
@@ -127,7 +128,7 @@ class Simulable
 	 */
 	b2Body* m_b2d_body = nullptr;
 
-	bool parseSimulable(const rapidxml::xml_node<char>* node);
+	bool parseSimulable(const JointXMLnode<>& node);
 
 	void internalHandlePublish(const TSimulContext& context);
 
@@ -142,6 +143,9 @@ class Simulable
 
 	/** Last time-step velocity (of the ref. point, in global coords) */
 	mrpt::math::TTwist2D m_dq{0, 0, 0};
+
+	/** Initial pose, per configuration XML world file */
+	mrpt::math::TPose3D m_initial_q = mrpt::math::TPose3D::Identity();
 
 	/** Whether is is in collision right now */
 	bool m_isInCollision = false;
