@@ -1,8 +1,8 @@
 syntax = "proto2";
 
-import "Twist.proto";
-
 package mvsim_msgs;
+
+import "Twist.proto";
 
 message SrvSetControllerTwist {
   required string objectId = 1;
