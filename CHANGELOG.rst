@@ -2,6 +2,19 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add more documentation, demo files, and screenshots
+* Support animations from keyframe list for blocks and vehicles
+* Refactor common xml params in Simulable interface
+* Support PARENT_NAME usage in sensor definition files; add "<publish>" tags to tutorial sensors
+* 2D lidar sensor: new XML parameter maxRange
+* change threshold to decimate sensors preview subwindows
+* BUGFIX: Uninitialized quaternion in rviz marker (Closes `#14 <https://github.com/MRPT/mvsim/issues/14>`_)
+* Allow expressions in include tags
+* Expose more lidar params in its XML
+* Contributors: Jose Luis Blanco-Claraco
+
 0.4.0 (2022-09-27)
 ------------------
 * Major new release with tons of new features.
