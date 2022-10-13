@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2022-10-13)
+------------------
 * Add more documentation, demo files, and screenshots
 * Support animations from keyframe list for blocks and vehicles
 * Refactor common xml params in Simulable interface
