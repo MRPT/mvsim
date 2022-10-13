@@ -14,7 +14,6 @@
 #include <mrpt/system/filesystem.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
 #include <mvsim/FrictionModels/FrictionBase.h>
-#include <mvsim/JointXMLnode.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
@@ -28,6 +27,7 @@
 #include <sstream>	// std::stringstream
 #include <string>
 
+#include "JointXMLnode.h"
 #include "XMLClassesRegistry.h"
 #include "parse_utils.h"
 #include "xml_utils.h"
