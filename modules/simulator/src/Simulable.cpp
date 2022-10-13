@@ -15,6 +15,7 @@
 
 #include <cmath>  // fmod()
 
+#include "JointXMLnode.h"
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)

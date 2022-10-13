@@ -15,7 +15,7 @@
 namespace mvsim
 {
 /** Proxy class to a set of XML nodes to appear as if they where one. */
-template <typename Ch = char>
+template <typename Ch>
 class JointXMLnode
 {
    public:
@@ -113,4 +113,5 @@ class JointXMLnode
 	iterator begin() { return iterator(*this); }
 	iterator end() { return iterator(*this, m_nodes.size()); }
 };
+
 }  // namespace mvsim

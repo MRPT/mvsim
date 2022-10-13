@@ -14,7 +14,6 @@
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3DInterpolator.h>
-#include <mvsim/JointXMLnode.h>
 #include <mvsim/basic_types.h>
 
 #include <shared_mutex>

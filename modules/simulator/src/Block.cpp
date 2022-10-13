@@ -15,7 +15,6 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/version.h>
 #include <mvsim/Block.h>
-#include <mvsim/JointXMLnode.h>
 #include <mvsim/World.h>
 
 #include <map>
@@ -25,6 +24,7 @@
 #include <sstream>	// std::stringstream
 #include <string>
 
+#include "JointXMLnode.h"
 #include "XMLClassesRegistry.h"
 #include "xml_utils.h"
 

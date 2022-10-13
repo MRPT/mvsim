@@ -49,6 +49,8 @@ namespace mvsim
 {
 class World;
 class VehicleBase;
+template <typename Ch = char>
+class JointXMLnode;
 
 /** Simulation context for simulable objects updates */
 struct TSimulContext
