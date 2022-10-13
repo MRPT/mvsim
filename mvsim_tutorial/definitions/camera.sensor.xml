@@ -9,14 +9,14 @@
 
     <!-- <save_to_rawlog>camera.rawlog</save_to_rawlog> -->
 
-    <ncols>640</ncols>
-    <nrows>480</nrows>
-    <cx>320</cx>
-    <cy>240</cy>
-    <fx>400</fx>
-    <fy>400</fy>
-    <clip_min>1e-2</clip_min>
-    <clip_max>1e+4</clip_max>
+    <ncols>${ncols|640}</ncols>
+    <nrows>${nrows|480}</nrows>
+    <cx>${cx|320}</cx>
+    <cy>${cy|240}</cy>
+    <fx>${fx|400}</fx>
+    <fy>${fy|400}</fy>
+    <clip_min>${clip_min|1e-2}</clip_min>
+    <clip_max>${clip_max|1e+4}</clip_max>
 
     <visual> <model_uri>../models/simple_camera.dae</model_uri> </visual>
 
