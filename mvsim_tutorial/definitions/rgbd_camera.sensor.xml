@@ -5,6 +5,8 @@
         See: https://docs.mrpt.org/reference/latest/class_mrpt_obs_CObservation3DRangeScan.html
     -->
     <pose_3d> ${sensor_x|0.65}  ${sensor_y|0.0}  ${sensor_z|1.0}  ${sensor_yaw|0.0} 0.0 0.0</pose_3d>
+    
+    <!-- the yaw=-90deg roll=-90deg rotation is required since RGB axis convention is +Z forward, depth sensor is +X forward -->
     <relativePoseIntensityWRTDepth>0.0 0.0 0.0  -90.0 0.0 -90.0</relativePoseIntensityWRTDepth>
 
     <sensor_period>${sensor_period_sec|0.1}</sensor_period>
@@ -23,8 +25,8 @@
     <depth_fx>400</depth_fx>
     <depth_fy>400</depth_fy>
     <depth_resolution>1e-3</depth_resolution>
-    <depth_clip_min>0.01</depth_clip_min>
-    <depth_clip_max>15.0</depth_clip_max>
+    <depth_clip_min>${depth_clip_min|0.01}</depth_clip_min>
+    <depth_clip_max>${depth_clip_max|15.0}</depth_clip_max>
     <depth_noise_sigma>${depth_noise_sigma|0.05}</depth_noise_sigma>
 
     <rgb_ncols>640</rgb_ncols>
@@ -33,8 +35,8 @@
     <rgb_cy>240</rgb_cy>
     <rgb_fx>400</rgb_fx>
     <rgb_fy>400</rgb_fy>
-    <rgb_clip_min>1e-2</rgb_clip_min>
-    <rgb_clip_max>1e+4</rgb_clip_max>
+    <rgb_clip_min>${rgb_clip_min|1e-2}</rgb_clip_min>
+    <rgb_clip_max>${rgb_clip_max|1e+4}</rgb_clip_max>
 
     <visual> <model_uri>../models/simple_camera.dae</model_uri> <model_pitch>90</model_pitch> </visual>
 
