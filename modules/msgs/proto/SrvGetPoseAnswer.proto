@@ -1,9 +1,9 @@
 syntax = "proto2";
 
+package mvsim_msgs;
+
 import "Pose.proto";
 import "Twist.proto";
-
-package mvsim_msgs;
 
 message SrvGetPoseAnswer {
   /* Should be checked */

@@ -1,8 +1,8 @@
 syntax = "proto2";
 
-import "TopicInfo.proto";
-
 package mvsim_msgs;
+
+import "TopicInfo.proto";
 
 message ListTopicsAnswer {
   repeated TopicInfo topics = 1;

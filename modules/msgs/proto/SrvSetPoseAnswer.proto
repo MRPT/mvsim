@@ -1,8 +1,8 @@
 syntax = "proto2";
 
-import "Pose.proto";
-
 package mvsim_msgs;
+
+import "Pose.proto";
 
 message SrvSetPoseAnswer {
   /* Should be checked */
