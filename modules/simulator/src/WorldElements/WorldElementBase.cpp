@@ -12,6 +12,7 @@
 #include <mvsim/WorldElements/GroundGrid.h>
 #include <mvsim/WorldElements/HorizontalPlane.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
+#include <mvsim/WorldElements/PointCloud.h>
 
 #include <map>
 #include <rapidxml.hpp>
@@ -38,6 +39,7 @@ void register_all_world_elements()
 	REGISTER_WORLD_ELEMENT("occupancy_grid", OccupancyGridMap)
 	REGISTER_WORLD_ELEMENT("elevation_map", ElevationMap)
 	REGISTER_WORLD_ELEMENT("horizontal_plane", HorizontalPlane)
+	REGISTER_WORLD_ELEMENT("pointcloud", PointCloud)
 }
 
 WorldElementBase::Ptr WorldElementBase::factory(
