@@ -36,10 +36,34 @@ if (MVSIM_WITH_PROTOBUF)
 	# Python files:
 	if (MVSIM_WITH_PYTHON)
 		file(MAKE_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
+		file(COPY python/__init__.py DESTINATION ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
+
 		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy ${PROTO_PY_FILES} ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/
+			COMMENT "Copying protobuf python files to: ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/"
 		)
-		file(COPY python/__init__.py DESTINATION ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/)
+
+		# We must fix protobuf broken code: 
+		# Read https://github.com/cpcloud/protoletariat
+		# and https://github.com/protocolbuffers/protobuf/issues/1491
+		find_program(PROTOL_EXECUTABLE NAMES protol)
+
+		if (NOT PROTOL_EXECUTABLE)
+			message(STATUS "protol not found, installing now...")
+			
+			execute_process(
+				COMMAND pip3 install .
+				WORKING_DIRECTORY ${mvsim_SOURCE_DIR}/externals/proletariat/
+			)
+		endif()
+		find_program(PROTOL_EXECUTABLE NAMES protol REQUIRED)
+
+		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+			COMMAND 
+			${PROTOL_EXECUTABLE} --create-package --in-place --python-out ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/ protoc --proto-path=${CMAKE_CURRENT_SOURCE_DIR}/proto ${PROTOBUF_DEFINITION_FILES}
+			COMMENT "Applying protoletariat protobuf broken code fix..."
+		)
+
 	endif()
 	
 	target_include_directories(${PROJECT_NAME}
