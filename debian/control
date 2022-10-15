@@ -10,6 +10,7 @@ Build-Depends:
 	libmrpt-maps-dev (>= 2.0.0),
 	libmrpt-gui-dev (>= 2.0.0),
 	libmrpt-tfest-dev (>= 2.0.0),
+	libmrpt-tclap-dev (>= 2.0.0),
 	cmake,
 	libbox2d-dev,
 	protobuf-compiler,
