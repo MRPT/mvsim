@@ -49,18 +49,40 @@ if (MVSIM_WITH_PROTOBUF)
 		find_program(PROTOL_EXECUTABLE NAMES protol)
 
 		if (NOT PROTOL_EXECUTABLE)
-			message(STATUS "protol not found, installing now...")
+			message(STATUS "protol not found, installing now with pip3...")
 			
+			find_program(PIP3_EXECUTABLE NAMES pip3 REQUIRED)
+
+			set(PROTOL_INSTALL_DIR ${MVSIM_PYTHON_BUILD_DIRECTORY}/protol-install/)
+
 			execute_process(
-				COMMAND pip3 install .
-				WORKING_DIRECTORY ${mvsim_SOURCE_DIR}/externals/proletariat/
+				COMMAND ${PIP3_EXECUTABLE} install --prefix ${PROTOL_INSTALL_DIR} .
+				WORKING_DIRECTORY ${mvsim_SOURCE_DIR}/externals/protoletariat/
+				RESULT_VARIABLE PIP3_INSTALL_RESULT
+				OUTPUT_VARIABLE PIP3_OUTPUT
+				ERROR_VARIABLE  PIP3_OUTPUT
 			)
+			message(STATUS "PIP3_INSTALL_RESULT: ${PIP3_INSTALL_RESULT}. Output:\n${PIP3_OUTPUT}")
+
+			# Hint to find protol executable:
+			set(PROTOL_DESTDIR ${PROTOL_INSTALL_DIR}/bin)
+			
+			# And add pkg to PYTHONPATH:
+			set(PROTOL_PKG_DIR ${PROTOL_INSTALL_DIR}/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/)
+			message(STATUS "PROTOL_PKG_DIR: ${PROTOL_PKG_DIR}")
 		endif()
-		find_program(PROTOL_EXECUTABLE NAMES protol REQUIRED)
+
+		find_program(PROTOL_EXECUTABLE NAMES protol REQUIRED HINTS ${PROTOL_DESTDIR})
+		message(STATUS "PROTOL_EXECUTABLE: ${PROTOL_EXECUTABLE}")
+
+		configure_file(
+			${mvsim_SOURCE_DIR}/cmake/apply-protol.cmake.in
+			${MVSIM_PYTHON_BUILD_DIRECTORY}/apply-protol.cmake
+			@ONLY
+			)
 
 		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-			COMMAND 
-			${PROTOL_EXECUTABLE} --create-package --in-place --python-out ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_msgs/ protoc --proto-path=${CMAKE_CURRENT_SOURCE_DIR}/proto ${PROTOBUF_DEFINITION_FILES}
+			COMMAND ${CMAKE_COMMAND} -P ${MVSIM_PYTHON_BUILD_DIRECTORY}/apply-protol.cmake
 			COMMENT "Applying protoletariat protobuf broken code fix..."
 		)
 
