@@ -1,3 +1,6 @@
 [submodule "externals/box2d"]
 	path = externals/box2d
 	url = https://github.com/erincatto/box2d.git
+[submodule "externals/protoletariat"]
+	path = externals/protoletariat
+	url = https://github.com/cpcloud/protoletariat.git
