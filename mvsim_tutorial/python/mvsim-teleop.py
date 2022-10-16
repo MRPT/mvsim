@@ -39,4 +39,4 @@ if __name__ == "__main__":
     client.connect()
     print("Connected successfully.")
 
-    sendRobotTwistSetpoint(client, 'r1', 1.0, 0.0, 0.0)
+    sendRobotTwistSetpoint(client, 'r1', 0.75, 0.0, 1.0)
