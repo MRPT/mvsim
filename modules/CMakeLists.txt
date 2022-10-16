@@ -197,6 +197,37 @@ if (MVSIM_WITH_PROTOBUF)
   add_subdirectory(msgs)
 endif()
 
+# From: https://github.com/ament/ament_cmake/blob/rolling/ament_cmake_python/ament_cmake_python-extras.cmake
+macro(mvsim_ament_cmake_python_get_python_install_dir)
+  if(NOT DEFINED PYTHON_INSTALL_DIR)
+    # avoid storing backslash in cached variable since CMake will interpret it as escape character
+    set(_python_code
+      "import os"
+      "import sysconfig"
+      "print(os.path.relpath(sysconfig.get_path('purelib', vars={'base': '${CMAKE_INSTALL_PREFIX}'}), start='${CMAKE_INSTALL_PREFIX}').replace(os.sep, '/'))"
+    )
+    get_executable_path(_python_interpreter Python3::Interpreter CONFIGURE)
+    execute_process(
+      COMMAND
+      "${_python_interpreter}"
+      "-c"
+      "${_python_code}"
+      OUTPUT_VARIABLE _output
+      RESULT_VARIABLE _result
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(NOT _result EQUAL 0)
+      message(FATAL_ERROR
+        "execute_process(${_python_interpreter} -c '${_python_code}') returned "
+        "error code ${_result}")
+    endif()
+
+    set(PYTHON_INSTALL_DIR
+      "${_output}"
+      CACHE INTERNAL
+      "The directory for Python library installation. This needs to be in PYTHONPATH when 'setup.py install' is called.")
+  endif()
+endmacro()
 
 # ========================== Install Python libs ==========================
 if (pybind11_FOUND)
@@ -247,6 +278,9 @@ if (pybind11_FOUND)
 		CACHE PATH "Install prefix for python modules with 'make python-install'")
 	unset(def_)
 
+
+	mvsim_ament_cmake_python_get_python_install_dir()
+
 	add_custom_target(python-install
 			COMMAND
 				${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py 
@@ -257,7 +291,7 @@ if (pybind11_FOUND)
 				--single-version-externally-managed
 			DEPENDS mvsim-msgs pymvsim_comms
 			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}
-			COMMENT "Runnin 'python-install'...")
+			COMMENT "Running 'python-install'...")
 endif()
 
 # ========================== Show results ====================================
@@ -267,9 +301,8 @@ message(STATUS "BUILD_FOR_ROS  : ${BUILD_FOR_ROS} (ROS_VERSION: " $ENV{ROS_VERSI
 if (DETECTED_ROS1)
 	message(STATUS "  - catkin [req]              : ${catkin_FOUND}")
 	message(STATUS "  - dynamic_reconfigure [opt] : ${dynamic_reconfigure_FOUND}")
-	elseif(DETECTED_ROS2)
+elseif(DETECTED_ROS2)
 	message(STATUS "  - rclcpp [req]              : ${rclcpp_FOUND}")
-	message(STATUS "  - PYTHON_INSTALL_DIRECTORY  : ${PYTHON_INSTALL_DIRECTORY}")
 endif()
 
 message(STATUS "libbox2d       : ${box2d_VERSION}")
@@ -279,7 +312,9 @@ message(STATUS "Python wrappers: ${MVSIM_WITH_PYTHON} (pybind11: ${pybind11_VERS
 message(STATUS "Python interp  : ${Python3_EXECUTABLE}")
 if ($ENV{VERBOSE})
 	message(STATUS "CMAKE_INSTALL_PREFIX     : ${CMAKE_INSTALL_PREFIX}")
+	message(STATUS "DESTDIR                  : ${DESTDIR}")
 	message(STATUS "Python3_SITELIB          : ${Python3_SITELIB}")
 	message(STATUS "PYTHON_INSTALL_DIRECTORY : ${PYTHON_INSTALL_DIRECTORY}")
+	message(STATUS "PYTHON_INSTALL_DIR       : ${PYTHON_INSTALL_DIR}")
 endif()
 message(STATUS "")
