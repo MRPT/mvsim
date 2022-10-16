@@ -225,10 +225,16 @@ if (pybind11_FOUND)
 	   DEFINED ENV{DH_INTERNAL_OPTIONS}
 	  )
 		# Building with "debuild":
-		set(def_ "${CMAKE_INSTALL_PREFIX}")
+		if (NOT DEFINED ENV{ROS_DISTRO})
+			# A regular debian build:
+			set(def_ "${CMAKE_INSTALL_PREFIX}/..")
+		else()
+			# A ROS build:
+			set(def_ "${mvsim_BINARY_DIR}/../debian/ros-$ENV{ROS_DISTRO}-mvsim/opt/ros/$ENV{ROS_DISTRO}/")
+		endif()
 	else()
 		# Otherwise:
-		set(def_ ${Python3_SITELIB})
+		set(def_ ${Python3_SITELIB}/..)
 	endif()
 
 	set(PYTHON_INSTALL_DIRECTORY ${def_}
@@ -236,7 +242,7 @@ if (pybind11_FOUND)
 	unset(def_)
 
 	add_custom_target(python-install
-			COMMAND ${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install --root=${PYTHON_INSTALL_DIRECTORY}/.. --install-layout=deb --single-version-externally-managed
+			COMMAND ${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install --root=${PYTHON_INSTALL_DIRECTORY} --install-layout=deb --single-version-externally-managed
 			DEPENDS mvsim-msgs pymvsim_comms
 			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY})
 endif()
@@ -250,6 +256,7 @@ if (DETECTED_ROS1)
 	message(STATUS "  - dynamic_reconfigure [opt] : ${dynamic_reconfigure_FOUND}")
 	elseif(DETECTED_ROS2)
 	message(STATUS "  - rclcpp [req]              : ${rclcpp_FOUND}")
+	message(STATUS "  - PYTHON_INSTALL_DIRECTORY  : ${PYTHON_INSTALL_DIRECTORY}")
 endif()
 
 message(STATUS "libbox2d       : ${box2d_VERSION}")
