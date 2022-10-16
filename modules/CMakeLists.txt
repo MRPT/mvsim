@@ -215,8 +215,25 @@ if (pybind11_FOUND)
 	  ${CMAKE_INSTALL_INCLUDEDIR}/mvsim/mvsim-msgs/
 	)
 
-	set(PYTHON_INSTALL_DIRECTORY "${Python3_SITELIB}"
-	CACHE PATH "Install prefix for python modules with 'make python-install'")
+	# ------------------------------------------------
+	# For Debian packages, it should be:
+	# PYTHON_INSTALL_DIRECTORY="../debian/tmp/usr/"
+	# ------------------------------------------------
+	exec_program(env)
+	if(DEFINED ENV{DEB_HOST_ARCH} OR
+	   DEFINED ENV{DEB_BUILD_OPTIONS} OR
+	   DEFINED ENV{DH_INTERNAL_OPTIONS}
+	  )
+		# Building with "debuild":
+		set(def_ "${CMAKE_INSTALL_PREFIX}")
+	else()
+		# Otherwise:
+		set(def_ ${Python3_SITELIB})
+	endif()
+
+	set(PYTHON_INSTALL_DIRECTORY ${def_}
+		CACHE PATH "Install prefix for python modules with 'make python-install'")
+	unset(def_)
 
 	add_custom_target(python-install
 			COMMAND ${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install --root=${PYTHON_INSTALL_DIRECTORY}/.. --install-layout=deb --single-version-externally-managed

@@ -86,7 +86,7 @@ if (MVSIM_WITH_PROTOBUF)
 			COMMENT "Applying protoletariat protobuf broken code fix..."
 		)
 
-		install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} --build \"${mvsim_BUILD_DIR}\" --target python-install)")
+		install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} --build \"${mvsim_BINARY_DIR}\" --target python-install)")
 	endif()
 	
 	target_include_directories(${PROJECT_NAME}
