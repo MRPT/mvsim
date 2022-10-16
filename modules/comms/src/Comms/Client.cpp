@@ -140,7 +140,7 @@ void Client::connect()
 {
 	using namespace std::string_literals;
 	ASSERTMSG_(
-		!zmq_->mainReqSocket || !zmq_->mainReqSocket->connected(),
+		!zmq_->mainReqSocket || !zmq_->mainReqSocket,
 		"Client is already running.");
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -165,7 +165,7 @@ void Client::connect()
 	zmq_->srvListenSocket.emplace(zmq_->context, ZMQ_REP);
 	zmq_->srvListenSocket->bind("tcp://0.0.0.0:*"s);
 
-	if (!zmq_->srvListenSocket->connected())
+	if (!zmq_->srvListenSocket)
 		THROW_EXCEPTION("Error binding service listening socket.");
 
 	ASSERTMSG_(
@@ -182,7 +182,7 @@ void Client::connect()
 	zmq_->topicNotificationsSocket.emplace(zmq_->context, ZMQ_PAIR);
 	zmq_->topicNotificationsSocket->bind("tcp://0.0.0.0:*"s);
 
-	if (!zmq_->topicNotificationsSocket->connected())
+	if (!zmq_->topicNotificationsSocket)
 		THROW_EXCEPTION("Error binding topic updates listening socket.");
 
 	zmq_->topicNotificationsEndPoint =
@@ -212,7 +212,7 @@ void Client::shutdown() noexcept
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "shutdown");
 
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
-	if (!zmq_->mainReqSocket->connected()) return;
+	if (!zmq_->mainReqSocket) return;
 
 	try
 	{
@@ -505,7 +505,7 @@ void Client::publishTopic(
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	ASSERTMSG_(
-		zmq_ && zmq_->mainReqSocket && zmq_->mainReqSocket->connected(),
+		zmq_ && zmq_->mainReqSocket && zmq_->mainReqSocket,
 		"Client not connected to Server");
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "publishTopic");
 
@@ -824,7 +824,9 @@ void Client::doSubscribeTopic(
 		topics.emplace_hint(topics.begin(), topicName, zmq_->context)->second;
 
 	// subscribe to .recv() any message:
+	//#if ZMQ_VERSION < ZMQ_MAKE_VERSION(4, 7, 0)
 	ipt.subSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+	//#endif
 
 	ipt.callbacks.push_back(callback);
 
