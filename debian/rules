@@ -36,8 +36,6 @@ override_dh_auto_configure:
 
 override_dh_auto_install:
 	dh_auto_install -B $(BUILDDIR)
-	# Install python:
-	dh_auto_build -O--buildsystem=cmake -- python-install
 
 	# If we have libbox2d < 2.4 (or none), install the custom, embedded version of it:
 	# empty line first:
