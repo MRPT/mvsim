@@ -230,6 +230,10 @@ if (pybind11_FOUND)
 			set(PYTHON_INSTALL_DIR_POST "/..")
 		else()
 			# A ROS build:
+			# Examples for PYTHONPATH:
+			# /opt/ros/noetic/lib/python3/dist-packages
+			# /opt/ros/foxy/lib/python3.8/site-packages
+			#
 			set(def_ "${mvsim_BINARY_DIR}/../debian/ros-$ENV{ROS_DISTRO}-mvsim/opt/ros/$ENV{ROS_DISTRO}/")
 			set(PYTHON_INSTALL_DIR_POST "/../../../")
 		endif()
@@ -272,4 +276,8 @@ message(STATUS "Protobuf       : ${MVSIM_WITH_PROTOBUF} ${Protobuf_VERSION}")
 message(STATUS "ZeroMQ         : ${MVSIM_WITH_ZMQ} ${ZeroMQ_VERSION}")
 message(STATUS "Python wrappers: ${MVSIM_WITH_PYTHON} (pybind11: ${pybind11_VERSION})")
 message(STATUS "Python interp  : ${Python3_EXECUTABLE}")
+if ($ENV{VERBOSE})
+	message(STATUS "Python3_SITELIB: ${Python3_SITELIB}")
+	message(STATUS "PYTHON_INSTALL_DIRECTORY : ${PYTHON_INSTALL_DIRECTORY}")
+endif()
 message(STATUS "")
