@@ -256,7 +256,8 @@ if (pybind11_FOUND)
 				--install-layout=deb
 				--single-version-externally-managed
 			DEPENDS mvsim-msgs pymvsim_comms
-			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY})
+			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}
+			COMMENT "Runnin 'python-install'...")
 endif()
 
 # ========================== Show results ====================================
@@ -277,7 +278,8 @@ message(STATUS "ZeroMQ         : ${MVSIM_WITH_ZMQ} ${ZeroMQ_VERSION}")
 message(STATUS "Python wrappers: ${MVSIM_WITH_PYTHON} (pybind11: ${pybind11_VERSION})")
 message(STATUS "Python interp  : ${Python3_EXECUTABLE}")
 if ($ENV{VERBOSE})
-	message(STATUS "Python3_SITELIB: ${Python3_SITELIB}")
+	message(STATUS "CMAKE_INSTALL_PREFIX     : ${CMAKE_INSTALL_PREFIX}")
+	message(STATUS "Python3_SITELIB          : ${Python3_SITELIB}")
 	message(STATUS "PYTHON_INSTALL_DIRECTORY : ${PYTHON_INSTALL_DIRECTORY}")
 endif()
 message(STATUS "")
