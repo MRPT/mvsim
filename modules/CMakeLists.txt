@@ -219,7 +219,6 @@ if (pybind11_FOUND)
 	# For Debian packages, it should be:
 	# PYTHON_INSTALL_DIRECTORY="../debian/tmp/usr/"
 	# ------------------------------------------------
-	exec_program(env)
 	if(DEFINED ENV{DEB_HOST_ARCH} OR
 	   DEFINED ENV{DEB_BUILD_OPTIONS} OR
 	   DEFINED ENV{DH_INTERNAL_OPTIONS}
