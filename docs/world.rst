@@ -360,8 +360,9 @@ between steps. Each step has several sub steps:
 
 -  After time step - everything needed to be done with updated state
 
+
 Logging
-~~~~~~~
+---------
 
 Each vehicle is equipped with parameters logger(s). This logger is not
 configurable and can be rewritten programmaticaly.
@@ -392,10 +393,10 @@ them.
 
 
 Limitations
-~~~~~~~~~~~~
+-------------
 
 -  A limitation of box2d is that no element can be thinner than 0.05 units, or
-the following assert will be raised while loading the world model:
+   the following assert will be raised while loading the world model:
 
 .. code-block::
 
