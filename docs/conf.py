@@ -32,13 +32,12 @@ author = u'Jose Luis Blanco Claraco'
 
 
 html_theme_options = {
-#    'canonical_url': '',
-    'analytics_id': 'UA-21128561-9',  #  Provided by Google in your dashboard
+    # 'canonical_url': '',
+    'analytics_id': 'UA-21128561-9',  # Provided by Google in your dashboard
     'logo_only': False,
     'display_version': True,
     'prev_next_buttons_location': 'bottom',
     'style_external_links': False,
-    'vcs_pageview_mode': '',
     'style_nav_header_background': 'white',
     # Toc options
     'collapse_navigation': True,
@@ -60,7 +59,7 @@ master_doc = 'index'
 # ones.
 extensions = [
     'sphinx_rtd_theme',
-	'sphinx.ext.mathjax'
+    'sphinx.ext.mathjax'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
