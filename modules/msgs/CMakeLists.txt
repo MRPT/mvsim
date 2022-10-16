@@ -55,24 +55,38 @@ if (MVSIM_WITH_PROTOBUF)
 			message(STATUS " you can still build MVSIM without Python support     ")
 			message(STATUS " setting the CMake variable MVSIM_WITH_PYTHON=Off     ")
 			message(STATUS "======================================================")
+
 			
 			set(PROTOL_INSTALL_DIR ${MVSIM_PYTHON_BUILD_DIRECTORY}/protol-install/)
 
+			# And add pkg to PYTHONPATH:
+			set(PROTOL_PKG_DIR ${PROTOL_INSTALL_DIR}/usr/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/ CACHE PATH "Path to installed protoletariat pkg")
+			message(STATUS "PROTOL_PKG_DIR: ${PROTOL_PKG_DIR}")
+			
+			set(ENV{PYTHONPATH}  ${PROTOL_PKG_DIR})
+
 			execute_process(
-				COMMAND python3 -m pip3 install --root ${PROTOL_INSTALL_DIR} --prefix /usr/ .
+				COMMAND python3 -m pip install --root ${PROTOL_INSTALL_DIR} --prefix /usr/ .
 				WORKING_DIRECTORY ${mvsim_SOURCE_DIR}/externals/protoletariat/
 				RESULT_VARIABLE PIP3_INSTALL_RESULT
 				OUTPUT_VARIABLE PIP3_OUTPUT
 				ERROR_VARIABLE  PIP3_OUTPUT
 			)
-			message(STATUS "PIP3_INSTALL_RESULT: ${PIP3_INSTALL_RESULT}. Output:\n${PIP3_OUTPUT}")
+			message(STATUS "PIP3_INSTALL_RESULT: ${PIP3_INSTALL_RESULT}.\nOutput:\n${PIP3_OUTPUT}")
+
+			execute_process(
+				COMMAND python3 -m pip show -f protoletariat
+				WORKING_DIRECTORY ${mvsim_SOURCE_DIR}/externals/protoletariat/
+				RESULT_VARIABLE PIP3_LIST_RESULT
+				OUTPUT_VARIABLE PIP3_OUTPUT
+				ERROR_VARIABLE  PIP3_OUTPUT
+			)
+			message(STATUS "PIP3_LIST_RESULT: ${PIP3_LIST_RESULT}.\nOutput:\n${PIP3_OUTPUT}")
+
 
 			# Hint to find protol executable:
 			set(PROTOL_DESTDIR ${PROTOL_INSTALL_DIR}/usr/bin)
 			
-			# And add pkg to PYTHONPATH:
-			set(PROTOL_PKG_DIR ${PROTOL_INSTALL_DIR}/usr/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/ CACHE PATH "Path to installed protoletariat pkg")
-			message(STATUS "PROTOL_PKG_DIR: ${PROTOL_PKG_DIR}")
 			unset(PROTOL_EXECUTABLE CACHE)
 		endif()
 
