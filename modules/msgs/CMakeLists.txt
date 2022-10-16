@@ -70,6 +70,7 @@ if (MVSIM_WITH_PROTOBUF)
 			# And add pkg to PYTHONPATH:
 			set(PROTOL_PKG_DIR ${PROTOL_INSTALL_DIR}/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/)
 			message(STATUS "PROTOL_PKG_DIR: ${PROTOL_PKG_DIR}")
+			unset(PROTOL_EXECUTABLE CACHE)
 		endif()
 
 		find_program(PROTOL_EXECUTABLE NAMES protol REQUIRED HINTS ${PROTOL_DESTDIR})
