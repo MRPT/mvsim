@@ -227,14 +227,17 @@ if (pybind11_FOUND)
 		# Building with "debuild":
 		if (NOT DEFINED ENV{ROS_DISTRO})
 			# A regular debian build:
-			set(def_ "${CMAKE_INSTALL_PREFIX}/..")
+			set(def_ "${CMAKE_INSTALL_PREFIX}")
+			set(PYTHON_INSTALL_DIR_POST "/..")
 		else()
 			# A ROS build:
 			set(def_ "${mvsim_BINARY_DIR}/../debian/ros-$ENV{ROS_DISTRO}-mvsim/opt/ros/$ENV{ROS_DISTRO}/")
+			set(PYTHON_INSTALL_DIR_POST "/../../../")
 		endif()
 	else()
 		# Otherwise:
-		set(def_ ${Python3_SITELIB}/..)
+		set(def_ ${Python3_SITELIB})
+		set(PYTHON_INSTALL_DIR_POST "/..")
 	endif()
 
 	set(PYTHON_INSTALL_DIRECTORY ${def_}
@@ -242,7 +245,13 @@ if (pybind11_FOUND)
 	unset(def_)
 
 	add_custom_target(python-install
-			COMMAND ${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py install --root=${PYTHON_INSTALL_DIRECTORY} --install-layout=deb --single-version-externally-managed
+			COMMAND
+				${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py 
+				install
+				--root=${PYTHON_INSTALL_DIRECTORY}${PYTHON_INSTALL_DIR_POST}
+				--prefix=${CMAKE_INSTALL_PREFIX}
+				--install-layout=deb
+				--single-version-externally-managed
 			DEPENDS mvsim-msgs pymvsim_comms
 			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY})
 endif()
