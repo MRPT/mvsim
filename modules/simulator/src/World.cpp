@@ -178,7 +178,7 @@ std::string World::xmlPathToActualPath(const std::string& modelURI) const
 	if (modelURI.substr(0, 7) == "http://" ||
 		modelURI.substr(0, 8) == "https://")
 	{
-		MRPT_TODO("Retrieve models from online sources");
+		// MRPT_TODO("Retrieve models from online sources");
 		THROW_EXCEPTION("To do: online models");
 		// localFileName = xx;
 	}

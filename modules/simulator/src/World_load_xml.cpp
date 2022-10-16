@@ -56,6 +56,7 @@ void World::load_from_XML(
 
 	// Parse the XML input:
 	const auto [xml, root] = readXmlTextAndGetRoot(xml_text, fileNameForPath);
+	(void)xml;	// unused
 
 	if (0 != strcmp(root->name(), "mvsim_world"))
 		throw runtime_error(mrpt::format(
@@ -186,6 +187,7 @@ void World::internal_recursive_parse_XML(
 		}
 
 		const auto [xml, root] = readXmlAndGetRoot(absFile, vars);
+		(void)xml;	// unused
 
 		// recursive parse:
 		const auto newBasePath =
