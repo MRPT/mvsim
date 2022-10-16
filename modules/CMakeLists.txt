@@ -206,7 +206,8 @@ macro(mvsim_ament_cmake_python_get_python_install_dir)
       "import sysconfig"
       "print(os.path.relpath(sysconfig.get_path('purelib', vars={'base': '${CMAKE_INSTALL_PREFIX}'}), start='${CMAKE_INSTALL_PREFIX}').replace(os.sep, '/'))"
     )
-    get_executable_path(_python_interpreter Python3::Interpreter CONFIGURE)
+    # JL Was: get_executable_path(_python_interpreter Python3::Interpreter CONFIGURE)
+	set(_python_interpreter ${Python3_EXECUTABLE})
     execute_process(
       COMMAND
       "${_python_interpreter}"
@@ -258,7 +259,6 @@ if (pybind11_FOUND)
 		if (NOT DEFINED ENV{ROS_DISTRO})
 			# A regular debian build:
 			set(def_ "${CMAKE_INSTALL_PREFIX}")
-			set(PYTHON_INSTALL_DIR_POST "/..")
 		else()
 			# A ROS build:
 			# Examples for PYTHONPATH:
@@ -266,12 +266,10 @@ if (pybind11_FOUND)
 			# /opt/ros/foxy/lib/python3.8/site-packages
 			#
 			set(def_ "${mvsim_BINARY_DIR}/../debian/ros-$ENV{ROS_DISTRO}-mvsim/opt/ros/$ENV{ROS_DISTRO}/")
-			set(PYTHON_INSTALL_DIR_POST "/../../../")
 		endif()
 	else()
 		# Otherwise:
 		set(def_ ${Python3_SITELIB})
-		set(PYTHON_INSTALL_DIR_POST "/..")
 	endif()
 
 	set(PYTHON_INSTALL_DIRECTORY ${def_}
@@ -279,13 +277,14 @@ if (pybind11_FOUND)
 	unset(def_)
 
 
-	mvsim_ament_cmake_python_get_python_install_dir()
+	mvsim_ament_cmake_python_get_python_install_dir() # Gets PYTHON_INSTALL_DIR
 
 	add_custom_target(python-install
 			COMMAND
 				${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py 
 				install
-				--root=${PYTHON_INSTALL_DIRECTORY}${PYTHON_INSTALL_DIR_POST}
+				--root=${PYTHON_INSTALL_DIRECTORY}
+				--install-lib=${PYTHON_INSTALL_DIR}
 				--prefix=${CMAKE_INSTALL_PREFIX}
 				--install-layout=deb
 				--single-version-externally-managed

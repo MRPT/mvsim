@@ -73,7 +73,7 @@ if (MVSIM_WITH_PROTOBUF)
 			set(PROTOL_DESTDIR ${PROTOL_INSTALL_DIR}/usr/bin)
 			
 			# And add pkg to PYTHONPATH:
-			set(PROTOL_PKG_DIR ${PROTOL_INSTALL_DIR}/usr/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/)
+			set(PROTOL_PKG_DIR ${PROTOL_INSTALL_DIR}/usr/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/ CACHE PATH "Path to installed protoletariat pkg")
 			message(STATUS "PROTOL_PKG_DIR: ${PROTOL_PKG_DIR}")
 			unset(PROTOL_EXECUTABLE CACHE)
 		endif()
