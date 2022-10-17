@@ -247,30 +247,7 @@ if (pybind11_FOUND)
 	  ${CMAKE_INSTALL_INCLUDEDIR}/mvsim/mvsim-msgs/
 	)
 
-	# ------------------------------------------------
-	# For Debian packages, it should be:
-	# PYTHON_INSTALL_DIRECTORY="../debian/tmp/usr/"
-	# ------------------------------------------------
-	if(DEFINED ENV{DEB_HOST_ARCH} OR
-	   DEFINED ENV{DEB_BUILD_OPTIONS} OR
-	   DEFINED ENV{DH_INTERNAL_OPTIONS}
-	  )
-		# Building with "debuild":
-		if (NOT DEFINED ENV{ROS_DISTRO})
-			# A regular debian build:
-			set(def_ "${CMAKE_INSTALL_PREFIX}")
-		else()
-			# A ROS build:
-			# Examples for PYTHONPATH:
-			# /opt/ros/noetic/lib/python3/dist-packages
-			# /opt/ros/foxy/lib/python3.8/site-packages
-			#
-			set(def_ "${mvsim_BINARY_DIR}/../debian/ros-$ENV{ROS_DISTRO}-mvsim/opt/ros/$ENV{ROS_DISTRO}/")
-		endif()
-	else()
-		# Otherwise:
-		set(def_ ${Python3_SITELIB})
-	endif()
+	set(def_ "${CMAKE_INSTALL_PREFIX}")
 
 	set(PYTHON_INSTALL_DIRECTORY ${def_}
 		CACHE PATH "Install prefix for python modules with 'make python-install'")
@@ -279,18 +256,23 @@ if (pybind11_FOUND)
 
 	mvsim_ament_cmake_python_get_python_install_dir() # Gets PYTHON_INSTALL_DIR
 
-	add_custom_target(python-install
-			COMMAND
-				${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py 
+	set(_cmd
+		${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py 
 				install
 				--root=${PYTHON_INSTALL_DIRECTORY}
 				--install-lib=${PYTHON_INSTALL_DIR}
 				--prefix=${CMAKE_INSTALL_PREFIX}
 				--install-layout=deb
 				--single-version-externally-managed
+	)
+	string(REPLACE ";" " " _cmd_print "${_cmd}")
+	
+	add_custom_target(python-install
+			COMMAND ${_cmd}
 			DEPENDS mvsim-msgs pymvsim_comms
 			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}
-			COMMENT "Running 'python-install'...")
+			COMMENT "Running 'python-install': ${_cmd_print}")
+	unset(_cmd)
 endif()
 
 # ========================== Show results ====================================
