@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#set -x
+set -e
+
+cd @MVSIM_PYTHON_BUILD_DIRECTORY@
+source @MVSIM_PYTHON_BUILD_DIRECTORY@/venv/bin/activate
+
+protol --create-package \
+    --in-place \
+    --python-out @MVSIM_PYTHON_BUILD_DIRECTORY@/mvsim_msgs/ \
+    protoc --proto-path=@CMAKE_CURRENT_SOURCE_DIR@/proto \
+    @PROTOBUF_DEFINITION_FILES_FOR_BASH@
+

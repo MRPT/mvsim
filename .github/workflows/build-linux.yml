@@ -83,7 +83,8 @@ jobs:
             pybind11-dev \
             libprotobuf-dev \
             libpython3-dev \
-            python3-pip
+            python3-pip \
+            python3-virtualenv
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++ g++

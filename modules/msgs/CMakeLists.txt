@@ -10,6 +10,9 @@ file(GLOB PROTOBUF_DEFINITION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOBUF_DEFINITION_FILES})
 protobuf_generate_python(PROTO_PY_FILES ${PROTOBUF_DEFINITION_FILES})
 
+# Space-separated list for bash scripts:
+string (REPLACE ";" " " PROTOBUF_DEFINITION_FILES_FOR_BASH "${PROTOBUF_DEFINITION_FILES}")
+
 # Declare the target (a library)
 add_library(${PROJECT_NAME}
   ${PROTO_SRCS} ${PROTO_HDRS}
@@ -46,61 +49,29 @@ if (MVSIM_WITH_PROTOBUF)
 		# We must fix protobuf broken code: 
 		# Read https://github.com/cpcloud/protoletariat
 		# and https://github.com/protocolbuffers/protobuf/issues/1491
-		find_program(PROTOL_EXECUTABLE NAMES protol)
+		
+		configure_file(
+			${mvsim_SOURCE_DIR}/cmake/create-venv.sh.in
+			${MVSIM_PYTHON_BUILD_DIRECTORY}/create-venv.sh
+			@ONLY
+		)
 
-		if (NOT PROTOL_EXECUTABLE)
-			message(STATUS "======================================================")
-			message(STATUS "protol not found, installing it now with pip3...      ")
-			message(STATUS " If pip3 is not installed or another error is found,  ")
-			message(STATUS " you can still build MVSIM without Python support     ")
-			message(STATUS " setting the CMake variable MVSIM_WITH_PYTHON=Off     ")
-			message(STATUS "======================================================")
-
-			
-			set(PROTOL_INSTALL_DIR ${MVSIM_PYTHON_BUILD_DIRECTORY}/protol-install/)
-
-			# And add pkg to PYTHONPATH:
-			set(PROTOL_PKG_DIR ${PROTOL_INSTALL_DIR}/usr/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/ CACHE PATH "Path to installed protoletariat pkg")
-			message(STATUS "PROTOL_PKG_DIR: ${PROTOL_PKG_DIR}")
-			
-			set(ENV{PYTHONPATH}  ${PROTOL_PKG_DIR})
-
-			execute_process(
-				COMMAND python3 -m pip install --root ${PROTOL_INSTALL_DIR} --prefix /usr/ .
-				WORKING_DIRECTORY ${mvsim_SOURCE_DIR}/externals/protoletariat/
-				RESULT_VARIABLE PIP3_INSTALL_RESULT
-				OUTPUT_VARIABLE PIP3_OUTPUT
-				ERROR_VARIABLE  PIP3_OUTPUT
-			)
-			message(STATUS "PIP3_INSTALL_RESULT: ${PIP3_INSTALL_RESULT}.\nOutput:\n${PIP3_OUTPUT}")
-
-			execute_process(
-				COMMAND python3 -m pip show -f protoletariat
-				WORKING_DIRECTORY ${mvsim_SOURCE_DIR}/externals/protoletariat/
-				RESULT_VARIABLE PIP3_LIST_RESULT
-				OUTPUT_VARIABLE PIP3_OUTPUT
-				ERROR_VARIABLE  PIP3_OUTPUT
-			)
-			message(STATUS "PIP3_LIST_RESULT: ${PIP3_LIST_RESULT}.\nOutput:\n${PIP3_OUTPUT}")
-
-
-			# Hint to find protol executable:
-			set(PROTOL_DESTDIR ${PROTOL_INSTALL_DIR}/usr/bin)
-			
-			unset(PROTOL_EXECUTABLE CACHE)
-		endif()
-
-		find_program(PROTOL_EXECUTABLE NAMES protol REQUIRED HINTS ${PROTOL_DESTDIR})
-		message(STATUS "PROTOL_EXECUTABLE: ${PROTOL_EXECUTABLE}")
+		execute_process(
+			COMMAND ${MVSIM_PYTHON_BUILD_DIRECTORY}/create-venv.sh
+			RESULT_VARIABLE VENV_RESULT
+			OUTPUT_VARIABLE VENV_OUTPUT
+			ERROR_VARIABLE  VENV_OUTPUT
+		)
+		message(STATUS "Python3 virtualenv creation: ${VENV_RESULT}.\nOutput:\n${VENV_OUTPUT}")
 
 		configure_file(
-			${mvsim_SOURCE_DIR}/cmake/apply-protol.cmake.in
-			${MVSIM_PYTHON_BUILD_DIRECTORY}/apply-protol.cmake
+			${mvsim_SOURCE_DIR}/cmake/apply-protol.sh.in
+			${MVSIM_PYTHON_BUILD_DIRECTORY}/apply-protol.sh
 			@ONLY
 			)
 
 		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -P ${MVSIM_PYTHON_BUILD_DIRECTORY}/apply-protol.cmake
+			COMMAND ${MVSIM_PYTHON_BUILD_DIRECTORY}/apply-protol.sh
 			COMMENT "Applying protoletariat protobuf broken code fix..."
 		)
 
