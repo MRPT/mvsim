@@ -33,7 +33,7 @@
   <depend>boost</depend>
   <depend>pybind11-dev</depend>
   <depend>protobuf-dev</depend>
-  <depend>python3-virtualenv</depend>
+  <depend>python3-venv</depend>
 
   <!-- ROS1 -->
   <depend           condition="$ROS_VERSION == 1">roscpp</depend>
