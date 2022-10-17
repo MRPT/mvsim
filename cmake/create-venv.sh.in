@@ -5,7 +5,7 @@ set -e
 
 cd @MVSIM_PYTHON_BUILD_DIRECTORY@
 
-@Python3_EXECUTABLE@ -m venv -p @Python3_EXECUTABLE@ venv
+@Python3_EXECUTABLE@ -m venv venv
 source venv/bin/activate
 
 pip install protoletariat
