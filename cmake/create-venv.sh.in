@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#set -x
+set -e
+
+cd @MVSIM_PYTHON_BUILD_DIRECTORY@
+
+virtualenv -p @Python3_EXECUTABLE@ venv
+source venv/bin/activate
+
+pip install protoletariat
