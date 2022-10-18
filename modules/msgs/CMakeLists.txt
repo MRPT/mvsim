@@ -62,7 +62,7 @@ if (MVSIM_WITH_PROTOBUF)
 			OUTPUT_VARIABLE VENV_OUTPUT
 			ERROR_VARIABLE  VENV_OUTPUT
 		)
-		message(STATUS "Python3 virtualenv creation: ${VENV_RESULT}.\nOutput:\n${VENV_OUTPUT}")
+		message(STATUS "Python3 venv creation: ${VENV_RESULT}.\nOutput:\n${VENV_OUTPUT}")
 
 		configure_file(
 			${mvsim_SOURCE_DIR}/cmake/apply-protol.sh.in
