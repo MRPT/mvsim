@@ -65,7 +65,11 @@ if (MVSIM_WITH_PYTHON)
   set(Python_ADDITIONAL_VERSIONS ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
   set(PYBIND11_PYTHON_VERSION ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
   find_package(pybind11 CONFIG)
-  set(MVSIM_PYTHON_BUILD_DIRECTORY ${mvsim_BINARY_DIR}/python)
+  
+  # The PYTHON build dir must be exactly at the same level than the root binary dir
+  # in order for the different build tools (debuild,...) pass the correct relative 
+  # path where to install the built python packages (e.g. under <build>/debian/tmp )
+  set(MVSIM_PYTHON_BUILD_DIRECTORY ${mvsim_BINARY_DIR})
 
   if (pybind11_FOUND AND pybind11_VERSION VERSION_LESS 2.2)
 	message(STATUS "Warning: Disabling Python bindings since pybind11 >=2.2 is required but only found version ${pybind11_VERSION}")
@@ -247,12 +251,9 @@ if (pybind11_FOUND)
 	  ${CMAKE_INSTALL_INCLUDEDIR}/mvsim/mvsim-msgs/
 	)
 
-	set(def_ "${CMAKE_INSTALL_PREFIX}")
-
-	set(PYTHON_INSTALL_DIRECTORY ${def_}
-		CACHE PATH "Install prefix for python modules with 'make python-install'")
-	unset(def_)
-
+	if (NOT DEFINED PYTHON_INSTALL_DIRECTORY)
+		set(PYTHON_INSTALL_DIRECTORY ${CMAKE_INSTALL_PREFIX} CACHE PATH "Install prefix for python modules with 'make python-install'")
+	endif()
 
 	mvsim_ament_cmake_python_get_python_install_dir() # Gets PYTHON_INSTALL_DIR
 
