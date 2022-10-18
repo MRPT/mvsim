@@ -257,22 +257,18 @@ if (pybind11_FOUND)
 
 	mvsim_ament_cmake_python_get_python_install_dir() # Gets PYTHON_INSTALL_DIR
 
-	set(_cmd
-		${Python3_EXECUTABLE} ${MVSIM_PYTHON_BUILD_DIRECTORY}/setup.py 
-				install
-				--root=${PYTHON_INSTALL_DIRECTORY}
-				--install-lib=${PYTHON_INSTALL_DIR}
-				--prefix=${CMAKE_INSTALL_PREFIX}
-				--install-layout=deb
-				--single-version-externally-managed
+	# We need to do the install via a script run during "make install" so we can 
+	# catch the variable DESTDIR, used in debian builds:
+	configure_file(
+		${mvsim_SOURCE_DIR}/cmake/install-python.cmake.in
+		${mvsim_BINARY_DIR}/install-python.cmake
+		@ONLY
 	)
-	string(REPLACE ";" " " _cmd_print "${_cmd}")
-	
+
 	add_custom_target(python-install
-			COMMAND ${_cmd}
+			COMMAND ${CMAKE_COMMAND} -P ${mvsim_BINARY_DIR}/install-python.cmake
 			DEPENDS mvsim-msgs pymvsim_comms
-			WORKING_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}
-			COMMENT "Running 'python-install': ${_cmd_print}")
+			COMMENT "Running 'python-install': ${_cmd}")
 	unset(_cmd)
 endif()
 

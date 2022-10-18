@@ -1,0 +1,19 @@
+
+message(STATUS "DESTDIR: ${DESTDIR}")
+
+
+execute_process(COMMAND
+    @Python3_EXECUTABLE@ @MVSIM_PYTHON_BUILD_DIRECTORY@/setup.py 
+        install
+        --root=${PYTHON_INSTALL_DIRECTORY}
+        --install-lib=${PYTHON_INSTALL_DIR}
+        --prefix=${CMAKE_INSTALL_PREFIX}
+        --install-layout=deb
+        --single-version-externally-managed
+    RESULT_VARIABLE result
+    WORKING_DIRECTORY @MVSIM_PYTHON_BUILD_DIRECTORY@
+)
+
+if(result)
+    message(FATAL_ERROR "CMake step for installing python modules failed: ${result}")
+endif()
