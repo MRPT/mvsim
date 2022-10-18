@@ -6,7 +6,7 @@
 # - Use it to move an object in an arbitrary way.
 #
 # Install python3-mvsim, or test with a local build with:
-# export PYTHONPATH=$HOME/code/mvsim/build/lib/:$PYTHONPATH
+# export PYTHONPATH=$HOME/code/mvsim/build/:$PYTHONPATH
 # ---------------------------------------------------------------------
 
 from mvsim_comms import pymvsim_comms
