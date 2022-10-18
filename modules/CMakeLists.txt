@@ -60,7 +60,14 @@ if (MVSIM_WITH_PYTHON)
 		set(Python3_VERSION_MAJOR ${Python_VERSION_MAJOR})
 		set(Python3_VERSION_MINOR ${Python_VERSION_MINOR})
 	endif()
+endif()
 
+if (MVSIM_WITH_PYTHON AND ("${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}" VERSION_LESS "3.8"))
+	set(MVSIM_WITH_PYTHON OFF CACHE BOOL "Build python wrappers" FORCE)
+	message(STATUS "*WARNING* Disabling Python wrappers: We require python >=3.8, but ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR} was detected.")
+endif()
+
+if (MVSIM_WITH_PYTHON)
   # Enforce using python3:
   set(Python_ADDITIONAL_VERSIONS ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
   set(PYBIND11_PYTHON_VERSION ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
