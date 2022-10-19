@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.2 (2022-10-19)
+------------------
 * Disable Python wrappers for python <3.8
 * Honor DESTDIR when building and installing
 * Honor cli-provided PYTHON_INSTALL_DIRECTORY via cmake flags
