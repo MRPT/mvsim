@@ -2,6 +2,16 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Disable Python wrappers for python <3.8
+* Honor DESTDIR when building and installing
+* Honor cli-provided PYTHON_INSTALL_DIRECTORY via cmake flags
+* Fix protobuf-generated broken Python3 imports (using protoletariat)
+* Add new WorldElement type: pointcloud
+* Add Python3 example for teleop twist
+* Contributors: Jose Luis Blanco-Claraco
+
 0.4.1 (2022-10-13)
 ------------------
 * Add more documentation, demo files, and screenshots
