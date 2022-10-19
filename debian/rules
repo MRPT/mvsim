@@ -39,6 +39,7 @@ override_dh_auto_install:
 
 	# Workaround not to FTBFS if built with old python version, 
 	# which do not create actual package contents:
+	mkdir -p debian/tmp/usr/lib/python3/
 	touch debian/tmp/usr/lib/python3/.mvsim_empty
 
 	# If we have libbox2d < 2.4 (or none), install the custom, embedded version of it:
