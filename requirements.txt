@@ -1,5 +1,2 @@
-astunparse==1.6.3
-click==8.1.3
-protobuf==4.21.8
-protoletariat==1.0.1
-six==1.16.0
+protobuf
+protoletariat
