@@ -37,6 +37,10 @@ override_dh_auto_configure:
 override_dh_auto_install:
 	dh_auto_install -B $(BUILDDIR)
 
+	# Workaround not to FTBFS if built with old python version, 
+	# which do not create actual package contents:
+	touch debian/tmp/usr/lib/python3/.mvsim_empty
+
 	# If we have libbox2d < 2.4 (or none), install the custom, embedded version of it:
 	# empty line first:
 	echo "" >> debian/libmvsim-simulator-dev.install
