@@ -338,7 +338,7 @@ void World::connectToServer()
 			std::function<mvsim_msgs::SrvGetPoseAnswer(
 				const mvsim_msgs::SrvGetPose&)>(
 				[this](const mvsim_msgs::SrvGetPose& req) {
-					const auto lckCopy =
+					auto lckCopy =
 						mrpt::lockHelper(m_copy_of_objects_dynstate_mtx);
 
 					mvsim_msgs::SrvGetPoseAnswer ans;
@@ -369,17 +369,19 @@ void World::connectToServer()
 
 						ans.set_objectisincollision(
 							m_copy_of_objects_had_collision.count(sId) != 0);
-
-						{
-							const auto lckPhys =
-								mrpt::lockHelper(m_reset_collision_flags_mtx);
-							m_reset_collision_flags.insert(sId);
-						}
 					}
 					else
 					{
 						ans.set_success(false);
 					}
+
+					lckCopy.unlock();
+					{
+						const auto lckPhys =
+							mrpt::lockHelper(m_reset_collision_flags_mtx);
+						m_reset_collision_flags.insert(sId);
+					}
+
 					return ans;
 				}));
 
