@@ -26,11 +26,11 @@ void mvsim::sendMessage(
 	arch << m.GetTypeName();
 	arch << m.SerializeAsString();
 
-	zmq::message_t msg(buf.getRawBufferData(), buf.getTotalBytesCount());
 #if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
-	socket.send(msg, zmq::send_flags::none);
+	zmq_send(
+		socket.handle(), buf.getRawBufferData(), buf.getTotalBytesCount(), 0);
 #else
-	socket.send(msg);
+	zmq_send(socket.handle(), buf.getRawBufferData(), buf.getTotalBytesCount());
 #endif
 }
 

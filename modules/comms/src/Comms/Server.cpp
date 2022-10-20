@@ -83,7 +83,7 @@ void Server::internalServerThread()
 	{
 		MRPT_LOG_INFO_STREAM("Server thread started.");
 
-		zmq::context_t context(1);
+		zmq::context_t context(3);
 		mainThreadZMQcontext_ = &context;
 
 		zmq::socket_t mainRepSocket(context, ZMQ_REP);

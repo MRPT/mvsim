@@ -95,7 +95,7 @@ struct InfoPerSubscribedTopic
 struct Client::ZMQImpl
 {
 #if defined(MVSIM_HAS_ZMQ)
-	zmq::context_t context{1, ZMQ_MAX_SOCKETS_DFLT};
+	zmq::context_t context{2, ZMQ_MAX_SOCKETS_DFLT};
 	std::optional<zmq::socket_t> mainReqSocket;
 	std::recursive_mutex mainReqSocketMtx;
 	mvsim::SocketMonitor mainReqSocketMonitor;
