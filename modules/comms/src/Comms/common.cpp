@@ -29,8 +29,10 @@ void mvsim::sendMessage(
 #if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
 	zmq_send(
 		socket.handle(), buf.getRawBufferData(), buf.getTotalBytesCount(), 0);
-#else
+#elif ZMQ_VERSION > ZMQ_MAKE_VERSION(4, 2, 5)
 	zmq_send(socket.handle(), buf.getRawBufferData(), buf.getTotalBytesCount());
+#else
+	zmq_send(socket, buf.getRawBufferData(), buf.getTotalBytesCount());
 #endif
 }
 
