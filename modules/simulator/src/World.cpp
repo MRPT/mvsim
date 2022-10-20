@@ -136,14 +136,39 @@ void World::internal_one_timestep(double dt)
 	}
 
 	// 3) Save dynamical state and post-step processing:
+	// This also makes a copy of all objects dynamical state, so service calls
+	// can be answered straight away without waiting for the main simulation
+	// mutex:
 	{
 		mrpt::system::CTimeLoggerEntry tle(
 			m_timlogger, "timestep.3.save_dynstate");
 
 		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+		const auto lckCopy = mrpt::lockHelper(m_copy_of_objects_dynstate_mtx);
 
 		for (auto& e : m_simulableObjects)
-			if (e.second) e.second->simul_post_timestep(context);
+		{
+			if (!e.second) continue;
+			// process:
+			e.second->simul_post_timestep(context);
+
+			// save our own copy of the kinematic state:
+			m_copy_of_objects_dynstate_pose[e.first] = e.second->getPose();
+			m_copy_of_objects_dynstate_twist[e.first] = e.second->getTwist();
+
+			if (e.second->hadCollision())
+				m_copy_of_objects_had_collision.insert(e.first);
+		}
+	}
+	{
+		const auto lckPhys = mrpt::lockHelper(m_reset_collision_flags_mtx);
+		for (const auto& sId : m_reset_collision_flags)
+		{
+			if (auto itV = m_simulableObjects.find(sId);
+				itV != m_simulableObjects.end())
+				itV->second->resetCollisionFlag();
+		}
+		m_reset_collision_flags.clear();
 	}
 
 	// 4) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
@@ -313,17 +338,18 @@ void World::connectToServer()
 			std::function<mvsim_msgs::SrvGetPoseAnswer(
 				const mvsim_msgs::SrvGetPose&)>(
 				[this](const mvsim_msgs::SrvGetPose& req) {
-					std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
+					const auto lckCopy =
+						mrpt::lockHelper(m_copy_of_objects_dynstate_mtx);
 
 					mvsim_msgs::SrvGetPoseAnswer ans;
 					const auto sId = req.objectid();
 					ans.set_objectisincollision(false);
 
-					if (auto itV = m_simulableObjects.find(sId);
-						itV != m_simulableObjects.end())
+					if (auto itV = m_copy_of_objects_dynstate_pose.find(sId);
+						itV != m_copy_of_objects_dynstate_pose.end())
 					{
 						ans.set_success(true);
-						const mrpt::math::TPose3D p = itV->second->getPose();
+						const mrpt::math::TPose3D p = itV->second;
 						auto* po = ans.mutable_pose();
 						po->set_x(p.x);
 						po->set_y(p.y);
@@ -332,7 +358,7 @@ void World::connectToServer()
 						po->set_pitch(p.pitch);
 						po->set_roll(p.roll);
 
-						const auto t = itV->second->getTwist();
+						const auto t = m_copy_of_objects_dynstate_twist.at(sId);
 						auto* tw = ans.mutable_twist();
 						tw->set_vx(t.vx);
 						tw->set_vy(t.vy);
@@ -342,8 +368,13 @@ void World::connectToServer()
 						tw->set_wz(t.omega);
 
 						ans.set_objectisincollision(
-							itV->second->hadCollision());
-						itV->second->resetCollisionFlag();
+							m_copy_of_objects_had_collision.count(sId) != 0);
+
+						{
+							const auto lckPhys =
+								mrpt::lockHelper(m_reset_collision_flags_mtx);
+							m_reset_collision_flags.insert(sId);
+						}
 					}
 					else
 					{

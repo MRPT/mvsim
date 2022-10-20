@@ -461,6 +461,16 @@ class World : public mrpt::system::COutputLogger
 	mrpt::opengl::COpenGLScene m_physical_objects;
 	std::recursive_mutex m_physical_objects_mtx;
 
+	/// Updated in internal_one_step()
+	std::map<std::string, mrpt::math::TPose3D> m_copy_of_objects_dynstate_pose;
+	std::map<std::string, mrpt::math::TTwist2D>
+		m_copy_of_objects_dynstate_twist;
+	std::set<std::string> m_copy_of_objects_had_collision;
+	std::recursive_mutex m_copy_of_objects_dynstate_mtx;
+
+	std::set<std::string> m_reset_collision_flags;
+	std::mutex m_reset_collision_flags_mtx;
+
 	void internal_gui_on_observation(
 		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 	void internal_gui_on_observation_3Dscan(

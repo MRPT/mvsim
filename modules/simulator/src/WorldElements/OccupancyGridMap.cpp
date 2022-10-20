@@ -104,7 +104,7 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void OccupancyGridMap::internalGuiUpdate(
 	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
-	bool childrenOnly)
+	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 
