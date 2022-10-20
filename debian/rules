@@ -22,18 +22,12 @@ CMAKE_FLAGS = \
 	$(CMAKE_ARCH_FLAGS)
 
 # Package version of libbox2d-dev
-libbox2d_version := $(shell dpkg-query -W -f '$${Version}' libbox2d-dev)
-
-# Code snippet from: https://stackoverflow.com/a/15637871/1631514
-libbox2d_version_ge_2_4 := $(shell echo -e "2.4\n$(libbox2d_version)"|sort -ct. -k1,1n -k2,2n && echo YES)
+libbox2d_version = $(shell dpkg-query -W -f '$${Version}' libbox2d-dev)
 
 %:
 	dh $@ --with python3 --buildsystem=cmake
 
 override_dh_auto_configure:
-	echo $(libbox2d_version)
-	echo $(libbox2d_version_ge_2_4)
-
 	dh_auto_configure -B $(BUILDDIR) \
 		-- $(CMAKE_FLAGS) \
 		-DCMAKE_SHARED_LINKER_FLAGS_RELEASE="$(LDFLAGS)" \
@@ -48,14 +42,18 @@ override_dh_auto_install:
 	mkdir -p debian/tmp/usr/lib/python3/
 	touch debian/tmp/usr/lib/python3/.mvsim_empty
 
+	echo "libbox2d_version: $(libbox2d_version)"
+
 	# If we have libbox2d < 2.4 (or none), install the custom, embedded version of it:
 	# empty line first:
-	# if [ ! "$(libbox2d_version_ge_2_4)" == "YES" ]; then\
+	if [ "$$(echo $(libbox2d_version) | sed 's/\([0-9]\.[0-9]\).*/\1<2.4/' | bc)" = "1" ]; then \
+		echo "WARNING: Embedding libbox2d into libmvsim-simulator-dev"
+		
 		echo "" >> debian/libmvsim-simulator-dev.install;
 		echo "usr/lib/*/libbox2d.a" >> debian/libmvsim-simulator-dev.install;
 		echo "usr/lib/*/cmake/box2d/*" >> debian/libmvsim-simulator-dev.install;
 		echo "usr/include/box2d/" >> debian/libmvsim-simulator-dev.install;
-	#fi
+	fi
 
 override_dh_missing:
 	dh_missing --list-missing
