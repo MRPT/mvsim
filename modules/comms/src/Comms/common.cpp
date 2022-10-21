@@ -26,7 +26,7 @@ void mvsim::sendMessage(
 	arch << m.GetTypeName();
 	arch << m.SerializeAsString();
 
-#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
+#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 2, 5)
 	zmq_send(
 		socket.handle(), buf.getRawBufferData(), buf.getTotalBytesCount(), 0);
 #else
