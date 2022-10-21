@@ -76,7 +76,7 @@ zmq::message_t mvsim::receiveMessage(zmq::socket_t& s)
 
 std::string mvsim::get_zmq_endpoint(const zmq::socket_t& s)
 {
-#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 7, 0)
+#if CPPZMQ_VERSION > ZMQ_MAKE_VERSION(4, 7, 0)
 	return s.get(zmq::sockopt::last_endpoint);
 #else
 	char assignedPort[200];
