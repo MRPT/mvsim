@@ -26,11 +26,11 @@ void mvsim::sendMessage(
 	arch << m.GetTypeName();
 	arch << m.SerializeAsString();
 
-#if ZMQ_VERSION > ZMQ_MAKE_VERSION(4, 2, 5)
-	zmq_send(
-		socket.handle(), buf.getRawBufferData(), buf.getTotalBytesCount(), 0);
+	zmq::message_t msg(buf.getRawBufferData(), buf.getTotalBytesCount());
+#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
+	socket.send(msg, zmq::send_flags::none);
 #else
-	zmq_send(socket, buf.getRawBufferData(), buf.getTotalBytesCount(), 0);
+	socket.send(msg);
 #endif
 }
 
@@ -57,7 +57,8 @@ void mvsim::parseMessage(
 	bool ok = out.ParseFromString(serializedData);
 	if (!ok)
 		THROW_EXCEPTION_FMT(
-			"Format error: protobuf could not decode binary message of type "
+			"Format error: protobuf could not decode binary message of "
+			"type "
 			"'%s'",
 			typeName.c_str());
 }
