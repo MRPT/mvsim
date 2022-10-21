@@ -19,6 +19,14 @@ elseif("$ENV{ROS_VERSION}" STREQUAL "1")
 	set (CMAKE_CXX_STANDARD 14)
 endif()
 
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+	set(default_build_type "Release")
+	message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+	set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build." FORCE)
+endif()
+# Set the possible values of build type for cmake-gui
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo" "SanitizeAddress" "SanitizeThread")
+
 # CMake file for the library target
 project(mvsim)
 
@@ -47,6 +55,19 @@ include(GNUInstallDirs)
 if (POLICY CMP0057)
 	cmake_policy(SET CMP0057 NEW) # IN_LIST (needed by pybind11 cmake scripts)
 endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+	# BUILD_TYPE: SanitizeAddress
+	set(CMAKE_CXX_FLAGS_SANITIZEADDRESS "-fsanitize=address  -fsanitize=leak -g")
+	set(CMAKE_EXE_LINKER_FLAGS_SANITIZEADDRESS "-fsanitize=address  -fsanitize=leak")
+	set(CMAKE_SHARED_LINKER_FLAGS_SANITIZEADDRESS "-fsanitize=address  -fsanitize=leak")
+	
+	# BUILD_TYPE: SanitizeThread
+	set(CMAKE_CXX_FLAGS_SANITIZETHREAD "-fsanitize=thread -g")
+	set(CMAKE_EXE_LINKER_FLAGS_SANITIZETHREAD "-fsanitize=thread")
+	set(CMAKE_SHARED_LINKER_FLAGS_SANITIZETHREAD "-fsanitize=thread")
+endif()
+
 
 # ------------------------------------------------------------------
 #                              IMPORTANT NOTE
