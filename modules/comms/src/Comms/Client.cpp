@@ -225,7 +225,7 @@ void Client::shutdown() noexcept
 			"shutdown: Exception: " << mrpt::exception_to_str(e));
 	}
 
-#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
+#if CPPZMQ_VERSIONZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
 	zmq_->context.shutdown();
 #else
 	// Missing shutdown() in older versions:
@@ -397,8 +397,15 @@ void Client::doAdvertiseTopic(
 
 	// Bind the PUBLISH socket:
 	ipat.pubSocket.bind("tcp://0.0.0.0:*");
+
+#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 7, 1)
+	if (!ipat.pubSocket)
+#else
 	if (!ipat.pubSocket.connected())
+#endif
+	{
 		THROW_EXCEPTION("Could not bind publisher socket");
+	}
 
 	// Retrieve assigned TCP port:
 	ipat.endpoint = get_zmq_endpoint(ipat.pubSocket);
@@ -457,11 +464,7 @@ void Client::doAdvertiseService(
 	lck.unlock();
 
 	// Retrieve assigned TCP port:
-	char assignedPort[100];
-	size_t assignedPortLen = sizeof(assignedPort);
-	zmq_->srvListenSocket->getsockopt(
-		ZMQ_LAST_ENDPOINT, assignedPort, &assignedPortLen);
-	assignedPort[assignedPortLen] = '\0';
+	const auto assignedPort = mvsim::get_zmq_endpoint(*zmq_->srvListenSocket);
 
 	ips.serviceName = serviceName;	// redundant in container, but handy.
 	ips.callback = callback;
@@ -471,7 +474,7 @@ void Client::doAdvertiseService(
 	MRPT_LOG_DEBUG_FMT(
 		"Advertising service `%s` [%s->%s] on endpoint `%s`",
 		serviceName.c_str(), descIn->full_name().c_str(),
-		descOut->full_name().c_str(), assignedPort);
+		descOut->full_name().c_str(), assignedPort.c_str());
 
 	mvsim_msgs::AdvertiseServiceRequest req;
 	req.set_servicename(ips.serviceName);
@@ -531,7 +534,11 @@ void Client::publishTopic(
 			topicName.c_str(), msg.GetDescriptor()->name().c_str(),
 			ipat.descriptor->name().c_str()));
 
+#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 7, 1)
+	ASSERT_(ipat.pubSocket);
+#else
 	ASSERT_(ipat.pubSocket.connected());
+#endif
 
 	mvsim::sendMessage(msg, ipat.pubSocket);
 
@@ -824,9 +831,11 @@ void Client::doSubscribeTopic(
 		topics.emplace_hint(topics.begin(), topicName, zmq_->context)->second;
 
 	// subscribe to .recv() any message:
-	//#if ZMQ_VERSION < ZMQ_MAKE_VERSION(4, 7, 0)
+#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 7, 1)
+	ipt.subSocket.set(zmq::sockopt::subscribe, "");
+#else
 	ipt.subSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
-	//#endif
+#endif
 
 	ipt.callbacks.push_back(callback);
 

@@ -94,7 +94,7 @@ void Server::internalServerThread()
 			zmq::message_t request;
 
 			//  Wait for next request from client
-#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
+#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
 			std::optional<size_t> reqSize = mainRepSocket.recv(request);
 			ASSERT_(reqSize.has_value());
 #else
@@ -160,7 +160,7 @@ void Server::requestMainThreadTermination()
 	zmq::context_t* ctx = mainThreadZMQcontext_;
 	if (ctx)
 	{
-#if ZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
+#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
 		ctx->shutdown();
 #else
 		// Missing shutdown() in older versions:
@@ -252,7 +252,11 @@ void Server::db_add_topic_subscriber(
 	ASSERT_(mainThreadZMQcontext_);
 	zmq::socket_t s(*mainThreadZMQcontext_, ZMQ_PAIR);
 	s.connect(updatesEndPoint);
+#if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 7, 1)
+	ASSERT_(s);
+#else
 	ASSERT_(s.connected());
+#endif
 	sendMessage(tiMsg, s);
 
 	mvsim_msgs::GenericAnswer ans;
