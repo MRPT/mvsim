@@ -30,7 +30,7 @@
                 <technique sid="COMMON">
                     <blinn>
                         <emission>
-                               <color> 0.30000 0.30000 0.30000 1</color>
+                               <color>0.30000 0.30000 0.30000 1</color>
                         </emission>
                         <ambient>
                                <color>1.0000 1.0000 1.0000 1</color>
