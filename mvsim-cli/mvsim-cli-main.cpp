@@ -47,7 +47,7 @@ TCLAP::SwitchArg argHelp(
 
 // ======= Command handlers =======
 
-static const std::map<std::string, cmd_t> cliCommands = {
+const std::map<std::string, cmd_t> cliCommands = {
 	{"help", cmd_t(&printListCommands)},
 	{"server", cmd_t(&launchStandAloneServer)},
 	{"launch", cmd_t(&launchSimulation)},
