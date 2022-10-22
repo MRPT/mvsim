@@ -12,9 +12,11 @@
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mvsim/WorldElements/OccupancyGridMap.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #if PACKAGE_ROS_VERSION == 1
+// ===========================================
+//                    ROS 1
+// ===========================================
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -29,11 +31,15 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 // usings:
 using Msg_OccupancyGrid = nav_msgs::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::TransformStamped;
 #else
+// ===========================================
+//                    ROS 2
+// ===========================================
 #include <mrpt/ros2bridge/image.h>
 #include <mrpt/ros2bridge/laser_scan.h>
 #include <mrpt/ros2bridge/map.h>
@@ -46,6 +52,7 @@ using Msg_TransformStamped = geometry_msgs::TransformStamped;
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 // usings:
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
