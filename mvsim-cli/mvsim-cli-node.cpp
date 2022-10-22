@@ -14,7 +14,7 @@
 static int printCommandsNode(bool showErrorMsg);
 static int nodeList();
 
-static const std::map<std::string, cmd_t> cliNodeCommands = {
+const std::map<std::string, cmd_t> cliNodeCommands = {
 	{"list", cmd_t(&nodeList)},
 };
 

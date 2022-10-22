@@ -39,6 +39,7 @@ struct TThreadParams
    private:
 	bool closing_ = false;
 };
+
 static void mvsim_server_thread_update_GUI(TThreadParams& thread_params);
 mvsim::World::TGUIKeyEvent gui_key_events;
 std::mutex gui_key_events_mtx;

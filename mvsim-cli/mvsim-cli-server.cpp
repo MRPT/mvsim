@@ -17,7 +17,7 @@ TCLAP::ValueArg<int> argPort(
 	"p", "port", "TCP port to listen at", false, mvsim::MVSIM_PORTNO_MAIN_REP,
 	"TCP port", cmd);
 
-static std::shared_ptr<mvsim::Server> server;
+std::shared_ptr<mvsim::Server> server;
 
 void commonLaunchServer()
 {
