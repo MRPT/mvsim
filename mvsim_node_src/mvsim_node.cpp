@@ -52,7 +52,14 @@ using Msg_TransformStamped = geometry_msgs::TransformStamped;
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+
+// see: https://github.com/ros2/geometry2/pull/416
+#if defined(MVSIM_HAS_TF2_GEOMETRY_MSGS_HPP)
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#else
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#endif
+
 // usings:
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
