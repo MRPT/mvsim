@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 set -e
 
 cd @MVSIM_PYTHON_BUILD_DIRECTORY@
