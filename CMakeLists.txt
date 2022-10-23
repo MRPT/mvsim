@@ -351,6 +351,12 @@ if (BUILD_FOR_ROS)
 			#PRIVATE  # ros ament already used the plain signature, we cannot use this here...
 			mrpt::ros2bridge
 		)
+
+		# We need this to handle this backwards-incompatible change: https://github.com/ros2/geometry2/pull/416
+		if("${tf2_geometry_msgs_VERSION}" VERSION_GREATER_EQUAL "0.18.0")
+			target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_TF2_GEOMETRY_MSGS_HPP)
+		endif()
+
 	endif()
 
 	target_compile_definitions(mvsim_node PRIVATE
