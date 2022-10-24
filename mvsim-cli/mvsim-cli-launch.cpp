@@ -51,10 +51,10 @@ int launchSimulation()
 
 	// check args:
 	bool badArgs = false;
-	const auto& unlabeledArgs = argCmd.getValue();
+	const auto& unlabeledArgs = cli->argCmd.getValue();
 	if (unlabeledArgs.size() != 2) badArgs = true;
 
-	if (argHelp.isSet() || badArgs)
+	if (cli->argHelp.isSet() || badArgs)
 	{
 		fprintf(
 			stdout,
@@ -76,9 +76,10 @@ Available options:
 
 	world.setMinLoggingLevel(
 		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			argVerbosity.getValue()));
+			cli->argVerbosity.getValue()));
 
-	if (argFullProfiler.isSet()) world.getTimeLogger().enableKeepWholeHistory();
+	if (cli->argFullProfiler.isSet())
+		world.getTimeLogger().enableKeepWholeHistory();
 
 	// Load from XML:
 	rapidxml::file<> fil_xml(sXMLfilename.c_str());

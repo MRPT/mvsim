@@ -13,10 +13,6 @@
 
 #include "mvsim-cli.h"
 
-TCLAP::ValueArg<int> argPort(
-	"p", "port", "TCP port to listen at", false, mvsim::MVSIM_PORTNO_MAIN_REP,
-	"TCP port", cmd);
-
 std::shared_ptr<mvsim::Server> server;
 
 void commonLaunchServer()
@@ -26,18 +22,18 @@ void commonLaunchServer()
 	// Start network server:
 	server = std::make_shared<mvsim::Server>();
 
-	if (argPort.isSet()) server->listenningPort(argPort.getValue());
+	if (cli->argPort.isSet()) server->listenningPort(cli->argPort.getValue());
 
 	server->setMinLoggingLevel(
 		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			argVerbosity.getValue()));
+			cli->argVerbosity.getValue()));
 
 	server->start();
 }
 
 int launchStandAloneServer()
 {
-	if (argHelp.isSet())
+	if (cli->argHelp.isSet())
 	{
 		fprintf(
 			stdout,
