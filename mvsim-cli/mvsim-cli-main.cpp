@@ -20,32 +20,8 @@
 
 #include "mvsim-cli.h"
 
-TCLAP::CmdLine cmd("mvsim", ' ', "version", false /* no --help */);
-
-TCLAP::UnlabeledMultiArg<std::string> argCmd(
-	"command", "Command to run. Run 'mvsim help' to list commands.", false, "",
-	cmd);
-
-TCLAP::ValueArg<std::string> argVerbosity(
-	"v", "verbose", "Verbosity level", false, "INFO", "ERROR|WARN|INFO|DEBUG",
-	cmd);
-
-TCLAP::SwitchArg argFullProfiler(
-	"", "full-profiler",
-	"Enable saving *all* timing data, dumping it to a file at the end of the "
-	"program.",
-	cmd);
-
-TCLAP::SwitchArg argDetails(
-	"", "details", "Shows details in the specified subcommand", cmd);
-
-TCLAP::SwitchArg argVersion(
-	"", "version", "Shows program version and exits", cmd);
-
-TCLAP::SwitchArg argHelp(
-	"h", "help", "Shows more detailed help for command", cmd);
-
 // ======= Command handlers =======
+std::unique_ptr<cli_flags> cli;
 
 const std::map<std::string, cmd_t> cliCommands = {
 	{"help", cmd_t(&printListCommands)},
@@ -79,13 +55,15 @@ int main(int argc, char** argv)
 {
 	try
 	{
-		if (!cmd.parse(argc, argv))
+		cli = std::make_unique<cli_flags>();
+
+		if (!cli->cmd.parse(argc, argv))
 		{
 			printListCommands();
 			return 1;
 		}
 
-		if (argVersion.isSet())
+		if (cli->argVersion.isSet())
 		{
 			printVersion();
 			return 0;
@@ -93,15 +71,15 @@ int main(int argc, char** argv)
 
 		// Take first unlabeled argument:
 		std::string command;
-		if (const auto& lst = argCmd.getValue(); !lst.empty())
+		if (const auto& lst = cli->argCmd.getValue(); !lst.empty())
 			command = lst.at(0);
 
 		// Look up command in table:
 		auto itCmd = cliCommands.find(command);
 
-		if (!argCmd.isSet() || itCmd == cliCommands.end())
+		if (!cli->argCmd.isSet() || itCmd == cliCommands.end())
 		{
-			if (!argHelp.isSet())
+			if (!cli->argHelp.isSet())
 			{
 				setConsoleErrorColor();
 				std::cerr << "Error: missing or unknown command.\n";
