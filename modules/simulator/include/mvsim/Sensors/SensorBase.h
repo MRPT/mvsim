@@ -58,6 +58,8 @@ class SensorBase : public VisualObject, public Simulable
 	static void RegisterSensorOriginViz(
 		const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
 
+	double sensor_period() const { return m_sensor_period; }
+
    protected:
 	/** Should be called within each derived class simul_post_timestep() method
 	 *  to update m_sensor_last_timestamp and check if the sensor should be
