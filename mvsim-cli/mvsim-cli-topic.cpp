@@ -108,7 +108,7 @@ static void callbackSubscribeTopicGeneric(const zmq::message_t& msg)
 	const auto [typeName, serializedData] =
 		mvsim::internal::parseMessageToParts(msg);
 	std::cout << "[" << mrpt::system::dateTimeLocalToString(mrpt::Clock::now())
-			  << "] Received data : \n ";
+			  << "] Received data : \n";
 	std::cout << " - typeName: " << typeName << "\n";
 	std::cout << " - data: " << serializedData.size() << " bytes\n";
 
