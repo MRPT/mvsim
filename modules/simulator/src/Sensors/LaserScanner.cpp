@@ -449,7 +449,11 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	auto viewport = world3DScene.getViewport();
 
+#if MRPT_VERSION < 0x256
 	auto& cam = viewport->getCamera();
+#else
+	auto& cam = m_fbo_renderer_depth->getCamera(world3DScene);
+#endif
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
