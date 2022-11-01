@@ -275,7 +275,17 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	auto viewport = world3DScene.getViewport();
 
-	auto& cam = viewport->getCamera();
+#if MRPT_VERSION < 0x256
+	auto* camDepth = &viewport->getCamera();
+	auto* camRGB = &viewport->getCamera();
+#else
+	auto* camDepth = m_fbo_renderer_depth
+						 ? &m_fbo_renderer_depth->getCamera(world3DScene)
+						 : nullptr;
+	auto* camRGB = m_fbo_renderer_rgb
+					   ? &m_fbo_renderer_rgb->getCamera(world3DScene)
+					   : nullptr;
+#endif
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
@@ -283,8 +293,6 @@ void DepthCameraSensor::simulateOn3DScene(
 	// ----------------------------------------------------------
 	// RGB first with its camera intrinsics & clip distances
 	// ----------------------------------------------------------
-	cam.set6DOFMode(true);
-	cam.setProjectiveFromPinhole(curObs.cameraParamsIntensity);
 
 	// RGB camera pose:
 	//   vehicle (+) relativePoseOnVehicle (+) relativePoseIntensityWRTDepth
@@ -300,12 +308,14 @@ void DepthCameraSensor::simulateOn3DScene(
 	const auto rgbSensorPose =
 		vehiclePose + curObs.sensorPose + curObs.relativePoseIntensityWRTDepth;
 
-	cam.setPose(rgbSensorPose);
-
 	if (m_fbo_renderer_rgb)
 	{
 		auto tle2 = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.renderRGB");
+
+		camRGB->set6DOFMode(true);
+		camRGB->setProjectiveFromPinhole(curObs.cameraParamsIntensity);
+		camRGB->setPose(rgbSensorPose);
 
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
@@ -329,12 +339,13 @@ void DepthCameraSensor::simulateOn3DScene(
 		auto tle2 = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.renderD");
 
-		cam.setProjectiveFromPinhole(curObs.cameraParams);
+		camDepth->setProjectiveFromPinhole(curObs.cameraParams);
 
 		// Camera pose: vehicle + relativePoseOnVehicle:
 		// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
 		// the camera to look forward:
-		cam.setPose(depthSensorPose);
+		camDepth->set6DOFMode(true);
+		camDepth->setPose(depthSensorPose);
 
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(m_depth_clip_min, m_depth_clip_max);
