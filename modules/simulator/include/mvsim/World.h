@@ -92,8 +92,11 @@ class World : public mrpt::system::COutputLogger
 	}
 
 	/// Simulation fixed-time interval for numerical integration
-	double get_simul_timestep() const { return m_simul_timestep; }
+	double get_simul_timestep() const;
+
 	/// Simulation fixed-time interval for numerical integration
+	/// `0` means auto-determine as the minimum of 50 ms and the shortest sensor
+	/// sample period.
 	void set_simul_timestep(double timestep) { m_simul_timestep = timestep; }
 
 	/// Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
@@ -344,11 +347,14 @@ class World : public mrpt::system::COutputLogger
 	 * friction, etc. */
 	double m_gravity = 9.81;
 
-	/** Simulation fixed-time interval for numerical integration.*/
-	double m_simul_timestep = 10e-3;
+	/** Simulation fixed-time interval for numerical integration.
+	 * `0` means auto-determine as the minimum of 50 ms and the shortest sensor
+	 * sample period.
+	 */
+	mutable double m_simul_timestep = 0;
 
 	/** Velocity and position iteration count (refer to libbox2d docs) */
-	int m_b2d_vel_iters = 6, m_b2d_pos_iters = 3;
+	int m_b2d_vel_iters = 8, m_b2d_pos_iters = 3;
 
 	std::string m_server_address = "localhost";
 

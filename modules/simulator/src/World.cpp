@@ -76,32 +76,33 @@ void World::clear_all()
 /** Runs the simulation for a given time interval (in seconds) */
 void World::run_simulation(double dt)
 {
-	const double t0 = mrpt::Clock::toDouble(mrpt::Clock::now());
+	const double t0 = mrpt::Clock::nowDouble();
 
 	// Define start of simulation time:
 	if (!m_simul_start_wallclock_time.has_value())
-		m_simul_start_wallclock_time = t0;
+		m_simul_start_wallclock_time = t0 - dt;
 
 	m_timlogger.registerUserMeasure("run_simulation.dt", dt);
 
+	const double simulTimestep = get_simul_timestep();
+
 	// sanity checks:
 	ASSERT_(dt > 0);
-	ASSERT_(m_simul_timestep > 0);
+	ASSERT_(simulTimestep > 0);
 
 	// Run in time steps:
 	const double end_time = m_simul_time + dt;
 	// tolerance for rounding errors summing time steps
-	const double timetol = 1e-6;
+	const double timetol = 1e-4;
 	while (m_simul_time < (end_time - timetol))
 	{
 		// Timestep: always "simul_step" for the sake of repeatibility,
 		// except if requested to run a shorter step:
 		const double remainingTime = end_time - m_simul_time;
-		if (remainingTime < 0) break;
+		if (remainingTime <= 0) break;
 
 		internal_one_timestep(
-			remainingTime > m_simul_timestep ? m_simul_timestep
-											 : remainingTime);
+			remainingTime > simulTimestep ? simulTimestep : remainingTime);
 
 		if (gui_thread_must_close()) break;
 	}
@@ -190,11 +191,9 @@ void World::internal_one_timestep(double dt)
 		}
 		if (pending_running_sensors_on_3D_scene())
 		{
-#if 1
 			MRPT_LOG_WARN(
 				"Timeout waiting for async sensors to be simulated in opengl "
 				"thread.");
-#endif
 			m_timlogger.registerUserMeasure("timestep.timeout_3D_sensors", 1.0);
 		}
 	}
@@ -459,4 +458,29 @@ void World::insertBlock(const Block::Ptr& block)
 		m_simulableObjects.end(),
 		std::make_pair(
 			block->getName(), std::dynamic_pointer_cast<Simulable>(block)));
+}
+
+double World::get_simul_timestep() const
+{
+	ASSERT_GE_(m_simul_timestep, .0);
+
+	if (m_simul_timestep == 0)
+	{
+		// `0` means auto-determine as the minimum of 50 ms and the shortest
+		// sensor sample period.
+		m_simul_timestep = 50e-3;
+		for (const auto& veh : m_vehicles)
+		{
+			if (!veh.second) continue;
+			for (const auto& s : veh.second->getSensors())
+			{
+				mrpt::keep_min(m_simul_timestep, s->sensor_period());
+			}
+		}
+		MRPT_LOG_INFO_FMT(
+			"Physics simulation timestep automatically determined as: %.02f ms",
+			1e3 * m_simul_timestep);
+	}
+
+	return m_simul_timestep;
 }

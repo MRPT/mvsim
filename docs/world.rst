@@ -26,7 +26,7 @@ specified in seconds.
 	<mvsim_world version="1.0">
 	...
 		<!-- General simulation options -->
-		<simul_timestep>0.005</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [s] -->
+		<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [s], or 0 to auto-determine -->
 	...
 	</mvsim_world>
 

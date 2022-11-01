@@ -95,13 +95,12 @@ Available options:
 		std::thread(&mvsim_server_thread_update_GUI, std::ref(thread_params));
 
 	// Run simulation:
-	mrpt::system::CTicTac tictac;
-	double t_old = tictac.Tac();
+	double tOld = mrpt::Clock::nowDouble();
 	double REALTIME_FACTOR = 1.0;
-	bool do_exit = false;
-	size_t teleop_idx_veh = 0;	// Index of the vehicle to teleop
+	bool doExit = false;
+	size_t teleopIdxVeh = 0;  // Index of the vehicle to teleop
 
-	while (!do_exit && !mrpt::system::os::kbhit())
+	while (!doExit && !mrpt::system::os::kbhit())
 	{
 		// was the quit button hit in the GUI?
 		if (world.gui_thread_must_close()) break;
@@ -109,18 +108,17 @@ Available options:
 		// Simulation
 		// ============================================================
 		// Compute how much time has passed to simulate in real-time:
-		double t_new = tictac.Tac();
-		double incr_time = REALTIME_FACTOR * (t_new - t_old);
+		double tNew = mrpt::Clock::nowDouble();
+		double incrTime = REALTIME_FACTOR * (tNew - tOld);
 
-		// Just in case the computer is *really fast*...
-		if (incr_time >= world.get_simul_timestep())
+		// Simulate:
+		if (incrTime > 0)
 		{
-			// Simulate:
-			world.run_simulation(incr_time);
-
-			// t_old_simul = world.get_simul_time();
-			t_old = t_new;
+			world.run_simulation(incrTime);
 		}
+
+		// t_old_simul = world.get_simul_time();
+		tOld = tNew;
 
 		// I could use 10ms here but chono literals are since gcc 4.9.3
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -137,7 +135,7 @@ Available options:
 		switch (keyevent.keycode)
 		{
 			case GLFW_KEY_ESCAPE:
-				do_exit = true;
+				doExit = true;
 				break;
 			case '1':
 			case '2':
@@ -145,7 +143,7 @@ Available options:
 			case '4':
 			case '5':
 			case '6':
-				teleop_idx_veh = keyevent.keycode - '1';
+				teleopIdxVeh = keyevent.keycode - '1';
 				break;
 		};
 
@@ -153,13 +151,13 @@ Available options:
 			const World::VehicleList& vehs = world.getListOfVehicles();
 			txt2gui_tmp += mrpt::format(
 				"Selected vehicle: %u/%u\n",
-				static_cast<unsigned>(teleop_idx_veh + 1),
+				static_cast<unsigned>(teleopIdxVeh + 1),
 				static_cast<unsigned>(vehs.size()));
-			if (vehs.size() > teleop_idx_veh)
+			if (vehs.size() > teleopIdxVeh)
 			{
 				// Get iterator to selected vehicle:
 				World::VehicleList::const_iterator it_veh = vehs.begin();
-				std::advance(it_veh, teleop_idx_veh);
+				std::advance(it_veh, teleopIdxVeh);
 
 				// Get speed: ground truth
 				{
