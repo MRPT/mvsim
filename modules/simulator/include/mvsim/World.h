@@ -197,7 +197,21 @@ class World : public mrpt::system::COutputLogger
 
 	std::atomic_bool m_gui_thread_running = false;
 	std::atomic_bool m_gui_thread_must_close = false;
-	std::mutex m_gui_thread_start_mtx;
+	mutable std::mutex m_gui_thread_start_mtx;
+
+	bool gui_thread_must_close() const
+	{
+		m_gui_thread_start_mtx.lock();
+		const bool v = m_gui_thread_must_close;
+		m_gui_thread_start_mtx.unlock();
+		return v;
+	}
+	void gui_thread_must_close(bool value)
+	{
+		m_gui_thread_start_mtx.lock();
+		m_gui_thread_must_close = value;
+		m_gui_thread_start_mtx.unlock();
+	}
 
 	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f)
 	{

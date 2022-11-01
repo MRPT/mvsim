@@ -12,6 +12,7 @@
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
+#include <mrpt/version.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -238,10 +239,19 @@ void DepthCameraSensor::simulateOn3DScene(
 		auto tle2 = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.createFBO");
 
+#if MRPT_VERSION < 0x256
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(
 			m_sensor_params.cameraParamsIntensity.ncols,
 			m_sensor_params.cameraParamsIntensity.nrows,
 			true /* skip GLUT window */);
+#else
+		mrpt::opengl::CFBORender::Parameters p;
+		p.width = m_sensor_params.cameraParamsIntensity.ncols;
+		p.height = m_sensor_params.cameraParamsIntensity.nrows;
+		p.create_EGL_context = false;  // reuse nanogui context
+
+		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(p);
+#endif
 	}
 
 	if (!m_fbo_renderer_depth && m_sense_depth)
@@ -249,9 +259,18 @@ void DepthCameraSensor::simulateOn3DScene(
 		auto tle2 = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.createFBO");
 
+#if MRPT_VERSION < 0x256
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
 			m_sensor_params.cameraParams.ncols,
 			m_sensor_params.cameraParams.nrows, true /* skip GLUT window */);
+#else
+		mrpt::opengl::CFBORender::Parameters p;
+		p.width = m_sensor_params.cameraParams.ncols;
+		p.height = m_sensor_params.cameraParams.nrows;
+		p.create_EGL_context = false;  // reuse nanogui context
+
+		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
+#endif
 	}
 
 	auto viewport = world3DScene.getViewport();
