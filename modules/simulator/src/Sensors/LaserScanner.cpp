@@ -11,6 +11,7 @@
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
+#include <mrpt/version.h>
 #include <mvsim/Sensors/LaserScanner.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -432,8 +433,19 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	camModel.fy(camModel.fx());
 
 	if (!m_fbo_renderer_depth)
+	{
+#if MRPT_VERSION < 0x256
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
 			FBO_NCOLS, FBO_NROWS, true /* skip GLUT window */);
+#else
+		mrpt::opengl::CFBORender::Parameters p;
+		p.width = FBO_NCOLS;
+		p.height = FBO_NROWS;
+		p.create_EGL_context = false;  // reuse nanogui context
+
+		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
+#endif
+	}
 
 	auto viewport = world3DScene.getViewport();
 

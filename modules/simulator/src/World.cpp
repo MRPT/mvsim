@@ -36,10 +36,14 @@ World::~World()
 {
 	if (m_gui_thread.joinable())
 	{
-		MRPT_LOG_DEBUG("Waiting for GUI thread to quit...");
-		m_gui_thread_must_close = true;
+		MRPT_LOG_DEBUG("Dtor: Waiting for GUI thread to quit...");
+		gui_thread_must_close(true);
 		m_gui_thread.join();
-		MRPT_LOG_DEBUG("GUI thread shut down successful.");
+		MRPT_LOG_DEBUG("Dtor: GUI thread shut down successful.");
+	}
+	else
+	{
+		MRPT_LOG_DEBUG("Dtor: GUI thread already shut down.");
 	}
 
 	this->clear_all();
@@ -98,6 +102,8 @@ void World::run_simulation(double dt)
 		internal_one_timestep(
 			remainingTime > m_simul_timestep ? m_simul_timestep
 											 : remainingTime);
+
+		if (gui_thread_must_close()) break;
 	}
 
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
@@ -108,6 +114,8 @@ void World::run_simulation(double dt)
 /** Runs one individual time step */
 void World::internal_one_timestep(double dt)
 {
+	if (gui_thread_must_close()) return;
+
 	std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
 
 	m_timer_iteration.Tic();

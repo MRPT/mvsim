@@ -103,6 +103,9 @@ Available options:
 
 	while (!do_exit && !mrpt::system::os::kbhit())
 	{
+		// was the quit button hit in the GUI?
+		if (world.gui_thread_must_close()) break;
+
 		// Simulation
 		// ============================================================
 		// Compute how much time has passed to simulate in real-time:
@@ -146,7 +149,7 @@ Available options:
 				break;
 		};
 
-		{  // Test: Differential drive: Control raw forces
+		{
 			const World::VehicleList& vehs = world.getListOfVehicles();
 			txt2gui_tmp += mrpt::format(
 				"Selected vehicle: %u/%u\n",
@@ -200,7 +203,7 @@ Available options:
 
 	thread_params.closing(true);
 
-	thGUI.join();  // TODO: It could break smth
+	if (thGUI.joinable()) thGUI.join();
 
 	// save full profiling, if enabled:
 	if (world.getTimeLogger().isEnabledKeepWholeHistory())

@@ -61,6 +61,8 @@ void World::GUI::prepare_control_window()
 
 	w->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
 		->setCallback([this]() {
+			m_parent.gui_thread_must_close(true);
+
 			gui_win->setVisible(false);
 			nanogui::leave();
 		});
@@ -454,7 +456,7 @@ void World::internal_GUI_thread()
 		// The GUI must be closed from this same thread. Use a shared atomic
 		// bool:
 		auto lambdaLoopCallback = [](World& me) {
-			if (me.m_gui_thread_must_close) nanogui::leave();
+			if (me.gui_thread_must_close()) nanogui::leave();
 
 			// Update all GUI elements:
 			ASSERT_(me.m_gui.gui_win->background_scene);
@@ -520,6 +522,9 @@ void World::internal_GUI_thread()
 #endif
 
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
+
+		// to let other threads know that we are closing:
+		gui_thread_must_close(true);
 
 		// Make sure opengl resources are freed from this thread, not from the
 		// main one upon destruction of the last ref to shared_ptr's to opengl
