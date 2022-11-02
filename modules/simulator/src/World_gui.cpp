@@ -170,9 +170,9 @@ void World::GUI::prepare_editor_window()
 	{
 		auto tab = w->add<nanogui::TabWidget>();
 
-		nanogui::Widget* tabs[3] = {
+		nanogui::Widget* tabs[4] = {
 			tab->createTab("Vehicles"), tab->createTab("Blocks"),
-			tab->createTab("Elements")};
+			tab->createTab("Elements"), tab->createTab("Misc.")};
 
 		tab->setActiveTab(0);
 
@@ -181,17 +181,18 @@ void World::GUI::prepare_editor_window()
 				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3,
 				3));
 
-		nanogui::VScrollPanel* vscrolls[3] = {
+		nanogui::VScrollPanel* vscrolls[4] = {
 			tabs[0]->add<nanogui::VScrollPanel>(),
 			tabs[1]->add<nanogui::VScrollPanel>(),
-			tabs[2]->add<nanogui::VScrollPanel>()};
+			tabs[2]->add<nanogui::VScrollPanel>(),
+			tabs[3]->add<nanogui::VScrollPanel>()};
 
 		for (auto vs : vscrolls) vs->setFixedSize({pnWidth, pnHeight});
 
 		// vscroll should only have *ONE* child. this is what `wrapper`
 		// is for
-		nanogui::Widget* wrappers[3];
-		for (int i = 0; i < 3; i++)
+		nanogui::Widget* wrappers[4];
+		for (int i = 0; i < 4; i++)
 		{
 			wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
 			wrappers[i]->setFixedSize({pnWidth, pnHeight});
@@ -256,6 +257,20 @@ void World::GUI::prepare_editor_window()
 				for (auto b : btns_selectedOps) b->setEnabled(btnsEnabled);
 			});
 		}
+
+		// "misc." tab
+		// --------------
+		wrappers[3]
+			->add<nanogui::Button>("Save 3D scene...", ENTYPO_ICON_EXPORT)
+			->setCallback([this]() {
+				const std::string outFile = nanogui::file_dialog(
+					{{"3Dscene", "MRPT 3D scene file (*.3Dsceme)"}},
+					true /*save*/);
+				if (outFile.empty()) return;
+
+				auto lck = mrpt::lockHelper(m_parent.physical_objects_mtx());
+				m_parent.m_physical_objects.saveToFile(outFile);
+			});
 	}
 
 	w->add<nanogui::Label>(" ");
@@ -526,9 +541,9 @@ void World::internal_GUI_thread()
 		// to let other threads know that we are closing:
 		gui_thread_must_close(true);
 
-		// Make sure opengl resources are freed from this thread, not from the
-		// main one upon destruction of the last ref to shared_ptr's to opengl
-		// classes.
+		// Make sure opengl resources are freed from this thread, not from
+		// the main one upon destruction of the last ref to shared_ptr's to
+		// opengl classes.
 		{
 			auto lck = mrpt::lockHelper(m_gui.gui_win->background_scene_mtx);
 			if (m_gui.gui_win->background_scene)
