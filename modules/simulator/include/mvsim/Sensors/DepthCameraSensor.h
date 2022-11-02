@@ -74,7 +74,9 @@ class DepthCameraSensor : public SensorBase
 	bool m_gui_uptodate = false;
 	std::recursive_mutex m_gui_mtx;
 	mrpt::opengl::CPointCloudColoured::Ptr m_gl_obs;
+
 	std::optional<TSimulContext> m_has_to_render;
+	std::mutex m_has_to_render_mtx;
 
 	float m_rgb_clip_min = 1e-2, m_rgb_clip_max = 1e+4;
 	float m_depth_clip_min = 0.1, m_depth_clip_max = 15.0;
