@@ -263,13 +263,26 @@ void World::GUI::prepare_editor_window()
 		wrappers[3]
 			->add<nanogui::Button>("Save 3D scene...", ENTYPO_ICON_EXPORT)
 			->setCallback([this]() {
-				const std::string outFile = nanogui::file_dialog(
-					{{"3Dscene", "MRPT 3D scene file (*.3Dsceme)"}},
-					true /*save*/);
-				if (outFile.empty()) return;
+				try
+				{
+					const std::string outFile = nanogui::file_dialog(
+						{{"3Dscene", "MRPT 3D scene file (*.3Dsceme)"}},
+						true /*save*/);
+					if (outFile.empty()) return;
 
-				auto lck = mrpt::lockHelper(m_parent.physical_objects_mtx());
-				m_parent.m_physical_objects.saveToFile(outFile);
+					auto lck =
+						mrpt::lockHelper(m_parent.physical_objects_mtx());
+					m_parent.m_physical_objects.saveToFile(outFile);
+
+					std::cout << "[mvsim gui] Saved world scene to: " << outFile
+							  << std::endl;
+				}
+				catch (const std::exception& e)
+				{
+					std::cerr
+						<< "[mvsim gui] Exception while saving 3D scene:\n"
+						<< e.what() << std::endl;
+				}
 			});
 	}
 
