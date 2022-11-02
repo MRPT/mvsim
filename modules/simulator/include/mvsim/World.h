@@ -77,7 +77,18 @@ class World : public mrpt::system::COutputLogger
 	  @{*/
 
 	/** Seconds since start of simulation. \sa get_simul_timestamp() */
-	double get_simul_time() const { return m_simul_time; }
+	double get_simul_time() const
+	{
+		auto lck = mrpt::lockHelper(m_simul_time_mtx);
+		return m_simul_time;
+	}
+
+	/// Normally should not be called by users, for internal use only.
+	void force_set_simul_time(double newSimulatedTime)
+	{
+		auto lck = mrpt::lockHelper(m_simul_time_mtx);
+		m_simul_time = newSimulatedTime;
+	}
 
 	/** Get the current simulation full timestamp, computed as the
 	 *  real wall clock timestamp at the beginning of the simulation,
@@ -86,6 +97,7 @@ class World : public mrpt::system::COutputLogger
 	 */
 	mrpt::Clock::time_point get_simul_timestamp() const
 	{
+		auto lck = mrpt::lockHelper(m_simul_time_mtx);
 		ASSERT_(m_simul_start_wallclock_time.has_value());
 		return mrpt::Clock::fromDouble(
 			m_simul_time + m_simul_start_wallclock_time.value());
@@ -370,6 +382,7 @@ class World : public mrpt::system::COutputLogger
 	 * wall-clock time because of time warp, etc.) */
 	double m_simul_time = 0;
 	std::optional<double> m_simul_start_wallclock_time;
+	std::mutex m_simul_time_mtx;
 
 	/** Path from which to take relative directories. */
 	std::string m_base_path{"."};

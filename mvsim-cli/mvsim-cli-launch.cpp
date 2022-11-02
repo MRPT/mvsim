@@ -95,8 +95,8 @@ Available options:
 		std::thread(&mvsim_server_thread_update_GUI, std::ref(thread_params));
 
 	// Run simulation:
-	double tOld = mrpt::Clock::nowDouble();
-	double REALTIME_FACTOR = 1.0;
+	const double tAbsInit = mrpt::Clock::nowDouble();
+	// double REALTIME_FACTOR = 1.0;
 	bool doExit = false;
 	size_t teleopIdxVeh = 0;  // Index of the vehicle to teleop
 
@@ -109,16 +109,15 @@ Available options:
 		// ============================================================
 		// Compute how much time has passed to simulate in real-time:
 		double tNew = mrpt::Clock::nowDouble();
-		double incrTime = REALTIME_FACTOR * (tNew - tOld);
+		double incrTime = (tNew - tAbsInit) - world.get_simul_time();
+		int incrTimeSteps =
+			static_cast<int>(std::floor(incrTime / world.get_simul_timestep()));
 
 		// Simulate:
-		if (incrTime > 0)
+		if (incrTimeSteps > 0)
 		{
-			world.run_simulation(incrTime);
+			world.run_simulation(incrTimeSteps * world.get_simul_timestep());
 		}
-
-		// t_old_simul = world.get_simul_time();
-		tOld = tNew;
 
 		// I could use 10ms here but chono literals are since gcc 4.9.3
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));

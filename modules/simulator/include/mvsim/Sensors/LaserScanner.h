@@ -84,6 +84,8 @@ class LaserScanner : public SensorBase
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov;
 
 	std::optional<TSimulContext> m_has_to_render;
+	std::mutex m_has_to_render_mtx;
+
 	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_depth;
 };
 }  // namespace mvsim

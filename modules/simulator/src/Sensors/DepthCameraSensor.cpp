@@ -211,7 +211,10 @@ void DepthCameraSensor::simulateOn3DScene(
 {
 	using namespace mrpt;  // _deg
 
-	if (!m_has_to_render.has_value()) return;
+	{
+		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+		if (!m_has_to_render.has_value()) return;
+	}
 
 	auto tleWhole =
 		mrpt::system::CTimeLoggerEntry(m_world->getTimeLogger(), "sensor.RGBD");
@@ -431,16 +434,20 @@ void DepthCameraSensor::simulateOn3DScene(
 	}
 
 	{
+		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+
 		auto tlePub = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.report");
 
 		SensorBase::reportNewObservation(m_last_obs, *m_has_to_render);
+
+		tlePub.stop();
+
+		if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
+
+		m_gui_uptodate = false;
+		m_has_to_render.reset();
 	}
-
-	if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
-
-	m_gui_uptodate = false;
-	m_has_to_render.reset();
 }
 
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
@@ -449,6 +456,7 @@ void DepthCameraSensor::simul_post_timestep(const TSimulContext& context)
 	Simulable::simul_post_timestep(context);
 	if (SensorBase::should_simulate_sensor(context))
 	{
+		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
 		m_has_to_render = context;
 		m_world->mark_as_pending_running_sensors_on_3D_scene();
 	}

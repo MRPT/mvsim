@@ -242,6 +242,17 @@ bool SensorBase::should_simulate_sensor(const TSimulContext& context)
 	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period)
 		return false;
 
+	if ((context.simul_time - m_sensor_last_timestamp) >= 2 * m_sensor_period)
+	{
+		std::cout
+			<< "[mvsim::SensorBase] WARNING: "
+			   "At least one sensor sample has been lost due to too coarse "
+			   "discrete time steps. sensor_period="
+			<< m_sensor_period << " [s], (simul_time - sensor_last_timestamp)="
+			<< (context.simul_time - m_sensor_last_timestamp) << " [s]."
+			<< std::endl;
+	}
+
 	m_sensor_last_timestamp = context.simul_time;
 	m_vehicle_pose_at_last_timestamp =
 		mrpt::poses::CPose3D(m_vehicle.getPose());

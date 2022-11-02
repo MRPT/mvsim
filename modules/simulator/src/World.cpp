@@ -56,7 +56,7 @@ void World::clear_all()
 	auto lck = mrpt::lockHelper(m_world_cs);
 
 	// Reset params:
-	m_simul_time = 0.0;
+	force_set_simul_time(.0);
 
 	// (B2D) World contents:
 	// ---------------------------------------------
@@ -91,19 +91,21 @@ void World::run_simulation(double dt)
 	ASSERT_(simulTimestep > 0);
 
 	// Run in time steps:
-	const double end_time = m_simul_time + dt;
+	const double end_time = get_simul_time() + dt;
 	// tolerance for rounding errors summing time steps
 	const double timetol = 1e-4;
-	while (m_simul_time < (end_time - timetol))
+	while (get_simul_time() < (end_time - timetol))
 	{
 		// Timestep: always "simul_step" for the sake of repeatibility,
 		// except if requested to run a shorter step:
-		const double remainingTime = end_time - m_simul_time;
+		const double remainingTime = end_time - get_simul_time();
 		if (remainingTime <= 0) break;
 
 		internal_one_timestep(
-			remainingTime > simulTimestep ? simulTimestep : remainingTime);
+			remainingTime >= simulTimestep ? simulTimestep : remainingTime);
 
+		// IMPORTANT: This must be inside the loop to allow breaking if we are
+		// closing the app and simulatedTime is not ticking anymore.
 		if (gui_thread_must_close()) break;
 	}
 
@@ -124,7 +126,7 @@ void World::internal_one_timestep(double dt)
 	TSimulContext context;
 	context.world = this;
 	context.b2_world = m_box2d_world.get();
-	context.simul_time = m_simul_time;
+	context.simul_time = get_simul_time();
 	context.dt = dt;
 
 	// 1) Pre-step
@@ -141,7 +143,10 @@ void World::internal_one_timestep(double dt)
 			m_timlogger, "timestep.1.dynamics_integrator");
 
 		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
-		m_simul_time += dt;	 // Avance time
+
+		// Move time forward:
+		auto lckSimTim = mrpt::lockHelper(m_simul_time_mtx);
+		m_simul_time += dt;
 	}
 
 	// 3) Save dynamical state and post-step processing:

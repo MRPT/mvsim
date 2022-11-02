@@ -178,7 +178,18 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	{
 		if (m_raytrace_3d)
 		{
+			auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+
 			// Will run upon next async call of simulateOn3DScene()
+			if (m_has_to_render.has_value())
+			{
+				m_world->logFmt(
+					mrpt::system::LVL_WARN,
+					"Time for a new sample came without still simulating the "
+					"last one (!) for simul_time=%.03f s.",
+					m_has_to_render->simul_time);
+			}
+
 			m_has_to_render = context;
 			m_world->mark_as_pending_running_sensors_on_3D_scene();
 		}
@@ -395,7 +406,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 {
 	using namespace mrpt;  // _deg
 
-	if (!m_has_to_render.has_value()) return;
+	{
+		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+		if (!m_has_to_render.has_value()) return;
+	}
 
 	auto tleWhole = mrpt::system::CTimeLoggerEntry(
 		m_world->getTimeLogger(), "sensor.2Dlidar");
@@ -605,14 +619,19 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	}
 
 	{
+		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+
 		auto tlePub = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.2Dlidar.report");
 
 		SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
+
+		tlePub.stop();
+
+		if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
+
+		m_gui_uptodate = false;
+
+		m_has_to_render.reset();
 	}
-
-	if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
-
-	m_gui_uptodate = false;
-	m_has_to_render.reset();
 }

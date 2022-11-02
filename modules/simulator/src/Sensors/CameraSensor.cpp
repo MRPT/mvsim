@@ -164,7 +164,10 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 {
 	using namespace mrpt;  // _deg
 
-	if (!m_has_to_render.has_value()) return;
+	{
+		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+		if (!m_has_to_render.has_value()) return;
+	}
 
 	auto tleWhole =
 		mrpt::system::CTimeLoggerEntry(m_world->getTimeLogger(), "sensor.RGB");
@@ -245,12 +248,15 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		m_last_obs2gui = m_last_obs;
 	}
 
-	SensorBase::reportNewObservation(m_last_obs, *m_has_to_render);
+	{
+		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+		SensorBase::reportNewObservation(m_last_obs, *m_has_to_render);
 
-	if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
+		if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
 
-	m_gui_uptodate = false;
-	m_has_to_render.reset();
+		m_gui_uptodate = false;
+		m_has_to_render.reset();
+	}
 }
 
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:

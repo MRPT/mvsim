@@ -685,7 +685,7 @@ void World::internalUpdate3DSceneObjects(
 		if (m_gui.lbCpuUsage)
 			m_gui.lbCpuUsage->setCaption(mrpt::format(
 				"Time: %s (CPU usage: %.03f%%)",
-				mrpt::system::formatTimeInterval(this->m_simul_time).c_str(),
+				mrpt::system::formatTimeInterval(get_simul_time()).c_str(),
 				cpu_usage_ratio * 100.0));
 
 		// User supplied-lines:
