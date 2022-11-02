@@ -468,23 +468,52 @@ void World::insertBlock(const Block::Ptr& block)
 double World::get_simul_timestep() const
 {
 	ASSERT_GE_(m_simul_timestep, .0);
+	static bool firstTimeCheck = true;
+
+	auto lambdaMinimumSensorPeriod = [this]() -> std::optional<double> {
+		std::optional<double> ret;
+		for (const auto& veh : m_vehicles)
+		{
+			if (!veh.second) continue;
+			for (const auto& s : veh.second->getSensors())
+			{
+				const double T = s->sensor_period();
+				if (ret)
+					mrpt::keep_min(*ret, T);
+				else
+					ret = T;
+			}
+		}
+		return ret;
+	};
 
 	if (m_simul_timestep == 0)
 	{
 		// `0` means auto-determine as the minimum of 50 ms and the shortest
 		// sensor sample period.
 		m_simul_timestep = 50e-3;
-		for (const auto& veh : m_vehicles)
-		{
-			if (!veh.second) continue;
-			for (const auto& s : veh.second->getSensors())
-			{
-				mrpt::keep_min(m_simul_timestep, s->sensor_period());
-			}
-		}
+
+		auto sensorMinPeriod = lambdaMinimumSensorPeriod();
+		if (sensorMinPeriod) mrpt::keep_min(m_simul_timestep, *sensorMinPeriod);
+
 		MRPT_LOG_INFO_FMT(
 			"Physics simulation timestep automatically determined as: %.02f ms",
 			1e3 * m_simul_timestep);
+
+		firstTimeCheck = false;	 // no need to check.
+	}
+	else if (firstTimeCheck)
+	{
+		firstTimeCheck = false;
+		auto sensorMinPeriod = lambdaMinimumSensorPeriod();
+		if (sensorMinPeriod && m_simul_timestep > *sensorMinPeriod)
+		{
+			MRPT_LOG_WARN_FMT(
+				"Physics simulation timestep (%.02f ms) should be >= than the "
+				"minimum sensor period (%.02f ms) to avoid missing sensor "
+				"readings!!",
+				1e3 * m_simul_timestep, 1e3 * *sensorMinPeriod);
+		}
 	}
 
 	return m_simul_timestep;

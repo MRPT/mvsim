@@ -239,7 +239,11 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 
 bool SensorBase::should_simulate_sensor(const TSimulContext& context)
 {
-	if (context.simul_time < m_sensor_last_timestamp + m_sensor_period)
+	// to fix edge cases with sensor period a multiple of simulation timestep:
+	const double timeEpsilon = 1e-6;
+
+	if (context.simul_time <
+		m_sensor_last_timestamp + m_sensor_period - timeEpsilon)
 		return false;
 
 	if ((context.simul_time - m_sensor_last_timestamp) >= 2 * m_sensor_period)
