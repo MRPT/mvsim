@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/format.h>
+#include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/core/round.h>
 #include <mrpt/math/TLine3D.h>
@@ -776,7 +777,12 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 #if MRPT_VERSION >= 0x204
 			mrpt::system::thread_name("guiThread", m_gui_thread);
 #endif
-			for (int timeout = 0; timeout < 300; timeout++)
+
+			const int MVSIM_OPEN_GUI_TIMEOUT_MS =
+				mrpt::get_env<int>("MVSIM_OPEN_GUI_TIMEOUT_MS", 3000);
+
+			for (int timeout = 0; timeout < MVSIM_OPEN_GUI_TIMEOUT_MS / 10;
+				 timeout++)
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 				if (m_gui_thread_running) break;
