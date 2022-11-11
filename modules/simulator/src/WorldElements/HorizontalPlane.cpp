@@ -58,6 +58,7 @@ void HorizontalPlane::internalGuiUpdate(
 	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
+	using namespace std::string_literals;
 
 	// 1st call? (w/o texture)
 	if (!m_gl_plane && m_textureFileName.empty())
@@ -65,6 +66,7 @@ void HorizontalPlane::internalGuiUpdate(
 		m_gl_plane = mrpt::opengl::CTexturedPlane::Create();
 		m_gl_plane->setPlaneCorners(m_x_min, m_x_max, m_y_min, m_y_max);
 		m_gl_plane->setLocation(0, 0, m_z);
+		m_gl_plane->setName("HorizontalPlane_"s + getName());
 
 		m_gl_plane->setColor_u8(m_color);
 
@@ -94,6 +96,7 @@ void HorizontalPlane::internalGuiUpdate(
 		float v_max = (m_y_max - m_y_min) / m_textureSizeY;
 
 		m_gl_plane_text = mrpt::opengl::CSetOfTexturedTriangles::Create();
+		m_gl_plane_text->setName("HorizontalPlane_"s + getName());
 
 		{
 			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
