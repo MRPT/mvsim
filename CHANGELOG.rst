@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.3 (2022-11-14)
+------------------
 * add names to gl objects (useful to debug)
 * configurable gui open timeout
 * GUI: new button Editor->Export 3Dscene file
