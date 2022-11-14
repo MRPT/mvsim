@@ -2,6 +2,33 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add names to gl objects (useful to debug)
+* configurable gui open timeout
+* GUI: new button Editor->Export 3Dscene file
+* Add a warning if using a physics timestep is incompatible with the sensor periods
+* FIX: more accurate simulation of timesteps; more mutexes
+* automatic determination of timestep; FIX bug: constant offset in simul time
+* fix FBO api for mrpt 2.5.6
+* fix build against mrpt 2.5.6; fix infinite loop while hitting quit button
+* refactor TCLAP objects to avoid global object initialization fiasco crashes
+* handle old and new versions of tf_geometry_msgs
+* mvsim cli new command: topic hz
+* Fix ROS2 obsolete header
+* fix build for u18.04
+* fix for older zmq versions
+* fix newest zmq deprecated warnings
+* FIX: DAE file error to load on newer version of assimp
+* provide cmake config types for gcc sanitizers
+* fix zmq API in bionic
+* avoid zmq_message_t ctor; more parallel threads for ZMQ
+* make the get_pose() service to answer immediately without needing to acquire the main simulation mutex
+* fix escaping
+* more portable makefile comparison for libbox2d version
+* d/rules: auto detection of system libbox2d version
+* Contributors: Jose Luis Blanco-Claraco
+
 0.4.2 (2022-10-19)
 ------------------
 * Disable Python wrappers for python <3.8
