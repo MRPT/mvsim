@@ -142,6 +142,9 @@ class Client : public mrpt::system::COutputLogger
 	std::thread serviceInvokerThread_;
 	std::thread topicUpdatesThread_;
 
+	std::map<std::string, std::string> serviceToEndPointCache_;
+	std::mutex serviceToEndPointCacheMtx_;
+
 	mrpt::system::CTimeLogger profiler_{false, "mvsim::Client"};
 
 	void doRegisterClient();
