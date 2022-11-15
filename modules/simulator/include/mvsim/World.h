@@ -31,6 +31,19 @@
 
 #include <list>
 
+#if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
+// forward declarations:
+namespace mvsim_msgs
+{
+class SrvGetPose;
+class SrvGetPoseAnswer;
+class SrvSetPoseAnswer;
+class SrvSetPose;
+class SrvSetControllerTwist;
+class SrvSetControllerTwistAnswer;
+}  // namespace mvsim_msgs
+#endif
+
 namespace mvsim
 {
 /** Simulation happens inside a World object.
@@ -530,5 +543,19 @@ class World : public mrpt::system::COutputLogger
 	void internal_recursive_parse_XML(
 		const void* /*rapidxml::xml_node<>* */ node,
 		const std::string& currentBasePath);
+
+	// Services:
+	void internal_advertiseServices();	// called from connectToServer()
+
+#if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
+
+	mvsim_msgs::SrvSetPoseAnswer srv_set_pose(
+		const mvsim_msgs::SrvSetPose& req);
+	mvsim_msgs::SrvGetPoseAnswer srv_get_pose(
+		const mvsim_msgs::SrvGetPose& req);
+	mvsim_msgs::SrvSetControllerTwistAnswer srv_set_controller_twist(
+		const mvsim_msgs::SrvSetControllerTwist& req);
+
+#endif
 };
 }  // namespace mvsim
