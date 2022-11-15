@@ -756,8 +756,15 @@ void Client::doCallService(
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "doCallService");
 
 	// 1) Request to the server who is serving this service:
-	// TODO: Cache?
 	std::string srvEndpoint;
+
+	auto lckCache = mrpt::lockHelper(serviceToEndPointCacheMtx_);
+	if (auto it = serviceToEndPointCache_.find(serviceName);
+		it != serviceToEndPointCache_.end())
+	{
+		srvEndpoint = it->second;
+	}
+	else
 	{
 		mrpt::system::CTimeLoggerEntry tle2(profiler_, "doCallService.getinfo");
 
@@ -778,7 +785,10 @@ void Client::doCallService(
 				serviceName.c_str(), gsia.errormessage().c_str());
 
 		srvEndpoint = gsia.serviceendpoint();
+
+		serviceToEndPointCache_[serviceName] = srvEndpoint;
 	}
+	lckCache.unlock();
 
 	// 2) Connect to the service offerrer and request the execution:
 	zmq::socket_t srvReqSock(zmq_->context, ZMQ_REQ);
