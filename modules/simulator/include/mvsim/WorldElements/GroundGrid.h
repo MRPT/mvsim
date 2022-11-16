@@ -23,12 +23,11 @@ class GroundGrid : public WorldElementBase
 	virtual ~GroundGrid();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
-	void poses_mutex_lock() override {}
-	void poses_mutex_unlock() override {}
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
 	bool m_is_floating;

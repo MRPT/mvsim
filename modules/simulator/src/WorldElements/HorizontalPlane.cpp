@@ -54,14 +54,15 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void HorizontalPlane::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 	using namespace std::string_literals;
 
 	// 1st call? (w/o texture)
-	if (!m_gl_plane && m_textureFileName.empty())
+	if (!m_gl_plane && m_textureFileName.empty() && viz && physical)
 	{
 		m_gl_plane = mrpt::opengl::CTexturedPlane::Create();
 		m_gl_plane->setPlaneCorners(m_x_min, m_x_max, m_y_min, m_y_max);
@@ -75,11 +76,11 @@ void HorizontalPlane::internalGuiUpdate(
 			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
 				m_cull_faces));
 #endif
-		viz.insert(m_gl_plane);
-		physical.insert(m_gl_plane);
+		viz->get().insert(m_gl_plane);
+		physical->get().insert(m_gl_plane);
 	}
 	// 1st call? (with texture)
-	if (!m_gl_plane_text && !m_textureFileName.empty())
+	if (!m_gl_plane_text && !m_textureFileName.empty() && viz && physical)
 	{
 		const std::string localFileName =
 			m_world->xmlPathToActualPath(m_textureFileName);
@@ -131,7 +132,7 @@ void HorizontalPlane::internalGuiUpdate(
 				m_cull_faces));
 #endif
 
-		viz.insert(m_gl_plane_text);
-		physical.insert(m_gl_plane_text);
+		viz->get().insert(m_gl_plane_text);
+		physical->get().insert(m_gl_plane_text);
 	}
 }

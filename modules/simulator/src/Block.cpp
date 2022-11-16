@@ -223,22 +223,16 @@ void Block::simul_post_timestep(const TSimulContext& context)
 	Simulable::simul_post_timestep(context);
 }
 
-mrpt::poses::CPose3D Block::internalGuiGetVisualPose()
-{
-	return mrpt::poses::CPose3D(getPose());
-}
-
 void Block::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	bool childrenOnly)
 {
-	auto lck = mrpt::lockHelper(m_gui_mtx);
-
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	if (!childrenOnly)
 	{
-		if (!m_gl_block)
+		if (!m_gl_block && viz && physical)
 		{
 			m_gl_block = mrpt::opengl::CSetOfObjects::Create();
 			m_gl_block->setName(m_name);
@@ -256,26 +250,31 @@ void Block::internalGuiUpdate(
 
 			m_gl_block->insert(gl_poly);
 
-			viz.insert(m_gl_block);
-			physical.insert(m_gl_block);
+			viz->get().insert(m_gl_block);
+			physical->get().insert(m_gl_block);
 		}
 
 		// Update them:
-		m_gl_block->setPose(getPose());
+		// If "viz" does not have a value, it's because we are already inside a
+		// setPose() change event, so my caller already holds the mutex and we
+		// don't need/can't acquire it again:
+		const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
+
+		if (m_gl_block) m_gl_block->setPose(objectPose);
 	}
 
-	if (!m_gl_forces)
+	if (!m_gl_forces && viz)
 	{
 		// Visualization of forces:
 		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
 
-		viz.insert(m_gl_forces);  // forces are in global coords
+		viz->get().insert(m_gl_forces);	 // forces are in global coords
 	}
 
 	// Other common stuff:
-	internal_internalGuiUpdate_forces(viz);
+	if (viz) internal_internalGuiUpdate_forces(viz->get());
 }
 
 void Block::internal_internalGuiUpdate_forces(	//
@@ -417,4 +416,14 @@ void Block::setIsStatic(bool b)
 DummyInvisibleBlock::DummyInvisibleBlock(World* parent)
 	: VisualObject(parent), Simulable(parent)
 {
+}
+
+void DummyInvisibleBlock::internalGuiUpdate(
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+	bool childrenOnly)
+{
+	if (!viz || !physical) return;
+
+	for (auto& s : m_sensors) s->guiUpdate(viz, physical);
 }

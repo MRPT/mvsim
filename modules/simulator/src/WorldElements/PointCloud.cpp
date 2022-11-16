@@ -65,19 +65,20 @@ void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void PointCloud::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	bool childrenOnly)
 {
 	using namespace mrpt::math;
 
 	// 1st time call?? -> Create objects
-	if (!m_gl_points)
+	if (!m_gl_points && viz && physical)
 	{
 		m_gl_points = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_points->setName("PointCloud");
 		m_gl_points->setPose(m_pointcloud_pose);
-		viz.insert(m_gl_points);
-		physical.insert(m_gl_points);
+		viz->get().insert(m_gl_points);
+		physical->get().insert(m_gl_points);
 	}
 
 	// 1st call OR gridmap changed?

@@ -76,18 +76,21 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void LaserScanner::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz,
-	[[maybe_unused]] mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
+		physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	auto lck = mrpt::lockHelper(m_gui_mtx);
-
-	auto glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
-		viz.getByName("group_sensors_viz"));
-	ASSERT_(glVizSensors);
+	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
+	if (viz)
+	{
+		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+			viz->get().getByName("group_sensors_viz"));
+		ASSERT_(glVizSensors);
+	}
 
 	// 1st time?
-	if (!m_gl_scan)
+	if (!m_gl_scan && glVizSensors)
 	{
 		m_gl_scan = mrpt::opengl::CPlanarLaserScan::Create();
 		m_gl_scan->enablePoints(m_viz_visiblePoints);
@@ -99,7 +102,7 @@ void LaserScanner::internalGuiUpdate(
 
 		glVizSensors->insert(m_gl_scan);
 	}
-	if (!m_gl_sensor_origin)
+	if (!m_gl_sensor_origin && viz)
 	{
 		m_gl_sensor_origin = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_sensor_origin_corner =
@@ -108,10 +111,10 @@ void LaserScanner::internalGuiUpdate(
 		m_gl_sensor_origin->insert(m_gl_sensor_origin_corner);
 
 		m_gl_sensor_origin->setVisibility(false);
-		viz.insert(m_gl_sensor_origin);
+		viz->get().insert(m_gl_sensor_origin);
 		SensorBase::RegisterSensorOriginViz(m_gl_sensor_origin);
 	}
-	if (!m_gl_sensor_fov)
+	if (!m_gl_sensor_fov && viz)
 	{
 		m_gl_sensor_fov = mrpt::opengl::CSetOfObjects::Create();
 
@@ -131,7 +134,7 @@ void LaserScanner::internalGuiUpdate(
 		m_gl_sensor_fov->insert(fovScan);
 
 		m_gl_sensor_fov->setVisibility(false);
-		viz.insert(m_gl_sensor_fov);
+		viz->get().insert(m_gl_sensor_fov);
 		SensorBase::RegisterSensorFOVViz(m_gl_sensor_fov);
 	}
 
@@ -153,11 +156,14 @@ void LaserScanner::internalGuiUpdate(
 	const mrpt::poses::CPose2D& p = m_vehicle.getCPose2D();
 	const double z_incrs = 10e-3;  // for m_z_order
 	const double z_offset = 1e-2;
-	m_gl_scan->setPose(mrpt::poses::CPose3D(
-		p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
 
-	m_gl_sensor_fov->setPose(p);
-	m_gl_sensor_origin->setPose(p);
+	if (m_gl_scan)
+		m_gl_scan->setPose(mrpt::poses::CPose3D(
+			p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
+
+	if (m_gl_sensor_fov) m_gl_sensor_fov->setPose(p);
+
+	if (m_gl_sensor_origin) m_gl_sensor_origin->setPose(p);
 
 	if (m_glCustomVisual)
 		m_glCustomVisual->setPose(p + m_scan_model.sensorPose);
@@ -171,7 +177,6 @@ void LaserScanner::simul_pre_timestep([
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void LaserScanner::simul_post_timestep(const TSimulContext& context)
 {
-	auto lck = mrpt::lockHelper(m_gui_mtx);
 	Simulable::simul_post_timestep(context);
 
 	if (SensorBase::should_simulate_sensor(context))
@@ -416,8 +421,6 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	auto tle1 = mrpt::system::CTimeLoggerEntry(
 		m_world->getTimeLogger(), "sensor.2Dlidar.acqGuiMtx");
-
-	auto lck = mrpt::lockHelper(m_gui_mtx);
 
 	tle1.stop();
 

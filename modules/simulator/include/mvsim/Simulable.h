@@ -22,6 +22,7 @@ namespace mvsim
 {
 class Client;
 class World;
+class VisualObject;
 
 class Simulable
 {
@@ -41,9 +42,6 @@ class Simulable
 	 */
 	virtual void simul_post_timestep(const TSimulContext& context);
 
-	virtual void poses_mutex_lock() = 0;
-	virtual void poses_mutex_unlock() = 0;
-
 	/** Override to register external forces exerted by other WorldElements.
 	 * Force is (fx,fy) in global coordinates. Application point is
 	 * (local_ptx,local_pty) in the body local frame */
@@ -51,44 +49,28 @@ class Simulable
 		const mrpt::math::TVector2D& force,
 		const mrpt::math::TPoint2D& applyPoint = mrpt::math::TPoint2D(0, 0));
 
+	virtual VisualObject* meAsVisualObject() { return nullptr; }
+
 	/** Last time-step velocity (of the ref. point, in local coords) */
 	mrpt::math::TTwist2D getVelocityLocal() const;
 
 	/** Last time-step pose (of the ref. point, in global coords) (ground-truth)
 	 */
-	mrpt::math::TPose3D getPose() const
-	{
-		m_q_mtx.lock_shared();
-		mrpt::math::TPose3D ret = m_q;
-		m_q_mtx.unlock_shared();
-		return ret;
-	}
+	mrpt::math::TPose3D getPose() const;
 
-	mrpt::math::TTwist2D getTwist() const
-	{
-		m_q_mtx.lock_shared();
-		mrpt::math::TTwist2D ret = m_dq;
-		m_q_mtx.unlock_shared();
-		return ret;
-	}
+	/// No thread-safe version. Used internally only.
+	mrpt::math::TPose3D getPoseNoLock() const;
+
+	mrpt::math::TTwist2D getTwist() const;
 
 	/** Manually override vehicle pose (Use with caution!) (purposely set a
 	 * "const")*/
 	void setPose(const mrpt::math::TPose3D& p) const;
 
-	void setTwist(const mrpt::math::TTwist2D& dq) const
-	{
-		m_q_mtx.lock();
-		const_cast<mrpt::math::TTwist2D&>(m_dq) = dq;
-		m_q_mtx.unlock();
-	}
+	void setTwist(const mrpt::math::TTwist2D& dq) const;
 
 	/// Alternative to getPose()
 	mrpt::poses::CPose2D getCPose2D() const;
-
-	/** Last time-step velocity (of the ref. point, in global coords)
-	 * (ground-truth) */
-	const mrpt::math::TTwist2D& getVelocity() const { return m_dq; }
 
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 	const std::string& getName() const { return m_name; }

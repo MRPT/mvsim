@@ -37,12 +37,10 @@ class PointCloud : public WorldElementBase
 	const mrpt::maps::CPointsMap::Ptr& getPoints() const { return m_points; }
 	mrpt::maps::CPointsMap::Ptr& getPoints() { return m_points; }
 
-	void poses_mutex_lock() override {}
-	void poses_mutex_unlock() override {}
-
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
 	mrpt::maps::CPointsMap::Ptr m_points;

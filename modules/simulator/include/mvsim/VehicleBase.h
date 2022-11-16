@@ -54,9 +54,6 @@ class VehicleBase : public VisualObject, public Simulable
 	static void register_vehicle_class(
 		const rapidxml::xml_node<char>* xml_node);
 
-	void poses_mutex_lock() override { m_gui_mtx.lock(); }
-	void poses_mutex_unlock() override { m_gui_mtx.unlock(); }
-
 	// ------- Interface with "World" ------
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
@@ -154,9 +151,9 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void initLoggers();
 	virtual void writeLogStrings();
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
-	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
 
    protected:
 	// Protected ctor for class factory
@@ -171,6 +168,8 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void invoke_motor_controllers(
 		const TSimulContext& context,
 		std::vector<double>& out_force_per_wheel) = 0;
+
+	VisualObject* meAsVisualObject() override { return this; }
 
 	/** user-supplied index number: must be set/get'ed with setVehicleIndex()
 	 * getVehicleIndex() (default=0) */
@@ -227,8 +226,6 @@ class VehicleBase : public VisualObject, public Simulable
 	mrpt::opengl::CSetOfLines::Ptr m_gl_forces;
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
-
-	std::recursive_mutex m_gui_mtx;
 
    public:	// data logger header entries
 	static constexpr char DL_TIMESTAMP[] = "timestamp";

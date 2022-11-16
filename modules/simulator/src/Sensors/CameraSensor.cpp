@@ -85,13 +85,12 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void CameraSensor::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz,
-	[[maybe_unused]] mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
+		physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	auto lck = mrpt::lockHelper(m_gui_mtx);
-
-	if (!m_gl_sensor_origin)
+	if (!m_gl_sensor_origin && viz)
 	{
 		m_gl_sensor_origin = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_sensor_origin_corner =
@@ -100,14 +99,14 @@ void CameraSensor::internalGuiUpdate(
 		m_gl_sensor_origin->insert(m_gl_sensor_origin_corner);
 
 		m_gl_sensor_origin->setVisibility(false);
-		viz.insert(m_gl_sensor_origin);
+		viz->get().insert(m_gl_sensor_origin);
 		SensorBase::RegisterSensorOriginViz(m_gl_sensor_origin);
 	}
-	if (!m_gl_sensor_fov)
+	if (!m_gl_sensor_fov && viz)
 	{
 		m_gl_sensor_fov = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_sensor_fov->setVisibility(false);
-		viz.insert(m_gl_sensor_fov);
+		viz->get().insert(m_gl_sensor_fov);
 		SensorBase::RegisterSensorFOVViz(m_gl_sensor_fov);
 	}
 
@@ -171,8 +170,6 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	auto tleWhole =
 		mrpt::system::CTimeLoggerEntry(m_world->getTimeLogger(), "sensor.RGB");
-
-	auto lck = mrpt::lockHelper(m_gui_mtx);
 
 	if (m_glCustomVisual) m_glCustomVisual->setVisibility(false);
 
