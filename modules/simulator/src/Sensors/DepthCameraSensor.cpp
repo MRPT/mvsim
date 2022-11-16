@@ -304,7 +304,7 @@ void DepthCameraSensor::simulateOn3DScene(
 	// Note: relativePoseOnVehicle should be (y,p,r)=(-90deg,0,-90deg) to make
 	// the camera to look forward:
 
-	const auto vehiclePose = m_vehicle_pose_at_last_timestamp;
+	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
 
 	const auto depthSensorPose =
 		vehiclePose + curObs.sensorPose + fixedAxisConventionRot;
