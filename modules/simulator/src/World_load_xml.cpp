@@ -52,7 +52,10 @@ void World::load_from_XML(
 	// Create anchor object for standalone (environment-attached) sensors:
 	DummyInvisibleBlock::Ptr standaloneSensorHost =
 		std::make_shared<DummyInvisibleBlock>(this);
+
+	m_simulableObjectsMtx.lock();
 	m_simulableObjects.emplace("__standaloneSensorHost", standaloneSensorHost);
+	m_simulableObjectsMtx.unlock();
 
 	// Parse the XML input:
 	const auto [xml, root] = readXmlTextAndGetRoot(xml_text, fileNameForPath);
@@ -107,6 +110,8 @@ void World::internal_recursive_parse_XML(
 	{
 		WorldElementBase::Ptr e = WorldElementBase::factory(this, node);
 		m_world_elements.emplace_back(e);
+
+		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 		m_simulableObjects.emplace(
 			e->getName(), std::dynamic_pointer_cast<Simulable>(e));
 	}
@@ -123,6 +128,8 @@ void World::internal_recursive_parse_XML(
 				"Duplicated vehicle name: '%s'", veh->getName().c_str()));
 
 		m_vehicles.insert(VehicleList::value_type(veh->getName(), veh));
+
+		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 		m_simulableObjects.emplace(
 			veh->getName(), std::dynamic_pointer_cast<Simulable>(veh));
 	}
@@ -134,6 +141,8 @@ void World::internal_recursive_parse_XML(
 	// top-level <sensor> entries:
 	else if (!strcmp(node->name(), "sensor"))
 	{
+		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+
 		DummyInvisibleBlock::Ptr standaloneSensorHost =
 			std::dynamic_pointer_cast<DummyInvisibleBlock>(
 				m_simulableObjects.find("__standaloneSensorHost")->second);

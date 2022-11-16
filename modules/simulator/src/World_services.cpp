@@ -31,13 +31,12 @@ using namespace mvsim;
 mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(
 	const mvsim_msgs::SrvSetPose& req)
 {
-	std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
-
 	mvsim_msgs::SrvSetPoseAnswer ans;
 	ans.set_objectisincollision(false);
 
 	const auto sId = req.objectid();
 
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 	if (auto itV = m_simulableObjects.find(sId);
 		itV != m_simulableObjects.end())
 	{
@@ -132,6 +131,8 @@ mvsim_msgs::SrvSetControllerTwistAnswer World::srv_set_controller_twist(
 	ans.set_success(false);
 
 	const auto sId = req.objectid();
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 
 	auto itV = m_simulableObjects.find(sId);
 	if (itV == m_simulableObjects.end())

@@ -297,11 +297,13 @@ class World : public mrpt::system::COutputLogger
 		return m_world_elements;
 	}
 
+	/// Always lock/unlock getListOfSimulableObjectsMtx() before using this:
 	SimulableList& getListOfSimulableObjects() { return m_simulableObjects; }
 	const SimulableList& getListOfSimulableObjects() const
 	{
 		return m_simulableObjects;
 	}
+	auto& getListOfSimulableObjectsMtx() { return m_simulableObjectsMtx; }
 
 	mrpt::system::CTimeLogger& getTimeLogger() { return m_timlogger; }
 	/** Replace macros, prefix the base_path if input filename is relative, etc.
@@ -460,6 +462,7 @@ class World : public mrpt::system::COutputLogger
 	// shared_ptr to their Simulable interfaces, so we can easily iterate on
 	// this list only for common tasks:
 	SimulableList m_simulableObjects;
+	std::mutex m_simulableObjectsMtx;
 
 	/** Runs one individual time step */
 	void internal_one_timestep(double dt);
