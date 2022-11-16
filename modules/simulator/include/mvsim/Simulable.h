@@ -24,6 +24,13 @@ class Client;
 class World;
 class VisualObject;
 
+struct ParseSimulableParams
+{
+	ParseSimulableParams() = default;
+
+	bool init_pose_mandatory = true;
+};
+
 class Simulable
 {
    public:
@@ -110,7 +117,8 @@ class Simulable
 	 */
 	b2Body* m_b2d_body = nullptr;
 
-	bool parseSimulable(const JointXMLnode<>& node);
+	bool parseSimulable(
+		const JointXMLnode<>& node, const ParseSimulableParams& p = {});
 
 	void internalHandlePublish(const TSimulContext& context);
 

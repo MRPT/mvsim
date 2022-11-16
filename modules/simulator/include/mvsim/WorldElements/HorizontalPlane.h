@@ -24,6 +24,9 @@ class HorizontalPlane : public WorldElementBase
 	virtual ~HorizontalPlane();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
+	// ------- Interface with "World" ------
+	void simul_pre_timestep(const TSimulContext& context) override;
+	void simul_post_timestep(const TSimulContext& context) override;
 
    protected:
 	virtual void internalGuiUpdate(

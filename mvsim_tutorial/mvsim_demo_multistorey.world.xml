@@ -1,0 +1,59 @@
+<mvsim_world version="1.0">
+	<!-- General simulation options -->
+	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<cam_distance>35</cam_distance>
+		<fov_deg>35</fov_deg>
+		<refresh_fps>20</refresh_fps>
+		<!-- <follow_vehicle>r1</follow_vehicle> -->
+	</gui>
+
+
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+	<!-- ground -->
+	<element class="horizontal_plane">
+		<!--<cull_face>BACK</cull_face>-->
+		<x_min>0</x_min><y_min>0</y_min><x_max>2</x_max><y_max>2</y_max> <z>0.0</z>
+		<init_pose>3 -1 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<animation type="keyframes">
+			<time_pose3d>0.0   0 0 0 0 0 0</time_pose3d>  <!-- time  x y z yaw pitch roll -->
+			<time_pose3d>2.0   0 0 0 0 0 0</time_pose3d>
+			<time_pose3d>10.0  0 0 3 0 0 0</time_pose3d>
+			<time_pose3d>15.0  0 0 3 0 0 0</time_pose3d>
+			<time_pose3d>18.0  0 0 0 0 0 0</time_pose3d>
+		</animation>
+	</element>
+	<!-- =============================
+		   Vehicle classes definition
+	     ============================= -->
+	<include file="definitions/jackal.vehicle.xml" />
+
+	<!-- ========================
+		   Vehicle(s) definition
+	     ======================== -->
+	<vehicle name="r1" class="jackal">
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<!-- Sensors -->
+		<include file="definitions/lidar2d.sensor.xml" 
+		  sensor_x="0.15" sensor_z="0.33" sensor_yaw="0" sensor_name="laser1" 
+		/>
+
+		<include file="definitions/rgbd_camera.sensor.xml" 
+		  sensor_x="0.22" sensor_z="0.29"
+		  sensor_period_sec="0.10"
+		  show_3d_pointcloud="true"
+		/>
+	</vehicle>
+
+	<!-- ======================================
+	      Obstacle blocks classes definition
+	     ====================================== -->
+
+</mvsim_world>
