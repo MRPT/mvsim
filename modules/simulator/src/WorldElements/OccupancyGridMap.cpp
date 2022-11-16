@@ -103,18 +103,19 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void OccupancyGridMap::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 
 	// 1st time call?? -> Create objects
-	if (!m_gl_grid)
+	if (!m_gl_grid && viz && physical)
 	{
 		m_gl_grid = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_grid->setName("OccupancyGridMap");
-		viz.insert(m_gl_grid);
-		physical.insert(m_gl_grid);
+		viz->get().insert(m_gl_grid);
+		physical->get().insert(m_gl_grid);
 	}
 	if (m_gl_obs_clouds.size() != m_obstacles_for_each_obj.size())
 	{
@@ -133,6 +134,7 @@ void OccupancyGridMap::internalGuiUpdate(
 	}
 
 	// Update obstacles:
+	if (viz)
 	{
 		std::lock_guard<std::mutex> csl(m_gl_obs_clouds_buffer_cs);
 		for (size_t i = 0; i < m_gl_obs_clouds.size(); i++)
@@ -143,7 +145,7 @@ void OccupancyGridMap::internalGuiUpdate(
 				gl_objs = mrpt::opengl::CSetOfObjects::Create();
 				gl_objs->setName("OccupancyGridMap.obstacles");
 				MRPT_TODO("Add a name, and remove old ones in scene, etc.")
-				viz.insert(gl_objs);
+				viz->get().insert(gl_objs);
 			}
 
 			// Now that we are in a safe thread (with the OpenGL scene lock
@@ -155,7 +157,8 @@ void OccupancyGridMap::internalGuiUpdate(
 		}
 
 		m_gl_obs_clouds_buffer.clear();
-	}  // end lock
+		// end lock
+	}
 }
 
 void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)

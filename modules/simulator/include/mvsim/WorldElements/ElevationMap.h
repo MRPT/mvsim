@@ -31,12 +31,11 @@ class ElevationMap : public WorldElementBase
 
 	bool getElevationAt(
 		double x, double y, float& z) const;  //!< return false if out of bounds
-	void poses_mutex_lock() override {}
-	void poses_mutex_unlock() override {}
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.

@@ -114,18 +114,21 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void DepthCameraSensor::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz,
-	[[maybe_unused]] mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
+		physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	auto lck = mrpt::lockHelper(m_gui_mtx);
-
-	auto glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
-		viz.getByName("group_sensors_viz"));
-	ASSERT_(glVizSensors);
+	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
+	if (viz)
+	{
+		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+			viz->get().getByName("group_sensors_viz"));
+		ASSERT_(glVizSensors);
+	}
 
 	// 1st time?
-	if (!m_gl_obs)
+	if (!m_gl_obs && glVizSensors)
 	{
 		m_gl_obs = mrpt::opengl::CPointCloudColoured::Create();
 		m_gl_obs->setPointSize(2.0f);
@@ -134,7 +137,7 @@ void DepthCameraSensor::internalGuiUpdate(
 		glVizSensors->insert(m_gl_obs);
 	}
 
-	if (!m_gl_sensor_origin)
+	if (!m_gl_sensor_origin && viz)
 	{
 		m_gl_sensor_origin = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_sensor_origin_corner =
@@ -143,14 +146,14 @@ void DepthCameraSensor::internalGuiUpdate(
 		m_gl_sensor_origin->insert(m_gl_sensor_origin_corner);
 
 		m_gl_sensor_origin->setVisibility(false);
-		viz.insert(m_gl_sensor_origin);
+		viz->get().insert(m_gl_sensor_origin);
 		SensorBase::RegisterSensorOriginViz(m_gl_sensor_origin);
 	}
-	if (!m_gl_sensor_fov)
+	if (!m_gl_sensor_fov && viz)
 	{
 		m_gl_sensor_fov = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_sensor_fov->setVisibility(false);
-		viz.insert(m_gl_sensor_fov);
+		viz->get().insert(m_gl_sensor_fov);
 		SensorBase::RegisterSensorFOVViz(m_gl_sensor_fov);
 	}
 
@@ -193,9 +196,9 @@ void DepthCameraSensor::internalGuiUpdate(
 	// Move with vehicle:
 	const auto& p = m_vehicle.getPose();
 
-	m_gl_obs->setPose(p);
-	m_gl_sensor_fov->setPose(p);
-	m_gl_sensor_origin->setPose(p);
+	if (m_gl_obs) m_gl_obs->setPose(p);
+	if (m_gl_sensor_fov) m_gl_sensor_fov->setPose(p);
+	if (m_gl_sensor_origin) m_gl_sensor_origin->setPose(p);
 
 	if (m_glCustomVisual)
 		m_glCustomVisual->setPose(p + m_sensor_params.sensorPose.asTPose());
@@ -221,8 +224,6 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	auto tle1 = mrpt::system::CTimeLoggerEntry(
 		m_world->getTimeLogger(), "sensor.RGBD.acqGuiMtx");
-
-	auto lck = mrpt::lockHelper(m_gui_mtx);
 
 	tle1.stop();
 

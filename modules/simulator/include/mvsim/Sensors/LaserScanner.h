@@ -32,15 +32,13 @@ class LaserScanner : public SensorBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	void poses_mutex_lock() override {}
-	void poses_mutex_unlock() override {}
-
 	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
 	void freeOpenGLResources() override;
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
 	// when not using the 3D raytrace mode.
@@ -77,7 +75,6 @@ class LaserScanner : public SensorBase
 	 * internalGuiUpdate() from m_last_scan2gui */
 	bool m_gui_uptodate = false;
 
-	std::recursive_mutex m_gui_mtx;
 	mrpt::opengl::CPlanarLaserScan::Ptr m_gl_scan;
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
 		m_gl_sensor_origin_corner;

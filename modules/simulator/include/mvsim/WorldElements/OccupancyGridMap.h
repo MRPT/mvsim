@@ -40,12 +40,10 @@ class OccupancyGridMap : public WorldElementBase
 	const mrpt::maps::COccupancyGridMap2D& getOccGrid() const { return m_grid; }
 	mrpt::maps::COccupancyGridMap2D& getOccGrid() { return m_grid; }
 
-	void poses_mutex_lock() override {}
-	void poses_mutex_unlock() override {}
-
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
 	mrpt::maps::COccupancyGridMap2D m_grid;

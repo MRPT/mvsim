@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <mrpt/core/optional_ref.h>
 #include <mrpt/opengl/opengl_frwds.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mvsim/basic_types.h>
@@ -36,10 +37,13 @@ class VisualObject
 
 	virtual ~VisualObject();
 
-	/** Must create a new object in the scene and/or update it according to the
-	 * current state */
+	/** This creates a new object in the scene and/or update it according to the
+	 * current state of the object. If none of the scenes are passed, the poses
+	 * of existing visual objects are updated, but no new ones are created.
+	 */
 	virtual void guiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical);
 
 	World* getWorldObject() { return m_world; }
 	const World* getWorldObject() const { return m_world; }
@@ -74,9 +78,9 @@ class VisualObject
 	const bool m_insertCustomVizIntoPhysical = true;
 
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly = false) = 0;
-	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() { return {}; }
 
    private:
 	mrpt::math::TPoint3D viz_bbmin_{-1.0, -1.0, .0}, viz_bbmax_{1.0, 1.0, 1.0};

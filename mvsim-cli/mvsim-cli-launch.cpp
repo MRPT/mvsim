@@ -96,7 +96,6 @@ Available options:
 
 	// Run simulation:
 	const double tAbsInit = mrpt::Clock::nowDouble();
-	// double REALTIME_FACTOR = 1.0;
 	bool doExit = false;
 	size_t teleopIdxVeh = 0;  // Index of the vehicle to teleop
 
@@ -119,7 +118,6 @@ Available options:
 			world.run_simulation(incrTimeSteps * world.get_simul_timestep());
 		}
 
-		// I could use 10ms here but chono literals are since gcc 4.9.3
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 		// GUI msgs, teleop, etc.
@@ -195,6 +193,8 @@ Available options:
 		gui_key_events_mtx.unlock();
 
 		msg2gui = txt2gui_tmp;	// send txt msgs to show in the GUI
+
+		if (thread_params.isClosing()) doExit = true;
 
 	}  // end while()
 

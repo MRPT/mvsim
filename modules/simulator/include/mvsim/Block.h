@@ -96,9 +96,6 @@ class Block : public VisualObject, public Simulable
 	bool isStatic() const;
 	void setIsStatic(bool b);
 
-	void poses_mutex_lock() override { m_gui_mtx.lock(); }
-	void poses_mutex_unlock() override { m_gui_mtx.unlock(); }
-
 	const mrpt::img::TColor block_color() const { return m_block_color; }
 	void block_color(const mrpt::img::TColor& c)
 	{
@@ -119,11 +116,13 @@ class Block : public VisualObject, public Simulable
 		m_gl_block.reset();	 // regenerate 3D view
 	}
 
+	VisualObject* meAsVisualObject() override { return this; }
+
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
-	virtual mrpt::poses::CPose3D internalGuiGetVisualPose() override;
 
 	/** user-supplied index number: must be set/get'ed with setblockIndex()
 	 * getblockIndex() (default=0) */
@@ -174,8 +173,6 @@ class Block : public VisualObject, public Simulable
 	std::mutex m_force_segments_for_rendering_cs;
 	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
 
-	std::recursive_mutex m_gui_mtx;
-
 };	// end Block
 
 /** An invisible block which can be used as an auxiliary anchor object. */
@@ -217,23 +214,16 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 	/** Get the block mass */
 	virtual double getMass() const { return 0; }
 
-	void poses_mutex_lock() override {}
-	void poses_mutex_unlock() override {}
-
 	void add_sensor(const SensorBase::Ptr& sensor)
 	{
 		m_sensors.push_back(sensor);
 	}
 
    protected:
-	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
-		[[maybe_unused]] bool childrenOnly) override
-	{
-		for (auto& s : m_sensors) s->guiUpdate(viz, physical);
-	}
-
-	mrpt::poses::CPose3D internalGuiGetVisualPose() override { return {}; }
+	void internalGuiUpdate(
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+		[[maybe_unused]] bool childrenOnly) override;
 
 	void registerOnServer(mvsim::Client& c) override
 	{

@@ -92,7 +92,8 @@ void Wheel::recalcInertia()
 }
 
 void Wheel::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	bool childrenOnly)
 {
 	// nothing to do, already done in getAs3DObject()

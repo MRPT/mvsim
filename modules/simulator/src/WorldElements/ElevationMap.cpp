@@ -151,7 +151,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void ElevationMap::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	bool childrenOnly)
 {
 	using namespace mrpt::math;
@@ -162,13 +163,13 @@ void ElevationMap::internalGuiUpdate(
 		"loadConfigFrom() first?");
 
 	// 1st time call?? -> Create objects
-	if (firstSceneRendering_)
+	if (firstSceneRendering_ && viz && physical)
 	{
 		firstSceneRendering_ = false;
-		viz.insert(gl_mesh_);
-		physical.insert(gl_mesh_);
+		viz->get().insert(gl_mesh_);
+		physical->get().insert(gl_mesh_);
 
-		viz.insert(gl_debugWheelsContactPoints_);
+		viz->get().insert(gl_debugWheelsContactPoints_);
 	}
 }
 

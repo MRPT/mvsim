@@ -11,6 +11,7 @@
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
+#include <mvsim/VisualObject.h>
 #include <mvsim/World.h>
 
 #include <cmath>  // fmod()
@@ -58,7 +59,7 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 {
 	if (m_b2d_body)
 	{
-		poses_mutex_lock();
+		m_q_mtx.lock();
 		// m_simulable_parent->physical_objects_mtx(): already locked by caller
 
 		// Pos:
@@ -69,6 +70,10 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		m_q.yaw = angle;
 		// The rest (z,pitch,roll) will be always 0, unless other
 		// world-element modifies them! (e.g. elevation map)
+
+		// Update the GUI element **poses** only:
+		if (auto* vo = meAsVisualObject(); vo)
+			vo->guiUpdate(std::nullopt, std::nullopt);
 
 		// Vel:
 		const b2Vec2& vel = m_b2d_body->GetLinearVelocity();
@@ -89,7 +94,7 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		// Reseteable collision flag:
 		m_hadCollisionFlag = m_hadCollisionFlag || m_isInCollision;
 
-		poses_mutex_unlock();
+		m_q_mtx.unlock();
 	}
 
 	// Optional publish to topics:
@@ -295,9 +300,7 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 		msg.set_unixtimestamp(tNow);
 		msg.set_relativetoobjectid(m_name);
 
-		auto lckListObjs = mrpt::lockHelper(
-			getSimulableWorldObject()->getListOfSimulableObjectsMtx());
-
+		// Note: getSimulableWorldObjectMtx() is already hold by my caller.
 		const auto& allObjects =
 			getSimulableWorldObject()->getListOfSimulableObjects();
 
@@ -356,6 +359,39 @@ void Simulable::registerOnServer(mvsim::Client& c)
 void Simulable::setPose(const mrpt::math::TPose3D& p) const
 {
 	m_q_mtx.lock();
-	const_cast<mrpt::math::TPose3D&>(m_q) = p;
+
+	Simulable& me = const_cast<Simulable&>(*this);
+
+	me.m_q = p;
+
+	// Update the GUI element poses only:
+	if (auto* vo = me.meAsVisualObject(); vo)
+		vo->guiUpdate(std::nullopt, std::nullopt);
+
+	m_q_mtx.unlock();
+}
+
+mrpt::math::TPose3D Simulable::getPose() const
+{
+	m_q_mtx.lock_shared();
+	mrpt::math::TPose3D ret = m_q;
+	m_q_mtx.unlock_shared();
+	return ret;
+}
+
+mrpt::math::TPose3D Simulable::getPoseNoLock() const { return m_q; }
+
+mrpt::math::TTwist2D Simulable::getTwist() const
+{
+	m_q_mtx.lock_shared();
+	mrpt::math::TTwist2D ret = m_dq;
+	m_q_mtx.unlock_shared();
+	return ret;
+}
+
+void Simulable::setTwist(const mrpt::math::TTwist2D& dq) const
+{
+	m_q_mtx.lock();
+	const_cast<mrpt::math::TTwist2D&>(m_dq) = dq;
 	m_q_mtx.unlock();
 }

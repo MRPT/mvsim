@@ -68,8 +68,9 @@ class Wheel : public VisualObject
 	void loadFromXML(const rapidxml::xml_node<char>* xml_node);
 
 	void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
-		bool childrenOnly = false) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+		bool childrenOnly) override;
 
 	double getPhi() const
 	{

@@ -24,12 +24,11 @@ class HorizontalPlane : public WorldElementBase
 	virtual ~HorizontalPlane();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
-	void poses_mutex_lock() override {}
-	void poses_mutex_unlock() override {}
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
 	float m_x_min = -10, m_x_max = 10, m_y_min = -10, m_y_max = 10;

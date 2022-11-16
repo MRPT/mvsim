@@ -14,6 +14,7 @@
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
+#include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/World.h>
 
@@ -29,13 +30,21 @@ static std::atomic_int32_t g_uniqueCustomVisualId = 0;
 VisualObject::~VisualObject() = default;
 
 void VisualObject::guiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical)
 {
 	using namespace std::string_literals;
 
-	const auto objectPose = internalGuiGetVisualPose();
+	const auto* meSim = dynamic_cast<Simulable*>(this);
+	ASSERT_(meSim);
 
-	if (m_glCustomVisual)
+	// If "viz" does not have a value, it's because we are already inside a
+	// setPose() change event, so my caller already holds the mutex and we don't
+	// need/can't acquire it again:
+	const auto objectPose =
+		viz.has_value() ? meSim->getPose() : meSim->getPoseNoLock();
+
+	if (m_glCustomVisual && viz.has_value() && physical.has_value())
 	{
 		// Assign a unique ID on first call:
 		if (m_glCustomVisualId < 0)
@@ -47,17 +56,17 @@ void VisualObject::guiUpdate(
 			m_glCustomVisual->setName(name);
 
 			// Add to the 3D scene:
-			if (m_insertCustomVizIntoViz) viz.insert(m_glCustomVisual);
+			if (m_insertCustomVizIntoViz) viz->get().insert(m_glCustomVisual);
 
 			if (m_insertCustomVizIntoPhysical)
-				physical.insert(m_glCustomVisual);
+				physical->get().insert(m_glCustomVisual);
 		}
 
 		// Update pose:
 		m_glCustomVisual->setPose(objectPose);
 	}
 
-	if (m_glBoundingBox)
+	if (m_glBoundingBox && viz.has_value())
 	{
 		if (m_glBoundingBox->empty())
 		{
@@ -66,7 +75,7 @@ void VisualObject::guiUpdate(
 			glBox->setBoxCorners(viz_bbmin_, viz_bbmax_);
 			m_glBoundingBox->insert(glBox);
 			m_glBoundingBox->setVisibility(false);
-			viz.insert(m_glBoundingBox);
+			viz->get().insert(m_glBoundingBox);
 		}
 		m_glBoundingBox->setPose(objectPose);
 	}
@@ -76,9 +85,26 @@ void VisualObject::guiUpdate(
 	internalGuiUpdate(viz, physical, childrenOnly);
 }
 
-static std::map<std::string, mrpt::opengl::CAssimpModel::Ptr> gModelsCache;
+class ModelsCache
+{
+   public:
+	std::map<std::string, mrpt::opengl::CAssimpModel::Ptr> cache;
 
-void VisualObject::FreeOpenGLResources() { gModelsCache.clear(); }
+	static ModelsCache& Instance()
+	{
+		static ModelsCache o;
+		return o;
+	}
+
+   private:
+	ModelsCache() = default;
+	~ModelsCache() = default;
+};
+
+void VisualObject::FreeOpenGLResources()
+{
+	ModelsCache::Instance().cache.clear();
+}
 
 bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 {
@@ -118,15 +144,17 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	const std::string localFileName = m_world->xmlPathToActualPath(modelURI);
 	ASSERT_FILE_EXISTS_(localFileName);
 
+	auto& gModelsCache = ModelsCache::Instance();
+
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 
 	auto glModel = [&]() {
-		if (auto it = gModelsCache.find(localFileName);
-			it != gModelsCache.end())
+		if (auto it = gModelsCache.cache.find(localFileName);
+			it != gModelsCache.cache.end())
 			return it->second;
 		else
 		{
-			auto m = gModelsCache[localFileName] =
+			auto m = gModelsCache.cache[localFileName] =
 				mrpt::opengl::CAssimpModel::Create();
 
 			// En/Dis-able the extra verbosity while loading the 3D model:

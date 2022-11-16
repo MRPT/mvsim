@@ -33,16 +33,14 @@ class CameraSensor : public SensorBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	void poses_mutex_lock() override {}
-	void poses_mutex_unlock() override {}
-
 	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
 
 	void freeOpenGLResources() override;
 
    protected:
 	virtual void internalGuiUpdate(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
 	// Store here all sensor intrinsic parameters. This obj will be copied as a
@@ -59,7 +57,6 @@ class CameraSensor : public SensorBase
 	/** Whether m_gl_scan has to be updated upon next call of
 	 * internalGuiUpdate() from m_last_scan2gui */
 	bool m_gui_uptodate = false;
-	std::recursive_mutex m_gui_mtx;
 
 	std::optional<TSimulContext> m_has_to_render;
 	std::mutex m_has_to_render_mtx;

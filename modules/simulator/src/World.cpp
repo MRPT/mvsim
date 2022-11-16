@@ -122,7 +122,7 @@ void World::internal_one_timestep(double dt)
 	context.simul_time = get_simul_time();
 	context.dt = dt;
 
-	auto lckListObjs = mrpt::lockHelper(m_simulableObjectsMtx);
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 
 	// 1) Pre-step
 	{

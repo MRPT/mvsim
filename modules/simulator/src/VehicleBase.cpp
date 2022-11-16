@@ -548,11 +548,6 @@ void VehicleBase::getWheelsVelocityLocal(
 	}
 }
 
-mrpt::poses::CPose3D VehicleBase::internalGuiGetVisualPose()
-{
-	return mrpt::poses::CPose3D(getPose());
-}
-
 void VehicleBase::internal_internalGuiUpdate_sensors(
 	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
 {
@@ -666,15 +661,14 @@ void VehicleBase::create_multibody_system(b2World& world)
 }
 
 void VehicleBase::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	bool childrenOnly)
 {
-	auto lck = mrpt::lockHelper(m_gui_mtx);
-
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	const size_t nWs = this->getNumWheels();
-	if (!m_gl_chassis)
+	if (!m_gl_chassis && viz && physical)
 	{
 		m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
 		m_gl_chassis->setName("vehicle_chassis_"s + m_name);
@@ -698,34 +692,44 @@ void VehicleBase::internalGuiUpdate(
 			m_gl_chassis->insert(gl_poly);
 		}
 
-		viz.insert(m_gl_chassis);
-		physical.insert(m_gl_chassis);
+		viz->get().insert(m_gl_chassis);
+		physical->get().insert(m_gl_chassis);
 	}
 
 	// Update them:
 	// ----------------------------------
-	m_gl_chassis->setPose(getPose());
+	// If "viz" does not have a value, it's because we are already inside a
+	// setPose() change event, so my caller already holds the mutex and we don't
+	// need/can't acquire it again:
+	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-	for (size_t i = 0; i < nWs; i++)
+	if (m_gl_chassis)
 	{
-		const Wheel& w = getWheelInfo(i);
-		m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
-			w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+		m_gl_chassis->setPose(objectPose);
+		for (size_t i = 0; i < nWs; i++)
+		{
+			const Wheel& w = getWheelInfo(i);
+			m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
+				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+		}
 	}
 
 	// Init on first use:
-	if (!m_gl_forces)
+	if (!m_gl_forces && viz)
 	{
 		// Visualization of forces:
 		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
 		m_gl_forces->setLineWidth(3.0);
 		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
-		viz.insert(m_gl_forces);  // forces are in global coords
+		viz->get().insert(m_gl_forces);	 // forces are in global coords
 	}
 
 	// Other common stuff:
-	internal_internalGuiUpdate_sensors(viz, physical);
-	internal_internalGuiUpdate_forces(viz);
+	if (viz && physical)
+	{
+		internal_internalGuiUpdate_sensors(viz->get(), physical->get());
+		internal_internalGuiUpdate_forces(viz->get());
+	}
 }
 
 void VehicleBase::initLoggers()

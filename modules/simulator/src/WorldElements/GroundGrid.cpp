@@ -61,13 +61,14 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void GroundGrid::internalGuiUpdate(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	bool childrenOnly)
 {
 	using namespace mrpt::math;
 
 	// 1st call OR gridmap changed?
-	if (!m_gl_groundgrid)
+	if (!m_gl_groundgrid && viz)
 	{
 		m_gl_groundgrid = mrpt::opengl::CGridPlaneXY::Create();
 		m_gl_groundgrid->setPlaneLimits(m_x_min, m_x_max, m_y_min, m_y_max);
@@ -75,7 +76,7 @@ void GroundGrid::internalGuiUpdate(
 		m_gl_groundgrid->setColor_u8(m_color);
 		m_gl_groundgrid->setLineWidth(m_line_width);
 
-		viz.insert(m_gl_groundgrid);
+		viz->get().insert(m_gl_groundgrid);
 	}
 
 	// Update:
