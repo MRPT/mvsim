@@ -15,6 +15,7 @@
 
 #include <rapidxml.hpp>
 
+#include "JointXMLnode.h"
 #include "xml_utils.h"
 
 using namespace rapidxml;
@@ -35,6 +36,17 @@ HorizontalPlane::~HorizontalPlane() {}
 void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	if (!root) return;	// Assume defaults
+
+	// Common setup for simulable objects:
+	// -----------------------------------------------------------
+	{
+		ParseSimulableParams p;
+		p.init_pose_mandatory = false;
+
+		JointXMLnode<> jnode;
+		jnode.add(root);
+		parseSimulable(jnode, p);
+	}
 
 	TParameterDefinitions params;
 	params["color"] = TParamEntry("%color", &m_color);
@@ -135,4 +147,23 @@ void HorizontalPlane::internalGuiUpdate(
 		viz->get().insert(m_gl_plane_text);
 		physical->get().insert(m_gl_plane_text);
 	}
+
+	// Update them:
+	// If "viz" does not have a value, it's because we are already inside a
+	// setPose() change event, so my caller already holds the mutex and we
+	// don't need/can't acquire it again:
+	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
+
+	if (m_gl_plane) m_gl_plane->setPose(objectPose);
+	if (m_gl_plane_text) m_gl_plane_text->setPose(objectPose);
+}
+
+void HorizontalPlane::simul_pre_timestep(const TSimulContext& context)
+{
+	Simulable::simul_pre_timestep(context);
+}
+
+void HorizontalPlane::simul_post_timestep(const TSimulContext& context)
+{
+	Simulable::simul_post_timestep(context);
 }
