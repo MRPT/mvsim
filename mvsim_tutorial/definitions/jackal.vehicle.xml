@@ -30,9 +30,9 @@
         <!--   Motor controller -->
         <controller class="twist_pid">
             <!-- Params -->
-            <KP>20</KP>  <KI>10</KI> <I_MAX>10</I_MAX> <KD>0</KD>
+            <KP>5</KP>  <KI>10</KI> <I_MAX>1</I_MAX> <KD>0</KD>
             <V>0.0</V><W>0</W>
-            <max_torque>150</max_torque>
+            <max_torque>100</max_torque>
         </controller>
 
     </dynamics>

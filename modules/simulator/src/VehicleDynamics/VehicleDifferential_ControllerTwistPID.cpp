@@ -57,7 +57,7 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	const double followErrorL = spVelL - actVelL;
 	const double followErrorR = spVelR - actVelR;
 
-	const double zeroThres = 0.05;	// m/s
+	const double zeroThres = 0.001;	 // m/s
 
 	if (std::abs(spVelL) < zeroThres &&	 //
 		std::abs(spVelR) < zeroThres &&	 //
