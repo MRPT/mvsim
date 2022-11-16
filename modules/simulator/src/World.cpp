@@ -170,7 +170,7 @@ void World::internal_one_timestep(double dt)
 		}
 	}
 	{
-		const auto lckPhys = mrpt::lockHelper(m_reset_collision_flags_mtx);
+		const auto lckCollis = mrpt::lockHelper(m_reset_collision_flags_mtx);
 		for (const auto& sId : m_reset_collision_flags)
 		{
 			if (auto itV = m_simulableObjects.find(sId);

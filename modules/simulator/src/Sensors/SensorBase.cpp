@@ -258,8 +258,6 @@ bool SensorBase::should_simulate_sensor(const TSimulContext& context)
 	}
 
 	m_sensor_last_timestamp = context.simul_time;
-	m_vehicle_pose_at_last_timestamp =
-		mrpt::poses::CPose3D(m_vehicle.getPose());
 
 	return true;
 }

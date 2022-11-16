@@ -223,8 +223,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 	const double maxRange = m_scan_model.maxRange;
 
 	// Get pose of the robot:
-	const mrpt::poses::CPose2D vehPose =
-		mrpt::poses::CPose2D(m_vehicle_pose_at_last_timestamp);
+	const mrpt::poses::CPose2D vehPose = m_vehicle.getCPose2D();
 
 	// grid maps:
 	// -------------
@@ -475,7 +474,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
 
-	const auto vehiclePose = m_vehicle_pose_at_last_timestamp;
+	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
 
 	// ----------------------------------------------------------
 	// Decompose the 2D lidar FOV into "n" depth camera images,

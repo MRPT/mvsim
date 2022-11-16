@@ -64,7 +64,7 @@ class SensorBase : public VisualObject, public Simulable
 	/** Should be called within each derived class simul_post_timestep() method
 	 *  to update m_sensor_last_timestamp and check if the sensor should be
 	 * simulated now, given the current simulation time, and the sensor rate in
-	 * m_sensor_period. It also updates m_vehicle_pose_at_last_timestamp.
+	 * m_sensor_period.
 	 *
 	 * \return true if it is now time to simulate a new sensor reading,
 	 *         false otherwise.
@@ -81,11 +81,6 @@ class SensorBase : public VisualObject, public Simulable
 
 	/** The last sensor reading timestamp. See  m_sensor_period */
 	double m_sensor_last_timestamp = 0;
-
-	/** Whenever m_sensor_last_timestamp is updated, the vehicle pose will be
-	 * stored here, so we have the exact vehicle pose at that timestamp for
-	 * sensors that run on an async thread (i.e. opengl rendering) */
-	mrpt::poses::CPose3D m_vehicle_pose_at_last_timestamp;
 
 	/** Publish to MVSIM ZMQ topic stream, if not empty (default) */
 	std::string publishTopic_;
