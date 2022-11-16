@@ -122,6 +122,8 @@ void World::internal_one_timestep(double dt)
 	context.simul_time = get_simul_time();
 	context.dt = dt;
 
+	auto lckListObjs = mrpt::lockHelper(m_simulableObjectsMtx);
+
 	// 1) Pre-step
 	{
 		mrpt::system::CTimeLoggerEntry tle(m_timlogger, "timestep.0.prestep");
@@ -177,6 +179,7 @@ void World::internal_one_timestep(double dt)
 		}
 		m_reset_collision_flags.clear();
 	}
+	lckListObjs.unlock();  // for m_simulableObjects
 
 	// 4) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
 	mrpt::system::CTimeLoggerEntry tle4(
@@ -276,11 +279,14 @@ void World::connectToServer()
 	m_client.connect();
 
 	// Let objects register topics / services:
+	auto lckListObjs = mrpt::lockHelper(m_simulableObjectsMtx);
+
 	for (auto& o : m_simulableObjects)
 	{
 		ASSERT_(o.second);
 		o.second->registerOnServer(m_client);
 	}
+	lckListObjs.unlock();
 
 	// global services:
 	internal_advertiseServices();
@@ -293,6 +299,9 @@ void World::insertBlock(const Block::Ptr& block)
 
 	// make sure the name is not duplicated:
 	m_blocks.insert(BlockList::value_type(block->getName(), block));
+
+	auto lckListObjs = mrpt::lockHelper(m_simulableObjectsMtx);
+
 	m_simulableObjects.insert(
 		m_simulableObjects.end(),
 		std::make_pair(

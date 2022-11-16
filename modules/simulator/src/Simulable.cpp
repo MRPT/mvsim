@@ -295,17 +295,20 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 		msg.set_unixtimestamp(tNow);
 		msg.set_relativetoobjectid(m_name);
 
+		auto lckListObjs = mrpt::lockHelper(
+			getSimulableWorldObject()->getListOfSimulableObjectsMtx());
+
 		const auto& allObjects =
 			getSimulableWorldObject()->getListOfSimulableObjects();
 
 		// detect other objects and publish their relative poses wrt me:
 		for (const auto& otherId : publishRelativePoseOfOtherObjects_)
 		{
-			msg.set_objectid(otherId);
-
 			if (auto itObj = allObjects.find(otherId);
 				itObj != allObjects.end())
 			{
+				msg.set_objectid(otherId);
+
 				const auto relPose = itObj->second->m_q - m_q;
 
 				auto pose = msg.mutable_pose();

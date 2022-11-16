@@ -167,7 +167,9 @@ void World::GUI::prepare_editor_window()
 
 	w->add<nanogui::Label>("Selected object", "sans-bold");
 
-	if (!m_parent.m_simulableObjects.empty())
+	auto lckListObjs =
+		mrpt::lockHelper(m_parent.getListOfSimulableObjectsMtx());
+	if (!m_parent.getListOfSimulableObjects().empty())
 	{
 		auto tab = w->add<nanogui::TabWidget>();
 
@@ -202,7 +204,7 @@ void World::GUI::prepare_editor_window()
 				nanogui::Alignment::Minimum, 3, 3));
 		}
 
-		for (const auto& o : m_parent.m_simulableObjects)
+		for (const auto& o : m_parent.getListOfSimulableObjects())
 		{
 			InfoPerObject ipo;
 
@@ -563,7 +565,14 @@ void World::internal_GUI_thread()
 			if (m_gui.gui_win->background_scene)
 				m_gui.gui_win->background_scene->freeOpenGLResources();
 		}
-		for (auto& obj : m_simulableObjects) obj.second->freeOpenGLResources();
+
+		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+
+		for (auto& obj : getListOfSimulableObjects())
+			obj.second->freeOpenGLResources();
+
+		lckListObjs.unlock();
+
 		VisualObject::FreeOpenGLResources();
 
 		// Now, destroy window:
