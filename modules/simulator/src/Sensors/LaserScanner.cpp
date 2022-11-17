@@ -530,11 +530,16 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// make owner's own body invisible?
 	auto visVeh = dynamic_cast<VisualObject*>(&m_vehicle);
+	auto veh = dynamic_cast<VehicleBase*>(&m_vehicle);
 	bool formerVisVehState = true;
-	if (visVeh && m_ignore_parent_body)
+	if (m_ignore_parent_body)
 	{
-		formerVisVehState = visVeh->customVisualVisible();
-		visVeh->customVisualVisible(false);
+		if (visVeh)
+		{
+			formerVisVehState = visVeh->customVisualVisible();
+			visVeh->customVisualVisible(false);
+		}
+		if (veh) veh->chassisAndWheelsVisible(false);
 	}
 
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
@@ -607,8 +612,11 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		tleStore.stop();
 	}
 
-	if (visVeh && m_ignore_parent_body)
-		visVeh->customVisualVisible(formerVisVehState);
+	if (m_ignore_parent_body)
+	{
+		if (visVeh) visVeh->customVisualVisible(formerVisVehState);
+		if (veh) veh->chassisAndWheelsVisible(formerVisVehState);
+	}
 
 	// Store generated obs:
 	{

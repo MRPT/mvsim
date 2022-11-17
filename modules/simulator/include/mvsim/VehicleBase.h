@@ -143,6 +143,7 @@ class VehicleBase : public VisualObject, public Simulable
 	{
 		for (auto& sensor : m_sensors) sensor->freeOpenGLResources();
 	}
+	void chassisAndWheelsVisible(bool visible);
 
    protected:
 	std::map<std::string, std::shared_ptr<CSVLogger>> m_loggers;
@@ -215,10 +216,11 @@ class VehicleBase : public VisualObject, public Simulable
 	std::vector<b2Fixture*> m_fixture_wheels;
 
    private:
-	// Called from internalGuiUpdate_common()
+	// Called from internalGuiUpdate()
 	void internal_internalGuiUpdate_sensors(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
-	// Called from internalGuiUpdate_common()
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical);
+	// Called from internalGuiUpdate()
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_chassis;

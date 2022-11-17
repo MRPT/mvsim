@@ -549,7 +549,8 @@ void VehicleBase::getWheelsVelocityLocal(
 }
 
 void VehicleBase::internal_internalGuiUpdate_sensors(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical)
 {
 	for (auto& s : m_sensors) s->guiUpdate(viz, physical);
 }
@@ -795,4 +796,13 @@ void VehicleBase::registerOnServer(mvsim::Client& c)
 	// register myself, and my children objects:
 	Simulable::registerOnServer(c);
 	for (auto& sensor : m_sensors) sensor->registerOnServer(c);
+}
+
+void VehicleBase::chassisAndWheelsVisible(bool visible)
+{
+	if (m_gl_chassis) m_gl_chassis->setVisibility(visible);
+	for (auto& glW : m_gl_wheels)
+	{
+		if (glW) glW->setVisibility(visible);
+	}
 }
