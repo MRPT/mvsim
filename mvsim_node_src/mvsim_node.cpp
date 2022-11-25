@@ -782,7 +782,7 @@ void MVSimNode::spinNotifyROS()
 			// --------------------------------------------
 			const mrpt::math::TPose3D& gh_veh_pose = veh->getPose();
 			// [vx,vy,w] in global frame
-			const auto& gh_veh_vel = veh->getVelocity();
+			const auto& gh_veh_vel = veh->getTwist();
 
 			{
 #if PACKAGE_ROS_VERSION == 1
