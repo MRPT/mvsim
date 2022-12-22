@@ -361,6 +361,9 @@ class World : public mrpt::system::COutputLogger
 
 	auto& physical_objects_mtx() { return m_physical_objects_mtx; }
 
+	bool headless() const { return m_gui_options.headless; }
+	void headless(bool setHeadless) { m_gui_options.headless = setHeadless; }
+
    private:
 	friend class VehicleBase;
 	friend class Block;
@@ -421,8 +424,8 @@ class World : public mrpt::system::COutputLogger
 		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
 		double fov_deg = 60.0;
-		/** Name of the vehicle to follow (empty=none) */
-		std::string follow_vehicle;
+		std::string follow_vehicle;	 //!< Vehicle name to follow (empty=none)
+		bool headless = false;
 
 		const TParameterDefinitions params = {
 			{"win_w", {"%u", &win_w}},
@@ -435,14 +438,16 @@ class World : public mrpt::system::COutputLogger
 			{"follow_vehicle", {"%s", &follow_vehicle}},
 			{"start_maximized", {"%bool", &start_maximized}},
 			{"refresh_fps", {"%i", &refresh_fps}},
+			{"headless", {"%bool", &headless}},
 		};
 
 		TGUI_Options() = default;
 		void parse_from(const rapidxml::xml_node<char>& node);
 	};
 
-	TGUI_Options m_gui_options;	 //!< Some of these options are only used the
-								 //! first time the GUI window is created.
+	/** Some of these options are only used the first time the GUI window is
+	 * created. */
+	TGUI_Options m_gui_options;
 
 	// -------- World contents ----------
 	/** Mutex protecting simulation objects from multi-thread access */
