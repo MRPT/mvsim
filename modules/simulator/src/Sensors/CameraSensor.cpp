@@ -154,8 +154,8 @@ void CameraSensor::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_sensor_params.cameraPose.asTPose());
 }
 
-void CameraSensor::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void CameraSensor::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 
