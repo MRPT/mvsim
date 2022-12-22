@@ -169,8 +169,8 @@ void LaserScanner::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_scan_model.sensorPose);
 }
 
-void LaserScanner::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void LaserScanner::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 
