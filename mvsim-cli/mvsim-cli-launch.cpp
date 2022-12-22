@@ -78,8 +78,11 @@ Available options:
 		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
 			cli->argVerbosity.getValue()));
 
+	// CLI flags:
 	if (cli->argFullProfiler.isSet())
 		world.getTimeLogger().enableKeepWholeHistory();
+
+	if (cli->argHeadless.isSet()) world.headless(true);
 
 	// Load from XML:
 	rapidxml::file<> fil_xml(sXMLfilename.c_str());

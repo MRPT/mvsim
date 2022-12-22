@@ -37,6 +37,9 @@ struct cli_flags
 		"program.",
 		cmd};
 
+	TCLAP::SwitchArg argHeadless{
+		"", "headless", "Runs the simulator without any GUI window.", cmd};
+
 	TCLAP::SwitchArg argDetails{
 		"", "details", "Shows details in the specified subcommand", cmd};
 
