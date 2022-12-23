@@ -252,7 +252,7 @@ void DepthCameraSensor::simulateOn3DScene(
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParamsIntensity.ncols;
 		p.height = m_sensor_params.cameraParamsIntensity.nrows;
-		p.create_EGL_context = false;  // reuse nanogui context
+		p.create_EGL_context = m_vehicle.getSimulableWorldObject()->headless();
 
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif
@@ -271,7 +271,7 @@ void DepthCameraSensor::simulateOn3DScene(
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParams.ncols;
 		p.height = m_sensor_params.cameraParams.nrows;
-		p.create_EGL_context = false;  // reuse nanogui context
+		p.create_EGL_context = m_vehicle.getSimulableWorldObject()->headless();
 
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif
