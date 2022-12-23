@@ -417,14 +417,6 @@ void World::internal_GUI_thread()
 			worldVisual_->insert(m_glUserObjsViz);
 			worldPhysical_.insert(m_glUserObjsPhysical);
 
-			// Create group for sensor viz:
-			{
-				auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
-				glVizSensors->setName("group_sensors_viz");
-				glVizSensors->setVisibility(m_gui_options.show_sensor_points);
-				worldVisual_->insert(glVizSensors);
-			}
-
 			std::lock_guard<std::mutex> lck(
 				m_gui.gui_win->background_scene_mtx);
 			m_gui.gui_win->background_scene = worldVisual_;
