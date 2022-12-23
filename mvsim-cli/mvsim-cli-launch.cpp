@@ -79,7 +79,8 @@ void mvsim_launch_shutdown()
 		app->world.getTimeLogger().saveToMFile(sFil);
 	}
 
-	app.reset();
+	app->world.free_opengl_resources();
+	app.reset();  // destroy all
 }
 
 void mvsim_signal_handler(int s)

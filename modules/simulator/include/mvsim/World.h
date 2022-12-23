@@ -366,6 +366,8 @@ class World : public mrpt::system::COutputLogger
 	mvsim::Client& commsClient() { return m_client; }
 	const mvsim::Client& commsClient() const { return m_client; }
 
+	void free_opengl_resources();
+
 	auto& physical_objects_mtx() { return worldPhysicalMtx_; }
 
 	bool headless() const { return m_gui_options.headless; }

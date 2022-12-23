@@ -371,3 +371,13 @@ double World::get_simul_timestep() const
 
 	return m_simul_timestep;
 }
+
+void World::free_opengl_resources()
+{
+	auto lck = mrpt::lockHelper(worldPhysicalMtx_);
+
+	worldPhysical_.clear();
+	worldVisual_->clear();
+
+	VisualObject::FreeOpenGLResources();
+}
