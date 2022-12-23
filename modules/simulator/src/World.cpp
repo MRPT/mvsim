@@ -68,8 +68,19 @@ void World::clear_all()
 
 void World::internal_initialize()
 {
+	ASSERT_(!initialized_);
+	ASSERT_(worldVisual_);
+
 	worldVisual_->getViewport()->lightParameters().ambient = {
 		0.5f, 0.5f, 0.5f, 1.0f};
+
+	// Create group for sensor viz:
+	{
+		auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
+		glVizSensors->setName("group_sensors_viz");
+		glVizSensors->setVisibility(m_gui_options.show_sensor_points);
+		worldVisual_->insert(glVizSensors);
+	}
 
 	initialized_ = true;
 }

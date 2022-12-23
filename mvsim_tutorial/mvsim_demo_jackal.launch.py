@@ -29,6 +29,7 @@ def generate_launch_description():
                          'mvsim_demo_depth_camera.yaml'),
             {
                 "world_file": LaunchConfiguration('world_file'),
+                "headless": False
             }]
     )
 
