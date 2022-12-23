@@ -457,7 +457,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
-		p.create_EGL_context = false;  // reuse nanogui context
+		p.create_EGL_context = m_vehicle.getSimulableWorldObject()->headless();
 
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif

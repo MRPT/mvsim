@@ -90,6 +90,8 @@ void World::load_from_XML(
 		// Move on to next node:
 		node = node->next_sibling(nullptr);
 	}
+
+	internal_initialize();
 }
 
 void World::internal_recursive_parse_XML(

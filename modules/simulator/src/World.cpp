@@ -66,9 +66,19 @@ void World::clear_all()
 	m_blocks.clear();
 }
 
+void World::internal_initialize()
+{
+	worldVisual_->getViewport()->lightParameters().ambient = {
+		0.5f, 0.5f, 0.5f, 1.0f};
+
+	initialized_ = true;
+}
+
 /** Runs the simulation for a given time interval (in seconds) */
 void World::run_simulation(double dt)
 {
+	ASSERT_(initialized_);
+
 	const double t0 = mrpt::Clock::nowDouble();
 
 	// Define start of simulation time:

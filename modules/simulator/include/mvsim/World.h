@@ -74,6 +74,8 @@ class World : public mrpt::system::COutputLogger
 	 */
 	void load_from_XML_file(const std::string& xmlFileNamePath);
 
+	void internal_initialize();
+
 	/** Load an entire world description into this object from a specification
 	 * in XML format.
 	 * \param[in] fileNameForPath Optionally, provide the full path to an XML
@@ -186,6 +188,11 @@ class World : public mrpt::system::COutputLogger
 	mrpt::opengl::CSetOfObjects::Ptr m_gui_user_objects_physical,
 		m_gui_user_objects_viz;
 	std::mutex m_gui_user_objects_mtx;
+
+	/// Update 3D vehicles, sensors, run render-based sensors, etc:
+	/// Called from World_gui thread in normal mode, or mvsim-cli in headless
+	/// mode.
+	void internalGraphicsLoopTasksForSimulation();
 
 	void internalRunSensorsOn3DScene(
 		mrpt::opengl::COpenGLScene& physicalObjects);
@@ -359,7 +366,7 @@ class World : public mrpt::system::COutputLogger
 	mvsim::Client& commsClient() { return m_client; }
 	const mvsim::Client& commsClient() const { return m_client; }
 
-	auto& physical_objects_mtx() { return m_physical_objects_mtx; }
+	auto& physical_objects_mtx() { return worldPhysicalMtx_; }
 
 	bool headless() const { return m_gui_options.headless; }
 	void headless(bool setHeadless) { m_gui_options.headless = setHeadless; }
@@ -463,6 +470,8 @@ class World : public mrpt::system::COutputLogger
 	WorldElementList m_world_elements;
 	BlockList m_blocks;
 
+	bool initialized_ = false;
+
 	// List of all objects above (vehicles, world_elements, blocks), but as
 	// shared_ptr to their Simulable interfaces, so we can easily iterate on
 	// this list only for common tasks:
@@ -509,11 +518,19 @@ class World : public mrpt::system::COutputLogger
 	};
 	GUI m_gui{*this};  //!< gui state
 
-	/// 3D scene with all physically observable objects: we will use this
-	/// scene as input to simulated sensors like cameras, where we don't wont
-	/// to see visualization marks, etc.
-	mrpt::opengl::COpenGLScene m_physical_objects;
-	std::recursive_mutex m_physical_objects_mtx;
+	/** 3D scene with all visual objects (vehicles, obstacles, markers, etc.)
+	 *  \sa worldPhysical_
+	 */
+	mrpt::opengl::COpenGLScene::Ptr worldVisual_ =
+		mrpt::opengl::COpenGLScene::Create();
+
+	/** 3D scene with all physically observable objects: we will use this
+	 * scene as input to simulated sensors like cameras, where we don't wont
+	 * to see visualization marks, etc.
+	 * \sa m_world_visual
+	 */
+	mrpt::opengl::COpenGLScene worldPhysical_;
+	std::recursive_mutex worldPhysicalMtx_;
 
 	/// Updated in internal_one_step()
 	std::map<std::string, mrpt::math::TPose3D> m_copy_of_objects_dynstate_pose;

@@ -275,7 +275,7 @@ void World::GUI::prepare_editor_window()
 
 					auto lck =
 						mrpt::lockHelper(m_parent.physical_objects_mtx());
-					m_parent.m_physical_objects.saveToFile(outFile);
+					m_parent.worldPhysical_.saveToFile(outFile);
 
 					std::cout << "[mvsim gui] Saved world scene to: " << outFile
 							  << std::endl;
@@ -409,27 +409,25 @@ void World::internal_GUI_thread()
 
 		// Add a background scene:
 		{
-			auto scene = mrpt::opengl::COpenGLScene::Create();
+			// we use the member scene worldVisual_ as the placeholder for the
+			// visual 3D scene:
 
 			// add the placeholders for user-provided objects, both for pure
 			// visualization only, and physical objects:
-			scene->insert(m_glUserObjsViz);
-			m_physical_objects.insert(m_glUserObjsPhysical);
-
-			scene->getViewport()->lightParameters().ambient = {
-				0.5f, 0.5f, 0.5f, 1.0f};
+			worldVisual_->insert(m_glUserObjsViz);
+			worldPhysical_.insert(m_glUserObjsPhysical);
 
 			// Create group for sensor viz:
 			{
 				auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
 				glVizSensors->setName("group_sensors_viz");
 				glVizSensors->setVisibility(m_gui_options.show_sensor_points);
-				scene->insert(glVizSensors);
+				worldVisual_->insert(glVizSensors);
 			}
 
 			std::lock_guard<std::mutex> lck(
 				m_gui.gui_win->background_scene_mtx);
-			m_gui.gui_win->background_scene = std::move(scene);
+			m_gui.gui_win->background_scene = worldVisual_;
 		}
 
 		// Only if the world is empty: at least introduce a ground grid:
@@ -489,32 +487,13 @@ void World::internal_GUI_thread()
 		auto lambdaLoopCallback = [](World& me) {
 			if (me.gui_thread_must_close()) nanogui::leave();
 
-			// Update all GUI elements:
-			ASSERT_(me.m_gui.gui_win->background_scene);
-
-			auto lckPhys = mrpt::lockHelper(me.physical_objects_mtx());
-
-			me.internalUpdate3DSceneObjects(
-				*me.m_gui.gui_win->background_scene, me.m_physical_objects);
-
-			me.internalRunSensorsOn3DScene(me.m_physical_objects);
-
-			lckPhys.unlock();
+			// Update 3D vehicles, sensors, run render-based sensors, etc:
+			me.internalGraphicsLoopTasksForSimulation();
 
 			me.internal_process_pending_gui_user_tasks();
 
 			// handle mouse operations:
 			me.m_gui.handle_mouse_operations();
-
-			// handle user custom 3D visual objects:
-			{
-				const auto lck = mrpt::lockHelper(me.m_gui_user_objects_mtx);
-				// replace list of smart pointers (fast):
-				if (me.m_gui_user_objects_physical)
-					*me.m_glUserObjsPhysical = *me.m_gui_user_objects_physical;
-				if (me.m_gui_user_objects_viz)
-					*me.m_glUserObjsViz = *me.m_gui_user_objects_viz;
-			}
 		};
 
 #if MRPT_VERSION >= 0x232
@@ -714,17 +693,17 @@ void World::internalUpdate3DSceneObjects(
 	// Other messages
 	// -----------------------------
 	m_timlogger.enter("update_GUI.5.text-msgs");
+	if (m_gui.lbCpuUsage)
 	{
 		// 1st line: time
 		double cpu_usage_ratio =
 			std::max(1e-10, m_timlogger.getMeanTime("run_simulation.cpu_dt")) /
 			std::max(1e-10, m_timlogger.getMeanTime("run_simulation.dt"));
 
-		if (m_gui.lbCpuUsage)
-			m_gui.lbCpuUsage->setCaption(mrpt::format(
-				"Time: %s (CPU usage: %.03f%%)",
-				mrpt::system::formatTimeInterval(get_simul_time()).c_str(),
-				cpu_usage_ratio * 100.0));
+		m_gui.lbCpuUsage->setCaption(mrpt::format(
+			"Time: %s (CPU usage: %.03f%%)",
+			mrpt::system::formatTimeInterval(get_simul_time()).c_str(),
+			cpu_usage_ratio * 100.0));
 
 		// User supplied-lines:
 		m_gui_msg_lines_mtx.lock();
@@ -750,24 +729,19 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------
 	if (!m_gui_options.follow_vehicle.empty())
 	{
-		auto it = m_vehicles.find(m_gui_options.follow_vehicle);
-		if (it == m_vehicles.end())
-		{
-			static bool warn1st = true;
-			if (warn1st)
-			{
-				MRPT_LOG_ERROR_FMT(
-					"GUI: Camera set to follow vehicle named '%s' which "
-					"can't "
-					"be found!",
-					m_gui_options.follow_vehicle.c_str());
-				warn1st = true;
-			}
-		}
-		else
+		if (auto it = m_vehicles.find(m_gui_options.follow_vehicle);
+			it != m_vehicles.end())
 		{
 			const mrpt::poses::CPose2D pose = it->second->getCPose2D();
 			m_gui.gui_win->camera().setCameraPointing(pose.x(), pose.y(), 0.0f);
+		}
+		else
+		{
+			MRPT_LOG_THROTTLE_ERROR_FMT(
+				5.0,
+				"GUI: Camera set to follow vehicle named '%s' which can't be "
+				"found!",
+				m_gui_options.follow_vehicle.c_str());
 		}
 	}
 }
@@ -951,4 +925,27 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 	glControl->scene->getViewport()->setImageView(im);
 
 	return mrpt::math::TPoint2D(w->size().x(), w->size().y());
+}
+
+void World::internalGraphicsLoopTasksForSimulation()
+{
+	// Update all GUI elements:
+	ASSERT_(worldVisual_);
+
+	auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+
+	internalUpdate3DSceneObjects(*worldVisual_, worldPhysical_);
+
+	internalRunSensorsOn3DScene(worldPhysical_);
+
+	lckPhys.unlock();
+
+	// handle user custom 3D visual objects:
+	{
+		const auto lck = mrpt::lockHelper(m_gui_user_objects_mtx);
+		// replace list of smart pointers (fast):
+		if (m_gui_user_objects_physical)
+			*m_glUserObjsPhysical = *m_gui_user_objects_physical;
+		if (m_gui_user_objects_viz) *m_glUserObjsViz = *m_gui_user_objects_viz;
+	}
 }
