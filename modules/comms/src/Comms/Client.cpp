@@ -740,7 +740,9 @@ void Client::subscribeTopic(
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	THROW_EXCEPTION("TO DO");
+	// make a copy by value
+	subscribe_topic_raw(
+		topicName, [callback](const zmq::message_t& m) { callback(m.str()); });
 #endif
 	MRPT_END
 }
