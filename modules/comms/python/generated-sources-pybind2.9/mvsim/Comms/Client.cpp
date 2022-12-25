@@ -11,6 +11,7 @@
 #include <pybind11/pybind11.h>
 #include <string>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 
 
 #ifndef BINDER_PYBIND11_TYPE_CASTER
@@ -35,7 +36,6 @@ void bind_mvsim_Comms_Client(std::function< pybind11::module &(std::string const
 		cl.def("shutdown", (void (mvsim::Client::*)()) &mvsim::Client::shutdown, "Shutdowns the communication thread. Blocks until the thread is stopped.\n There is no need to manually call this method, it is called upon\n destruction. \n\nC++: mvsim::Client::shutdown() --> void");
 		cl.def("callService", (std::string (mvsim::Client::*)(const std::string &, const std::string &)) &mvsim::Client::callService, "Overload for python wrapper\n\nC++: mvsim::Client::callService(const std::string &, const std::string &) --> std::string", pybind11::arg("serviceName"), pybind11::arg("inputSerializedMsg"));
 		cl.def("subscribeTopic", (void (mvsim::Client::*)(const std::string &, const class std::function<void (const std::string &)> &)) &mvsim::Client::subscribeTopic, "Overload for python wrapper\n\nC++: mvsim::Client::subscribeTopic(const std::string &, const class std::function<void (const std::string &)> &) --> void", pybind11::arg("topicName"), pybind11::arg("callback"));
-		cl.def("subscribe_topic_raw", (void (mvsim::Client::*)(const std::string &, const class std::function<void (const class zmq::message_t &)> &)) &mvsim::Client::subscribe_topic_raw, "C++: mvsim::Client::subscribe_topic_raw(const std::string &, const class std::function<void (const class zmq::message_t &)> &) --> void", pybind11::arg("topicName"), pybind11::arg("callback"));
 		cl.def("enable_profiler", (void (mvsim::Client::*)(bool)) &mvsim::Client::enable_profiler, "C++: mvsim::Client::enable_profiler(bool) --> void", pybind11::arg("enable"));
 
 		{ // mvsim::Client::InfoPerNode file:mvsim/Comms/Client.h line:111

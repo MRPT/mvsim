@@ -19,7 +19,8 @@ MVSIM_CLI_EXE_PATH = os.environ['MVSIM_CLI_EXE_PATH']
 
 def onMessage(msg):
     # callback
-    print("callback received: " + msg)
+    print("callback received: ")
+    print(msg)
 
 
 if __name__ == "__main__":
