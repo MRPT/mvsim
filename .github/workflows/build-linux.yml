@@ -104,3 +104,4 @@ jobs:
       - name: Build all
         run: |
           make -C build
+          ctest --verbose --test-dir build
