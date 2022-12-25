@@ -124,7 +124,7 @@ void DepthCameraSensor::internalGuiUpdate(
 	{
 		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
-		ASSERT_(glVizSensors);
+		if (!glVizSensors) return;	// may happen during shutdown
 	}
 
 	// 1st time?
@@ -204,8 +204,8 @@ void DepthCameraSensor::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_sensor_params.sensorPose.asTPose());
 }
 
-void DepthCameraSensor::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
+void DepthCameraSensor::simul_pre_timestep([
+	[maybe_unused]] const TSimulContext& context)
 {
 }
 
