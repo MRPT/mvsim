@@ -9,22 +9,31 @@
 # ---------------------------------------------------------------------
 
 from mvsim_comms import pymvsim_comms
+import subprocess
 import time
+import os
+
+TESTS_DIR = os.environ['TESTS_DIR']
+MVSIM_CLI_EXE_PATH = os.environ['MVSIM_CLI_EXE_PATH']
 
 
-# Callback for subscribed topic:
 def onMessage(msg):
+    # callback
     print("callback received: " + msg)
 
 
 if __name__ == "__main__":
+
+    subprocess.Popen([MVSIM_CLI_EXE_PATH, "launch",
+                     TESTS_DIR + "/test-still-lidar2d.world.xml",
+                     "--headless", "-v WARN"])
+
     client = pymvsim_comms.mvsim.Client()
-    client.setName("tutorial1")
     print("Connecting to server...")
     client.connect()
     print("Connected successfully.")
 
-    # Subscribe to "/r1/pose"
-    client.subscribeTopic("/r1/pose", onMessage)
+    # Subscribe to "/r1/laser1"
+    client.subscribeTopic("/r1/laser1", onMessage)
 
-    time.sleep(2.0)
+    time.sleep(120.0)
