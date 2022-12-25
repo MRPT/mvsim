@@ -86,7 +86,7 @@ void LaserScanner::internalGuiUpdate(
 	{
 		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
-		ASSERT_(glVizSensors);
+		if (!glVizSensors) return;	// may happen during shutdown
 	}
 
 	// 1st time?
@@ -169,8 +169,8 @@ void LaserScanner::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_scan_model.sensorPose);
 }
 
-void LaserScanner::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
+void LaserScanner::simul_pre_timestep([
+	[maybe_unused]] const TSimulContext& context)
 {
 }
 
