@@ -82,6 +82,8 @@ void World::internal_initialize()
 		worldVisual_->insert(glVizSensors);
 	}
 
+	getTimeLogger().setMinLoggingLevel(this->getMinLoggingLevel());
+
 	initialized_ = true;
 }
 
