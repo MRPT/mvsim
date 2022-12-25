@@ -179,16 +179,23 @@ Available options:
 	// Handle CTRL+C:
 	mvsim_install_signal_handler();
 
-	mrpt::system::consoleColorAndStyle(
-		mrpt::system::ConsoleForegroundColor::BRIGHT_YELLOW);
-	std::cout  //
-		<< "\n"
-		<< "====================================================\n"
-		<< " MVSIM simulator running. Press CTRL+C to end.      \n"
-		<< "====================================================\n"
-		<< "\n";
-	mrpt::system::consoleColorAndStyle(
-		mrpt::system::ConsoleForegroundColor::DEFAULT);
+	const auto verbosityLevel =
+		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+			cli->argVerbosity.getValue());
+
+	if (verbosityLevel <= mrpt::system::LVL_INFO)
+	{
+		mrpt::system::consoleColorAndStyle(
+			mrpt::system::ConsoleForegroundColor::BRIGHT_YELLOW);
+		std::cout  //
+			<< "\n"
+			<< "====================================================\n"
+			<< " MVSIM simulator running. Press CTRL+C to end.      \n"
+			<< "====================================================\n"
+			<< "\n";
+		mrpt::system::consoleColorAndStyle(
+			mrpt::system::ConsoleForegroundColor::DEFAULT);
+	}
 
 	const auto sXMLfilename = unlabeledArgs.at(1);
 
@@ -197,9 +204,7 @@ Available options:
 
 	app.emplace();
 
-	app->world.setMinLoggingLevel(
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			cli->argVerbosity.getValue()));
+	app->world.setMinLoggingLevel(verbosityLevel);
 
 	// CLI flags:
 	if (cli->argFullProfiler.isSet())
