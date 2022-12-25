@@ -14,7 +14,7 @@
 	PYBIND11_MAKE_OPAQUE(std::shared_ptr<void>)
 #endif
 
-// std::exception file:bits/exception.h line:60
+// std::exception file:bits/exception.h line:61
 struct PyCallBack_std_exception : public std::exception {
 	using std::exception::exception;
 
@@ -35,7 +35,7 @@ struct PyCallBack_std_exception : public std::exception {
 
 void bind_std_exception(std::function< pybind11::module &(std::string const &namespace_) > &M)
 {
-	{ // std::exception file:bits/exception.h line:60
+	{ // std::exception file:bits/exception.h line:61
 		pybind11::class_<std::exception, std::shared_ptr<std::exception>, PyCallBack_std_exception> cl(M("std"), "exception", "");
 		cl.def( pybind11::init( [](){ return new std::exception(); }, [](){ return new PyCallBack_std_exception(); } ) );
 		cl.def( pybind11::init( [](PyCallBack_std_exception const &o){ return new PyCallBack_std_exception(o); } ) );
