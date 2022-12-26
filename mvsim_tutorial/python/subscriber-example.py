@@ -9,12 +9,16 @@
 # ---------------------------------------------------------------------
 
 from mvsim_comms import pymvsim_comms
+from mvsim_msgs import TimeStampedPose_pb2
 import time
 
 
 # Callback for subscribed topic:
-def onMessage(msg):
-    print("callback received: " + msg)
+def onMessage(msgType, msg):
+    assert(msgType == "mvsim_msgs.TimeStampedPose")
+    p = TimeStampedPose_pb2.TimeStampedPose()
+    p.ParseFromString(bytes(msg))
+    print("callback received: pose=\n" + str(p))
 
 
 if __name__ == "__main__":

@@ -736,13 +736,19 @@ std::string Client::callService(
 /// Overload for python wrapper
 void Client::subscribeTopic(
 	const std::string& topicName,
-	const std::function<void(const std::string& /*serializedMsg*/)>& callback)
+	const std::function<void(
+		const std::string& /*msgType*/,
+		const std::vector<uint8_t>& /*serializedMsg*/)>& callback)
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	// make a copy by value
-	subscribe_topic_raw(
-		topicName, [callback](const zmq::message_t& m) { callback(m.str()); });
+
+	subscribe_topic_raw(topicName, [callback](const zmq::message_t& m) {
+		const auto [sType, sData] = mvsim::internal::parseMessageToParts(m);
+		std::vector<uint8_t> d(sData.size());
+		::memcpy(d.data(), sData.data(), sData.size());
+		callback(sType, d);
+	});
 #endif
 	MRPT_END
 }
