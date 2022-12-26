@@ -35,10 +35,10 @@ void bind_mvsim_Comms_Client(std::function< pybind11::module &(std::string const
 		cl.def("connected", (bool (mvsim::Client::*)() const) &mvsim::Client::connected, "Whether the client is correctly connected to the server. \n\nC++: mvsim::Client::connected() const --> bool");
 		cl.def("shutdown", (void (mvsim::Client::*)()) &mvsim::Client::shutdown, "Shutdowns the communication thread. Blocks until the thread is stopped.\n There is no need to manually call this method, it is called upon\n destruction. \n\nC++: mvsim::Client::shutdown() --> void");
 		cl.def("callService", (std::string (mvsim::Client::*)(const std::string &, const std::string &)) &mvsim::Client::callService, "Overload for python wrapper\n\nC++: mvsim::Client::callService(const std::string &, const std::string &) --> std::string", pybind11::arg("serviceName"), pybind11::arg("inputSerializedMsg"));
-		cl.def("subscribeTopic", (void (mvsim::Client::*)(const std::string &, const class std::function<void (const std::string &)> &)) &mvsim::Client::subscribeTopic, "Overload for python wrapper\n\nC++: mvsim::Client::subscribeTopic(const std::string &, const class std::function<void (const std::string &)> &) --> void", pybind11::arg("topicName"), pybind11::arg("callback"));
+		cl.def("subscribeTopic", (void (mvsim::Client::*)(const std::string &, const class std::function<void (const std::string &, const class std::vector<unsigned char, class std::allocator<unsigned char> > &)> &)) &mvsim::Client::subscribeTopic, "Overload for python wrapper (callback accepts bytes-string)\n\nC++: mvsim::Client::subscribeTopic(const std::string &, const class std::function<void (const std::string &, const class std::vector<unsigned char, class std::allocator<unsigned char> > &)> &) --> void", pybind11::arg("topicName"), pybind11::arg("callback"));
 		cl.def("enable_profiler", (void (mvsim::Client::*)(bool)) &mvsim::Client::enable_profiler, "C++: mvsim::Client::enable_profiler(bool) --> void", pybind11::arg("enable"));
 
-		{ // mvsim::Client::InfoPerNode file:mvsim/Comms/Client.h line:111
+		{ // mvsim::Client::InfoPerNode file:mvsim/Comms/Client.h line:113
 			auto & enclosing_class = cl;
 			pybind11::class_<mvsim::Client::InfoPerNode, std::shared_ptr<mvsim::Client::InfoPerNode>> cl(enclosing_class, "InfoPerNode", "");
 			cl.def( pybind11::init( [](){ return new mvsim::Client::InfoPerNode(); } ) );
@@ -47,7 +47,7 @@ void bind_mvsim_Comms_Client(std::function< pybind11::module &(std::string const
 			cl.def("assign", (struct mvsim::Client::InfoPerNode & (mvsim::Client::InfoPerNode::*)(const struct mvsim::Client::InfoPerNode &)) &mvsim::Client::InfoPerNode::operator=, "C++: mvsim::Client::InfoPerNode::operator=(const struct mvsim::Client::InfoPerNode &) --> struct mvsim::Client::InfoPerNode &", pybind11::return_value_policy::automatic, pybind11::arg(""));
 		}
 
-		{ // mvsim::Client::InfoPerTopic file:mvsim/Comms/Client.h line:117
+		{ // mvsim::Client::InfoPerTopic file:mvsim/Comms/Client.h line:119
 			auto & enclosing_class = cl;
 			pybind11::class_<mvsim::Client::InfoPerTopic, std::shared_ptr<mvsim::Client::InfoPerTopic>> cl(enclosing_class, "InfoPerTopic", "");
 			cl.def( pybind11::init( [](){ return new mvsim::Client::InfoPerTopic(); } ) );
