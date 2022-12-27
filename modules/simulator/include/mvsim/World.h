@@ -375,6 +375,8 @@ class World : public mrpt::system::COutputLogger
 	bool headless() const { return m_gui_options.headless; }
 	void headless(bool setHeadless) { m_gui_options.headless = setHeadless; }
 
+	bool sensor_has_to_create_egl_context();
+
    private:
 	friend class VehicleBase;
 	friend class Block;

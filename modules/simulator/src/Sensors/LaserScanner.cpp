@@ -169,8 +169,8 @@ void LaserScanner::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_scan_model.sensorPose);
 }
 
-void LaserScanner::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void LaserScanner::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 
@@ -457,7 +457,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
-		p.create_EGL_context = m_vehicle.getSimulableWorldObject()->headless();
+		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif

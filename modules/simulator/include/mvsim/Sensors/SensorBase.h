@@ -73,6 +73,9 @@ class SensorBase : public VisualObject, public Simulable
 
 	Simulable& m_vehicle;  //!< The vehicle this sensor is attached to
 
+	World* world() { return m_vehicle.getSimulableWorldObject(); }
+	const World* world() const { return m_vehicle.getSimulableWorldObject(); }
+
 	/** Generate one sensor reading every this period [s] (Default = 0.1) */
 	double m_sensor_period = 0.1;
 
