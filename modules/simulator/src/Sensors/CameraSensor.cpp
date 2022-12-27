@@ -190,7 +190,7 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParams.ncols;
 		p.height = m_sensor_params.cameraParams.nrows;
-		p.create_EGL_context = m_vehicle.getSimulableWorldObject()->headless();
+		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif

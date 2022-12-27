@@ -394,3 +394,15 @@ void World::free_opengl_resources()
 
 	VisualObject::FreeOpenGLResources();
 }
+
+bool World::sensor_has_to_create_egl_context()
+{
+	// If we have a GUI, reuse that context:
+	if (!headless()) return false;
+
+	// otherwise, just the first time:
+	static bool first = true;
+	bool ret = first;
+	first = false;
+	return ret;
+}
