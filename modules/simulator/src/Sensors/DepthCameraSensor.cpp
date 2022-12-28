@@ -124,7 +124,7 @@ void DepthCameraSensor::internalGuiUpdate(
 	{
 		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
-		ASSERT_(glVizSensors);
+		if (!glVizSensors) return;	// may happen during shutdown
 	}
 
 	// 1st time?
@@ -252,7 +252,7 @@ void DepthCameraSensor::simulateOn3DScene(
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParamsIntensity.ncols;
 		p.height = m_sensor_params.cameraParamsIntensity.nrows;
-		p.create_EGL_context = m_vehicle.getSimulableWorldObject()->headless();
+		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif
@@ -271,7 +271,7 @@ void DepthCameraSensor::simulateOn3DScene(
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParams.ncols;
 		p.height = m_sensor_params.cameraParams.nrows;
-		p.create_EGL_context = m_vehicle.getSimulableWorldObject()->headless();
+		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif

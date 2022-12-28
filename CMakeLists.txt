@@ -203,10 +203,11 @@ if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   add_compile_options(-O3)
 endif()
 
-# --------------------------
+# ----------------------------------------------------------
 # Dependency: MRPT
-# --------------------------
-find_package(mrpt-maps REQUIRED)
+# Use the first cmd to set the minimum required version
+# ----------------------------------------------------------
+find_package(mrpt-maps 2.5.6 REQUIRED)
 find_package(mrpt-tclap REQUIRED)
 find_package(mrpt-gui REQUIRED)
 find_package(mrpt-tfest REQUIRED)
@@ -422,7 +423,11 @@ if (BUILD_FOR_ROS)
 		#ament_export_targets(export_${PROJECT_NAME})
 		ament_package()
 	endif()
-
-	
 endif() # BUILD_FOR_ROS
+
+option(MVSIM_UNIT_TESTS "Build and run MVSIM unit tests (requires Python and ZMQ)" ON)
+if (MVSIM_UNIT_TESTS AND MVSIM_WITH_PYTHON AND MVSIM_WITH_ZMQ)
+	enable_testing()  # This must be in the root cmake file
+	add_subdirectory(tests)
+endif()
 

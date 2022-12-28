@@ -12,8 +12,6 @@
 
 from mvsim_comms import pymvsim_comms
 from mvsim_msgs import SrvSetControllerTwist_pb2
-import time
-import math
 
 
 def sendRobotTwistSetpoint(client, robotName, vx, vy, w):

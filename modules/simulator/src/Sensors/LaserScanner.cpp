@@ -19,6 +19,10 @@
 
 #include "xml_utils.h"
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+#include <mvsim/mvsim-msgs/ObservationLidar2D.pb.h>
+#endif
+
 using namespace mvsim;
 using namespace rapidxml;
 
@@ -86,7 +90,7 @@ void LaserScanner::internalGuiUpdate(
 	{
 		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
-		ASSERT_(glVizSensors);
+		if (!glVizSensors) return;	// may happen during shutdown
 	}
 
 	// 1st time?
@@ -396,7 +400,12 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 		m_last_scan2gui = m_last_scan;
 	}
 
+	// publish as generic Protobuf (mrpt serialized) object:
 	SensorBase::reportNewObservation(m_last_scan, context);
+
+	// Publish custom 2d-lidar observation type too:
+	SensorBase::reportNewObservation_lidar_2d(m_last_scan, context);
+
 	m_gui_uptodate = false;
 }
 
@@ -457,7 +466,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
-		p.create_EGL_context = m_vehicle.getSimulableWorldObject()->headless();
+		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif
@@ -634,7 +643,12 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		auto tlePub = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.2Dlidar.report");
 
+		// publish as generic Protobuf (mrpt serialized) object:
 		SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
+
+		// Publish custom 2d-lidar observation type too:
+		SensorBase::reportNewObservation_lidar_2d(
+			m_last_scan, *m_has_to_render);
 
 		tlePub.stop();
 
@@ -644,4 +658,18 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 		m_has_to_render.reset();
 	}
+}
+
+void LaserScanner::registerOnServer(mvsim::Client& c)
+{
+	using namespace std::string_literals;
+
+	SensorBase::registerOnServer(c);
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	// Topic:
+	if (!publishTopic_.empty())
+		c.advertiseTopic<mvsim_msgs::ObservationLidar2D>(
+			publishTopic_ + "_scan"s);
+#endif
 }
