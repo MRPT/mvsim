@@ -209,10 +209,11 @@ void World::internal_one_timestep(double dt)
 		m_timlogger, "timestep.4.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
-		for (int i = 0; i < 1000 && pending_running_sensors_on_3D_scene(); i++)
-		{
+		// Use a huge timeout here to avoid timing out in build farms / cloud
+		// containers:
+		for (int i = 0; i < 20000 && pending_running_sensors_on_3D_scene(); i++)
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		}
+
 		if (pending_running_sensors_on_3D_scene())
 		{
 			MRPT_LOG_WARN(
