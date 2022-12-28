@@ -65,7 +65,7 @@ if __name__ == "__main__":
     #
     subprocess.Popen([MVSIM_CLI_EXE_PATH, "launch",
                      TESTS_DIR + "/test-still-lidar2d.world.xml",
-                     "--headless", "-v WARN", "--realtime-factor 0.1"])
+                     "--headless", "-v DEBUG", "--realtime-factor 0.1"])
 
     client = pymvsim_comms.mvsim.Client()
     print("Connecting to server...", flush=True)
