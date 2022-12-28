@@ -19,7 +19,7 @@
 struct PyCallBack_mvsim_UnexpectedMessageException : public mvsim::UnexpectedMessageException {
 	using mvsim::UnexpectedMessageException::UnexpectedMessageException;
 
-	const char * what() const noexcept override {
+	const char * what() const throw() override {
 		pybind11::gil_scoped_acquire gil;
 		pybind11::function overload = pybind11::get_overload(static_cast<const mvsim::UnexpectedMessageException *>(this), "what");
 		if (overload) {

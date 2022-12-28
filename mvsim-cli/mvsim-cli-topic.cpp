@@ -12,6 +12,7 @@
 #include <mrpt/math/ops_containers.h>
 #include <mrpt/system/datetime.h>
 #include <mvsim/Comms/Client.h>
+#include <mvsim/mvsim-msgs/ObservationLidar2D.pb.h>
 #include <mvsim/mvsim-msgs/TimeStampedPose.pb.h>
 
 #include "mvsim-cli.h"
@@ -99,7 +100,16 @@ static void echo_TimeStampedPose(const std::string& data)
 		std::cerr << "ERROR: Protobuf could not parse message.\n";
 		return;
 	}
-
+	out.PrintDebugString();
+}
+static void echo_ObservationLidar2D(const std::string& data)
+{
+	mvsim_msgs::ObservationLidar2D out;
+	if (bool ok = out.ParseFromString(data); !ok)
+	{
+		std::cerr << "ERROR: Protobuf could not parse message.\n";
+		return;
+	}
 	out.PrintDebugString();
 }
 
@@ -114,6 +124,8 @@ static void callbackSubscribeTopicGeneric(const zmq::message_t& msg)
 
 	if (typeName == mvsim_msgs::TimeStampedPose().GetTypeName())
 		echo_TimeStampedPose(serializedData);
+	else if (typeName == mvsim_msgs::ObservationLidar2D().GetTypeName())
+		echo_ObservationLidar2D(serializedData);
 
 	std::cout << std::endl;
 }

@@ -18,6 +18,8 @@
 #include <mvsim/mvsim-msgs/SrvSetControllerTwistAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvShutdown.pb.h>
+#include <mvsim/mvsim-msgs/SrvShutdownAnswer.pb.h>
 #endif
 
 #include <algorithm>  // count()
@@ -173,6 +175,17 @@ mvsim_msgs::SrvSetControllerTwistAnswer World::srv_set_controller_twist(
 	return ans;
 }
 
+mvsim_msgs::SrvShutdownAnswer World::srv_shutdown(
+	const mvsim_msgs::SrvShutdown& req)
+{
+	mvsim_msgs::SrvShutdownAnswer ans;
+	ans.set_accepted(true);
+
+	this->gui_thread_must_close(true);
+
+	return ans;
+}
+
 #endif	// MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 
 void World::internal_advertiseServices()
@@ -192,6 +205,10 @@ void World::internal_advertiseServices()
 		mvsim_msgs::SrvSetControllerTwistAnswer>(
 		"set_controller_twist",
 		[this](const auto& req) { return srv_set_controller_twist(req); });
+
+	m_client.advertiseService<
+		mvsim_msgs::SrvShutdown, mvsim_msgs::SrvShutdownAnswer>(
+		"shutdown", [this](const auto& req) { return srv_shutdown(req); });
 
 #endif
 }

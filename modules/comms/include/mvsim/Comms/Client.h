@@ -102,11 +102,13 @@ class Client : public mrpt::system::COutputLogger
 	/// Overload for python wrapper
 	std::string callService(
 		const std::string& serviceName, const std::string& inputSerializedMsg);
-	/// Overload for python wrapper
+
+	/// Overload for python wrapper (callback accepts bytes-string)
 	void subscribeTopic(
 		const std::string& topicName,
-		const std::function<void(const std::string& /*serializedMsg*/)>&
-			callback);
+		const std::function<void(
+			const std::string& /*msgType*/,
+			const std::vector<uint8_t>& /*serializedMsg*/)>& callback);
 
 	struct InfoPerNode
 	{

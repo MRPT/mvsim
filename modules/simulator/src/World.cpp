@@ -82,6 +82,8 @@ void World::internal_initialize()
 		worldVisual_->insert(glVizSensors);
 	}
 
+	getTimeLogger().setMinLoggingLevel(this->getMinLoggingLevel());
+
 	initialized_ = true;
 }
 
@@ -207,10 +209,11 @@ void World::internal_one_timestep(double dt)
 		m_timlogger, "timestep.4.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
-		for (int i = 0; i < 1000 && pending_running_sensors_on_3D_scene(); i++)
-		{
+		// Use a huge timeout here to avoid timing out in build farms / cloud
+		// containers:
+		for (int i = 0; i < 20000 && pending_running_sensors_on_3D_scene(); i++)
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		}
+
 		if (pending_running_sensors_on_3D_scene())
 		{
 			MRPT_LOG_WARN(
@@ -391,4 +394,16 @@ void World::free_opengl_resources()
 	worldVisual_->clear();
 
 	VisualObject::FreeOpenGLResources();
+}
+
+bool World::sensor_has_to_create_egl_context()
+{
+	// If we have a GUI, reuse that context:
+	if (!headless()) return false;
+
+	// otherwise, just the first time:
+	static bool first = true;
+	bool ret = first;
+	first = false;
+	return ret;
 }

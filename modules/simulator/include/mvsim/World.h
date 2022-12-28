@@ -37,10 +37,12 @@ namespace mvsim_msgs
 {
 class SrvGetPose;
 class SrvGetPoseAnswer;
-class SrvSetPoseAnswer;
 class SrvSetPose;
+class SrvSetPoseAnswer;
 class SrvSetControllerTwist;
 class SrvSetControllerTwistAnswer;
+class SrvShutdown;
+class SrvShutdownAnswer;
 }  // namespace mvsim_msgs
 #endif
 
@@ -373,6 +375,8 @@ class World : public mrpt::system::COutputLogger
 	bool headless() const { return m_gui_options.headless; }
 	void headless(bool setHeadless) { m_gui_options.headless = setHeadless; }
 
+	bool sensor_has_to_create_egl_context();
+
    private:
 	friend class VehicleBase;
 	friend class Block;
@@ -582,7 +586,8 @@ class World : public mrpt::system::COutputLogger
 		const mvsim_msgs::SrvGetPose& req);
 	mvsim_msgs::SrvSetControllerTwistAnswer srv_set_controller_twist(
 		const mvsim_msgs::SrvSetControllerTwist& req);
-
+	mvsim_msgs::SrvShutdownAnswer srv_shutdown(
+		const mvsim_msgs::SrvShutdown& req);
 #endif
 };
 }  // namespace mvsim
