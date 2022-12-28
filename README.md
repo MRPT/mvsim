@@ -15,7 +15,7 @@ MultiVehicle simulator (libmvsim)
 Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
 It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and accurate simulation of typical robot sensors (e.g. 2D and 3D lidars).
 
-This package includes the C++ library `mvsim`, a standalone app and a ROS node.
+This package includes C++ libraries, standalone applications, and ROS-1 and ROS-2 nodes.
 
 License: 3-clause BSD License
 Copyright (C) 2014-2022 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
