@@ -96,7 +96,10 @@ jobs:
           cmake -DCMAKE_VERBOSE_MAKEFILE=ON \
                 -H. -Bbuild
 
-      - name: Build all
+      - name: Build
         run: |
           make -C build
+          
+      - name: Run tests
+        run: |
           ctest --verbose --test-dir build
