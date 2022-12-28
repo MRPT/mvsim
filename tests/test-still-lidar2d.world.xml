@@ -61,6 +61,7 @@
 			sensor_x="1.7" sensor_z="1.01" sensor_yaw="0"
 			sensor_name="laser1"
 			sensor_publish="true"
+			sensor_period="0.25"
 		/>
 	</vehicle>
 
