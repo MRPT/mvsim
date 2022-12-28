@@ -11,6 +11,7 @@
 from mvsim_comms import pymvsim_comms
 from mvsim_msgs import ObservationLidar2D_pb2
 from mvsim_msgs import SrvShutdown_pb2
+from mvsim_msgs import SrvGetPose_pb2
 
 import subprocess
 import time
@@ -45,6 +46,17 @@ def call_mvsim_shutdown(client):
     client.callService('shutdown', req.SerializeToString())
 
 
+def getObjectPose(client, objectName):
+    # Send a get pose request:
+    try:
+        req = SrvGetPose_pb2.SrvGetPose()
+        req.objectId = objectName  # vehicle/robot/object name in MVSIM
+        ret = client.callService('get_pose', req.SerializeToString())
+    except:
+        ret = ""
+    return ret
+
+
 if __name__ == "__main__":
 
     # Important: Run with simulated slow-down time (--realtime-factor),
@@ -55,15 +67,17 @@ if __name__ == "__main__":
                      TESTS_DIR + "/test-still-lidar2d.world.xml",
                      "--headless", "-v WARN", "--realtime-factor 0.1"])
 
-    # wait for the simulator to have started and advertised its topics
-    # This wait can be removed once the TO-DO in Server::db_advertise_topic()
-    # is implemented.
-    time.sleep(2.0)
-
     client = pymvsim_comms.mvsim.Client()
     print("Connecting to server...", flush=True)
     client.connect()
     print("Connected successfully.", flush=True)
+
+    # this is to wait for the simulator to have started and
+    # advertised its topics so we can correctly subscribe to them:
+    # (TODO: Remove this ugly wait when the TO-DO
+    #        in Server::db_advertise_topic() is addressed)
+    while len(getObjectPose(client, "r1")) < 50:
+        time.sleep(0.1)
 
     # Subscribe to "/r1/laser1_scan"
     client.subscribeTopic("/r1/laser1_scan", onMessage)
