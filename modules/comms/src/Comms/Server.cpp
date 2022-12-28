@@ -222,9 +222,7 @@ void Server::db_advertise_topic(
 
 	// 2) If clients are already waiting for this topic, inform them so they
 	// can subscribe to this new source of data:
-#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-#endif
-	MRPT_TODO("TO-DO");
+	send_topic_publishers_to_subscribed_clients(topicName);
 }
 
 void Server::db_add_topic_subscriber(
@@ -238,7 +236,17 @@ void Server::db_add_topic_subscriber(
 		updatesEndPoint, topicName, updatesEndPoint);
 
 	// Send all currently-existing publishers:
+	send_topic_publishers_to_subscribed_clients(
+		topicName, updatesEndPoint /*only this one*/);
+}
+
+void Server::send_topic_publishers_to_subscribed_clients(
+	const std::string& topicName,
+	const std::optional<std::string>& updatesEndPoint)
+{
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	auto& dbTopic = knownTopics_[topicName];
+
 	mvsim_msgs::TopicInfo tiMsg;
 	tiMsg.set_topicname(topicName);
 	tiMsg.set_topictype(dbTopic.topicTypeName);
@@ -250,20 +258,52 @@ void Server::db_add_topic_subscriber(
 	}
 
 	ASSERT_(mainThreadZMQcontext_);
-	zmq::socket_t s(*mainThreadZMQcontext_, ZMQ_PAIR);
-	s.connect(updatesEndPoint);
+
+	auto lambdaSendToSub = [&](const std::string& subUpdtEndPoint) {
+		try
+		{
+			MRPT_LOG_DEBUG_STREAM(
+				"[send_topic_publishers_to_subscribed_clients] Letting "
+				<< subUpdtEndPoint << " know about "
+				<< dbTopic.publishers.size() << " publishers for topic '"
+				<< topicName << "'");
+
+			zmq::socket_t s(*mainThreadZMQcontext_, ZMQ_PAIR);
+			s.connect(subUpdtEndPoint);
 #if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 7, 1)
-	ASSERT_(s);
+			ASSERT_(s);
 #else
-	ASSERT_(s.connected());
+			ASSERT_(s.connected());
 #endif
-	sendMessage(tiMsg, s);
+			sendMessage(tiMsg, s);
 
-	mvsim_msgs::GenericAnswer ans;
-	const auto m = receiveMessage(s);
-	mvsim::parseMessage(m, ans);
-	ASSERT_(ans.success());
+			mvsim_msgs::GenericAnswer ans;
+			const auto m = receiveMessage(s);
+			mvsim::parseMessage(m, ans);
+			ASSERT_(ans.success());
+		}
+		catch (const std::exception& e)
+		{
+			MRPT_LOG_ERROR_STREAM(
+				"Error sending topic updates to endpoint " << subUpdtEndPoint
+														   << ":\n"
+														   << e.what());
+		}
+	};
 
+	if (updatesEndPoint.has_value())
+	{
+		// send to this one only:
+		lambdaSendToSub(*updatesEndPoint);
+	}
+	else
+	{
+		// send to all:
+		for (const auto& ips : dbTopic.subscribers)
+		{
+			lambdaSendToSub(ips.second.subscriberUpdatesEndpoint);
+		}
+	}
 #endif
 }
 
@@ -282,7 +322,8 @@ void Server::db_advertise_service(
 		 dbSrv.outputTypeName != outputTypeName))
 	{
 		throw std::runtime_error(mrpt::format(
-			"Trying to register service `%s` [%s->%s] but already known with "
+			"Trying to register service `%s` [%s->%s] but already known "
+			"with "
 			"types "
 			"[%s->%s]",
 			serviceName.c_str(), inputTypeName.c_str(), outputTypeName.c_str(),
@@ -323,8 +364,8 @@ void Server::handle(const mvsim_msgs::RegisterNodeRequest& m, zmq::socket_t& s)
 		"Registering new node named '" << m.nodename() << "'");
 
 	// Make sure we don't have already a node named like this:
-	// Don't raise an error if the name was already registered, since it might
-	// be that the same node disconnected and connected again:
+	// Don't raise an error if the name was already registered, since it
+	// might be that the same node disconnected and connected again:
 	db_remove_node(m.nodename());
 
 	db_register_node(m.nodename());

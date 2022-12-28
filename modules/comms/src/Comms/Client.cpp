@@ -659,7 +659,7 @@ void Client::internalTopicUpdatesThread()
 			// past.
 
 			// Look for the entry in the list of subscribed topics:
-			std::shared_lock<std::shared_mutex> lck(zmq_->subscribedTopics_mtx);
+			std::unique_lock<std::shared_mutex> lck(zmq_->subscribedTopics_mtx);
 			const auto& topicName = tiMsg.topicname();
 
 			auto itTopic = zmq_->subscribedTopics.find(topicName);
@@ -906,7 +906,7 @@ void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
 			// Send to subscriber callbacks:
 			try
 			{
-				for (auto callback : ipt.callbacks) callback(m);
+				for (const auto& callback : ipt.callbacks) callback(m);
 			}
 			catch (const std::exception& e)
 			{
