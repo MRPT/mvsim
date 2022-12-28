@@ -21,7 +21,7 @@
 struct PyCallBack_std_runtime_error : public std::runtime_error {
 	using std::runtime_error::runtime_error;
 
-	const char * what() const noexcept override {
+	const char * what() const throw() override {
 		pybind11::gil_scoped_acquire gil;
 		pybind11::function overload = pybind11::get_overload(static_cast<const std::runtime_error *>(this), "what");
 		if (overload) {
