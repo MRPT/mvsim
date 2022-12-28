@@ -203,10 +203,11 @@ if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   add_compile_options(-O3)
 endif()
 
-# --------------------------
+# ----------------------------------------------------------
 # Dependency: MRPT
-# --------------------------
-find_package(mrpt-maps REQUIRED)
+# Use the first cmd to set the minimum required version
+# ----------------------------------------------------------
+find_package(mrpt-maps 2.5.6 REQUIRED)
 find_package(mrpt-tclap REQUIRED)
 find_package(mrpt-gui REQUIRED)
 find_package(mrpt-tfest REQUIRED)
