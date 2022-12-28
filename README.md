@@ -10,7 +10,7 @@
 | ROS2 Humble (u22.04) | [![Build Status](https://build.ros2.org/job/Hdev__mvsim__ubuntu_jammy_amd64/badge/icon)](https://build.ros2.org/job/Hdev__mvsim__ubuntu_jammy_amd64/) |  [![Build Status](https://build.ros2.org/job/Hbin_uJ64__mvsim__ubuntu_jammy_amd64__binary/badge/icon)](https://build.ros2.org/job/Hbin_uJ64__mvsim__ubuntu_jammy_amd64__binary/) | [![Version](https://img.shields.io/ros/v/humble/mvsim)](https://index.ros.org/search/?term=mvsim) |
 | ROS2 Rolling (u22.04) | [![Build Status](https://build.ros2.org/job/Rdev__mvsim__ubuntu_jammy_amd64/badge/icon)](https://build.ros2.org/job/Rdev__mvsim__ubuntu_jammy_amd64/) |  [![Build Status](https://build.ros2.org/job/Rbin_uJ64__mvsim__ubuntu_jammy_amd64__binary/badge/icon)](https://build.ros2.org/job/Rbin_uJ64__mvsim__ubuntu_jammy_amd64__binary/)  | [![Version](https://img.shields.io/ros/v/rolling/mvsim)](https://index.ros.org/search/?term=mvsim) |
 
-MultiVehicle simulator (libmvsim)
+MultiVehicle simulator (MVSIM)
 ======================================
 Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
 It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and accurate simulation of typical robot sensors (e.g. 2D and 3D lidars).
