@@ -57,6 +57,16 @@ struct cli_flags
 		mvsim::MVSIM_PORTNO_MAIN_REP,
 		"TCP port",
 		cmd};
+
+	TCLAP::ValueArg<double> argRealTimeFactor{
+		"",
+		"realtime-factor",
+		"Realtime modification factor: <1 slower than real-time, >1 faster "
+		"than real-time",
+		false,
+		1.0,
+		"1.0",
+		cmd};
 };
 
 extern std::unique_ptr<cli_flags> cli;

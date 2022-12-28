@@ -169,9 +169,10 @@ int launchSimulation()
 			R"XXX(Usage: mvsim launch <WORLD_MODEL.xml> [options]
 
 Available options:
-  --headless           Launch without GUI (e.g. suitable for dockerized envs.)
-  --full-profiler      Enable full profiling (generates file with all timings)
-  -v, --verbosity      Set verbosity level: DEBUG, INFO (default), WARN, ERROR
+ --headless              Launch without GUI (e.g. suitable for dockerized envs.)
+ --full-profiler         Enable full profiling (generates file with all timings)
+ --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0
+ -v, --verbosity         Set verbosity level: DEBUG, INFO (default), WARN, ERROR
 )XXX");
 		return 0;
 	}
@@ -237,6 +238,7 @@ Available options:
 
 	// Run simulation:
 	const double tAbsInit = mrpt::Clock::nowDouble();
+	const double rtFactor = cli->argRealTimeFactor.getValue();
 	bool doExit = false;
 
 	while (!doExit)
@@ -248,7 +250,8 @@ Available options:
 		// ============================================================
 		// Compute how much time has passed to simulate in real-time:
 		double tNew = mrpt::Clock::nowDouble();
-		double incrTime = (tNew - tAbsInit) - app->world.get_simul_time();
+		double incrTime =
+			rtFactor * (tNew - tAbsInit) - app->world.get_simul_time();
 		int incrTimeSteps = static_cast<int>(
 			std::floor(incrTime / app->world.get_simul_timestep()));
 

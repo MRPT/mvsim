@@ -47,9 +47,13 @@ def call_mvsim_shutdown(client):
 
 if __name__ == "__main__":
 
+    # Important: Run with simulated slow-down time (--realtime-factor),
+    # to prevent timeout in real-time check asserts within mvsim
+    # when run inside cloud docker containers:
+    #
     subprocess.Popen([MVSIM_CLI_EXE_PATH, "launch",
                      TESTS_DIR + "/test-still-lidar2d.world.xml",
-                     "--headless", "-v WARN"])
+                     "--headless", "-v WARN", "--realtime-factor 0.1"])
 
     client = pymvsim_comms.mvsim.Client()
     print("Connecting to server...")
