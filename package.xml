@@ -34,6 +34,7 @@
   <depend>pybind11-dev</depend>
   <depend>protobuf-dev</depend>
   <depend>python3-venv</depend>
+  <depend>python3-protobuf</depend>
 
   <!-- ROS1 -->
   <depend           condition="$ROS_VERSION == 1">roscpp</depend>
