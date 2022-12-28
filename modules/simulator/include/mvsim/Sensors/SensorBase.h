@@ -99,6 +99,10 @@ class SensorBase : public VisualObject, public Simulable
 		const std::shared_ptr<mrpt::obs::CObservation>& obs,
 		const TSimulContext& context);
 
+	void reportNewObservation_lidar_2d(
+		const std::shared_ptr<mrpt::obs::CObservation2DRangeScan>& obs,
+		const TSimulContext& context);
+
 	/// Assign a sensible default name/sensor label if none is provided:
 	void make_sure_we_have_a_name(const std::string& prefix);
 };

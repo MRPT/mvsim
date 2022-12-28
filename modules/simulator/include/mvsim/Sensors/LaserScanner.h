@@ -35,6 +35,8 @@ class LaserScanner : public SensorBase
 	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
 	void freeOpenGLResources() override;
 
+	void registerOnServer(mvsim::Client& c) override;
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
