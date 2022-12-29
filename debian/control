@@ -21,6 +21,7 @@ Build-Depends:
 	python3-setuptools,
 	python3-pip,
 	python3-venv,
+	wget
 Standards-Version: 4.5.0
 
 Package: libmvsim-comms0.4
