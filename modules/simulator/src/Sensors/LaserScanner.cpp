@@ -32,7 +32,7 @@ LaserScanner::LaserScanner(
 	Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent), m_z_order(++z_order_cnt)
 {
-	this->loadConfigFrom(root);
+	LaserScanner::loadConfigFrom(root);
 }
 
 LaserScanner::~LaserScanner() {}
@@ -56,7 +56,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["pose_3d"] = TParamEntry("%pose3d", &m_scan_model.sensorPose);
 	params["height"] = TParamEntry("%lf", &m_scan_model.sensorPose.z());
 	params["range_std_noise"] = TParamEntry("%lf", &m_rangeStdNoise);
-	params["maxRange"] = TParamEntry("%f", &m_scan_model.maxRange);
+	params["max_range"] = TParamEntry("%f", &m_scan_model.maxRange);
 	params["angle_std_noise_deg"] = TParamEntry("%lf_deg", &m_angleStdNoise);
 	params["sensor_period"] = TParamEntry("%lf", &m_sensor_period);
 	params["bodies_visible"] = TParamEntry("%bool", &m_see_fixtures);
@@ -459,26 +459,17 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (!m_fbo_renderer_depth)
 	{
-#if MRPT_VERSION < 0x256
-		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
-			FBO_NCOLS, FBO_NROWS, true /* skip GLUT window */);
-#else
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
-#endif
 	}
 
 	auto viewport = world3DScene.getViewport();
 
-#if MRPT_VERSION < 0x256
-	auto& cam = viewport->getCamera();
-#else
 	auto& cam = m_fbo_renderer_depth->getCamera(world3DScene);
-#endif
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
@@ -487,7 +478,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// ----------------------------------------------------------
 	// Decompose the 2D lidar FOV into "n" depth camera images,
-	// of 90deg FOV each.
+	// of camModel_FOV each.
 	// ----------------------------------------------------------
 	const auto firstAngle = curObs->getScanAngle(0);  // wrt sensorPose
 	const auto lastAngle = curObs->getScanAngle(curObs->getScanSize() - 1);

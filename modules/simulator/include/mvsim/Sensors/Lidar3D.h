@@ -11,9 +11,8 @@
 
 #include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/obs/CObservationRotatingScan.h>
-#include <mrpt/obs/CObservationVelodyneScan.h>
 #include <mrpt/opengl/CFBORender.h>
-#include <mrpt/opengl/CPlanarLaserScan.h>
+#include <mrpt/opengl/CPointCloudColoured.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/Sensors/SensorBase.h>
 
@@ -24,6 +23,8 @@ namespace mvsim
 /**
  * @brief A 3D LiDAR sensor, with 360 degrees horizontal fielf-of-view, and a
  * configurable vertical FOV.
+ * The number of rays in the vertical FOV and the number of samples in each
+ * horizontal row are configurable.
  */
 class Lidar3D : public SensorBase
 {
@@ -50,20 +51,22 @@ class Lidar3D : public SensorBase
 	mrpt::poses::CPose3D m_sensorPoseOnVeh;
 
 	double m_rangeStdNoise = 0.01;
-
 	bool m_ignore_parent_body = false;
 
 	float m_viz_pointSize = 3.0f;
+	float m_maxRange = 80.0f;
+	double m_vertical_fov = mrpt::DEG2RAD(30.0);
+	int m_vertNumRays = 16, m_horzNumRays = 180;
 
 	/** Last simulated scan */
-	mrpt::obs::CObservation::Ptr m_last_scan2gui, m_last_scan;
+	mrpt::obs::CObservationPointCloud::Ptr m_last_scan2gui, m_last_scan;
 	std::mutex m_last_scan_cs;
 
 	/** Whether m_gl_scan has to be updated upon next call of
 	 * internalGuiUpdate() from m_last_scan2gui */
 	bool m_gui_uptodate = false;
 
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_scan;
+	mrpt::opengl::CPointCloudColoured::Ptr m_glPoints;
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
 		m_gl_sensor_origin_corner;
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov;

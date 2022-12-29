@@ -79,6 +79,9 @@ class Simulable
 	/// Alternative to getPose()
 	mrpt::poses::CPose2D getCPose2D() const;
 
+	/// Alternative to getPose()
+	mrpt::poses::CPose3D getCPose3D() const;
+
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 	const std::string& getName() const { return m_name; }
 
