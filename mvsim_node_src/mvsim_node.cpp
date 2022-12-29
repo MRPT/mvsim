@@ -116,7 +116,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	gui_refresh_period_ms_ = n_->declare_parameter<double>(
 		"gui_refresh_period", gui_refresh_period_ms_);
 
-	show_gui_ = n_->declare_parameter<bool>("show_gui", show_gui_);
+	headless_ = n_->declare_parameter<bool>("headless", headless_);
 
 	period_ms_publish_tf_ = n_->declare_parameter<double>(
 		"period_ms_publish_tf", period_ms_publish_tf_);
@@ -167,7 +167,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	localn_.param("realtime_factor", realtime_factor_, 1.0);
 	localn_.param(
 		"gui_refresh_period", gui_refresh_period_ms_, gui_refresh_period_ms_);
-	localn_.param("show_gui", show_gui_, show_gui_);
+	localn_.param("headless", headless_, headless_);
 	localn_.param(
 		"period_ms_publish_tf", period_ms_publish_tf_, period_ms_publish_tf_);
 	localn_.param(
@@ -250,6 +250,8 @@ MVSimNode::~MVSimNode()
 {
 	thread_params_.closing = true;
 	if (thGUI_.joinable()) thGUI_.join();
+
+	mvsim_world_.free_opengl_resources();
 }
 
 #if PACKAGE_ROS_VERSION == 1
@@ -343,7 +345,7 @@ void MVSimNode::spin()
 
 				// Get speed: ground truth
 				txt2gui_tmp +=
-					"odo vel: "s +
+					"\nodo vel: "s +
 					it_veh->second->getVelocityLocalOdoEstimate().asString();
 
 				// Generic teleoperation interface for any controller that
@@ -381,7 +383,7 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 
 		while (!thread_params.closing)
 		{
-			if (obj->world_init_ok_ && obj->show_gui_)
+			if (obj->world_init_ok_ && !obj->headless_)
 			{
 				World::TUpdateGUIParams guiparams;
 				guiparams.msg_lines = obj->msg2gui_;
@@ -391,9 +393,23 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 				// Send key-strokes to the main thread:
 				if (guiparams.keyevent.keycode != 0)
 					obj->gui_key_events_ = guiparams.keyevent;
+
+				std::this_thread::sleep_for(
+					std::chrono::milliseconds(obj->gui_refresh_period_ms_));
 			}
-			std::this_thread::sleep_for(
-				std::chrono::milliseconds(obj->gui_refresh_period_ms_));
+			else if (obj->world_init_ok_ && obj->headless_)
+			{
+				obj->mvsim_world_.internalGraphicsLoopTasksForSimulation();
+
+				std::this_thread::sleep_for(
+					std::chrono::microseconds(static_cast<size_t>(
+						obj->mvsim_world_.get_simul_timestep() * 1000000)));
+			}
+			else
+			{
+				std::this_thread::sleep_for(
+					std::chrono::milliseconds(obj->gui_refresh_period_ms_));
+			}
 		}
 	}
 	catch (const std::exception& e)

@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+/* Request the MVSIM process to shutdown and quit */
+message SrvShutdown {
+
+}

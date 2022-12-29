@@ -87,7 +87,7 @@ class MVSimNode
 	/// (Defaul=1.0) >1: speed-up, <1: slow-down
 	double realtime_factor_ = 1.0;
 	int gui_refresh_period_ms_ = 50;
-	bool show_gui_ = true;	//!< Default= true
+	bool headless_ = false;
 
 	/// Default=true. Behaves as navigation/fake_localization for each
 	/// vehicle without the need to launch additional nodes.

@@ -27,6 +27,7 @@
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/mvsim-msgs/GenericObservation.pb.h>
+#include <mvsim/mvsim-msgs/ObservationLidar2D.pb.h>
 #endif
 
 using namespace mvsim;
@@ -193,6 +194,42 @@ void SensorBase::reportNewObservation(
 		auto arch = mrpt::serialization::archiveFrom(*m_rawlog_io);
 		arch << *obs;
 	}
+}
+
+void SensorBase::reportNewObservation_lidar_2d(
+	const std::shared_ptr<mrpt::obs::CObservation2DRangeScan>& obs,
+	const TSimulContext& context)
+{
+	using namespace std::string_literals;
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	if (publishTopic_.empty()) return;
+
+	mvsim_msgs::ObservationLidar2D msg;
+	msg.set_unixtimestamp(mrpt::Clock::toDouble(obs->timestamp));
+	msg.set_sourceobjectid(m_vehicle.getName());
+
+	msg.set_aperture(obs->aperture);
+	for (size_t i = 0; i < obs->getScanSize(); i++)
+	{
+		msg.add_scanranges(obs->getScanRange(i));
+		msg.add_validranges(obs->getScanRangeValidity(i));
+	}
+
+	msg.set_ccw(obs->rightToLeft);
+	msg.set_maxrange(obs->maxRange);
+
+	const auto& p = obs->sensorPose;
+	auto sp = msg.mutable_sensorpose();
+	sp->set_x(p.x());
+	sp->set_y(p.y());
+	sp->set_z(p.z());
+	sp->set_yaw(p.yaw());
+	sp->set_pitch(p.pitch());
+	sp->set_roll(p.roll());
+
+	context.world->commsClient().publishTopic(publishTopic_ + "_scan"s, msg);
+#endif
 }
 
 void SensorBase::registerOnServer(mvsim::Client& c)

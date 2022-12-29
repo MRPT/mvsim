@@ -22,9 +22,8 @@ jobs:
         name: [
           ubuntu-20.04-clang-ppa-mrpt,
           ubuntu-20.04-gcc-ppa-mrpt,
-          ubuntu-22.04-gcc,
-          ubuntu-22.04-clang,
           ubuntu-22.04-gcc-ppa-mrpt,
+          ubuntu-22.04-clang-ppa-mrpt,
         ]
 
         build_type: [ Release ]
@@ -39,19 +38,14 @@ jobs:
             compiler: gcc
             install_mrpt_ppa: ON
 
-          - name: ubuntu-22.04-gcc
-            os: ubuntu-22.04
-            compiler: gcc
-            install_mrpt_ppa: OFF
-
-          - name: ubuntu-22.04-clang
-            os: ubuntu-22.04
-            compiler: clang
-            install_mrpt_ppa: OFF
-
           - name: ubuntu-22.04-gcc-ppa-mrpt
             os: ubuntu-22.04
             compiler: gcc
+            install_mrpt_ppa: ON
+
+          - name: ubuntu-22.04-clang-ppa-mrpt
+            os: ubuntu-22.04
+            compiler: clang
             install_mrpt_ppa: ON
 
     steps:
@@ -84,7 +78,8 @@ jobs:
             libprotobuf-dev \
             libpython3-dev \
             python3-pip \
-            python3-virtualenv
+            python3-virtualenv \
+            python3-protobuf
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++ g++
@@ -101,6 +96,10 @@ jobs:
           cmake -DCMAKE_VERBOSE_MAKEFILE=ON \
                 -H. -Bbuild
 
-      - name: Build all
+      - name: Build
         run: |
           make -C build
+          
+      - name: Run tests
+        run: |
+          ctest --verbose --test-dir build

@@ -154,8 +154,8 @@ void CameraSensor::internalGuiUpdate(
 		m_glCustomVisual->setPose(p + m_sensor_params.cameraPose.asTPose());
 }
 
-void CameraSensor::simul_pre_timestep([
-	[maybe_unused]] const TSimulContext& context)
+void CameraSensor::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 }
 
@@ -190,7 +190,7 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParams.ncols;
 		p.height = m_sensor_params.cameraParams.nrows;
-		p.create_EGL_context = false;  // reuse nanogui context
+		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(p);
 #endif

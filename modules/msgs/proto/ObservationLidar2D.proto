@@ -1,0 +1,30 @@
+syntax = "proto2";
+
+import "Pose.proto";
+
+package mvsim_msgs;
+
+message ObservationLidar2D {
+  required double unixTimestamp = 1;
+
+  /* Name of the vehicle/robot originating this reading */
+  required string sourceObjectId = 2;
+
+  /* Scan: range values, in meters */
+  repeated float scanRanges = 3;
+  
+  /* Validity flags, one per range value in "scanRanges". False=no return */
+  repeated bool validRanges = 4;
+  
+  /* The "aperture" or field-of-view of the range finder, in radians */
+  required float aperture = 5;
+
+  /* The scanning direction: true=counterclockwise; false=clockwise */
+  required bool ccw = 6;
+
+  /* The maximum range allowed by the device, in meters (e.g. 80m, 50m,...) */
+  required float maxRange = 7;
+
+  /* The SE(3) pose of the sensor in the robot/vehicle frame of reference at the moment of starting the scan. */
+  required Pose sensorPose = 8;
+}
