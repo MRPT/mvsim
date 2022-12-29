@@ -54,17 +54,18 @@
 		</publish>-->
 
 		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml"
+<!--		<include file="definitions/lidar2d.sensor.xml"
 		  sensor_x="0.15" sensor_z="0.35" sensor_yaw="0"
 		  sensor_period_sec="0.10"
 		  raytrace_3d="true"
-		  sensor_name="laser1"
-		/>
+		  sensor_name="scanner1"
+		/>-->
 
-		<include file="definitions/rgbd_camera.sensor.xml" 
+		<include file="definitions/velodyne-vlp16.sensor.xml"
 		  sensor_x="0.22" sensor_z="0.29"
 		  sensor_period_sec="0.10"
-		  show_3d_pointcloud="true"
+		  sensor_std_noise="0.001"
+		  sensor_name="lidar1"
 		/>
 	</vehicle>
 
