@@ -6,3 +6,5 @@ Attributions:
 - `jackal_description`: Files from [jackal](https://github.com/jackal/jackal) repository.
   License: BSD-3-Clause
 
+Each subdirectory has its own README/License file with further attribution details.
+

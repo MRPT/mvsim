@@ -60,6 +60,7 @@ int main(int argc, char** argv)
 		if (!world_file.empty()) node->loadWorldModel(world_file);
 
 		// Attach world as a mvsim communications node:
+		node->mvsim_world_.headless(node->headless_);
 		node->mvsim_world_.connectToServer();
 
 #if PACKAGE_ROS_VERSION == 1

@@ -66,9 +66,32 @@ void World::clear_all()
 	m_blocks.clear();
 }
 
+void World::internal_initialize()
+{
+	ASSERT_(!initialized_);
+	ASSERT_(worldVisual_);
+
+	worldVisual_->getViewport()->lightParameters().ambient = {
+		0.5f, 0.5f, 0.5f, 1.0f};
+
+	// Create group for sensor viz:
+	{
+		auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
+		glVizSensors->setName("group_sensors_viz");
+		glVizSensors->setVisibility(m_gui_options.show_sensor_points);
+		worldVisual_->insert(glVizSensors);
+	}
+
+	getTimeLogger().setMinLoggingLevel(this->getMinLoggingLevel());
+
+	initialized_ = true;
+}
+
 /** Runs the simulation for a given time interval (in seconds) */
 void World::run_simulation(double dt)
 {
+	ASSERT_(initialized_);
+
 	const double t0 = mrpt::Clock::nowDouble();
 
 	// Define start of simulation time:
@@ -186,10 +209,11 @@ void World::internal_one_timestep(double dt)
 		m_timlogger, "timestep.4.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
-		for (int i = 0; i < 1000 && pending_running_sensors_on_3D_scene(); i++)
-		{
+		// Use a huge timeout here to avoid timing out in build farms / cloud
+		// containers:
+		for (int i = 0; i < 20000 && pending_running_sensors_on_3D_scene(); i++)
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		}
+
 		if (pending_running_sensors_on_3D_scene())
 		{
 			MRPT_LOG_WARN(
@@ -360,4 +384,26 @@ double World::get_simul_timestep() const
 	}
 
 	return m_simul_timestep;
+}
+
+void World::free_opengl_resources()
+{
+	auto lck = mrpt::lockHelper(worldPhysicalMtx_);
+
+	worldPhysical_.clear();
+	worldVisual_->clear();
+
+	VisualObject::FreeOpenGLResources();
+}
+
+bool World::sensor_has_to_create_egl_context()
+{
+	// If we have a GUI, reuse that context:
+	if (!headless()) return false;
+
+	// otherwise, just the first time:
+	static bool first = true;
+	bool ret = first;
+	first = false;
+	return ret;
 }

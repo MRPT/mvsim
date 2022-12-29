@@ -127,6 +127,12 @@ class Server : public mrpt::system::COutputLogger
 	void db_add_topic_subscriber(
 		const std::string& topicName, const std::string& updatesEndPoint);
 
+	/** Send to updatesEndPoint only, if given; otherwise, send to all
+	 * subscribers */
+	void send_topic_publishers_to_subscribed_clients(
+		const std::string& topicName,
+		const std::optional<std::string>& updatesEndPoint = std::nullopt);
+
 	struct InfoPerNode
 	{
 		InfoPerNode(const std::string& name) : nodeName(name) {}

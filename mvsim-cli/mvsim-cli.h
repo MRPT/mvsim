@@ -37,6 +37,9 @@ struct cli_flags
 		"program.",
 		cmd};
 
+	TCLAP::SwitchArg argHeadless{
+		"", "headless", "Runs the simulator without any GUI window.", cmd};
+
 	TCLAP::SwitchArg argDetails{
 		"", "details", "Shows details in the specified subcommand", cmd};
 
@@ -53,6 +56,16 @@ struct cli_flags
 		false,
 		mvsim::MVSIM_PORTNO_MAIN_REP,
 		"TCP port",
+		cmd};
+
+	TCLAP::ValueArg<double> argRealTimeFactor{
+		"",
+		"realtime-factor",
+		"Realtime modification factor: <1 slower than real-time, >1 faster "
+		"than real-time",
+		false,
+		1.0,
+		"1.0",
 		cmd};
 };
 
