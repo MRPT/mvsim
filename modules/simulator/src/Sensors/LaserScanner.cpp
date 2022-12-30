@@ -497,12 +497,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	//  tan(bearing) = --------------
 	//                      fx
 	//
-	thread_local std::vector<size_t> angleIdx2pixelIdx;
-	thread_local std::vector<float> angleIdx2secant;
-	if (angleIdx2pixelIdx.empty())
+	if (angleIdx2pixelIdx_.empty())
 	{
-		angleIdx2pixelIdx.resize(numRaysPerRender);
-		angleIdx2secant.resize(numRaysPerRender);
+		angleIdx2pixelIdx_.resize(numRaysPerRender);
+		angleIdx2secant_.resize(numRaysPerRender);
 
 		for (int i = 0; i < numRaysPerRender; i++)
 		{
@@ -514,9 +512,15 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				mrpt::round(camModel.cx() - camModel.fx() * std::tan(ang)), 0,
 				camModel.ncols - 1);
 
-			angleIdx2pixelIdx.at(i) = pixelIdx;
-			angleIdx2secant.at(i) = 1.0f / std::cos(ang);
+			angleIdx2pixelIdx_.at(i) = pixelIdx;
+			angleIdx2secant_.at(i) = 1.0f / std::cos(ang);
 		}
+	}
+	else
+	{
+		// sanity check:
+		ASSERT_EQUAL_(angleIdx2pixelIdx_.size(), numRaysPerRender);
+		ASSERT_EQUAL_(angleIdx2secant_.size(), numRaysPerRender);
 	}
 
 	// ----------------------------------------------------------
@@ -599,10 +603,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			// done with full scan range?
 			if (scanRayIdx >= curObs->getScanSize()) break;
 
-			const auto u = angleIdx2pixelIdx.at(i);
+			const auto u = angleIdx2pixelIdx_.at(i);
 
 			const float d = depthImage(0, u);
-			const float range = d * angleIdx2secant.at(i);
+			const float range = d * angleIdx2secant_.at(i);
 
 			if (range <= 0 || range >= curObs->maxRange) continue;	// invalid
 

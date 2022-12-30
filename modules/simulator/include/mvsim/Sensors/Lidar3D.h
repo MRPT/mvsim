@@ -75,5 +75,17 @@ class Lidar3D : public SensorBase
 	std::mutex m_has_to_render_mtx;
 
 	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_depth;
+
+	struct PerRayLUT
+	{
+		int u = 0, v = 0;  //!< Pixel coords
+		float depth2range = 0;
+	};
+	struct PerHorzAngleLUT
+	{
+		std::vector<PerRayLUT> column;
+	};
+
+	std::vector<PerHorzAngleLUT> lut_;
 };
 }  // namespace mvsim
