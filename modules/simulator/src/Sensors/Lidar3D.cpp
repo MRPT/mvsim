@@ -195,11 +195,13 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	curObs->pointcloud = curPtsPtr;
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
-	constexpr double camModel_hFOV = 150.0_deg;
-	const int FBO_NROWS = m_vertNumRays * 2;
+	constexpr double camModel_hFOV = 120.01_deg;
+	const int FBO_NROWS = m_vertNumRays * 20;
 	// This FBO is for camModel_hFOV only:
 	const int FBO_NCOLS = m_horzNumRays;
-	const double camModel_vFOV = m_vertical_fov * 1.1;
+
+	MRPT_TODO("use geometry to place an exact limit");
+	const double camModel_vFOV = m_vertical_fov * 3.0;
 
 	mrpt::img::TCamera camModel;
 	camModel.ncols = FBO_NCOLS;
@@ -241,7 +243,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	ASSERT_GT_(m_horzNumRays, 1);
 	ASSERT_GT_(m_vertNumRays, 1);
 
-	constexpr bool scanIsCW = true;
+	constexpr bool scanIsCW = false;
 	constexpr double aperture = 2 * M_PI;
 
 	const double firstAngle = -aperture * 0.5;
@@ -254,48 +256,61 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	ASSERT_(numHorzRaysPerRender > 0);
 
 	// Precomputed LUT of bearings to pixel coordinates:
-	//                    cx - u
-	//  tan(bearing) = --------------
-	//                      fx
+	//                         cx - u
+	//  tan(horzBearing) = --------------
+	//                          fx
 	//
-	thread_local std::vector<size_t> angleIdx2pixelIdx, vertAngleIdx2pixelIdx;
-	thread_local std::vector<float> angleIdx2secant, vertAngleIdx2secant;
-	if (angleIdx2pixelIdx.empty())
+	//                             cy - v
+	//  tan(vertBearing) = -------------------------
+	//                      fy / cos(horzBearing)
+	//
+	if (lut_.empty())
 	{
-		angleIdx2pixelIdx.resize(numHorzRaysPerRender);
-		angleIdx2secant.resize(numHorzRaysPerRender);
+		lut_.resize(numHorzRaysPerRender);
 
 		for (int i = 0; i < numHorzRaysPerRender; i++)
 		{
-			const auto ang = (scanIsCW ? -1 : 1) *
-							 (camModel_hFOV * 0.5 -
-							  i * camModel_hFOV / (numHorzRaysPerRender - 1));
+			lut_[i].column.resize(nRows);
 
-			const auto pixelIdx = mrpt::saturate_val<int>(
-				mrpt::round(camModel.cx() - camModel.fx() * std::tan(ang)), 0,
-				camModel.ncols - 1);
+			const double horzAng =
+				(scanIsCW ? -1 : 1) *
+				(camModel_hFOV * 0.5 -
+				 i * camModel_hFOV / (numHorzRaysPerRender - 1));
 
-			angleIdx2pixelIdx.at(i) = pixelIdx;
-			angleIdx2secant.at(i) = 1.0f / std::cos(ang);
+			const double cosHorzAng = std::cos(horzAng);
+
+			const auto pixel_u = mrpt::saturate_val<int>(
+				mrpt::round(camModel.cx() - camModel.fx() * std::tan(horzAng)),
+				0, camModel.ncols - 1);
+
+			for (int j = 0; j < nRows; j++)
+			{
+				auto& entry = lut_[i].column[j];
+
+				const auto vertAng =
+					-camModel_vFOV * 0.5 + j * camModel_vFOV / (nRows - 1);
+
+				const double cosVertAng = std::cos(vertAng);
+
+				const auto pixel_v = mrpt::round(
+					camModel.cy() -
+					camModel.fy() * std::tan(vertAng) / cosHorzAng);
+
+				if (pixel_v < 0 || pixel_v >= camModel.nrows)
+					continue;  // out of the simulated camera (should not
+							   // happen?)
+
+				entry.u = pixel_u;
+				entry.v = pixel_v;
+				entry.depth2range = 1.0f / (cosHorzAng * cosVertAng);
+			}
 		}
 	}
-	if (vertAngleIdx2pixelIdx.empty())
+	else
 	{
-		vertAngleIdx2pixelIdx.resize(nRows);
-		vertAngleIdx2secant.resize(nRows);
-
-		for (size_t i = 0; i < nRows; i++)
-		{
-			const auto ang =
-				(camModel_vFOV * 0.5 - i * camModel_vFOV / (nRows - 1));
-
-			const auto pixelIdx = mrpt::saturate_val<int>(
-				mrpt::round(camModel.cy() - camModel.fy() * std::tan(ang)), 0,
-				camModel.nrows - 1);
-
-			vertAngleIdx2pixelIdx.at(i) = pixelIdx;
-			vertAngleIdx2secant.at(i) = 1.0f / std::cos(ang);
-		}
+		// check:
+		ASSERT_EQUAL_(lut_.size(), numHorzRaysPerRender);
+		ASSERT_EQUAL_(lut_.at(0).column.size(), nRows);
 	}
 
 	// ----------------------------------------------------------
@@ -350,11 +365,21 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		// Add random noise:
 		if (m_rangeStdNoise > 0)
 		{
-			auto tleStore = mrpt::system::CTimeLoggerEntry(
-				m_world->getTimeLogger(), "sensor.3Dlidar.noise");
-
 			// Each thread must create its own rng:
 			thread_local mrpt::random::CRandomGenerator rng;
+			thread_local std::vector<float> noiseSeq;
+			thread_local size_t noiseIdx = 0;
+			constexpr size_t noiseLen = 7823;  // prime
+			if (noiseSeq.empty())
+			{
+				noiseSeq.reserve(noiseLen);
+				for (size_t i = 0; i < noiseLen; i++)
+					noiseSeq.push_back(
+						rng.drawGaussian1D(0.0, m_rangeStdNoise));
+			}
+
+			auto tleStore = mrpt::system::CTimeLoggerEntry(
+				m_world->getTimeLogger(), "sensor.3Dlidar.noise");
 
 			float* d = depthImage.data();
 			const size_t N = depthImage.size();
@@ -362,8 +387,8 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			{
 				if (d[i] == 0) continue;  // it was an invalid ray return.
 
-				const float dNoisy =
-					d[i] + rng.drawGaussian1D(0, m_rangeStdNoise);
+				const float dNoisy = d[i] + noiseSeq[noiseIdx++];
+				if (noiseIdx >= noiseLen) noiseIdx = 0;
 
 				if (dNoisy < 0 || dNoisy > m_maxRange) continue;
 
@@ -381,15 +406,18 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			if (iAbs >= rangeImage.cols())
 				continue;  // we don't need this image part
 
-			const auto u = angleIdx2pixelIdx.at(i);
-
 			for (unsigned int j = 0; j < nRows; j++)
 			{
-				const auto v = vertAngleIdx2pixelIdx.at(j);
+				// LUT entry:
+				const auto& e = lut_.at(i).column.at(j);
+				const auto u = e.u;
+				const auto v = e.v;
+
+				ASSERTDEB_LT_(u, depthImage.cols());
+				ASSERTDEB_LT_(v, depthImage.rows());
 
 				const float d = depthImage(v, u);
-				const float range =
-					d * angleIdx2secant.at(i) * vertAngleIdx2secant.at(j);
+				const float range = d * e.depth2range;
 
 				if (range <= 0 || range >= m_maxRange) continue;  // invalid
 

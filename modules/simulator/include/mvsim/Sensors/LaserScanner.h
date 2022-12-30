@@ -95,5 +95,8 @@ class LaserScanner : public SensorBase
 	std::mutex m_has_to_render_mtx;
 
 	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_depth;
+
+	std::vector<size_t> angleIdx2pixelIdx_;
+	std::vector<float> angleIdx2secant_;
 };
 }  // namespace mvsim
