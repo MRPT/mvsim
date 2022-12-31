@@ -243,19 +243,12 @@ void DepthCameraSensor::simulateOn3DScene(
 		auto tle2 = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.createFBO");
 
-#if MRPT_VERSION < 0x256
-		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(
-			m_sensor_params.cameraParamsIntensity.ncols,
-			m_sensor_params.cameraParamsIntensity.nrows,
-			true /* skip GLUT window */);
-#else
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParamsIntensity.ncols;
 		p.height = m_sensor_params.cameraParamsIntensity.nrows;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(p);
-#endif
 	}
 
 	if (!m_fbo_renderer_depth && m_sense_depth)
@@ -263,33 +256,22 @@ void DepthCameraSensor::simulateOn3DScene(
 		auto tle2 = mrpt::system::CTimeLoggerEntry(
 			m_world->getTimeLogger(), "sensor.RGBD.createFBO");
 
-#if MRPT_VERSION < 0x256
-		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
-			m_sensor_params.cameraParams.ncols,
-			m_sensor_params.cameraParams.nrows, true /* skip GLUT window */);
-#else
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParams.ncols;
 		p.height = m_sensor_params.cameraParams.nrows;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
-#endif
 	}
 
 	auto viewport = world3DScene.getViewport();
 
-#if MRPT_VERSION < 0x256
-	auto* camDepth = &viewport->getCamera();
-	auto* camRGB = &viewport->getCamera();
-#else
 	auto* camDepth = m_fbo_renderer_depth
 						 ? &m_fbo_renderer_depth->getCamera(world3DScene)
 						 : nullptr;
 	auto* camRGB = m_fbo_renderer_rgb
 					   ? &m_fbo_renderer_rgb->getCamera(world3DScene)
 					   : nullptr;
-#endif
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);

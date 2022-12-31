@@ -32,7 +32,7 @@ LaserScanner::LaserScanner(
 	Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent), m_z_order(++z_order_cnt)
 {
-	this->loadConfigFrom(root);
+	LaserScanner::loadConfigFrom(root);
 }
 
 LaserScanner::~LaserScanner() {}
@@ -56,7 +56,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["pose_3d"] = TParamEntry("%pose3d", &m_scan_model.sensorPose);
 	params["height"] = TParamEntry("%lf", &m_scan_model.sensorPose.z());
 	params["range_std_noise"] = TParamEntry("%lf", &m_rangeStdNoise);
-	params["maxRange"] = TParamEntry("%f", &m_scan_model.maxRange);
+	params["max_range"] = TParamEntry("%f", &m_scan_model.maxRange);
 	params["angle_std_noise_deg"] = TParamEntry("%lf_deg", &m_angleStdNoise);
 	params["sensor_period"] = TParamEntry("%lf", &m_sensor_period);
 	params["bodies_visible"] = TParamEntry("%bool", &m_see_fixtures);
@@ -459,26 +459,17 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (!m_fbo_renderer_depth)
 	{
-#if MRPT_VERSION < 0x256
-		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(
-			FBO_NCOLS, FBO_NROWS, true /* skip GLUT window */);
-#else
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
-#endif
 	}
 
 	auto viewport = world3DScene.getViewport();
 
-#if MRPT_VERSION < 0x256
-	auto& cam = viewport->getCamera();
-#else
 	auto& cam = m_fbo_renderer_depth->getCamera(world3DScene);
-#endif
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
@@ -487,7 +478,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// ----------------------------------------------------------
 	// Decompose the 2D lidar FOV into "n" depth camera images,
-	// of 90deg FOV each.
+	// of camModel_FOV each.
 	// ----------------------------------------------------------
 	const auto firstAngle = curObs->getScanAngle(0);  // wrt sensorPose
 	const auto lastAngle = curObs->getScanAngle(curObs->getScanSize() - 1);
@@ -506,12 +497,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	//  tan(bearing) = --------------
 	//                      fx
 	//
-	thread_local std::vector<size_t> angleIdx2pixelIdx;
-	thread_local std::vector<float> angleIdx2secant;
-	if (angleIdx2pixelIdx.empty())
+	if (angleIdx2pixelIdx_.empty())
 	{
-		angleIdx2pixelIdx.resize(numRaysPerRender);
-		angleIdx2secant.resize(numRaysPerRender);
+		angleIdx2pixelIdx_.resize(numRaysPerRender);
+		angleIdx2secant_.resize(numRaysPerRender);
 
 		for (int i = 0; i < numRaysPerRender; i++)
 		{
@@ -523,9 +512,15 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				mrpt::round(camModel.cx() - camModel.fx() * std::tan(ang)), 0,
 				camModel.ncols - 1);
 
-			angleIdx2pixelIdx.at(i) = pixelIdx;
-			angleIdx2secant.at(i) = 1.0f / std::cos(ang);
+			angleIdx2pixelIdx_.at(i) = pixelIdx;
+			angleIdx2secant_.at(i) = 1.0f / std::cos(ang);
 		}
+	}
+	else
+	{
+		// sanity check:
+		ASSERT_EQUAL_(angleIdx2pixelIdx_.size(), numRaysPerRender);
+		ASSERT_EQUAL_(angleIdx2secant_.size(), numRaysPerRender);
 	}
 
 	// ----------------------------------------------------------
@@ -608,10 +603,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			// done with full scan range?
 			if (scanRayIdx >= curObs->getScanSize()) break;
 
-			const auto u = angleIdx2pixelIdx.at(i);
+			const auto u = angleIdx2pixelIdx_.at(i);
 
 			const float d = depthImage(0, u);
-			const float range = d * angleIdx2secant.at(i);
+			const float range = d * angleIdx2secant_.at(i);
 
 			if (range <= 0 || range >= curObs->maxRange) continue;	// invalid
 

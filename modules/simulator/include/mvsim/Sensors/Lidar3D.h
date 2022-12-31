@@ -9,9 +9,10 @@
 
 #pragma once
 
-#include <mrpt/obs/CObservation2DRangeScan.h>
+#include <mrpt/obs/CObservationPointCloud.h>
+#include <mrpt/obs/CObservationRotatingScan.h>
 #include <mrpt/opengl/CFBORender.h>
-#include <mrpt/opengl/CPlanarLaserScan.h>
+#include <mrpt/opengl/CPointCloudColoured.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mvsim/Sensors/SensorBase.h>
 
@@ -20,20 +21,17 @@
 namespace mvsim
 {
 /**
- * @brief A 2D lidar scanner, with FOV up to 360 degrees.
- *
- * There are two working modes:
- * - `raytrace_3d=false`: Very fast simulation, applicable to 2D worlds.
- * - `raytrace_3d=true`: Accurate version using detailed 3D meshes for all
- *   available objects in the scene.
- *
+ * @brief A 3D LiDAR sensor, with 360 degrees horizontal fielf-of-view, and a
+ * configurable vertical FOV.
+ * The number of rays in the vertical FOV and the number of samples in each
+ * horizontal row are configurable.
  */
-class LaserScanner : public SensorBase
+class Lidar3D : public SensorBase
 {
-	DECLARES_REGISTER_SENSOR(LaserScanner)
+	DECLARES_REGISTER_SENSOR(Lidar3D)
    public:
-	LaserScanner(Simulable& parent, const rapidxml::xml_node<char>* root);
-	virtual ~LaserScanner();
+	Lidar3D(Simulable& parent, const rapidxml::xml_node<char>* root);
+	virtual ~Lidar3D();
 
 	// See docs in base class
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
@@ -44,49 +42,31 @@ class LaserScanner : public SensorBase
 	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
 	void freeOpenGLResources() override;
 
-	void registerOnServer(mvsim::Client& c) override;
-
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
-	// when not using the 3D raytrace mode.
-	void internal_simulate_lidar_2d_mode(const TSimulContext& context);
+	mrpt::poses::CPose3D m_sensorPoseOnVeh;
 
-	int m_z_order;	//!< to help rendering multiple scans
-	mrpt::poses::CPose2D m_sensor_pose_on_veh;
 	double m_rangeStdNoise = 0.01;
-	double m_angleStdNoise = mrpt::DEG2RAD(0.01);
-	/** Whether all box2d "fixtures" are visible (solid) or not (Default=true)
-	 */
-	bool m_see_fixtures = true;
-
-	/** If enabled, use realistic 3D depth measurement using the scene 3D model,
-	 * instead of 2D "fixtures" used for collisions. */
-	bool m_raytrace_3d = false;
-
 	bool m_ignore_parent_body = false;
 
-	bool m_viz_visiblePlane = false;
-	bool m_viz_visiblePoints = false;
 	float m_viz_pointSize = 3.0f;
+	float m_maxRange = 80.0f;
+	double m_vertical_fov = mrpt::DEG2RAD(30.0);
+	int m_vertNumRays = 16, m_horzNumRays = 180;
 
-	// Store here all scan parameters. This obj will be copied as a
-	// "pattern" to fill it with actual scan data.
-	mrpt::obs::CObservation2DRangeScan m_scan_model;
-
-	std::mutex m_last_scan_cs;
 	/** Last simulated scan */
-	mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan;
-	mrpt::obs::CObservation2DRangeScan::Ptr m_last_scan2gui;
+	mrpt::obs::CObservationPointCloud::Ptr m_last_scan2gui, m_last_scan;
+	std::mutex m_last_scan_cs;
 
 	/** Whether m_gl_scan has to be updated upon next call of
 	 * internalGuiUpdate() from m_last_scan2gui */
 	bool m_gui_uptodate = false;
 
-	mrpt::opengl::CPlanarLaserScan::Ptr m_gl_scan;
+	mrpt::opengl::CPointCloudColoured::Ptr m_glPoints;
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
 		m_gl_sensor_origin_corner;
 	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov;
@@ -96,7 +76,16 @@ class LaserScanner : public SensorBase
 
 	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_depth;
 
-	std::vector<size_t> angleIdx2pixelIdx_;
-	std::vector<float> angleIdx2secant_;
+	struct PerRayLUT
+	{
+		int u = 0, v = 0;  //!< Pixel coords
+		float depth2range = 0;
+	};
+	struct PerHorzAngleLUT
+	{
+		std::vector<PerRayLUT> column;
+	};
+
+	std::vector<PerHorzAngleLUT> lut_;
 };
 }  // namespace mvsim

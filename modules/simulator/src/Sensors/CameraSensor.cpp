@@ -182,27 +182,17 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	if (!m_fbo_renderer_rgb)
 	{
-#if MRPT_VERSION < 0x256
-		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(
-			m_sensor_params.cameraParams.ncols,
-			m_sensor_params.cameraParams.nrows, true /* skip GLUT window */);
-#else
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = m_sensor_params.cameraParams.ncols;
 		p.height = m_sensor_params.cameraParams.nrows;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(p);
-#endif
 	}
 
 	auto viewport = world3DScene.getViewport();
 
-#if MRPT_VERSION < 0x256
-	auto& cam = viewport->getCamera();
-#else
 	auto& cam = m_fbo_renderer_rgb->getCamera(world3DScene);
-#endif
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);

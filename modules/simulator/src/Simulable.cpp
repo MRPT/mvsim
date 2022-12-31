@@ -123,6 +123,12 @@ mrpt::poses::CPose2D Simulable::getCPose2D() const
 	return {m_q.x, m_q.y, m_q.yaw};
 }
 
+mrpt::poses::CPose3D Simulable::getCPose3D() const
+{
+	std::shared_lock lck(m_q_mtx);
+	return mrpt::poses::CPose3D(m_q);
+}
+
 bool Simulable::parseSimulable(
 	const JointXMLnode<>& rootNode, const ParseSimulableParams& psp)
 {
