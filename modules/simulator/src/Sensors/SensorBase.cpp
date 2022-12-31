@@ -11,6 +11,7 @@
 #include <mvsim/Sensors/CameraSensor.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/Sensors/LaserScanner.h>
+#include <mvsim/Sensors/Lidar3D.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
@@ -46,6 +47,7 @@ void register_all_sensors()
 	REGISTER_SENSOR("laser", LaserScanner)
 	REGISTER_SENSOR("rgbd_camera", DepthCameraSensor)
 	REGISTER_SENSOR("camera", CameraSensor)
+	REGISTER_SENSOR("lidar3d", Lidar3D)
 }
 
 static auto gAllSensorsOriginViz = mrpt::opengl::CSetOfObjects::Create();
