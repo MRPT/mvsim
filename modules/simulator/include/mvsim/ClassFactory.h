@@ -74,10 +74,7 @@ class ClassFactory
 
 #define DECLARES_REGISTER_CLASS1(CLASS_NAME, BASE_CLASS, ARG1) \
    public:                                                     \
-	static BASE_CLASS* Create(ARG1 a1)                         \
-	{                                                          \
-		return new CLASS_NAME(a1);                             \
-	}
+	static BASE_CLASS* Create(ARG1 a1) { return new CLASS_NAME(a1); }
 #define DECLARES_REGISTER_CLASS2(CLASS_NAME, BASE_CLASS, ARG1, ARG2) \
    public:                                                           \
 	static BASE_CLASS* Create(ARG1 a1, ARG2 a2)                      \
