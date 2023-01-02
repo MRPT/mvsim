@@ -81,7 +81,7 @@ void SensorBase::RegisterSensorOriginViz(
 SensorBase::SensorBase(Simulable& vehicle)
 	: VisualObject(vehicle.getSimulableWorldObject()),
 	  Simulable(vehicle.getSimulableWorldObject()),
-	  m_vehicle(vehicle)
+	  vehicle_(vehicle)
 {
 }
 
@@ -162,7 +162,7 @@ void SensorBase::reportNewObservation(
 	if (!obs) return;
 
 	// Notify the world:
-	m_world->dispatchOnObservation(m_vehicle, obs);
+	world_->dispatchOnObservation(vehicle_, obs);
 
 	// Publish:
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -170,7 +170,7 @@ void SensorBase::reportNewObservation(
 	{
 		mvsim_msgs::GenericObservation msg;
 		msg.set_unixtimestamp(mrpt::Clock::toDouble(obs->timestamp));
-		msg.set_sourceobjectid(m_vehicle.getName());
+		msg.set_sourceobjectid(vehicle_.getName());
 
 		std::vector<uint8_t> serializedData;
 		mrpt::serialization::ObjectToOctetVector(obs.get(), serializedData);
@@ -183,15 +183,15 @@ void SensorBase::reportNewObservation(
 #endif
 
 	// Save to .rawlog:
-	if (!m_save_to_rawlog.empty())
+	if (!save_to_rawlog_.empty())
 	{
-		if (!m_rawlog_io)
+		if (!rawlog_io_)
 		{
-			m_rawlog_io = std::make_shared<mrpt::io::CFileGZOutputStream>(
-				m_save_to_rawlog);
+			rawlog_io_ = std::make_shared<mrpt::io::CFileGZOutputStream>(
+				save_to_rawlog_);
 		}
 
-		auto arch = mrpt::serialization::archiveFrom(*m_rawlog_io);
+		auto arch = mrpt::serialization::archiveFrom(*rawlog_io_);
 		arch << *obs;
 	}
 }
@@ -207,7 +207,7 @@ void SensorBase::reportNewObservation_lidar_2d(
 
 	mvsim_msgs::ObservationLidar2D msg;
 	msg.set_unixtimestamp(mrpt::Clock::toDouble(obs->timestamp));
-	msg.set_sourceobjectid(m_vehicle.getName());
+	msg.set_sourceobjectid(vehicle_.getName());
 
 	msg.set_aperture(obs->aperture);
 	for (size_t i = 0; i < obs->getScanSize(); i++)
@@ -248,31 +248,31 @@ void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	// Attribs:
 	TParameterDefinitions attribs;
-	attribs["name"] = TParamEntry("%s", &m_name);
+	attribs["name"] = TParamEntry("%s", &name_);
 	parse_xmlnode_attribs(*root, attribs, {}, "[SensorBase]");
 
-	m_varValues = {{"NAME", m_name}, {"PARENT_NAME", m_vehicle.getName()}};
+	varValues_ = {{"NAME", name_}, {"PARENT_NAME", vehicle_.getName()}};
 
 	// Parse common sensor XML params:
-	this->parseSensorPublish(root->first_node("publish"), m_varValues);
+	this->parseSensorPublish(root->first_node("publish"), varValues_);
 
 	TParameterDefinitions params;
-	params["sensor_period"] = TParamEntry("%lf", &m_sensor_period);
-	params["save_to_rawlog"] = TParamEntry("%s", &m_save_to_rawlog);
+	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
+	params["save_to_rawlog"] = TParamEntry("%s", &save_to_rawlog_);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*root, params, m_varValues);
+	parse_xmlnode_children_as_param(*root, params, varValues_);
 }
 
 void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 {
-	if (!m_name.empty()) return;
+	if (!name_.empty()) return;
 
 	size_t nextIdx = 0;
-	if (auto v = dynamic_cast<VehicleBase*>(&m_vehicle); v)
+	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v)
 		nextIdx = v->getSensors().size() + 1;
 
-	m_name = mrpt::format(
+	name_ = mrpt::format(
 		"%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
 }
 
@@ -282,21 +282,21 @@ bool SensorBase::should_simulate_sensor(const TSimulContext& context)
 	const double timeEpsilon = 1e-6;
 
 	if (context.simul_time <
-		m_sensor_last_timestamp + m_sensor_period - timeEpsilon)
+		sensor_last_timestamp_ + sensor_period_ - timeEpsilon)
 		return false;
 
-	if ((context.simul_time - m_sensor_last_timestamp) >= 2 * m_sensor_period)
+	if ((context.simul_time - sensor_last_timestamp_) >= 2 * sensor_period_)
 	{
 		std::cout
 			<< "[mvsim::SensorBase] WARNING: "
 			   "At least one sensor sample has been lost due to too coarse "
 			   "discrete time steps. sensor_period="
-			<< m_sensor_period << " [s], (simul_time - sensor_last_timestamp)="
-			<< (context.simul_time - m_sensor_last_timestamp) << " [s]."
+			<< sensor_period_ << " [s], (simul_time - sensor_last_timestamp)="
+			<< (context.simul_time - sensor_last_timestamp_) << " [s]."
 			<< std::endl;
 	}
 
-	m_sensor_last_timestamp = context.simul_time;
+	sensor_last_timestamp_ = context.simul_time;
 
 	return true;
 }

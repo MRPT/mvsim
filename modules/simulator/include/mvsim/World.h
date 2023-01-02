@@ -96,15 +96,15 @@ class World : public mrpt::system::COutputLogger
 	/** Seconds since start of simulation. \sa get_simul_timestamp() */
 	double get_simul_time() const
 	{
-		auto lck = mrpt::lockHelper(m_simul_time_mtx);
-		return m_simul_time;
+		auto lck = mrpt::lockHelper(simul_time_mtx_);
+		return simulTime_;
 	}
 
 	/// Normally should not be called by users, for internal use only.
 	void force_set_simul_time(double newSimulatedTime)
 	{
-		auto lck = mrpt::lockHelper(m_simul_time_mtx);
-		m_simul_time = newSimulatedTime;
+		auto lck = mrpt::lockHelper(simul_time_mtx_);
+		simulTime_ = newSimulatedTime;
 	}
 
 	/** Get the current simulation full timestamp, computed as the
@@ -114,10 +114,10 @@ class World : public mrpt::system::COutputLogger
 	 */
 	mrpt::Clock::time_point get_simul_timestamp() const
 	{
-		auto lck = mrpt::lockHelper(m_simul_time_mtx);
-		ASSERT_(m_simul_start_wallclock_time.has_value());
+		auto lck = mrpt::lockHelper(simul_time_mtx_);
+		ASSERT_(simul_start_wallclock_time_.has_value());
 		return mrpt::Clock::fromDouble(
-			m_simul_time + m_simul_start_wallclock_time.value());
+			simulTime_ + simul_start_wallclock_time_.value());
 	}
 
 	/// Simulation fixed-time interval for numerical integration
@@ -126,15 +126,15 @@ class World : public mrpt::system::COutputLogger
 	/// Simulation fixed-time interval for numerical integration
 	/// `0` means auto-determine as the minimum of 50 ms and the shortest sensor
 	/// sample period.
-	void set_simul_timestep(double timestep) { m_simul_timestep = timestep; }
+	void set_simul_timestep(double timestep) { simulTimestep_ = timestep; }
 
 	/// Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
 	/// friction, etc.
-	double get_gravity() const { return m_gravity; }
+	double get_gravity() const { return gravity_; }
 
 	/// Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
 	/// friction, etc.
-	void set_gravity(double accel) { m_gravity = accel; }
+	void set_gravity(double accel) { gravity_ = accel; }
 
 	/** Runs the simulation for a given time interval (in seconds)
 	 * \note The minimum simulation time is the timestep set (e.g. via
@@ -174,22 +174,22 @@ class World : public mrpt::system::COutputLogger
 
 	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const
 	{
-		return m_gui.gui_win;
+		return gui_.gui_win;
 	}
 
 	const mrpt::math::TPoint3D& gui_mouse_point() const
 	{
-		return m_gui.clickedPt;
+		return gui_.clickedPt;
 	}
 
 	/** If !=null, a set of objects to be rendered merged with the default
-	 * visualization. Lock the mutex m_gui_user_objects_mtx while writing.
+	 * visualization. Lock the mutex gui_user_objects_mtx_ while writing.
 	 * There are two sets of objects: "viz" for visualization only, "physical"
 	 * for objects which should be detected by sensors.
 	 */
-	mrpt::opengl::CSetOfObjects::Ptr m_gui_user_objects_physical,
-		m_gui_user_objects_viz;
-	std::mutex m_gui_user_objects_mtx;
+	mrpt::opengl::CSetOfObjects::Ptr gui_user_objects_physical_,
+		gui_user_objects_viz_;
+	std::mutex gui_user_objects_mtx_;
 
 	/// Update 3D vehicles, sensors, run render-based sensors, etc:
 	/// Called from World_gui thread in normal mode, or mvsim-cli in headless
@@ -204,65 +204,65 @@ class World : public mrpt::system::COutputLogger
 	void internal_GUI_thread();
 	void internal_process_pending_gui_user_tasks();
 
-	std::mutex m_pendingRunSensorsOn3DSceneMtx;
-	bool m_pendingRunSensorsOn3DScene = false;
+	std::mutex pendingRunSensorsOn3DSceneMtx_;
+	bool pendingRunSensorsOn3DScene_ = false;
 
 	void mark_as_pending_running_sensors_on_3D_scene()
 	{
-		m_pendingRunSensorsOn3DSceneMtx.lock();
-		m_pendingRunSensorsOn3DScene = true;
-		m_pendingRunSensorsOn3DSceneMtx.unlock();
+		pendingRunSensorsOn3DSceneMtx_.lock();
+		pendingRunSensorsOn3DScene_ = true;
+		pendingRunSensorsOn3DSceneMtx_.unlock();
 	}
 	void clear_pending_running_sensors_on_3D_scene()
 	{
-		m_pendingRunSensorsOn3DSceneMtx.lock();
-		m_pendingRunSensorsOn3DScene = false;
-		m_pendingRunSensorsOn3DSceneMtx.unlock();
+		pendingRunSensorsOn3DSceneMtx_.lock();
+		pendingRunSensorsOn3DScene_ = false;
+		pendingRunSensorsOn3DSceneMtx_.unlock();
 	}
 	bool pending_running_sensors_on_3D_scene()
 	{
-		m_pendingRunSensorsOn3DSceneMtx.lock();
-		bool ret = m_pendingRunSensorsOn3DScene;
-		m_pendingRunSensorsOn3DSceneMtx.unlock();
+		pendingRunSensorsOn3DSceneMtx_.lock();
+		bool ret = pendingRunSensorsOn3DScene_;
+		pendingRunSensorsOn3DSceneMtx_.unlock();
 		return ret;
 	}
 
-	std::string m_gui_msg_lines;
-	std::mutex m_gui_msg_lines_mtx;
+	std::string guiMsgLines_;
+	std::mutex guiMsgLinesMtx_;
 
-	std::thread m_gui_thread;
+	std::thread gui_thread_;
 
-	std::atomic_bool m_gui_thread_running = false;
-	std::atomic_bool m_gui_thread_must_close = false;
-	mutable std::mutex m_gui_thread_start_mtx;
+	std::atomic_bool gui_thread_running_ = false;
+	std::atomic_bool gui_thread_must_close_ = false;
+	mutable std::mutex gui_thread_start_mtx_;
 
 	bool gui_thread_must_close() const
 	{
-		m_gui_thread_start_mtx.lock();
-		const bool v = m_gui_thread_must_close;
-		m_gui_thread_start_mtx.unlock();
+		gui_thread_start_mtx_.lock();
+		const bool v = gui_thread_must_close_;
+		gui_thread_start_mtx_.unlock();
 		return v;
 	}
 	void gui_thread_must_close(bool value)
 	{
-		m_gui_thread_start_mtx.lock();
-		m_gui_thread_must_close = value;
-		m_gui_thread_start_mtx.unlock();
+		gui_thread_start_mtx_.lock();
+		gui_thread_must_close_ = value;
+		gui_thread_start_mtx_.unlock();
 	}
 
 	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f)
 	{
-		m_gui_user_pending_tasks_mtx.lock();
-		m_gui_user_pending_tasks.emplace_back(f);
-		m_gui_user_pending_tasks_mtx.unlock();
+		guiUserPendingTasksMtx_.lock();
+		guiUserPendingTasks_.emplace_back(f);
+		guiUserPendingTasksMtx_.unlock();
 	}
 
-	std::vector<std::function<void(void)>> m_gui_user_pending_tasks;
-	std::mutex m_gui_user_pending_tasks_mtx;
+	std::vector<std::function<void(void)>> guiUserPendingTasks_;
+	std::mutex guiUserPendingTasksMtx_;
 
-	TGUIKeyEvent m_lastKeyEvent;
-	std::atomic_bool m_lastKeyEventValid = false;
-	std::mutex m_lastKeyEvent_mtx;
+	TGUIKeyEvent lastKeyEvent_;
+	std::atomic_bool lastKeyEventValid_ = false;
+	std::mutex lastKeyEventMtx_;
 
 	bool is_GUI_open() const;  //!< Return true if the GUI window is open, after
 							   //! a previous call to update_GUI()
@@ -291,30 +291,30 @@ class World : public mrpt::system::COutputLogger
 
 	/** \name Access inner working objects
 	  @{*/
-	std::unique_ptr<b2World>& getBox2DWorld() { return m_box2d_world; }
+	std::unique_ptr<b2World>& getBox2DWorld() { return box2d_world_; }
 	const std::unique_ptr<b2World>& getBox2DWorld() const
 	{
-		return m_box2d_world;
+		return box2d_world_;
 	}
-	b2Body* getBox2DGroundBody() { return m_b2_ground_body; }
-	const VehicleList& getListOfVehicles() const { return m_vehicles; }
-	VehicleList& getListOfVehicles() { return m_vehicles; }
-	const BlockList& getListOfBlocks() const { return m_blocks; }
-	BlockList& getListOfBlocks() { return m_blocks; }
+	b2Body* getBox2DGroundBody() { return b2_ground_body_; }
+	const VehicleList& getListOfVehicles() const { return vehicles_; }
+	VehicleList& getListOfVehicles() { return vehicles_; }
+	const BlockList& getListOfBlocks() const { return blocks_; }
+	BlockList& getListOfBlocks() { return blocks_; }
 	const WorldElementList& getListOfWorldElements() const
 	{
-		return m_world_elements;
+		return worldElements_;
 	}
 
 	/// Always lock/unlock getListOfSimulableObjectsMtx() before using this:
-	SimulableList& getListOfSimulableObjects() { return m_simulableObjects; }
+	SimulableList& getListOfSimulableObjects() { return simulableObjects_; }
 	const SimulableList& getListOfSimulableObjects() const
 	{
-		return m_simulableObjects;
+		return simulableObjects_;
 	}
-	auto& getListOfSimulableObjectsMtx() { return m_simulableObjectsMtx; }
+	auto& getListOfSimulableObjectsMtx() { return simulableObjectsMtx_; }
 
-	mrpt::system::CTimeLogger& getTimeLogger() { return m_timlogger; }
+	mrpt::system::CTimeLogger& getTimeLogger() { return timlogger_; }
 	/** Replace macros, prefix the base_path if input filename is relative, etc.
 	 */
 	std::string resolvePath(const std::string& in_path) const;
@@ -349,14 +349,14 @@ class World : public mrpt::system::COutputLogger
 
 	void registerCallbackOnObservation(const on_observation_callback_t& f)
 	{
-		m_callbacksOnObservation.emplace_back(f);
+		callbacksOnObservation_.emplace_back(f);
 	}
 
 	/** Calls all registered callbacks: */
 	void dispatchOnObservation(
 		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 	{
-		for (const auto& cb : m_callbacksOnObservation) cb(veh, obs);
+		for (const auto& cb : callbacksOnObservation_) cb(veh, obs);
 	}
 
 	/** @} */
@@ -365,15 +365,15 @@ class World : public mrpt::system::COutputLogger
 	 * description loaded from XML file. */
 	void connectToServer();
 
-	mvsim::Client& commsClient() { return m_client; }
-	const mvsim::Client& commsClient() const { return m_client; }
+	mvsim::Client& commsClient() { return client_; }
+	const mvsim::Client& commsClient() const { return client_; }
 
 	void free_opengl_resources();
 
 	auto& physical_objects_mtx() { return worldPhysicalMtx_; }
 
-	bool headless() const { return m_gui_options.headless; }
-	void headless(bool setHeadless) { m_gui_options.headless = setHeadless; }
+	bool headless() const { return guiOptions_.headless; }
+	void headless(bool setHeadless) { guiOptions_.headless = setHeadless; }
 
 	bool sensor_has_to_create_egl_context();
 
@@ -381,48 +381,48 @@ class World : public mrpt::system::COutputLogger
 	friend class VehicleBase;
 	friend class Block;
 
-	mvsim::Client m_client{"World"};
+	mvsim::Client client_{"World"};
 
-	std::vector<on_observation_callback_t> m_callbacksOnObservation;
+	std::vector<on_observation_callback_t> callbacksOnObservation_;
 
 	// -------- World Params ----------
 	/** Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
 	 * friction, etc. */
-	double m_gravity = 9.81;
+	double gravity_ = 9.81;
 
 	/** Simulation fixed-time interval for numerical integration.
 	 * `0` means auto-determine as the minimum of 50 ms and the shortest sensor
 	 * sample period.
 	 */
-	mutable double m_simul_timestep = 0;
+	mutable double simulTimestep_ = 0;
 
 	/** Velocity and position iteration count (refer to libbox2d docs) */
-	int m_b2d_vel_iters = 8, m_b2d_pos_iters = 3;
+	int b2dVelIters_ = 8, b2dPosIters_ = 3;
 
-	std::string m_server_address = "localhost";
+	std::string serverAddress_ = "localhost";
 
-	const TParameterDefinitions m_other_world_params = {
-		{"server_address", {"%s", &m_server_address}},
-		{"gravity", {"%lf", &m_gravity}},
-		{"simul_timestep", {"%lf", &m_simul_timestep}},
-		{"b2d_vel_iters", {"%i", &m_b2d_vel_iters}},
-		{"b2d_pos_iters", {"%i", &m_b2d_pos_iters}},
+	const TParameterDefinitions other_world_params_ = {
+		{"server_address", {"%s", &serverAddress_}},
+		{"gravity", {"%lf", &gravity_}},
+		{"simul_timestep", {"%lf", &simulTimestep_}},
+		{"b2d_vel_iters", {"%i", &b2dVelIters_}},
+		{"b2d_pos_iters", {"%i", &b2dPosIters_}},
 	};
 
 	/** In seconds, real simulation time since beginning (may be different than
 	 * wall-clock time because of time warp, etc.) */
-	double m_simul_time = 0;
-	std::optional<double> m_simul_start_wallclock_time;
-	std::mutex m_simul_time_mtx;
+	double simulTime_ = 0;
+	std::optional<double> simul_start_wallclock_time_;
+	std::mutex simul_time_mtx_;
 
 	/** Path from which to take relative directories. */
-	std::string m_base_path{"."};
+	std::string basePath_{"."};
 
 	/// This private container will be filled with objects in the public
-	/// m_gui_user_objects
-	mrpt::opengl::CSetOfObjects::Ptr m_glUserObjsPhysical =
+	/// gui_user_objects_
+	mrpt::opengl::CSetOfObjects::Ptr glUserObjsPhysical_ =
 		mrpt::opengl::CSetOfObjects::Create();
-	mrpt::opengl::CSetOfObjects::Ptr m_glUserObjsViz =
+	mrpt::opengl::CSetOfObjects::Ptr glUserObjsViz_ =
 		mrpt::opengl::CSetOfObjects::Create();
 
 	// ------- GUI options -----
@@ -460,39 +460,39 @@ class World : public mrpt::system::COutputLogger
 
 	/** Some of these options are only used the first time the GUI window is
 	 * created. */
-	TGUI_Options m_gui_options;
+	TGUI_Options guiOptions_;
 
 	// -------- World contents ----------
 	/** Mutex protecting simulation objects from multi-thread access */
-	std::recursive_mutex m_world_cs;
+	std::recursive_mutex world_cs_;
 
 	/** Box2D dynamic simulator instance */
-	std::unique_ptr<b2World> m_box2d_world;
+	std::unique_ptr<b2World> box2d_world_;
 
 	/** Used to declare friction between vehicles-ground*/
-	b2Body* m_b2_ground_body = nullptr;
+	b2Body* b2_ground_body_ = nullptr;
 
-	VehicleList m_vehicles;
-	WorldElementList m_world_elements;
-	BlockList m_blocks;
+	VehicleList vehicles_;
+	WorldElementList worldElements_;
+	BlockList blocks_;
 
 	bool initialized_ = false;
 
 	// List of all objects above (vehicles, world_elements, blocks), but as
 	// shared_ptr to their Simulable interfaces, so we can easily iterate on
 	// this list only for common tasks:
-	SimulableList m_simulableObjects;
-	std::mutex m_simulableObjectsMtx;
+	SimulableList simulableObjects_;
+	std::mutex simulableObjectsMtx_;
 
 	/** Runs one individual time step */
 	void internal_one_timestep(double dt);
 
-	std::mutex m_simulationStepRunningMtx;
+	std::mutex simulationStepRunningMtx_;
 
 	/** GUI stuff  */
 	struct GUI
 	{
-		GUI(World& parent) : m_parent(parent) {}
+		GUI(World& parent) : parent_(parent) {}
 
 		mrpt::gui::CDisplayWindowGUI::Ptr gui_win;
 		nanogui::Label* lbCpuUsage = nullptr;
@@ -520,9 +520,9 @@ class World : public mrpt::system::COutputLogger
 		void handle_mouse_operations();
 
 	   private:
-		World& m_parent;
+		World& parent_;
 	};
-	GUI m_gui{*this};  //!< gui state
+	GUI gui_{*this};  //!< gui state
 
 	/** 3D scene with all visual objects (vehicles, obstacles, markers, etc.)
 	 *  \sa worldPhysical_
@@ -533,20 +533,19 @@ class World : public mrpt::system::COutputLogger
 	/** 3D scene with all physically observable objects: we will use this
 	 * scene as input to simulated sensors like cameras, where we don't wont
 	 * to see visualization marks, etc.
-	 * \sa m_world_visual
+	 * \sa world_visual_
 	 */
 	mrpt::opengl::COpenGLScene worldPhysical_;
 	std::recursive_mutex worldPhysicalMtx_;
 
 	/// Updated in internal_one_step()
-	std::map<std::string, mrpt::math::TPose3D> m_copy_of_objects_dynstate_pose;
-	std::map<std::string, mrpt::math::TTwist2D>
-		m_copy_of_objects_dynstate_twist;
-	std::set<std::string> m_copy_of_objects_had_collision;
-	std::recursive_mutex m_copy_of_objects_dynstate_mtx;
+	std::map<std::string, mrpt::math::TPose3D> copy_of_objects_dynstate_pose_;
+	std::map<std::string, mrpt::math::TTwist2D> copy_of_objects_dynstate_twist_;
+	std::set<std::string> copy_of_objects_had_collision_;
+	std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
-	std::set<std::string> m_reset_collision_flags;
-	std::mutex m_reset_collision_flags_mtx;
+	std::set<std::string> reset_collision_flags_;
+	std::mutex reset_collision_flags_mtx_;
 
 	void internal_gui_on_observation(
 		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
@@ -560,12 +559,12 @@ class World : public mrpt::system::COutputLogger
 	mrpt::math::TPoint2D internal_gui_on_image(
 		const std::string& label, const mrpt::img::CImage& im, int winPosX);
 
-	std::map<std::string, nanogui::Window*> m_gui_obs_viz;	//!< by sensorLabel
+	std::map<std::string, nanogui::Window*> guiObsViz_;	 //!< by sensorLabel
 
 	/** @} */  // end GUI stuff
 
-	mrpt::system::CTimeLogger m_timlogger{true /*enabled*/, "mvsim::World"};
-	mrpt::system::CTicTac m_timer_iteration;
+	mrpt::system::CTimeLogger timlogger_{true /*enabled*/, "mvsim::World"};
+	mrpt::system::CTicTac timer_iteration_;
 
 	void process_load_walls(const rapidxml::xml_node<char>& node);
 	void insertBlock(const Block::Ptr& block);

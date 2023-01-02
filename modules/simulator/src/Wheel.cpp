@@ -27,9 +27,9 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 {
 	obj.clear();
 
-	if (m_glCustomVisual)
+	if (glCustomVisual_)
 	{
-		obj.insert(m_glCustomVisual);
+		obj.insert(glCustomVisual_);
 	}
 	else
 	{
@@ -75,7 +75,7 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 	const double INERTIA_NOT_SET = -1.;
 	this->Iyy = INERTIA_NOT_SET;
 
-	parse_xmlnode_attribs(*xml_node, m_params, {}, "[Wheel]");
+	parse_xmlnode_attribs(*xml_node, params_, {}, "[Wheel]");
 
 	// If not manually overrided, calc automatically:
 	if (Iyy == INERTIA_NOT_SET) this->recalcInertia();

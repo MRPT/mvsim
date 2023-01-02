@@ -30,21 +30,21 @@ PointCloud::~PointCloud() {}
 
 void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 {
-	m_gui_uptodate = false;
+	gui_uptodate_ = false;
 
 	if (auto x2d = root->first_node("file_txt_2d"); x2d && x2d->value())
 	{
-		const string sFile = m_world->resolvePath(x2d->value());
+		const string sFile = world_->resolvePath(x2d->value());
 
-		m_points = mrpt::maps::CSimplePointsMap::Create();
-		m_points->load2D_from_text_file(sFile);
+		points_ = mrpt::maps::CSimplePointsMap::Create();
+		points_->load2D_from_text_file(sFile);
 	}
 	else if (auto x3d = root->first_node("file_txt_3d"); x3d && x3d->value())
 	{
-		const string sFile = m_world->resolvePath(x3d->value());
+		const string sFile = world_->resolvePath(x3d->value());
 
-		m_points = mrpt::maps::CSimplePointsMap::Create();
-		m_points->load3D_from_text_file(sFile);
+		points_ = mrpt::maps::CSimplePointsMap::Create();
+		points_->load3D_from_text_file(sFile);
 	}
 	else
 	{
@@ -54,14 +54,14 @@ void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 	{
 		// Other general params:
 		TParameterDefinitions ps;
-		ps["points_size"] = TParamEntry("%lf", &m_render_points_size);
-		ps["pose_3d"] = TParamEntry("%pose3d", &m_pointcloud_pose);
+		ps["points_size"] = TParamEntry("%lf", &render_points_size_);
+		ps["pose_3d"] = TParamEntry("%pose3d", &pointcloud_pose_);
 		parse_xmlnode_children_as_param(*root, ps);
 	}
 
-	m_points->renderOptions.point_size = m_render_points_size;
+	points_->renderOptions.point_size = render_points_size_;
 
-	m_gui_uptodate = false;
+	gui_uptodate_ = false;
 }
 
 void PointCloud::internalGuiUpdate(
@@ -72,20 +72,20 @@ void PointCloud::internalGuiUpdate(
 	using namespace mrpt::math;
 
 	// 1st time call?? -> Create objects
-	if (!m_gl_points && viz && physical)
+	if (!gl_points_ && viz && physical)
 	{
-		m_gl_points = mrpt::opengl::CSetOfObjects::Create();
-		m_gl_points->setName("PointCloud");
-		m_gl_points->setPose(m_pointcloud_pose);
-		viz->get().insert(m_gl_points);
-		physical->get().insert(m_gl_points);
+		gl_points_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_points_->setName("PointCloud");
+		gl_points_->setPose(pointcloud_pose_);
+		viz->get().insert(gl_points_);
+		physical->get().insert(gl_points_);
 	}
 
 	// 1st call OR gridmap changed?
-	if (!m_gui_uptodate && m_points)
+	if (!gui_uptodate_ && points_)
 	{
-		m_points->getVisualizationInto(*m_gl_points);
-		m_gui_uptodate = true;
+		points_->getVisualizationInto(*gl_points_);
+		gui_uptodate_ = true;
 	}
 }
 

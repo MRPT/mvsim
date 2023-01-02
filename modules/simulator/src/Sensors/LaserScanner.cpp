@@ -30,7 +30,7 @@ int z_order_cnt = 0;
 
 LaserScanner::LaserScanner(
 	Simulable& parent, const rapidxml::xml_node<char>* root)
-	: SensorBase(parent), m_z_order(++z_order_cnt)
+	: SensorBase(parent), z_order_(++z_order_cnt)
 {
 	LaserScanner::loadConfigFrom(root);
 }
@@ -39,7 +39,7 @@ LaserScanner::~LaserScanner() {}
 
 void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
-	m_gui_uptodate = false;
+	gui_uptodate_ = false;
 
 	SensorBase::loadConfigFrom(root);
 	SensorBase::make_sure_we_have_a_name("laser");
@@ -47,36 +47,36 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Other scalar params:
 	int nRays = 181;
 	double fov_deg = 180;
-	m_scan_model.sensorPose.z() = 0.05;
+	scan_model_.sensorPose.z() = 0.05;
 
 	TParameterDefinitions params;
 	params["fov_degrees"] = TParamEntry("%lf", &fov_deg);
 	params["nrays"] = TParamEntry("%i", &nRays);
-	params["pose"] = TParamEntry("%pose2d_ptr3d", &m_scan_model.sensorPose);
-	params["pose_3d"] = TParamEntry("%pose3d", &m_scan_model.sensorPose);
-	params["height"] = TParamEntry("%lf", &m_scan_model.sensorPose.z());
-	params["range_std_noise"] = TParamEntry("%lf", &m_rangeStdNoise);
-	params["max_range"] = TParamEntry("%f", &m_scan_model.maxRange);
-	params["angle_std_noise_deg"] = TParamEntry("%lf_deg", &m_angleStdNoise);
-	params["sensor_period"] = TParamEntry("%lf", &m_sensor_period);
-	params["bodies_visible"] = TParamEntry("%bool", &m_see_fixtures);
+	params["pose"] = TParamEntry("%pose2d_ptr3d", &scan_model_.sensorPose);
+	params["pose_3d"] = TParamEntry("%pose3d", &scan_model_.sensorPose);
+	params["height"] = TParamEntry("%lf", &scan_model_.sensorPose.z());
+	params["range_std_noise"] = TParamEntry("%lf", &rangeStdNoise_);
+	params["max_range"] = TParamEntry("%f", &scan_model_.maxRange);
+	params["angle_std_noise_deg"] = TParamEntry("%lf_deg", &angleStdNoise_);
+	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
+	params["bodies_visible"] = TParamEntry("%bool", &see_fixtures_);
 
-	params["viz_pointSize"] = TParamEntry("%f", &m_viz_pointSize);
-	params["viz_visiblePlane"] = TParamEntry("%bool", &m_viz_visiblePlane);
-	params["viz_visiblePoints"] = TParamEntry("%bool", &m_viz_visiblePoints);
+	params["viz_pointSize"] = TParamEntry("%f", &viz_pointSize_);
+	params["viz_visiblePlane"] = TParamEntry("%bool", &viz_visiblePlane_);
+	params["viz_visiblePoints"] = TParamEntry("%bool", &viz_visiblePoints_);
 
-	params["raytrace_3d"] = TParamEntry("%bool", &m_raytrace_3d);
-	params["ignore_parent_body"] = TParamEntry("%bool", &m_ignore_parent_body);
+	params["raytrace_3d"] = TParamEntry("%bool", &raytrace_3d_);
+	params["ignore_parent_body"] = TParamEntry("%bool", &ignore_parent_body_);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*root, params, m_varValues);
+	parse_xmlnode_children_as_param(*root, params, varValues_);
 
 	// Pass params to the scan2D obj:
-	m_scan_model.aperture = mrpt::DEG2RAD(fov_deg);
-	m_scan_model.resizeScan(nRays);
-	m_scan_model.stdError = m_rangeStdNoise;
+	scan_model_.aperture = mrpt::DEG2RAD(fov_deg);
+	scan_model_.resizeScan(nRays);
+	scan_model_.stdError = rangeStdNoise_;
 
-	m_scan_model.sensorLabel = m_name;
+	scan_model_.sensorLabel = name_;
 }
 
 void LaserScanner::internalGuiUpdate(
@@ -94,39 +94,39 @@ void LaserScanner::internalGuiUpdate(
 	}
 
 	// 1st time?
-	if (!m_gl_scan && glVizSensors)
+	if (!gl_scan_ && glVizSensors)
 	{
-		m_gl_scan = mrpt::opengl::CPlanarLaserScan::Create();
-		m_gl_scan->enablePoints(m_viz_visiblePoints);
-		m_gl_scan->setPointSize(m_viz_pointSize);
-		m_gl_scan->enableSurface(m_viz_visiblePlane);
-		// m_gl_scan->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.4f);
+		gl_scan_ = mrpt::opengl::CPlanarLaserScan::Create();
+		gl_scan_->enablePoints(viz_visiblePoints_);
+		gl_scan_->setPointSize(viz_pointSize_);
+		gl_scan_->enableSurface(viz_visiblePlane_);
+		// gl_scan_->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.4f);
 
-		m_gl_scan->setLocalRepresentativePoint({0, 0, 0.10f});
+		gl_scan_->setLocalRepresentativePoint({0, 0, 0.10f});
 
-		glVizSensors->insert(m_gl_scan);
+		glVizSensors->insert(gl_scan_);
 	}
-	if (!m_gl_sensor_origin && viz)
+	if (!gl_sensor_origin_ && viz)
 	{
-		m_gl_sensor_origin = mrpt::opengl::CSetOfObjects::Create();
-		m_gl_sensor_origin_corner =
+		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_origin_corner_ =
 			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
-		m_gl_sensor_origin->insert(m_gl_sensor_origin_corner);
+		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
-		m_gl_sensor_origin->setVisibility(false);
-		viz->get().insert(m_gl_sensor_origin);
-		SensorBase::RegisterSensorOriginViz(m_gl_sensor_origin);
+		gl_sensor_origin_->setVisibility(false);
+		viz->get().insert(gl_sensor_origin_);
+		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
 	}
-	if (!m_gl_sensor_fov && viz)
+	if (!gl_sensor_fov_ && viz)
 	{
-		m_gl_sensor_fov = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
 
 		auto fovScan = mrpt::opengl::CPlanarLaserScan::Create();
 		fovScan->enablePoints(false);
 		fovScan->enableSurface(true);
 
-		mrpt::obs::CObservation2DRangeScan s = m_scan_model;
+		mrpt::obs::CObservation2DRangeScan s = scan_model_;
 		const float f = 0.30f;
 		for (size_t i = 0; i < s.getScanSize(); i++)
 		{
@@ -135,42 +135,41 @@ void LaserScanner::internalGuiUpdate(
 		}
 		fovScan->setScan(s);
 
-		m_gl_sensor_fov->insert(fovScan);
+		gl_sensor_fov_->insert(fovScan);
 
-		m_gl_sensor_fov->setVisibility(false);
-		viz->get().insert(m_gl_sensor_fov);
-		SensorBase::RegisterSensorFOVViz(m_gl_sensor_fov);
+		gl_sensor_fov_->setVisibility(false);
+		viz->get().insert(gl_sensor_fov_);
+		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
 	}
 
-	if (!m_gui_uptodate && glVizSensors->isVisible())
+	if (!gui_uptodate_ && glVizSensors->isVisible())
 	{
 		{
-			std::lock_guard<std::mutex> csl(m_last_scan_cs);
-			if (m_last_scan2gui)
+			std::lock_guard<std::mutex> csl(last_scan_cs_);
+			if (last_scan2gui_)
 			{
-				m_gl_scan->setScan(*m_last_scan2gui);
-				m_gl_sensor_origin_corner->setPose(m_last_scan2gui->sensorPose);
+				gl_scan_->setScan(*last_scan2gui_);
+				gl_sensor_origin_corner_->setPose(last_scan2gui_->sensorPose);
 
-				m_last_scan2gui.reset();
+				last_scan2gui_.reset();
 			}
 		}
-		m_gui_uptodate = true;
+		gui_uptodate_ = true;
 	}
 
-	const mrpt::poses::CPose2D& p = m_vehicle.getCPose2D();
-	const double z_incrs = 10e-3;  // for m_z_order
+	const mrpt::poses::CPose2D& p = vehicle_.getCPose2D();
+	const double z_incrs = 10e-3;  // for z_order_
 	const double z_offset = 1e-2;
 
-	if (m_gl_scan)
-		m_gl_scan->setPose(mrpt::poses::CPose3D(
-			p.x(), p.y(), z_offset + z_incrs * m_z_order, p.phi(), 0.0, 0.0));
+	if (gl_scan_)
+		gl_scan_->setPose(mrpt::poses::CPose3D(
+			p.x(), p.y(), z_offset + z_incrs * z_order_, p.phi(), 0.0, 0.0));
 
-	if (m_gl_sensor_fov) m_gl_sensor_fov->setPose(p);
+	if (gl_sensor_fov_) gl_sensor_fov_->setPose(p);
 
-	if (m_gl_sensor_origin) m_gl_sensor_origin->setPose(p);
+	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
 
-	if (m_glCustomVisual)
-		m_glCustomVisual->setPose(p + m_scan_model.sensorPose);
+	if (glCustomVisual_) glCustomVisual_->setPose(p + scan_model_.sensorPose);
 }
 
 void LaserScanner::simul_pre_timestep(
@@ -185,22 +184,22 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 
 	if (SensorBase::should_simulate_sensor(context))
 	{
-		if (m_raytrace_3d)
+		if (raytrace_3d_)
 		{
-			auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+			auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
 
 			// Will run upon next async call of simulateOn3DScene()
-			if (m_has_to_render.has_value())
+			if (has_to_render_.has_value())
 			{
-				m_world->logFmt(
+				world_->logFmt(
 					mrpt::system::LVL_WARN,
 					"Time for a new sample came without still simulating the "
 					"last one (!) for simul_time=%.03f s.",
-					m_has_to_render->simul_time);
+					has_to_render_->simul_time);
 			}
 
-			m_has_to_render = context;
-			m_world->mark_as_pending_running_sensors_on_3D_scene();
+			has_to_render_ = context;
+			world_->mark_as_pending_running_sensors_on_3D_scene();
 		}
 		else
 		{
@@ -215,25 +214,25 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 	using mrpt::maps::COccupancyGridMap2D;
 	using mrpt::obs::CObservation2DRangeScan;
 
-	auto tle = mrpt::system::CTimeLoggerEntry(
-		m_world->getTimeLogger(), "LaserScanner");
+	auto tle =
+		mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "LaserScanner");
 
 	// Create an array of scans, each reflecting ranges to one kind of world
 	// objects.
 	// Finally, we'll take the shortest range in each direction:
 	std::list<CObservation2DRangeScan> lstScans;
 
-	const size_t nRays = m_scan_model.getScanSize();
-	const double maxRange = m_scan_model.maxRange;
+	const size_t nRays = scan_model_.getScanSize();
+	const double maxRange = scan_model_.maxRange;
 
 	// Get pose of the robot:
-	const mrpt::poses::CPose2D vehPose = m_vehicle.getCPose2D();
+	const mrpt::poses::CPose2D vehPose = vehicle_.getCPose2D();
 
 	// grid maps:
 	// -------------
-	m_world->getTimeLogger().enter("LaserScanner.scan.1.gridmap");
+	world_->getTimeLogger().enter("LaserScanner.scan.1.gridmap");
 
-	const World::WorldElementList& elements = m_world->getListOfWorldElements();
+	const World::WorldElementList& elements = world_->getListOfWorldElements();
 
 	for (const auto& element : elements)
 	{
@@ -244,38 +243,40 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 		const COccupancyGridMap2D& occGrid = grid->getOccGrid();
 
 		// Create new scan:
-		lstScans.emplace_back(m_scan_model);
+		lstScans.emplace_back(scan_model_);
 		CObservation2DRangeScan& scan = lstScans.back();
 
 		// Ray tracing over the gridmap:
 		occGrid.laserScanSimulator(
-			scan, vehPose, 0.5f, m_scan_model.getScanSize(), m_rangeStdNoise, 1,
-			m_angleStdNoise);
+			scan, vehPose, 0.5f, scan_model_.getScanSize(), rangeStdNoise_, 1,
+			angleStdNoise_);
 	}
-	m_world->getTimeLogger().leave("LaserScanner.scan.1.gridmap");
+	world_->getTimeLogger().leave("LaserScanner.scan.1.gridmap");
 
 	// ray trace on Box2D polygons:
 	// ------------------------------
-	m_world->getTimeLogger().enter("LaserScanner.scan.2.polygons");
+	world_->getTimeLogger().enter("LaserScanner.scan.2.polygons");
 	{
 		// Create new scan:
-		lstScans.push_back(CObservation2DRangeScan(m_scan_model));
+		lstScans.push_back(CObservation2DRangeScan(scan_model_));
 		CObservation2DRangeScan& scan = lstScans.back();
 
 		// Avoid the lidar seeing the vehicle owns shape:
 		std::map<b2Fixture*, uintptr_t> orgUserData;
 
-		auto makeFixtureInvisible = [&](b2Fixture* f) {
+		auto makeFixtureInvisible = [&](b2Fixture* f)
+		{
 			if (!f) return;
 			orgUserData[f] = f->GetUserData().pointer;
 			f->GetUserData().pointer = INVISIBLE_FIXTURE_USER_DATA;
 		};
-		auto undoInvisibleFixtures = [&]() {
+		auto undoInvisibleFixtures = [&]()
+		{
 			for (auto& kv : orgUserData)
 				kv.first->GetUserData().pointer = kv.second;
 		};
 
-		if (auto v = dynamic_cast<VehicleBase*>(&m_vehicle); v)
+		if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v)
 		{
 			makeFixtureInvisible(v->get_fixture_chassis());
 			for (auto& f : v->get_fixture_wheels()) makeFixtureInvisible(f);
@@ -293,8 +294,8 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 				b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal,
 				float fraction) override
 			{
-				if (!m_see_fixtures || fixture->GetUserData().pointer ==
-										   INVISIBLE_FIXTURE_USER_DATA)
+				if (!see_fixtures_ || fixture->GetUserData().pointer ==
+										  INVISIBLE_FIXTURE_USER_DATA)
 				{
 					// By returning -1, we instruct the calling code to ignore
 					// this fixture and
@@ -302,9 +303,9 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 					return -1.0f;
 				}
 
-				m_hit = true;
-				m_point = point;
-				m_normal = normal;
+				hit_ = true;
+				point_ = point;
+				normal_ = normal;
 				// By returning the current fraction, we instruct the calling
 				// code to clip the ray and
 				// continue the ray-cast to the next fixture. WARNING: do not
@@ -314,10 +315,10 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 				return fraction;
 			}
 
-			bool m_see_fixtures = true;
-			bool m_hit = false;
-			b2Vec2 m_point{0, 0};
-			b2Vec2 m_normal{0, 0};
+			bool see_fixtures_ = true;
+			bool hit_ = false;
+			b2Vec2 point_{0, 0};
+			b2Vec2 normal_{0, 0};
 		};
 
 		const mrpt::poses::CPose2D sensorPose =
@@ -325,7 +326,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 		const b2Vec2 sensorPt = b2Vec2(sensorPose.x(), sensorPose.y());
 
 		RayCastClosestCallback callback;
-		callback.m_see_fixtures = m_see_fixtures;
+		callback.see_fixtures_ = see_fixtures_;
 
 		// Scan size:
 		ASSERT_(nRays >= 2);
@@ -343,18 +344,18 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 			const b2Vec2 endPt = b2Vec2(
 				sensorPt.x + cos(A) * maxRange, sensorPt.y + sin(A) * maxRange);
 
-			callback.m_hit = false;
-			m_world->getBox2DWorld()->RayCast(&callback, sensorPt, endPt);
-			scan.setScanRangeValidity(i, callback.m_hit);
+			callback.hit_ = false;
+			world_->getBox2DWorld()->RayCast(&callback, sensorPt, endPt);
+			scan.setScanRangeValidity(i, callback.hit_);
 
 			float range = 0;
-			if (callback.m_hit)
+			if (callback.hit_)
 			{
 				// Hit:
 				range = std::sqrt(
-					mrpt::square(callback.m_point.x - sensorPt.x) +
-					mrpt::square(callback.m_point.y - sensorPt.y));
-				range += rnd.drawGaussian1D_normalized() * m_rangeStdNoise;
+					mrpt::square(callback.point_.x - sensorPt.x) +
+					mrpt::square(callback.point_.y - sensorPt.y));
+				range += rnd.drawGaussian1D_normalized() * rangeStdNoise_;
 			}
 			else
 			{
@@ -366,16 +367,16 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 
 		undoInvisibleFixtures();
 	}
-	m_world->getTimeLogger().leave("LaserScanner.scan.2.polygons");
+	world_->getTimeLogger().leave("LaserScanner.scan.2.polygons");
 
 	// Summarize all scans in one single scan:
 	// ----------------------------------------
-	m_world->getTimeLogger().enter("LaserScanner.scan.3.merge");
+	world_->getTimeLogger().enter("LaserScanner.scan.3.merge");
 
-	auto lastScan = CObservation2DRangeScan::Create(m_scan_model);
+	auto lastScan = CObservation2DRangeScan::Create(scan_model_);
 
-	lastScan->timestamp = m_world->get_simul_timestamp();
-	lastScan->sensorLabel = m_name;
+	lastScan->timestamp = world_->get_simul_timestamp();
+	lastScan->sensorLabel = name_;
 
 	lastScan->resizeScanAndAssign(nRays, maxRange, false);
 
@@ -392,27 +393,27 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 			}
 		}
 	}
-	m_world->getTimeLogger().leave("LaserScanner.scan.3.merge");
+	world_->getTimeLogger().leave("LaserScanner.scan.3.merge");
 
 	{
-		std::lock_guard<std::mutex> csl(m_last_scan_cs);
-		m_last_scan = std::move(lastScan);
-		m_last_scan2gui = m_last_scan;
+		std::lock_guard<std::mutex> csl(last_scan_cs_);
+		last_scan_ = std::move(lastScan);
+		last_scan2gui_ = last_scan_;
 	}
 
 	// publish as generic Protobuf (mrpt serialized) object:
-	SensorBase::reportNewObservation(m_last_scan, context);
+	SensorBase::reportNewObservation(last_scan_, context);
 
 	// Publish custom 2d-lidar observation type too:
-	SensorBase::reportNewObservation_lidar_2d(m_last_scan, context);
+	SensorBase::reportNewObservation_lidar_2d(last_scan_, context);
 
-	m_gui_uptodate = false;
+	gui_uptodate_ = false;
 }
 
 void LaserScanner::freeOpenGLResources()
 {
 	// Free fbo:
-	m_fbo_renderer_depth.reset();
+	fbo_renderer_depth_.reset();
 }
 
 void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
@@ -420,28 +421,28 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	using namespace mrpt;  // _deg
 
 	{
-		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
-		if (!m_has_to_render.has_value()) return;
+		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
+		if (!has_to_render_.has_value()) return;
 	}
 
 	auto tleWhole = mrpt::system::CTimeLoggerEntry(
-		m_world->getTimeLogger(), "sensor.2Dlidar");
+		world_->getTimeLogger(), "sensor.2Dlidar");
 
 	auto tle1 = mrpt::system::CTimeLoggerEntry(
-		m_world->getTimeLogger(), "sensor.2Dlidar.acqGuiMtx");
+		world_->getTimeLogger(), "sensor.2Dlidar.acqGuiMtx");
 
 	tle1.stop();
 
-	if (m_glCustomVisual) m_glCustomVisual->setVisibility(false);
+	if (glCustomVisual_) glCustomVisual_->setVisibility(false);
 
 	// Start making a copy of the pattern observation:
-	auto curObs = mrpt::obs::CObservation2DRangeScan::Create(m_scan_model);
+	auto curObs = mrpt::obs::CObservation2DRangeScan::Create(scan_model_);
 
-	const size_t nRays = m_scan_model.getScanSize();
-	const double maxRange = m_scan_model.maxRange;
+	const size_t nRays = scan_model_.getScanSize();
+	const double maxRange = scan_model_.maxRange;
 
-	curObs->timestamp = m_world->get_simul_timestamp();
-	curObs->sensorLabel = m_name;
+	curObs->timestamp = world_->get_simul_timestamp();
+	curObs->sensorLabel = name_;
 
 	curObs->resizeScanAndAssign(nRays, maxRange, false);
 
@@ -457,24 +458,24 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	camModel.fx(camModel.cx() / tan(camModel_FOV * 0.5));  // tan(FOV/2)=cx/fx
 	camModel.fy(camModel.fx());
 
-	if (!m_fbo_renderer_depth)
+	if (!fbo_renderer_depth_)
 	{
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
-		m_fbo_renderer_depth = std::make_shared<mrpt::opengl::CFBORender>(p);
+		fbo_renderer_depth_ = std::make_shared<mrpt::opengl::CFBORender>(p);
 	}
 
 	auto viewport = world3DScene.getViewport();
 
-	auto& cam = m_fbo_renderer_depth->getCamera(world3DScene);
+	auto& cam = fbo_renderer_depth_->getCamera(world3DScene);
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
 
-	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
+	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
 
 	// ----------------------------------------------------------
 	// Decompose the 2D lidar FOV into "n" depth camera images,
@@ -533,10 +534,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	mrpt::math::CMatrixFloat depthImage;
 
 	// make owner's own body invisible?
-	auto visVeh = dynamic_cast<VisualObject*>(&m_vehicle);
-	auto veh = dynamic_cast<VehicleBase*>(&m_vehicle);
+	auto visVeh = dynamic_cast<VisualObject*>(&vehicle_);
+	auto veh = dynamic_cast<VehicleBase*>(&vehicle_);
 	bool formerVisVehState = true;
-	if (m_ignore_parent_body)
+	if (ignore_parent_body_)
 	{
 		if (visVeh)
 		{
@@ -563,17 +564,17 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		cam.setPose(depthSensorPose);
 
 		auto tleRender = mrpt::system::CTimeLoggerEntry(
-			m_world->getTimeLogger(), "sensor.2Dlidar.renderSubScan");
+			world_->getTimeLogger(), "sensor.2Dlidar.renderSubScan");
 
-		m_fbo_renderer_depth->render_depth(world3DScene, depthImage);
+		fbo_renderer_depth_->render_depth(world3DScene, depthImage);
 
 		tleRender.stop();
 
 		// Add random noise:
-		if (m_rangeStdNoise > 0)
+		if (rangeStdNoise_ > 0)
 		{
 			auto tleStore = mrpt::system::CTimeLoggerEntry(
-				m_world->getTimeLogger(), "sensor.2Dlidar.noise");
+				world_->getTimeLogger(), "sensor.2Dlidar.noise");
 
 			// Each thread must create its own rng:
 			thread_local mrpt::random::CRandomGenerator rng;
@@ -585,7 +586,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				if (d[i] == 0) continue;  // it was an invalid ray return.
 
 				const float dNoisy =
-					d[i] + rng.drawGaussian1D(0, m_rangeStdNoise);
+					d[i] + rng.drawGaussian1D(0, rangeStdNoise_);
 
 				if (dNoisy < 0 || dNoisy > curObs->maxRange) continue;
 
@@ -594,7 +595,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		}
 
 		auto tleStore = mrpt::system::CTimeLoggerEntry(
-			m_world->getTimeLogger(), "sensor.2Dlidar.storeObs");
+			world_->getTimeLogger(), "sensor.2Dlidar.storeObs");
 
 		// Convert depth into range and store into scan observation:
 		for (int i = 0; i < numRaysPerRender; i++)
@@ -616,7 +617,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		tleStore.stop();
 	}
 
-	if (m_ignore_parent_body)
+	if (ignore_parent_body_)
 	{
 		if (visVeh) visVeh->customVisualVisible(formerVisVehState);
 		if (veh) veh->chassisAndWheelsVisible(formerVisVehState);
@@ -625,33 +626,32 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	// Store generated obs:
 	{
 		auto tle3 = mrpt::system::CTimeLoggerEntry(
-			m_world->getTimeLogger(), "sensor.2Dlidar.acqObsMtx");
+			world_->getTimeLogger(), "sensor.2Dlidar.acqObsMtx");
 
-		std::lock_guard<std::mutex> csl(m_last_scan_cs);
-		m_last_scan = std::move(curObs);
-		m_last_scan2gui = m_last_scan;
+		std::lock_guard<std::mutex> csl(last_scan_cs_);
+		last_scan_ = std::move(curObs);
+		last_scan2gui_ = last_scan_;
 	}
 
 	{
-		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
+		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
 
 		auto tlePub = mrpt::system::CTimeLoggerEntry(
-			m_world->getTimeLogger(), "sensor.2Dlidar.report");
+			world_->getTimeLogger(), "sensor.2Dlidar.report");
 
 		// publish as generic Protobuf (mrpt serialized) object:
-		SensorBase::reportNewObservation(m_last_scan, *m_has_to_render);
+		SensorBase::reportNewObservation(last_scan_, *has_to_render_);
 
 		// Publish custom 2d-lidar observation type too:
-		SensorBase::reportNewObservation_lidar_2d(
-			m_last_scan, *m_has_to_render);
+		SensorBase::reportNewObservation_lidar_2d(last_scan_, *has_to_render_);
 
 		tlePub.stop();
 
-		if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
+		if (glCustomVisual_) glCustomVisual_->setVisibility(true);
 
-		m_gui_uptodate = false;
+		gui_uptodate_ = false;
 
-		m_has_to_render.reset();
+		has_to_render_.reset();
 	}
 }
 

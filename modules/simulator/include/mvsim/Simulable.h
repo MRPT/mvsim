@@ -36,7 +36,7 @@ class Simulable
    public:
 	using Ptr = std::shared_ptr<Simulable>;
 
-	Simulable(World* parent) : m_simulable_parent(parent) {}
+	Simulable(World* parent) : simulable_parent_(parent) {}
 
 	/** Process right before the integration of dynamic equations for each
 	 * timestep: set action forces from motors, update friction models, etc. */
@@ -45,7 +45,7 @@ class Simulable
 	/** Override to do any required process right after the integration of
 	 * dynamic equations for each timestep.
 	 * IMPORTANT: Reimplementations MUST also call this base method,
-	 * since it is in charge of important tasks (e.g. update m_q, m_dq)
+	 * since it is in charge of important tasks (e.g. update q_, dq_)
 	 */
 	virtual void simul_post_timestep(const TSimulContext& context);
 
@@ -83,42 +83,42 @@ class Simulable
 	mrpt::poses::CPose3D getCPose3D() const;
 
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
-	const std::string& getName() const { return m_name; }
+	const std::string& getName() const { return name_; }
 
 	/** Changes object name (e.g. "r1", "veh1") */
-	void setName(const std::string& s) { m_name = s; }
+	void setName(const std::string& s) { name_ = s; }
 
 	/** Whether is is in collision right now. \sa  */
-	bool isInCollision() const { return m_isInCollision; }
+	bool isInCollision() const { return isInCollision_; }
 
 	/** Whether a collision occurred since the last time this flag was manually
 	 * reset.
 	 * \sa isInCollision(), resetCollisionFlag()  */
-	bool hadCollision() const { return m_hadCollisionFlag; }
+	bool hadCollision() const { return hadCollisionFlag_; }
 
 	/** Resets the condition reported by hadCollision() to false */
-	void resetCollisionFlag() { m_hadCollisionFlag = false; }
+	void resetCollisionFlag() { hadCollisionFlag_ = false; }
 
 	virtual void registerOnServer(mvsim::Client& c);
 
-	const b2Body* b2d_body() const { return m_b2d_body; }
-	b2Body* b2d_body() { return m_b2d_body; }
+	const b2Body* b2d_body() const { return b2dBody_; }
+	b2Body* b2d_body() { return b2dBody_; }
 
-	World* getSimulableWorldObject() { return m_simulable_parent; }
-	const World* getSimulableWorldObject() const { return m_simulable_parent; }
+	World* getSimulableWorldObject() { return simulable_parent_; }
+	const World* getSimulableWorldObject() const { return simulable_parent_; }
 
 	virtual void freeOpenGLResources() {}
 
    protected:
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
-	std::string m_name;
+	std::string name_;
 
 	/** Derived classes must store here the body of the physical element (e.g.
 	 * chassis).
 	 * This is used by \a simul_post_timestep() to extract the block
 	 * dynamical coords (q,\dot{q}) after each simulation step.
 	 */
-	b2Body* m_b2d_body = nullptr;
+	b2Body* b2dBody_ = nullptr;
 
 	bool parseSimulable(
 		const JointXMLnode<>& node, const ParseSimulableParams& p = {});
@@ -126,31 +126,31 @@ class Simulable
 	void internalHandlePublish(const TSimulContext& context);
 
    private:
-	World* m_simulable_parent = nullptr;
+	World* simulable_parent_ = nullptr;
 
-	/** protects m_q, m_dq */
-	mutable std::shared_mutex m_q_mtx;
+	/** protects q_, dq_ */
+	mutable std::shared_mutex q_mtx_;
 
 	/** Last time-step pose (of the ref. point, in global coords) */
-	mrpt::math::TPose3D m_q = mrpt::math::TPose3D::Identity();
+	mrpt::math::TPose3D q_ = mrpt::math::TPose3D::Identity();
 
 	/** Last time-step velocity (of the ref. point, in global coords) */
-	mrpt::math::TTwist2D m_dq{0, 0, 0};
+	mrpt::math::TTwist2D dq_{0, 0, 0};
 
 	// ============ ANIMATION VARIABLES ============
 	/** Initial pose, per configuration XML world file */
-	mrpt::math::TPose3D m_initial_q = mrpt::math::TPose3D::Identity();
+	mrpt::math::TPose3D initial_q_ = mrpt::math::TPose3D::Identity();
 
-	std::optional<mrpt::poses::CPose3DInterpolator> m_anim_keyframes_path;
+	std::optional<mrpt::poses::CPose3DInterpolator> anim_keyframes_path_;
 
 	// ============ END OF ANIMATION VARIABLES ============
 
 	/** Whether is is in collision right now */
-	bool m_isInCollision = false;
+	bool isInCollision_ = false;
 
 	/** Whether a collision occurred since the last time this flag was manually
 	 * reset  */
-	bool m_hadCollisionFlag = false;
+	bool hadCollisionFlag_ = false;
 
 	/** If not empty, publish the pose on this topic */
 	std::string publishPoseTopic_;

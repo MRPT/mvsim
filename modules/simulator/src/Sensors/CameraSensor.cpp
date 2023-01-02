@@ -33,20 +33,20 @@ CameraSensor::~CameraSensor() {}
 
 void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
-	m_gui_uptodate = false;
+	gui_uptodate_ = false;
 
 	SensorBase::loadConfigFrom(root);
 	SensorBase::make_sure_we_have_a_name("camera");
 
-	m_fbo_renderer_rgb.reset();
+	fbo_renderer_rgb_.reset();
 
 	using namespace mrpt;  // _deg
-	m_sensor_params.cameraPose =
+	sensor_params_.cameraPose =
 		mrpt::poses::CPose3D(0, 0, 0.5, 90.0_deg, 0, 90.0_deg);
 
 	// Default values:
 	{
-		auto& c = m_sensor_params.cameraParams;
+		auto& c = sensor_params_.cameraParams;
 		c.ncols = 640;
 		c.nrows = 480;
 		c.cx(c.ncols / 2);
@@ -57,9 +57,9 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	// Other scalar params:
 	TParameterDefinitions params;
-	params["pose_3d"] = TParamEntry("%pose3d", &m_sensor_params.cameraPose);
+	params["pose_3d"] = TParamEntry("%pose3d", &sensor_params_.cameraPose);
 
-	auto& rgbCam = m_sensor_params.cameraParams;
+	auto& rgbCam = sensor_params_.cameraParams;
 	params["cx"] = TParamEntry("%lf", &rgbCam.intrinsicParams(0, 2));
 	params["cy"] = TParamEntry("%lf", &rgbCam.intrinsicParams(1, 2));
 	params["fx"] = TParamEntry("%lf", &rgbCam.intrinsicParams(0, 0));
@@ -69,19 +69,19 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["ncols"] = TParamEntry("%u", &rgb_ncols);
 	params["nrows"] = TParamEntry("%u", &rgb_nrows);
 
-	params["clip_min"] = TParamEntry("%f", &m_rgb_clip_min);
-	params["clip_max"] = TParamEntry("%f", &m_rgb_clip_max);
+	params["clip_min"] = TParamEntry("%f", &rgbClipMin_);
+	params["clip_max"] = TParamEntry("%f", &rgbClipMax_);
 
-	params["ambient_light"] = TParamEntry("%f", &m_ambient_light);
+	params["ambient_light"] = TParamEntry("%f", &ambient_light_);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*root, params, m_varValues);
+	parse_xmlnode_children_as_param(*root, params, varValues_);
 
 	rgbCam.ncols = rgb_ncols;
 	rgbCam.nrows = rgb_nrows;
 
 	// save sensor label here too:
-	m_sensor_params.sensorLabel = m_name;
+	sensor_params_.sensorLabel = name_;
 }
 
 void CameraSensor::internalGuiUpdate(
@@ -90,68 +90,67 @@ void CameraSensor::internalGuiUpdate(
 		physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	if (!m_gl_sensor_origin && viz)
+	if (!gl_sensor_origin_ && viz)
 	{
-		m_gl_sensor_origin = mrpt::opengl::CSetOfObjects::Create();
-		m_gl_sensor_origin_corner =
+		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_origin_corner_ =
 			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
-		m_gl_sensor_origin->insert(m_gl_sensor_origin_corner);
+		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
-		m_gl_sensor_origin->setVisibility(false);
-		viz->get().insert(m_gl_sensor_origin);
-		SensorBase::RegisterSensorOriginViz(m_gl_sensor_origin);
+		gl_sensor_origin_->setVisibility(false);
+		viz->get().insert(gl_sensor_origin_);
+		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
 	}
-	if (!m_gl_sensor_fov && viz)
+	if (!gl_sensor_fov_ && viz)
 	{
-		m_gl_sensor_fov = mrpt::opengl::CSetOfObjects::Create();
-		m_gl_sensor_fov->setVisibility(false);
-		viz->get().insert(m_gl_sensor_fov);
-		SensorBase::RegisterSensorFOVViz(m_gl_sensor_fov);
+		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_fov_->setVisibility(false);
+		viz->get().insert(gl_sensor_fov_);
+		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
 	}
 
-	if (!m_gui_uptodate)
+	if (!gui_uptodate_)
 	{
 		{
-			std::lock_guard<std::mutex> csl(m_last_obs_cs);
-			if (m_last_obs2gui)
+			std::lock_guard<std::mutex> csl(last_obs_cs_);
+			if (last_obs2gui_)
 			{
-				m_gl_sensor_origin_corner->setPose(
-					m_last_obs2gui->sensorPose());
+				gl_sensor_origin_corner_->setPose(last_obs2gui_->sensorPose());
 
-				if (!m_gl_sensor_frustum)
+				if (!gl_sensor_frustum_)
 				{
-					m_gl_sensor_frustum = mrpt::opengl::CSetOfObjects::Create();
+					gl_sensor_frustum_ = mrpt::opengl::CSetOfObjects::Create();
 
 					const float frustumScale = 0.4e-3;
 					auto frustum = mrpt::opengl::CFrustum::Create(
-						m_last_obs2gui->cameraParams, frustumScale);
+						last_obs2gui_->cameraParams, frustumScale);
 
-					m_gl_sensor_frustum->insert(frustum);
-					m_gl_sensor_fov->insert(m_gl_sensor_frustum);
+					gl_sensor_frustum_->insert(frustum);
+					gl_sensor_fov_->insert(gl_sensor_frustum_);
 				}
 
 				using namespace mrpt;  // _deg
 
-				m_gl_sensor_frustum->setPose(
-					m_last_obs2gui->cameraPose +
+				gl_sensor_frustum_->setPose(
+					last_obs2gui_->cameraPose +
 					(-mrpt::poses::CPose3D::FromYawPitchRoll(
 						-90.0_deg, 0.0_deg, -90.0_deg)));
 
-				m_last_obs2gui.reset();
+				last_obs2gui_.reset();
 			}
 		}
-		m_gui_uptodate = true;
+		gui_uptodate_ = true;
 	}
 
 	// Move with vehicle:
-	const auto& p = m_vehicle.getPose();
+	const auto& p = vehicle_.getPose();
 
-	m_gl_sensor_fov->setPose(p);
-	m_gl_sensor_origin->setPose(p);
+	gl_sensor_fov_->setPose(p);
+	gl_sensor_origin_->setPose(p);
 
-	if (m_glCustomVisual)
-		m_glCustomVisual->setPose(p + m_sensor_params.cameraPose.asTPose());
+	if (glCustomVisual_)
+		glCustomVisual_->setPose(p + sensor_params_.cameraPose.asTPose());
 }
 
 void CameraSensor::simul_pre_timestep(
@@ -164,35 +163,35 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	using namespace mrpt;  // _deg
 
 	{
-		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
-		if (!m_has_to_render.has_value()) return;
+		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
+		if (!has_to_render_.has_value()) return;
 	}
 
 	auto tleWhole =
-		mrpt::system::CTimeLoggerEntry(m_world->getTimeLogger(), "sensor.RGB");
+		mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGB");
 
-	if (m_glCustomVisual) m_glCustomVisual->setVisibility(false);
+	if (glCustomVisual_) glCustomVisual_->setVisibility(false);
 
 	// Start making a copy of the pattern observation:
-	auto curObs = mrpt::obs::CObservationImage::Create(m_sensor_params);
+	auto curObs = mrpt::obs::CObservationImage::Create(sensor_params_);
 
 	// Set timestamp:
-	curObs->timestamp = m_world->get_simul_timestamp();
+	curObs->timestamp = world_->get_simul_timestamp();
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
-	if (!m_fbo_renderer_rgb)
+	if (!fbo_renderer_rgb_)
 	{
 		mrpt::opengl::CFBORender::Parameters p;
-		p.width = m_sensor_params.cameraParams.ncols;
-		p.height = m_sensor_params.cameraParams.nrows;
+		p.width = sensor_params_.cameraParams.ncols;
+		p.height = sensor_params_.cameraParams.nrows;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
-		m_fbo_renderer_rgb = std::make_shared<mrpt::opengl::CFBORender>(p);
+		fbo_renderer_rgb_ = std::make_shared<mrpt::opengl::CFBORender>(p);
 	}
 
 	auto viewport = world3DScene.getViewport();
 
-	auto& cam = m_fbo_renderer_rgb->getCamera(world3DScene);
+	auto& cam = fbo_renderer_rgb_->getCamera(world3DScene);
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
@@ -209,40 +208,40 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	// Note: relativePoseOnVehicle should be (y,p,r)=(-90deg,0,-90deg) to make
 	// the camera to look forward:
 
-	const auto vehiclePose = mrpt::poses::CPose3D(m_vehicle.getPose());
+	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
 	const auto rgbSensorPose = vehiclePose + curObs->cameraPose;
 
 	cam.setPose(rgbSensorPose);
 
-	ASSERT_(m_fbo_renderer_rgb);
+	ASSERT_(fbo_renderer_rgb_);
 
 	auto tle2 = mrpt::system::CTimeLoggerEntry(
-		m_world->getTimeLogger(), "sensor.RGB.render");
+		world_->getTimeLogger(), "sensor.RGB.render");
 
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
-	viewport->setViewportClipDistances(m_rgb_clip_min, m_rgb_clip_max);
+	viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);
 	viewport->lightParameters().ambient = {
-		m_ambient_light, m_ambient_light, m_ambient_light, 1.0f};
+		ambient_light_, ambient_light_, ambient_light_, 1.0f};
 
-	m_fbo_renderer_rgb->render_RGB(world3DScene, curObs->image);
+	fbo_renderer_rgb_->render_RGB(world3DScene, curObs->image);
 
 	tle2.stop();
 
 	// Store generated obs:
 	{
-		std::lock_guard<std::mutex> csl(m_last_obs_cs);
-		m_last_obs = std::move(curObs);
-		m_last_obs2gui = m_last_obs;
+		std::lock_guard<std::mutex> csl(last_obs_cs_);
+		last_obs_ = std::move(curObs);
+		last_obs2gui_ = last_obs_;
 	}
 
 	{
-		auto lckHasTo = mrpt::lockHelper(m_has_to_render_mtx);
-		SensorBase::reportNewObservation(m_last_obs, *m_has_to_render);
+		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
+		SensorBase::reportNewObservation(last_obs_, *has_to_render_);
 
-		if (m_glCustomVisual) m_glCustomVisual->setVisibility(true);
+		if (glCustomVisual_) glCustomVisual_->setVisibility(true);
 
-		m_gui_uptodate = false;
-		m_has_to_render.reset();
+		gui_uptodate_ = false;
+		has_to_render_.reset();
 	}
 }
 
@@ -252,9 +251,9 @@ void CameraSensor::simul_post_timestep(const TSimulContext& context)
 	Simulable::simul_post_timestep(context);
 	if (SensorBase::should_simulate_sensor(context))
 	{
-		m_has_to_render = context;
-		m_world->mark_as_pending_running_sensors_on_3D_scene();
+		has_to_render_ = context;
+		world_->mark_as_pending_running_sensors_on_3D_scene();
 	}
 }
 
-void CameraSensor::freeOpenGLResources() { m_fbo_renderer_rgb.reset(); }
+void CameraSensor::freeOpenGLResources() { fbo_renderer_rgb_.reset(); }

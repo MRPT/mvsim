@@ -21,14 +21,14 @@ using namespace std;
 
 GroundGrid::GroundGrid(World* parent, const rapidxml::xml_node<char>* root)
 	: WorldElementBase(parent),
-	  m_is_floating(true),
-	  m_x_min(-25.0),
-	  m_x_max(25.0),
-	  m_y_min(-25.0),
-	  m_y_max(25.0),
-	  m_interval(5.0),
-	  m_color(0xe0, 0xe0, 0xe0, 0xff),
-	  m_line_width(1.0)
+	  is_floating_(true),
+	  x_min_(-25.0),
+	  x_max_(25.0),
+	  y_min_(-25.0),
+	  y_max_(25.0),
+	  interval_(5.0),
+	  color_(0xe0, 0xe0, 0xe0, 0xff),
+	  line_width_(1.0)
 {
 	// Create opengl object: in this class, we'll store most state data directly
 	// in the mrpt::opengl object.
@@ -41,23 +41,23 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (!root) return;	// Assume defaults
 
 	TParameterDefinitions params;
-	params["floating"] = TParamEntry("%bool", &m_is_floating);
+	params["floating"] = TParamEntry("%bool", &is_floating_);
 	params["floating_focus"] =
-		TParamEntry("%s", &m_float_center_at_vehicle_name);
-	params["color"] = TParamEntry("%color", &m_color);
-	params["line_width"] = TParamEntry("%lf", &m_line_width);
+		TParamEntry("%s", &float_center_at_vehicle_name_);
+	params["color"] = TParamEntry("%color", &color_);
+	params["line_width"] = TParamEntry("%lf", &line_width_);
 
-	params["x_min"] = TParamEntry("%lf", &m_x_min);
-	params["x_max"] = TParamEntry("%lf", &m_x_max);
-	params["y_min"] = TParamEntry("%lf", &m_y_min);
-	params["y_max"] = TParamEntry("%lf", &m_y_max);
-	params["interval"] = TParamEntry("%lf", &m_interval);
+	params["x_min"] = TParamEntry("%lf", &x_min_);
+	params["x_max"] = TParamEntry("%lf", &x_max_);
+	params["y_min"] = TParamEntry("%lf", &y_min_);
+	params["y_max"] = TParamEntry("%lf", &y_max_);
+	params["interval"] = TParamEntry("%lf", &interval_);
 
 	parse_xmlnode_children_as_param(*root, params);
 
 	// If a vehicle name is given, setting "is_floating=true" by the user is
 	// optional:
-	if (!m_float_center_at_vehicle_name.empty()) m_is_floating = true;
+	if (!float_center_at_vehicle_name_.empty()) is_floating_ = true;
 }
 
 void GroundGrid::internalGuiUpdate(
@@ -68,32 +68,32 @@ void GroundGrid::internalGuiUpdate(
 	using namespace mrpt::math;
 
 	// 1st call OR gridmap changed?
-	if (!m_gl_groundgrid && viz)
+	if (!gl_groundgrid_ && viz)
 	{
-		m_gl_groundgrid = mrpt::opengl::CGridPlaneXY::Create();
-		m_gl_groundgrid->setPlaneLimits(m_x_min, m_x_max, m_y_min, m_y_max);
-		m_gl_groundgrid->setGridFrequency(m_interval);
-		m_gl_groundgrid->setColor_u8(m_color);
-		m_gl_groundgrid->setLineWidth(m_line_width);
+		gl_groundgrid_ = mrpt::opengl::CGridPlaneXY::Create();
+		gl_groundgrid_->setPlaneLimits(x_min_, x_max_, y_min_, y_max_);
+		gl_groundgrid_->setGridFrequency(interval_);
+		gl_groundgrid_->setColor_u8(color_);
+		gl_groundgrid_->setLineWidth(line_width_);
 
-		viz->get().insert(m_gl_groundgrid);
+		viz->get().insert(gl_groundgrid_);
 	}
 
 	// Update:
 	mrpt::math::TPoint3D center_offset(.0, .0, .0);
-	if (m_is_floating)
+	if (is_floating_)
 	{
 		// Centered at a vehicle:
-		const World::VehicleList& vehs = m_world->getListOfVehicles();
+		const World::VehicleList& vehs = world_->getListOfVehicles();
 		// Look for the vehicle by its name:
 		World::VehicleList::const_iterator it_veh =
-			vehs.find(m_float_center_at_vehicle_name);
+			vehs.find(float_center_at_vehicle_name_);
 		// not found -> error:
-		if (!m_float_center_at_vehicle_name.empty() && it_veh == vehs.end())
+		if (!float_center_at_vehicle_name_.empty() && it_veh == vehs.end())
 			throw std::runtime_error(mrpt::format(
 				"[GroundGrid] *ERROR* Cannot find vehicle named '%s' to "
 				"focus on.",
-				m_float_center_at_vehicle_name.c_str()));
+				float_center_at_vehicle_name_.c_str()));
 
 		// If the user didn't specify any name, assume it's the first vehicle,
 		// or ignore it if none exists:
@@ -108,12 +108,12 @@ void GroundGrid::internalGuiUpdate(
 	}
 
 	// "Discretize" offset for a better visual impact:
-	ASSERT_(m_interval > .0);
-	center_offset.x = m_interval *
-					  ::floor(std::abs(center_offset.x) / m_interval) *
+	ASSERT_(interval_ > .0);
+	center_offset.x = interval_ *
+					  ::floor(std::abs(center_offset.x) / interval_) *
 					  (center_offset.x < 0 ? -1. : 1.);
-	center_offset.y = m_interval *
-					  ::floor(std::abs(center_offset.y) / m_interval) *
+	center_offset.y = interval_ *
+					  ::floor(std::abs(center_offset.y) / interval_) *
 					  (center_offset.y < 0 ? -1. : 1.);
-	m_gl_groundgrid->setLocation(center_offset);
+	gl_groundgrid_->setLocation(center_offset);
 }

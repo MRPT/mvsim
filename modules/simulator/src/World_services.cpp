@@ -39,8 +39,7 @@ mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(
 	const auto sId = req.objectid();
 
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-	if (auto itV = m_simulableObjects.find(sId);
-		itV != m_simulableObjects.end())
+	if (auto itV = simulableObjects_.find(sId); itV != simulableObjects_.end())
 	{
 		if (req.has_relativeincrement() && req.relativeincrement())
 		{
@@ -79,14 +78,14 @@ mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(
 mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(
 	const mvsim_msgs::SrvGetPose& req)
 {
-	auto lckCopy = mrpt::lockHelper(m_copy_of_objects_dynstate_mtx);
+	auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
 
 	mvsim_msgs::SrvGetPoseAnswer ans;
 	const auto sId = req.objectid();
 	ans.set_objectisincollision(false);
 
-	if (auto itV = m_copy_of_objects_dynstate_pose.find(sId);
-		itV != m_copy_of_objects_dynstate_pose.end())
+	if (auto itV = copy_of_objects_dynstate_pose_.find(sId);
+		itV != copy_of_objects_dynstate_pose_.end())
 	{
 		ans.set_success(true);
 		const mrpt::math::TPose3D p = itV->second;
@@ -98,7 +97,7 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(
 		po->set_pitch(p.pitch);
 		po->set_roll(p.roll);
 
-		const auto t = m_copy_of_objects_dynstate_twist.at(sId);
+		const auto t = copy_of_objects_dynstate_twist_.at(sId);
 		auto* tw = ans.mutable_twist();
 		tw->set_vx(t.vx);
 		tw->set_vy(t.vy);
@@ -108,7 +107,7 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(
 		tw->set_wz(t.omega);
 
 		ans.set_objectisincollision(
-			m_copy_of_objects_had_collision.count(sId) != 0);
+			copy_of_objects_had_collision_.count(sId) != 0);
 	}
 	else
 	{
@@ -118,8 +117,8 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(
 	lckCopy.unlock();
 
 	{
-		const auto lckPhys = mrpt::lockHelper(m_reset_collision_flags_mtx);
-		m_reset_collision_flags.insert(sId);
+		const auto lckPhys = mrpt::lockHelper(reset_collision_flags_mtx_);
+		reset_collision_flags_.insert(sId);
 	}
 	return ans;
 }
@@ -127,7 +126,7 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(
 mvsim_msgs::SrvSetControllerTwistAnswer World::srv_set_controller_twist(
 	const mvsim_msgs::SrvSetControllerTwist& req)
 {
-	std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
+	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
 
 	mvsim_msgs::SrvSetControllerTwistAnswer ans;
 	ans.set_success(false);
@@ -136,8 +135,8 @@ mvsim_msgs::SrvSetControllerTwistAnswer World::srv_set_controller_twist(
 
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 
-	auto itV = m_simulableObjects.find(sId);
-	if (itV == m_simulableObjects.end())
+	auto itV = simulableObjects_.find(sId);
+	if (itV == simulableObjects_.end())
 	{
 		ans.set_errormessage("objectId not found");
 		return ans;
@@ -192,21 +191,21 @@ void World::internal_advertiseServices()
 {
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 	// global services:
-	m_client
+	client_
 		.advertiseService<mvsim_msgs::SrvSetPose, mvsim_msgs::SrvSetPoseAnswer>(
 			"set_pose", [this](const auto& req) { return srv_set_pose(req); });
 
-	m_client
+	client_
 		.advertiseService<mvsim_msgs::SrvGetPose, mvsim_msgs::SrvGetPoseAnswer>(
 			"get_pose", [this](const auto& req) { return srv_get_pose(req); });
 
-	m_client.advertiseService<
+	client_.advertiseService<
 		mvsim_msgs::SrvSetControllerTwist,
 		mvsim_msgs::SrvSetControllerTwistAnswer>(
 		"set_controller_twist",
 		[this](const auto& req) { return srv_set_controller_twist(req); });
 
-	m_client.advertiseService<
+	client_.advertiseService<
 		mvsim_msgs::SrvShutdown, mvsim_msgs::SrvShutdownAnswer>(
 		"shutdown", [this](const auto& req) { return srv_shutdown(req); });
 

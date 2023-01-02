@@ -94,7 +94,7 @@ class MVSimNode
 	bool do_fake_localization_ = true;
 
 	//!< (Default=0.1) Time tolerance for published TFs
-	double m_transform_tolerance = 0.1;
+	double transform_tolerance_ = 0.1;
 
    protected:
 	std::shared_ptr<mvsim::Server> mvsim_server_;
@@ -173,7 +173,7 @@ class MVSimNode
 
 	/// Pubs/Subs for each vehicle. Initialized by initPubSubs(), called
 	/// from notifyROSWorldIsUpdated()
-	std::vector<TPubSubPerVehicle> m_pubsub_vehicles;
+	std::vector<TPubSubPerVehicle> pubsub_vehicles_;
 
 	/** Initialize all pub/subs required for each vehicle, for the specific
 	 * vehicle \a veh */

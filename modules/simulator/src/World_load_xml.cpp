@@ -40,11 +40,11 @@ void World::load_from_XML(
 	using namespace rapidxml;
 
 	// Extract base path of file:
-	m_base_path =
+	basePath_ =
 		mrpt::system::trim(mrpt::system::extractFileDirectory(fileNameForPath));
-	// printf("[World] INFO: Using base path='%s'\n",m_base_path.c_str());
+	// printf("[World] INFO: Using base path='%s'\n",basePath_.c_str());
 
-	auto lck = mrpt::lockHelper(m_world_cs);  // Protect multithread access
+	auto lck = mrpt::lockHelper(world_cs_);	 // Protect multithread access
 
 	// Clear the existing world.
 	this->clear_all();
@@ -53,9 +53,9 @@ void World::load_from_XML(
 	DummyInvisibleBlock::Ptr standaloneSensorHost =
 		std::make_shared<DummyInvisibleBlock>(this);
 
-	m_simulableObjectsMtx.lock();
-	m_simulableObjects.emplace("__standaloneSensorHost", standaloneSensorHost);
-	m_simulableObjectsMtx.unlock();
+	simulableObjectsMtx_.lock();
+	simulableObjects_.emplace("__standaloneSensorHost", standaloneSensorHost);
+	simulableObjectsMtx_.unlock();
 
 	// Parse the XML input:
 	const auto [xml, root] = readXmlTextAndGetRoot(xml_text, fileNameForPath);
@@ -85,7 +85,7 @@ void World::load_from_XML(
 	xml_node<>* node = root->first_node();
 	while (node)
 	{
-		internal_recursive_parse_XML(node, m_base_path);
+		internal_recursive_parse_XML(node, basePath_);
 
 		// Move on to next node:
 		node = node->next_sibling(nullptr);
@@ -104,17 +104,17 @@ void World::internal_recursive_parse_XML(
 		reinterpret_cast<const rapidxml::xml_node<>*>(nodeOpaquePtr);
 
 	// push relative directory state:
-	const auto savedBasePath = m_base_path;
-	m_base_path = currentBasePath;
+	const auto savedBasePath = basePath_;
+	basePath_ = currentBasePath;
 
 	// <element class='*'> entries:
 	if (!strcmp(node->name(), "element"))
 	{
 		WorldElementBase::Ptr e = WorldElementBase::factory(this, node);
-		m_world_elements.emplace_back(e);
+		worldElements_.emplace_back(e);
 
 		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-		m_simulableObjects.emplace(
+		simulableObjects_.emplace(
 			e->getName(), std::dynamic_pointer_cast<Simulable>(e));
 	}
 	// <vehicle> entries:
@@ -122,17 +122,17 @@ void World::internal_recursive_parse_XML(
 	{
 		VehicleBase::Ptr veh = VehicleBase::factory(this, node);
 		// Assign each vehicle a unique "index" number
-		veh->setVehicleIndex(m_vehicles.size());
+		veh->setVehicleIndex(vehicles_.size());
 
 		ASSERTMSG_(
-			m_vehicles.count(veh->getName()) == 0,
+			vehicles_.count(veh->getName()) == 0,
 			mrpt::format(
 				"Duplicated vehicle name: '%s'", veh->getName().c_str()));
 
-		m_vehicles.insert(VehicleList::value_type(veh->getName(), veh));
+		vehicles_.insert(VehicleList::value_type(veh->getName(), veh));
 
 		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-		m_simulableObjects.emplace(
+		simulableObjects_.emplace(
 			veh->getName(), std::dynamic_pointer_cast<Simulable>(veh));
 	}
 	// <vehicle:class> entries:
@@ -147,7 +147,7 @@ void World::internal_recursive_parse_XML(
 
 		DummyInvisibleBlock::Ptr standaloneSensorHost =
 			std::dynamic_pointer_cast<DummyInvisibleBlock>(
-				m_simulableObjects.find("__standaloneSensorHost")->second);
+				simulableObjects_.find("__standaloneSensorHost")->second);
 		ASSERT_(standaloneSensorHost);
 
 		SensorBase::Ptr sensor =
@@ -168,7 +168,7 @@ void World::internal_recursive_parse_XML(
 	// <gui> </gui> params:
 	else if (!strcmp(node->name(), "gui"))
 	{
-		m_gui_options.parse_from(*node);
+		guiOptions_.parse_from(*node);
 	}
 	// <walls> </walls> params:
 	else if (!strcmp(node->name(), "walls"))
@@ -208,7 +208,7 @@ void World::internal_recursive_parse_XML(
 	else
 	{
 		// Default: Check if it's a parameter:
-		if (!parse_xmlnode_as_param(*node, m_other_world_params))
+		if (!parse_xmlnode_as_param(*node, other_world_params_))
 		{
 			// Unknown element!!
 			MRPT_LOG_WARN_STREAM(
@@ -219,5 +219,5 @@ void World::internal_recursive_parse_XML(
 	}
 
 	// pop relative directory state:
-	m_base_path = savedBasePath;
+	basePath_ = savedBasePath;
 }

@@ -64,7 +64,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	mrpt::math::CMatrixFloat elevation_data;
 	if (!sElevationImgFile.empty())
 	{
-		sElevationImgFile = m_world->resolvePath(sElevationImgFile);
+		sElevationImgFile = world_->resolvePath(sElevationImgFile);
 
 		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(
@@ -99,7 +99,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	bool has_mesh_image = false;
 	if (!sTextureImgFile.empty())
 	{
-		sTextureImgFile = m_world->resolvePath(sTextureImgFile);
+		sTextureImgFile = world_->resolvePath(sTextureImgFile);
 
 		if (!mesh_image.loadFromFile(sTextureImgFile))
 			throw std::runtime_error(mrpt::format(
@@ -182,11 +182,11 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 
 	ASSERT_(gl_mesh_);
 
-	const World::VehicleList& lstVehs = this->m_world->getListOfVehicles();
+	const World::VehicleList& lstVehs = this->world_->getListOfVehicles();
 	for (World::VehicleList::const_iterator itVeh = lstVehs.begin();
 		 itVeh != lstVehs.end(); ++itVeh)
 	{
-		m_world->getTimeLogger().enter("elevationmap.handle_vehicle");
+		world_->getTimeLogger().enter("elevationmap.handle_vehicle");
 
 		const size_t nWheels = itVeh->second->getNumWheels();
 
@@ -260,8 +260,8 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 
 #if 0
 			std::cout << "iter: " << iter << " poseErr:"
-					  << std::sqrt(corrs.overallSquareError(m_optimal_transf))
-					  << " p:" << m_optimal_transf << "\n";
+					  << std::sqrt(corrs.overallSquareError(optimal_transf_))
+					  << " p:" << optimal_transf_ << "\n";
 #endif
 
 			new_pose.z = optimalTf_.z();
@@ -325,7 +325,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 			}
 		}
 
-		m_world->getTimeLogger().leave("elevationmap.handle_vehicle");
+		world_->getTimeLogger().leave("elevationmap.handle_vehicle");
 	}
 }
 

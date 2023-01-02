@@ -37,10 +37,10 @@ static XmlClassesRegistry block_classes_registry("block:class");
 Block::Block(World* parent) : VisualObject(parent), Simulable(parent)
 {
 	// Default shape:
-	m_block_poly.emplace_back(-0.5, -0.5);
-	m_block_poly.emplace_back(-0.5, 0.5);
-	m_block_poly.emplace_back(0.5, 0.5);
-	m_block_poly.emplace_back(0.5, -0.5);
+	block_poly_.emplace_back(-0.5, -0.5);
+	block_poly_.emplace_back(-0.5, 0.5);
+	block_poly_.emplace_back(0.5, 0.5);
+	block_poly_.emplace_back(0.5, -0.5);
 	updateMaxRadiusFromPoly();
 }
 
@@ -110,13 +110,13 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		const xml_attribute<>* attrib_name = root->first_attribute("name");
 		if (attrib_name && attrib_name->value())
 		{
-			block->m_name = attrib_name->value();
+			block->name_ = attrib_name->value();
 		}
 		else
 		{
 			// Default name:
 			static int cnt = 0;
-			block->m_name = mrpt::format("block%03i", ++cnt);
+			block->name_ = mrpt::format("block%03i", ++cnt);
 		}
 	}
 
@@ -131,10 +131,10 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// Params:
 	// -----------------------------------------------------------
 	parse_xmlnode_children_as_param(
-		*root, block->m_params, {}, "[Block::factory]");
+		*root, block->params_, {}, "[Block::factory]");
 	if (class_root)
 		parse_xmlnode_children_as_param(
-			*class_root, block->m_params, {}, "[Block::factory]");
+			*class_root, block->params_, {}, "[Block::factory]");
 
 	// Auto shape node from visual?
 	if (const rapidxml::xml_node<char>* xml_shape_viz =
@@ -150,11 +150,11 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 				"visual object seems incorrect.");
 		}
 
-		block->m_block_poly.clear();
-		block->m_block_poly.emplace_back(bbmin.x, bbmin.y);
-		block->m_block_poly.emplace_back(bbmin.x, bbmax.y);
-		block->m_block_poly.emplace_back(bbmax.x, bbmax.y);
-		block->m_block_poly.emplace_back(bbmax.x, bbmin.y);
+		block->block_poly_.clear();
+		block->block_poly_.emplace_back(bbmin.x, bbmin.y);
+		block->block_poly_.emplace_back(bbmin.x, bbmax.y);
+		block->block_poly_.emplace_back(bbmax.x, bbmax.y);
+		block->block_poly_.emplace_back(bbmax.x, bbmin.y);
 
 		block->updateMaxRadiusFromPoly();
 	}
@@ -165,7 +165,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		xml_shape)
 	{
 		mvsim::parse_xmlnode_shape(
-			*xml_shape, block->m_block_poly, "[Block::factory]");
+			*xml_shape, block->block_poly_, "[Block::factory]");
 		block->updateMaxRadiusFromPoly();
 	}
 
@@ -173,16 +173,16 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// ----------------------------------------------------
 	block->create_multibody_system(*parent->getBox2DWorld());
 
-	if (block->m_b2d_body)
+	if (block->b2dBody_)
 	{
 		// Init pos:
 		const auto q = block->getPose();
 		const auto dq = block->getTwist();
 
-		block->m_b2d_body->SetTransform(b2Vec2(q.x, q.y), q.yaw);
+		block->b2dBody_->SetTransform(b2Vec2(q.x, q.y), q.yaw);
 		// Init vel:
-		block->m_b2d_body->SetLinearVelocity(b2Vec2(dq.vx, dq.vy));
-		block->m_b2d_body->SetAngularVelocity(dq.omega);
+		block->b2dBody_->SetLinearVelocity(b2Vec2(dq.vx, dq.vy));
+		block->b2dBody_->SetAngularVelocity(dq.omega);
 	}
 
 	return block;
@@ -232,26 +232,26 @@ void Block::internalGuiUpdate(
 	// ----------------------------------
 	if (!childrenOnly)
 	{
-		if (!m_gl_block && viz && physical)
+		if (!gl_block_ && viz && physical)
 		{
-			m_gl_block = mrpt::opengl::CSetOfObjects::Create();
-			m_gl_block->setName(m_name);
+			gl_block_ = mrpt::opengl::CSetOfObjects::Create();
+			gl_block_->setName(name_);
 
 			// Block shape:
 			auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
-				m_block_poly, m_block_z_max - m_block_z_min);
-			gl_poly->setLocation(0, 0, m_block_z_min);
-			gl_poly->setColor_u8(m_block_color);
+				block_poly_, block_z_max_ - block_z_min_);
+			gl_poly->setLocation(0, 0, block_z_min_);
+			gl_poly->setColor_u8(block_color_);
 
 // Hide back faces:
 #if MRPT_VERSION >= 0x240
 			// gl_poly->cullFaces(mrpt::opengl::TCullFace::FRONT);
 #endif
 
-			m_gl_block->insert(gl_poly);
+			gl_block_->insert(gl_poly);
 
-			viz->get().insert(m_gl_block);
-			physical->get().insert(m_gl_block);
+			viz->get().insert(gl_block_);
+			physical->get().insert(gl_block_);
 		}
 
 		// Update them:
@@ -260,17 +260,17 @@ void Block::internalGuiUpdate(
 		// don't need/can't acquire it again:
 		const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-		if (m_gl_block) m_gl_block->setPose(objectPose);
+		if (gl_block_) gl_block_->setPose(objectPose);
 	}
 
-	if (!m_gl_forces && viz)
+	if (!gl_forces_ && viz)
 	{
 		// Visualization of forces:
-		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
-		m_gl_forces->setLineWidth(3.0);
-		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
+		gl_forces_ = mrpt::opengl::CSetOfLines::Create();
+		gl_forces_->setLineWidth(3.0);
+		gl_forces_->setColor_u8(0xff, 0xff, 0xff);
 
-		viz->get().insert(m_gl_forces);	 // forces are in global coords
+		viz->get().insert(gl_forces_);	// forces are in global coords
 	}
 
 	// Other common stuff:
@@ -280,16 +280,16 @@ void Block::internalGuiUpdate(
 void Block::internal_internalGuiUpdate_forces(	//
 	[[maybe_unused]] mrpt::opengl::COpenGLScene& scene)
 {
-	if (m_world->m_gui_options.show_forces)
+	if (world_->guiOptions_.show_forces)
 	{
-		std::lock_guard<std::mutex> csl(m_force_segments_for_rendering_cs);
-		m_gl_forces->clear();
-		m_gl_forces->appendLines(m_force_segments_for_rendering);
-		m_gl_forces->setVisibility(true);
+		std::lock_guard<std::mutex> csl(force_segments_for_rendering_cs_);
+		gl_forces_->clear();
+		gl_forces_->appendLines(force_segments_for_rendering_);
+		gl_forces_->setVisibility(true);
 	}
 	else
 	{
-		m_gl_forces->setVisibility(false);
+		gl_forces_->setVisibility(false);
 	}
 }
 
@@ -297,119 +297,119 @@ void Block::updateMaxRadiusFromPoly()
 {
 	using namespace mrpt::math;
 
-	m_max_radius = 0.001f;
-	for (const auto& segment : m_block_poly)
+	maxRadius_ = 0.001f;
+	for (const auto& segment : block_poly_)
 	{
 		const float n = segment.norm();
-		mrpt::keep_max(m_max_radius, n);
+		mrpt::keep_max(maxRadius_, n);
 	}
 }
 
 /** Create bodies, fixtures, etc. for the dynamical simulation */
 void Block::create_multibody_system(b2World& world)
 {
-	if (m_intangible) return;
+	if (intangible_) return;
 
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 
-	m_b2d_body = world.CreateBody(&bodyDef);
+	b2dBody_ = world.CreateBody(&bodyDef);
 
 	// Define shape of block:
 	// ------------------------------
 	{
 		// Convert shape into Box2D format:
-		const size_t nPts = m_block_poly.size();
+		const size_t nPts = block_poly_.size();
 		ASSERT_(nPts >= 3);
 		ASSERT_LE_(nPts, (size_t)b2_maxPolygonVertices);
 		std::vector<b2Vec2> pts(nPts);
 		for (size_t i = 0; i < nPts; i++)
-			pts[i] = b2Vec2(m_block_poly[i].x, m_block_poly[i].y);
+			pts[i] = b2Vec2(block_poly_[i].x, block_poly_[i].y);
 
 		b2PolygonShape blockPoly;
 		blockPoly.Set(&pts[0], nPts);
-		// blockPoly.m_radius = 1e-3;  // The "skin" depth of the body
+		// blockPoly.radius_ = 1e-3;  // The "skin" depth of the body
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &blockPoly;
-		fixtureDef.restitution = m_restitution;
+		fixtureDef.restitution = restitution_;
 
 		// Set the box density to be non-zero, so it will be dynamic.
 		b2MassData mass;
 		blockPoly.ComputeMass(&mass, 1);  // Mass with density=1 => compute area
-		fixtureDef.density = m_mass / mass.mass;
+		fixtureDef.density = mass_ / mass.mass;
 
 		// Override the default friction.
-		fixtureDef.friction = m_lateral_friction;  // 0.3f;
+		fixtureDef.friction = lateral_friction_;  // 0.3f;
 
 		// Add the shape to the body.
-		m_fixture_block = m_b2d_body->CreateFixture(&fixtureDef);
+		fixture_block_ = b2dBody_->CreateFixture(&fixtureDef);
 
 		// Compute center of mass:
 		b2MassData vehMass;
-		m_fixture_block->GetMassData(&vehMass);
-		m_block_com.x = vehMass.center.x;
-		m_block_com.y = vehMass.center.y;
+		fixture_block_->GetMassData(&vehMass);
+		block_com_.x = vehMass.center.x;
+		block_com_.y = vehMass.center.y;
 	}
 
 	// Create "archor points" to simulate friction with the ground:
 	// -----------------------------------------------------------------
 	const size_t nContactPoints = 2;
 	const double weight_per_contact_point =
-		m_mass * getWorldObject()->get_gravity() / nContactPoints;
-	const double mu = m_ground_friction;
+		mass_ * getWorldObject()->get_gravity() / nContactPoints;
+	const double mu = groundFriction_;
 	const double max_friction = mu * weight_per_contact_point;
 
 	// Location (local coords) of each contact-point:
 	const mrpt::math::TPoint2D pt_loc[nContactPoints] = {
-		mrpt::math::TPoint2D(m_max_radius, 0),
-		mrpt::math::TPoint2D(-m_max_radius, 0)};
+		mrpt::math::TPoint2D(maxRadius_, 0),
+		mrpt::math::TPoint2D(-maxRadius_, 0)};
 
 	b2FrictionJointDef fjd;
 
-	fjd.bodyA = m_world->getBox2DGroundBody();
-	fjd.bodyB = m_b2d_body;
+	fjd.bodyA = world_->getBox2DGroundBody();
+	fjd.bodyB = b2dBody_;
 
 	for (size_t i = 0; i < nContactPoints; i++)
 	{
 		const b2Vec2 local_pt = b2Vec2(pt_loc[i].x, pt_loc[i].y);
 
-		fjd.localAnchorA = m_b2d_body->GetWorldPoint(local_pt);
+		fjd.localAnchorA = b2dBody_->GetWorldPoint(local_pt);
 		fjd.localAnchorB = local_pt;
 		fjd.maxForce = max_friction;
 		fjd.maxTorque = 0;
 
 		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>(
-			m_world->getBox2DWorld()->CreateJoint(&fjd));
-		m_friction_joints.push_back(b2_friction);
+			world_->getBox2DWorld()->CreateJoint(&fjd));
+		friction_joints_.push_back(b2_friction);
 	}
 }
 
 void Block::apply_force(
 	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
-	if (m_intangible) return;
-	ASSERT_(m_b2d_body);
+	if (intangible_) return;
+	ASSERT_(b2dBody_);
 	// Application point -> world coords
 	const b2Vec2 wPt =
-		m_b2d_body->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
-	m_b2d_body->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
+		b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
+	b2dBody_->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }
 
 bool Block::isStatic() const
 {
-	if (m_intangible) return true;
-	ASSERT_(m_b2d_body);
-	return m_b2d_body->GetType() == b2_staticBody;
+	if (intangible_) return true;
+	ASSERT_(b2dBody_);
+	return b2dBody_->GetType() == b2_staticBody;
 }
 
 void Block::setIsStatic(bool b)
 {
-	if (m_intangible) return;
-	ASSERT_(m_b2d_body);
-	m_b2d_body->SetType(b ? b2_staticBody : b2_dynamicBody);
+	if (intangible_) return;
+	ASSERT_(b2dBody_);
+	b2dBody_->SetType(b ? b2_staticBody : b2_dynamicBody);
 }
 
 // Protected ctor:
@@ -425,5 +425,5 @@ void DummyInvisibleBlock::internalGuiUpdate(
 {
 	if (!viz || !physical) return;
 
-	for (auto& s : m_sensors) s->guiUpdate(viz, physical);
+	for (auto& s : sensors_) s->guiUpdate(viz, physical);
 }

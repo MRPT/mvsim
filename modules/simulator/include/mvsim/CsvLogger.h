@@ -19,7 +19,7 @@ class CSVLogger
 	bool writeHeader();
 	bool writeRow();
 
-	void setFilepath(std::string path) { m_filepath = path; }
+	void setFilepath(std::string path) { filepath_ = path; }
 	bool open();
 	bool isOpen();
 	bool close();
@@ -29,9 +29,9 @@ class CSVLogger
 	void newSession();
 
    private:
-	columns_type m_columns;
-	std::shared_ptr<std::ofstream> m_file;
-	std::string m_filepath;
+	columns_type columns_;
+	std::shared_ptr<std::ofstream> file_;
+	std::string filepath_;
 	bool isRecording = false;
 	unsigned int currentSession = 1;
 };

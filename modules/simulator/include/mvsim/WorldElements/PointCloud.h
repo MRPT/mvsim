@@ -34,8 +34,8 @@ class PointCloud : public WorldElementBase
 
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 
-	const mrpt::maps::CPointsMap::Ptr& getPoints() const { return m_points; }
-	mrpt::maps::CPointsMap::Ptr& getPoints() { return m_points; }
+	const mrpt::maps::CPointsMap::Ptr& getPoints() const { return points_; }
+	mrpt::maps::CPointsMap::Ptr& getPoints() { return points_; }
 
    protected:
 	virtual void internalGuiUpdate(
@@ -43,15 +43,15 @@ class PointCloud : public WorldElementBase
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
-	mrpt::maps::CPointsMap::Ptr m_points;
+	mrpt::maps::CPointsMap::Ptr points_;
 
-	/// Whether m_gl_grid has to be updated upon next call of
+	/// Whether gl_grid_ has to be updated upon next call of
 	/// internalGuiUpdate()
-	bool m_gui_uptodate = false;
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_points;
+	bool gui_uptodate_ = false;
+	mrpt::opengl::CSetOfObjects::Ptr gl_points_;
 
-	double m_render_points_size = 3.0;
-	mrpt::poses::CPose3D m_pointcloud_pose = mrpt::poses::CPose3D::Identity();
+	double render_points_size_ = 3.0;
+	mrpt::poses::CPose3D pointcloud_pose_ = mrpt::poses::CPose3D::Identity();
 };
 
 }  // namespace mvsim

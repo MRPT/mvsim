@@ -48,33 +48,33 @@ class Lidar3D : public SensorBase
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
-	mrpt::poses::CPose3D m_sensorPoseOnVeh;
+	mrpt::poses::CPose3D sensorPoseOnVeh_;
 
-	double m_rangeStdNoise = 0.01;
-	bool m_ignore_parent_body = false;
+	double rangeStdNoise_ = 0.01;
+	bool ignore_parent_body_ = false;
 
-	float m_viz_pointSize = 3.0f;
-	float m_maxRange = 80.0f;
-	double m_vertical_fov = mrpt::DEG2RAD(30.0);
-	int m_vertNumRays = 16, m_horzNumRays = 180;
+	float viz_pointSize_ = 3.0f;
+	float maxRange_ = 80.0f;
+	double vertical_fov_ = mrpt::DEG2RAD(30.0);
+	int vertNumRays_ = 16, horzNumRays_ = 180;
 
 	/** Last simulated scan */
-	mrpt::obs::CObservationPointCloud::Ptr m_last_scan2gui, m_last_scan;
-	std::mutex m_last_scan_cs;
+	mrpt::obs::CObservationPointCloud::Ptr last_scan2gui_, last_scan_;
+	std::mutex last_scan_cs_;
 
-	/** Whether m_gl_scan has to be updated upon next call of
-	 * internalGuiUpdate() from m_last_scan2gui */
-	bool m_gui_uptodate = false;
+	/** Whether gl_scan_ has to be updated upon next call of
+	 * internalGuiUpdate() from last_scan2gui_ */
+	bool gui_uptodate_ = false;
 
-	mrpt::opengl::CPointCloudColoured::Ptr m_glPoints;
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
-		m_gl_sensor_origin_corner;
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov;
+	mrpt::opengl::CPointCloudColoured::Ptr glPoints_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
+		gl_sensor_origin_corner_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_;
 
-	std::optional<TSimulContext> m_has_to_render;
-	std::mutex m_has_to_render_mtx;
+	std::optional<TSimulContext> has_to_render_;
+	std::mutex has_to_render_mtx_;
 
-	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_depth;
+	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_depth_;
 
 	struct PerRayLUT
 	{
