@@ -65,6 +65,7 @@
 		  sensor_x="0.10" sensor_z="0.30"
 		  sensor_period_sec="0.10"
 		  sensor_std_noise="0.01"
+		  sensor_publish="false"
 		  sensor_name="lidar1"
 		/>
 	</vehicle>

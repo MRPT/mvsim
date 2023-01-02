@@ -121,12 +121,12 @@ void Lidar3D::internalGuiUpdate(
 		gui_uptodate_ = true;
 	}
 
-	const mrpt::poses::CPose3D p = vehicle_.getCPose3D();
+	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + sensorPoseOnVeh_;
 
 	if (glPoints_) glPoints_->setPose(p);
 	if (gl_sensor_fov_) gl_sensor_fov_->setPose(p);
 	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
-	if (glCustomVisual_) glCustomVisual_->setPose(p + sensorPoseOnVeh_);
+	if (glCustomVisual_) glCustomVisual_->setPose(p);
 }
 
 void Lidar3D::simul_pre_timestep([[maybe_unused]] const TSimulContext& context)
@@ -341,11 +341,13 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			firstAngle + (camModel_hFOV / 2.0 + camModel_hFOV * renderIdx) *
 							 (scanIsCW ? 1 : -1);
 
-		const auto thisDepthSensorPoseOnVeh =
-			curObs->sensorPose +
+		const auto thisDepthSensorPoseWrtSensor =
 			mrpt::poses::CPose3D::FromYawPitchRoll(
 				thisRenderMidAngle, 0.0, 0.0) +
 			fixedAxisConventionRot;
+
+		const auto thisDepthSensorPoseOnVeh =
+			curObs->sensorPose + thisDepthSensorPoseWrtSensor;
 
 		const auto thisDepthSensorPose = vehiclePose + thisDepthSensorPoseOnVeh;
 
@@ -429,7 +431,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 					d * (u - camModel.cx()) / camModel.fx(),
 					d * (v - camModel.cy()) / camModel.fy(), d};
 				curPts.insertPoint(
-					thisDepthSensorPoseOnVeh.composePoint(pt_wrt_cam));
+					thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
 			}
 		}
 		tleStore.stop();
