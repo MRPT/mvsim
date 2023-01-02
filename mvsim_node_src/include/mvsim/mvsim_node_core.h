@@ -48,6 +48,14 @@
 #include <atomic>
 #include <thread>
 
+namespace mrpt
+{
+namespace obs
+{
+class CObservationPointCloud;
+}
+}  // namespace mrpt
+
 /** A class to wrap libmvsim as a ROS node
  */
 class MVSimNode
@@ -280,5 +288,8 @@ class MVSimNode
 	void internalOn(
 		const mvsim::VehicleBase& veh,
 		const mrpt::obs::CObservation3DRangeScan& obs);
+	void internalOn(
+		const mvsim::VehicleBase& veh,
+		const mrpt::obs::CObservationPointCloud& obs);
 
 };	// end class

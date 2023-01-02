@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/obs/CObservation3DRangeScan.h>
+#include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
@@ -197,8 +198,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 				catch (const std::exception& e)
 				{
 					ROS12_ERROR(
-						"[MVSimNode] Error processing observation with "
-						"label  "
+						"[MVSimNode] Error processing observation with label "
 						"'%s':\n%s",
 						obsCopy ? obsCopy->sensorLabel.c_str() : "(nullptr)",
 						e.what());
@@ -988,6 +988,13 @@ void MVSimNode::onNewObservation(
 	{
 		internalOn(veh, *oRGBD);
 	}
+	else if (const auto* oPC =
+				 dynamic_cast<const mrpt::obs::CObservationPointCloud*>(
+					 obs.get());
+			 oPC)
+	{
+		internalOn(veh, *oPC);
+	}
 	else
 	{
 		// Don't know how to emit this observation to ROS!
@@ -1291,5 +1298,99 @@ void MVSimNode::internalOn(
 			pubPoints->publish(msg_pts);
 #endif
 		}
+	}
+}
+
+void MVSimNode::internalOn(
+	const mvsim::VehicleBase& veh, const mrpt::obs::CObservationPointCloud& obs)
+{
+	using namespace std::string_literals;
+
+	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+
+	const auto lbPoints = obs.sensorLabel + "_points"s;
+
+	// Create the publisher the first time an observation arrives:
+	const bool is_1st_pub =
+		pubs.pub_sensors.find(lbPoints) == pubs.pub_sensors.end();
+
+	auto& pubPts = pubs.pub_sensors[lbPoints];
+
+	if (is_1st_pub)
+	{
+#if PACKAGE_ROS_VERSION == 1
+		pubPts = n_.advertise<sensor_msgs::PointCloud2>(
+			vehVarName(lbPoints, veh), 10);
+#else
+		pubPts = n_->create_publisher<sensor_msgs::msg::PointCloud2>(
+			vehVarName(lbPoints, veh), 10);
+#endif
+	}
+
+#if PACKAGE_ROS_VERSION == 2
+	rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubPoints =
+		std::dynamic_pointer_cast<
+			rclcpp::Publisher<sensor_msgs::msg::PointCloud2>>(pubPts);
+	ASSERT_(pubPoints);
+#endif
+
+	const std::string sSensorFrameId_points = vehVarName(lbPoints, veh);
+
+	const auto now = myNow();
+
+	// POINTS
+	// --------
+
+	// Send TF:
+	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
+
+	tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+
+	Msg_TransformStamped tfStmp;
+	tfStmp.transform = tf2::toMsg(transform);
+	tfStmp.child_frame_id = sSensorFrameId_points;
+	tfStmp.header.frame_id = vehVarName("base_link", veh);
+	tfStmp.header.stamp = now;
+	tf_br_.sendTransform(tfStmp);
+
+	// Send observation:
+	{
+		// Convert observation MRPT -> ROS
+#if PACKAGE_ROS_VERSION == 1
+		sensor_msgs::PointCloud2 msg_pts;
+		std_msgs::Header msg_header;
+#else
+		sensor_msgs::msg::PointCloud2 msg_pts;
+		std_msgs::msg::Header msg_header;
+#endif
+		msg_header.stamp = now;
+		msg_header.frame_id = sSensorFrameId_points;
+
+		mrpt::obs::T3DPointsProjectionParams pp;
+		pp.takeIntoAccountSensorPoseOnRobot = false;
+
+		if (auto* sPts = dynamic_cast<const mrpt::maps::CSimplePointsMap*>(
+				obs.pointcloud.get());
+			sPts)
+		{
+			mrpt2ros::toROS(*sPts, msg_header, msg_pts);
+		}
+		else if (auto* xyzi = dynamic_cast<const mrpt::maps::CPointsMapXYZI*>(
+					 obs.pointcloud.get());
+				 xyzi)
+		{
+			mrpt2ros::toROS(*xyzi, msg_header, msg_pts);
+		}
+		else
+		{
+			THROW_EXCEPTION(
+				"Do not know how to handle this variant of CPointsMap");
+		}
+
+#if PACKAGE_ROS_VERSION == 1
+		pubPts.publish(msg_pts);
+#else
+		pubPoints->publish(msg_pts);
+#endif
 	}
 }
