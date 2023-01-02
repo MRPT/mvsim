@@ -18,7 +18,7 @@ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and 
 This package includes C++ libraries, standalone applications, and ROS-1 and ROS-2 nodes.
 
 License: 3-clause BSD License
-Copyright (C) 2014-2022 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
+Copyright (C) 2014-2023 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
 ![screenshot-demo-2robots](docs/imgs/mvsim_screenshot_ros1_depth_camera_demo.png)
 
