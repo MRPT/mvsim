@@ -62,10 +62,10 @@ class FrictionBase
 	void setLogger(const std::weak_ptr<CSVLogger>& logger);
 
    protected:
-	World* m_world;
-	VehicleBase& m_my_vehicle;
+	World* world_;
+	VehicleBase& my_vehicle_;
 
-	std::weak_ptr<CSVLogger> m_logger;
+	std::weak_ptr<CSVLogger> logger_;
 };
 
 typedef std::shared_ptr<FrictionBase> FrictionBasePtr;

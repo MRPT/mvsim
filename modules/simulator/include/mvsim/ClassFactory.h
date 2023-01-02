@@ -34,13 +34,13 @@ class ClassFactory
 
 	void do_register(const std::string& class_name, const TClassData& data)
 	{
-		m_classes[class_name] = data;
+		classes_[class_name] = data;
 	}
 
 	Ptr create(const std::string& class_name, ARG1 a1) const
 	{
-		auto it = m_classes.find(class_name);
-		if (it == m_classes.end())
+		auto it = classes_.find(class_name);
+		if (it == classes_.end())
 			throw std::runtime_error(
 				(std::string("ClassFactory: Unknown class ") + class_name)
 					.c_str());
@@ -54,8 +54,8 @@ class ClassFactory
 	}
 	Ptr create(const std::string& class_name, ARG1 a1, ARG2 a2) const
 	{
-		auto it = m_classes.find(class_name);
-		if (it == m_classes.end())
+		auto it = classes_.find(class_name);
+		if (it == classes_.end())
 			throw std::runtime_error(
 				(std::string("ClassFactory: Unknown class ") + class_name)
 					.c_str());
@@ -69,12 +69,15 @@ class ClassFactory
 	}
 
    private:
-	std::map<std::string, TClassData> m_classes;
+	std::map<std::string, TClassData> classes_;
 };	// namespace mvsim
 
 #define DECLARES_REGISTER_CLASS1(CLASS_NAME, BASE_CLASS, ARG1) \
    public:                                                     \
-	static BASE_CLASS* Create(ARG1 a1) { return new CLASS_NAME(a1); }
+	static BASE_CLASS* Create(ARG1 a1)                         \
+	{                                                          \
+		return new CLASS_NAME(a1);                             \
+	}
 #define DECLARES_REGISTER_CLASS2(CLASS_NAME, BASE_CLASS, ARG1, ARG2) \
    public:                                                           \
 	static BASE_CLASS* Create(ARG1 a1, ARG2 a2)                      \

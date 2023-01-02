@@ -19,7 +19,7 @@ using namespace mvsim;
 
 DefaultFriction::DefaultFriction(
 	VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
-	: FrictionBase(my_vehicle), m_mu(0.8), m_C_damping(1.0)
+	: FrictionBase(my_vehicle), mu_(0.8), C_damping_(1.0)
 {
 	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
@@ -27,7 +27,7 @@ DefaultFriction::DefaultFriction(
 			"<friction>...</friction> XML node was expected!!");
 
 	// Parse XML params:
-	if (node) parse_xmlnode_children_as_param(*node, m_params);
+	if (node) parse_xmlnode_children_as_param(*node, params_);
 }
 
 // See docs in base class.
@@ -43,8 +43,8 @@ void DefaultFriction::evaluate_friction(
 
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
-	const double mu = m_mu;
-	const double gravity = m_my_vehicle.getWorldObject()->get_gravity();
+	const double mu = mu_;
+	const double gravity = my_vehicle_.getWorldObject()->get_gravity();
 	const double partial_mass = input.weight / gravity + input.wheel.mass;
 	const double max_friction = mu * partial_mass * gravity;
 
@@ -78,7 +78,7 @@ void DefaultFriction::evaluate_friction(
 	// (eq. 3)==> Find out F_r
 	// Iyy_w * \Delta\omega_w = dt*\tau-  R*dt*Fri    -C_damp * \omega_w * dt
 	// "Damping" / internal friction of the wheel's shaft, etc.
-	const double C_damping = m_C_damping;
+	const double C_damping = C_damping_;
 	// const mrpt::math::TPoint2D wheel_damping(- C_damping *
 	// input.wheel_speed.x, 0.0);
 

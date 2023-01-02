@@ -45,7 +45,7 @@ class ElevationMap : public WorldElementBase
 	bool firstSceneRendering_ = true;
 	float resolution_ = 1.0f;
 
-	/** A copy of elevation data in m_gl_mesh. Coordinate order is (x,y) */
+	/** A copy of elevation data in gl_mesh_. Coordinate order is (x,y) */
 	mrpt::math::CMatrixFloat meshCacheZ_;
 
 	bool debugShowContactPoints_ = false;

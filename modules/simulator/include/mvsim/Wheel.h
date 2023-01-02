@@ -51,7 +51,7 @@ class Wheel : public VisualObject
 	/** Color for OpenGL rendering */
 	mrpt::img::TColor color{0xff323232};
 
-	const TParameterDefinitions m_params = {
+	const TParameterDefinitions params_ = {
 		{"mass", {"%lf", &mass}},
 		{"width", {"%lf", &width}},
 		{"diameter", {"%lf", &diameter}},

@@ -82,20 +82,18 @@ constexpr char VehicleBase::WL_FRIC_Y[];
 
 // Protected ctor:
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
-	: VisualObject(parent),
-	  Simulable(parent),
-	  m_fixture_wheels(nWheels, nullptr)
+	: VisualObject(parent), Simulable(parent), fixture_wheels_(nWheels, nullptr)
 {
 	// Create wheels:
-	for (size_t i = 0; i < nWheels; i++) m_wheels_info.emplace_back(parent);
+	for (size_t i = 0; i < nWheels; i++) wheels_info_.emplace_back(parent);
 
 	// Default shape:
-	m_chassis_poly.emplace_back(-0.4, -0.5);
-	m_chassis_poly.emplace_back(-0.4, 0.5);
-	m_chassis_poly.emplace_back(0.4, 0.5);
-	m_chassis_poly.emplace_back(0.6, 0.3);
-	m_chassis_poly.emplace_back(0.6, -0.3);
-	m_chassis_poly.emplace_back(0.4, -0.5);
+	chassis_poly_.emplace_back(-0.4, -0.5);
+	chassis_poly_.emplace_back(-0.4, 0.5);
+	chassis_poly_.emplace_back(0.4, 0.5);
+	chassis_poly_.emplace_back(0.6, 0.3);
+	chassis_poly_.emplace_back(0.6, -0.3);
+	chassis_poly_.emplace_back(0.4, -0.5);
 	updateMaxRadiusFromPoly();
 }
 
@@ -237,13 +235,13 @@ VehicleBase::Ptr VehicleBase::factory(
 		const xml_attribute<>* attrib_name = root->first_attribute("name");
 		if (attrib_name && attrib_name->value())
 		{
-			veh->m_name = attrib_name->value();
+			veh->name_ = attrib_name->value();
 		}
 		else
 		{
 			// Default name:
 			static int cnt = 0;
-			veh->m_name = mrpt::format("veh%i", ++cnt);
+			veh->name_ = mrpt::format("veh%i", ++cnt);
 		}
 	}
 
@@ -277,7 +275,7 @@ VehicleBase::Ptr VehicleBase::factory(
 					"visual object seems incorrect.");
 			}
 
-			auto& poly = veh->m_chassis_poly;
+			auto& poly = veh->chassis_poly_;
 			poly.clear();
 			poly.emplace_back(bbmin.x, bbmin.y);
 			poly.emplace_back(bbmin.x, bbmax.y);
@@ -294,7 +292,7 @@ VehicleBase::Ptr VehicleBase::factory(
 		if (log_path_node)
 		{
 			// Parse:
-			veh->m_log_path = log_path_node->value();
+			veh->log_path_ = log_path_node->value();
 		}
 	}
 
@@ -304,16 +302,16 @@ VehicleBase::Ptr VehicleBase::factory(
 	// ----------------------------------------------------
 	veh->create_multibody_system(*parent->getBox2DWorld());
 
-	if (veh->m_b2d_body)
+	if (veh->b2dBody_)
 	{
 		// Init pos:
 		const auto q = veh->getPose();
 		const auto dq = veh->getTwist();
 
-		veh->m_b2d_body->SetTransform(b2Vec2(q.x, q.y), q.yaw);
+		veh->b2dBody_->SetTransform(b2Vec2(q.x, q.y), q.yaw);
 		// Init vel:
-		veh->m_b2d_body->SetLinearVelocity(b2Vec2(dq.vx, dq.vy));
-		veh->m_b2d_body->SetAngularVelocity(dq.omega);
+		veh->b2dBody_->SetLinearVelocity(b2Vec2(dq.vx, dq.vy));
+		veh->b2dBody_->SetAngularVelocity(dq.omega);
 	}
 
 	// Friction model:
@@ -324,15 +322,15 @@ VehicleBase::Ptr VehicleBase::factory(
 		if (!frict_node)
 		{
 			// Default:
-			veh->m_friction = std::shared_ptr<FrictionBase>(
+			veh->friction_ = std::shared_ptr<FrictionBase>(
 				new DefaultFriction(*veh, nullptr /*default params*/));
 		}
 		else
 		{
 			// Parse:
-			veh->m_friction = std::shared_ptr<FrictionBase>(
+			veh->friction_ = std::shared_ptr<FrictionBase>(
 				FrictionBase::factory(*veh, frict_node));
-			ASSERT_(veh->m_friction);
+			ASSERT_(veh->friction_);
 		}
 	}
 
@@ -343,7 +341,7 @@ VehicleBase::Ptr VehicleBase::factory(
 		if (!strcmp(xmlNode->name(), "sensor"))
 		{
 			SensorBase::Ptr se = SensorBase::factory(*veh, xmlNode);
-			veh->m_sensors.push_back(SensorBase::Ptr(se));
+			veh->sensors_.push_back(SensorBase::Ptr(se));
 		}
 	}
 
@@ -377,26 +375,25 @@ VehicleBase::Ptr VehicleBase::factory(
 void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 {
 	Simulable::simul_pre_timestep(context);
-	for (auto& s : m_sensors) s->simul_pre_timestep(context);
+	for (auto& s : sensors_) s->simul_pre_timestep(context);
 
 	// Update wheels position (they may turn, etc. as in an Ackermann
 	// configuration)
-	for (size_t i = 0; i < m_fixture_wheels.size(); i++)
+	for (size_t i = 0; i < fixture_wheels_.size(); i++)
 	{
 		b2PolygonShape* wheelShape =
-			dynamic_cast<b2PolygonShape*>(m_fixture_wheels[i]->GetShape());
+			dynamic_cast<b2PolygonShape*>(fixture_wheels_[i]->GetShape());
 		wheelShape->SetAsBox(
-			m_wheels_info[i].diameter * 0.5, m_wheels_info[i].width * 0.5,
-			b2Vec2(m_wheels_info[i].x, m_wheels_info[i].y),
-			m_wheels_info[i].yaw);
+			wheels_info_[i].diameter * 0.5, wheels_info_[i].width * 0.5,
+			b2Vec2(wheels_info_[i].x, wheels_info_[i].y), wheels_info_[i].yaw);
 	}
 
 	// Apply motor forces/torques:
-	this->invoke_motor_controllers(context, m_torque_per_wheel);
+	this->invoke_motor_controllers(context, torque_per_wheel_);
 
 	// Apply friction model at each wheel:
 	const size_t nW = getNumWheels();
-	ASSERT_EQUAL_(m_torque_per_wheel.size(), nW);
+	ASSERT_EQUAL_(torque_per_wheel_.size(), nW);
 
 	const double gravity = getWorldObject()->get_gravity();
 	const double massPerWheel =
@@ -417,52 +414,51 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		Wheel& w = getWheelInfo(i);
 
 		FrictionBase::TFrictionInput fi(context, w);
-		fi.motor_torque =
-			-m_torque_per_wheel[i];	 // "-" => Forwards is negative
+		fi.motor_torque = -torque_per_wheel_[i];  // "-" => Forwards is negative
 		fi.weight = weightPerWheel;
 		fi.wheel_speed = wheels_vels[i];
 
-		m_friction->setLogger(
+		friction_->setLogger(
 			getLoggerPtr(LOGGER_WHEEL + std::to_string(i + 1)));
 		// eval friction:
 		mrpt::math::TPoint2D net_force_;
-		m_friction->evaluate_friction(fi, net_force_);
+		friction_->evaluate_friction(fi, net_force_);
 
 		// Apply force:
-		const b2Vec2 wForce = m_b2d_body->GetWorldVector(b2Vec2(
+		const b2Vec2 wForce = b2dBody_->GetWorldVector(b2Vec2(
 			net_force_.x, net_force_.y));  // Force vector -> world coords
-		const b2Vec2 wPt = m_b2d_body->GetWorldPoint(
+		const b2Vec2 wPt = b2dBody_->GetWorldPoint(
 			b2Vec2(w.x, w.y));	// Application point -> world coords
 		// printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f
 		// Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
-		m_b2d_body->ApplyForce(wForce, wPt, true /*wake up*/);
+		b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
 
 		// log
 		{
-			m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
+			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				DL_TIMESTAMP, context.simul_time);
-			m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
+			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_TORQUE, fi.motor_torque);
-			m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
+			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_WEIGHT, fi.weight);
-			m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
+			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_VEL_X, fi.wheel_speed.x);
-			m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
+			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_VEL_Y, fi.wheel_speed.y);
-			m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
+			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_FRIC_X, net_force_.x);
-			m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
+			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_FRIC_Y, net_force_.y);
 		}
 
 		// save it for optional rendering:
-		if (m_world->m_gui_options.show_forces)
+		if (world_->guiOptions_.show_forces)
 		{
 			const double forceScale =
-				m_world->m_gui_options.force_scale;	 // [meters/N]
+				world_->guiOptions_.force_scale;  // [meters/N]
 			const mrpt::math::TPoint3D pt1(
-				wPt.x, wPt.y, m_chassis_z_max * 1.1 + getPose().z);
+				wPt.x, wPt.y, chassis_z_max_ * 1.1 + getPose().z);
 			const mrpt::math::TPoint3D pt2 =
 				pt1 + mrpt::math::TPoint3D(wForce.x, wForce.y, 0) * forceScale;
 			force_vectors.push_back(mrpt::math::TSegment3D(pt1, pt2));
@@ -470,10 +466,10 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	}
 
 	// Save forces for optional rendering:
-	if (m_world->m_gui_options.show_forces)
+	if (world_->guiOptions_.show_forces)
 	{
-		std::lock_guard<std::mutex> csl(m_force_segments_for_rendering_cs);
-		m_force_segments_for_rendering = force_vectors;
+		std::lock_guard<std::mutex> csl(force_segments_for_rendering_cs_);
+		force_segments_for_rendering_ = force_vectors;
 	}
 }
 
@@ -481,9 +477,9 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
  * equations for each timestep */
 void VehicleBase::simul_post_timestep(const TSimulContext& context)
 {
-	// Common part (update m_q, m_dq)
+	// Common part (update q_, dq_)
 	Simulable::simul_post_timestep(context);
-	for (auto& s : m_sensors) s->simul_post_timestep(context);
+	for (auto& s : sensors_) s->simul_post_timestep(context);
 
 	// Integrate wheels' rotation:
 	const size_t nW = getNumWheels();
@@ -509,16 +505,16 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	const auto q = getPose();
 	const auto dq = getTwist();
 
-	m_loggers[LOGGER_POSE]->updateColumn(DL_TIMESTAMP, context.simul_time);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_X, q.x);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Y, q.y);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_Z, q.z);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_YAW, q.yaw);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_PITCH, q.pitch);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_Q_ROLL, q.roll);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_X, dq.vx);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Y, dq.vy);
-	m_loggers[LOGGER_POSE]->updateColumn(PL_DQ_Z, dq.omega);
+	loggers_[LOGGER_POSE]->updateColumn(DL_TIMESTAMP, context.simul_time);
+	loggers_[LOGGER_POSE]->updateColumn(PL_Q_X, q.x);
+	loggers_[LOGGER_POSE]->updateColumn(PL_Q_Y, q.y);
+	loggers_[LOGGER_POSE]->updateColumn(PL_Q_Z, q.z);
+	loggers_[LOGGER_POSE]->updateColumn(PL_Q_YAW, q.yaw);
+	loggers_[LOGGER_POSE]->updateColumn(PL_Q_PITCH, q.pitch);
+	loggers_[LOGGER_POSE]->updateColumn(PL_Q_ROLL, q.roll);
+	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_X, dq.vx);
+	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_Y, dq.vy);
+	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_Z, dq.omega);
 
 	{
 		writeLogStrings();
@@ -552,22 +548,22 @@ void VehicleBase::internal_internalGuiUpdate_sensors(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical)
 {
-	for (auto& s : m_sensors) s->guiUpdate(viz, physical);
+	for (auto& s : sensors_) s->guiUpdate(viz, physical);
 }
 
 void VehicleBase::internal_internalGuiUpdate_forces(  //
 	[[maybe_unused]] mrpt::opengl::COpenGLScene& scene)
 {
-	if (m_world->m_gui_options.show_forces)
+	if (world_->guiOptions_.show_forces)
 	{
-		std::lock_guard<std::mutex> csl(m_force_segments_for_rendering_cs);
-		m_gl_forces->clear();
-		m_gl_forces->appendLines(m_force_segments_for_rendering);
-		m_gl_forces->setVisibility(true);
+		std::lock_guard<std::mutex> csl(force_segments_for_rendering_cs_);
+		gl_forces_->clear();
+		gl_forces_->appendLines(force_segments_for_rendering_);
+		gl_forces_->setVisibility(true);
 	}
 	else
 	{
-		m_gl_forces->setVisibility(false);
+		gl_forces_->setVisibility(false);
 	}
 }
 
@@ -575,11 +571,11 @@ void VehicleBase::updateMaxRadiusFromPoly()
 {
 	using namespace mrpt::math;
 
-	m_max_radius = 0.001f;
-	for (const auto& pt : m_chassis_poly)
+	maxRadius_ = 0.001f;
+	for (const auto& pt : chassis_poly_)
 	{
 		const float n = pt.norm();
-		mrpt::keep_max(m_max_radius, n);
+		mrpt::keep_max(maxRadius_, n);
 	}
 }
 
@@ -590,22 +586,22 @@ void VehicleBase::create_multibody_system(b2World& world)
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 
-	m_b2d_body = world.CreateBody(&bodyDef);
+	b2dBody_ = world.CreateBody(&bodyDef);
 
 	// Define shape of chassis:
 	// ------------------------------
 	{
 		// Convert shape into Box2D format:
-		const size_t nPts = m_chassis_poly.size();
+		const size_t nPts = chassis_poly_.size();
 		ASSERT_(nPts >= 3);
 		ASSERT_LE_(nPts, (size_t)b2_maxPolygonVertices);
 		std::vector<b2Vec2> pts(nPts);
 		for (size_t i = 0; i < nPts; i++)
-			pts[i] = b2Vec2(m_chassis_poly[i].x, m_chassis_poly[i].y);
+			pts[i] = b2Vec2(chassis_poly_[i].x, chassis_poly_[i].y);
 
 		b2PolygonShape chassisPoly;
 		chassisPoly.Set(&pts[0], nPts);
-		// chassisPoly.m_radius = 1e-3;  // The "skin" depth of the body
+		// chassisPoly.radius_ = 1e-3;  // The "skin" depth of the body
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;
@@ -616,32 +612,31 @@ void VehicleBase::create_multibody_system(b2World& world)
 		b2MassData mass;
 		chassisPoly.ComputeMass(
 			&mass, 1);	// Mass with density=1 => compute area
-		fixtureDef.density = m_chassis_mass / mass.mass;
+		fixtureDef.density = chassis_mass_ / mass.mass;
 
 		// Override the default friction.
 		fixtureDef.friction = 0.3f;
 
 		// Add the shape to the body.
-		m_fixture_chassis = m_b2d_body->CreateFixture(&fixtureDef);
+		fixture_chassis_ = b2dBody_->CreateFixture(&fixtureDef);
 
 		// Compute center of mass:
 		b2MassData vehMass;
-		m_fixture_chassis->GetMassData(&vehMass);
-		m_chassis_com.x = vehMass.center.x;
-		m_chassis_com.y = vehMass.center.y;
+		fixture_chassis_->GetMassData(&vehMass);
+		chassis_com_.x = vehMass.center.x;
+		chassis_com_.y = vehMass.center.y;
 	}
 
 	// Define shape of wheels:
 	// ------------------------------
-	ASSERT_EQUAL_(m_fixture_wheels.size(), m_wheels_info.size());
+	ASSERT_EQUAL_(fixture_wheels_.size(), wheels_info_.size());
 
-	for (size_t i = 0; i < m_wheels_info.size(); i++)
+	for (size_t i = 0; i < wheels_info_.size(); i++)
 	{
 		b2PolygonShape wheelShape;
 		wheelShape.SetAsBox(
-			m_wheels_info[i].diameter * 0.5, m_wheels_info[i].width * 0.5,
-			b2Vec2(m_wheels_info[i].x, m_wheels_info[i].y),
-			m_wheels_info[i].yaw);
+			wheels_info_[i].diameter * 0.5, wheels_info_[i].width * 0.5,
+			b2Vec2(wheels_info_[i].x, wheels_info_[i].y), wheels_info_[i].yaw);
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;
@@ -652,12 +647,12 @@ void VehicleBase::create_multibody_system(b2World& world)
 		b2MassData mass;
 		wheelShape.ComputeMass(
 			&mass, 1);	// Mass with density=1 => compute area
-		fixtureDef.density = m_wheels_info[i].mass / mass.mass;
+		fixtureDef.density = wheels_info_[i].mass / mass.mass;
 
 		// Override the default friction.
 		fixtureDef.friction = 0.5f;
 
-		m_fixture_wheels[i] = m_b2d_body->CreateFixture(&fixtureDef);
+		fixture_wheels_[i] = b2dBody_->CreateFixture(&fixtureDef);
 	}
 }
 
@@ -669,32 +664,32 @@ void VehicleBase::internalGuiUpdate(
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	const size_t nWs = this->getNumWheels();
-	if (!m_gl_chassis && viz && physical)
+	if (!gl_chassis_ && viz && physical)
 	{
-		m_gl_chassis = mrpt::opengl::CSetOfObjects::Create();
-		m_gl_chassis->setName("vehicle_chassis_"s + m_name);
+		gl_chassis_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_chassis_->setName("vehicle_chassis_"s + name_);
 
 		// Wheels shape:
-		m_gl_wheels.resize(nWs);
+		gl_wheels_.resize(nWs);
 		for (size_t i = 0; i < nWs; i++)
 		{
-			m_gl_wheels[i] = mrpt::opengl::CSetOfObjects::Create();
-			this->getWheelInfo(i).getAs3DObject(*m_gl_wheels[i]);
-			m_gl_chassis->insert(m_gl_wheels[i]);
+			gl_wheels_[i] = mrpt::opengl::CSetOfObjects::Create();
+			this->getWheelInfo(i).getAs3DObject(*gl_wheels_[i]);
+			gl_chassis_->insert(gl_wheels_[i]);
 		}
 
 		if (!childrenOnly)
 		{
 			// Robot shape:
 			auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
-				m_chassis_poly, m_chassis_z_max - m_chassis_z_min);
-			gl_poly->setLocation(0, 0, m_chassis_z_min);
-			gl_poly->setColor_u8(m_chassis_color);
-			m_gl_chassis->insert(gl_poly);
+				chassis_poly_, chassis_z_max_ - chassis_z_min_);
+			gl_poly->setLocation(0, 0, chassis_z_min_);
+			gl_poly->setColor_u8(chassis_color_);
+			gl_chassis_->insert(gl_poly);
 		}
 
-		viz->get().insert(m_gl_chassis);
-		physical->get().insert(m_gl_chassis);
+		viz->get().insert(gl_chassis_);
+		physical->get().insert(gl_chassis_);
 	}
 
 	// Update them:
@@ -704,25 +699,25 @@ void VehicleBase::internalGuiUpdate(
 	// need/can't acquire it again:
 	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-	if (m_gl_chassis)
+	if (gl_chassis_)
 	{
-		m_gl_chassis->setPose(objectPose);
+		gl_chassis_->setPose(objectPose);
 		for (size_t i = 0; i < nWs; i++)
 		{
 			const Wheel& w = getWheelInfo(i);
-			m_gl_wheels[i]->setPose(mrpt::math::TPose3D(
+			gl_wheels_[i]->setPose(mrpt::math::TPose3D(
 				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
 		}
 	}
 
 	// Init on first use:
-	if (!m_gl_forces && viz)
+	if (!gl_forces_ && viz)
 	{
 		// Visualization of forces:
-		m_gl_forces = mrpt::opengl::CSetOfLines::Create();
-		m_gl_forces->setLineWidth(3.0);
-		m_gl_forces->setColor_u8(0xff, 0xff, 0xff);
-		viz->get().insert(m_gl_forces);	 // forces are in global coords
+		gl_forces_ = mrpt::opengl::CSetOfLines::Create();
+		gl_forces_->setLineWidth(3.0);
+		gl_forces_->setColor_u8(0xff, 0xff, 0xff);
+		viz->get().insert(gl_forces_);	// forces are in global coords
 	}
 
 	// Other common stuff:
@@ -735,40 +730,40 @@ void VehicleBase::internalGuiUpdate(
 
 void VehicleBase::initLoggers()
 {
-	m_loggers[LOGGER_POSE] = std::make_shared<CSVLogger>();
-	//  m_loggers[LOGGER_POSE]->addColumn(DL_TIMESTAMP);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_X);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Y);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_Z);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_YAW);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_PITCH);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_Q_ROLL);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_X);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Y);
-	//  m_loggers[LOGGER_POSE]->addColumn(PL_DQ_Z);
-	m_loggers[LOGGER_POSE]->setFilepath(
-		m_log_path + "mvsim_" + m_name + LOGGER_POSE + ".log");
+	loggers_[LOGGER_POSE] = std::make_shared<CSVLogger>();
+	//  loggers_[LOGGER_POSE]->addColumn(DL_TIMESTAMP);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_X);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_Y);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_Z);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_YAW);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_PITCH);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_ROLL);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_X);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_Y);
+	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_Z);
+	loggers_[LOGGER_POSE]->setFilepath(
+		log_path_ + "mvsim_" + name_ + LOGGER_POSE + ".log");
 
 	for (size_t i = 0; i < getNumWheels(); i++)
 	{
-		m_loggers[LOGGER_WHEEL + std::to_string(i + 1)] =
+		loggers_[LOGGER_WHEEL + std::to_string(i + 1)] =
 			std::make_shared<CSVLogger>();
-		//    m_loggers[LOGGER_WHEEL + std::to_string(i +
+		//    loggers_[LOGGER_WHEEL + std::to_string(i +
 		//    1)]->addColumn(DL_TIMESTAMP);
-		//    m_loggers[LOGGER_WHEEL + std::to_string(i +
+		//    loggers_[LOGGER_WHEEL + std::to_string(i +
 		//    1)]->addColumn(WL_TORQUE);
-		//    m_loggers[LOGGER_WHEEL + std::to_string(i +
+		//    loggers_[LOGGER_WHEEL + std::to_string(i +
 		//    1)]->addColumn(WL_WEIGHT);
-		//    m_loggers[LOGGER_WHEEL + std::to_string(i +
+		//    loggers_[LOGGER_WHEEL + std::to_string(i +
 		//    1)]->addColumn(WL_VEL_X);
-		//    m_loggers[LOGGER_WHEEL + std::to_string(i +
+		//    loggers_[LOGGER_WHEEL + std::to_string(i +
 		//    1)]->addColumn(WL_VEL_Y);
-		//    m_loggers[LOGGER_WHEEL + std::to_string(i +
+		//    loggers_[LOGGER_WHEEL + std::to_string(i +
 		//    1)]->addColumn(WL_FRIC_X);
-		//    m_loggers[LOGGER_WHEEL + std::to_string(i +
+		//    loggers_[LOGGER_WHEEL + std::to_string(i +
 		//    1)]->addColumn(WL_FRIC_Y);
-		m_loggers[LOGGER_WHEEL + std::to_string(i + 1)]->setFilepath(
-			m_log_path + "mvsim_" + m_name + LOGGER_WHEEL +
+		loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->setFilepath(
+			log_path_ + "mvsim_" + name_ + LOGGER_WHEEL +
 			std::to_string(i + 1) + ".log");
 	}
 }
@@ -776,7 +771,7 @@ void VehicleBase::initLoggers()
 void VehicleBase::writeLogStrings()
 {
 	std::map<std::string, std::shared_ptr<CSVLogger>>::iterator it;
-	for (it = m_loggers.begin(); it != m_loggers.end(); ++it)
+	for (it = loggers_.begin(); it != loggers_.end(); ++it)
 	{
 		it->second->writeRow();
 	}
@@ -785,23 +780,23 @@ void VehicleBase::writeLogStrings()
 void VehicleBase::apply_force(
 	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
-	ASSERT_(m_b2d_body);
-	const b2Vec2 wPt = m_b2d_body->GetWorldPoint(b2Vec2(
+	ASSERT_(b2dBody_);
+	const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(
 		applyPoint.x, applyPoint.y));  // Application point -> world coords
-	m_b2d_body->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
+	b2dBody_->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }
 
 void VehicleBase::registerOnServer(mvsim::Client& c)
 {
 	// register myself, and my children objects:
 	Simulable::registerOnServer(c);
-	for (auto& sensor : m_sensors) sensor->registerOnServer(c);
+	for (auto& sensor : sensors_) sensor->registerOnServer(c);
 }
 
 void VehicleBase::chassisAndWheelsVisible(bool visible)
 {
-	if (m_gl_chassis) m_gl_chassis->setVisibility(visible);
-	for (auto& glW : m_gl_wheels)
+	if (gl_chassis_) gl_chassis_->setVisibility(visible);
+	for (auto& glW : gl_wheels_)
 	{
 		if (glW) glW->setVisibility(visible);
 	}

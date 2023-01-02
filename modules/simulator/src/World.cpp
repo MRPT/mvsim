@@ -27,11 +27,11 @@ World::World() : mrpt::system::COutputLogger("mvsim::World")
 // Dtor.
 World::~World()
 {
-	if (m_gui_thread.joinable())
+	if (gui_thread_.joinable())
 	{
 		MRPT_LOG_DEBUG("Dtor: Waiting for GUI thread to quit...");
 		gui_thread_must_close(true);
-		m_gui_thread.join();
+		gui_thread_.join();
 		MRPT_LOG_DEBUG("Dtor: GUI thread shut down successful.");
 	}
 	else
@@ -40,30 +40,30 @@ World::~World()
 	}
 
 	this->clear_all();
-	m_box2d_world.reset();
+	box2d_world_.reset();
 }
 
 // Resets the entire simulation environment to an empty world.
 void World::clear_all()
 {
-	auto lck = mrpt::lockHelper(m_world_cs);
+	auto lck = mrpt::lockHelper(world_cs_);
 
 	// Reset params:
 	force_set_simul_time(.0);
 
 	// (B2D) World contents:
 	// ---------------------------------------------
-	m_box2d_world = std::make_unique<b2World>(b2Vec2_zero);
+	box2d_world_ = std::make_unique<b2World>(b2Vec2_zero);
 
 	// Define the ground body.
 	b2BodyDef groundBodyDef;
-	m_b2_ground_body = m_box2d_world->CreateBody(&groundBodyDef);
+	b2_ground_body_ = box2d_world_->CreateBody(&groundBodyDef);
 
 	// Clear lists of objs:
 	// ---------------------------------------------
-	m_vehicles.clear();
-	m_world_elements.clear();
-	m_blocks.clear();
+	vehicles_.clear();
+	worldElements_.clear();
+	blocks_.clear();
 }
 
 void World::internal_initialize()
@@ -78,7 +78,7 @@ void World::internal_initialize()
 	{
 		auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
 		glVizSensors->setName("group_sensors_viz");
-		glVizSensors->setVisibility(m_gui_options.show_sensor_points);
+		glVizSensors->setVisibility(guiOptions_.show_sensor_points);
 		worldVisual_->insert(glVizSensors);
 	}
 
@@ -95,10 +95,10 @@ void World::run_simulation(double dt)
 	const double t0 = mrpt::Clock::nowDouble();
 
 	// Define start of simulation time:
-	if (!m_simul_start_wallclock_time.has_value())
-		m_simul_start_wallclock_time = t0 - dt;
+	if (!simul_start_wallclock_time_.has_value())
+		simul_start_wallclock_time_ = t0 - dt;
 
-	m_timlogger.registerUserMeasure("run_simulation.dt", dt);
+	timlogger_.registerUserMeasure("run_simulation.dt", dt);
 
 	const double simulTimestep = get_simul_timestep();
 
@@ -127,7 +127,7 @@ void World::run_simulation(double dt)
 
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
 
-	m_timlogger.registerUserMeasure("run_simulation.cpu_dt", t1 - t0);
+	timlogger_.registerUserMeasure("run_simulation.cpu_dt", t1 - t0);
 }
 
 /** Runs one individual time step */
@@ -135,13 +135,13 @@ void World::internal_one_timestep(double dt)
 {
 	if (gui_thread_must_close()) return;
 
-	std::lock_guard<std::mutex> lck(m_simulationStepRunningMtx);
+	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
 
-	m_timer_iteration.Tic();
+	timer_iteration_.Tic();
 
 	TSimulContext context;
 	context.world = this;
-	context.b2_world = m_box2d_world.get();
+	context.b2_world = box2d_world_.get();
 	context.simul_time = get_simul_time();
 	context.dt = dt;
 
@@ -149,22 +149,22 @@ void World::internal_one_timestep(double dt)
 
 	// 1) Pre-step
 	{
-		mrpt::system::CTimeLoggerEntry tle(m_timlogger, "timestep.0.prestep");
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.0.prestep");
 
-		for (auto& e : m_simulableObjects)
+		for (auto& e : simulableObjects_)
 			if (e.second) e.second->simul_pre_timestep(context);
 	}
 
 	// 2) Run dynamics
 	{
 		mrpt::system::CTimeLoggerEntry tle(
-			m_timlogger, "timestep.1.dynamics_integrator");
+			timlogger_, "timestep.1.dynamics_integrator");
 
-		m_box2d_world->Step(dt, m_b2d_vel_iters, m_b2d_pos_iters);
+		box2d_world_->Step(dt, b2dVelIters_, b2dPosIters_);
 
 		// Move time forward:
-		auto lckSimTim = mrpt::lockHelper(m_simul_time_mtx);
-		m_simul_time += dt;
+		auto lckSimTim = mrpt::lockHelper(simul_time_mtx_);
+		simulTime_ += dt;
 	}
 
 	// 3) Save dynamical state and post-step processing:
@@ -173,40 +173,40 @@ void World::internal_one_timestep(double dt)
 	// mutex:
 	{
 		mrpt::system::CTimeLoggerEntry tle(
-			m_timlogger, "timestep.3.save_dynstate");
+			timlogger_, "timestep.3.save_dynstate");
 
 		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
-		const auto lckCopy = mrpt::lockHelper(m_copy_of_objects_dynstate_mtx);
+		const auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
 
-		for (auto& e : m_simulableObjects)
+		for (auto& e : simulableObjects_)
 		{
 			if (!e.second) continue;
 			// process:
 			e.second->simul_post_timestep(context);
 
 			// save our own copy of the kinematic state:
-			m_copy_of_objects_dynstate_pose[e.first] = e.second->getPose();
-			m_copy_of_objects_dynstate_twist[e.first] = e.second->getTwist();
+			copy_of_objects_dynstate_pose_[e.first] = e.second->getPose();
+			copy_of_objects_dynstate_twist_[e.first] = e.second->getTwist();
 
 			if (e.second->hadCollision())
-				m_copy_of_objects_had_collision.insert(e.first);
+				copy_of_objects_had_collision_.insert(e.first);
 		}
 	}
 	{
-		const auto lckCollis = mrpt::lockHelper(m_reset_collision_flags_mtx);
-		for (const auto& sId : m_reset_collision_flags)
+		const auto lckCollis = mrpt::lockHelper(reset_collision_flags_mtx_);
+		for (const auto& sId : reset_collision_flags_)
 		{
-			if (auto itV = m_simulableObjects.find(sId);
-				itV != m_simulableObjects.end())
+			if (auto itV = simulableObjects_.find(sId);
+				itV != simulableObjects_.end())
 				itV->second->resetCollisionFlag();
 		}
-		m_reset_collision_flags.clear();
+		reset_collision_flags_.clear();
 	}
-	lckListObjs.unlock();  // for m_simulableObjects
+	lckListObjs.unlock();  // for simulableObjects_
 
 	// 4) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
 	mrpt::system::CTimeLoggerEntry tle4(
-		m_timlogger, "timestep.4.wait_3D_sensors");
+		timlogger_, "timestep.4.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
 		// Use a huge timeout here to avoid timing out in build farms / cloud
@@ -219,14 +219,14 @@ void World::internal_one_timestep(double dt)
 			MRPT_LOG_WARN(
 				"Timeout waiting for async sensors to be simulated in opengl "
 				"thread.");
-			m_timlogger.registerUserMeasure("timestep.timeout_3D_sensors", 1.0);
+			timlogger_.registerUserMeasure("timestep.timeout_3D_sensors", 1.0);
 		}
 	}
 	tle4.stop();
 
-	const double ts = m_timer_iteration.Tac();
-	m_timlogger.registerUserMeasure("timestep", ts);
-	if (ts > dt) m_timlogger.registerUserMeasure("timestep.too_slow_alert", ts);
+	const double ts = timer_iteration_.Tac();
+	timlogger_.registerUserMeasure("timestep", ts);
+	if (ts > dt) timlogger_.registerUserMeasure("timestep.too_slow_alert", ts);
 }
 
 std::string World::xmlPathToActualPath(const std::string& modelURI) const
@@ -265,7 +265,7 @@ std::string World::resolvePath(const std::string& s_in) const
 	if (s.size() > 0 && (s[0] == '/' || s[0] == '\\')) is_relative = false;
 	if (is_relative)
 	{
-		ret = m_base_path;
+		ret = basePath_;
 		if (!ret.empty() && ret[ret.size() - 1] != '/' &&
 			ret[ret.size() - 1] != '\\')
 			ret += string("/");
@@ -279,36 +279,36 @@ std::string World::resolvePath(const std::string& s_in) const
 
 void World::runVisitorOnVehicles(const vehicle_visitor_t& v)
 {
-	for (auto& veh : m_vehicles)
+	for (auto& veh : vehicles_)
 		if (veh.second) v(*veh.second);
 }
 
 void World::runVisitorOnWorldElements(const world_element_visitor_t& v)
 {
-	for (auto& we : m_world_elements)
+	for (auto& we : worldElements_)
 		if (we) v(*we);
 }
 
 void World::runVisitorOnBlocks(const block_visitor_t& v)
 {
-	for (auto& b : m_blocks)
+	for (auto& b : blocks_)
 		if (b.second) v(*b.second);
 }
 
 void World::connectToServer()
 {
 	//
-	m_client.setVerbosityLevel(this->getMinLoggingLevel());
-	m_client.serverHostAddress(m_server_address);
-	m_client.connect();
+	client_.setVerbosityLevel(this->getMinLoggingLevel());
+	client_.serverHostAddress(serverAddress_);
+	client_.connect();
 
 	// Let objects register topics / services:
-	auto lckListObjs = mrpt::lockHelper(m_simulableObjectsMtx);
+	auto lckListObjs = mrpt::lockHelper(simulableObjectsMtx_);
 
-	for (auto& o : m_simulableObjects)
+	for (auto& o : simulableObjects_)
 	{
 		ASSERT_(o.second);
-		o.second->registerOnServer(m_client);
+		o.second->registerOnServer(client_);
 	}
 	lckListObjs.unlock();
 
@@ -319,27 +319,28 @@ void World::connectToServer()
 void World::insertBlock(const Block::Ptr& block)
 {
 	// Assign each block an "index" number
-	block->setBlockIndex(m_blocks.size());
+	block->setBlockIndex(blocks_.size());
 
 	// make sure the name is not duplicated:
-	m_blocks.insert(BlockList::value_type(block->getName(), block));
+	blocks_.insert(BlockList::value_type(block->getName(), block));
 
-	auto lckListObjs = mrpt::lockHelper(m_simulableObjectsMtx);
+	auto lckListObjs = mrpt::lockHelper(simulableObjectsMtx_);
 
-	m_simulableObjects.insert(
-		m_simulableObjects.end(),
+	simulableObjects_.insert(
+		simulableObjects_.end(),
 		std::make_pair(
 			block->getName(), std::dynamic_pointer_cast<Simulable>(block)));
 }
 
 double World::get_simul_timestep() const
 {
-	ASSERT_GE_(m_simul_timestep, .0);
+	ASSERT_GE_(simulTimestep_, .0);
 	static bool firstTimeCheck = true;
 
-	auto lambdaMinimumSensorPeriod = [this]() -> std::optional<double> {
+	auto lambdaMinimumSensorPeriod = [this]() -> std::optional<double>
+	{
 		std::optional<double> ret;
-		for (const auto& veh : m_vehicles)
+		for (const auto& veh : vehicles_)
 		{
 			if (!veh.second) continue;
 			for (const auto& s : veh.second->getSensors())
@@ -354,18 +355,18 @@ double World::get_simul_timestep() const
 		return ret;
 	};
 
-	if (m_simul_timestep == 0)
+	if (simulTimestep_ == 0)
 	{
 		// `0` means auto-determine as the minimum of 50 ms and the shortest
 		// sensor sample period.
-		m_simul_timestep = 50e-3;
+		simulTimestep_ = 50e-3;
 
 		auto sensorMinPeriod = lambdaMinimumSensorPeriod();
-		if (sensorMinPeriod) mrpt::keep_min(m_simul_timestep, *sensorMinPeriod);
+		if (sensorMinPeriod) mrpt::keep_min(simulTimestep_, *sensorMinPeriod);
 
 		MRPT_LOG_INFO_FMT(
 			"Physics simulation timestep automatically determined as: %.02f ms",
-			1e3 * m_simul_timestep);
+			1e3 * simulTimestep_);
 
 		firstTimeCheck = false;	 // no need to check.
 	}
@@ -373,17 +374,17 @@ double World::get_simul_timestep() const
 	{
 		firstTimeCheck = false;
 		auto sensorMinPeriod = lambdaMinimumSensorPeriod();
-		if (sensorMinPeriod && m_simul_timestep > *sensorMinPeriod)
+		if (sensorMinPeriod && simulTimestep_ > *sensorMinPeriod)
 		{
 			MRPT_LOG_WARN_FMT(
 				"Physics simulation timestep (%.02f ms) should be >= than the "
 				"minimum sensor period (%.02f ms) to avoid missing sensor "
 				"readings!!",
-				1e3 * m_simul_timestep, 1e3 * *sensorMinPeriod);
+				1e3 * simulTimestep_, 1e3 * *sensorMinPeriod);
 		}
 	}
 
-	return m_simul_timestep;
+	return simulTimestep_;
 }
 
 void World::free_opengl_resources()

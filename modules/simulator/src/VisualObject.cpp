@@ -44,43 +44,43 @@ void VisualObject::guiUpdate(
 	const auto objectPose =
 		viz.has_value() ? meSim->getPose() : meSim->getPoseNoLock();
 
-	if (m_glCustomVisual && viz.has_value() && physical.has_value())
+	if (glCustomVisual_ && viz.has_value() && physical.has_value())
 	{
 		// Assign a unique ID on first call:
-		if (m_glCustomVisualId < 0)
+		if (glCustomVisualId_ < 0)
 		{
 			// Assign a unique name, so we can localize the object in the scene
 			// if needed.
-			m_glCustomVisualId = g_uniqueCustomVisualId++;
-			const auto name = "_autoViz"s + std::to_string(m_glCustomVisualId);
-			m_glCustomVisual->setName(name);
+			glCustomVisualId_ = g_uniqueCustomVisualId++;
+			const auto name = "_autoViz"s + std::to_string(glCustomVisualId_);
+			glCustomVisual_->setName(name);
 
 			// Add to the 3D scene:
-			if (m_insertCustomVizIntoViz) viz->get().insert(m_glCustomVisual);
+			if (insertCustomVizIntoViz_) viz->get().insert(glCustomVisual_);
 
-			if (m_insertCustomVizIntoPhysical)
-				physical->get().insert(m_glCustomVisual);
+			if (insertCustomVizIntoPhysical_)
+				physical->get().insert(glCustomVisual_);
 		}
 
 		// Update pose:
-		m_glCustomVisual->setPose(objectPose);
+		glCustomVisual_->setPose(objectPose);
 	}
 
-	if (m_glBoundingBox && viz.has_value())
+	if (glBoundingBox_ && viz.has_value())
 	{
-		if (m_glBoundingBox->empty())
+		if (glBoundingBox_->empty())
 		{
 			auto glBox = mrpt::opengl::CBox::Create();
 			glBox->setWireframe(true);
 			glBox->setBoxCorners(viz_bbmin_, viz_bbmax_);
-			m_glBoundingBox->insert(glBox);
-			m_glBoundingBox->setVisibility(false);
-			viz->get().insert(m_glBoundingBox);
+			glBoundingBox_->insert(glBox);
+			glBoundingBox_->setVisibility(false);
+			viz->get().insert(glBoundingBox_);
 		}
-		m_glBoundingBox->setPose(objectPose);
+		glBoundingBox_->setPose(objectPose);
 	}
 
-	const bool childrenOnly = !!m_glCustomVisual;
+	const bool childrenOnly = !!glCustomVisual_;
 
 	internalGuiUpdate(viz, physical, childrenOnly);
 }
@@ -110,8 +110,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 {
 	MRPT_TRY_START
 
-	m_glBoundingBox = mrpt::opengl::CSetOfObjects::Create();
-	m_glBoundingBox->setName("bbox");
+	glBoundingBox_ = mrpt::opengl::CSetOfObjects::Create();
+	glBoundingBox_->setName("bbox");
 
 	if (visual_node == nullptr) return false;
 
@@ -141,14 +141,15 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 
 	if (modelURI.empty()) return false;
 
-	const std::string localFileName = m_world->xmlPathToActualPath(modelURI);
+	const std::string localFileName = world_->xmlPathToActualPath(modelURI);
 	ASSERT_FILE_EXISTS_(localFileName);
 
 	auto& gModelsCache = ModelsCache::Instance();
 
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 
-	auto glModel = [&]() {
+	auto glModel = [&]()
+	{
 		if (auto it = gModelsCache.cache.find(localFileName);
 			it != gModelsCache.cache.end())
 			return it->second;
@@ -198,10 +199,10 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	glGroup->setPose(modelPose);
 	glGroup->setName("group");
 
-	m_glCustomVisual = mrpt::opengl::CSetOfObjects::Create();
-	m_glCustomVisual->setName("glCustomVisual");
-	m_glCustomVisual->insert(glGroup);
-	m_glBoundingBox->setVisibility(initialShowBoundingBox);
+	glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
+	glCustomVisual_->setName("glCustomVisual");
+	glCustomVisual_->insert(glGroup);
+	glBoundingBox_->setVisibility(initialShowBoundingBox);
 
 	// Auto bounds from visual model bounding-box:
 
@@ -215,18 +216,18 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 
 void VisualObject::showBoundingBox(bool show)
 {
-	if (!m_glBoundingBox) return;
-	m_glBoundingBox->setVisibility(show);
+	if (!glBoundingBox_) return;
+	glBoundingBox_->setVisibility(show);
 }
 
 void VisualObject::customVisualVisible(const bool visible)
 {
-	if (!m_glCustomVisual) return;
+	if (!glCustomVisual_) return;
 
-	m_glCustomVisual->setVisibility(visible);
+	glCustomVisual_->setVisibility(visible);
 }
 
 bool VisualObject::customVisualVisible() const
 {
-	return m_glCustomVisual && m_glCustomVisual->isVisible();
+	return glCustomVisual_ && glCustomVisual_->isVisible();
 }

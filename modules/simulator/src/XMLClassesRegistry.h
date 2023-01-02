@@ -19,7 +19,7 @@ namespace mvsim
 class XmlClassesRegistry
 {
    private:
-	const std::string m_tagname;  //!< xml tag
+	const std::string tagname_;	 //!< xml tag
 	struct TXMLData
 	{
 		rapidxml::xml_document<>* xml_doc;
@@ -33,13 +33,13 @@ class XmlClassesRegistry
 			if (xml_data) delete xml_data;
 		}
 	};
-	std::map<std::string, TXMLData> m_classes;
+	std::map<std::string, TXMLData> classes_;
 
    public:
 	/** Define the xml tag, e.g. "vehicle:class" for "<vehicle:class
 	 * name='xxx'>...</vehicle:class>" */
 	XmlClassesRegistry(const std::string& xml_class_tag)
-		: m_tagname(xml_class_tag)
+		: tagname_(xml_class_tag)
 	{
 	}
 
