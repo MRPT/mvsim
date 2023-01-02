@@ -148,8 +148,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 
-	auto glModel = [&]()
-	{
+	auto glModel = [&]() {
 		if (auto it = gModelsCache.cache.find(localFileName);
 			it != gModelsCache.cache.end())
 			return it->second;

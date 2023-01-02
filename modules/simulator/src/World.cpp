@@ -337,8 +337,7 @@ double World::get_simul_timestep() const
 	ASSERT_GE_(simulTimestep_, .0);
 	static bool firstTimeCheck = true;
 
-	auto lambdaMinimumSensorPeriod = [this]() -> std::optional<double>
-	{
+	auto lambdaMinimumSensorPeriod = [this]() -> std::optional<double> {
 		std::optional<double> ret;
 		for (const auto& veh : vehicles_)
 		{

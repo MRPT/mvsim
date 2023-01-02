@@ -180,8 +180,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	mvsim_world_.registerCallbackOnObservation(
 		[this](
 			const mvsim::Simulable& veh,
-			const mrpt::obs::CObservation::Ptr& obs)
-		{
+			const mrpt::obs::CObservation::Ptr& obs) {
 			if (!obs) return;
 
 			mrpt::system::CTimeLoggerEntry tle(
@@ -189,24 +188,22 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 			const mvsim::Simulable* vehPtr = &veh;
 			const mrpt::obs::CObservation::Ptr obsCopy = obs;
-			auto fut = ros_publisher_workers_.enqueue(
-				[this, vehPtr, obsCopy]()
+			auto fut = ros_publisher_workers_.enqueue([this, vehPtr,
+													   obsCopy]() {
+				try
 				{
-					try
-					{
-						onNewObservation(*vehPtr, obsCopy);
-					}
-					catch (const std::exception& e)
-					{
-						ROS12_ERROR(
-							"[MVSimNode] Error processing observation with "
-							"label  "
-							"'%s':\n%s",
-							obsCopy ? obsCopy->sensorLabel.c_str()
-									: "(nullptr)",
-							e.what());
-					}
-				});
+					onNewObservation(*vehPtr, obsCopy);
+				}
+				catch (const std::exception& e)
+				{
+					ROS12_ERROR(
+						"[MVSimNode] Error processing observation with "
+						"label  "
+						"'%s':\n%s",
+						obsCopy ? obsCopy->sensorLabel.c_str() : "(nullptr)",
+						e.what());
+				}
+			});
 		});
 }
 
@@ -480,14 +477,15 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	if (lastMapPublished.Tac() > 2.0)
 	{
 		mvsim_world_.runVisitorOnWorldElements(
-			[this](mvsim::WorldElementBase& obj)
-			{ publishWorldElements(obj); });
+			[this](mvsim::WorldElementBase& obj) {
+				publishWorldElements(obj);
+			});
 		lastMapPublished.Tic();
 	}
 #endif
 
-	mvsim_world_.runVisitorOnVehicles([this](mvsim::VehicleBase& v)
-									  { publishVehicles(v); });
+	mvsim_world_.runVisitorOnVehicles(
+		[this](mvsim::VehicleBase& v) { publishVehicles(v); });
 
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
@@ -546,8 +544,9 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 	pubsubs.sub_cmd_vel = n_->create_subscription<geometry_msgs::msg::Twist>(
 		vehVarName("cmd_vel", *veh), 10,
-		[this, veh](const geometry_msgs::msg::Twist::SharedPtr msg)
-		{ return this->onROSMsgCmdVel(msg, veh); });
+		[this, veh](const geometry_msgs::msg::Twist::SharedPtr msg) {
+			return this->onROSMsgCmdVel(msg, veh);
+		});
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -776,8 +775,8 @@ void MVSimNode::spinNotifyROS()
 
 #if PACKAGE_ROS_VERSION == 2
 	// In ROS2,latching doesn't work, we must re-publish on a regular basis...
-	mvsim_world_.runVisitorOnWorldElements([this](mvsim::WorldElementBase& obj)
-										   { publishWorldElements(obj); });
+	mvsim_world_.runVisitorOnWorldElements(
+		[this](mvsim::WorldElementBase& obj) { publishWorldElements(obj); });
 #endif
 
 	// Publish all TFs for each vehicle:
