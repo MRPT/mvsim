@@ -112,7 +112,7 @@ if (BUILD_FOR_ROS AND DETECTED_ROS1)
 		roscpp tf2 dynamic_reconfigure std_msgs nav_msgs sensor_msgs visualization_msgs
 		tf2_geometry_msgs
 	)
-	find_package(mrpt-ros1bridge REQUIRED)
+	find_package(mrpt-ros1bridge 2.5.6 REQUIRED)
 
 	#add dynamic reconfigure api
 	if (dynamic_reconfigure_FOUND)
@@ -154,8 +154,7 @@ if (BUILD_FOR_ROS AND DETECTED_ROS2)
 	find_package(visualization_msgs REQUIRED)
 	find_package(tf2_geometry_msgs REQUIRED)
 
-	find_package(mrpt-ros2bridge REQUIRED)
-
+	find_package(mrpt-ros2bridge 2.5.6 REQUIRED)
 endif()
 
 
@@ -208,9 +207,9 @@ endif()
 # Use the first cmd to set the minimum required version
 # ----------------------------------------------------------
 find_package(mrpt-maps 2.5.6 REQUIRED)
-find_package(mrpt-tclap REQUIRED)
-find_package(mrpt-gui REQUIRED)
-find_package(mrpt-tfest REQUIRED)
+find_package(mrpt-tclap 2.5.6 REQUIRED)
+find_package(mrpt-gui 2.5.6 REQUIRED)
+find_package(mrpt-tfest 2.5.6 REQUIRED)
 
 # --------------------------
 # Dependency: Box2D
