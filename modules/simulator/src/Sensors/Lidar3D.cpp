@@ -282,7 +282,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				mrpt::round(camModel.cx() - camModel.fx() * std::tan(horzAng)),
 				0, camModel.ncols - 1);
 
-			for (int j = 0; j < nRows; j++)
+			for (size_t j = 0; j < nRows; j++)
 			{
 				auto& entry = lut_[i].column[j];
 
@@ -295,9 +295,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 					camModel.cy() -
 					camModel.fy() * std::tan(vertAng) / cosHorzAng);
 
-				if (pixel_v < 0 || pixel_v >= camModel.nrows)
-					continue;  // out of the simulated camera (should not
-							   // happen?)
+				// out of the simulated camera (should not happen?)
+				if (pixel_v < 0 || pixel_v >= static_cast<int>(camModel.nrows))
+					continue;
 
 				entry.u = pixel_u;
 				entry.v = pixel_v;

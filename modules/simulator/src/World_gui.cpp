@@ -929,10 +929,10 @@ void World::internalGraphicsLoopTasksForSimulation()
 
 	// handle user custom 3D visual objects:
 	{
-		const auto lck = mrpt::lockHelper(gui_user_objects_mtx_);
+		const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
 		// replace list of smart pointers (fast):
-		if (gui_user_objects_physical_)
-			*glUserObjsPhysical_ = *gui_user_objects_physical_;
-		if (gui_user_objects_viz_) *glUserObjsViz_ = *gui_user_objects_viz_;
+		if (guiUserObjectsPhysical_)
+			*glUserObjsPhysical_ = *guiUserObjectsPhysical_;
+		if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
 	}
 }
