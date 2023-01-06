@@ -187,9 +187,9 @@ class World : public mrpt::system::COutputLogger
 	 * There are two sets of objects: "viz" for visualization only, "physical"
 	 * for objects which should be detected by sensors.
 	 */
-	mrpt::opengl::CSetOfObjects::Ptr gui_user_objects_physical_,
-		gui_user_objects_viz_;
-	std::mutex gui_user_objects_mtx_;
+	mrpt::opengl::CSetOfObjects::Ptr guiUserObjectsPhysical_,
+		guiUserObjectsViz_;
+	std::mutex guiUserObjectsMtx_;
 
 	/// Update 3D vehicles, sensors, run render-based sensors, etc:
 	/// Called from World_gui thread in normal mode, or mvsim-cli in headless
