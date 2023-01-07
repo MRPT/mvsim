@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -25,12 +25,12 @@ DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
 	  max_torque(400.0)
 {
 	// Get distance between wheels:
-	m_dist_fWheels =
-		m_veh.m_wheels_info[WHEEL_FL].y - m_veh.m_wheels_info[WHEEL_FR].y;
-	m_r2f_L = m_veh.m_wheels_info[WHEEL_FL].x - m_veh.m_wheels_info[WHEEL_RL].x;
+	dist_fWheels_ =
+		veh_.wheels_info_[WHEEL_FL].y - veh_.wheels_info_[WHEEL_FR].y;
+	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
 
-	ASSERT_(m_dist_fWheels > 0.0);
-	ASSERT_(m_r2f_L > 0.0);
+	ASSERT_(dist_fWheels_ > 0.0);
+	ASSERT_(r2f_L_ > 0.0);
 }
 
 void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
@@ -46,19 +46,19 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	else
 	{
 		const double R = setpoint_lin_speed / setpoint_ang_speed;
-		co.steer_ang = atan(m_r2f_L / R);
+		co.steer_ang = atan(r2f_L_ / R);
 	}
 
-	m_PID.KP = KP;
-	m_PID.KI = KI;
-	m_PID.KD = KD;
-	m_PID.max_out = max_torque;
+	PID_.KP = KP;
+	PID_.KI = KI;
+	PID_.KD = KD;
+	PID_.max_out = max_torque;
 
-	const double vel_act = m_veh.getVelocityLocalOdoEstimate().vx;
+	const double vel_act = veh_.getVelocityLocalOdoEstimate().vx;
 	const double vel_des = setpoint_lin_speed;
 
 	// "-" because \tau<0 makes robot moves forwards.
-	co.drive_torque = -m_PID.compute(vel_des - vel_act, ci.context.dt);
+	co.drive_torque = -PID_.compute(vel_des - vel_act, ci.context.dt);
 }
 
 void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(

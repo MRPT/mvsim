@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -23,44 +23,44 @@ using namespace std;
 DynamicsAckermann::DynamicsAckermann(World* parent)
 	: VehicleBase(parent, 4 /*num wheels*/)
 {
-	m_chassis_mass = 500.0;
-	m_chassis_z_min = 0.20;
-	m_chassis_z_max = 1.40;
-	m_chassis_color = mrpt::img::TColor(0xe8, 0x30, 0x00);
+	chassis_mass_ = 500.0;
+	chassis_z_min_ = 0.20;
+	chassis_z_max_ = 1.40;
+	chassis_color_ = mrpt::img::TColor(0xe8, 0x30, 0x00);
 
 	// Default shape:
-	m_chassis_poly.clear();
-	m_chassis_poly.emplace_back(-0.8, -1.0);
-	m_chassis_poly.emplace_back(-0.8, 1.0);
-	m_chassis_poly.emplace_back(1.5, 0.9);
-	m_chassis_poly.emplace_back(1.8, 0.8);
-	m_chassis_poly.emplace_back(1.8, -0.8);
-	m_chassis_poly.emplace_back(1.5, -0.9);
+	chassis_poly_.clear();
+	chassis_poly_.emplace_back(-0.8, -1.0);
+	chassis_poly_.emplace_back(-0.8, 1.0);
+	chassis_poly_.emplace_back(1.5, 0.9);
+	chassis_poly_.emplace_back(1.8, 0.8);
+	chassis_poly_.emplace_back(1.8, -0.8);
+	chassis_poly_.emplace_back(1.5, -0.9);
 	updateMaxRadiusFromPoly();
 
-	m_fixture_chassis = nullptr;
-	for (int i = 0; i < 4; i++) m_fixture_wheels[i] = nullptr;
+	fixture_chassis_ = nullptr;
+	for (int i = 0; i < 4; i++) fixture_wheels_[i] = nullptr;
 
 	// Default values:
 	// rear-left:
-	m_wheels_info[WHEEL_RL].x = 0;
-	m_wheels_info[WHEEL_RL].y = 0.9;
+	wheels_info_[WHEEL_RL].x = 0;
+	wheels_info_[WHEEL_RL].y = 0.9;
 	// rear-right:
-	m_wheels_info[WHEEL_RR].x = 0;
-	m_wheels_info[WHEEL_RR].y = -0.9;
+	wheels_info_[WHEEL_RR].x = 0;
+	wheels_info_[WHEEL_RR].y = -0.9;
 	// Front-left:
-	m_wheels_info[WHEEL_FL].x = 1.3;
-	m_wheels_info[WHEEL_FL].y = 0.9;
+	wheels_info_[WHEEL_FL].x = 1.3;
+	wheels_info_[WHEEL_FL].y = 0.9;
 	// Front-right:
-	m_wheels_info[WHEEL_FR].x = 1.3;
-	m_wheels_info[WHEEL_FR].y = -0.9;
+	wheels_info_[WHEEL_FR].x = 1.3;
+	wheels_info_[WHEEL_FR].y = -0.9;
 }
 
 /** The derived-class part of load_params_from_xml() */
 void DynamicsAckermann::dynamics_load_params_from_xml(
 	const rapidxml::xml_node<char>* xml_node)
 {
-	const std::map<std::string, std::string> varValues = {{"NAME", m_name}};
+	const std::map<std::string, std::string> varValues = {{"NAME", name_}};
 
 	// <chassis ...> </chassis>
 	if (const rapidxml::xml_node<char>* xml_chassis =
@@ -69,10 +69,10 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	{
 		// Attribs:
 		TParameterDefinitions attribs;
-		attribs["mass"] = TParamEntry("%lf", &this->m_chassis_mass);
-		attribs["zmin"] = TParamEntry("%lf", &this->m_chassis_z_min);
-		attribs["zmax"] = TParamEntry("%lf", &this->m_chassis_z_max);
-		attribs["color"] = TParamEntry("%color", &this->m_chassis_color);
+		attribs["mass"] = TParamEntry("%lf", &this->chassis_mass_);
+		attribs["zmin"] = TParamEntry("%lf", &this->chassis_z_min_);
+		attribs["zmax"] = TParamEntry("%lf", &this->chassis_z_max_);
+		attribs["color"] = TParamEntry("%color", &this->chassis_color_);
 
 		parse_xmlnode_attribs(
 			*xml_chassis, attribs, {},
@@ -83,7 +83,7 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 				xml_chassis->first_node("shape");
 			xml_shape)
 			mvsim::parse_xmlnode_shape(
-				*xml_shape, m_chassis_poly,
+				*xml_shape, chassis_poly_,
 				"[DynamicsAckermann::dynamics_load_params_from_xml]");
 	}
 
@@ -102,11 +102,11 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 	{
 		if (auto xml_wheel = xml_node->first_node(w_names[i]); xml_wheel)
 		{
-			m_wheels_info[i].loadFromXML(xml_wheel);
+			wheels_info_[i].loadFromXML(xml_wheel);
 		}
 		else
 		{
-			m_world->logFmt(
+			world_->logFmt(
 				mrpt::system::LVL_WARN,
 				"No XML entry '%s' found: using defaults for wheel #%u",
 				w_names[i], static_cast<unsigned int>(i));
@@ -124,18 +124,18 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 		ack_ps["f_wheels_x"] = TParamEntry("%lf", &front_x);
 		ack_ps["f_wheels_d"] = TParamEntry("%lf", &front_d);
 		// other params:
-		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &m_max_steer_ang);
+		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &max_steer_ang_);
 
 		parse_xmlnode_children_as_param(
 			*xml_node, ack_ps, varValues,
 			"[DynamicsAckermann::dynamics_load_params_from_xml]");
 
 		// Front-left:
-		m_wheels_info[WHEEL_FL].x = front_x;
-		m_wheels_info[WHEEL_FL].y = 0.5 * front_d;
+		wheels_info_[WHEEL_FL].x = front_x;
+		wheels_info_[WHEEL_FL].y = 0.5 * front_d;
 		// Front-right:
-		m_wheels_info[WHEEL_FR].x = front_x;
-		m_wheels_info[WHEEL_FR].y = -0.5 * front_d;
+		wheels_info_[WHEEL_FR].x = front_x;
+		wheels_info_[WHEEL_FR].y = -0.5 * front_d;
 	}
 
 	// Vehicle controller:
@@ -154,24 +154,24 @@ void DynamicsAckermann::dynamics_load_params_from_xml(
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
-				m_controller = std::make_shared<ControllerRawForces>(*this);
+				controller_ = std::make_shared<ControllerRawForces>(*this);
 			else if (sCtrlClass == ControllerTwistFrontSteerPID::class_name())
-				m_controller =
+				controller_ =
 					std::make_shared<ControllerTwistFrontSteerPID>(*this);
 			else if (sCtrlClass == ControllerFrontSteerPID::class_name())
-				m_controller = std::make_shared<ControllerFrontSteerPID>(*this);
+				controller_ = std::make_shared<ControllerFrontSteerPID>(*this);
 			else
 				THROW_EXCEPTION_FMT(
 					"[DynamicsAckermann] Unknown 'class'='%s' in "
 					"<controller> XML node",
 					sCtrlClass.c_str());
 
-			m_controller->load_config(*xml_control);
+			controller_->load_config(*xml_control);
 		}
 	}
 	// Default controller:
-	if (!m_controller)
-		m_controller = std::make_shared<ControllerRawForces>(*this);
+	if (!controller_)
+		controller_ = std::make_shared<ControllerRawForces>(*this);
 }
 
 // See docs in base class:
@@ -181,13 +181,13 @@ void DynamicsAckermann::invoke_motor_controllers(
 	// Longitudinal forces at each wheel:
 	out_torque_per_wheel.assign(4, 0.0);
 
-	if (m_controller)
+	if (controller_)
 	{
 		// Invoke controller:
 		TControllerInput ci;
 		ci.context = context;
 		TControllerOutput co;
-		m_controller->control_step(ci, co);
+		controller_->control_step(ci, co);
 		// Take its output:
 		out_torque_per_wheel[WHEEL_RL] = co.rl_torque;
 		out_torque_per_wheel[WHEEL_RR] = co.rr_torque;
@@ -198,8 +198,8 @@ void DynamicsAckermann::invoke_motor_controllers(
 		// Ackermann formulas for inner&outer weels turning angles wrt the
 		// equivalent (central) one:
 		computeFrontWheelAngles(
-			co.steer_ang, m_wheels_info[WHEEL_FL].yaw,
-			m_wheels_info[WHEEL_FR].yaw);
+			co.steer_ang, wheels_info_[WHEEL_FL].yaw,
+			wheels_info_[WHEEL_FR].yaw);
 	}
 }
 
@@ -209,12 +209,12 @@ void DynamicsAckermann::computeFrontWheelAngles(
 {
 	// EQ1: cot(d)+0.5*w/l = cot(do)
 	// EQ2: cot(di)=cot(do)-w/l
-	const double w = m_wheels_info[WHEEL_FL].y - m_wheels_info[WHEEL_FR].y;
-	const double l = m_wheels_info[WHEEL_FL].x - m_wheels_info[WHEEL_RL].x;
+	const double w = wheels_info_[WHEEL_FL].y - wheels_info_[WHEEL_FR].y;
+	const double l = wheels_info_[WHEEL_FL].x - wheels_info_[WHEEL_RL].x;
 	ASSERT_(l > 0);
 	const double w_l = w / l;
 	const double delta =
-		b2Clamp(std::abs(desired_equiv_steer_ang), 0.0, m_max_steer_ang);
+		b2Clamp(std::abs(desired_equiv_steer_ang), 0.0, max_steer_ang_);
 
 	const bool delta_neg = (desired_equiv_steer_ang < 0);
 	ASSERT_LT_(delta, 0.5 * M_PI - 0.01);
@@ -237,19 +237,19 @@ mrpt::math::TTwist2D DynamicsAckermann::getVelocityLocalOdoEstimate() const
 	// Velocities in local +X at each wheel i={0,1}:
 	// v_i = vx - w_veh * wheel_{i,y}  =  w_i * R_i
 	// Re-arranging:
-	const double w0 = m_wheels_info[WHEEL_RL].getW();
-	const double w1 = m_wheels_info[WHEEL_RR].getW();
-	const double R0 = m_wheels_info[WHEEL_RL].diameter * 0.5;
-	const double R1 = m_wheels_info[WHEEL_RR].diameter * 0.5;
+	const double w0 = wheels_info_[WHEEL_RL].getW();
+	const double w1 = wheels_info_[WHEEL_RR].getW();
+	const double R0 = wheels_info_[WHEEL_RL].diameter * 0.5;
+	const double R1 = wheels_info_[WHEEL_RR].diameter * 0.5;
 
-	const double Ay = m_wheels_info[WHEEL_RL].y - m_wheels_info[WHEEL_RR].y;
+	const double Ay = wheels_info_[WHEEL_RL].y - wheels_info_[WHEEL_RR].y;
 	ASSERTMSG_(
 		Ay != 0.0,
 		"The two wheels of a differential vehicle CAN'T by at the same Y "
 		"coordinate!");
 
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;
-	const double vx_veh = w0 * R0 + w_veh * m_wheels_info[WHEEL_RL].y;
+	const double vx_veh = w0 * R0 + w_veh * wheels_info_[WHEEL_RL].y;
 
 	odo_vel.vx = vx_veh;
 	odo_vel.vy = 0.0;

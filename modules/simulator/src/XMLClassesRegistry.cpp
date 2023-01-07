@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -20,8 +20,8 @@ using namespace std;
 const rapidxml::xml_node<char>* XmlClassesRegistry::get(
 	const std::string& xml_node_class) const
 {
-	map<string, TXMLData>::const_iterator it = m_classes.find(xml_node_class);
-	if (it == m_classes.end())
+	map<string, TXMLData>::const_iterator it = classes_.find(xml_node_class);
+	if (it == classes_.end())
 		return nullptr;
 	else
 		return it->second.xml_doc->first_node();
@@ -41,11 +41,11 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_class)
 		// sanity checks:
 		// e.g. "vehicle:class"
 		const rapidxml::xml_node<>* root_node =
-			xml->first_node(m_tagname.c_str());
+			xml->first_node(tagname_.c_str());
 		if (!root_node)
 			throw runtime_error(mrpt::format(
 				"[XmlClassesRegistry] Missing XML node <%s>",
-				m_tagname.c_str()));
+				tagname_.c_str()));
 
 		const rapidxml::xml_attribute<>* att_name =
 			root_node->first_attribute("name");
@@ -53,12 +53,12 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_class)
 			throw runtime_error(mrpt::format(
 				"[XmlClassesRegistry] Missing mandatory attribute "
 				"'name' in node <%s>",
-				m_tagname.c_str()));
+				tagname_.c_str()));
 
 		const string sClassName = att_name->value();
 
 		// All OK:
-		TXMLData& d = m_classes[sClassName];
+		TXMLData& d = classes_[sClassName];
 		d.xml_doc = xml;
 		d.xml_data = xml_node_class;
 	}

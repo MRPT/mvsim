@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -30,12 +30,12 @@ class GroundGrid : public WorldElementBase
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
-	bool m_is_floating;
-	std::string m_float_center_at_vehicle_name;
-	double m_x_min, m_x_max, m_y_min, m_y_max, m_interval;
-	mrpt::img::TColor m_color;
-	double m_line_width;
+	bool is_floating_;
+	std::string float_center_at_vehicle_name_;
+	double x_min_, x_max_, y_min_, y_max_, interval_;
+	mrpt::img::TColor color_;
+	double line_width_;
 
-	mrpt::opengl::CGridPlaneXY::Ptr m_gl_groundgrid;
+	mrpt::opengl::CGridPlaneXY::Ptr gl_groundgrid_;
 };
 }  // namespace mvsim

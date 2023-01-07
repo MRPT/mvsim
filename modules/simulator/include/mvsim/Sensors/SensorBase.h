@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -58,38 +58,38 @@ class SensorBase : public VisualObject, public Simulable
 	static void RegisterSensorOriginViz(
 		const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
 
-	double sensor_period() const { return m_sensor_period; }
+	double sensor_period() const { return sensor_period_; }
 
    protected:
 	/** Should be called within each derived class simul_post_timestep() method
-	 *  to update m_sensor_last_timestamp and check if the sensor should be
+	 *  to update sensor_last_timestamp_ and check if the sensor should be
 	 * simulated now, given the current simulation time, and the sensor rate in
-	 * m_sensor_period.
+	 * sensor_period_.
 	 *
 	 * \return true if it is now time to simulate a new sensor reading,
 	 *         false otherwise.
 	 */
 	bool should_simulate_sensor(const TSimulContext& context);
 
-	Simulable& m_vehicle;  //!< The vehicle this sensor is attached to
+	Simulable& vehicle_;  //!< The vehicle this sensor is attached to
 
-	World* world() { return m_vehicle.getSimulableWorldObject(); }
-	const World* world() const { return m_vehicle.getSimulableWorldObject(); }
+	World* world() { return vehicle_.getSimulableWorldObject(); }
+	const World* world() const { return vehicle_.getSimulableWorldObject(); }
 
 	/** Generate one sensor reading every this period [s] (Default = 0.1) */
-	double m_sensor_period = 0.1;
+	double sensor_period_ = 0.1;
 
-	std::string m_save_to_rawlog;
-	std::shared_ptr<mrpt::io::CFileGZOutputStream> m_rawlog_io;
+	std::string save_to_rawlog_;
+	std::shared_ptr<mrpt::io::CFileGZOutputStream> rawlog_io_;
 
-	/** The last sensor reading timestamp. See  m_sensor_period */
-	double m_sensor_last_timestamp = 0;
+	/** The last sensor reading timestamp. See  sensor_period_ */
+	double sensor_last_timestamp_ = 0;
 
 	/** Publish to MVSIM ZMQ topic stream, if not empty (default) */
 	std::string publishTopic_;
 
 	/// Filled in by SensorBase::loadConfigFrom()
-	std::map<std::string, std::string> m_varValues;
+	std::map<std::string, std::string> varValues_;
 
 	bool parseSensorPublish(
 		const rapidxml::xml_node<char>* node,

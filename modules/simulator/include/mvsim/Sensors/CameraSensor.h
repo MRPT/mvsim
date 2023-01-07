@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -45,27 +45,27 @@ class CameraSensor : public SensorBase
 
 	// Store here all sensor intrinsic parameters. This obj will be copied as a
 	// "pattern" to fill it with actual scan data.
-	mrpt::obs::CObservationImage m_sensor_params;
+	mrpt::obs::CObservationImage sensor_params_;
 
-	std::mutex m_last_obs_cs;
+	std::mutex last_obs_cs_;
 	/** Last simulated scan */
-	mrpt::obs::CObservationImage::Ptr m_last_obs;
-	mrpt::obs::CObservationImage::Ptr m_last_obs2gui;
+	mrpt::obs::CObservationImage::Ptr last_obs_;
+	mrpt::obs::CObservationImage::Ptr last_obs2gui_;
 
-	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_rgb;
+	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_rgb_;
 
-	/** Whether m_gl_scan has to be updated upon next call of
-	 * internalGuiUpdate() from m_last_scan2gui */
-	bool m_gui_uptodate = false;
+	/** Whether gl_scan_ has to be updated upon next call of
+	 * internalGuiUpdate() from last_scan2gui_ */
+	bool gui_uptodate_ = false;
 
-	std::optional<TSimulContext> m_has_to_render;
-	std::mutex m_has_to_render_mtx;
+	std::optional<TSimulContext> has_to_render_;
+	std::mutex has_to_render_mtx_;
 
-	float m_rgb_clip_min = 1e-2, m_rgb_clip_max = 1e+4;
-	float m_ambient_light = 0.6f;
+	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
+	float ambient_light_ = 0.6f;
 
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
-		m_gl_sensor_origin_corner;
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov, m_gl_sensor_frustum;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
+		gl_sensor_origin_corner_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
 };
 }  // namespace mvsim

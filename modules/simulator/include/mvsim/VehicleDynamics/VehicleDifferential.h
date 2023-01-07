@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -139,15 +139,15 @@ class DynamicsDifferential : public VehicleBase
 		}
 
 	   private:
-		double m_distWheels = 0;
-		std::array<PID_Controller, 2> m_PIDs;
+		double distWheels_ = 0;
+		std::array<PID_Controller, 2> PIDs_;
 	};
 
-	const ControllerBase::Ptr& getController() const { return m_controller; }
-	ControllerBase::Ptr& getController() { return m_controller; }
+	const ControllerBase::Ptr& getController() const { return controller_; }
+	ControllerBase::Ptr& getController() { return controller_; }
 	virtual ControllerBaseInterface* getControllerInterface() override
 	{
-		return m_controller.get();
+		return controller_.get();
 	}
 
 	/** @} */  // end controllers
@@ -164,10 +164,10 @@ class DynamicsDifferential : public VehicleBase
 		std::vector<double>& out_force_per_wheel) override;
 
 	/// Defined at ctor time:
-	const std::vector<ConfigPerWheel> m_configPerWheel;
+	const std::vector<ConfigPerWheel> configPerWheel_;
 
    private:
-	ControllerBase::Ptr m_controller;  //!< The installed controller
+	ControllerBase::Ptr controller_;  //!< The installed controller
 };
 
 class DynamicsDifferential_3_wheels : public DynamicsDifferential

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -61,13 +61,13 @@ void DynamicsAckermannDrivetrain::ControllerRawForces::teleop_interface(
 		case 'A':
 		case 'a':
 			setpoint_steer_ang += 1.0 * M_PI / 180.0;
-			mrpt::keep_min(setpoint_steer_ang, m_veh.getMaxSteeringAngle());
+			mrpt::keep_min(setpoint_steer_ang, veh_.getMaxSteeringAngle());
 			break;
 
 		case 'D':
 		case 'd':
 			setpoint_steer_ang -= 1.0 * M_PI / 180.0;
-			mrpt::keep_max(setpoint_steer_ang, -m_veh.getMaxSteeringAngle());
+			mrpt::keep_max(setpoint_steer_ang, -veh_.getMaxSteeringAngle());
 			break;
 
 		case ' ':

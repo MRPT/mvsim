@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -56,41 +56,41 @@ class DepthCameraSensor : public SensorBase
 
 	// Store here all sensor intrinsic parameters. This obj will be copied as a
 	// "pattern" to fill it with actual scan data.
-	mrpt::obs::CObservation3DRangeScan m_sensor_params;
+	mrpt::obs::CObservation3DRangeScan sensor_params_;
 
-	std::mutex m_last_obs_cs;
+	std::mutex last_obs_cs_;
 	/** Last simulated scan */
-	mrpt::obs::CObservation3DRangeScan::Ptr m_last_obs;
-	mrpt::obs::CObservation3DRangeScan::Ptr m_last_obs2gui;
+	mrpt::obs::CObservation3DRangeScan::Ptr last_obs_;
+	mrpt::obs::CObservation3DRangeScan::Ptr last_obs2gui_;
 
 	// Note: we need 2 to support different resolutions for RGB vs Depth.
-	std::shared_ptr<mrpt::opengl::CFBORender> m_fbo_renderer_rgb,
-		m_fbo_renderer_depth;
+	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_rgb_,
+		fbo_renderer_depth_;
 
-	/** Whether m_gl_scan has to be updated upon next call of
-	 * internalGuiUpdate() from m_last_scan2gui */
-	bool m_gui_uptodate = false;
-	mrpt::opengl::CPointCloudColoured::Ptr m_gl_obs;
+	/** Whether gl_scan_ has to be updated upon next call of
+	 * internalGuiUpdate() from last_scan2gui_ */
+	bool gui_uptodate_ = false;
+	mrpt::opengl::CPointCloudColoured::Ptr gl_obs_;
 
-	std::optional<TSimulContext> m_has_to_render;
-	std::mutex m_has_to_render_mtx;
+	std::optional<TSimulContext> has_to_render_;
+	std::mutex has_to_render_mtx_;
 
-	float m_rgb_clip_min = 1e-2, m_rgb_clip_max = 1e+4;
-	float m_depth_clip_min = 0.1, m_depth_clip_max = 15.0;
-	float m_depth_resolution = 1e-3;
+	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
+	float depth_clip_min_ = 0.1, depth_clip_max_ = 15.0;
+	float depth_resolution_ = 1e-3;
 
-	float m_ambient_light = 0.6f;
+	float ambient_light_ = 0.6f;
 
-	bool m_sense_depth = true;	//!< Simulate the DEPTH sensor part
-	bool m_sense_rgb = true;  //!< Simulate the RGB sensor part
+	bool sense_depth_ = true;  //!< Simulate the DEPTH sensor part
+	bool sense_rgb_ = true;	 //!< Simulate the RGB sensor part
 
-	float m_depth_noise_sigma = 1e-3;
-	bool m_show_3d_pointcloud = false;
+	float depth_noise_sigma_ = 1e-3;
+	bool show_3d_pointcloud_ = false;
 
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_origin,
-		m_gl_sensor_origin_corner;
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_sensor_fov, m_gl_sensor_frustum;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
+		gl_sensor_origin_corner_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
 
-	mrpt::math::CMatrixFloat m_depthImage;	// to avoid memory allocs
+	mrpt::math::CMatrixFloat depthImage_;  // to avoid memory allocs
 };
 }  // namespace mvsim

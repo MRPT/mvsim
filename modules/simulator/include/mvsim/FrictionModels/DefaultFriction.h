@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -33,11 +33,11 @@ class DefaultFriction : public FrictionBase
 		mrpt::math::TPoint2D& out_result_force_local) const override;
 
    private:
-	double m_mu;  //!< friction coeficient (non-dimensional)
-	double m_C_damping;	 //!< For wheels "internal friction" (N*m*s/rad)
+	double mu_;	 //!< friction coeficient (non-dimensional)
+	double C_damping_;	//!< For wheels "internal friction" (N*m*s/rad)
 
    public:
-	const TParameterDefinitions m_params = {
-		{"mu", {"%lf", &m_mu}}, {"C_damping", {"%lf", &m_C_damping}}};
+	const TParameterDefinitions params_ = {
+		{"mu", {"%lf", &mu_}}, {"C_damping", {"%lf", &C_damping_}}};
 };
 }  // namespace mvsim

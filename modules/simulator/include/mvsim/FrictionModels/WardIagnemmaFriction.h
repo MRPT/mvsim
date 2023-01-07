@@ -35,9 +35,9 @@ class WardIagnemmaFriction : public FrictionBase
 		mrpt::math::TPoint2D& out_result_force_local) const override;
 
    private:
-	double m_mu;  //!< friction coeficient (non-dimensional)
-	double m_C_damping;	 //!< For wheels "internal friction" (N*m*s/rad)
-	double m_A_roll, m_R1,
-		m_R2;  //!< Ward-Iagnemma rolling resistance coefficient
+	double mu_;	 //!< friction coeficient (non-dimensional)
+	double C_damping_;	//!< For wheels "internal friction" (N*m*s/rad)
+	double A_roll_, R1_,
+		R2_;  //!< Ward-Iagnemma rolling resistance coefficient
 };
 }  // namespace mvsim

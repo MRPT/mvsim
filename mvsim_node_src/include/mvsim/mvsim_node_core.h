@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -47,6 +47,14 @@
 
 #include <atomic>
 #include <thread>
+
+namespace mrpt
+{
+namespace obs
+{
+class CObservationPointCloud;
+}
+}  // namespace mrpt
 
 /** A class to wrap libmvsim as a ROS node
  */
@@ -94,7 +102,7 @@ class MVSimNode
 	bool do_fake_localization_ = true;
 
 	//!< (Default=0.1) Time tolerance for published TFs
-	double m_transform_tolerance = 0.1;
+	double transform_tolerance_ = 0.1;
 
    protected:
 	std::shared_ptr<mvsim::Server> mvsim_server_;
@@ -173,7 +181,7 @@ class MVSimNode
 
 	/// Pubs/Subs for each vehicle. Initialized by initPubSubs(), called
 	/// from notifyROSWorldIsUpdated()
-	std::vector<TPubSubPerVehicle> m_pubsub_vehicles;
+	std::vector<TPubSubPerVehicle> pubsub_vehicles_;
 
 	/** Initialize all pub/subs required for each vehicle, for the specific
 	 * vehicle \a veh */
@@ -280,5 +288,8 @@ class MVSimNode
 	void internalOn(
 		const mvsim::VehicleBase& veh,
 		const mrpt::obs::CObservation3DRangeScan& obs);
+	void internalOn(
+		const mvsim::VehicleBase& veh,
+		const mrpt::obs::CObservationPointCloud& obs);
 
 };	// end class

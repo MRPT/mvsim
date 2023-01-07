@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -62,10 +62,10 @@ class FrictionBase
 	void setLogger(const std::weak_ptr<CSVLogger>& logger);
 
    protected:
-	World* m_world;
-	VehicleBase& m_my_vehicle;
+	World* world_;
+	VehicleBase& my_vehicle_;
 
-	std::weak_ptr<CSVLogger> m_logger;
+	std::weak_ptr<CSVLogger> logger_;
 };
 
 typedef std::shared_ptr<FrictionBase> FrictionBasePtr;

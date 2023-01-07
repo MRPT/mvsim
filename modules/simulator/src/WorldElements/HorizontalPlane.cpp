@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -49,18 +49,18 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 
 	TParameterDefinitions params;
-	params["color"] = TParamEntry("%color", &m_color);
+	params["color"] = TParamEntry("%color", &color_);
 
-	params["x_min"] = TParamEntry("%f", &m_x_min);
-	params["x_max"] = TParamEntry("%f", &m_x_max);
-	params["y_min"] = TParamEntry("%f", &m_y_min);
-	params["y_max"] = TParamEntry("%f", &m_y_max);
-	params["z"] = TParamEntry("%f", &m_z);
-	params["cull_face"] = TParamEntry("%s", &m_cull_faces);
+	params["x_min"] = TParamEntry("%f", &x_min_);
+	params["x_max"] = TParamEntry("%f", &x_max_);
+	params["y_min"] = TParamEntry("%f", &y_min_);
+	params["y_max"] = TParamEntry("%f", &y_max_);
+	params["z"] = TParamEntry("%f", &z_);
+	params["cull_face"] = TParamEntry("%s", &cull_faces_);
 
-	params["texture"] = TParamEntry("%s", &m_textureFileName);
-	params["texture_size_x"] = TParamEntry("%lf", &m_textureSizeX);
-	params["texture_size_y"] = TParamEntry("%lf", &m_textureSizeY);
+	params["texture"] = TParamEntry("%s", &textureFileName_);
+	params["texture_size_x"] = TParamEntry("%lf", &textureSizeX_);
+	params["texture_size_y"] = TParamEntry("%lf", &textureSizeY_);
 
 	parse_xmlnode_children_as_param(*root, params);
 }
@@ -74,28 +74,28 @@ void HorizontalPlane::internalGuiUpdate(
 	using namespace std::string_literals;
 
 	// 1st call? (w/o texture)
-	if (!m_gl_plane && m_textureFileName.empty() && viz && physical)
+	if (!gl_plane_ && textureFileName_.empty() && viz && physical)
 	{
-		m_gl_plane = mrpt::opengl::CTexturedPlane::Create();
-		m_gl_plane->setPlaneCorners(m_x_min, m_x_max, m_y_min, m_y_max);
-		m_gl_plane->setLocation(0, 0, m_z);
-		m_gl_plane->setName("HorizontalPlane_"s + getName());
+		gl_plane_ = mrpt::opengl::CTexturedPlane::Create();
+		gl_plane_->setPlaneCorners(x_min_, x_max_, y_min_, y_max_);
+		gl_plane_->setLocation(0, 0, z_);
+		gl_plane_->setName("HorizontalPlane_"s + getName());
 
-		m_gl_plane->setColor_u8(m_color);
+		gl_plane_->setColor_u8(color_);
 
 #if MRPT_VERSION >= 0x240
-		m_gl_plane->cullFaces(
+		gl_plane_->cullFaces(
 			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
-				m_cull_faces));
+				cull_faces_));
 #endif
-		viz->get().insert(m_gl_plane);
-		physical->get().insert(m_gl_plane);
+		viz->get().insert(gl_plane_);
+		physical->get().insert(gl_plane_);
 	}
 	// 1st call? (with texture)
-	if (!m_gl_plane_text && !m_textureFileName.empty() && viz && physical)
+	if (!gl_plane_text_ && !textureFileName_.empty() && viz && physical)
 	{
 		const std::string localFileName =
-			m_world->xmlPathToActualPath(m_textureFileName);
+			world_->xmlPathToActualPath(textureFileName_);
 		ASSERT_FILE_EXISTS_(localFileName);
 
 		mrpt::img::CImage texture;
@@ -105,47 +105,47 @@ void HorizontalPlane::internalGuiUpdate(
 		// Compute (U,V) texture coordinates:
 		float u_min = 0;
 		float v_min = 0;
-		float u_max = (m_x_max - m_x_min) / m_textureSizeX;
-		float v_max = (m_y_max - m_y_min) / m_textureSizeY;
+		float u_max = (x_max_ - x_min_) / textureSizeX_;
+		float v_max = (y_max_ - y_min_) / textureSizeY_;
 
-		m_gl_plane_text = mrpt::opengl::CSetOfTexturedTriangles::Create();
-		m_gl_plane_text->setName("HorizontalPlane_"s + getName());
+		gl_plane_text_ = mrpt::opengl::CSetOfTexturedTriangles::Create();
+		gl_plane_text_->setName("HorizontalPlane_"s + getName());
 
 		{
 			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
-			t.vertices[0].xyzrgba.pt = {m_x_min, m_y_min, m_z};
-			t.vertices[1].xyzrgba.pt = {m_x_max, m_y_min, m_z};
-			t.vertices[2].xyzrgba.pt = {m_x_max, m_y_max, m_z};
+			t.vertices[0].xyzrgba.pt = {x_min_, y_min_, z_};
+			t.vertices[1].xyzrgba.pt = {x_max_, y_min_, z_};
+			t.vertices[2].xyzrgba.pt = {x_max_, y_max_, z_};
 
 			t.vertices[0].uv = {u_min, v_min};
 			t.vertices[1].uv = {u_max, v_min};
 			t.vertices[2].uv = {u_max, v_max};
 
-			m_gl_plane_text->insertTriangle(t);
+			gl_plane_text_->insertTriangle(t);
 		}
 		{
 			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
-			t.vertices[0].xyzrgba.pt = {m_x_min, m_y_min, m_z};
-			t.vertices[1].xyzrgba.pt = {m_x_max, m_y_max, m_z};
-			t.vertices[2].xyzrgba.pt = {m_x_min, m_y_max, m_z};
+			t.vertices[0].xyzrgba.pt = {x_min_, y_min_, z_};
+			t.vertices[1].xyzrgba.pt = {x_max_, y_max_, z_};
+			t.vertices[2].xyzrgba.pt = {x_min_, y_max_, z_};
 
 			t.vertices[0].uv = {u_min, v_min};
 			t.vertices[1].uv = {u_max, v_max};
 			t.vertices[2].uv = {u_min, v_max};
 
-			m_gl_plane_text->insertTriangle(t);
+			gl_plane_text_->insertTriangle(t);
 		}
 
-		m_gl_plane_text->assignImage(texture);
+		gl_plane_text_->assignImage(texture);
 
 #if MRPT_VERSION >= 0x240
-		m_gl_plane_text->cullFaces(
+		gl_plane_text_->cullFaces(
 			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
-				m_cull_faces));
+				cull_faces_));
 #endif
 
-		viz->get().insert(m_gl_plane_text);
-		physical->get().insert(m_gl_plane_text);
+		viz->get().insert(gl_plane_text_);
+		physical->get().insert(gl_plane_text_);
 	}
 
 	// Update them:
@@ -154,8 +154,8 @@ void HorizontalPlane::internalGuiUpdate(
 	// don't need/can't acquire it again:
 	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-	if (m_gl_plane) m_gl_plane->setPose(objectPose);
-	if (m_gl_plane_text) m_gl_plane_text->setPose(objectPose);
+	if (gl_plane_) gl_plane_->setPose(objectPose);
+	if (gl_plane_text_) gl_plane_text_->setPose(objectPose);
 }
 
 void HorizontalPlane::simul_pre_timestep(const TSimulContext& context)

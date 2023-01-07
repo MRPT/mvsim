@@ -12,6 +12,13 @@
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
+	<variable name="BLOCKS_X_MIN" value="5.0" />
+	<variable name="BLOCKS_X_MAX" value="10.0" />
+	
+	<variable name="BLOCKS_Y_MIN" value="-5.0" />	
+	<variable name="BLOCKS_Y_MAX" value="8.0" />
+
+	<variable name="NUM_BLOCKS" value="30" />
 
 	<!-- ========================
 		   Scenario definition
@@ -54,7 +61,7 @@
 	      Obstacle blocks classes definition
 	     ====================================== -->
 	<block:class name="square_obstacle">
-		<mass>20</mass>
+		<mass>2</mass>
 		<color>#0080ff</color>
 		<zmax>0.5</zmax>
 		<ground_friction>0.3</ground_friction>
@@ -66,9 +73,16 @@
 		</shape>
 	</block:class>
 
-	<block class="square_obstacle"> <init_pose>6 5 45</init_pose> </block>
-	<block class="square_obstacle"> <init_pose>10 -3 -90</init_pose> </block>
-	<block class="square_obstacle"> <init_pose>3 -4 -45</init_pose> </block>
+	<block class="square_obstacle"> <init_pose>$f{BLOCKS_X_MIN + 2} $f{BLOCKS_Y_MIN+1}  45</init_pose> </block>
+	<block class="square_obstacle"> <init_pose>$f{BLOCKS_X_MIN + 8} $f{BLOCKS_Y_MIN+5} -90</init_pose> </block>
+	<block class="square_obstacle"> <init_pose>$f{BLOCKS_X_MIN + 4} $f{BLOCKS_Y_MIN+8} -45</init_pose> </block>
+
+	<!-- this random functions require mrpt >=2.5.8 -->
+	<!--
+	<for var="i" from="0" to="$f{NUM_BLOCKS}">
+		<block class="square_obstacle"> <init_pose>$f{unifrnd(BLOCKS_X_MIN,BLOCKS_X_MAX)} $f{unifrnd(BLOCKS_Y_MIN,BLOCKS_Y_MAX)} $f{unifrnd(-180,180)}</init_pose> </block>
+	</for>
+	-->
 
 	<block class="square_obstacle">
 		<init_pose>5 1 0</init_pose>
