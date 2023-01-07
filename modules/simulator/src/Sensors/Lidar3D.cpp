@@ -53,6 +53,8 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["vert_nrays"] = TParamEntry("%i", &vertNumRays_);
 	params["horz_nrays"] = TParamEntry("%i", &horzNumRays_);
 
+	params["fbo_nrows"] = TParamEntry("%i", &fbo_nrows_);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
 }
@@ -195,12 +197,12 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	constexpr double camModel_hFOV = 120.01_deg;
-	const int FBO_NROWS = vertNumRays_ * 20;
+	const int FBO_NROWS = fbo_nrows_;
 	// This FBO is for camModel_hFOV only:
 	const int FBO_NCOLS = horzNumRays_;
 
-	MRPT_TODO("use geometry to place an exact limit");
-	const double camModel_vFOV = vertical_fov_ * 3.0;
+	// worst vFOV case: at each sub-scan render corner:
+	const double camModel_vFOV = std::min(179.0_deg, 5.0 * vertical_fov_);
 
 	mrpt::img::TCamera camModel;
 	camModel.ncols = FBO_NCOLS;

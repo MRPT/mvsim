@@ -3,7 +3,9 @@
 
     <vert_fov_degrees>${vert_fov_degrees|30}</vert_fov_degrees>
     <vert_nrays>${vert_nrays|16}</vert_nrays>
-    <horz_nrays>${horz_nrays|300}</horz_nrays>
+    <horz_nrays>${horz_nrays|200}</horz_nrays>
+
+    <fbo_nrows>${fbo_nrows|320}</fbo_nrows>
 
     <range_std_noise>${sensor_std_noise|0.01}</range_std_noise>
     <sensor_period>${sensor_period_sec|0.10}</sensor_period>

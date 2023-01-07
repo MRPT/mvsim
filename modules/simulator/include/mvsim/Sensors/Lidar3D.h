@@ -57,6 +57,7 @@ class Lidar3D : public SensorBase
 	float maxRange_ = 80.0f;
 	double vertical_fov_ = mrpt::DEG2RAD(30.0);
 	int vertNumRays_ = 16, horzNumRays_ = 180;
+	int fbo_nrows_ = vertNumRays_ * 20;
 
 	/** Last simulated scan */
 	mrpt::obs::CObservationPointCloud::Ptr last_scan2gui_, last_scan_;
