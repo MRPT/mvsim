@@ -17,6 +17,7 @@
 #include <cmath>  // fmod()
 
 #include "JointXMLnode.h"
+#include "parse_utils.h"
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -143,7 +144,12 @@ bool Simulable::parseSimulable(
 	if (const xml_node<>* nPose = rootNode.first_node("init_pose"); nPose)
 	{
 		mrpt::math::TPose3D p;
-		if (3 != ::sscanf(nPose->value(), "%lf %lf %lf", &p.x, &p.y, &p.yaw))
+		if (3 != ::sscanf(
+					 mvsim::parse(
+						 nPose->value(),
+						 getSimulableWorldObject()->user_defined_variables())
+						 .c_str(),
+					 "%lf %lf %lf", &p.x, &p.y, &p.yaw))
 			THROW_EXCEPTION_FMT(
 				"Error parsing <init_pose>%s</init_pose>", nPose->value());
 		p.yaw *= M_PI / 180.0;	// deg->rad
@@ -163,9 +169,12 @@ bool Simulable::parseSimulable(
 	if (const xml_node<>* nInitVel = rootNode.first_node("init_vel"); nInitVel)
 	{
 		mrpt::math::TTwist2D dq;
-		if (3 !=
-			::sscanf(
-				nInitVel->value(), "%lf %lf %lf", &dq.vx, &dq.vy, &dq.omega))
+		if (3 != ::sscanf(
+					 mvsim::parse(
+						 nInitVel->value(),
+						 getSimulableWorldObject()->user_defined_variables())
+						 .c_str(),
+					 "%lf %lf %lf", &dq.vx, &dq.vy, &dq.omega))
 			THROW_EXCEPTION_FMT(
 				"Error parsing <init_vel>%s</init_vel>", nInitVel->value());
 		dq.omega *= M_PI / 180.0;  // deg->rad
@@ -247,8 +256,11 @@ bool Simulable::parseSimulable(
 					mrpt::math::TPose3D p;
 					double t = 0;
 					if (4 != ::sscanf(
-								 n->value(), "%lf %lf %lf %lf", &t, &p.x, &p.y,
-								 &p.yaw))
+								 mvsim::parse(
+									 n->value(), getSimulableWorldObject()
+													 ->user_defined_variables())
+									 .c_str(),
+								 "%lf %lf %lf %lf", &t, &p.x, &p.y, &p.yaw))
 						THROW_EXCEPTION_FMT(
 							"Error parsing <time_pose>:\n%s", n->value());
 					p.yaw *= M_PI / 180.0;	// deg->rad
@@ -260,8 +272,12 @@ bool Simulable::parseSimulable(
 					mrpt::math::TPose3D p;
 					double t = 0;
 					if (7 != ::sscanf(
-								 n->value(), "%lf %lf %lf %lf %lf %lf %lf", &t,
-								 &p.x, &p.y, &p.z, &p.yaw, &p.pitch, &p.roll))
+								 mvsim::parse(
+									 n->value(), getSimulableWorldObject()
+													 ->user_defined_variables())
+									 .c_str(),
+								 "%lf %lf %lf %lf %lf %lf %lf", &t, &p.x, &p.y,
+								 &p.z, &p.yaw, &p.pitch, &p.roll))
 						THROW_EXCEPTION_FMT(
 							"Error parsing <time_pose3d>:\n%s", n->value());
 					p.yaw *= M_PI / 180.0;	// deg->rad

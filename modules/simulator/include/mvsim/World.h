@@ -377,6 +377,11 @@ class World : public mrpt::system::COutputLogger
 
 	bool sensor_has_to_create_egl_context();
 
+	const std::map<std::string, std::string>& user_defined_variables() const
+	{
+		return userDefinedVariables_;
+	}
+
    private:
 	friend class VehicleBase;
 	friend class Block;
@@ -401,13 +406,17 @@ class World : public mrpt::system::COutputLogger
 
 	std::string serverAddress_ = "localhost";
 
-	const TParameterDefinitions other_world_params_ = {
+	const TParameterDefinitions otherWorldParams_ = {
 		{"server_address", {"%s", &serverAddress_}},
 		{"gravity", {"%lf", &gravity_}},
 		{"simul_timestep", {"%lf", &simulTimestep_}},
 		{"b2d_vel_iters", {"%i", &b2dVelIters_}},
 		{"b2d_pos_iters", {"%i", &b2dPosIters_}},
 	};
+
+	/** User-defined variables as defined via `<variable name='' value='' />`
+	 * tags in the World xml file, for use within `$f{}` expressions */
+	std::map<std::string, std::string> userDefinedVariables_;
 
 	/** In seconds, real simulation time since beginning (may be different than
 	 * wall-clock time because of time warp, etc.) */

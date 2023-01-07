@@ -12,11 +12,11 @@
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
-#include <iostream>	 // for debugging
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
+#include <sstream>
 #include <stdexcept>
 
 #include "parse_utils.h"
@@ -183,7 +183,8 @@ void World::internal_recursive_parse_XML(
 			fileAttrb,
 			"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
 
-		const std::string relFile = mvsim::parse(fileAttrb->value(), {});
+		const std::string relFile =
+			mvsim::parse(fileAttrb->value(), user_defined_variables());
 
 		const auto absFile = this->resolvePath(relFile);
 		MRPT_LOG_DEBUG_STREAM(
@@ -205,16 +206,34 @@ void World::internal_recursive_parse_XML(
 			mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
 		internal_recursive_parse_XML(root, newBasePath);
 	}
+	else if (!strcmp(node->name(), "variable"))
+	{
+		auto nameAttr = node->first_attribute("name");
+		ASSERTMSG_(
+			nameAttr,
+			"XML tag '<variable />' must have a 'name=\"xxx\"' attribute)");
+		const auto name = nameAttr->value();
+
+		auto valueAttr = node->first_attribute("value");
+		ASSERTMSG_(
+			valueAttr,
+			"XML tag '<variable />' must have a 'value=\"xxx\"' attribute)");
+
+		const std::string finalValue =
+			mvsim::parse(valueAttr->value(), userDefinedVariables_);
+
+		userDefinedVariables_[name] = finalValue;
+	}
 	else
 	{
 		// Default: Check if it's a parameter:
-		if (!parse_xmlnode_as_param(*node, other_world_params_))
+		if (!parse_xmlnode_as_param(*node, otherWorldParams_))
 		{
 			// Unknown element!!
 			MRPT_LOG_WARN_STREAM(
 				"[World::load_from_XML] *Warning* Ignoring "
 				"unknown XML node type '"
-				<< node->name());
+				<< node->name() << "'");
 		}
 	}
 
