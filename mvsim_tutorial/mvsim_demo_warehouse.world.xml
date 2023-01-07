@@ -70,6 +70,12 @@
 		  horz_nrays="300"
 		  fbo_nrows="$f{40*16}"
 		/>
+		
+		<include file="definitions/camera.sensor.xml" 
+		  sensor_x="0.2"  sensor_y="0" sensor_z="0.40"
+		  sensor_period_sec="0.10"
+		  sensor_name="cam1"
+		  />		
 	</vehicle>
 
 	<!-- ======================================
