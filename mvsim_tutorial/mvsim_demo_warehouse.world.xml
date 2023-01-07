@@ -87,8 +87,9 @@
 	  <wallThickness>0.10</wallThickness>
 	</walls>-->
 
+
 	<!-- ======================================
-	      Objects
+	      Object types
 	     ====================================== -->
 	<block:class name="shelf">
 		<mass>300</mass>
@@ -104,6 +105,24 @@
 		</visual>
 	</block:class>
 
+	<block:class name="stairs">
+		<mass>5000</mass>
+		<color>#0080ff</color>
+		<zmax>6.0</zmax>
+		<ground_friction>100.0</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/metal-stairs.dae</model_uri>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+
+	<!-- ======================================
+	      Object instances
+	     ====================================== -->
 	<!-- You can assign an optional custom name to each object, as an attribute to block, like name="shelf_001", etc. -->
 
 	<block class="shelf"> <init_pose>0 5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
@@ -113,5 +132,9 @@
 	<block class="shelf"> <init_pose>0 -9 0</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
 
 	<block class="shelf"> <init_pose>12 0 90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+
+
+	<block class="stairs"> <init_pose>-10 -10 0</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+
 
 </mvsim_world>

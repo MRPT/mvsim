@@ -12,6 +12,8 @@
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
+#include <filesystem>
+#include <iostream>
 #include <map>
 #include <stdexcept>
 
@@ -229,15 +231,70 @@ void World::internal_one_timestep(double dt)
 	if (ts > dt) timlogger_.registerUserMeasure("timestep.too_slow_alert", ts);
 }
 
+static std::string get_user_local_directory()
+{
+	std::filesystem::path local_directory;
+#ifdef _WIN32
+	local_directory = std::filesystem::path(std::getenv("APPDATA"));
+#else
+	local_directory = std::filesystem::path(std::getenv("HOME"));
+	local_directory += std::filesystem::path("/.config/");
+#endif
+
+	local_directory += std::filesystem::path("mvsim/");
+	local_directory += std::filesystem::path("storage/");
+
+	return local_directory.string();
+}
+
+static bool is_remote(const std::string& url)
+{
+	return 0 == ::strncmp(url.c_str(), "http://", strlen("http://")) ||
+		   0 == ::strncmp(url.c_str(), "https://", strlen("https://"));
+}
+
+std::string download_and_resolve_path(const std::string& url)
+{
+	std::cout << "[mvsim] Downloading '" << url << "'..." << std::endl;
+
+	const auto localDir = get_user_local_directory();
+
+	static bool warn1st = true;
+	if (warn1st)
+	{
+		std::cout << "[mvsim] Using local storage directory: '" << localDir
+				  << "'" << std::endl;
+		warn1st = false;
+	}
+	std::filesystem::create_directories(localDir);
+	ASSERT_DIRECTORY_EXISTS_(localDir);
+
+	const auto fileName = mrpt::system::extractFileName(url) + "." +
+						  mrpt::system::extractFileExtension(url);
+	const auto localFil = localDir + fileName;
+
+	const auto cmd =
+		mrpt::format("wget -q -O \"%s\" %s", localFil.c_str(), url.c_str());
+
+	int ret = ::system(cmd.c_str());
+	if (ret != 0)
+	{
+		THROW_EXCEPTION_FMT(
+			"[mvsim] Error executing the following command trying to "
+			"acquire a remote resource:\n%s",
+			cmd.c_str());
+	}
+
+	return {};
+}
+
 std::string World::xmlPathToActualPath(const std::string& modelURI) const
 {
 	std::string localFileName;
-	if (modelURI.substr(0, 7) == "http://" ||
-		modelURI.substr(0, 8) == "https://")
+	if (is_remote(modelURI))
 	{
-		// MRPT_TODO("Retrieve models from online sources");
-		THROW_EXCEPTION("To do: online models");
-		// localFileName = xx;
+		// Retrieve models from online sources:
+		localFileName = download_and_resolve_path(modelURI);
 	}
 	else if (modelURI.substr(0, 7) == "file://")
 	{

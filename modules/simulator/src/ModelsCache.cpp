@@ -13,6 +13,9 @@
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
 
+#include <cstdlib>
+#include <cstring>
+
 using namespace mvsim;
 
 ModelsCache& ModelsCache::Instance()
@@ -22,24 +25,14 @@ ModelsCache& ModelsCache::Instance()
 }
 
 mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
-	const std::string& url, const Options& options)
+	const std::string& localFileName, const Options& options)
 {
 	// already cached?
-	if (auto it = cache.find(url); it != cache.end()) return it->second;
+	if (auto it = cache.find(localFileName); it != cache.end())
+		return it->second;
 
 	// No, it's a new model path, create its placeholder:
-	auto m = cache[url] = mrpt::opengl::CAssimpModel::Create();
-
-	// Is it a remote resource on the Internet?
-	std::string localFileName;
-	if (0)
-	{
-	}
-	else
-	{
-		// local file:
-		localFileName = url;
-	}
+	auto m = cache[localFileName] = mrpt::opengl::CAssimpModel::Create();
 
 	ASSERT_FILE_EXISTS_(localFileName);
 
