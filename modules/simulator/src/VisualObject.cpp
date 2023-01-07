@@ -7,13 +7,9 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/core/get_env.h>
-#include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/system/filesystem.h>
-#include <mrpt/version.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/World.h>
@@ -21,6 +17,7 @@
 #include <atomic>
 #include <rapidxml.hpp>
 
+#include "ModelsCache.h"
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -85,26 +82,7 @@ void VisualObject::guiUpdate(
 	internalGuiUpdate(viz, physical, childrenOnly);
 }
 
-class ModelsCache
-{
-   public:
-	std::map<std::string, mrpt::opengl::CAssimpModel::Ptr> cache;
-
-	static ModelsCache& Instance()
-	{
-		static ModelsCache o;
-		return o;
-	}
-
-   private:
-	ModelsCache() = default;
-	~ModelsCache() = default;
-};
-
-void VisualObject::FreeOpenGLResources()
-{
-	ModelsCache::Instance().cache.clear();
-}
+void VisualObject::FreeOpenGLResources() { ModelsCache::Instance().clear(); }
 
 bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 {
@@ -120,8 +98,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	mrpt::math::TPose3D modelPose;
 	bool initialShowBoundingBox = false;
 
-	std::string modelCull = "NONE";
-	mrpt::img::TColor modelColor = mrpt::img::TColor::white();
+	ModelsCache::Options opts;
 
 	TParameterDefinitions params;
 	params["model_uri"] = TParamEntry("%s", &modelURI);
@@ -133,8 +110,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	params["model_pitch"] = TParamEntry("%lf_deg", &modelPose.pitch);
 	params["model_roll"] = TParamEntry("%lf_deg", &modelPose.roll);
 	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
-	params["model_cull_faces"] = TParamEntry("%s", &modelCull);
-	params["model_color"] = TParamEntry("%color", &modelColor);
+	params["model_cull_faces"] = TParamEntry("%s", &opts.modelCull);
+	params["model_color"] = TParamEntry("%color", &opts.modelColor);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*visual_node, params);
@@ -142,56 +119,15 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	if (modelURI.empty()) return false;
 
 	const std::string localFileName = world_->xmlPathToActualPath(modelURI);
-	ASSERT_FILE_EXISTS_(localFileName);
-
-	auto& gModelsCache = ModelsCache::Instance();
 
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 
-	auto glModel = [&]() {
-		if (auto it = gModelsCache.cache.find(localFileName);
-			it != gModelsCache.cache.end())
-			return it->second;
-		else
-		{
-			auto m = gModelsCache.cache[localFileName] =
-				mrpt::opengl::CAssimpModel::Create();
+	auto& gModelsCache = ModelsCache::Instance();
 
-			// En/Dis-able the extra verbosity while loading the 3D model:
-			int loadFlags =
-				mrpt::opengl::CAssimpModel::LoadFlags::RealTimeMaxQuality |
-				mrpt::opengl::CAssimpModel::LoadFlags::FlipUVs;
+	auto glModel = gModelsCache.get(localFileName, opts);
 
-#if MRPT_VERSION >= 0x250
-			if (modelColor != mrpt::img::TColor::white())
-				loadFlags |=
-					mrpt::opengl::CAssimpModel::LoadFlags::IgnoreMaterialColor;
-
-			m->setColor_u8(modelColor);
-#endif
-			if (mrpt::get_env<bool>("MVSIM_LOAD_MODELS_VERBOSE", false))
-				loadFlags |= mrpt::opengl::CAssimpModel::LoadFlags::Verbose;
-
-			m->loadScene(localFileName, loadFlags);
-
-#if MRPT_VERSION >= 0x240
-			m->cullFaces(
-				mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
-					modelCull));
-#endif
-
-			return m;
-		}
-	}();
-
-	mrpt::math::TPoint3D bbmin, bbmax;
-#if MRPT_VERSION >= 0x218
 	const auto bb = glModel->getBoundingBox();
-	bbmin = bb.min;
-	bbmax = bb.max;
-#else
-	glModel->getBoundingBox(bbmin, bbmax);
-#endif
+
 	glGroup->insert(glModel);
 
 	glGroup->setScale(modelScale);
@@ -206,8 +142,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	// Auto bounds from visual model bounding-box:
 
 	// Apply transformation to bounding box too:
-	viz_bbmin_ = modelPose.composePoint(bbmin * modelScale);
-	viz_bbmax_ = modelPose.composePoint(bbmax * modelScale);
+	viz_bbmin_ = modelPose.composePoint(bb.min * modelScale);
+	viz_bbmax_ = modelPose.composePoint(bb.max * modelScale);
 
 	return true;
 	MRPT_TRY_END
