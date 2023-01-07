@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -23,11 +23,11 @@ DynamicsAckermannDrivetrain::ControllerFrontSteerPID::ControllerFrontSteerPID(
 	  KI(0),
 	  KD(0),
 	  max_torque(100.0),
-	  m_twist_control(veh)
+	  twist_control_(veh)
 {
 	// Get distance between wheels:
-	m_r2f_L = m_veh.m_wheels_info[WHEEL_FL].x - m_veh.m_wheels_info[WHEEL_RL].x;
-	ASSERT_(m_r2f_L > 0.0);
+	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
+	ASSERT_(r2f_L_ > 0.0);
 }
 
 // See base class docs
@@ -46,20 +46,20 @@ void DynamicsAckermannDrivetrain::ControllerFrontSteerPID::control_step(
 	{
 		// ang = atan(r2f_L/R)  ->  R= r2f_L / tan(ang)
 		// R = v/w              ->   w=v/R
-		const double R = m_r2f_L / tan(setpoint_steer_ang);
+		const double R = r2f_L_ / tan(setpoint_steer_ang);
 		w = v / R;
 	}
 
 	// Let the twist controller do the calculations:
-	m_twist_control.setpoint_lin_speed = v;
-	m_twist_control.setpoint_ang_speed = w;
+	twist_control_.setpoint_lin_speed = v;
+	twist_control_.setpoint_ang_speed = w;
 
-	m_twist_control.KP = KP;
-	m_twist_control.KI = KI;
-	m_twist_control.KD = KD;
-	m_twist_control.max_torque = max_torque;
+	twist_control_.KP = KP;
+	twist_control_.KI = KI;
+	twist_control_.KD = KD;
+	twist_control_.max_torque = max_torque;
 
-	m_twist_control.control_step(ci, co);
+	twist_control_.control_step(ci, co);
 	co.steer_ang = setpoint_steer_ang;	// Mainly for the case of v=0
 }
 
@@ -99,13 +99,13 @@ void DynamicsAckermannDrivetrain::ControllerFrontSteerPID::teleop_interface(
 		case 'A':
 		case 'a':
 			setpoint_steer_ang += 1.0 * M_PI / 180.0;
-			mrpt::keep_min(setpoint_steer_ang, m_veh.getMaxSteeringAngle());
+			mrpt::keep_min(setpoint_steer_ang, veh_.getMaxSteeringAngle());
 			break;
 
 		case 'D':
 		case 'd':
 			setpoint_steer_ang -= 1.0 * M_PI / 180.0;
-			mrpt::keep_max(setpoint_steer_ang, -m_veh.getMaxSteeringAngle());
+			mrpt::keep_max(setpoint_steer_ang, -veh_.getMaxSteeringAngle());
 			break;
 		case ' ':
 			setpoint_lin_speed = .0;

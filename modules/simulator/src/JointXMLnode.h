@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -22,15 +22,15 @@ class JointXMLnode
 	typedef std::vector<const rapidxml::xml_node<Ch>*> TListNodes;
 
    private:
-	TListNodes m_nodes;
+	TListNodes nodes_;
 
    public:
-	void add(const rapidxml::xml_node<Ch>* node) { m_nodes.push_back(node); }
+	void add(const rapidxml::xml_node<Ch>* node) { nodes_.push_back(node); }
 
 	const rapidxml::xml_node<Ch>* first_node(const char* name) const
 	{
 		const rapidxml::xml_node<Ch>* ret = nullptr;
-		for (const auto& node : m_nodes)
+		for (const auto& node : nodes_)
 		{
 			ret = node->first_node(name);
 			if (ret != nullptr) return ret;
@@ -38,7 +38,7 @@ class JointXMLnode
 		return ret;
 	}
 
-	TListNodes& getListOfNodes() { return m_nodes; }
+	TListNodes& getListOfNodes() { return nodes_; }
 	// Iterators-like interface ----------------------
 	class iterator
 	{
@@ -111,7 +111,7 @@ class JointXMLnode
 	};	// end class iterator
 
 	iterator begin() { return iterator(*this); }
-	iterator end() { return iterator(*this, m_nodes.size()); }
+	iterator end() { return iterator(*this, nodes_.size()); }
 };
 
 }  // namespace mvsim

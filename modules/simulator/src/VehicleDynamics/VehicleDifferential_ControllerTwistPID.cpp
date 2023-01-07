@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -21,8 +21,8 @@ DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(
 	// Get distance between wheels:
 	// Warning: the controller *assumes* that both wheels are parallel (as it's
 	// a rule in differential robots!!)
-	m_distWheels = m_veh.m_wheels_info[0].y - m_veh.m_wheels_info[1].y;
-	ASSERT_(m_distWheels > 0);
+	distWheels_ = veh_.wheels_info_[0].y - veh_.wheels_info_[1].y;
+	ASSERT_(distWheels_ > 0);
 }
 
 // See base class docs
@@ -34,18 +34,18 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	// 1) Compute desired velocity set-point (in m/s)
 	// 2) Run the PI/PID for that wheel independently (in newtons)
 	const double spVelL =
-		setpoint_lin_speed - 0.5 * setpoint_ang_speed * m_distWheels;
+		setpoint_lin_speed - 0.5 * setpoint_ang_speed * distWheels_;
 	const double spVelR =
-		setpoint_lin_speed + 0.5 * setpoint_ang_speed * m_distWheels;
+		setpoint_lin_speed + 0.5 * setpoint_ang_speed * distWheels_;
 
 	// Compute each wheel actual velocity (from an "odometry" estimation of
 	// velocity, not ground-truth!):
-	const mrpt::math::TTwist2D vehVelOdo = m_veh.getVelocityLocalOdoEstimate();
-	const double actVelL = vehVelOdo.vx - 0.5 * vehVelOdo.omega * m_distWheels;
-	const double actVelR = vehVelOdo.vx + 0.5 * vehVelOdo.omega * m_distWheels;
+	const mrpt::math::TTwist2D vehVelOdo = veh_.getVelocityLocalOdoEstimate();
+	const double actVelL = vehVelOdo.vx - 0.5 * vehVelOdo.omega * distWheels_;
+	const double actVelR = vehVelOdo.vx + 0.5 * vehVelOdo.omega * distWheels_;
 
 	// Apply controller:
-	for (auto& pid : m_PIDs)
+	for (auto& pid : PIDs_)
 	{
 		pid.KP = KP;
 		pid.KI = KI;
@@ -66,12 +66,12 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	{
 		co.wheel_torque_l = 0;
 		co.wheel_torque_r = 0;
-		for (auto& pid : m_PIDs) pid.reset();
+		for (auto& pid : PIDs_) pid.reset();
 	}
 	else
 	{
-		co.wheel_torque_l = -m_PIDs[0].compute(followErrorL, ci.context.dt);
-		co.wheel_torque_r = -m_PIDs[1].compute(followErrorR, ci.context.dt);
+		co.wheel_torque_l = -PIDs_[0].compute(followErrorL, ci.context.dt);
+		co.wheel_torque_r = -PIDs_[1].compute(followErrorR, ci.context.dt);
 	}
 }
 
@@ -122,7 +122,7 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 		{
 			setpoint_lin_speed = 0.0;
 			setpoint_ang_speed = 0.0;
-			for (auto& pid : m_PIDs) pid.reset();
+			for (auto& pid : PIDs_) pid.reset();
 		}
 		break;
 	};

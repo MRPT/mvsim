@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -34,13 +34,13 @@ class ClassFactory
 
 	void do_register(const std::string& class_name, const TClassData& data)
 	{
-		m_classes[class_name] = data;
+		classes_[class_name] = data;
 	}
 
 	Ptr create(const std::string& class_name, ARG1 a1) const
 	{
-		auto it = m_classes.find(class_name);
-		if (it == m_classes.end())
+		auto it = classes_.find(class_name);
+		if (it == classes_.end())
 			throw std::runtime_error(
 				(std::string("ClassFactory: Unknown class ") + class_name)
 					.c_str());
@@ -54,8 +54,8 @@ class ClassFactory
 	}
 	Ptr create(const std::string& class_name, ARG1 a1, ARG2 a2) const
 	{
-		auto it = m_classes.find(class_name);
-		if (it == m_classes.end())
+		auto it = classes_.find(class_name);
+		if (it == classes_.end())
 			throw std::runtime_error(
 				(std::string("ClassFactory: Unknown class ") + class_name)
 					.c_str());
@@ -69,7 +69,7 @@ class ClassFactory
 	}
 
    private:
-	std::map<std::string, TClassData> m_classes;
+	std::map<std::string, TClassData> classes_;
 };	// namespace mvsim
 
 #define DECLARES_REGISTER_CLASS1(CLASS_NAME, BASE_CLASS, ARG1) \

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -34,8 +34,8 @@ class DynamicsAckermann : public VehicleBase
 	DynamicsAckermann(World* parent);
 
 	/** The maximum steering angle (rad). Determines min turning radius */
-	double getMaxSteeringAngle() const { return m_max_steer_ang; }
-	void setMaxSteeringAngle(double val) { m_max_steer_ang = val; }
+	double getMaxSteeringAngle() const { return max_steer_ang_; }
+	void setMaxSteeringAngle(double val) { max_steer_ang_ = val; }
 	/** @name Controllers
 		@{ */
 
@@ -107,8 +107,8 @@ class DynamicsAckermann : public VehicleBase
 		}
 
 	   private:
-		double m_dist_fWheels, m_r2f_L;
-		PID_Controller m_PID[2];  //<! [0]:fl, [1]: fr
+		double dist_fWheels_, r2f_L_;
+		PID_Controller PID_[2];	 //<! [0]:fl, [1]: fr
 	};
 
 	/** PID controller that controls the vehicle with front traction & steering
@@ -133,15 +133,15 @@ class DynamicsAckermann : public VehicleBase
 		double KP, KI, KD;	//!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 	   private:
-		ControllerTwistFrontSteerPID m_twist_control;
-		double m_r2f_L;
+		ControllerTwistFrontSteerPID twist_control_;
+		double r2f_L_;
 	};
 
-	const ControllerBase::Ptr& getController() const { return m_controller; }
-	ControllerBase::Ptr& getController() { return m_controller; }
+	const ControllerBase::Ptr& getController() const { return controller_; }
+	ControllerBase::Ptr& getController() { return controller_; }
 	virtual ControllerBaseInterface* getControllerInterface() override
 	{
-		return m_controller.get();
+		return controller_.get();
 	}
 
 	/** @} */  // end controllers
@@ -167,9 +167,9 @@ class DynamicsAckermann : public VehicleBase
 		std::vector<double>& out_force_per_wheel) override;
 
    private:
-	ControllerBase::Ptr m_controller;  //!< The installed controller
+	ControllerBase::Ptr controller_;  //!< The installed controller
 
 	/** The maximum steering angle (rad). Determines min turning radius */
-	double m_max_steer_ang = mrpt::DEG2RAD(30);
+	double max_steer_ang_ = mrpt::DEG2RAD(30);
 };
 }  // namespace mvsim

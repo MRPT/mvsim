@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -22,34 +22,34 @@ using namespace std;
 DynamicsDifferential::DynamicsDifferential(
 	World* parent, const std::vector<ConfigPerWheel>& cfgPerWheel)
 	: VehicleBase(parent, cfgPerWheel.size() /*num wheels*/),
-	  m_configPerWheel(cfgPerWheel)
+	  configPerWheel_(cfgPerWheel)
 {
 	using namespace mrpt::math;
 
-	m_chassis_mass = 15.0;
-	m_chassis_z_min = 0.05;
-	m_chassis_z_max = 0.6;
-	m_chassis_color = mrpt::img::TColor(0xff, 0x00, 0x00);
+	chassis_mass_ = 15.0;
+	chassis_z_min_ = 0.05;
+	chassis_z_max_ = 0.6;
+	chassis_color_ = mrpt::img::TColor(0xff, 0x00, 0x00);
 
 	// Default shape:
-	m_chassis_poly.clear();
-	m_chassis_poly.emplace_back(-0.4, -0.5);
-	m_chassis_poly.emplace_back(-0.4, 0.5);
-	m_chassis_poly.emplace_back(0.4, 0.5);
-	m_chassis_poly.emplace_back(0.6, 0.3);
-	m_chassis_poly.emplace_back(0.6, -0.3);
-	m_chassis_poly.emplace_back(0.4, -0.5);
+	chassis_poly_.clear();
+	chassis_poly_.emplace_back(-0.4, -0.5);
+	chassis_poly_.emplace_back(-0.4, 0.5);
+	chassis_poly_.emplace_back(0.4, 0.5);
+	chassis_poly_.emplace_back(0.6, 0.3);
+	chassis_poly_.emplace_back(0.6, -0.3);
+	chassis_poly_.emplace_back(0.4, -0.5);
 	updateMaxRadiusFromPoly();
 
-	m_fixture_chassis = nullptr;
-	for (auto& fw : m_fixture_wheels) fw = nullptr;
+	fixture_chassis_ = nullptr;
+	for (auto& fw : fixture_wheels_) fw = nullptr;
 }
 
 /** The derived-class part of load_params_from_xml() */
 void DynamicsDifferential::dynamics_load_params_from_xml(
 	const rapidxml::xml_node<char>* xml_node)
 {
-	const std::map<std::string, std::string> varValues = {{"NAME", m_name}};
+	const std::map<std::string, std::string> varValues = {{"NAME", name_}};
 
 	// <chassis ...> </chassis>
 	const rapidxml::xml_node<char>* xml_chassis =
@@ -58,10 +58,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	{
 		// Attribs:
 		TParameterDefinitions attribs;
-		attribs["mass"] = TParamEntry("%lf", &this->m_chassis_mass);
-		attribs["zmin"] = TParamEntry("%lf", &this->m_chassis_z_min);
-		attribs["zmax"] = TParamEntry("%lf", &this->m_chassis_z_max);
-		attribs["color"] = TParamEntry("%color", &this->m_chassis_color);
+		attribs["mass"] = TParamEntry("%lf", &this->chassis_mass_);
+		attribs["zmin"] = TParamEntry("%lf", &this->chassis_z_min_);
+		attribs["zmax"] = TParamEntry("%lf", &this->chassis_z_max_);
+		attribs["color"] = TParamEntry("%color", &this->chassis_color_);
 
 		parse_xmlnode_attribs(
 			*xml_chassis, attribs, varValues,
@@ -72,28 +72,28 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 			xml_chassis->first_node("shape");
 		if (xml_shape)
 			mvsim::parse_xmlnode_shape(
-				*xml_shape, m_chassis_poly,
+				*xml_shape, chassis_poly_,
 				"[DynamicsDifferential::dynamics_load_params_from_xml]");
 	}
 
 	// <l_wheel ...>, <r_wheel ...>
 
 	// reset default values
-	ASSERT_EQUAL_(getNumWheels(), m_configPerWheel.size());
+	ASSERT_EQUAL_(getNumWheels(), configPerWheel_.size());
 
 	// Load common params:
 	for (size_t i = 0; i < getNumWheels(); i++)
 	{
-		const auto& cpw = m_configPerWheel.at(i);
+		const auto& cpw = configPerWheel_.at(i);
 
 		const rapidxml::xml_node<char>* xml_wheel =
 			xml_node->first_node(cpw.name.c_str());
 		if (xml_wheel)
-			m_wheels_info[i].loadFromXML(xml_wheel);
+			wheels_info_[i].loadFromXML(xml_wheel);
 		else
 		{
-			m_wheels_info[i].x = cpw.pos.x;
-			m_wheels_info[i].y = cpw.pos.y;
+			wheels_info_[i].x = cpw.pos.x;
+			wheels_info_[i].y = cpw.pos.y;
 		}
 	}
 
@@ -113,22 +113,22 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
-				m_controller = std::make_shared<ControllerRawForces>(*this);
+				controller_ = std::make_shared<ControllerRawForces>(*this);
 			else if (sCtrlClass == ControllerTwistPID::class_name())
-				m_controller = std::make_shared<ControllerTwistPID>(*this);
+				controller_ = std::make_shared<ControllerTwistPID>(*this);
 			else
 				THROW_EXCEPTION_FMT(
 					"[DynamicsDifferential] Unknown 'class'='%s' in "
 					"<controller> XML node",
 					sCtrlClass.c_str());
 
-			m_controller->load_config(*xml_control);
+			controller_->load_config(*xml_control);
 		}
 	}
 
 	// Default controller:
-	if (!m_controller)
-		m_controller = std::make_shared<ControllerRawForces>(*this);
+	if (!controller_)
+		controller_ = std::make_shared<ControllerRawForces>(*this);
 }
 
 // See docs in base class:
@@ -140,13 +140,13 @@ void DynamicsDifferential::invoke_motor_controllers(
 
 	otpw.assign(getNumWheels(), 0.0);
 
-	if (m_controller)
+	if (controller_)
 	{
 		// Invoke controller:
 		TControllerInput ci;
 		ci.context = context;
 		TControllerOutput co;
-		m_controller->control_step(ci, co);
+		controller_->control_step(ci, co);
 
 		// Take its output:
 		switch (getNumWheels())
@@ -181,19 +181,19 @@ mrpt::math::TTwist2D DynamicsDifferential::getVelocityLocalOdoEstimate() const
 	// Velocities in local +X at each wheel i={0,1}:
 	// v_i = vx - w_veh * wheel_{i,y}  =  w_i * R_i
 	// Re-arranging:
-	const double w0 = m_wheels_info[WHEEL_L].getW();
-	const double w1 = m_wheels_info[WHEEL_R].getW();
-	const double R0 = m_wheels_info[WHEEL_L].diameter * 0.5;
-	const double R1 = m_wheels_info[WHEEL_R].diameter * 0.5;
+	const double w0 = wheels_info_[WHEEL_L].getW();
+	const double w1 = wheels_info_[WHEEL_R].getW();
+	const double R0 = wheels_info_[WHEEL_L].diameter * 0.5;
+	const double R1 = wheels_info_[WHEEL_R].diameter * 0.5;
 
-	const double Ay = m_wheels_info[WHEEL_L].y - m_wheels_info[WHEEL_R].y;
+	const double Ay = wheels_info_[WHEEL_L].y - wheels_info_[WHEEL_R].y;
 	ASSERTMSG_(
 		Ay != 0.0,
 		"The two wheels of a differential vehicle CAN'T by at the same Y "
 		"coordinate!");
 
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;
-	const double vx_veh = w0 * R0 + w_veh * m_wheels_info[WHEEL_L].y;
+	const double vx_veh = w0 * R0 + w_veh * wheels_info_[WHEEL_L].y;
 
 	odo_vel.vx = vx_veh;
 	odo_vel.vy = 0.0;

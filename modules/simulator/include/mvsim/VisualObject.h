@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -29,9 +29,9 @@ class VisualObject
 	VisualObject(
 		World* parent, bool insertCustomVizIntoViz = true,
 		bool insertCustomVizIntoPhysical = true)
-		: m_world(parent),
-		  m_insertCustomVizIntoViz(insertCustomVizIntoViz),
-		  m_insertCustomVizIntoPhysical(insertCustomVizIntoPhysical)
+		: world_(parent),
+		  insertCustomVizIntoViz_(insertCustomVizIntoViz),
+		  insertCustomVizIntoPhysical_(insertCustomVizIntoPhysical)
 	{
 	}
 
@@ -45,8 +45,8 @@ class VisualObject
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical);
 
-	World* getWorldObject() { return m_world; }
-	const World* getWorldObject() const { return m_world; }
+	World* getWorldObject() { return world_; }
+	const World* getWorldObject() const { return world_; }
 
 	void customVisualVisible(const bool visible);
 	bool customVisualVisible() const;
@@ -66,16 +66,16 @@ class VisualObject
    protected:
 	bool parseVisual(const rapidxml::xml_node<char>* visual_node);
 
-	World* m_world;
+	World* world_;
 
 	/** If not empty, will override the derived-class visualization for this
 	 * object. */
-	std::shared_ptr<mrpt::opengl::CSetOfObjects> m_glCustomVisual;
-	std::shared_ptr<mrpt::opengl::CSetOfObjects> m_glBoundingBox;
-	int32_t m_glCustomVisualId = -1;
+	std::shared_ptr<mrpt::opengl::CSetOfObjects> glCustomVisual_;
+	std::shared_ptr<mrpt::opengl::CSetOfObjects> glBoundingBox_;
+	int32_t glCustomVisualId_ = -1;
 
-	const bool m_insertCustomVizIntoViz = true;
-	const bool m_insertCustomVizIntoPhysical = true;
+	const bool insertCustomVizIntoViz_ = true;
+	const bool insertCustomVizIntoPhysical_ = true;
 
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,

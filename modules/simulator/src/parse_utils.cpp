@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -11,13 +11,17 @@
 
 #include <mrpt/core/exceptions.h>
 #include <mrpt/core/get_env.h>
+#include <mrpt/expr/CRuntimeCompiledExpression.h>
+#include <mrpt/random/RandomGenerators.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>
 #include <mrpt/system/string_utils.h>
+#include <mrpt/version.h>
 
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 
 thread_local const bool MVSIM_VERBOSE_PARSE =
 	mrpt::get_env<bool>("MVSIM_VERBOSE_PARSE", false);
@@ -88,8 +92,7 @@ static std::string parseVars(
 	else
 	{
 		THROW_EXCEPTION_FMT(
-			"parseEnvVars(): Undefined variable found: $env{%s}",
-			varname.c_str());
+			"parseEnvVars(): Undefined variable found: ${%s}", varname.c_str());
 	}
 
 	return parseEnvVars(pre + varvalue + post.substr(post_end + 1));
@@ -135,7 +138,75 @@ static std::string parseCmdRuns(const std::string& text)
 	MRPT_TRY_END
 }
 
-MRPT_TODO("Add '$f{xxx}' exprtk parser, define random() user function")
+#if MRPT_VERSION >= 0x258
+static double my_rand()
+{
+	auto& rng = mrpt::random::getRandomGenerator();
+	return rng.drawUniform(0.0, 1.0);
+}
+static double my_unifrnd(double xMin, double xMax)
+{
+	auto& rng = mrpt::random::getRandomGenerator();
+	return rng.drawUniform(xMin, xMax);
+}
+static double randn()
+{
+	auto& rng = mrpt::random::getRandomGenerator();
+	return rng.drawGaussian1D_normalized();
+}
+#endif
+
+// Examples: "$f{180/5}",   "$f{ ${MAX_SPEED} * sin(deg2rad(45)) }"
+static std::string parseMathExpr(
+	const std::string& text,
+	const std::map<std::string, std::string>& variableNamesValues)
+{
+	MRPT_TRY_START
+
+	const auto start = text.find("$f{");
+	if (start == std::string::npos) return text;
+
+	const std::string pre = text.substr(0, start);
+	const std::string post = text.substr(start + 3);
+
+	const auto post_end = post.find('}');
+	if (post_end == std::string::npos)
+	{
+		THROW_EXCEPTION_FMT(
+			"Column=%u: Cannot find matching `}` for `${` in: `%s`",
+			static_cast<unsigned int>(start), text.c_str());
+	}
+
+	const auto sExpr = post.substr(0, post_end);
+
+	mrpt::expr::CRuntimeCompiledExpression expr;
+
+#if MRPT_VERSION >= 0x258
+
+	expr.register_function("rand", &my_rand);
+	expr.register_function("unifrnd", &my_unifrnd);
+	expr.register_function("randn", &randn);
+#endif
+
+	std::map<std::string, double> numericVars;
+	for (const auto& kv : variableNamesValues)
+	{
+		std::stringstream ss(kv.second);
+		double val = 0;
+		if (!(ss >> val)) continue;
+
+		numericVars[kv.first] = val;
+	}
+
+	// Compile expression (will throw on syntax error):
+	expr.compile(sExpr, numericVars);
+	const double val = expr.eval();
+
+	return parseCmdRuns(
+		pre + mrpt::format("%g", val) + post.substr(post_end + 1));
+
+	MRPT_TRY_END
+}
 
 std::string mvsim::parse(
 	const std::string& input,
@@ -149,6 +220,7 @@ std::string mvsim::parse(
 		s = parseVars(s, variableNamesValues);
 		s = parseEnvVars(s);
 		s = parseCmdRuns(s);
+		s = parseMathExpr(s, variableNamesValues);
 		// We may need to iterate since, in general, each expression generator
 		// might generate another kind of expression:
 		if (s == prevValue) break;

@@ -41,8 +41,8 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml" sensor_x="1.7" sensor_z="1.01" sensor_yaw="0" maxRange="70.0" sensor_name="laser1" />
-		<include file="definitions/lidar2d.sensor.xml" sensor_x="-0.5" sensor_z="1.01" sensor_yaw="180" maxRange="70.0" sensor_name="laser2" />
+		<include file="definitions/lidar2d.sensor.xml" sensor_x="1.7" sensor_z="1.01" sensor_yaw="0" max_range="70.0" sensor_name="laser1" />
+		<include file="definitions/lidar2d.sensor.xml" sensor_x="-0.5" sensor_z="1.01" sensor_yaw="180" max_range="70.0" sensor_name="laser2" />
 	</vehicle>
 
 </mvsim_world>

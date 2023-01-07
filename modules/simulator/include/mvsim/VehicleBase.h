@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -68,21 +68,21 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** Get (an approximation of) the max radius of the vehicle, from its point
 	 * of reference (in meters) */
-	virtual float getMaxVehicleRadius() const { return m_max_radius; }
+	virtual float getMaxVehicleRadius() const { return maxRadius_; }
 	/** Get the overall vehicle mass, excluding wheels. */
-	virtual double getChassisMass() const { return m_chassis_mass; }
-	b2Body* getBox2DChassisBody() { return m_b2d_body; }
+	virtual double getChassisMass() const { return chassis_mass_; }
+	b2Body* getBox2DChassisBody() { return b2dBody_; }
 	mrpt::math::TPoint2D getChassisCenterOfMass() const
 	{
-		return m_chassis_com;
+		return chassis_com_;
 	}  //!< In local coordinates (this excludes the mass of wheels)
 
-	size_t getNumWheels() const { return m_wheels_info.size(); }
+	size_t getNumWheels() const { return wheels_info_.size(); }
 	const Wheel& getWheelInfo(const size_t idx) const
 	{
-		return m_wheels_info[idx];
+		return wheels_info_[idx];
 	}
-	Wheel& getWheelInfo(const size_t idx) { return m_wheels_info[idx]; }
+	Wheel& getWheelInfo(const size_t idx) { return wheels_info_[idx]; }
 
 	/** Current velocity of each wheel's center point (in local coords). Call
 	 * with veh_vel_local=getVelocityLocal() for ground-truth.  */
@@ -96,58 +96,58 @@ class VehicleBase : public VisualObject, public Simulable
 	 * \sa getVelocityLocal() */
 	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const = 0;
 
-	const TListSensors& getSensors() const { return m_sensors; }
-	TListSensors& getSensors() { return m_sensors; }
+	const TListSensors& getSensors() const { return sensors_; }
+	TListSensors& getSensors() { return sensors_; }
 	std::shared_ptr<CSVLogger> getLoggerPtr(std::string logger_name)
 	{
-		return m_loggers[logger_name];
+		return loggers_[logger_name];
 	}
 
 	/** Get the 2D shape of the vehicle chassis, as set from the config file
 	 * (only used for collision detection) */
 	const mrpt::math::TPolygon2D& getChassisShape() const
 	{
-		return m_chassis_poly;
+		return chassis_poly_;
 	}
 
 	/** Set the vehicle index in the World */
-	void setVehicleIndex(size_t idx) { m_vehicle_index = idx; }
+	void setVehicleIndex(size_t idx) { vehicle_index_ = idx; }
 	/** Get the vehicle index in the World */
-	size_t getVehicleIndex() const { return m_vehicle_index; }
+	size_t getVehicleIndex() const { return vehicle_index_; }
 	void setRecording(bool record)
 	{
-		for (auto& logger : m_loggers) logger.second->setRecording(record);
+		for (auto& logger : loggers_) logger.second->setRecording(record);
 	}
 	void clearLogs()
 	{
-		for (auto& logger : m_loggers) logger.second->clear();
+		for (auto& logger : loggers_) logger.second->clear();
 	}
 	void newLogSession()
 	{
-		for (auto& logger : m_loggers) logger.second->newSession();
+		for (auto& logger : loggers_) logger.second->newSession();
 	}
 
 	virtual ControllerBaseInterface* getControllerInterface() = 0;
 
 	void registerOnServer(mvsim::Client& c) override;
 
-	b2Fixture* get_fixture_chassis() { return m_fixture_chassis; }
-	std::vector<b2Fixture*>& get_fixture_wheels() { return m_fixture_wheels; }
-	const b2Fixture* get_fixture_chassis() const { return m_fixture_chassis; }
+	b2Fixture* get_fixture_chassis() { return fixture_chassis_; }
+	std::vector<b2Fixture*>& get_fixture_wheels() { return fixture_wheels_; }
+	const b2Fixture* get_fixture_chassis() const { return fixture_chassis_; }
 	const std::vector<b2Fixture*>& get_fixture_wheels() const
 	{
-		return m_fixture_wheels;
+		return fixture_wheels_;
 	}
 
 	void freeOpenGLResources() override
 	{
-		for (auto& sensor : m_sensors) sensor->freeOpenGLResources();
+		for (auto& sensor : sensors_) sensor->freeOpenGLResources();
 	}
 	void chassisAndWheelsVisible(bool visible);
 
    protected:
-	std::map<std::string, std::shared_ptr<CSVLogger>> m_loggers;
-	std::string m_log_path;
+	std::map<std::string, std::shared_ptr<CSVLogger>> loggers_;
+	std::string log_path_;
 
 	virtual void initLoggers();
 	virtual void writeLogStrings();
@@ -174,31 +174,31 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** user-supplied index number: must be set/get'ed with setVehicleIndex()
 	 * getVehicleIndex() (default=0) */
-	size_t m_vehicle_index = 0;
+	size_t vehicle_index_ = 0;
 
 	/** Instance of friction model for the vehicle-to-ground interaction. */
-	FrictionBasePtr m_friction;
+	FrictionBasePtr friction_;
 
-	TListSensors m_sensors;	 //!< Sensors aboard
+	TListSensors sensors_;	//!< Sensors aboard
 
 	/** Updated in simul_pre_timestep() */
-	std::vector<double> m_torque_per_wheel;
+	std::vector<double> torque_per_wheel_;
 
 	// Chassis info:
-	double m_chassis_mass = 15.0;
-	mrpt::math::TPolygon2D m_chassis_poly;
+	double chassis_mass_ = 15.0;
+	mrpt::math::TPolygon2D chassis_poly_;
 
-	/** Automatically computed from m_chassis_poly upon each change via
+	/** Automatically computed from chassis_poly_ upon each change via
 	 * updateMaxRadiusFromPoly() */
-	double m_max_radius = 0.1;
+	double maxRadius_ = 0.1;
 
-	double m_chassis_z_min = 0.05, m_chassis_z_max = 0.6;
+	double chassis_z_min_ = 0.05, chassis_z_max_ = 0.6;
 
-	mrpt::img::TColor m_chassis_color{0xff, 0x00, 0x00};
+	mrpt::img::TColor chassis_color_{0xff, 0x00, 0x00};
 
 	/** center of mass. in local coordinates (this excludes the mass of wheels)
 	 */
-	mrpt::math::TPoint2D m_chassis_com{0, 0};
+	mrpt::math::TPoint2D chassis_com_{0, 0};
 
 	void updateMaxRadiusFromPoly();
 
@@ -206,14 +206,14 @@ class VehicleBase : public VisualObject, public Simulable
 	 *  Derived classes must define the order of the wheels, e.g. [0]=rear left,
 	 * etc.
 	 */
-	std::deque<Wheel> m_wheels_info;
+	std::deque<Wheel> wheels_info_;
 
 	// Box2D elements:
-	b2Fixture* m_fixture_chassis;  //!< Created at
+	b2Fixture* fixture_chassis_;  //!< Created at
 
 	/** [0]:rear-left, etc. (depending on derived class). Size set at
 	 * constructor. */
-	std::vector<b2Fixture*> m_fixture_wheels;
+	std::vector<b2Fixture*> fixture_wheels_;
 
    private:
 	// Called from internalGuiUpdate()
@@ -223,11 +223,11 @@ class VehicleBase : public VisualObject, public Simulable
 	// Called from internalGuiUpdate()
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 
-	mrpt::opengl::CSetOfObjects::Ptr m_gl_chassis;
-	std::vector<mrpt::opengl::CSetOfObjects::Ptr> m_gl_wheels;
-	mrpt::opengl::CSetOfLines::Ptr m_gl_forces;
-	std::mutex m_force_segments_for_rendering_cs;
-	std::vector<mrpt::math::TSegment3D> m_force_segments_for_rendering;
+	mrpt::opengl::CSetOfObjects::Ptr gl_chassis_;
+	std::vector<mrpt::opengl::CSetOfObjects::Ptr> gl_wheels_;
+	mrpt::opengl::CSetOfLines::Ptr gl_forces_;
+	std::mutex force_segments_for_rendering_cs_;
+	std::vector<mrpt::math::TSegment3D> force_segments_for_rendering_;
 
    public:	// data logger header entries
 	static constexpr char DL_TIMESTAMP[] = "timestamp";

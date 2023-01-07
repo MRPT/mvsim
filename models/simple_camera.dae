@@ -3,10 +3,10 @@
   <asset>
     <contributor>
       <author>Blender User</author>
-      <authoring_tool>Blender 2.82.7</authoring_tool>
+      <authoring_tool>Blender 3.0.1</authoring_tool>
     </contributor>
-    <created>2022-09-27T12:35:47</created>
-    <modified>2022-09-27T12:35:47</modified>
+    <created>2022-12-31T01:06:36</created>
+    <modified>2022-12-31T01:06:36</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -209,7 +209,7 @@
   <library_visual_scenes>
     <visual_scene id="Scene" name="Scene">
       <node id="Cube" name="Cube" type="NODE">
-        <matrix sid="transform">0.04 0 0 0 0 0.05 0 0.09289691 0 0 0.04 0 0 0 0 1</matrix>
+        <matrix sid="transform">0.04 0 0 0 0 0.05 0 0.06266318 0 0 0.04 0 0 0 0 1</matrix>
         <instance_geometry url="#Cube_001-mesh" name="Cube">
           <bind_material>
             <technique_common>
@@ -221,7 +221,7 @@
         </instance_geometry>
       </node>
       <node id="Cone" name="Cone" type="NODE">
-        <matrix sid="transform">0.05 0 0 5.73469e-9 0 3.7749e-9 0.06 1.38174e-8 0 -0.05 4.52987e-9 4.37312e-4 0 0 0 1</matrix>
+        <matrix sid="transform">0.02730411 0 0 5.73469e-9 0 2.12802e-9 0.06 1.38174e-8 0 -0.02818646 4.52987e-9 4.37312e-4 0 0 0 1</matrix>
         <instance_geometry url="#Cone-mesh" name="Cone">
           <bind_material>
             <technique_common>

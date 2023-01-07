@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -18,7 +18,7 @@ using namespace mvsim;
 
 TClassFactory_friction mvsim::classFactory_friction;
 
-MRPT_TODO("When each wheel will have its own friction - remove m_logger.")
+MRPT_TODO("When each wheel will have its own friction - remove logger_.")
 
 // Explicit registration calls seem to be one (the unique?) way to assure
 // registration takes place:
@@ -35,7 +35,7 @@ void register_all_friction()
 }
 
 FrictionBase::FrictionBase(VehicleBase& my_vehicle)
-	: m_world(my_vehicle.getWorldObject()), m_my_vehicle(my_vehicle)
+	: world_(my_vehicle.getWorldObject()), my_vehicle_(my_vehicle)
 {
 }
 
@@ -64,5 +64,5 @@ FrictionBase::Ptr FrictionBase::factory(
 
 void FrictionBase::setLogger(const std::weak_ptr<CSVLogger>& logger)
 {
-	m_logger = logger;
+	logger_ = logger;
 }

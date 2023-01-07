@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2022  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -25,11 +25,11 @@ DynamicsAckermann::ControllerTwistFrontSteerPID::ControllerTwistFrontSteerPID(
 	  max_torque(100.0)
 {
 	// Get distance between wheels:
-	m_dist_fWheels =
-		m_veh.m_wheels_info[WHEEL_FL].y - m_veh.m_wheels_info[WHEEL_FR].y;
-	m_r2f_L = m_veh.m_wheels_info[WHEEL_FL].x - m_veh.m_wheels_info[WHEEL_RL].x;
-	ASSERT_(m_dist_fWheels > 0.0);
-	ASSERT_(m_r2f_L > 0.0);
+	dist_fWheels_ =
+		veh_.wheels_info_[WHEEL_FL].y - veh_.wheels_info_[WHEEL_FR].y;
+	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
+	ASSERT_(dist_fWheels_ > 0.0);
+	ASSERT_(r2f_L_ > 0.0);
 }
 
 // See base class docs
@@ -50,13 +50,13 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	else
 	{
 		const double R = setpoint_lin_speed / setpoint_ang_speed;
-		co.steer_ang = atan(m_r2f_L / R);
+		co.steer_ang = atan(r2f_L_ / R);
 	}
 
 	// Desired velocities for each wheel:
 	std::vector<mrpt::math::TPoint2D>
 		desired_wheel_vels;	 // In local vehicle frame
-	m_veh.getWheelsVelocityLocal(
+	veh_.getWheelsVelocityLocal(
 		desired_wheel_vels,
 		mrpt::math::TTwist2D(setpoint_lin_speed, 0.0, setpoint_ang_speed));
 
@@ -66,7 +66,7 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	// FL:
 	double vel_fl, vel_fr;
 	double desired_fl_steer_ang, desired_fr_steer_ang;
-	m_veh.computeFrontWheelAngles(
+	veh_.computeFrontWheelAngles(
 		co.steer_ang, desired_fl_steer_ang, desired_fr_steer_ang);
 	{
 		const mrpt::poses::CPose2D wRotInv(0, 0, -desired_fl_steer_ang);
@@ -89,14 +89,14 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	{
 		std::vector<mrpt::math::TPoint2D>
 			odo_wheel_vels;	 // In local vehicle frame
-		m_veh.getWheelsVelocityLocal(
-			odo_wheel_vels, m_veh.getVelocityLocalOdoEstimate());
+		veh_.getWheelsVelocityLocal(
+			odo_wheel_vels, veh_.getVelocityLocalOdoEstimate());
 		ASSERT_(odo_wheel_vels.size() == 4);
 
 		const double actual_fl_steer_ang =
-			m_veh.getWheelInfo(DynamicsAckermann::WHEEL_FL).yaw;
+			veh_.getWheelInfo(DynamicsAckermann::WHEEL_FL).yaw;
 		const double actual_fr_steer_ang =
-			m_veh.getWheelInfo(DynamicsAckermann::WHEEL_FR).yaw;
+			veh_.getWheelInfo(DynamicsAckermann::WHEEL_FR).yaw;
 
 		{
 			const mrpt::poses::CPose2D wRotInv(0, 0, -actual_fl_steer_ang);
@@ -117,18 +117,18 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	// Apply controller:
 	for (int i = 0; i < 2; i++)
 	{
-		m_PID[i].KP = KP;
-		m_PID[i].KI = KI;
-		m_PID[i].KD = KD;
-		m_PID[i].max_out = max_torque;
+		PID_[i].KP = KP;
+		PID_[i].KI = KI;
+		PID_[i].KD = KD;
+		PID_[i].max_out = max_torque;
 	}
 
 	co.rl_torque = .0;
 	co.rr_torque = .0;
-	co.fl_torque = -m_PID[0].compute(
+	co.fl_torque = -PID_[0].compute(
 		vel_fl - act_vel_fl,
 		ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
-	co.fr_torque = -m_PID[1].compute(vel_fr - act_vel_fr, ci.context.dt);
+	co.fr_torque = -PID_[1].compute(vel_fr - act_vel_fr, ci.context.dt);
 }
 
 void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(
