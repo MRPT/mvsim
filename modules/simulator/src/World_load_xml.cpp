@@ -224,6 +224,44 @@ void World::internal_recursive_parse_XML(
 
 		userDefinedVariables_[name] = finalValue;
 	}
+	else if (!strcmp(node->name(), "for"))
+	{
+		auto varAttr = node->first_attribute("var");
+		ASSERTMSG_(
+			varAttr, "XML tag '<for />' must have a 'var=\"xxx\"' attribute)");
+		const auto varName = varAttr->value();
+
+		auto varFrom = node->first_attribute("from");
+		ASSERTMSG_(
+			varFrom, "XML tag '<for />' must have a 'from=\"xxx\"' attribute)");
+		const auto fromStr =
+			mvsim::parse(varFrom->value(), userDefinedVariables_);
+
+		auto varTo = node->first_attribute("to");
+		ASSERTMSG_(
+			varTo, "XML tag '<for />' must have a 'to=\"xxx\"' attribute)");
+		const auto toStr = mvsim::parse(varTo->value(), userDefinedVariables_);
+
+		if (auto childNode = node->first_node(); childNode)
+		{
+			for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr);
+				 curVal++)
+			{
+				MRPT_LOG_DEBUG_STREAM(
+					"<for /> loop: " << varName << "=" << curVal);
+
+				userDefinedVariables_[varName] = curVal;
+				internal_recursive_parse_XML(childNode, currentBasePath);
+			}
+		}
+		else
+		{
+			MRPT_LOG_WARN_STREAM(
+				"[World::load_from_XML] *Warning* <for ...> </for> loop has no "
+				"contents (!): '"
+				<< node->value() << "'");
+		}
+	}
 	else
 	{
 		// Default: Check if it's a parameter:

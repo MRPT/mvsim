@@ -18,6 +18,8 @@
 	<variable name="BLOCKS_Y_MIN" value="-5.0" />	
 	<variable name="BLOCKS_Y_MAX" value="8.0" />
 
+	<variable name="NUM_BLOCKS" value="30" />
+
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->
@@ -76,7 +78,11 @@
 	<block class="square_obstacle"> <init_pose>$f{BLOCKS_X_MIN + 4} $f{BLOCKS_Y_MIN+8} -45</init_pose> </block>
 
 	<!-- this random functions require mrpt >=2.5.8 -->
-	<!-- <block class="square_obstacle"> <init_pose>$f{unifrnd(BLOCKS_X_MIN,BLOCKS_X_MAX)} $f{unifrnd(BLOCKS_Y_MIN,BLOCKS_Y_MAX)} $f{unifrnd(-180,180)}</init_pose> </block> -->
+	<!--
+	<for var="i" from="0" to="$f{NUM_BLOCKS}">
+		<block class="square_obstacle"> <init_pose>$f{unifrnd(BLOCKS_X_MIN,BLOCKS_X_MAX)} $f{unifrnd(BLOCKS_Y_MIN,BLOCKS_Y_MAX)} $f{unifrnd(-180,180)}</init_pose> </block>
+	</for>
+	-->
 
 	<block class="square_obstacle">
 		<init_pose>5 1 0</init_pose>
