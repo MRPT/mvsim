@@ -12,6 +12,7 @@
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
+#include <iostream>
 #include <map>
 #include <stdexcept>
 
@@ -83,6 +84,7 @@ void World::internal_initialize()
 	}
 
 	getTimeLogger().setMinLoggingLevel(this->getMinLoggingLevel());
+	remoteResources_.setMinLoggingLevel(this->getMinLoggingLevel());
 
 	initialized_ = true;
 }
@@ -231,27 +233,13 @@ void World::internal_one_timestep(double dt)
 
 std::string World::xmlPathToActualPath(const std::string& modelURI) const
 {
-	std::string localFileName;
-	if (modelURI.substr(0, 7) == "http://" ||
-		modelURI.substr(0, 8) == "https://")
-	{
-		// MRPT_TODO("Retrieve models from online sources");
-		THROW_EXCEPTION("To do: online models");
-		// localFileName = xx;
-	}
-	else if (modelURI.substr(0, 7) == "file://")
-	{
-		localFileName = modelURI.substr(7);
-	}
-	else
-		localFileName = modelURI;
-
-	return resolvePath(localFileName);
+	std::string actualFileName = remoteResources_.resolve_path(modelURI);
+	return local_to_abs_path(actualFileName);
 }
 
 /** Replace macros, prefix the base_path if input filename is relative, etc.
  */
-std::string World::resolvePath(const std::string& s_in) const
+std::string World::local_to_abs_path(const std::string& s_in) const
 {
 	std::string ret;
 	const std::string s = mrpt::system::trim(s_in);

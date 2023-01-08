@@ -199,7 +199,8 @@ bool Simulable::parseSimulable(
 		params["publish_relative_pose_objects"] =
 			TParamEntry("%s", &listObjects);
 
-		const std::map<std::string, std::string> varValues = {{"NAME", name_}};
+		auto varValues = simulable_parent_->user_defined_variables();
+		varValues["NAME"] = name_;
 
 		parse_xmlnode_children_as_param(*node, params, varValues);
 

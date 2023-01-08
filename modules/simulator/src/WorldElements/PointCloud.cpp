@@ -34,14 +34,14 @@ void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	if (auto x2d = root->first_node("file_txt_2d"); x2d && x2d->value())
 	{
-		const string sFile = world_->resolvePath(x2d->value());
+		const string sFile = world_->local_to_abs_path(x2d->value());
 
 		points_ = mrpt::maps::CSimplePointsMap::Create();
 		points_->load2D_from_text_file(sFile);
 	}
 	else if (auto x3d = root->first_node("file_txt_3d"); x3d && x3d->value())
 	{
-		const string sFile = world_->resolvePath(x3d->value());
+		const string sFile = world_->local_to_abs_path(x3d->value());
 
 		points_ = mrpt::maps::CSimplePointsMap::Create();
 		points_->load3D_from_text_file(sFile);
@@ -56,7 +56,8 @@ void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 		TParameterDefinitions ps;
 		ps["points_size"] = TParamEntry("%lf", &render_points_size_);
 		ps["pose_3d"] = TParamEntry("%pose3d", &pointcloud_pose_);
-		parse_xmlnode_children_as_param(*root, ps);
+		parse_xmlnode_children_as_param(
+			*root, ps, world_->user_defined_variables());
 	}
 
 	points_->renderOptions.point_size = render_points_size_;

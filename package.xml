@@ -35,6 +35,8 @@
   <depend>protobuf-dev</depend>
   <depend>python3-venv</depend>
   <depend>python3-protobuf</depend>
+  <depend>wget</depend>
+  <depend>unzip</depend>
 
   <!-- ROS1 -->
   <depend           condition="$ROS_VERSION == 1">roscpp</depend>

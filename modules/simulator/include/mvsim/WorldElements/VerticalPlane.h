@@ -17,12 +17,16 @@
 
 namespace mvsim
 {
-class HorizontalPlane : public WorldElementBase
+/** A vertical plane, visible from one or both sides (see "cull_faces"),
+ *  conveniently defined by starting and end points (x0,y0)-(x1,y1).
+ *
+ */
+class VerticalPlane : public WorldElementBase
 {
-	DECLARES_REGISTER_WORLD_ELEMENT(HorizontalPlane)
+	DECLARES_REGISTER_WORLD_ELEMENT(VerticalPlane)
    public:
-	HorizontalPlane(World* parent, const rapidxml::xml_node<char>* root);
-	virtual ~HorizontalPlane();
+	VerticalPlane(World* parent, const rapidxml::xml_node<char>* root);
+	virtual ~VerticalPlane();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
 	// ------- Interface with "World" ------
@@ -35,7 +39,7 @@ class HorizontalPlane : public WorldElementBase
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
-	float x_min_ = -10, x_max_ = 10, y_min_ = -10, y_max_ = 10;
+	float x0_ = -10, x1_ = -10, y0_ = -10, y1_ = 10;
 	mrpt::img::TColor color_ = {0xa0, 0xa0, 0xa0, 0xff};
 
 	/** If defined, it overrides the plain color in color_ */
@@ -43,7 +47,7 @@ class HorizontalPlane : public WorldElementBase
 	double textureSizeX_ = 1.0;
 	double textureSizeY_ = 1.0;
 
-	float z_ = .0f;
+	float z_ = .0f, height_ = 3.0f;
 	std::string cull_faces_ = "NONE";
 
 	mrpt::opengl::CTexturedPlane::Ptr gl_plane_;

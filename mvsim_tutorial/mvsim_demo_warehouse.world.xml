@@ -7,11 +7,12 @@
 		<ortho>false</ortho>
 		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
 		<cam_distance>25</cam_distance>
-		<fov_deg>45</fov_deg>
+		<fov_deg>120</fov_deg>
 		<refresh_fps>20</refresh_fps>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
+	<variable name="CEILING_HEIGHT" value="6.0"></variable>
 
 	<!-- ========================
 		   Scenario definition
@@ -19,23 +20,64 @@
 	<!-- ground -->
 	<element class="horizontal_plane">
 		<cull_face>BACK</cull_face>
-		<x_min>-20</x_min>
-		<y_min>-20</y_min>
+		<x_min>-15</x_min>
+		<y_min>-13</y_min>
 		<x_max> 20</x_max>
-		<y_max> 20</y_max>
+		<y_max> 13</y_max>
 		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/concrete-ground-1.jpg</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
 	</element>
 
 	<!-- ceiling -->
 	<element class="horizontal_plane">
 		<cull_face>FRONT</cull_face>
-		<x_min>-20</x_min>
-		<y_min>-20</y_min>
+		<x_min>-15</x_min>
+		<y_min>-13</y_min>
 		<x_max> 20</x_max>
-		<y_max> 20</y_max>
-		<z>10.0</z>
+		<y_max> 13</y_max>
+		<z>$f{CEILING_HEIGHT}</z>
 	</element>
 
+
+	<!-- perimeter walls: -->
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>-15</x0> <y0>13</y0>
+		<x1>-15</x1> <y1>-13</y1>
+		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
+	</element>
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0> 20</x0> <y0>13</y0>
+		<x1>-15</x1> <y1>13</y1>
+		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
+	</element>
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0> 20</x0> <y0>-13</y0>
+		<x1> 20</x1> <y1>13</y1>
+		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
+	</element>
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>-15</x0> <y0>-13</y0>
+		<x1> 20</x1> <y1>-13</y1>
+		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
+	</element>
 
 	<!-- =============================
 		   Vehicle classes definition
@@ -62,31 +104,27 @@
 		/>-->
 
 		<include file="definitions/velodyne-vlp16.sensor.xml"
-		  sensor_x="0.10" sensor_z="$f{0.30 + 0.30}"
+		  sensor_x="0.10" sensor_z="$f{0.27 + 0.09}"
 		  sensor_period_sec="0.10"
 		  sensor_std_noise="0.02"
 		  sensor_publish="false"
 		  sensor_name="lidar1"
 		  horz_nrays="300"
-		  fbo_nrows="$f{40*16}"
+		  fbo_nrows="$f{30*16}"
 		/>
+		
+		<include file="definitions/camera.sensor.xml" 
+		  sensor_x="0.2"  sensor_y="0" sensor_z="0.27"
+		  sensor_period_sec="0.10"
+		  sensor_name="cam1"
+		  />		
 	</vehicle>
 
 	<!-- ======================================
-	      Walls
-	     ====================================== -->
-<!--	<walls>
-	  <color>#505050</color>
-	  <model_uri>testWalls.dae</model_uri>
-	  <wallThickness>0.10</wallThickness>
-	</walls>-->
-
-	<!-- ======================================
-	      Objects
+	      Object types
 	     ====================================== -->
 	<block:class name="shelf">
 		<mass>300</mass>
-		<color>#0080ff</color>
 		<zmax>2.0</zmax>
 		<ground_friction>100.0</ground_friction>
 		<shape_from_visual/> <!-- automatic size from 3D model file -->
@@ -98,6 +136,37 @@
 		</visual>
 	</block:class>
 
+	<block:class name="stairs">
+		<mass>5000</mass>
+		<zmax>6.0</zmax>
+		<ground_friction>100.0</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/metal-stairs.dae</model_uri>
+			<model_offset_z>4.31</model_offset_z>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<block:class name="pallet_jack">
+		<mass>1000</mass>
+		<zmax>6.0</zmax>
+		<ground_friction>100.0</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/pallet_jack.zip/pallet_jack/pallet_jack.dae</model_uri>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+
+	<!-- ======================================
+	      Object instances
+	     ====================================== -->
 	<!-- You can assign an optional custom name to each object, as an attribute to block, like name="shelf_001", etc. -->
 
 	<block class="shelf"> <init_pose>0 5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
@@ -107,5 +176,12 @@
 	<block class="shelf"> <init_pose>0 -9 0</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
 
 	<block class="shelf"> <init_pose>12 0 90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+	<block class="shelf"> <init_pose>18 0 90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+
+	<block class="pallet_jack"> <init_pose>3 3 0</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+
+	<block class="stairs"> <init_pose>-16 -17 -90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+	<block class="stairs"> <init_pose> 16  17  90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+
 
 </mvsim_world>

@@ -58,13 +58,14 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["debug_show_contact_points"] =
 		TParamEntry("%bool", &debugShowContactPoints_);
 
-	parse_xmlnode_children_as_param(*root, params);
+	parse_xmlnode_children_as_param(
+		*root, params, world_->user_defined_variables());
 
 	// Load elevation data:
 	mrpt::math::CMatrixFloat elevation_data;
 	if (!sElevationImgFile.empty())
 	{
-		sElevationImgFile = world_->resolvePath(sElevationImgFile);
+		sElevationImgFile = world_->local_to_abs_path(sElevationImgFile);
 
 		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(
@@ -99,7 +100,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	bool has_mesh_image = false;
 	if (!sTextureImgFile.empty())
 	{
-		sTextureImgFile = world_->resolvePath(sTextureImgFile);
+		sTextureImgFile = world_->local_to_abs_path(sTextureImgFile);
 
 		if (!mesh_image.loadFromFile(sTextureImgFile))
 			throw std::runtime_error(mrpt::format(
