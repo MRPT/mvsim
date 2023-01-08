@@ -186,7 +186,7 @@ void World::internal_recursive_parse_XML(
 		const std::string relFile =
 			mvsim::parse(fileAttrb->value(), user_defined_variables());
 
-		const auto absFile = this->resolvePath(relFile);
+		const auto absFile = this->local_to_abs_path(relFile);
 		MRPT_LOG_DEBUG_STREAM(
 			"XML parser: including file: '" << absFile << "'");
 

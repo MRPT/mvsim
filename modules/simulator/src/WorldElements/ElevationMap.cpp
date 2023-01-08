@@ -64,7 +64,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	mrpt::math::CMatrixFloat elevation_data;
 	if (!sElevationImgFile.empty())
 	{
-		sElevationImgFile = world_->resolvePath(sElevationImgFile);
+		sElevationImgFile = world_->local_to_abs_path(sElevationImgFile);
 
 		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(
@@ -99,7 +99,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	bool has_mesh_image = false;
 	if (!sTextureImgFile.empty())
 	{
-		sTextureImgFile = world_->resolvePath(sTextureImgFile);
+		sTextureImgFile = world_->local_to_abs_path(sTextureImgFile);
 
 		if (!mesh_image.loadFromFile(sTextureImgFile))
 			throw std::runtime_error(mrpt::format(

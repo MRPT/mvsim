@@ -25,6 +25,7 @@
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Block.h>
 #include <mvsim/Comms/Client.h>
+#include <mvsim/RemoteResourcesManager.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
@@ -317,7 +318,7 @@ class World : public mrpt::system::COutputLogger
 	mrpt::system::CTimeLogger& getTimeLogger() { return timlogger_; }
 	/** Replace macros, prefix the base_path if input filename is relative, etc.
 	 */
-	std::string resolvePath(const std::string& in_path) const;
+	std::string local_to_abs_path(const std::string& in_path) const;
 
 	std::string xmlPathToActualPath(const std::string& modelURI) const;
 
@@ -582,6 +583,8 @@ class World : public mrpt::system::COutputLogger
 	void internal_recursive_parse_XML(
 		const void* /*rapidxml::xml_node<>* */ node,
 		const std::string& currentBasePath);
+
+	mutable RemoteResourcesManager remoteResources_;
 
 	// Services:
 	void internal_advertiseServices();	// called from connectToServer()
