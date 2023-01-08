@@ -115,6 +115,7 @@
 		<!-- 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/metal-stairs.dae</model_uri>
+			<model_offset_z>4.31</model_offset_z>
 			<model_roll>90.0</model_roll>
 		</visual>
 	</block:class>
@@ -132,9 +133,11 @@
 	<block class="shelf"> <init_pose>0 -9 0</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
 
 	<block class="shelf"> <init_pose>12 0 90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+	<block class="shelf"> <init_pose>18 0 90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
 
 
-	<block class="stairs"> <init_pose>-10 -10 0</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+	<block class="stairs"> <init_pose>-17 -17 -90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+	<block class="stairs"> <init_pose> 17  17  90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
 
 
 </mvsim_world>

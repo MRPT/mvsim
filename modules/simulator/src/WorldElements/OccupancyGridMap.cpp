@@ -48,7 +48,7 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 		throw std::runtime_error(
 			"Error: <file></file> XML entry not found inside gridmap node!");
 
-	const string sFile = world_->resolvePath(xml_file->value());
+	const string sFile = world_->local_to_abs_path(xml_file->value());
 	const string sFileExt =
 		mrpt::system::extractFileExtension(sFile, true /*ignore gz*/);
 
