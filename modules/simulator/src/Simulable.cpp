@@ -157,6 +157,26 @@ bool Simulable::parseSimulable(
 		this->setPose(p);
 		initial_q_ = p;	 // save it for later usage in some animations, etc.
 	}
+	else if (const xml_node<>* nPose3 = rootNode.first_node("init_pose3d");
+			 nPose3)
+	{
+		mrpt::math::TPose3D p;
+		if (6 != ::sscanf(
+					 mvsim::parse(
+						 nPose3->value(),
+						 getSimulableWorldObject()->user_defined_variables())
+						 .c_str(),
+					 "%lf %lf %lf %lf %lf %lf ", &p.x, &p.y, &p.z, &p.yaw,
+					 &p.pitch, &p.roll))
+			THROW_EXCEPTION_FMT(
+				"Error parsing <init_pose3d>%s</init_pose3d>", nPose->value());
+		p.yaw *= M_PI / 180.0;	// deg->rad
+		p.pitch *= M_PI / 180.0;  // deg->rad
+		p.roll *= M_PI / 180.0;	 // deg->rad
+
+		this->setPose(p);
+		initial_q_ = p;	 // save it for later usage in some animations, etc.
+	}
 	else if (psp.init_pose_mandatory)
 	{
 		THROW_EXCEPTION(

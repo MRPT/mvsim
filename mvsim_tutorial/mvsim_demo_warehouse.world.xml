@@ -165,7 +165,7 @@
 	</block:class>
 
 	<block:class name="pallet_jack">
-		<mass>100</mass> <zmax>2.0</zmax> <ground_friction>0.1</ground_friction>
+		<mass>20</mass> <zmax>1.5</zmax> <ground_friction>0.1</ground_friction>
 		<shape_from_visual/> <!-- automatic size from 3D model file -->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
@@ -184,12 +184,26 @@
 		</visual>
 	</block:class>
 
+	<block:class name="extinguisher">
+		<mass>2</mass> <zmax>1.0</zmax> <ground_friction>100</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/extinguisher.zip/extinguisher/extinguisher.dae</model_uri>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+
 	<!-- ======================================
 	      Object instances
 	     ====================================== -->
 	<!-- You can assign an optional custom name to each object, as an attribute to block, like name="shelf_001", etc. -->
 
-	<!-- All coordinates are global coords: x,y, yaw(deg) -->
+	<!-- All coordinates are global coords: 
+	     SE(2) <init_pose>x y yaw(deg)</init_pose> or
+	     SE(3) <init_pose3d>x y z yaw(deg) pitch(deg) roll(deg)</init_pose3d> 
+	-->
 
 	<block class="shelf"> <init_pose>0 5 0</init_pose> </block>
 	<block class="shelf"> <init_pose>0 9 180</init_pose> </block>
@@ -217,5 +231,9 @@
 
 	<block class="chair_x3"> <init_pose>-14.5 1 90</init_pose> </block>
 	<block class="chair_x3"> <init_pose>-14.5 3 90</init_pose> </block>
+
+	<block class="extinguisher"> <init_pose3d>-14.8 12 1.1 90 0 0</init_pose3d> </block>
+	<block class="extinguisher"> <init_pose3d> 6.5 12.9 1.1 0 0 0</init_pose3d> </block>
+	<block class="extinguisher"> <init_pose3d> 2.5 -12.9 1.1 180 0 0</init_pose3d> </block>
 
 </mvsim_world>
