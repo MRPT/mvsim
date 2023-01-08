@@ -202,7 +202,8 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const int FBO_NCOLS = horzNumRays_;
 
 	// worst vFOV case: at each sub-scan render corner:
-	const double camModel_vFOV = std::min(179.0_deg, 5.0 * vertical_fov_);
+	const double camModel_vFOV =
+		std::min(179.0_deg, 2.05 * atan2(1.0, 1.0 / cos(camModel_hFOV * 0.5)));
 
 	mrpt::img::TCamera camModel;
 	camModel.ncols = FBO_NCOLS;
@@ -289,7 +290,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				auto& entry = lut_[i].column[j];
 
 				const auto vertAng =
-					-camModel_vFOV * 0.5 + j * camModel_vFOV / (nRows - 1);
+					-vertical_fov_ * 0.5 + j * vertical_fov_ / (nRows - 1);
 
 				const double cosVertAng = std::cos(vertAng);
 
