@@ -131,10 +131,12 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// Params:
 	// -----------------------------------------------------------
 	parse_xmlnode_children_as_param(
-		*root, block->params_, {}, "[Block::factory]");
+		*root, block->params_, parent->user_defined_variables(),
+		"[Block::factory]");
 	if (class_root)
 		parse_xmlnode_children_as_param(
-			*class_root, block->params_, {}, "[Block::factory]");
+			*class_root, block->params_, parent->user_defined_variables(),
+			"[Block::factory]");
 
 	// Auto shape node from visual?
 	if (const rapidxml::xml_node<char>* xml_shape_viz =

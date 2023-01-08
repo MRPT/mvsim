@@ -58,7 +58,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["debug_show_contact_points"] =
 		TParamEntry("%bool", &debugShowContactPoints_);
 
-	parse_xmlnode_children_as_param(*root, params);
+	parse_xmlnode_children_as_param(
+		*root, params, world_->user_defined_variables());
 
 	// Load elevation data:
 	mrpt::math::CMatrixFloat elevation_data;

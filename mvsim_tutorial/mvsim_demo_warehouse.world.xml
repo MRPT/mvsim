@@ -7,11 +7,12 @@
 		<ortho>false</ortho>
 		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
 		<cam_distance>25</cam_distance>
-		<fov_deg>45</fov_deg>
+		<fov_deg>10	0</fov_deg>
 		<refresh_fps>20</refresh_fps>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
+	<variable name="CEILING_HEIGHT" value="6.0"></variable>
 
 	<!-- ========================
 		   Scenario definition
@@ -24,6 +25,9 @@
 		<x_max> 20</x_max>
 		<y_max> 20</y_max>
 		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/concrete-ground-1.jpg</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
 	</element>
 
 	<!-- ceiling -->
@@ -33,7 +37,37 @@
 		<y_min>-20</y_min>
 		<x_max> 20</x_max>
 		<y_max> 20</y_max>
-		<z>10.0</z>
+		<z>$f{CEILING_HEIGHT}</z>
+	</element>
+
+
+	<!-- perimeter walls: -->
+	<element class="vertical_plane">
+		<cull_face>NONE</cull_face>
+		<x0>-20</x0> <y0>20</y0>
+		<x1>-20</x1> <y1>-20</y1>
+		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/concrete-ground-1.jpg</texture>
+		<texture_size_x>1.0</texture_size_x>
+		<texture_size_y>1.0</texture_size_y>
+	</element>
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0> 20</x0> <y0> 20</y0>
+		<x1>-20</x1> <y1> 20</y1>
+		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+	</element>
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0> 20</x0> <y0>-20</y0>
+		<x1> 20</x1> <y1> 20</y1>
+		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+	</element>
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>-20</x0> <y0>-20</y0>
+		<x1> 20</x1> <y1>-20</y1>
+		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
 	</element>
 
 
@@ -136,8 +170,8 @@
 	<block class="shelf"> <init_pose>18 0 90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
 
 
-	<block class="stairs"> <init_pose>-17 -17 -90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
-	<block class="stairs"> <init_pose> 17  17  90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+	<block class="stairs"> <init_pose>-16 -17 -90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
+	<block class="stairs"> <init_pose> 16  17  90</init_pose>  <!-- In global coords: x,y, yaw(deg) --> </block>
 
 
 </mvsim_world>

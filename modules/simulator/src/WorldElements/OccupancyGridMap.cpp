@@ -81,7 +81,8 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 		other_params["centerpixel_x"] = TParamEntry("%lf", &xcenterpixel);
 		other_params["centerpixel_y"] = TParamEntry("%lf", &ycenterpixel);
 
-		parse_xmlnode_children_as_param(*root, other_params);
+		parse_xmlnode_children_as_param(
+			*root, other_params, world_->user_defined_variables());
 
 		if (!grid_.loadFromBitmapFile(
 				sFile, resolution, {xcenterpixel, ycenterpixel}))
@@ -98,7 +99,8 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 		ps["restitution"] = TParamEntry("%lf", &restitution_);
 		ps["lateral_friction"] = TParamEntry("%lf", &lateral_friction_);
 
-		parse_xmlnode_children_as_param(*root, ps);
+		parse_xmlnode_children_as_param(
+			*root, ps, world_->user_defined_variables());
 	}
 }
 

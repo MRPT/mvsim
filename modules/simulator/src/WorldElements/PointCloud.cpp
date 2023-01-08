@@ -56,7 +56,8 @@ void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 		TParameterDefinitions ps;
 		ps["points_size"] = TParamEntry("%lf", &render_points_size_);
 		ps["pose_3d"] = TParamEntry("%pose3d", &pointcloud_pose_);
-		parse_xmlnode_children_as_param(*root, ps);
+		parse_xmlnode_children_as_param(
+			*root, ps, world_->user_defined_variables());
 	}
 
 	points_->renderOptions.point_size = render_points_size_;

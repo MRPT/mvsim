@@ -251,7 +251,9 @@ void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	attribs["name"] = TParamEntry("%s", &name_);
 	parse_xmlnode_attribs(*root, attribs, {}, "[SensorBase]");
 
-	varValues_ = {{"NAME", name_}, {"PARENT_NAME", vehicle_.getName()}};
+	varValues_ = world_->user_defined_variables();
+	varValues_["NAME"] = name_;
+	varValues_["PARENT_NAME"] = vehicle_.getName();
 
 	// Parse common sensor XML params:
 	this->parseSensorPublish(root->first_node("publish"), varValues_);

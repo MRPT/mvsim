@@ -95,6 +95,9 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 		const auto cmd =
 			mrpt::format("wget -q -O \"%s\" %s", localFil.c_str(), uri.c_str());
 
+		MRPT_LOG_INFO_STREAM(
+			"Downloading remote resources from: '" << uri << "'");
+
 		int ret = ::system(cmd.c_str());
 		if (ret != 0)
 		{

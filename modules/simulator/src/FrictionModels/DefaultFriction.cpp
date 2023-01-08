@@ -27,7 +27,9 @@ DefaultFriction::DefaultFriction(
 			"<friction>...</friction> XML node was expected!!");
 
 	// Parse XML params:
-	if (node) parse_xmlnode_children_as_param(*node, params_);
+	if (node)
+		parse_xmlnode_children_as_param(
+			*node, params_, world_->user_defined_variables());
 }
 
 // See docs in base class.
