@@ -12,13 +12,14 @@
 #include <mrpt/system/COutputLogger.h>
 
 #include <string>
+#include <tuple>
 
 namespace mvsim
 {
 /**
  * Keeps a local directory with cached archives and packages from remote
  * servers.
- * The cache directory is `$HOME/.cache/mvsim/storage/` in non-Windows systems.
+ * The cache directory is `$HOME/.cache/mvsim-storage/` in non-Windows systems.
  *
  * See resolve_path() for the possible formats of URI addresses.
  *
@@ -46,10 +47,21 @@ class RemoteResourcesManager : public mrpt::system::COutputLogger
 	 */
 	static bool is_remote(const std::string& uri);
 
+	/** Returns {true, zip_uri, internal_uri} if the URI refers to a ZIP file,
+	 * or {false, uri, ""} otherwise.
+	 */
+	static std::tuple<bool, std::string, std::string> zip_uri_split(
+		const std::string& uri);
+
 	static std::string cache_directory();
 
    private:
 	std::string handle_remote_uri(const std::string& uri);
+
+	/// Returns the local file that internalURI refers to, possibly
+	/// decompressing the ZIP package first if it is the first time.
+	std::string handle_local_zip_package(
+		const std::string& localZipFil, const std::string& internalURI);
 };
 
 }  // namespace mvsim
