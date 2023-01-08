@@ -42,7 +42,8 @@ WardIagnemmaFriction::WardIagnemmaFriction(
 		params["R1"] = TParamEntry("%lf", &R1_);
 		params["R2"] = TParamEntry("%lf", &R2_);
 		// Parse XML params:
-		parse_xmlnode_children_as_param(*node, params);
+		parse_xmlnode_children_as_param(
+			*node, params, world_->user_defined_variables());
 	}
 
 	MRPT_UNSCOPED_LOGGER_START;

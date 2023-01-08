@@ -11,7 +11,7 @@
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
 #include <mvsim/World.h>
-#include <mvsim/WorldElements/HorizontalPlane.h>
+#include <mvsim/WorldElements/VerticalPlane.h>
 
 #include <rapidxml.hpp>
 
@@ -22,18 +22,20 @@ using namespace rapidxml;
 using namespace mvsim;
 using namespace std;
 
-HorizontalPlane::HorizontalPlane(
+MRPT_TODO("Create box2d fixtures");
+
+VerticalPlane::VerticalPlane(
 	World* parent, const rapidxml::xml_node<char>* root)
 	: WorldElementBase(parent)
 {
 	// Create opengl object: in this class, we'll store most state data directly
 	// in the mrpt::opengl object.
-	HorizontalPlane::loadConfigFrom(root);
+	VerticalPlane::loadConfigFrom(root);
 }
 
-HorizontalPlane::~HorizontalPlane() {}
+VerticalPlane::~VerticalPlane() {}
 
-void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
+void VerticalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	if (!root) return;	// Assume defaults
 
@@ -51,11 +53,12 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	TParameterDefinitions params;
 	params["color"] = TParamEntry("%color", &color_);
 
-	params["x_min"] = TParamEntry("%f", &x_min_);
-	params["x_max"] = TParamEntry("%f", &x_max_);
-	params["y_min"] = TParamEntry("%f", &y_min_);
-	params["y_max"] = TParamEntry("%f", &y_max_);
+	params["x0"] = TParamEntry("%f", &x0_);
+	params["x1"] = TParamEntry("%f", &x1_);
+	params["y0"] = TParamEntry("%f", &y0_);
+	params["y1"] = TParamEntry("%f", &y1_);
 	params["z"] = TParamEntry("%f", &z_);
+	params["height"] = TParamEntry("%f", &height_);
 	params["cull_face"] = TParamEntry("%s", &cull_faces_);
 
 	params["texture"] = TParamEntry("%s", &textureFileName_);
@@ -66,7 +69,7 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		*root, params, world_->user_defined_variables());
 }
 
-void HorizontalPlane::internalGuiUpdate(
+void VerticalPlane::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
@@ -79,10 +82,29 @@ void HorizontalPlane::internalGuiUpdate(
 	// 1st call? (w/o texture)
 	if (!gl_plane_ && textureFileName_.empty() && viz && physical)
 	{
+		const mrpt::math::TPoint3Df p0 = {x0_, y0_, z_};
+		const mrpt::math::TPoint3Df p1 = {x1_, y1_, z_};
+
+		ASSERT_(p0 != p1);
+		const auto v01 = p1 - p0;
+
+		const float L = v01.norm(), H = height_;
+
+		const auto center =
+			(p0 + p1) * 0.5f + mrpt::math::TPoint3Df(0, 0, 0.5f * H);
+
 		gl_plane_ = mrpt::opengl::CTexturedPlane::Create();
-		gl_plane_->setPlaneCorners(x_min_, x_max_, y_min_, y_max_);
-		gl_plane_->setLocation(0, 0, z_);
-		gl_plane_->setName("HorizontalPlane_"s + getName());
+		gl_plane_->setPlaneCorners(-0.5 * L, 0.5 * L, -0.5 * H, 0.5 * H);
+
+		mrpt::math::TPose3D p;
+		p.x = center.x;
+		p.y = center.y;
+		p.z = center.z;
+		p.yaw = std::atan2(v01.y, v01.x);
+		p.roll = mrpt::DEG2RAD(90.0);
+
+		gl_plane_->setPose(p);
+		gl_plane_->setName("VerticalPlane_"s + getName());
 
 		gl_plane_->setColor_u8(color_);
 
@@ -106,20 +128,28 @@ void HorizontalPlane::internalGuiUpdate(
 		bool textureReadOk = texture.loadFromFile(localFileName);
 		ASSERT_(textureReadOk);
 
+		const mrpt::math::TPoint3Df p0 = {x0_, y0_, z_};
+		const mrpt::math::TPoint3Df p1 = {x1_, y1_, z_};
+
+		ASSERT_(p0 != p1);
+		const auto v01 = p1 - p0;
+
+		const float L = v01.norm(), H = height_;
+
 		// Compute (U,V) texture coordinates:
 		float u_min = 0;
 		float v_min = 0;
-		float u_max = (x_max_ - x_min_) / textureSizeX_;
-		float v_max = (y_max_ - y_min_) / textureSizeY_;
+		float u_max = L / textureSizeX_;
+		float v_max = H / textureSizeY_;
 
 		gl_plane_text_ = mrpt::opengl::CSetOfTexturedTriangles::Create();
-		gl_plane_text_->setName("HorizontalPlane_"s + getName());
+		gl_plane_text_->setName("VerticalPlane_"s + getName());
 
 		{
 			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
-			t.vertices[0].xyzrgba.pt = {x_min_, y_min_, z_};
-			t.vertices[1].xyzrgba.pt = {x_max_, y_min_, z_};
-			t.vertices[2].xyzrgba.pt = {x_max_, y_max_, z_};
+			t.vertices[0].xyzrgba.pt = {x0_, y0_, z_};
+			t.vertices[1].xyzrgba.pt = {x1_, y0_, z_};
+			t.vertices[2].xyzrgba.pt = {x1_, y1_, z_ + height_};
 
 			t.vertices[0].uv = {u_min, v_min};
 			t.vertices[1].uv = {u_max, v_min};
@@ -129,9 +159,9 @@ void HorizontalPlane::internalGuiUpdate(
 		}
 		{
 			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
-			t.vertices[0].xyzrgba.pt = {x_min_, y_min_, z_};
-			t.vertices[1].xyzrgba.pt = {x_max_, y_max_, z_};
-			t.vertices[2].xyzrgba.pt = {x_min_, y_max_, z_};
+			t.vertices[0].xyzrgba.pt = {x0_, y0_, z_};
+			t.vertices[1].xyzrgba.pt = {x1_, y1_, z_ + height_};
+			t.vertices[2].xyzrgba.pt = {x0_, y1_, z_ + height_};
 
 			t.vertices[0].uv = {u_min, v_min};
 			t.vertices[1].uv = {u_max, v_max};
@@ -158,16 +188,15 @@ void HorizontalPlane::internalGuiUpdate(
 	// setPose() change event, so my caller already holds the mutex and we
 	// don't need/can't acquire it again:
 	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
-
 	glGroup_->setPose(objectPose);
 }
 
-void HorizontalPlane::simul_pre_timestep(const TSimulContext& context)
+void VerticalPlane::simul_pre_timestep(const TSimulContext& context)
 {
 	Simulable::simul_pre_timestep(context);
 }
 
-void HorizontalPlane::simul_post_timestep(const TSimulContext& context)
+void VerticalPlane::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
 }

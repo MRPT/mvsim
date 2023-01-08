@@ -53,7 +53,8 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["y_max"] = TParamEntry("%lf", &y_max_);
 	params["interval"] = TParamEntry("%lf", &interval_);
 
-	parse_xmlnode_children_as_param(*root, params);
+	parse_xmlnode_children_as_param(
+		*root, params, world_->user_defined_variables());
 
 	// If a vehicle name is given, setting "is_floating=true" by the user is
 	// optional:
