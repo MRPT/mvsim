@@ -43,33 +43,41 @@
 
 	<!-- perimeter walls: -->
 	<element class="vertical_plane">
-		<cull_face>NONE</cull_face>
+		<cull_face>FRONT</cull_face>
 		<x0>-20</x0> <y0>20</y0>
 		<x1>-20</x1> <y1>-20</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/concrete-ground-1.jpg</texture>
-		<texture_size_x>1.0</texture_size_x>
-		<texture_size_y>1.0</texture_size_y>
+		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
 	</element>
 	<element class="vertical_plane">
 		<cull_face>FRONT</cull_face>
 		<x0> 20</x0> <y0> 20</y0>
 		<x1>-20</x1> <y1> 20</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
 	</element>
 	<element class="vertical_plane">
 		<cull_face>FRONT</cull_face>
 		<x0> 20</x0> <y0>-20</y0>
 		<x1> 20</x1> <y1> 20</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
 	</element>
 	<element class="vertical_plane">
 		<cull_face>FRONT</cull_face>
 		<x0>-20</x0> <y0>-20</y0>
 		<x1> 20</x1> <y1>-20</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
 	</element>
-
 
 	<!-- =============================
 		   Vehicle classes definition

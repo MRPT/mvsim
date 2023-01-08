@@ -148,8 +148,8 @@ void VerticalPlane::internalGuiUpdate(
 		{
 			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
 			t.vertices[0].xyzrgba.pt = {x0_, y0_, z_};
-			t.vertices[1].xyzrgba.pt = {x1_, y0_, z_};
-			t.vertices[2].xyzrgba.pt = {x1_, y1_, z_ + height_};
+			t.vertices[1].xyzrgba.pt = {x1_, y1_, z_};
+			t.vertices[2].xyzrgba.pt = {x1_, y1_, z_ + H};
 
 			t.vertices[0].uv = {u_min, v_min};
 			t.vertices[1].uv = {u_max, v_min};
@@ -160,8 +160,8 @@ void VerticalPlane::internalGuiUpdate(
 		{
 			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
 			t.vertices[0].xyzrgba.pt = {x0_, y0_, z_};
-			t.vertices[1].xyzrgba.pt = {x1_, y1_, z_ + height_};
-			t.vertices[2].xyzrgba.pt = {x0_, y1_, z_ + height_};
+			t.vertices[1].xyzrgba.pt = {x1_, y1_, z_ + H};
+			t.vertices[2].xyzrgba.pt = {x0_, y0_, z_ + H};
 
 			t.vertices[0].uv = {u_min, v_min};
 			t.vertices[1].uv = {u_max, v_max};
