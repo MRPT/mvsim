@@ -110,7 +110,7 @@
 		  sensor_publish="false"
 		  sensor_name="lidar1"
 		  horz_nrays="300"
-		  fbo_nrows="$f{40*16}"
+		  fbo_nrows="$f{30*16}"
 		/>
 		
 		<include file="definitions/camera.sensor.xml" 
@@ -119,16 +119,6 @@
 		  sensor_name="cam1"
 		  />		
 	</vehicle>
-
-	<!-- ======================================
-	      Walls
-	     ====================================== -->
-<!--	<walls>
-	  <color>#505050</color>
-	  <model_uri>testWalls.dae</model_uri>
-	  <wallThickness>0.10</wallThickness>
-	</walls>-->
-
 
 	<!-- ======================================
 	      Object types
