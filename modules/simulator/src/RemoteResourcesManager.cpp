@@ -165,7 +165,7 @@ std::string RemoteResourcesManager::handle_local_zip_package(
 		ASSERT_DIRECTORY_EXISTS_(zipOutDir);
 
 		const std::string cmd =
-			"unzip \""s + localZipFil + "\" -q -d \""s + zipOutDir + "\""s;
+			"unzip -q \""s + localZipFil + "\" -d \""s + zipOutDir + "\""s;
 
 		if (int ret = ::system(cmd.c_str()); ret != 0)
 		{
