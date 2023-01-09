@@ -33,7 +33,7 @@ This project includes a C++ library `mvsim`, a standalone app, and a ROS1 node.
 
 Licensed under the permissive 3-clause BSD License.
 
-.. figure:: imgs/mvsim-ros2-demo.gif
+.. figure:: https://mrpt.github.io/mvsim-models/anims/warehouse-demo-mvsim.gif
   :alt: MVSIM Simulating Jackal Robot in ROS2
   :target: first-steps.html
 
