@@ -20,10 +20,8 @@
 	<!-- ground -->
 	<element class="horizontal_plane">
 		<cull_face>BACK</cull_face>
-		<x_min>-15</x_min>
-		<y_min>-13</y_min>
-		<x_max> 20</x_max>
-		<y_max> 13</y_max>
+		<x_min>-15</x_min> <y_min>-13</y_min>
+		<x_max> 20</x_max> <y_max> 13</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/concrete-ground-1.jpg</texture>
 		<texture_size_x>2.0</texture_size_x>
@@ -33,13 +31,10 @@
 	<!-- ceiling -->
 	<element class="horizontal_plane">
 		<cull_face>FRONT</cull_face>
-		<x_min>-15</x_min>
-		<y_min>-13</y_min>
-		<x_max> 20</x_max>
-		<y_max> 13</y_max>
+		<x_min>-15</x_min> <y_min>-13</y_min>
+		<x_max> 20</x_max> <y_max> 13</y_max>
 		<z>$f{CEILING_HEIGHT}</z>
 	</element>
-
 
 	<!-- perimeter walls: -->
 	<element class="vertical_plane">

@@ -10,6 +10,8 @@
 #include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/version.h>
+#include <mvsim/Block.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/World.h>
@@ -126,7 +128,75 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 
 	auto glModel = gModelsCache.get(localFileName, opts);
 
-	const auto bb = glModel->getBoundingBox();
+	// Make sure the points and vertices buffers are up to date, so we can
+	// access them:
+	glModel->onUpdateBuffers_all();
+
+	mrpt::math::TBoundingBox bb;
+	// Slice bbox in z up to a given relevant height:
+	if (const Block* block = dynamic_cast<const Block*>(this); block)
+	{
+		const auto zMin = block->block_z_min();
+		const auto zMax = block->block_z_max();
+
+		bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
+
+		auto lambdaUpdatePt = [&bb, &modelPose, modelScale, zMin,
+							   zMax](const mrpt::math::TPoint3Df& orgPt) {
+			auto pt = modelPose.composePoint(orgPt * modelScale);
+			if (pt.z < zMin || pt.z > zMax) return;	 // skip
+			bb.updateWithPoint(pt);
+		};
+
+		{
+			auto lck =
+				mrpt::lockHelper(glModel->shaderTrianglesBufferMutex().data);
+			const auto& tris = glModel->shaderTrianglesBuffer();
+			for (const auto& tri : tris)
+				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
+		}
+		{
+			auto lck =
+				mrpt::lockHelper(glModel->shaderPointsBuffersMutex().data);
+			const auto& pts = glModel->shaderPointsVertexPointBuffer();
+			for (const auto& pt : pts) lambdaUpdatePt(pt);
+		}
+		{
+			auto lck =
+				mrpt::lockHelper(glModel->shaderWireframeBuffersMutex().data);
+			const auto& pts = glModel->shaderWireframeVertexPointBuffer();
+			for (const auto& pt : pts) lambdaUpdatePt(pt);
+		}
+
+#if MRPT_VERSION >= 0x260
+		const auto& txtrdObjs =
+			glModel->texturedObjects();	 // [new mrpt v2.6.0]
+		for (const auto& obj : txtrdObjs)
+		{
+			if (!obj) continue;
+
+			auto lck = mrpt::lockHelper(
+				obj->shaderTexturedTrianglesBufferMutex().data);
+			const auto& tris = obj->shaderTexturedTrianglesBuffer();
+			for (const auto& tri : tris)
+				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
+		}
+#endif
+#if 0
+		std::cout << 
+			"bbox for [" << modelURI << "] zMin=" << zMin << " zMax=" << zMax
+						 << " bb=" << bb.asString() << "\n";
+#endif
+	}
+	else
+	{
+		// default: the whole model bbox:
+		bb = glModel->getBoundingBox();
+
+		// Apply transformation to bounding box too:
+		bb.min = modelPose.composePoint(bb.min * modelScale);
+		bb.max = modelPose.composePoint(bb.max * modelScale);
+	}
 
 	glGroup->insert(glModel);
 
@@ -142,8 +212,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	// Auto bounds from visual model bounding-box:
 
 	// Apply transformation to bounding box too:
-	viz_bbmin_ = modelPose.composePoint(bb.min * modelScale);
-	viz_bbmax_ = modelPose.composePoint(bb.max * modelScale);
+	viz_bbmin_ = bb.min;
+	viz_bbmax_ = bb.max;
 
 	return true;
 	MRPT_TRY_END
