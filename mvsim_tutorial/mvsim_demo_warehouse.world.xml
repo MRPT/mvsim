@@ -34,6 +34,9 @@
 		<x_min>-15</x_min> <y_min>-13</y_min>
 		<x_max> 20</x_max> <y_max> 13</y_max>
 		<z>$f{CEILING_HEIGHT}</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
 	</element>
 
 	<!-- perimeter walls: -->
