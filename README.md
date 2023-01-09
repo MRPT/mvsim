@@ -20,7 +20,7 @@ This package includes C++ libraries, standalone applications, and ROS-1 and ROS-
 License: 3-clause BSD License
 Copyright (C) 2014-2023 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
-![screenshot-demo-warehouse](https://mrpt.github.io/mvsim-models/anims/warehouse-demo-mvsim.gif)
+![screenshot-demo](docs/imgs/mvsim-ros2-demo.gif)
 
 [![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
 
