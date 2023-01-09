@@ -20,7 +20,7 @@ This package includes C++ libraries, standalone applications, and ROS-1 and ROS-
 License: 3-clause BSD License
 Copyright (C) 2014-2023 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
-![screenshot-demo-2robots](docs/imgs/mvsim_screenshot_ros1_depth_camera_demo.png)
+![screenshot-demo-warehouse](https://mrpt.github.io/mvsim-models/anims/warehouse-demo-mvsim.gif)
 
 [![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
 
@@ -34,6 +34,7 @@ Launch demos
 
 Standalone:
 
+    mvsim launch mvsim_tutorial/mvsim_demo_warehouse.world.xml
     mvsim launch mvsim_tutorial/mvsim_demo_2robots.world.xml
     
     mvsim launch mvsim_tutorial/test_mesh.world.xml
@@ -45,12 +46,14 @@ ROS1:
 
 ROS2:
 
+    ros2 launch mvsim mvsim_demo_warehouse.launch.py
     ros2 launch mvsim mvsim_demo_depth_camera.launch.py
 
 Main features
 --------------
   * Lightweight in memory, CPU and library requirements.
   * Fully configurable via `.xml` "world" files.
+  * Headless mode, suitable for dockerized environments.
   * World maps:
     * Occupancy gridmaps: input as images or MRPT binary maps (from icp-slam, rbpf-slam, etc.)
     * Elevation meshes.
@@ -59,10 +62,10 @@ Main features
     * Ackermann steering (kinematic & dynamic steering, different mechanical drive models).
     * Ackermann steering with mechanical differentials of full grade.
   * Sensors:
-    * Laser scanners: Robots see each other, their own bodies, etc.
+    * 2D and 3D Lidars: Robots see each other, their own bodies, etc.
     * RGB cameras
     * Depth cameras
-  * Interface to vehicles: Choose among:
+  * Interface to vehicles: Custom Python interface, or ROS. Choose among:
     * Raw access to forces and motor torques.
     * Twist commands (using internal controllers).
 
