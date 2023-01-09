@@ -132,20 +132,21 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	// access them:
 	glModel->onUpdateBuffers_all();
 
-	mrpt::math::TBoundingBox bb;
+	mrpt::math::TBoundingBox bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
 	// Slice bbox in z up to a given relevant height:
 	if (const Block* block = dynamic_cast<const Block*>(this); block)
 	{
 		const auto zMin = block->block_z_min();
 		const auto zMax = block->block_z_max();
 
-		bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
+		size_t numTotalPts = 0, numPassedPts = 0;
 
-		auto lambdaUpdatePt = [&bb, &modelPose, modelScale, zMin,
-							   zMax](const mrpt::math::TPoint3Df& orgPt) {
+		auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt) {
+			numTotalPts++;
 			auto pt = modelPose.composePoint(orgPt * modelScale);
 			if (pt.z < zMin || pt.z > zMax) return;	 // skip
 			bb.updateWithPoint(pt);
+			numPassedPts++;
 		};
 
 		{
@@ -183,12 +184,14 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 		}
 #endif
 #if 0
-		std::cout << 
-			"bbox for [" << modelURI << "] zMin=" << zMin << " zMax=" << zMax
-						 << " bb=" << bb.asString() << "\n";
+		std::cout << "bbox for [" << modelURI << "] numTotalPts=" << numTotalPts
+				  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
+				  << " zMax=" << zMax << " bb=" << bb.asString() << "\n";
 #endif
 	}
-	else
+
+	if (bb.min == mrpt::math::TBoundingBox::PlusMinusInfinity().min ||
+		bb.max == mrpt::math::TBoundingBox::PlusMinusInfinity().max)
 	{
 		// default: the whole model bbox:
 		bb = glModel->getBoundingBox();
