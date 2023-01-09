@@ -103,31 +103,6 @@
 		</shape>
 	</block:class>
 
-	<block:class name="obstacle_table">
-		<mass>30</mass>
-		<color>#0080ff</color>
-		<zmax>1.0</zmax>
-		<ground_friction>0.5</ground_friction>
-		<shape>
-			<pt>-1.262 -0.631</pt>
-			<pt>-1.262  0.631</pt>
-			<pt> 1.262  0.631</pt>
-			<pt> 1.262 -0.631</pt>
-		</shape>
-		<!--  Custom visualization model -->
-		<!-- 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>table1.obj</model_uri>
-			<model_scale>0.025</model_scale>
-			<model_offset_x>0.0</model_offset_x>
-			<model_offset_y>0.0</model_offset_y>
-			<model_offset_z>0.26</model_offset_z>
-			<model_yaw>0.0</model_yaw>
-			<model_pitch>0.0</model_pitch>
-			<model_roll>90.0</model_roll>
-		</visual>
-	</block:class>
-
 	<block:class name="nurse_station">
 		<mass>300</mass>
 		<color>#0080ff</color>
@@ -137,14 +112,7 @@
 		<!--  Custom visualization model -->
 		<!-- 3D model filename to load (local or remote http://uri ) -->
 		<visual>
-			<model_uri>../models/aws_robomaker_hospital_nursesstation_01_visual.dae</model_uri>
-			<model_scale>1.0</model_scale>
-			<model_offset_x>0.0</model_offset_x>
-			<model_offset_y>0.0</model_offset_y>
-			<model_offset_z>0.0</model_offset_z>
-			<model_yaw>0.0</model_yaw>
-			<model_pitch>0.0</model_pitch>
-			<model_roll>00.0</model_roll>
+			<model_uri>https://mrpt.github.io/mvsim-models/aws_robomaker_hospital_nursesstation_01.zip/aws_robomaker_hospital_nursesstation_01/aws_robomaker_hospital_nursesstation_01_visual.dae</model_uri>
 		</visual>
 	</block:class>
 
@@ -154,13 +122,6 @@
 	     ======================== -->
 	<block class="square_obstacle">
 		<init_pose>6 5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<publish>
-		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
-		  <publish_pose_period>50e-3</publish_pose_period>
-		</publish>
-	</block>
-	<block class="obstacle_table">
-		<init_pose>7 7 45</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<publish>
 		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
 		  <publish_pose_period>50e-3</publish_pose_period>

@@ -83,14 +83,7 @@
 		<!--  Custom visualization model -->
 		<!-- 3D model filename to load (local or remote http://uri ) -->
 		<visual>
-			<model_uri>../models/aws_robomaker_hospital_nursesstation_01_visual.dae</model_uri>
-			<model_scale>1.0</model_scale>
-			<model_offset_x>0.0</model_offset_x>
-			<model_offset_y>0.0</model_offset_y>
-			<model_offset_z>0.0</model_offset_z>
-			<model_yaw>0.0</model_yaw>
-			<model_pitch>0.0</model_pitch>
-			<model_roll>00.0</model_roll>
+			<model_uri>https://mrpt.github.io/mvsim-models/aws_robomaker_hospital_nursesstation_01.zip/aws_robomaker_hospital_nursesstation_01/aws_robomaker_hospital_nursesstation_01_visual.dae</model_uri>
 		</visual>
 	</block:class>
 
