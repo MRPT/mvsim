@@ -23,7 +23,7 @@
 		<x_min>-15</x_min> <y_min>-13</y_min>
 		<x_max> 20</x_max> <y_max> 13</y_max>
 		<z>0.0</z>
-		<texture>https://mrpt.github.io/mvsim-models/concrete-ground-1.jpg</texture>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -42,7 +42,7 @@
 		<x0>-15</x0> <y0>13</y0>
 		<x1>-15</x1> <y1>-13</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
@@ -51,7 +51,7 @@
 		<x0> 20</x0> <y0>13</y0>
 		<x1>-15</x1> <y1>13</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
@@ -60,7 +60,7 @@
 		<x0> 20</x0> <y0>-13</y0>
 		<x1> 20</x1> <y1>13</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
@@ -69,7 +69,7 @@
 		<x0>-15</x0> <y0>-13</y0>
 		<x1> 20</x1> <y1>-13</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/wall-bricks-01.png</texture>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
