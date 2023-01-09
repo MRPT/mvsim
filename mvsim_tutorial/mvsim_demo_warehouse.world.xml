@@ -216,6 +216,20 @@
 	<block class="pallet_jack"> <init_pose>-12.5 11.5 -10</init_pose> </block>
 	<block class="pallet_jack"> <init_pose>-11 12 80</init_pose> </block>
 
+	<block class="pallet_jack"> 
+		<init_pose>0 0 0</init_pose>
+		<animation type="keyframes">
+			<time_pose>0.0  -13 -3  0</time_pose>
+			<time_pose>10.0  5  -3  0</time_pose>
+			<time_pose>11.0  5  -3  0</time_pose>
+			<time_pose>14.0  5  -3  180</time_pose>
+			<time_pose>24.0  -13 -3 180</time_pose>
+			<time_pose>25.0  -13 -3 180</time_pose>
+			<time_pose>26.0  -13 -3 0</time_pose>
+		</animation>
+	</block>
+
+
 	<block class="stairs"> <init_pose>-12 -11.5 -90</init_pose> </block>
 	<block class="stairs"> <init_pose> 15  11.5 90</init_pose> </block>
 
