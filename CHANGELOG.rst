@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.0 (2023-01-09)
+------------------
 * New warehouse demo world file, including ros2 launch.
 * New feature: download models from remote servers.
 * Add 3D Lidar sensor.
