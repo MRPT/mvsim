@@ -126,7 +126,7 @@
 		<shape_from_visual/> <!-- automatic size from 3D model file -->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
-			<model_uri>../models/shelf/shelf_big_movai.dae</model_uri>
+			<model_uri>https://mrpt.github.io/mvsim-models/shelf_big_moveai.zip/shelf_big_moveai/shelf_big_movai.dae</model_uri>
 			<model_roll>90.0</model_roll>
 		</visual>
 	</block:class>
