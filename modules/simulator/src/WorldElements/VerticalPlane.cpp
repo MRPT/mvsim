@@ -22,8 +22,6 @@ using namespace rapidxml;
 using namespace mvsim;
 using namespace std;
 
-MRPT_TODO("Create box2d fixtures");
-
 VerticalPlane::VerticalPlane(
 	World* parent, const rapidxml::xml_node<char>* root)
 	: WorldElementBase(parent)
@@ -37,7 +35,7 @@ VerticalPlane::~VerticalPlane() {}
 
 void VerticalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
-	if (!root) return;	// Assume defaults
+	ASSERT_(root);
 
 	// Common setup for simulable objects:
 	// -----------------------------------------------------------
@@ -67,6 +65,55 @@ void VerticalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	parse_xmlnode_children_as_param(
 		*root, params, world_->user_defined_variables());
+
+	// Create box2d fixtures, to enable collision detection:
+	// --------------------------------------------------------
+	b2World& world = *world_->getBox2DWorld();
+
+	// Define the dynamic body. We set its position and call the body factory.
+	b2BodyDef bodyDef;
+	bodyDef.type = b2_staticBody;
+
+	b2dBody_ = world.CreateBody(&bodyDef);
+
+	// Define shape of block:
+	// ------------------------------
+	{
+		const float thickness = 0.02f;
+
+		const mrpt::math::TPoint2Df p0 = {x0_, y0_};
+		const mrpt::math::TPoint2Df p1 = {x1_, y1_};
+		ASSERT_(p0 != p1);
+		const auto v01 = p1 - p0;
+		const mrpt::math::TPoint2Df normal = {-v01.y, v01.x};
+		const auto w = normal.unitarize() * thickness;
+
+		// Convert shape into Box2D format:
+		const size_t nPts = 4;
+		std::vector<b2Vec2> pts;
+
+		const auto p00 = p0 - w, p01 = p0 + w;
+		const auto p10 = p1 - w, p11 = p1 + w;
+
+		pts.emplace_back(p00.x, p00.y);
+		pts.emplace_back(p01.x, p01.y);
+		pts.emplace_back(p11.x, p11.y);
+		pts.emplace_back(p10.x, p10.y);
+
+		b2PolygonShape blockPoly;
+		blockPoly.Set(&pts[0], nPts);
+
+		// Define the dynamic body fixture.
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &blockPoly;
+		fixtureDef.restitution = restitution_;
+
+		// Add the shape to the body.
+		fixture_block_ = b2dBody_->CreateFixture(&fixtureDef);
+	}
+
+	// Init pos: (the vertices already have the global coordinates)
+	b2dBody_->SetTransform(b2Vec2(0, 0), 0);
 }
 
 void VerticalPlane::internalGuiUpdate(

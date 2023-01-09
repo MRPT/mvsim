@@ -53,5 +53,9 @@ class VerticalPlane : public WorldElementBase
 	mrpt::opengl::CTexturedPlane::Ptr gl_plane_;
 	mrpt::opengl::CSetOfTexturedTriangles::Ptr gl_plane_text_;
 	mrpt::opengl::CSetOfObjects::Ptr glGroup_;
+
+	b2Body* b2dBody_ = nullptr;
+	double restitution_ = 0.01;	 //!< Default: 0.01
+	b2Fixture* fixture_block_ = nullptr;
 };
 }  // namespace mvsim
