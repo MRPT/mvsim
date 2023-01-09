@@ -2,6 +2,39 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* New warehouse demo world file, including ros2 launch.
+* New feature: download models from remote servers.
+* Add 3D Lidar sensor.
+* Add support for headless simulations (mvsim launch --headless), suitable for running inside docker containers
+* New world element: vertical planes.
+* Add <for /> loops in XML world files
+* Support for formulas in XML files via  exprtk expressions
+* Fix naming convention; fix warnings
+* Move to clang-format-11
+* More consistent class member naming convention
+* Add simple Velodyne sensor DAE model
+* Add wget as build and runtime dep
+* PubSub system: Implemented the feature to notify subscribed clients about a new publisher for a topic
+* New 3D model: pioneer3
+* ROS: Add build and test dep python3-protobuf
+* Added unit tests
+* mvsim cli: add the --realtime-factor flag
+* more topic echo types
+* publish 2D lidar observations as custom protobuf msgs too
+* Add new protobuf msg type ObservationLidar2D.proto
+* add shutdown service
+* Fixed Python topic subscription and parsing
+* avoid potential crash during shutdown
+* FIX: Timelogger verbosity level is now copied from the main World object.
+* BUGFIX: Lidar sensors with ignore_parent_body=true should neither see the wheels
+* Tune PID parameters of examples
+* Refactoring and simplification of mutexes
+* cache GetServiceInfoRequest() calls (more efficient service calls in comms::Client)
+* factorize World services into its own .cpp file for clarity
+* Contributors: Jose Luis Blanco-Claraco
+
 0.4.3 (2022-11-14)
 ------------------
 * add names to gl objects (useful to debug)
