@@ -17,6 +17,7 @@
 import sphinx_rtd_theme
 import subprocess
 import os
+import datetime
 
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -27,9 +28,8 @@ if read_the_docs_build:
 # -- Project information -----------------------------------------------------
 
 project = 'mvsim'
-copyright = u'2020, Jose Luis Blanco Claraco'
 author = u'Jose Luis Blanco Claraco'
-
+copyright = datetime.date.today().strftime("%Y") + u', ' + author
 
 html_theme_options = {
     # 'canonical_url': '',
