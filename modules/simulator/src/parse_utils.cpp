@@ -182,7 +182,6 @@ static std::string parseMathExpr(
 	mrpt::expr::CRuntimeCompiledExpression expr;
 
 #if MRPT_VERSION >= 0x258
-
 	expr.register_function("rand", &my_rand);
 	expr.register_function("unifrnd", &my_unifrnd);
 	expr.register_function("randn", &randn);
@@ -192,6 +191,7 @@ static std::string parseMathExpr(
 	for (const auto& kv : variableNamesValues)
 	{
 		std::stringstream ss(kv.second);
+
 		double val = 0;
 		if (!(ss >> val)) continue;
 
@@ -212,6 +212,15 @@ std::string mvsim::parse(
 	const std::string& input,
 	const std::map<std::string, std::string>& variableNamesValues)
 {
+	if (MVSIM_VERBOSE_PARSE)
+	{
+		std::cout << "[mvsim::parse] Input : '" << input << "' "
+				  << " with these variables: ";
+		for (const auto& kv : variableNamesValues)
+			std::cout << kv.first << ", ";
+		std::cout << "\n";
+	}
+
 	std::string s = input;
 
 	std::string prevValue = s;
@@ -229,7 +238,6 @@ std::string mvsim::parse(
 
 	if (MVSIM_VERBOSE_PARSE)
 	{
-		std::cout << "[mvsim::parse] Input : '" << input << "'\n";
 		std::cout << "[mvsim::parse] Output: '" << s << "'\n";
 	}
 

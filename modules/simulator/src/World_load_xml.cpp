@@ -250,7 +250,7 @@ void World::internal_recursive_parse_XML(
 				MRPT_LOG_DEBUG_STREAM(
 					"<for /> loop: " << varName << "=" << curVal);
 
-				userDefinedVariables_[varName] = curVal;
+				userDefinedVariables_[varName] = std::to_string(curVal);
 				internal_recursive_parse_XML(childNode, currentBasePath);
 			}
 		}

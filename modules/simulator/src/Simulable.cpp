@@ -169,7 +169,7 @@ bool Simulable::parseSimulable(
 					 "%lf %lf %lf %lf %lf %lf ", &p.x, &p.y, &p.z, &p.yaw,
 					 &p.pitch, &p.roll))
 			THROW_EXCEPTION_FMT(
-				"Error parsing <init_pose3d>%s</init_pose3d>", nPose->value());
+				"Error parsing <init_pose3d>%s</init_pose3d>", nPose3->value());
 		p.yaw *= M_PI / 180.0;	// deg->rad
 		p.pitch *= M_PI / 180.0;  // deg->rad
 		p.roll *= M_PI / 180.0;	 // deg->rad
