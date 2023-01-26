@@ -2,6 +2,13 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* FIX: Stuck unit test runs in armhf build farms
+* Add demo with a large number of robots (100) in a simple setup
+* Support <for> loops in world definition files
+* Contributors: Jose Luis Blanco-Claraco
+
 0.5.0 (2023-01-09)
 ------------------
 * New warehouse demo world file, including ros2 launch.
