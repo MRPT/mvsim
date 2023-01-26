@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.1 (2023-01-26)
+------------------
 * FIX: Stuck unit test runs in armhf build farms
 * Add demo with a large number of robots (100) in a simple setup
 * Support <for> loops in world definition files
