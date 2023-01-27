@@ -429,7 +429,11 @@ option(MVSIM_UNIT_TESTS "Build and run MVSIM unit tests (requires Python and ZMQ
 # Disable tests in armhf, since they fail due to (probably?) very slow rendering capabilities.
 # See: https://github.com/ros-infrastructure/ros_buildfarm_config/pull/220
 if (MVSIM_UNIT_TESTS AND 
-	("armhf" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}")
+	(
+	("armhf" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}") OR
+	("arm64" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}") OR
+	("aarch64" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}")
+	)
 	)
 	set(MVSIM_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 	message(STATUS "*Warning*: Disabling unit tests in this architecture (${CMAKE_SYSTEM_PROCESSOR})")
