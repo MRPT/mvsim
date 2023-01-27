@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.2 (2023-01-27)
+------------------
 * FIX build farm errors in armhf builds
 * Contributors: Jose Luis Blanco-Claraco
 
