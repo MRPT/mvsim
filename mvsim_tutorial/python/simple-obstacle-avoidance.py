@@ -22,9 +22,9 @@ from mvsim_comms import pymvsim_comms
 from mvsim_msgs import SrvSetControllerTwist_pb2
 from mvsim_msgs import ObservationLidar2D_pb2
 
-OBS_AVOIDANCE_PERIOD = 0.1
-V_MAX = 1.0
-W_MAX = 1.0
+OBS_AVOIDANCE_PERIOD = 0.2  # s
+V_MAX = 1.0  # m/s
+VIRTUAL_TARGET_DIST = 2.0  # m
 
 parser = argparse.ArgumentParser(prog='simple-obstacle-avoidance')
 parser.add_argument('--vehicle', dest='vehicleName', action='store', required=True,
@@ -72,7 +72,7 @@ def evalObstacleAvoidance(obs: ObservationLidar2D_pb2.ObservationLidar2D):
         #
         # Obstacles:
         # Compute force strength:
-        mod = min(1e3, 1.0 / r)
+        mod = min(1e3, 1.0 / (r*r))
 
         # Add repulsive force:
         fx = -math.cos(ang) * mod
@@ -83,6 +83,7 @@ def evalObstacleAvoidance(obs: ObservationLidar2D_pb2.ObservationLidar2D):
     # Target:
     # mod = options.TARGET_ATTRACTIVE_FORCE
     # resultantForce += [cos(ang) * mod, sin(ang) * mod]
+    #print('RESULTANT FORCE: ', resultantForce)
 
     # Result:
     desiredDirection = 0
@@ -90,8 +91,23 @@ def evalObstacleAvoidance(obs: ObservationLidar2D_pb2.ObservationLidar2D):
         desiredDirection = math.atan2(resultantForce[1], resultantForce[0])
 
     # Convert direction to differential-driven command:
-    v = V_MAX*math.cos(desiredDirection)
-    w = W_MAX*desiredDirection/math.pi * math.copysign(1.0, v)
+    # Build a "virtual target point" and calculate the (v,w) to drive there.
+    target_x = VIRTUAL_TARGET_DIST*math.cos(desiredDirection)
+    target_y = VIRTUAL_TARGET_DIST*math.sin(desiredDirection)
+
+    if (target_x < 0):
+        v = -V_MAX
+    else:
+        v = V_MAX
+
+    if (target_y == 0):
+        w = 0
+    else:
+        R = math.sqrt((target_x*target_x + target_y *
+                      target_y)/(2*abs(target_y)))
+        if (target_y < 0):
+            R = -R
+        w = v / R
 
     return [v, w]
 
