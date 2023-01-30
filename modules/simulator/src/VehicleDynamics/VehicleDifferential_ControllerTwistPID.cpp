@@ -30,13 +30,13 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	const DynamicsDifferential::TControllerInput& ci,
 	DynamicsDifferential::TControllerOutput& co)
 {
+	const auto sp = setpoint();
+
 	// For each wheel:
 	// 1) Compute desired velocity set-point (in m/s)
 	// 2) Run the PI/PID for that wheel independently (in newtons)
-	const double spVelL =
-		setpoint_lin_speed - 0.5 * setpoint_ang_speed * distWheels_;
-	const double spVelR =
-		setpoint_lin_speed + 0.5 * setpoint_ang_speed * distWheels_;
+	const double spVelL = sp.vx - 0.5 * sp.omega * distWheels_;
+	const double spVelR = sp.vx + 0.5 * sp.omega * distWheels_;
 
 	// Compute each wheel actual velocity (from an "odometry" estimation of
 	// velocity, not ground-truth!):
@@ -85,8 +85,8 @@ void DynamicsDifferential::ControllerTwistPID::load_config(
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
 
 	// Initial speed.
-	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
-	params["W"] = TParamEntry("%lf_deg", &this->setpoint_ang_speed);
+	params["V"] = TParamEntry("%lf", &setpoint_.vx);
+	params["W"] = TParamEntry("%lf_deg", &setpoint_.omega);
 
 	parse_xmlnode_children_as_param(node, params);
 }
@@ -96,32 +96,33 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 {
 	ControllerBase::teleop_interface(in, out);
 
+	auto lck = mrpt::lockHelper(setpointMtx_);
+
 	switch (in.keycode)
 	{
 		case 'W':
 		case 'w':
-			setpoint_lin_speed += 0.1;
+			setpoint_.vx += 0.1;
 			break;
 
 		case 'S':
 		case 's':
-			setpoint_lin_speed -= 0.1;
+			setpoint_.vx -= 0.1;
 			break;
 
 		case 'A':
 		case 'a':
-			setpoint_ang_speed += 2.0 * M_PI / 180;
+			setpoint_.omega += 2.0 * M_PI / 180;
 			break;
 
 		case 'D':
 		case 'd':
-			setpoint_ang_speed -= 2.0 * M_PI / 180;
+			setpoint_.omega -= 2.0 * M_PI / 180;
 			break;
 
 		case ' ':
 		{
-			setpoint_lin_speed = 0.0;
-			setpoint_ang_speed = 0.0;
+			setpoint_ = {0, 0, 0};
 			for (auto& pid : PIDs_) pid.reset();
 		}
 		break;
@@ -132,6 +133,6 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 							"a/d=left/right.\n"
 							"spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
-		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_lin_speed,
-		180.0 / M_PI * setpoint_ang_speed);
+		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx,
+		180.0 / M_PI * setpoint_.omega);
 }

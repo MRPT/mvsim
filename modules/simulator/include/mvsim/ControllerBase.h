@@ -32,11 +32,17 @@ class ControllerBaseInterface
 	virtual void teleop_interface(
 		[[maybe_unused]] const TeleopInput& in,
 		[[maybe_unused]] TeleopOutput& out)
-	{ /*default: do nothing*/
+	{
+		/*default: do nothing*/
 	}
 
 	/** Accept a Twist command. \return true if the controller supports this
-	 * kind of commands, false otherwise */
+	 * kind of commands, false otherwise
+	 *
+	 *  Set these values to tell the controller the desired
+	 * setpoints for linear (vx) (m/s) and angular (omega) (rad/s)
+	 * velocities. Note that the "vy" component of the twist is ignored.
+	 */
 	virtual bool setTwistCommand([[maybe_unused]] const mrpt::math::TTwist2D& t)
 	{
 		return false; /* default: no */

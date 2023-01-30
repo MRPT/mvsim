@@ -111,11 +111,6 @@ class DynamicsDifferential : public VehicleBase
 		ControllerTwistPID(DynamicsDifferential& veh);
 		static const char* class_name() { return "twist_pid"; }
 
-		/** Directly set these values to tell the controller the desired
-		 * setpoints.
-		 * desired velocities (m/s) and (rad/s) */
-		double setpoint_lin_speed = 0, setpoint_ang_speed = 0;
-
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
 			DynamicsDifferential::TControllerOutput& co) override;
@@ -131,16 +126,28 @@ class DynamicsDifferential : public VehicleBase
 		double max_torque = 100;
 
 		// See base docs.
-		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override
+		bool setTwistCommand(const mrpt::math::TTwist2D& t) override
 		{
-			setpoint_lin_speed = t.vx;
-			setpoint_ang_speed = t.omega;
+			setpointMtx_.lock();
+			setpoint_ = t;
+			setpointMtx_.unlock();
 			return true;
+		}
+
+		/** Returns the current setpoint of the controller */
+		mrpt::math::TTwist2D setpoint() const
+		{
+			setpointMtx_.lock();
+			auto t = setpoint_;
+			setpointMtx_.unlock();
+			return t;
 		}
 
 	   private:
 		double distWheels_ = 0;
 		std::array<PID_Controller, 2> PIDs_;
+		mrpt::math::TTwist2D setpoint_{0, 0, 0};  //!< "vx" and "omega" only
+		mutable std::mutex setpointMtx_;
 	};
 
 	const ControllerBase::Ptr& getController() const { return controller_; }

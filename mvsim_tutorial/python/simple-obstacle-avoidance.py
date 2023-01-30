@@ -50,7 +50,7 @@ def sendRobotTwistSetpoint(client, robotName, vx, vy, w):
     req.twistSetPoint.wx = 0
     req.twistSetPoint.wy = 0
     req.twistSetPoint.wz = w
-    # ret =
+    #ret = 
     client.callService('set_controller_twist', req.SerializeToString())
 
 

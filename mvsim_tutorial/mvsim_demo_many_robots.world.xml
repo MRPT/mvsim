@@ -46,7 +46,7 @@
 
 			<!-- Sensors -->
 			<include file="definitions/lidar2d.sensor.xml" 
-			sensor_x="0.5" sensor_y="0" sensor_z="0.61" sensor_yaw="0"
+			sensor_x="0.55" sensor_y="0" sensor_z="0.61" sensor_yaw="0"
 			fov_degrees="360"
 			sensor_nrays="100"
 			sensor_name="laser1"
