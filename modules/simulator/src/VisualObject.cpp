@@ -25,6 +25,7 @@
 using namespace mvsim;
 
 static std::atomic_int32_t g_uniqueCustomVisualId = 0;
+double VisualObject::GeometryEpsilon = 1e-3;
 
 VisualObject::~VisualObject() = default;
 
@@ -136,8 +137,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	// Slice bbox in z up to a given relevant height:
 	if (const Block* block = dynamic_cast<const Block*>(this); block)
 	{
-		const auto zMin = block->block_z_min();
-		const auto zMax = block->block_z_max();
+		const auto zMin = block->block_z_min() - GeometryEpsilon;
+		const auto zMax = block->block_z_max() + GeometryEpsilon;
 
 		size_t numTotalPts = 0, numPassedPts = 0;
 

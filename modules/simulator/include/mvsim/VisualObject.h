@@ -63,6 +63,9 @@ class VisualObject
 
 	static void FreeOpenGLResources();
 
+	/** Epsilon for geometry checks related to bounding boxes (default:1e-3) */
+	static double GeometryEpsilon;
+
    protected:
 	bool parseVisual(const rapidxml::xml_node<char>* visual_node);
 
