@@ -119,6 +119,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*visual_node, params);
 
+	originalModelURI_ = modelURI;
+
 	if (modelURI.empty()) return false;
 
 	const std::string localFileName = world_->xmlPathToActualPath(modelURI);
@@ -187,7 +189,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 #if 0
 		std::cout << "bbox for [" << modelURI << "] numTotalPts=" << numTotalPts
 				  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
-				  << " zMax=" << zMax << " bb=" << bb.asString() << "\n";
+				  << " zMax=" << zMax << " bb=" << bb.asString()
+				  << " volume=" << bb.volume() << "\n";
 #endif
 	}
 
@@ -200,6 +203,17 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 		// Apply transformation to bounding box too:
 		bb.min = modelPose.composePoint(bb.min * modelScale);
 		bb.max = modelPose.composePoint(bb.max * modelScale);
+		// Sort corners:
+		bb = mrpt::math::TBoundingBox::FromUnsortedPoints(bb.min, bb.max);
+	}
+
+	if (bb.volume() < 1e-6)
+	{
+		THROW_EXCEPTION_FMT(
+			"Error: Bounding box of visual model ('%s') has almost null volume "
+			"(=%g m³). A possible cause, if this is a <block>, is not enough "
+			"vertices within the given range [zmin,zmax]",
+			originalModelURI_.c_str(), bb.volume());
 	}
 
 	glGroup->insert(glModel);

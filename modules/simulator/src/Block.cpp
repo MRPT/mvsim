@@ -145,11 +145,11 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	{
 		mrpt::math::TPoint3D bbmin, bbmax;
 		block->getVisualModelBoundingBox(bbmin, bbmax);
-		if (bbmin == bbmax)
+		if (mrpt::math::TBoundingBox(bbmin, bbmax).volume() == 0)
 		{
 			THROW_EXCEPTION(
 				"Error: Tag <shape_from_visual/> found but bounding box of "
-				"visual object seems incorrect.");
+				"visual object seems incorrect, while parsing <block>");
 		}
 
 		block->block_poly_.clear();

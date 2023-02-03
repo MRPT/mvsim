@@ -268,11 +268,11 @@ VehicleBase::Ptr VehicleBase::factory(
 		{
 			mrpt::math::TPoint3D bbmin, bbmax;
 			veh->getVisualModelBoundingBox(bbmin, bbmax);
-			if (bbmin == bbmax)
+			if (mrpt::math::TBoundingBox(bbmin, bbmax).volume() == 0)
 			{
 				THROW_EXCEPTION(
 					"Error: Tag <shape_from_visual/> found but bounding box of "
-					"visual object seems incorrect.");
+					"visual object seems incorrect, while parsing <vehicle>");
 			}
 
 			auto& poly = veh->chassis_poly_;

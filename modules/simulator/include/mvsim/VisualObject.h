@@ -87,5 +87,6 @@ class VisualObject
 
    private:
 	mrpt::math::TPoint3D viz_bbmin_{-1.0, -1.0, .0}, viz_bbmax_{1.0, 1.0, 1.0};
+	std::string originalModelURI_;
 };
 }  // namespace mvsim

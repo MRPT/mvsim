@@ -39,7 +39,7 @@
 	<variable name="ROBOTS_SPREAD_X" value="30.0"></variable>
 	<variable name="ROBOTS_SPREAD_Y" value="30.0"></variable>
 
-	<for var="i" from="1" to="100">
+	<for var="i" from="1" to="25">
 
 		<vehicle class="small_robot">
 			<init_pose>$f{-26+rand()*ROBOTS_SPREAD_X} $f{-4+rand()*ROBOTS_SPREAD_Y} $f{-180+rand()*360}</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
