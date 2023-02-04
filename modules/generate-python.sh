@@ -8,11 +8,11 @@ PYBIND11_MM_VERSION=${PYBIND11_MM_VERSION:-$SYSTEM_PYBIND11_MM_VERSION}
 
 echo "System PYBIND11_VERSION: $PYBIND11_VERSION (Used for wrapper: $PYBIND11_MM_VERSION)"
 
-mkdir -p $1/python/generated-sources-pybind${PYBIND11_MM_VERSION}
+mkdir -p $1/python/generated-sources-pybind
 
-$HOME/code/binder-for-pybind${PYBIND11_MM_VERSION}/build/source/binder \
+$HOME/code/binder/build/source/binder \
 	--root-module=pymvsim_$1 \
-	--prefix $1/python/generated-sources-pybind${PYBIND11_MM_VERSION}/ \
+	--prefix $1/python/generated-sources-pybind/ \
 	--bind pymvsim_$1 \
 	-config python.conf \
 	$1/python/all_$1_headers.hpp \

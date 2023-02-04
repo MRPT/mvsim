@@ -1,5 +1,0 @@
-pymvsim_comms.cpp
-std/exception.cpp
-std/stdexcept.cpp
-mvsim/Comms/common.cpp
-mvsim/Comms/Client.cpp

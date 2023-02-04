@@ -30,7 +30,12 @@ struct PyCallBack_std_exception : public std::exception
 			if (pybind11::detail::cast_is_temporary_value_reference<
 					const char*>::value)
 			{
+// pybind11 <=2.4: overload_caster_t, otherwise: override_caster_t
+#if (PYBIND11_MAJOR_VERSION == 2 && PYBIND11_MINOR_VERSION <= 4)
+				static pybind11::detail::overload_caster_t<const char*> caster;
+#else
 				static pybind11::detail::override_caster_t<const char*> caster;
+#endif
 				return pybind11::detail::cast_ref<const char*>(
 					std::move(o), caster);
 			}

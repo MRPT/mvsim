@@ -36,10 +36,16 @@ target_link_libraries(${PROJECT_NAME}
 # =========== Python wrapper ==================
 if (MVSIM_WITH_PYTHON)
   # Different versions of pybind11 required different generated-sources:
-  string(SUBSTRING ${pybind11_VERSION} 0 3 PYBIND11_MM_VERSION)
-  #message(STATUS "PYBIND11_MM_VERSION: ${PYBIND11_MM_VERSION}")
+  string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" PYBIND11_VERSION_MATCH ${pybind11_VERSION})
+  set(PYBIND11_MAJOR_VERSION ${CMAKE_MATCH_1})
+  set(PYBIND11_MINOR_VERSION ${CMAKE_MATCH_2})
+  set(PYBIND11_PATCH_VERSION ${CMAKE_MATCH_3})
 
-  set(PY_SRCS_DIR ${CMAKE_CURRENT_LIST_DIR}/python/generated-sources-pybind${PYBIND11_MM_VERSION})
+  if ($ENV{VERBOSE})
+    message(STATUS "PYBIND11_VERSION         : ${PYBIND11_MAJOR_VERSION}.${PYBIND11_MINOR_VERSION}.${PYBIND11_PATCH_VERSION}")
+  endif()
+
+  set(PY_SRCS_DIR ${CMAKE_CURRENT_LIST_DIR}/python/generated-sources-pybind)
 
   if (NOT EXISTS ${PY_SRCS_DIR})
 	message(WARNING "Skipping python wrapper due to missing wrapper C++ files for especific pybind11 version ${PYBIND11_MM_VERSION}: expected directory '${PY_SRCS_DIR}'")
@@ -50,6 +56,11 @@ if (MVSIM_WITH_PYTHON)
 		${PY_SRCS}
 		)
 	target_link_libraries(pymvsim_${MODULE_NAME} PUBLIC ${PROJECT_NAME})
+	target_compile_definitions(pymvsim_${MODULE_NAME} PRIVATE 
+		PYBIND11_MAJOR_VERSION=${PYBIND11_MAJOR_VERSION}
+		PYBIND11_MINOR_VERSION=${PYBIND11_MINOR_VERSION}
+		PYBIND11_PATCH_VERSION=${PYBIND11_PATCH_VERSION}
+		)
 
 	# Python files:
 	file(MAKE_DIRECTORY ${MVSIM_PYTHON_BUILD_DIRECTORY}/mvsim_${MODULE_NAME}/)
