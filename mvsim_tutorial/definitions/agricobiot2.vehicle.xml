@@ -24,8 +24,13 @@
                   <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale> </visual>
         </fr_wheel>
 
+        <!-- Distance between the rear and the front axes -->
         <f_wheels_x>1.3</f_wheels_x>
+
+        <!-- Distance between centers of the left and right wheels -->
         <f_wheels_d>2.0</f_wheels_d>
+
+        <!-- Ackermann front wheels maximum angle to each side (so, the overall range will be twice this value)  -->
         <max_steer_ang_deg>30.0</max_steer_ang_deg>
 
         <chassis mass="100.0" zmin="0.20" zmax="1.20">
