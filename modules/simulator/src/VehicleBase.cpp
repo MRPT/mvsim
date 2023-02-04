@@ -142,7 +142,7 @@ VehicleBase::Ptr VehicleBase::factory(
 	// parameter
 	//  in the set of "root" + "class_root" XML nodes:
 	// --------------------------------------------------------------------------------
-	JointXMLnode<> veh_root_node;
+	JointXMLnode<> nodes;
 
 	std::vector<XML_Doc_Data::Ptr> scopedLifeDocs;
 
@@ -184,13 +184,13 @@ VehicleBase::Ptr VehicleBase::factory(
 		const auto newBasePath =
 			mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
 
-		veh_root_node.add(nRoot->parent());
+		nodes.add(nRoot->parent());
 	}
 
 	// ---
 	{
 		// Always search in root. Also in the class root, if any:
-		veh_root_node.add(root);
+		nodes.add(root);
 
 		const xml_attribute<>* veh_class = root->first_attribute("class");
 		if (veh_class)
@@ -203,14 +203,14 @@ VehicleBase::Ptr VehicleBase::factory(
 					"[VehicleBase::factory] Vehicle class '%s' undefined",
 					sClassName.c_str()));
 
-			veh_root_node.add(class_root);
+			nodes.add(class_root);
 			// cout << *class_root;
 		}
 	}
 
 	// Class factory according to: <dynamics class="XXX">
 	// -------------------------------------------------
-	const xml_node<>* dyn_node = veh_root_node.first_node("dynamics");
+	const xml_node<>* dyn_node = nodes.first_node("dynamics");
 	if (!dyn_node)
 		throw runtime_error(
 			"[VehicleBase::factory] Missing XML node <dynamics>");
@@ -247,11 +247,11 @@ VehicleBase::Ptr VehicleBase::factory(
 
 	// Common setup for simulable objects:
 	// -----------------------------------------------------------
-	veh->parseSimulable(veh_root_node);
+	veh->parseSimulable(nodes);
 
 	// Custom visualization 3D model:
 	// -----------------------------------------------------------
-	veh->parseVisual(veh_root_node.first_node("visual"));
+	veh->parseVisual(nodes);
 
 	// Initialize class-specific params (mass, chassis shape, etc.)
 	// ---------------------------------------------------------------
@@ -288,7 +288,7 @@ VehicleBase::Ptr VehicleBase::factory(
 	// <Optional> Log path. If not specified, app folder will be used
 	// -----------------------------------------------------------
 	{
-		const xml_node<>* log_path_node = veh_root_node.first_node("log_path");
+		const xml_node<>* log_path_node = nodes.first_node("log_path");
 		if (log_path_node)
 		{
 			// Parse:
@@ -318,7 +318,7 @@ VehicleBase::Ptr VehicleBase::factory(
 	// Parse <friction> node, or assume default linear model:
 	// -----------------------------------------------------------
 	{
-		const xml_node<>* frict_node = veh_root_node.first_node("friction");
+		const xml_node<>* frict_node = nodes.first_node("friction");
 		if (!frict_node)
 		{
 			// Default:
@@ -336,7 +336,7 @@ VehicleBase::Ptr VehicleBase::factory(
 
 	// Sensors: <sensor class='XXX'> entries
 	// -------------------------------------------------
-	for (const auto& xmlNode : veh_root_node)
+	for (const auto& xmlNode : nodes)
 	{
 		if (!strcmp(xmlNode->name(), "sensor"))
 		{

@@ -80,11 +80,11 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// "class": When there is a 'class="XXX"' attribute, look for each parameter
 	//  in the set of "root" + "class_root" XML nodes:
 	// --------------------------------------------------------------------------------
-	JointXMLnode<> block_root_node;
+	JointXMLnode<> nodes;
 	const rapidxml::xml_node<char>* class_root = nullptr;
 	{
 		// Always search in root. Also in the class root, if any:
-		block_root_node.add(root);
+		nodes.add(root);
 		if (const xml_attribute<>* block_class = root->first_attribute("class");
 			block_class)
 		{
@@ -95,7 +95,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 					"[Block::factory] Block class '%s' undefined",
 					sClassName.c_str());
 
-			block_root_node.add(class_root);
+			nodes.add(class_root);
 		}
 	}
 
@@ -122,11 +122,11 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 	// Common setup for simulable objects:
 	// -----------------------------------------------------------
-	block->parseSimulable(block_root_node);
+	block->parseSimulable(nodes);
 
 	// Custom visualization 3D model:
 	// -----------------------------------------------------------
-	block->parseVisual(block_root_node.first_node("visual"));
+	block->parseVisual(nodes);
 
 	// Params:
 	// -----------------------------------------------------------
@@ -140,7 +140,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 	// Auto shape node from visual?
 	if (const rapidxml::xml_node<char>* xml_shape_viz =
-			block_root_node.first_node("shape_from_visual");
+			nodes.first_node("shape_from_visual");
 		xml_shape_viz)
 	{
 		mrpt::math::TPoint3D bbmin, bbmax;
@@ -162,8 +162,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	}
 
 	// Shape node (optional, fallback to default shape if none found)
-	if (const rapidxml::xml_node<char>* xml_shape =
-			block_root_node.first_node("shape");
+	if (const rapidxml::xml_node<char>* xml_shape = nodes.first_node("shape");
 		xml_shape)
 	{
 		mvsim::parse_xmlnode_shape(

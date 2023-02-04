@@ -67,7 +67,9 @@ class VisualObject
 	static double GeometryEpsilon;
 
    protected:
-	bool parseVisual(const rapidxml::xml_node<char>* visual_node);
+	/// Returns true if there is at least one `<visual>...</visual>` entry.
+	bool parseVisual(const rapidxml::xml_node<char>& rootNode);
+	bool parseVisual(const JointXMLnode<>& rootNode);
 
 	World* world_;
 
@@ -88,5 +90,8 @@ class VisualObject
    private:
 	mrpt::math::TPoint3D viz_bbmin_{-1.0, -1.0, .0}, viz_bbmax_{1.0, 1.0, 1.0};
 	std::string originalModelURI_;
+
+	/// Called by parseVisual once per "visual" block.
+	bool implParseVisual(const rapidxml::xml_node<char>& visual_node);
 };
 }  // namespace mvsim

@@ -19,6 +19,7 @@
 #include <atomic>
 #include <rapidxml.hpp>
 
+#include "JointXMLnode.h"
 #include "ModelsCache.h"
 #include "xml_utils.h"
 
@@ -87,14 +88,41 @@ void VisualObject::guiUpdate(
 
 void VisualObject::FreeOpenGLResources() { ModelsCache::Instance().clear(); }
 
-bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
+bool VisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
+{
+	MRPT_TRY_START
+
+	if (auto n = rootNode.first_node("visual"); n)
+	{
+		implParseVisual(*n);
+		return true;
+	}
+	return false;
+
+	MRPT_TRY_END
+}
+
+bool VisualObject::parseVisual(const JointXMLnode<>& rootNode)
+{
+	MRPT_TRY_START
+
+	bool any = false;
+	for (const auto& n : rootNode.getListOfNodes())
+	{
+		bool hasViz = parseVisual(*n);
+		any = any || hasViz;
+	}
+
+	return any;
+	MRPT_TRY_END
+}
+
+bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 {
 	MRPT_TRY_START
 
 	glBoundingBox_ = mrpt::opengl::CSetOfObjects::Create();
 	glBoundingBox_->setName("bbox");
-
-	if (visual_node == nullptr) return false;
 
 	std::string modelURI;
 	double modelScale = 1.0;
@@ -117,7 +145,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	params["model_color"] = TParamEntry("%color", &opts.modelColor);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*visual_node, params);
+	parse_xmlnode_children_as_param(visNode, params);
 
 	originalModelURI_ = modelURI;
 
@@ -233,7 +261,8 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	viz_bbmin_ = bb.min;
 	viz_bbmax_ = bb.max;
 
-	return true;
+	return true;  // yes, we have a custom viz model
+
 	MRPT_TRY_END
 }
 
