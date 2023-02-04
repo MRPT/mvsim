@@ -405,6 +405,10 @@ void World::internal_GUI_thread()
 		gui_.gui_win = mrpt::gui::CDisplayWindowGUI::Create(
 			"mvsim", guiOptions_.win_w, guiOptions_.win_h, cp);
 
+		// zmin / zmax of opengl viewport:
+		worldVisual_->getViewport()->setViewportClipDistances(
+			guiOptions_.clip_plane_min, guiOptions_.clip_plane_max);
+
 		// Add a background scene:
 		{
 			// we use the member scene worldVisual_ as the placeholder for the

@@ -447,6 +447,8 @@ class World : public mrpt::system::COutputLogger
 		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
 		double fov_deg = 60.0;
+		float clip_plane_min = 0.05f;
+		float clip_plane_max = 10e3f;
 		std::string follow_vehicle;	 //!< Vehicle name to follow (empty=none)
 		bool headless = false;
 
@@ -462,6 +464,8 @@ class World : public mrpt::system::COutputLogger
 			{"start_maximized", {"%bool", &start_maximized}},
 			{"refresh_fps", {"%i", &refresh_fps}},
 			{"headless", {"%bool", &headless}},
+			{"clip_plane_min", {"%f", &clip_plane_min}},
+			{"clip_plane_max", {"%f", &clip_plane_max}},
 		};
 
 		TGUI_Options() = default;
