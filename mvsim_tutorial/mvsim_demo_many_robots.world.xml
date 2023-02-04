@@ -52,6 +52,8 @@
 			sensor_name="laser1"
 			raytrace_3d="false"
 			sensor_publish="true"
+			viz_visibleLines="false"
+			viz_visiblePlane="true"
 			/>
 		</vehicle>
 	</for>

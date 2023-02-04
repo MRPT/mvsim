@@ -70,8 +70,11 @@ class LaserScanner : public SensorBase
 	bool ignore_parent_body_ = false;
 
 	bool viz_visiblePlane_ = false;
+	bool viz_visibleLines_ = true;
 	bool viz_visiblePoints_ = false;
 	float viz_pointSize_ = 3.0f;
+	mrpt::img::TColor viz_pointsColor_ = {0xff, 0x00, 0x00, 0x80};
+	mrpt::img::TColor viz_planeColor_ = {0x00, 0x00, 0xff, 0x10};
 
 	// Store here all scan parameters. This obj will be copied as a
 	// "pattern" to fill it with actual scan data.

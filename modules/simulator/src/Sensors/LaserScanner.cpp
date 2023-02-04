@@ -63,7 +63,11 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	params["viz_pointSize"] = TParamEntry("%f", &viz_pointSize_);
 	params["viz_visiblePlane"] = TParamEntry("%bool", &viz_visiblePlane_);
+	params["viz_visibleLines"] = TParamEntry("%bool", &viz_visibleLines_);
 	params["viz_visiblePoints"] = TParamEntry("%bool", &viz_visiblePoints_);
+
+	params["viz_pointsColor"] = TParamEntry("%color", &viz_pointsColor_);
+	params["viz_planeColor"] = TParamEntry("%color", &viz_planeColor_);
 
 	params["raytrace_3d"] = TParamEntry("%bool", &raytrace_3d_);
 	params["ignore_parent_body"] = TParamEntry("%bool", &ignore_parent_body_);
@@ -97,10 +101,18 @@ void LaserScanner::internalGuiUpdate(
 	if (!gl_scan_ && glVizSensors)
 	{
 		gl_scan_ = mrpt::opengl::CPlanarLaserScan::Create();
+
 		gl_scan_->enablePoints(viz_visiblePoints_);
 		gl_scan_->setPointSize(viz_pointSize_);
+		const mrpt::img::TColorf ptsCol(viz_pointsColor_);
+		gl_scan_->setPointsColor(ptsCol.R, ptsCol.G, ptsCol.B, ptsCol.A);
+
 		gl_scan_->enableSurface(viz_visiblePlane_);
-		// gl_scan_->setSurfaceColor(0.0f, 0.0f, 1.0f, 0.4f);
+		const mrpt::img::TColorf planeCol(viz_planeColor_);
+		gl_scan_->setSurfaceColor(
+			planeCol.R, planeCol.G, planeCol.B, planeCol.A);
+
+		gl_scan_->enableLine(viz_visibleLines_);
 
 		gl_scan_->setLocalRepresentativePoint({0, 0, 0.10f});
 
@@ -158,8 +170,8 @@ void LaserScanner::internalGuiUpdate(
 	}
 
 	const mrpt::poses::CPose2D& p = vehicle_.getCPose2D();
-	const double z_incrs = 10e-3;  // for z_order_
-	const double z_offset = 1e-2;
+	const double z_incrs = 1e-3;  // for z_order_
+	const double z_offset = 1e-3;
 
 	if (gl_scan_)
 		gl_scan_->setPose(mrpt::poses::CPose3D(
