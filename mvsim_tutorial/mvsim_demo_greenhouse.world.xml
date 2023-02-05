@@ -12,6 +12,8 @@
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
+	<variable name="NUM_TILTED_BEAMS_X" value="22"></variable>
+
 	<variable name="NUM_POLES_X" value="10"></variable>
 	<variable name="NUM_POLES_Y" value="20"></variable>
 	
@@ -23,8 +25,8 @@
 	<!-- ground -->
 	<element class="horizontal_plane">
 		<cull_face>BACK</cull_face>
-		<x_min>-15</x_min> <y_min>-13</y_min>
-		<x_max> 20</x_max> <y_max> 13</y_max>
+		<x_min>0</x_min> <y_min>0</y_min>
+		<x_max>46</x_max> <y_max>38.6</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
 		<texture_size_x>2.0</texture_size_x>
@@ -34,8 +36,8 @@
 	<!-- ceiling -->
 	<element class="horizontal_plane">
 		<cull_face>FRONT</cull_face>
-		<x_min>-15</x_min> <y_min>-13</y_min>
-		<x_max> 20</x_max> <y_max> 13</y_max>
+		<x_min>0</x_min> <y_min>0</y_min>
+		<x_max>46</x_max> <y_max>38.6</y_max>
 		<z>$f{CEILING_HEIGHT}</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
 		<texture_size_x>3.0</texture_size_x>
@@ -89,7 +91,7 @@
 		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="agricobiot2">
-		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>1.5 13 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 
 		<!--<publish>
 		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
@@ -124,12 +126,13 @@
 	<!-- ======================================
 	      Object types
 	     ====================================== -->
-	<block:class name="shelf">
-		<mass>300</mass> <zmax>2.0</zmax> <ground_friction>100.0</ground_friction>
+	<block:class name="pole_tilted">
+		<mass>20</mass> <zmax>3.0</zmax> <ground_friction>1e6</ground_friction>
 		<shape_from_visual/> <!-- automatic size from 3D model file -->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/shelf_big_moveai.zip/shelf_big_moveai/shelf_big_movai.dae</model_uri>
+			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/pole_tilted_he120e.stl</model_uri>
+			<model_offset_z>1.2</model_offset_z>
 			<model_roll>90.0</model_roll>
 		</visual>
 	</block:class>
@@ -144,14 +147,13 @@
 	     SE(3) <init_pose3d>x y z yaw(deg) pitch(deg) roll(deg)</init_pose3d> 
 	-->
 
-	<block class="shelf"> <init_pose>0 5 0</init_pose> </block>
-
-	<for var="iX" from="0" to="2">
-		<for var="iY" from="0" to="1">
-<!--			<block class="pallet">
-				<init_pose>$f{-7.9+iX*1.3} $f{0.9*iY+2} 0</init_pose>
-			</block>-->
-		</for>
+	<for var="iX" from="0" to="$f{NUM_TILTED_BEAMS_X-2}">
+		<block class="pole_tilted">
+			<init_pose>$f{3.95+2*iX} 1.35 180</init_pose>
+		</block>
+		<block class="pole_tilted">
+			<init_pose>$f{3.95+2*iX} $f{38.6-1.35} 0</init_pose>
+		</block>
 	</for>
 
 </mvsim_world>
