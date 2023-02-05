@@ -24,6 +24,11 @@ namespace mrpt::math
 class TPolygon2D;
 }  // namespace mrpt::math
 
+namespace mrpt::system
+{
+class COutputLogger;
+}
+
 namespace mvsim
 {
 struct XML_Doc_Data
@@ -76,7 +81,8 @@ void parse_xmlnode_children_as_param(
 	const rapidxml::xml_node<char>& xml_node,
 	const TParameterDefinitions& params,
 	const std::map<std::string, std::string>& variableNamesValues = {},
-	const char* functionNameContext = "");
+	const char* functionNameContext = "",
+	mrpt::system::COutputLogger* logger = nullptr);
 
 template <class NODE_LIST>
 void parse_xmlnodelist_children_as_param(

@@ -6,8 +6,8 @@
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>25</cam_distance>
-		<fov_deg>120</fov_deg>
+		<cam_distance>10</cam_distance>
+		<fov_deg>100</fov_deg>
 		<refresh_fps>20</refresh_fps>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
@@ -107,7 +107,7 @@
 		/>-->
 
 		<include file="definitions/velodyne-vlp16.sensor.xml"
-		  sensor_x="0.15" sensor_z="$f{0.27 + 0.09}"
+		  sensor_x="-0.58" sensor_z="$f{1.5 + 0.09}"
 		  sensor_period_sec="0.10"
 		  sensor_std_noise="0.02"
 		  sensor_publish="false"

@@ -9,39 +9,39 @@
     <!--  Dynamical model -->
     <dynamics class="ackermann">
         <!-- Rear wheels -->
-        <rl_wheel pos="$f{0.512/1.33} -0.2708 -0.245" mass="5.35" width="0.164" diameter="0.406">
-                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_yaw>0</model_yaw> </visual>
+        <rl_wheel pos="$f{-0.512/1.33} -0.2708 -0.245" mass="5.35" width="0.164" diameter="0.406">
+                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_offset_y>$f{-0.5*0.164}</model_offset_y> </visual>
         </rl_wheel>
-        <rr_wheel pos="$f{0.512/1.33}  0.2708 -0.245" mass="5.35" width="0.164" diameter="0.406">
-                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale> </visual>
+        <rr_wheel pos="$f{-0.512/1.33}  0.2708 -0.245" mass="5.35" width="0.164" diameter="0.406">
+                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_offset_y>$f{-0.5*0.164}</model_offset_y> </visual>
         </rr_wheel>
         
         <!-- Front wheels -->
         <fl_wheel mass="5.35" width="0.164" diameter="0.406">
-                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale> </visual>
+                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_offset_y>$f{-0.5*0.164}</model_offset_y> </visual>
         </fl_wheel>
         <fr_wheel mass="5.35" width="0.164" diameter="0.406">
-                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale> </visual>
+                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_offset_y>$f{-0.5*0.164}</model_offset_y> </visual>
         </fr_wheel>
 
         <!-- Distance between the rear and the front axes -->
-        <f_wheels_x>0.8</f_wheels_x>
+        <f_wheels_x>0.5</f_wheels_x>
 
         <!-- Distance between centers of the left and right wheels -->
-        <f_wheels_d>0.31</f_wheels_d>
+        <f_wheels_d>$f{2*0.2708}</f_wheels_d>
 
         <!-- Ackermann front wheels maximum angle to each side (so, the overall range will be twice this value)  -->
         <max_steer_ang_deg>35.0</max_steer_ang_deg>
 
-        <chassis mass="97.0" zmin="0.20" zmax="1.20">
+        <chassis mass="97.0" zmin="0" zmax="1.20">
         </chassis>
 
         <!--   Motor controller -->
         <controller class="twist_front_steer_pid">
             <!-- Params -->
-            <KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+            <KP>5</KP>  <KI>10</KI> <I_MAX>1</I_MAX> <KD>0</KD>
             <V>0.0</V><W>0</W>
-            <max_torque>600</max_torque>
+            <max_torque>100</max_torque>
         </controller>
 
         <!-- Available types: 
@@ -51,7 +51,7 @@
             torsen_front
             torsen_rear
             torsen_4wd -->
-        <drivetrain type="torsen_4wd">
+        <drivetrain type="open_rear">
             <front_rear_split>0.5</front_rear_split>
             <front_rear_bias>1.5</front_rear_bias>
 
@@ -68,24 +68,41 @@
     <!-- 3D model filename to load (local or remote http://uri ) -->
     <visual>
         <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/base.dae</model_uri>
-        <model_offset_z>0.8</model_offset_z>
-        <model_yaw>0.0</model_yaw>
+        <model_offset_z>0.67</model_offset_z>
+        <model_yaw>180.0</model_yaw>
         <model_pitch>0.0</model_pitch>
         <model_roll>90.0</model_roll>
     </visual>
     <visual>
         <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/drivetrain.dae</model_uri>
-        <model_offset_x>-0.8</model_offset_x>
-        <model_offset_y>-0.2</model_offset_y>
+        <model_offset_x>0.5</model_offset_x>
+        <model_offset_y>-0.27</model_offset_y>
+        <model_offset_z>0.20</model_offset_z>
+        <model_yaw>90.0</model_yaw>
+        <model_roll>90.0</model_roll>
+    </visual>
+    <visual>
+        <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/drivetrain.dae</model_uri>
+        <model_offset_x>0.5</model_offset_x>
+        <model_offset_y>0.27</model_offset_y>
+        <model_offset_z>0.20</model_offset_z>
+        <model_yaw>270.0</model_yaw>
+        <model_roll>90.0</model_roll>
+    </visual>
+    <visual>
+        <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/mast.dae</model_uri>
+        <model_offset_x>-0.58</model_offset_z>
+        <model_offset_y>0.01</model_offset_y>
         <model_offset_z>0.8</model_offset_z>
+        <model_yaw>180.0</model_yaw>
         <model_pitch>0.0</model_pitch>
         <model_roll>90.0</model_roll>
     </visual>
-
+    
     <!-- Friction force simulation -->
     <friction class="default">
-        <mu>0.7</mu>
-        <C_damping>10</C_damping>
+        <mu>0.9</mu>
+        <C_damping>0.1</C_damping>
     </friction>
 
     <!--<friction class="wardiagnemma">
