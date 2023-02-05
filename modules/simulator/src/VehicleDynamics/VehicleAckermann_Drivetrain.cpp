@@ -433,7 +433,7 @@ mrpt::math::TTwist2D DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate()
 	const double Ay = wheels_info_[WHEEL_RL].y - wheels_info_[WHEEL_RR].y;
 	ASSERTMSG_(
 		Ay != 0.0,
-		"The two wheels of a differential vehicle CAN'T by at the same Y "
+		"The two wheels of a differential vehicle cannot be at the same Y "
 		"coordinate!");
 
 	const double w_veh = (w1 * R1 - w0 * R0) / Ay;

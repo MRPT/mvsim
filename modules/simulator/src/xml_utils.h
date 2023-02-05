@@ -95,7 +95,8 @@ void parse_xmlnodelist_children_as_param(
  */
 mrpt::math::TPose2D parseXYPHI(
 	const std::string& s, bool allow_missing_angle = false,
-	double default_angle_radians = 0.0);
+	double default_angle_radians = 0.0,
+	const std::map<std::string, std::string>& variableNamesValues = {});
 
 /** Parses a <shape><pt>X Y</pt>...</shape> XML node into a
  * mrpt::math::TPolygon2D

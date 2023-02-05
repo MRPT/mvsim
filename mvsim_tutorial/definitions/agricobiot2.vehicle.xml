@@ -9,10 +9,10 @@
     <!--  Dynamical model -->
     <dynamics class="ackermann">
         <!-- Rear wheels -->
-        <rl_wheel pos="0.512/1.33  0.2708 -0.245" mass="5.35" width="0.164" diameter="0.406">
-                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale> </visual>
+        <rl_wheel pos="$f{0.512/1.33} -0.2708 -0.245" mass="5.35" width="0.164" diameter="0.406">
+                  <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_yaw>0</model_yaw> </visual>
         </rl_wheel>
-        <rr_wheel pos="0.512/1.33  0.2708 -0.245" mass="5.35" width="0.164" diameter="0.406">
+        <rr_wheel pos="$f{0.512/1.33}  0.2708 -0.245" mass="5.35" width="0.164" diameter="0.406">
                   <visual> <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale> </visual>
         </rr_wheel>
         
@@ -68,7 +68,7 @@
     <!-- 3D model filename to load (local or remote http://uri ) -->
     <visual>
         <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/base.dae</model_uri>
-        <model_offset_z>0.235</model_offset_z>
+        <model_offset_z>0.8</model_offset_z>
         <model_yaw>0.0</model_yaw>
         <model_pitch>0.0</model_pitch>
         <model_roll>90.0</model_roll>
@@ -76,9 +76,8 @@
     <visual>
         <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/drivetrain.dae</model_uri>
         <model_offset_x>-0.8</model_offset_x>
-        <model_offset_y>-0.075</model_offset_y>
-        <model_offset_z>0.4</model_offset_z>
-        <model_yaw>90.0</model_yaw>
+        <model_offset_y>-0.2</model_offset_y>
+        <model_offset_z>0.8</model_offset_z>
         <model_pitch>0.0</model_pitch>
         <model_roll>90.0</model_roll>
     </visual>

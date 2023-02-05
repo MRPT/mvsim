@@ -218,13 +218,16 @@ void mvsim::parse_xmlnode_children_as_param(
 }
 
 mrpt::math::TPose2D mvsim::parseXYPHI(
-	const std::string& s, bool allow_missing_angle,
-	double default_angle_radians)
+	const std::string& sOrg, bool allow_missing_angle,
+	double default_angle_radians,
+	const std::map<std::string, std::string>& variableNamesValues)
 {
 	mrpt::math::TPose2D v;
 	v.phi = mrpt::RAD2DEG(default_angle_radians);  // Default ang.
 
+	const auto s = parse(sOrg, variableNamesValues);
 	int na = ::sscanf(s.c_str(), "%lf %lf %lf", &v.x, &v.y, &v.phi);
+	std::cout << "[parseXYPHI] " << s << std::endl;
 
 	// User provides numbers as degrees:
 	v.phi = mrpt::DEG2RAD(v.phi);
