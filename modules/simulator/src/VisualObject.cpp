@@ -146,8 +146,6 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	// Parse XML params:
 	parse_xmlnode_children_as_param(visNode, params);
 
-	std::cout << "[URI] " << modelURI << std::endl;
-
 	if (modelURI.empty()) return false;
 
 	const std::string localFileName = world_->xmlPathToActualPath(modelURI);
