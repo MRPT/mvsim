@@ -168,7 +168,7 @@ void World::internal_recursive_parse_XML(
 	// <gui> </gui> params:
 	else if (!strcmp(node->name(), "gui"))
 	{
-		guiOptions_.parse_from(*node);
+		guiOptions_.parse_from(*node, *this);
 	}
 	// <walls> </walls> params:
 	else if (!strcmp(node->name(), "walls"))

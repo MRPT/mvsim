@@ -16,6 +16,7 @@
 #include <mrpt/math/TPolygon2D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/string_utils.h>
 #include <mvsim/basic_types.h>
@@ -206,14 +207,21 @@ bool mvsim::parse_xmlnode_as_param(
 void mvsim::parse_xmlnode_children_as_param(
 	const rapidxml::xml_node<char>& root, const TParameterDefinitions& params,
 	const std::map<std::string, std::string>& variableNamesValues,
-	const char* functionNameContext)
+	const char* functionNameContext, mrpt::system::COutputLogger* logger)
 {
 	rapidxml::xml_node<>* node = root.first_node();
 	while (node)
 	{
-		parse_xmlnode_as_param(
+		bool recognized = parse_xmlnode_as_param(
 			*node, params, variableNamesValues, functionNameContext);
 		node = node->next_sibling(nullptr);	 // Move on to next node
+
+		if (!recognized && logger)
+		{
+			logger->logFmt(
+				mrpt::system::LVL_WARN, "Unrecognized tag '<%s>'",
+				node->name());
+		}
 	}
 }
 

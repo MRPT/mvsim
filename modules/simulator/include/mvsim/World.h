@@ -465,7 +465,8 @@ class World : public mrpt::system::COutputLogger
 		};
 
 		TGUI_Options() = default;
-		void parse_from(const rapidxml::xml_node<char>& node);
+		void parse_from(
+			const rapidxml::xml_node<char>& node, COutputLogger& logger);
 	};
 
 	/** Some of these options are only used the first time the GUI window is
