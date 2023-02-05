@@ -92,12 +92,14 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
 {
 	MRPT_TRY_START
 
-	if (auto n = rootNode.first_node("visual"); n)
+	bool any = false;
+	for (auto n = rootNode.first_node("visual"); n;
+		 n = n->next_sibling("visual"))
 	{
-		implParseVisual(*n);
-		return true;
+		bool hasViz = implParseVisual(*n);
+		any = any || hasViz;
 	}
-	return false;
+	return any;
 
 	MRPT_TRY_END
 }
@@ -120,9 +122,6 @@ bool VisualObject::parseVisual(const JointXMLnode<>& rootNode)
 bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 {
 	MRPT_TRY_START
-
-	glBoundingBox_ = mrpt::opengl::CSetOfObjects::Create();
-	glBoundingBox_->setName("bbox");
 
 	std::string modelURI;
 	double modelScale = 1.0;
@@ -147,7 +146,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	// Parse XML params:
 	parse_xmlnode_children_as_param(visNode, params);
 
-	originalModelURI_ = modelURI;
+	std::cout << "[URI] " << modelURI << std::endl;
 
 	if (modelURI.empty()) return false;
 
@@ -241,7 +240,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 			"Error: Bounding box of visual model ('%s') has almost null volume "
 			"(=%g m³). A possible cause, if this is a <block>, is not enough "
 			"vertices within the given range [zmin,zmax]",
-			originalModelURI_.c_str(), bb.volume());
+			modelURI.c_str(), bb.volume());
 	}
 
 	glGroup->insert(glModel);
@@ -250,10 +249,19 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	glGroup->setPose(modelPose);
 	glGroup->setName("group");
 
-	glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
-	glCustomVisual_->setName("glCustomVisual");
+	if (!glCustomVisual_)
+	{
+		glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
+		glCustomVisual_->setName("glCustomVisual");
+	}
 	glCustomVisual_->insert(glGroup);
-	glBoundingBox_->setVisibility(initialShowBoundingBox);
+
+	if (!glBoundingBox_)
+	{
+		glBoundingBox_ = mrpt::opengl::CSetOfObjects::Create();
+		glBoundingBox_->setName("bbox");
+		glBoundingBox_->setVisibility(initialShowBoundingBox);
+	}
 
 	// Auto bounds from visual model bounding-box:
 

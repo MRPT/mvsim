@@ -73,6 +73,15 @@
         <model_pitch>0.0</model_pitch>
         <model_roll>90.0</model_roll>
     </visual>
+    <visual>
+        <model_uri>https://mrpt.github.io/mvsim-models/agricobiot2.zip/agricobiot2/drivetrain.dae</model_uri>
+        <model_offset_x>-0.8</model_offset_x>
+        <model_offset_y>-0.075</model_offset_y>
+        <model_offset_z>0.4</model_offset_z>
+        <model_yaw>90.0</model_yaw>
+        <model_pitch>0.0</model_pitch>
+        <model_roll>90.0</model_roll>
+    </visual>
 
     <!-- Friction force simulation -->
     <friction class="default">
