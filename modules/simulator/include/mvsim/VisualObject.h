@@ -10,6 +10,7 @@
 #pragma once
 
 #include <mrpt/core/optional_ref.h>
+#include <mrpt/math/TBoundingBox.h>
 #include <mrpt/opengl/opengl_frwds.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mvsim/basic_types.h>
@@ -53,12 +54,11 @@ class VisualObject
 
 	/** Returns bounding boxes, as loaded by parseVisual() from an XML config
 	 * file. */
-	void getVisualModelBoundingBox(
-		mrpt::math::TPoint3D& bbmin, mrpt::math::TPoint3D& bbmax) const
+	const mrpt::math::TBoundingBox& getVisualModelBoundingBox() const
 	{
-		bbmin = viz_bbmin_;
-		bbmax = viz_bbmax_;
+		return viz_bb_;
 	}
+
 	void showBoundingBox(bool show);
 
 	static void FreeOpenGLResources();
@@ -88,7 +88,7 @@ class VisualObject
 		bool childrenOnly = false) = 0;
 
    private:
-	mrpt::math::TPoint3D viz_bbmin_{-1.0, -1.0, .0}, viz_bbmax_{1.0, 1.0, 1.0};
+	mrpt::math::TBoundingBox viz_bb_{{-1.0, -1.0, .0}, {1.0, 1.0, 1.0}};
 
 	/// Called by parseVisual once per "visual" block.
 	bool implParseVisual(const rapidxml::xml_node<char>& visual_node);
