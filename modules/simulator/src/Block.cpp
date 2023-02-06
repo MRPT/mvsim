@@ -143,9 +143,8 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 			nodes.first_node("shape_from_visual");
 		xml_shape_viz)
 	{
-		mrpt::math::TPoint3D bbmin, bbmax;
-		block->getVisualModelBoundingBox(bbmin, bbmax);
-		if (mrpt::math::TBoundingBox(bbmin, bbmax).volume() == 0)
+		const auto bb = block->getVisualModelBoundingBox();
+		if (bb.volume() == 0)
 		{
 			THROW_EXCEPTION(
 				"Error: Tag <shape_from_visual/> found but bounding box of "
@@ -153,10 +152,10 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		}
 
 		block->block_poly_.clear();
-		block->block_poly_.emplace_back(bbmin.x, bbmin.y);
-		block->block_poly_.emplace_back(bbmin.x, bbmax.y);
-		block->block_poly_.emplace_back(bbmax.x, bbmax.y);
-		block->block_poly_.emplace_back(bbmax.x, bbmin.y);
+		block->block_poly_.emplace_back(bb.min.x, bb.min.y);
+		block->block_poly_.emplace_back(bb.min.x, bb.max.y);
+		block->block_poly_.emplace_back(bb.max.x, bb.max.y);
+		block->block_poly_.emplace_back(bb.max.x, bb.min.y);
 
 		block->updateMaxRadiusFromPoly();
 	}

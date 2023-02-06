@@ -266,9 +266,8 @@ VehicleBase::Ptr VehicleBase::factory(
 				xml_chassis->first_node("shape_from_visual");
 			sfv)
 		{
-			mrpt::math::TPoint3D bbmin, bbmax;
-			veh->getVisualModelBoundingBox(bbmin, bbmax);
-			if (mrpt::math::TBoundingBox(bbmin, bbmax).volume() == 0)
+			const auto bb = veh->getVisualModelBoundingBox();
+			if (bb.volume() == 0)
 			{
 				THROW_EXCEPTION(
 					"Error: Tag <shape_from_visual/> found but bounding box of "
@@ -277,10 +276,10 @@ VehicleBase::Ptr VehicleBase::factory(
 
 			auto& poly = veh->chassis_poly_;
 			poly.clear();
-			poly.emplace_back(bbmin.x, bbmin.y);
-			poly.emplace_back(bbmin.x, bbmax.y);
-			poly.emplace_back(bbmax.x, bbmax.y);
-			poly.emplace_back(bbmax.x, bbmin.y);
+			poly.emplace_back(bb.min.x, bb.min.y);
+			poly.emplace_back(bb.min.x, bb.max.y);
+			poly.emplace_back(bb.max.x, bb.max.y);
+			poly.emplace_back(bb.max.x, bb.min.y);
 		}
 	}
 	veh->updateMaxRadiusFromPoly();

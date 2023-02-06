@@ -235,7 +235,6 @@ mrpt::math::TPose2D mvsim::parseXYPHI(
 
 	const auto s = parse(sOrg, variableNamesValues);
 	int na = ::sscanf(s.c_str(), "%lf %lf %lf", &v.x, &v.y, &v.phi);
-	std::cout << "[parseXYPHI] " << s << std::endl;
 
 	// User provides numbers as degrees:
 	v.phi = mrpt::DEG2RAD(v.phi);

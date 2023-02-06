@@ -73,7 +73,7 @@ void VisualObject::guiUpdate(
 		{
 			auto glBox = mrpt::opengl::CBox::Create();
 			glBox->setWireframe(true);
-			glBox->setBoxCorners(viz_bbmin_, viz_bbmax_);
+			glBox->setBoxCorners(viz_bb_.min, viz_bb_.max);
 			glBoundingBox_->insert(glBox);
 			glBoundingBox_->setVisibility(false);
 			viz->get().insert(glBoundingBox_);
@@ -127,6 +127,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	double modelScale = 1.0;
 	mrpt::math::TPose3D modelPose;
 	bool initialShowBoundingBox = false;
+	std::string objectName = "group";
 
 	ModelsCache::Options opts;
 
@@ -142,6 +143,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
 	params["model_cull_faces"] = TParamEntry("%s", &opts.modelCull);
 	params["model_color"] = TParamEntry("%color", &opts.modelColor);
+	params["name"] = TParamEntry("%s", &objectName);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(visNode, params);
@@ -245,7 +247,9 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 	glGroup->setScale(modelScale);
 	glGroup->setPose(modelPose);
-	glGroup->setName("group");
+	glGroup->setName(objectName);
+
+	const bool wasFirstCustomViz = !glCustomVisual_;
 
 	if (!glCustomVisual_)
 	{
@@ -264,8 +268,17 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	// Auto bounds from visual model bounding-box:
 
 	// Apply transformation to bounding box too:
-	viz_bbmin_ = bb.min;
-	viz_bbmax_ = bb.max;
+	if (wasFirstCustomViz)
+	{
+		// Copy ...
+		viz_bb_ = bb;
+	}
+	else
+	{
+		// ... or update bounding box:
+		viz_bb_.updateWithPoint(bb.min);
+		viz_bb_.updateWithPoint(bb.max);
+	}
 
 	return true;  // yes, we have a custom viz model
 
