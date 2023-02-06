@@ -13,6 +13,7 @@
 	</gui>
 
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
+	<variable name="NUM_TILTED_BEAMS_Y" value="10"></variable>
 	
 	<variable name="NUM_CORRIDORS_X" value="10"></variable>
 	
@@ -20,7 +21,7 @@
 	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="12"></variable>
 
 	<variable name="NUM_POLES_X" value="10"></variable>
-	<variable name="NUM_POLES_Y" value="20"></variable>
+	<variable name="NUM_POLES_Y" value="10"></variable>
 
 	<variable name="PLANTS_RAND_XY" value="0.35"></variable>
 	
@@ -33,7 +34,7 @@
 	<element class="horizontal_plane">
 		<cull_face>BACK</cull_face>
 		<x_min>0</x_min> <y_min>0</y_min>
-		<x_max>46</x_max> <y_max>38.6</y_max>
+		<x_max>46</x_max> <y_max>28.6</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
 		<texture_size_x>2.0</texture_size_x>
@@ -44,7 +45,7 @@
 	<element class="horizontal_plane">
 		<cull_face>FRONT</cull_face>
 		<x_min>0</x_min> <y_min>0</y_min>
-		<x_max>46</x_max> <y_max>38.6</y_max>
+		<x_max>46</x_max> <y_max>28.6</y_max>
 		<z>$f{CEILING_HEIGHT}</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
 		<texture_size_x>3.0</texture_size_x>
@@ -115,7 +116,7 @@
 		/>-->
 
 		<include file="definitions/velodyne-vlp16.sensor.xml"
-		  sensor_x="-0.58" sensor_z="$f{1.5 + 0.09}"
+		  sensor_x="-0.34" sensor_y="0.01" sensor_z="1.53" sensor_yaw="180"
 		  sensor_period_sec="0.10"
 		  sensor_std_noise="0.02"
 		  sensor_publish="false"
@@ -135,13 +136,33 @@
 	      Object types
 	     ====================================== -->
 	<block:class name="pole_tilted">
-		<mass>20</mass> <zmax>3.0</zmax> <ground_friction>1e6</ground_friction>
+		<mass>20</mass> <zmax>1.0</zmax> <ground_friction>1e6</ground_friction>
 		<shape_from_visual/> <!-- automatic size from 3D model file -->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/pole_tilted_he120e.stl</model_uri>
 			<model_offset_z>1.2</model_offset_z>
 			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<block:class name="pole_009">
+		<mass>20</mass> <zmax>2.0</zmax> <ground_friction>1e6</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/pole_009.stl</model_uri>
+			<model_offset_z>1.2</model_offset_z>
+		</visual>
+	</block:class>
+
+	<block:class name="pole_004">
+		<mass>20</mass> <zmax>2.0</zmax> <ground_friction>1e6</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/pole_004.stl</model_uri>
+			<model_offset_z>1.2</model_offset_z>
 		</visual>
 	</block:class>
 
@@ -166,15 +187,44 @@
 	     SE(3) <init_pose3d>x y z yaw(deg) pitch(deg) roll(deg)</init_pose3d> 
 	-->
 
-	<!-- H-beams in the +X axis -->
+	<!-- H-beams along the X axis -->
 	<for var="iX" from="0" to="$f{NUM_TILTED_BEAMS_X-1}">
 		<block class="pole_tilted">
 			<init_pose>$f{3.95+2*iX} 1.35 180</init_pose>
 		</block>
 		<block class="pole_tilted">
-			<init_pose>$f{3.95+2*iX} $f{38.6-1.35} 0</init_pose>
+			<init_pose>$f{3.95+2*iX} $f{28.6-1.35} 0</init_pose>
 		</block>
 	</for>
+
+	<!-- H-beams along the Y axis -->
+	<for var="iY" from="0" to="$f{NUM_TILTED_BEAMS_Y-1}">
+		<block class="pole_tilted">
+			<init_pose>1.30 $f{3.9+2*iY} 90</init_pose>
+		</block>
+		<block class="pole_tilted">
+			<init_pose>$f{46-1.30} $f{3.9+2*iY} -90</init_pose>
+		</block>
+	</for>
+
+	<!-- Thick poles -->
+	<for var="iX" from="0" to="4">
+		<for var="iY" from="0" to="10">
+			<block class="pole_009">
+				<init_pose>$f{4+8*iX} $f{3.9+2*iY} 0</init_pose>
+			</block>
+		</for>
+	</for>
+
+	<!-- Thin poles -->
+	<for var="iX" from="0" to="4">
+		<for var="iY" from="0" to="10">
+			<block class="pole_004">
+				<init_pose>$f{4+4+8*iX} $f{3.9+2*iY} 0</init_pose>
+			</block>
+		</for>
+	</for>
+
 
 	<!-- Plants -->
 	<for var="iX" from="0" to="$f{NUM_CORRIDORS_X-1}">
@@ -188,10 +238,10 @@
 		</for>
 		<for var="iY" from="0" to="$f{NUM_PLANTS_CORRIDOR_NORTH-1}">
 			<block class="plant_tomato">
-				<init_pose>$f{3.95+4*iX+rand()*PLANTS_RAND_XY} $f{15.0+iY*(22/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<init_pose>$f{3.95+4*iX+rand()*PLANTS_RAND_XY} $f{15.0+iY*(12/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
 			</block>
 			<block class="plant_tomato">
-				<init_pose>$f{3.95+4*iX+3.0+rand()*PLANTS_RAND_XY} $f{15.0+iY*(22/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<init_pose>$f{3.95+4*iX+3.0+rand()*PLANTS_RAND_XY} $f{15.0+iY*(12/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
 			</block>
 		</for>
 	</for>
