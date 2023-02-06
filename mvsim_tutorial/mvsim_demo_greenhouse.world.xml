@@ -12,10 +12,17 @@
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
-	<variable name="NUM_TILTED_BEAMS_X" value="22"></variable>
+	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
+	
+	<variable name="NUM_CORRIDORS_X" value="10"></variable>
+	
+	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="8"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="12"></variable>
 
 	<variable name="NUM_POLES_X" value="10"></variable>
 	<variable name="NUM_POLES_Y" value="20"></variable>
+
+	<variable name="PLANTS_RAND_XY" value="0.35"></variable>
 	
 	<variable name="CEILING_HEIGHT" value="3.0"></variable>
 
@@ -45,7 +52,7 @@
 	</element>
 
 	<!-- perimeter walls: -->
-	<element class="vertical_plane">
+	<!--<element class="vertical_plane">
 		<cull_face>FRONT</cull_face>
 		<x0>-15</x0> <y0>13</y0>
 		<x1>-15</x1> <y1>-13</y1>
@@ -81,6 +88,7 @@
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
+	-->
 
 	<!-- =============================
 		   Vehicle classes definition
@@ -117,7 +125,7 @@
 		/>
 		
 		<include file="definitions/camera.sensor.xml" 
-		  sensor_x="0.2"  sensor_y="0" sensor_z="0.27"
+		  sensor_x="0.2"  sensor_y="0" sensor_z="0.9"
 		  sensor_period_sec="0.10"
 		  sensor_name="cam1"
 		  />		
@@ -137,6 +145,17 @@
 		</visual>
 	</block:class>
 
+	<block:class name="plant_tomato">
+		<mass>5</mass> <zmax>2.5</zmax> <ground_friction>1e6</ground_friction>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/tomato_plant_240cm.dae</model_uri>
+			<model_roll>90.0</model_roll>
+			<model_offset_z>-0.05</model_offset_z>
+		</visual>
+	</block:class>
+
 	<!-- ======================================
 	      Object instances
 	     ====================================== -->
@@ -147,13 +166,34 @@
 	     SE(3) <init_pose3d>x y z yaw(deg) pitch(deg) roll(deg)</init_pose3d> 
 	-->
 
-	<for var="iX" from="0" to="$f{NUM_TILTED_BEAMS_X-2}">
+	<!-- H-beams in the +X axis -->
+	<for var="iX" from="0" to="$f{NUM_TILTED_BEAMS_X-1}">
 		<block class="pole_tilted">
 			<init_pose>$f{3.95+2*iX} 1.35 180</init_pose>
 		</block>
 		<block class="pole_tilted">
 			<init_pose>$f{3.95+2*iX} $f{38.6-1.35} 0</init_pose>
 		</block>
+	</for>
+
+	<!-- Plants -->
+	<for var="iX" from="0" to="$f{NUM_CORRIDORS_X-1}">
+		<for var="iY" from="0" to="$f{NUM_PLANTS_CORRIDOR_SOUTH-1}">
+			<block class="plant_tomato">
+				<init_pose>$f{3.95+4*iX+rand()*PLANTS_RAND_XY} $f{3.0+iY*(9/NUM_PLANTS_CORRIDOR_SOUTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+			</block>
+			<block class="plant_tomato">
+				<init_pose>$f{3.95+4*iX+3.0+rand()*PLANTS_RAND_XY} $f{3.0+iY*(9/NUM_PLANTS_CORRIDOR_SOUTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+			</block>
+		</for>
+		<for var="iY" from="0" to="$f{NUM_PLANTS_CORRIDOR_NORTH-1}">
+			<block class="plant_tomato">
+				<init_pose>$f{3.95+4*iX+rand()*PLANTS_RAND_XY} $f{15.0+iY*(22/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+			</block>
+			<block class="plant_tomato">
+				<init_pose>$f{3.95+4*iX+3.0+rand()*PLANTS_RAND_XY} $f{15.0+iY*(22/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+			</block>
+		</for>
 	</for>
 
 </mvsim_world>

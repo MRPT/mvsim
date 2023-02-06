@@ -51,12 +51,21 @@ class Wheel : public VisualObject
 	/** Color for OpenGL rendering */
 	mrpt::img::TColor color{0xff323232};
 
+	/** Optional: name of a named custom visualization object in my parent
+	 * vehicle, whose angle (yaw) is to be set whenever this wheel angle is
+	 * updated.
+	 */
+	std::string linked_yaw_object_name;
+	double linked_yaw_offset = .0;
+
 	const TParameterDefinitions params_ = {
 		{"mass", {"%lf", &mass}},
 		{"width", {"%lf", &width}},
 		{"diameter", {"%lf", &diameter}},
 		{"color", {"%color", &color}},
-		{"inertia", {"%lf", &Iyy}}};
+		{"inertia", {"%lf", &Iyy}},
+		{"linked_yaw", {"%s", &linked_yaw_object_name}},
+		{"linked_yaw_offset_deg", {"%lf_deg", &linked_yaw_offset}}};
 
 	/** Generates a human-readable description of the wheel parameters and
 	 * kinematic status */

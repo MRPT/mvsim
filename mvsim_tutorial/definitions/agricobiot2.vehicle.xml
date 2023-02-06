@@ -17,10 +17,10 @@
         </rr_wheel>
         
         <!-- Front wheels -->
-        <fl_wheel mass="5.35" width="0.164" diameter="0.406">
+        <fl_wheel mass="5.35" width="0.164" diameter="0.406" linked_yaw="support-left-front-wheel" linked_yaw_offset_deg="-90">
                   <visual> <model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_offset_y>$f{-0.5*0.164}</model_offset_y> </visual>
         </fl_wheel>
-        <fr_wheel mass="5.35" width="0.164" diameter="0.406">
+        <fr_wheel mass="5.35" width="0.164" diameter="0.406" linked_yaw="support-right-front-wheel" linked_yaw_offset_deg="-90">
                   <visual> <model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_offset_y>$f{-0.5*0.164}</model_offset_y> </visual>
         </fr_wheel>
 
@@ -39,7 +39,7 @@
         <!--   Motor controller -->
         <controller class="twist_front_steer_pid">
             <!-- Params -->
-            <KP>10</KP>  <KI>1</KI> <I_MAX>1</I_MAX> <KD>0</KD>
+            <KP>100</KP>  <KI>5</KI> <I_MAX>10</I_MAX> <KD>0</KD>
             <V>0.0</V><W>0</W>
             <max_torque>300</max_torque>
         </controller>
@@ -79,7 +79,6 @@
         <model_offset_x>0.5</model_offset_x>
         <model_offset_y>-0.27</model_offset_y>
         <model_offset_z>0.20</model_offset_z>
-        <model_yaw>90.0</model_yaw>
         <model_roll>90.0</model_roll>
     </visual>
     <visual>
@@ -88,7 +87,6 @@
         <model_offset_x>0.5</model_offset_x>
         <model_offset_y>0.27</model_offset_y>
         <model_offset_z>0.20</model_offset_z>
-        <model_yaw>270.0</model_yaw>
         <model_roll>90.0</model_roll>
     </visual>
     <visual>
