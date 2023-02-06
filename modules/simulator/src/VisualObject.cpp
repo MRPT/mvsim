@@ -243,10 +243,12 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 			modelURI.c_str(), bb.volume());
 	}
 
+	// Note: we cannot apply pose/scale to the original glModel since
+	// it may be shared (many instances of the same object):
 	glGroup->insert(glModel);
-
 	glGroup->setScale(modelScale);
 	glGroup->setPose(modelPose);
+
 	glGroup->setName(objectName);
 
 	const bool wasFirstCustomViz = !glCustomVisual_;

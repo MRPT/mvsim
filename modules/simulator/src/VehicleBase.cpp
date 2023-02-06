@@ -706,6 +706,23 @@ void VehicleBase::internalGuiUpdate(
 			const Wheel& w = getWheelInfo(i);
 			gl_wheels_[i]->setPose(mrpt::math::TPose3D(
 				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+
+			if (!w.linked_yaw_object_name.empty())
+			{
+				auto glLinked = VisualObject::glCustomVisual_->getByName(
+					w.linked_yaw_object_name);
+				if (!glLinked)
+				{
+					THROW_EXCEPTION_FMT(
+						"Wheel #%zu has linked_yaw_object_name='%s' but parent "
+						"vehicle '%s' does not have any custom visual group "
+						"with that name.",
+						i, w.linked_yaw_object_name.c_str(), name_.c_str());
+				}
+				auto p = glLinked->getPose();
+				p.yaw = w.yaw + w.linked_yaw_offset;
+				glLinked->setPose(p);
+			}
 		}
 	}
 
