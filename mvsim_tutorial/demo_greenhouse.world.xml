@@ -210,18 +210,22 @@
 	<!-- Thick poles -->
 	<for var="iX" from="0" to="4">
 		<for var="iY" from="0" to="10">
-			<block class="pole_009">
-				<init_pose>$f{4+8*iX} $f{3.9+2*iY} 0</init_pose>
-			</block>
+			<if condition="$f{if(iY<=3 or iY>=6, 1, 0)}">
+				<block class="pole_009">
+					<init_pose>$f{4+8*iX} $f{3.9+2*iY} 0</init_pose>
+				</block>
+			</if>
 		</for>
 	</for>
 
 	<!-- Thin poles -->
 	<for var="iX" from="0" to="4">
 		<for var="iY" from="0" to="10">
-			<block class="pole_004">
-				<init_pose>$f{4+4+8*iX} $f{3.9+2*iY} 0</init_pose>
-			</block>
+			<if condition="$f{if(iY<=3 or iY>=6, 1, 0)}">
+				<block class="pole_004">
+					<init_pose>$f{4+4+8*iX} $f{3.9+2*iY} 0</init_pose>
+				</block>
+			</if>
 		</for>
 	</for>
 

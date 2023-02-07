@@ -112,6 +112,7 @@ void World::register_standard_xml_tag_parsers()
 	register_tag_parser("include", &World::parse_tag_include);
 	register_tag_parser("variable", &World::parse_tag_variable);
 	register_tag_parser("for", &World::parse_tag_for);
+	register_tag_parser("if", &World::parse_tag_if);
 }
 
 void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
@@ -296,8 +297,6 @@ void World::parse_tag_for(const XmlParserContext& ctx)
 		for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr);
 			 curVal++)
 		{
-			MRPT_LOG_DEBUG_STREAM("<for /> loop: " << varName << "=" << curVal);
-
 			userDefinedVariables_[varName] = std::to_string(curVal);
 			internal_recursive_parse_XML({childNode, basePath_});
 		}
@@ -309,5 +308,32 @@ void World::parse_tag_for(const XmlParserContext& ctx)
 			"[World::load_from_XML] *Warning* <for ...> </for> loop has no "
 			"contents (!): '"
 			<< ctx.node->value() << "'");
+	}
+}
+
+void World::parse_tag_if(const XmlParserContext& ctx)
+{
+	auto varCond = ctx.node->first_attribute("condition");
+	ASSERTMSG_(
+		varCond, "XML tag '<if />' must have a 'condition=\"xxx\"' attribute)");
+	const auto str = mvsim::parse(varCond->value(), userDefinedVariables_);
+
+	// is it "true"?
+	std::optional<int> intVal;
+	char* retStr = nullptr;
+	const long long ret = std::strtoll(str.c_str(), &retStr, 0 /*auto base*/);
+	if (retStr != 0 && retStr != str.c_str()) intVal = ret;
+
+	bool isTrue = str == "y" || str == "Y" || str == "yes" || str == "Yes" ||
+				  str == "YES" || str == "true" || str == "True" ||
+				  str == "TRUE" || str == "on" || str == "ON" || str == "On" ||
+				  (intVal.has_value() && intVal.value() != 0);
+
+	if (!isTrue) return;
+
+	for (auto childNode = ctx.node->first_node(); childNode;
+		 childNode = childNode->next_sibling())
+	{
+		internal_recursive_parse_XML({childNode, basePath_});
 	}
 }

@@ -635,6 +635,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_include(const XmlParserContext& ctx);
 	void parse_tag_variable(const XmlParserContext& ctx);
 	void parse_tag_for(const XmlParserContext& ctx);
+	void parse_tag_if(const XmlParserContext& ctx);
 
 	// ======== end of XML parser tags ========
 
