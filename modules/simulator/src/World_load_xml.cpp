@@ -25,8 +25,6 @@
 using namespace mvsim;
 using namespace std;
 
-MRPT_TODO("Replace if-else chain with a node load registry")
-
 void World::load_from_XML_file(const std::string& xmlFileNamePath)
 {
 	rapidxml::file<> fil_xml(xmlFileNamePath.c_str());
@@ -79,13 +77,16 @@ void World::load_from_XML(
 				attrb_version->value()));
 	}
 
+	// register tags:
+	register_standard_xml_tag_parsers();
+
 	// ------------------------------------------------
 	// Process all xml nodes
 	// ------------------------------------------------
 	xml_node<>* node = root->first_node();
 	while (node)
 	{
-		internal_recursive_parse_XML(node, basePath_);
+		internal_recursive_parse_XML({node, basePath_});
 
 		// Move on to next node:
 		node = node->next_sibling(nullptr);
@@ -94,192 +95,219 @@ void World::load_from_XML(
 	internal_initialize();
 }
 
-void World::internal_recursive_parse_XML(
-	const void* nodeOpaquePtr, const std::string& currentBasePath)
+void World::register_standard_xml_tag_parsers()
+{
+	if (!xmlParsers_.empty()) return;
+
+	register_tag_parser("vehicle", &World::parse_tag_vehicle);
+	register_tag_parser("vehicle:class", &World::parse_tag_vehicle_class);
+
+	register_tag_parser("block", &World::parse_tag_block);
+	register_tag_parser("block:class", &World::parse_tag_block_class);
+
+	register_tag_parser("element", &World::parse_tag_element);
+	register_tag_parser("sensor", &World::parse_tag_sensor);
+	register_tag_parser("gui", &World::parse_tag_gui);
+	register_tag_parser("walls", &World::parse_tag_walls);
+	register_tag_parser("include", &World::parse_tag_include);
+	register_tag_parser("variable", &World::parse_tag_variable);
+	register_tag_parser("for", &World::parse_tag_for);
+}
+
+void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
 {
 	using namespace rapidxml;
 	using namespace std::string_literals;
 
-	const rapidxml::xml_node<>* node =
-		reinterpret_cast<const rapidxml::xml_node<>*>(nodeOpaquePtr);
+	const rapidxml::xml_node<>* node = ctx.node;
+	ASSERT_(node);
 
 	// push relative directory state:
 	const auto savedBasePath = basePath_;
-	basePath_ = currentBasePath;
+	basePath_ = ctx.currentBasePath;
 
-	// <element class='*'> entries:
-	if (!strcmp(node->name(), "element"))
+	// Known tag parser?
+	if (auto itParser = xmlParsers_.find(node->name());
+		itParser != xmlParsers_.end())
 	{
-		WorldElementBase::Ptr e = WorldElementBase::factory(this, node);
-		worldElements_.emplace_back(e);
-
-		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-		simulableObjects_.emplace(
-			e->getName(), std::dynamic_pointer_cast<Simulable>(e));
-	}
-	// <vehicle> entries:
-	else if (!strcmp(node->name(), "vehicle"))
-	{
-		VehicleBase::Ptr veh = VehicleBase::factory(this, node);
-		// Assign each vehicle a unique "index" number
-		veh->setVehicleIndex(vehicles_.size());
-
-		ASSERTMSG_(
-			vehicles_.count(veh->getName()) == 0,
-			mrpt::format(
-				"Duplicated vehicle name: '%s'", veh->getName().c_str()));
-
-		vehicles_.insert(VehicleList::value_type(veh->getName(), veh));
-
-		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-		simulableObjects_.emplace(
-			veh->getName(), std::dynamic_pointer_cast<Simulable>(veh));
-	}
-	// <vehicle:class> entries:
-	else if (!strcmp(node->name(), "vehicle:class"))
-	{
-		VehicleBase::register_vehicle_class(node);
-	}
-	// top-level <sensor> entries:
-	else if (!strcmp(node->name(), "sensor"))
-	{
-		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-
-		DummyInvisibleBlock::Ptr standaloneSensorHost =
-			std::dynamic_pointer_cast<DummyInvisibleBlock>(
-				simulableObjects_.find("__standaloneSensorHost")->second);
-		ASSERT_(standaloneSensorHost);
-
-		SensorBase::Ptr sensor =
-			SensorBase::factory(*standaloneSensorHost, node);
-		standaloneSensorHost->add_sensor(sensor);
-	}
-	// <block> entries:
-	else if (!strcmp(node->name(), "block"))
-	{
-		Block::Ptr block = Block::factory(this, node);
-		insertBlock(block);
-	}
-	// <block:class> entries:
-	else if (!strcmp(node->name(), "block:class"))
-	{
-		Block::register_block_class(node);
-	}
-	// <gui> </gui> params:
-	else if (!strcmp(node->name(), "gui"))
-	{
-		guiOptions_.parse_from(*node, *this);
-	}
-	// <walls> </walls> params:
-	else if (!strcmp(node->name(), "walls"))
-	{
-		process_load_walls(*node);
-	}
-	// <include file="path" /> entries:
-	else if (!strcmp(node->name(), "include"))
-	{
-		auto fileAttrb = node->first_attribute("file");
-		ASSERTMSG_(
-			fileAttrb,
-			"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
-
-		const std::string relFile =
-			mvsim::parse(fileAttrb->value(), user_defined_variables());
-
-		const auto absFile = this->local_to_abs_path(relFile);
-		MRPT_LOG_DEBUG_STREAM(
-			"XML parser: including file: '" << absFile << "'");
-
-		std::map<std::string, std::string> vars;
-		for (auto attr = node->first_attribute(); attr;
-			 attr = attr->next_attribute())
-		{
-			if (strcmp(attr->name(), "file") == 0) continue;
-			vars[attr->name()] = attr->value();
-		}
-
-		const auto [xml, root] = readXmlAndGetRoot(absFile, vars);
-		(void)xml;	// unused
-
-		// recursive parse:
-		const auto newBasePath =
-			mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
-		internal_recursive_parse_XML(root, newBasePath);
-	}
-	else if (!strcmp(node->name(), "variable"))
-	{
-		auto nameAttr = node->first_attribute("name");
-		ASSERTMSG_(
-			nameAttr,
-			"XML tag '<variable />' must have a 'name=\"xxx\"' attribute)");
-		const auto name = nameAttr->value();
-
-		auto valueAttr = node->first_attribute("value");
-		ASSERTMSG_(
-			valueAttr,
-			"XML tag '<variable />' must have a 'value=\"xxx\"' attribute)");
-
-		const std::string finalValue =
-			mvsim::parse(valueAttr->value(), userDefinedVariables_);
-
-		userDefinedVariables_[name] = finalValue;
-	}
-	else if (!strcmp(node->name(), "for"))
-	{
-		auto varAttr = node->first_attribute("var");
-		ASSERTMSG_(
-			varAttr, "XML tag '<for />' must have a 'var=\"xxx\"' attribute)");
-		const auto varName = varAttr->value();
-
-		auto varFrom = node->first_attribute("from");
-		ASSERTMSG_(
-			varFrom, "XML tag '<for />' must have a 'from=\"xxx\"' attribute)");
-		const auto fromStr =
-			mvsim::parse(varFrom->value(), userDefinedVariables_);
-
-		auto varTo = node->first_attribute("to");
-		ASSERTMSG_(
-			varTo, "XML tag '<for />' must have a 'to=\"xxx\"' attribute)");
-		const auto toStr = mvsim::parse(varTo->value(), userDefinedVariables_);
-
-		bool forBodyEmpty = true;
-
-		for (auto childNode = node->first_node(); childNode;
-			 childNode = childNode->next_sibling())
-		{
-			forBodyEmpty = false;
-			for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr);
-				 curVal++)
-			{
-				MRPT_LOG_DEBUG_STREAM(
-					"<for /> loop: " << varName << "=" << curVal);
-
-				userDefinedVariables_[varName] = std::to_string(curVal);
-				internal_recursive_parse_XML(childNode, currentBasePath);
-			}
-		}
-
-		if (forBodyEmpty)
-		{
-			MRPT_LOG_WARN_STREAM(
-				"[World::load_from_XML] *Warning* <for ...> </for> loop has no "
-				"contents (!): '"
-				<< node->value() << "'");
-		}
+		itParser->second(ctx);
 	}
 	else
-	{
-		// Default: Check if it's a parameter:
+	{  // Default: Check if it's a parameter:
 		if (!parse_xmlnode_as_param(*node, otherWorldParams_))
 		{
 			// Unknown element!!
 			MRPT_LOG_WARN_STREAM(
-				"[World::load_from_XML] *Warning* Ignoring "
-				"unknown XML node type '"
+				"[World::load_from_XML] *Warning* Ignoring unknown XML node "
+				"type '"
 				<< node->name() << "'");
 		}
 	}
 
 	// pop relative directory state:
 	basePath_ = savedBasePath;
+}
+
+void World::parse_tag_element(const XmlParserContext& ctx)
+{
+	// <element class='*'> entries:
+	WorldElementBase::Ptr e = WorldElementBase::factory(this, ctx.node);
+	worldElements_.emplace_back(e);
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+	simulableObjects_.emplace(
+		e->getName(), std::dynamic_pointer_cast<Simulable>(e));
+}
+
+void World::parse_tag_vehicle(const XmlParserContext& ctx)
+{
+	// <vehicle> entries:
+	VehicleBase::Ptr veh = VehicleBase::factory(this, ctx.node);
+	// Assign each vehicle a unique "index" number
+	veh->setVehicleIndex(vehicles_.size());
+
+	ASSERTMSG_(
+		vehicles_.count(veh->getName()) == 0,
+		mrpt::format("Duplicated vehicle name: '%s'", veh->getName().c_str()));
+
+	vehicles_.insert(VehicleList::value_type(veh->getName(), veh));
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+	simulableObjects_.emplace(
+		veh->getName(), std::dynamic_pointer_cast<Simulable>(veh));
+}
+
+void World::parse_tag_vehicle_class(const XmlParserContext& ctx)
+{
+	// <vehicle:class> entries:
+	VehicleBase::register_vehicle_class(ctx.node);
+}
+
+void World::parse_tag_sensor(const XmlParserContext& ctx)
+{
+	// top-level <sensor> entries:
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+
+	DummyInvisibleBlock::Ptr standaloneSensorHost =
+		std::dynamic_pointer_cast<DummyInvisibleBlock>(
+			simulableObjects_.find("__standaloneSensorHost")->second);
+	ASSERT_(standaloneSensorHost);
+
+	SensorBase::Ptr sensor =
+		SensorBase::factory(*standaloneSensorHost, ctx.node);
+	standaloneSensorHost->add_sensor(sensor);
+}
+
+void World::parse_tag_block(const XmlParserContext& ctx)
+{
+	// <block> entries:
+	Block::Ptr block = Block::factory(this, ctx.node);
+	insertBlock(block);
+}
+
+void World::parse_tag_block_class(const XmlParserContext& ctx)
+{
+	//
+	Block::register_block_class(ctx.node);
+}
+
+void World::parse_tag_gui(const XmlParserContext& ctx)
+{
+	//
+	guiOptions_.parse_from(*ctx.node, *this);
+}
+
+void World::parse_tag_walls(const XmlParserContext& ctx)
+{
+	process_load_walls(*ctx.node);
+}
+
+void World::parse_tag_include(const XmlParserContext& ctx)
+{
+	auto fileAttrb = ctx.node->first_attribute("file");
+	ASSERTMSG_(
+		fileAttrb,
+		"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
+
+	const std::string relFile =
+		mvsim::parse(fileAttrb->value(), user_defined_variables());
+
+	const auto absFile = this->local_to_abs_path(relFile);
+	MRPT_LOG_DEBUG_STREAM("XML parser: including file: '" << absFile << "'");
+
+	std::map<std::string, std::string> vars;
+	for (auto attr = ctx.node->first_attribute(); attr;
+		 attr = attr->next_attribute())
+	{
+		if (strcmp(attr->name(), "file") == 0) continue;
+		vars[attr->name()] = attr->value();
+	}
+
+	const auto [xml, root] = readXmlAndGetRoot(absFile, vars);
+	(void)xml;	// unused
+
+	// recursive parse:
+	const auto newBasePath =
+		mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
+	internal_recursive_parse_XML({root, newBasePath});
+}
+
+void World::parse_tag_variable(const XmlParserContext& ctx)
+{
+	auto nameAttr = ctx.node->first_attribute("name");
+	ASSERTMSG_(
+		nameAttr,
+		"XML tag '<variable />' must have a 'name=\"xxx\"' attribute)");
+	const auto name = nameAttr->value();
+
+	auto valueAttr = ctx.node->first_attribute("value");
+	ASSERTMSG_(
+		valueAttr,
+		"XML tag '<variable />' must have a 'value=\"xxx\"' attribute)");
+
+	const std::string finalValue =
+		mvsim::parse(valueAttr->value(), userDefinedVariables_);
+
+	userDefinedVariables_[name] = finalValue;
+}
+
+void World::parse_tag_for(const XmlParserContext& ctx)
+{
+	auto varAttr = ctx.node->first_attribute("var");
+	ASSERTMSG_(
+		varAttr, "XML tag '<for />' must have a 'var=\"xxx\"' attribute)");
+	const auto varName = varAttr->value();
+
+	auto varFrom = ctx.node->first_attribute("from");
+	ASSERTMSG_(
+		varFrom, "XML tag '<for />' must have a 'from=\"xxx\"' attribute)");
+	const auto fromStr = mvsim::parse(varFrom->value(), userDefinedVariables_);
+
+	auto varTo = ctx.node->first_attribute("to");
+	ASSERTMSG_(varTo, "XML tag '<for />' must have a 'to=\"xxx\"' attribute)");
+	const auto toStr = mvsim::parse(varTo->value(), userDefinedVariables_);
+
+	bool forBodyEmpty = true;
+
+	for (auto childNode = ctx.node->first_node(); childNode;
+		 childNode = childNode->next_sibling())
+	{
+		forBodyEmpty = false;
+		for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr);
+			 curVal++)
+		{
+			MRPT_LOG_DEBUG_STREAM("<for /> loop: " << varName << "=" << curVal);
+
+			userDefinedVariables_[varName] = std::to_string(curVal);
+			internal_recursive_parse_XML({childNode, basePath_});
+		}
+	}
+
+	if (forBodyEmpty)
+	{
+		MRPT_LOG_WARN_STREAM(
+			"[World::load_from_XML] *Warning* <for ...> </for> loop has no "
+			"contents (!): '"
+			<< ctx.node->value() << "'");
+	}
 }

@@ -30,7 +30,9 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
+#include <functional>
 #include <list>
+#include <map>
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 // forward declarations:
@@ -584,10 +586,57 @@ class World : public mrpt::system::COutputLogger
 	void process_load_walls(const rapidxml::xml_node<char>& node);
 	void insertBlock(const Block::Ptr& block);
 
+	struct XmlParserContext
+	{
+		XmlParserContext(
+			const rapidxml::xml_node<char>* n, const std::string& basePath)
+			: node(n), currentBasePath(basePath)
+		{
+		}
+
+		const rapidxml::xml_node<char>* node = nullptr;
+		const std::string currentBasePath;
+	};
+
 	/// This will parse a main XML file, or its included
-	void internal_recursive_parse_XML(
-		const void* /*rapidxml::xml_node<>* */ node,
-		const std::string& currentBasePath);
+	void internal_recursive_parse_XML(const XmlParserContext& ctx);
+
+	using xml_tag_parser_function_t =
+		std::function<void(const XmlParserContext&)>;
+
+	std::map<std::string, xml_tag_parser_function_t> xmlParsers_;
+
+	void register_standard_xml_tag_parsers();
+
+	void register_tag_parser(
+		const std::string& xmlTagName, const xml_tag_parser_function_t& f)
+	{
+		xmlParsers_.emplace(xmlTagName, f);
+	}
+	void register_tag_parser(
+		const std::string& xmlTagName,
+		void (World::*f)(const XmlParserContext& ctx))
+	{
+		xmlParsers_.emplace(xmlTagName, [this, f](const XmlParserContext& ctx) {
+			(this->*f)(ctx);
+		});
+	}
+
+	// ======== XML parser tags ========
+	void parse_tag_element(const XmlParserContext& ctx);  //!< `<element>`
+	void parse_tag_vehicle(const XmlParserContext& ctx);  //!< `<vehicle>`
+	/** <vehicle:class> */
+	void parse_tag_vehicle_class(const XmlParserContext& ctx);
+	void parse_tag_sensor(const XmlParserContext& ctx);	 //!<  `<sensor>`
+	void parse_tag_block(const XmlParserContext& ctx);
+	void parse_tag_block_class(const XmlParserContext& ctx);
+	void parse_tag_gui(const XmlParserContext& ctx);
+	void parse_tag_walls(const XmlParserContext& ctx);
+	void parse_tag_include(const XmlParserContext& ctx);
+	void parse_tag_variable(const XmlParserContext& ctx);
+	void parse_tag_for(const XmlParserContext& ctx);
+
+	// ======== end of XML parser tags ========
 
 	mutable RemoteResourcesManager remoteResources_;
 
