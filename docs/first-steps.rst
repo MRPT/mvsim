@@ -9,7 +9,7 @@ standalone simulator applications to get used to MVSIM.
 
 .. code-block:: bash
 
-    mvsim launch mvsim_tutorial/mvsim_demo_2robots.world.xml
+    mvsim launch mvsim_tutorial/demo_2robots.world.xml
 
 You should see the GUI of a demo world with two robots equipped with a 2D
 lidar, scanning a model defined by means of an occupancy grid map and a couple
@@ -24,7 +24,7 @@ Select the active robot by pressing the keys ``1`` or ``2``.
 .. figure:: imgs/screenshot-demo-2robots.png
    :alt: screenshot-demo-2robots
 
-   Screenshot of the ``mvsim_demo_2robots`` example world.
+   Screenshot of the ``demo_2robots`` example world.
 
 
 2. ROS launch files
@@ -37,15 +37,15 @@ for example:
 .. code-block:: bash
 
     # For ROS1:
-    roslaunch mvsim mvsim_demo_jackal.launch
+    roslaunch mvsim demo_jackal.launch
 
     # For ROS2:
-    ros2 launch mvsim mvsim_demo_jackal.launch.py
+    ros2 launch mvsim demo_jackal.launch.py
 
 
 .. figure:: imgs/mvsim-ros2-demo.gif
    :alt: MVSIM Simulating Jackal Robot in ROS2
 
-   Screenshot of the ``mvsim_demo_jackal`` ROS demo.
+   Screenshot of the ``demo_jackal`` ROS demo.
 
 

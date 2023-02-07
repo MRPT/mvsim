@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/mvsim_demo_1robot.world.xml" />
+	<arg name="world_file" default="$(find mvsim)/mvsim_tutorial/demo_1robot.world.xml" />
 	<arg name="mvsim_do_fake_localization" default="false"/>
 
 	<node pkg="mvsim" type="mvsim_node" name="mvsim_simulator"> <!-- output="screen"> -->
@@ -8,7 +8,7 @@
 		<param name="do_fake_localization" value="$(arg mvsim_do_fake_localization)"/>
 	</node>
 
-	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find mvsim)/mvsim_tutorial/mvsim_demo_1robot.rviz"/>
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find mvsim)/mvsim_tutorial/demo_1robot.rviz"/>
 
 	<node pkg="mrpt_localization" type="mrpt_localization_node" name="mrpt_localization_node"> <!-- output="screen"> -->
 		<param name="ini_file" value="$(find mrpt_localization)/tutorial/pf-localization.ini"/> 

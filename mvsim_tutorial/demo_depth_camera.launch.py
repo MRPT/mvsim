@@ -17,7 +17,7 @@ def generate_launch_description():
     # args that can be set from the command line or a default will be used
     world_file_launch_arg = DeclareLaunchArgument(
         "world_file", default_value=TextSubstitution(
-            text=os.path.join(mvsimDir, 'mvsim_tutorial', 'mvsim_demo_1robot.world.xml')))
+            text=os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_depth_camera.world.xml')))
 
     mvsim_node = Node(
         package='mvsim',
@@ -25,7 +25,8 @@ def generate_launch_description():
         name='mvsim',
         output='screen',
         parameters=[
-            os.path.join(mvsimDir, 'mvsim_tutorial', 'mvsim_demo_1robot.yaml'),
+            os.path.join(mvsimDir, 'mvsim_tutorial',
+                         'demo_depth_camera.yaml'),
             {
                 "world_file": LaunchConfiguration('world_file'),
             }]
@@ -36,7 +37,7 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         arguments=[
-                '-d', [os.path.join(mvsimDir, 'mvsim_tutorial', 'mvsim_demo_1robot_ros2.rviz')]]
+                '-d', [os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_depth_camera_ros2.rviz')]]
     )
 
     return LaunchDescription([

@@ -34,20 +34,20 @@ Launch demos
 
 Standalone:
 
-    mvsim launch mvsim_tutorial/mvsim_demo_warehouse.world.xml
-    mvsim launch mvsim_tutorial/mvsim_demo_2robots.world.xml
+    mvsim launch mvsim_tutorial/demo_warehouse.world.xml
+    mvsim launch mvsim_tutorial/demo_2robots.world.xml
     
     mvsim launch mvsim_tutorial/test_mesh.world.xml
 
 
 ROS1:
 
-    roslaunch mvsim mvsim_demo_depth_camera.launch
+    roslaunch mvsim demo_depth_camera.launch
 
 ROS2:
 
-    ros2 launch mvsim mvsim_demo_warehouse.launch.py
-    ros2 launch mvsim mvsim_demo_depth_camera.launch.py
+    ros2 launch mvsim demo_warehouse.launch.py
+    ros2 launch mvsim demo_depth_camera.launch.py
 
 Main features
 --------------

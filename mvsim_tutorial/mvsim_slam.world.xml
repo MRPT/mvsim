@@ -17,7 +17,7 @@
 	     ======================== -->
 	<element class="occupancy_grid">
 		<!-- File can be an image or an MRPT .gridmap file -->
-		<file>mvsim_demo_world1.png</file>
+		<file>demo_world1.png</file>
 		
 		<!-- The rest of params are ignored if file is an MRPT gridmap -->
 		<resolution>0.25</resolution>
