@@ -18,7 +18,7 @@
     <!-- Visualization of sensed points in MVSIM GUI -->
     <viz_visiblePoints>${viz_visiblePoints|true}</viz_visiblePoints>
     <viz_pointSize>${viz_pointSize|3.0}</viz_pointSize>
-    <viz_visiblePlane>${viz_visiblePlane|true}</viz_visiblePlane>
+    <viz_visiblePlane>${viz_visiblePlane|false}</viz_visiblePlane>
     <viz_visibleLines>${viz_visibleLines|true}</viz_visibleLines>
     <viz_pointsColor>${viz_pointsColor|#ff000080}</viz_pointsColor>
     <viz_planeColor>${viz_planeColor|#0000ff10}</viz_planeColor>
