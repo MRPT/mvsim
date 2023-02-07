@@ -19,6 +19,7 @@
 #include <atomic>
 #include <rapidxml.hpp>
 
+#include "JointXMLnode.h"
 #include "ModelsCache.h"
 #include "xml_utils.h"
 
@@ -72,7 +73,7 @@ void VisualObject::guiUpdate(
 		{
 			auto glBox = mrpt::opengl::CBox::Create();
 			glBox->setWireframe(true);
-			glBox->setBoxCorners(viz_bbmin_, viz_bbmax_);
+			glBox->setBoxCorners(viz_bb_.min, viz_bb_.max);
 			glBoundingBox_->insert(glBox);
 			glBoundingBox_->setVisibility(false);
 			viz->get().insert(glBoundingBox_);
@@ -87,19 +88,46 @@ void VisualObject::guiUpdate(
 
 void VisualObject::FreeOpenGLResources() { ModelsCache::Instance().clear(); }
 
-bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
+bool VisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
 {
 	MRPT_TRY_START
 
-	glBoundingBox_ = mrpt::opengl::CSetOfObjects::Create();
-	glBoundingBox_->setName("bbox");
+	bool any = false;
+	for (auto n = rootNode.first_node("visual"); n;
+		 n = n->next_sibling("visual"))
+	{
+		bool hasViz = implParseVisual(*n);
+		any = any || hasViz;
+	}
+	return any;
 
-	if (visual_node == nullptr) return false;
+	MRPT_TRY_END
+}
+
+bool VisualObject::parseVisual(const JointXMLnode<>& rootNode)
+{
+	MRPT_TRY_START
+
+	bool any = false;
+	for (const auto& n : rootNode.getListOfNodes())
+	{
+		bool hasViz = parseVisual(*n);
+		any = any || hasViz;
+	}
+
+	return any;
+	MRPT_TRY_END
+}
+
+bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
+{
+	MRPT_TRY_START
 
 	std::string modelURI;
 	double modelScale = 1.0;
 	mrpt::math::TPose3D modelPose;
 	bool initialShowBoundingBox = false;
+	std::string objectName = "group";
 
 	ModelsCache::Options opts;
 
@@ -115,11 +143,10 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
 	params["model_cull_faces"] = TParamEntry("%s", &opts.modelCull);
 	params["model_color"] = TParamEntry("%color", &opts.modelColor);
+	params["name"] = TParamEntry("%s", &objectName);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(*visual_node, params);
-
-	originalModelURI_ = modelURI;
+	parse_xmlnode_children_as_param(visNode, params);
 
 	if (modelURI.empty()) return false;
 
@@ -213,27 +240,50 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>* visual_node)
 			"Error: Bounding box of visual model ('%s') has almost null volume "
 			"(=%g m³). A possible cause, if this is a <block>, is not enough "
 			"vertices within the given range [zmin,zmax]",
-			originalModelURI_.c_str(), bb.volume());
+			modelURI.c_str(), bb.volume());
 	}
 
+	// Note: we cannot apply pose/scale to the original glModel since
+	// it may be shared (many instances of the same object):
 	glGroup->insert(glModel);
-
 	glGroup->setScale(modelScale);
 	glGroup->setPose(modelPose);
-	glGroup->setName("group");
 
-	glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
-	glCustomVisual_->setName("glCustomVisual");
+	glGroup->setName(objectName);
+
+	const bool wasFirstCustomViz = !glCustomVisual_;
+
+	if (!glCustomVisual_)
+	{
+		glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
+		glCustomVisual_->setName("glCustomVisual");
+	}
 	glCustomVisual_->insert(glGroup);
-	glBoundingBox_->setVisibility(initialShowBoundingBox);
+
+	if (!glBoundingBox_)
+	{
+		glBoundingBox_ = mrpt::opengl::CSetOfObjects::Create();
+		glBoundingBox_->setName("bbox");
+		glBoundingBox_->setVisibility(initialShowBoundingBox);
+	}
 
 	// Auto bounds from visual model bounding-box:
 
 	// Apply transformation to bounding box too:
-	viz_bbmin_ = bb.min;
-	viz_bbmax_ = bb.max;
+	if (wasFirstCustomViz)
+	{
+		// Copy ...
+		viz_bb_ = bb;
+	}
+	else
+	{
+		// ... or update bounding box:
+		viz_bb_.updateWithPoint(bb.min);
+		viz_bb_.updateWithPoint(bb.max);
+	}
 
-	return true;
+	return true;  // yes, we have a custom viz model
+
 	MRPT_TRY_END
 }
 

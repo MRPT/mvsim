@@ -16,6 +16,7 @@
 #include <mrpt/math/TPolygon2D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/string_utils.h>
 #include <mvsim/basic_types.h>
@@ -206,24 +207,33 @@ bool mvsim::parse_xmlnode_as_param(
 void mvsim::parse_xmlnode_children_as_param(
 	const rapidxml::xml_node<char>& root, const TParameterDefinitions& params,
 	const std::map<std::string, std::string>& variableNamesValues,
-	const char* functionNameContext)
+	const char* functionNameContext, mrpt::system::COutputLogger* logger)
 {
 	rapidxml::xml_node<>* node = root.first_node();
 	while (node)
 	{
-		parse_xmlnode_as_param(
+		bool recognized = parse_xmlnode_as_param(
 			*node, params, variableNamesValues, functionNameContext);
 		node = node->next_sibling(nullptr);	 // Move on to next node
+
+		if (!recognized && logger)
+		{
+			logger->logFmt(
+				mrpt::system::LVL_WARN, "Unrecognized tag '<%s>'",
+				node->name());
+		}
 	}
 }
 
 mrpt::math::TPose2D mvsim::parseXYPHI(
-	const std::string& s, bool allow_missing_angle,
-	double default_angle_radians)
+	const std::string& sOrg, bool allow_missing_angle,
+	double default_angle_radians,
+	const std::map<std::string, std::string>& variableNamesValues)
 {
 	mrpt::math::TPose2D v;
 	v.phi = mrpt::RAD2DEG(default_angle_radians);  // Default ang.
 
+	const auto s = parse(sOrg, variableNamesValues);
 	int na = ::sscanf(s.c_str(), "%lf %lf %lf", &v.x, &v.y, &v.phi);
 
 	// User provides numbers as degrees:

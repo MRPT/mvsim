@@ -168,7 +168,7 @@ void World::internal_recursive_parse_XML(
 	// <gui> </gui> params:
 	else if (!strcmp(node->name(), "gui"))
 	{
-		guiOptions_.parse_from(*node);
+		guiOptions_.parse_from(*node, *this);
 	}
 	// <walls> </walls> params:
 	else if (!strcmp(node->name(), "walls"))
@@ -242,8 +242,12 @@ void World::internal_recursive_parse_XML(
 			varTo, "XML tag '<for />' must have a 'to=\"xxx\"' attribute)");
 		const auto toStr = mvsim::parse(varTo->value(), userDefinedVariables_);
 
-		if (auto childNode = node->first_node(); childNode)
+		bool forBodyEmpty = true;
+
+		for (auto childNode = node->first_node(); childNode;
+			 childNode = childNode->next_sibling())
 		{
+			forBodyEmpty = false;
 			for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr);
 				 curVal++)
 			{
@@ -254,7 +258,8 @@ void World::internal_recursive_parse_XML(
 				internal_recursive_parse_XML(childNode, currentBasePath);
 			}
 		}
-		else
+
+		if (forBodyEmpty)
 		{
 			MRPT_LOG_WARN_STREAM(
 				"[World::load_from_XML] *Warning* <for ...> </for> loop has no "

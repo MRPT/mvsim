@@ -119,7 +119,7 @@ SensorBase::Ptr SensorBase::factory(
 			"[SensorBase::factory] Unknown sensor type '%s'", root->name()));
 
 	// parse the optional visual model:
-	we->parseVisual(root->first_node("visual"));
+	we->parseVisual(*root);
 
 	return we;
 }

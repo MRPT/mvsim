@@ -30,9 +30,11 @@
 using namespace mvsim;
 using namespace std;
 
-void World::TGUI_Options::parse_from(const rapidxml::xml_node<char>& node)
+void World::TGUI_Options::parse_from(
+	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
-	parse_xmlnode_children_as_param(node, params, {}, "[World::TGUI_Options]");
+	parse_xmlnode_children_as_param(
+		node, params, {}, "[World::TGUI_Options]", &logger);
 }
 
 // Text labels unique IDs:

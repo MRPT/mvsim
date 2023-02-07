@@ -142,7 +142,7 @@ VehicleBase::Ptr VehicleBase::factory(
 	// parameter
 	//  in the set of "root" + "class_root" XML nodes:
 	// --------------------------------------------------------------------------------
-	JointXMLnode<> veh_root_node;
+	JointXMLnode<> nodes;
 
 	std::vector<XML_Doc_Data::Ptr> scopedLifeDocs;
 
@@ -184,13 +184,13 @@ VehicleBase::Ptr VehicleBase::factory(
 		const auto newBasePath =
 			mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
 
-		veh_root_node.add(nRoot->parent());
+		nodes.add(nRoot->parent());
 	}
 
 	// ---
 	{
 		// Always search in root. Also in the class root, if any:
-		veh_root_node.add(root);
+		nodes.add(root);
 
 		const xml_attribute<>* veh_class = root->first_attribute("class");
 		if (veh_class)
@@ -203,14 +203,14 @@ VehicleBase::Ptr VehicleBase::factory(
 					"[VehicleBase::factory] Vehicle class '%s' undefined",
 					sClassName.c_str()));
 
-			veh_root_node.add(class_root);
+			nodes.add(class_root);
 			// cout << *class_root;
 		}
 	}
 
 	// Class factory according to: <dynamics class="XXX">
 	// -------------------------------------------------
-	const xml_node<>* dyn_node = veh_root_node.first_node("dynamics");
+	const xml_node<>* dyn_node = nodes.first_node("dynamics");
 	if (!dyn_node)
 		throw runtime_error(
 			"[VehicleBase::factory] Missing XML node <dynamics>");
@@ -247,11 +247,11 @@ VehicleBase::Ptr VehicleBase::factory(
 
 	// Common setup for simulable objects:
 	// -----------------------------------------------------------
-	veh->parseSimulable(veh_root_node);
+	veh->parseSimulable(nodes);
 
 	// Custom visualization 3D model:
 	// -----------------------------------------------------------
-	veh->parseVisual(veh_root_node.first_node("visual"));
+	veh->parseVisual(nodes);
 
 	// Initialize class-specific params (mass, chassis shape, etc.)
 	// ---------------------------------------------------------------
@@ -266,9 +266,8 @@ VehicleBase::Ptr VehicleBase::factory(
 				xml_chassis->first_node("shape_from_visual");
 			sfv)
 		{
-			mrpt::math::TPoint3D bbmin, bbmax;
-			veh->getVisualModelBoundingBox(bbmin, bbmax);
-			if (mrpt::math::TBoundingBox(bbmin, bbmax).volume() == 0)
+			const auto bb = veh->getVisualModelBoundingBox();
+			if (bb.volume() == 0)
 			{
 				THROW_EXCEPTION(
 					"Error: Tag <shape_from_visual/> found but bounding box of "
@@ -277,10 +276,10 @@ VehicleBase::Ptr VehicleBase::factory(
 
 			auto& poly = veh->chassis_poly_;
 			poly.clear();
-			poly.emplace_back(bbmin.x, bbmin.y);
-			poly.emplace_back(bbmin.x, bbmax.y);
-			poly.emplace_back(bbmax.x, bbmax.y);
-			poly.emplace_back(bbmax.x, bbmin.y);
+			poly.emplace_back(bb.min.x, bb.min.y);
+			poly.emplace_back(bb.min.x, bb.max.y);
+			poly.emplace_back(bb.max.x, bb.max.y);
+			poly.emplace_back(bb.max.x, bb.min.y);
 		}
 	}
 	veh->updateMaxRadiusFromPoly();
@@ -288,7 +287,7 @@ VehicleBase::Ptr VehicleBase::factory(
 	// <Optional> Log path. If not specified, app folder will be used
 	// -----------------------------------------------------------
 	{
-		const xml_node<>* log_path_node = veh_root_node.first_node("log_path");
+		const xml_node<>* log_path_node = nodes.first_node("log_path");
 		if (log_path_node)
 		{
 			// Parse:
@@ -318,7 +317,7 @@ VehicleBase::Ptr VehicleBase::factory(
 	// Parse <friction> node, or assume default linear model:
 	// -----------------------------------------------------------
 	{
-		const xml_node<>* frict_node = veh_root_node.first_node("friction");
+		const xml_node<>* frict_node = nodes.first_node("friction");
 		if (!frict_node)
 		{
 			// Default:
@@ -336,7 +335,7 @@ VehicleBase::Ptr VehicleBase::factory(
 
 	// Sensors: <sensor class='XXX'> entries
 	// -------------------------------------------------
-	for (const auto& xmlNode : veh_root_node)
+	for (const auto& xmlNode : nodes)
 	{
 		if (!strcmp(xmlNode->name(), "sensor"))
 		{
@@ -707,6 +706,23 @@ void VehicleBase::internalGuiUpdate(
 			const Wheel& w = getWheelInfo(i);
 			gl_wheels_[i]->setPose(mrpt::math::TPose3D(
 				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+
+			if (!w.linked_yaw_object_name.empty())
+			{
+				auto glLinked = VisualObject::glCustomVisual_->getByName(
+					w.linked_yaw_object_name);
+				if (!glLinked)
+				{
+					THROW_EXCEPTION_FMT(
+						"Wheel #%zu has linked_yaw_object_name='%s' but parent "
+						"vehicle '%s' does not have any custom visual group "
+						"with that name.",
+						i, w.linked_yaw_object_name.c_str(), name_.c_str());
+				}
+				auto p = glLinked->getPose();
+				p.yaw = w.yaw + w.linked_yaw_offset;
+				glLinked->setPose(p);
+			}
 		}
 	}
 

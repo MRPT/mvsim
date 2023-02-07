@@ -81,7 +81,7 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 	if (Iyy == INERTIA_NOT_SET) this->recalcInertia();
 
 	// parse custom visual stuff:
-	this->parseVisual(xml_node->first_node("visual"));
+	this->parseVisual(*xml_node);
 }
 
 // Recompute Iyy from mass, diameter and height.

@@ -19,7 +19,7 @@ template <typename Ch>
 class JointXMLnode
 {
    public:
-	typedef std::vector<const rapidxml::xml_node<Ch>*> TListNodes;
+	using TListNodes = std::vector<const rapidxml::xml_node<Ch>*>;
 
    private:
 	TListNodes nodes_;
@@ -39,6 +39,8 @@ class JointXMLnode
 	}
 
 	TListNodes& getListOfNodes() { return nodes_; }
+	const TListNodes& getListOfNodes() const { return nodes_; }
+
 	// Iterators-like interface ----------------------
 	class iterator
 	{
