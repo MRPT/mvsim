@@ -188,10 +188,7 @@ bool mvsim::parse_xmlnode_as_param(
 	const std::map<std::string, std::string>& variableNamesValues,
 	const char* functionNameContext)
 {
-	TParameterDefinitions::const_iterator it_param =
-		params.find(xml_node.name());
-
-	if (it_param != params.end())
+	if (auto it_param = params.find(xml_node.name()); it_param != params.end())
 	{
 		// parse parameter:
 		it_param->second.parse(
@@ -199,7 +196,10 @@ bool mvsim::parse_xmlnode_as_param(
 			functionNameContext);
 		return true;
 	}
-	return false;
+	else
+	{
+		return false;
+	}
 }
 
 /** Call \a parse_xmlnode_as_param() for all children nodes of the given node.
@@ -214,14 +214,14 @@ void mvsim::parse_xmlnode_children_as_param(
 	{
 		bool recognized = parse_xmlnode_as_param(
 			*node, params, variableNamesValues, functionNameContext);
-		node = node->next_sibling(nullptr);	 // Move on to next node
-
 		if (!recognized && logger)
 		{
 			logger->logFmt(
-				mrpt::system::LVL_WARN, "Unrecognized tag '<%s>'",
-				node->name());
+				mrpt::system::LVL_WARN, "Unrecognized tag '<%s>' in %s",
+				node->name(),
+				functionNameContext ? functionNameContext : "(none)");
 		}
+		node = node->next_sibling(nullptr);	 // Move on to next node
 	}
 }
 
