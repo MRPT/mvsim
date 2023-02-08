@@ -347,6 +347,9 @@ void Block::create_multibody_system(b2World& world)
 		// Add the shape to the body.
 		fixture_block_ = b2dBody_->CreateFixture(&fixtureDef);
 
+		// Static (does not move at all) vs dynamic object:
+		b2dBody_->SetType(isStatic_ ? b2_staticBody : b2_dynamicBody);
+
 		// Compute center of mass:
 		b2MassData vehMass;
 		fixture_block_->GetMassData(&vehMass);

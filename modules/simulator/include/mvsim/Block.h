@@ -156,7 +156,8 @@ class Block : public VisualObject, public Simulable
 		{"lateral_friction", {"%lf", &lateral_friction_}},
 		{"restitution", {"%lf", &restitution_}},
 		{"color", {"%color", &block_color_}},
-		{"intangible", {"%bool", &intangible_}}
+		{"intangible", {"%bool", &intangible_}},
+		{"static", {"%bool", &isStatic_}}
 		//
 	};
 
