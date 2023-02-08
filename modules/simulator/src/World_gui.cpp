@@ -444,6 +444,10 @@ void World::internal_GUI_thread()
 		cam.setCameraPointing(0.0f, .0f, .0f);
 		cam.setCameraProjective(!guiOptions_.ortho);
 		cam.setZoomDistance(guiOptions_.camera_distance);
+		cam.setCameraFOV(guiOptions_.fov_deg);
+		cam.setCameraPointing(
+			guiOptions_.camera_point_to.x, guiOptions_.camera_point_to.y,
+			guiOptions_.camera_point_to.z);
 
 		// Main GUI loop
 		// ---------------------

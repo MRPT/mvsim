@@ -53,7 +53,7 @@ GUI options are specified with tag *gui*. *gui* has several nested tags:
 			<cam_distance>35</cam_distance>
 
 			<!-- camera vertical field of view in degrees -->
-			<fov_deg>35</fov_deg>
+			<fov_deg>60</fov_deg>
 
 			<!-- <follow_vehicle>r1</follow_vehicle> -->
 		</gui>

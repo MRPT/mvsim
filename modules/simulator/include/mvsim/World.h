@@ -451,6 +451,7 @@ class World : public mrpt::system::COutputLogger
 		double fov_deg = 60.0;
 		float clip_plane_min = 0.05f;
 		float clip_plane_max = 10e3f;
+		mrpt::math::TPoint3D camera_point_to{0, 0, 0};
 		std::string follow_vehicle;	 //!< Vehicle name to follow (empty=none)
 		bool headless = false;
 
@@ -468,6 +469,8 @@ class World : public mrpt::system::COutputLogger
 			{"headless", {"%bool", &headless}},
 			{"clip_plane_min", {"%f", &clip_plane_min}},
 			{"clip_plane_max", {"%f", &clip_plane_max}},
+			{"cam_distance", {"%lf", &camera_distance}},
+			{"cam_point_to", {"%point3d", &camera_point_to}},
 		};
 
 		TGUI_Options() = default;

@@ -129,6 +129,23 @@ void TParamEntry::parse(
 				"%s Error: Unknown format specifier '%s'", functionNameContext,
 				frmt));
 	}
+	// %point3d
+	else if (!strncmp(frmt, "%point3d", strlen("%point3d")))
+	{
+		double x = 0, y = 0, z = 0;
+		int ret = ::sscanf(str.c_str(), "%lf %lf %lf", &x, &y, &z);
+		if (ret != 2 && ret != 3)
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing '%s'='%s' (Expected format:'X Y [Z]')",
+				functionNameContext, varName.c_str(), str.c_str()));
+
+		mrpt::math::TPoint3D& pp =
+			*reinterpret_cast<mrpt::math::TPoint3D*>(val);
+
+		pp.x = x;
+		pp.y = y;
+		pp.z = z;
+	}
 	// "%pose3d"
 	else if (!strncmp(frmt, "%pose3d", strlen("%pose3d")))
 	{
