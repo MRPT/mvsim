@@ -46,7 +46,7 @@ class DynamicsAckermann : public VehicleBase
 	struct TControllerOutput
 	{
 		double fl_torque, fr_torque, rl_torque, rr_torque;
-		double steer_ang;  //!< Equivalent ackerman steering angle
+		double steer_ang;  //!< Equivalent Ackermann steering angle
 		TControllerOutput()
 			: fl_torque(0),
 			  fr_torque(0),
