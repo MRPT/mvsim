@@ -53,12 +53,11 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 		co.steer_ang = atan(r2f_L_ / R);
 	}
 
-	// Desired velocities for each wheel:
-	std::vector<mrpt::math::TPoint2D>
-		desired_wheel_vels;	 // In local vehicle frame
-	veh_.getWheelsVelocityLocal(
-		desired_wheel_vels,
-		mrpt::math::TTwist2D(setpoint_lin_speed, 0.0, setpoint_ang_speed));
+	// Desired velocities for each wheel
+	// In local vehicle frame:
+	const std::vector<mrpt::math::TPoint2D> desired_wheel_vels =
+		veh_.getWheelsVelocityLocal(
+			mrpt::math::TTwist2D(setpoint_lin_speed, 0.0, setpoint_ang_speed));
 
 	ASSERT_(desired_wheel_vels.size() == 4);
 
@@ -87,10 +86,9 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	// velocity, not ground-truth!):
 	double act_vel_fl, act_vel_fr;
 	{
-		std::vector<mrpt::math::TPoint2D>
-			odo_wheel_vels;	 // In local vehicle frame
-		veh_.getWheelsVelocityLocal(
-			odo_wheel_vels, veh_.getVelocityLocalOdoEstimate());
+		// In local vehicle frame:
+		const std::vector<mrpt::math::TPoint2D> odo_wheel_vels =
+			veh_.getWheelsVelocityLocal(veh_.getVelocityLocalOdoEstimate());
 		ASSERT_(odo_wheel_vels.size() == 4);
 
 		const double actual_fl_steer_ang =

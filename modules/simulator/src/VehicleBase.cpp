@@ -400,13 +400,13 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		getChassisMass() / nW;	// Part of the vehicle weight on each wheel.
 	const double weightPerWheel = massPerWheel * gravity;
 
-	std::vector<mrpt::math::TPoint2D> wheels_vels;
-	getWheelsVelocityLocal(wheels_vels, getVelocityLocal());
+	const std::vector<mrpt::math::TPoint2D> wheels_vels =
+		getWheelsVelocityLocal(getVelocityLocal());
 
 	ASSERT_EQUAL_(wheels_vels.size(), nW);
 
-	std::vector<mrpt::math::TSegment3D>
-		force_vectors;	// For visualization only
+	// For visualization only
+	std::vector<mrpt::math::TSegment3D> forceVectors;
 
 	for (size_t i = 0; i < nW; i++)
 	{
@@ -461,7 +461,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 				wPt.x, wPt.y, chassis_z_max_ * 1.1 + getPose().z);
 			const mrpt::math::TPoint3D pt2 =
 				pt1 + mrpt::math::TPoint3D(wForce.x, wForce.y, 0) * forceScale;
-			force_vectors.push_back(mrpt::math::TSegment3D(pt1, pt2));
+			forceVectors.push_back(mrpt::math::TSegment3D(pt1, pt2));
 		}
 	}
 
@@ -469,7 +469,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	if (world_->guiOptions_.show_forces)
 	{
 		std::lock_guard<std::mutex> csl(force_segments_for_rendering_cs_);
-		force_segments_for_rendering_ = force_vectors;
+		force_segments_for_rendering_ = forceVectors;
 	}
 }
 
@@ -522,8 +522,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 }
 
 /** Last time-step velocity of each wheel's center point (in local coords) */
-void VehicleBase::getWheelsVelocityLocal(
-	std::vector<mrpt::math::TPoint2D>& vels,
+std::vector<mrpt::math::TPoint2D> VehicleBase::getWheelsVelocityLocal(
 	const mrpt::math::TTwist2D& veh_vel_local) const
 {
 	// Each wheel velocity is:
@@ -534,7 +533,8 @@ void VehicleBase::getWheelsVelocityLocal(
 	const double w = veh_vel_local.omega;  // vehicle w
 
 	const size_t nW = this->getNumWheels();
-	vels.resize(nW);
+	std::vector<mrpt::math::TPoint2D> vels(nW);
+
 	for (size_t i = 0; i < nW; i++)
 	{
 		const Wheel& wheel = getWheelInfo(i);
@@ -542,6 +542,7 @@ void VehicleBase::getWheelsVelocityLocal(
 		vels[i].x = veh_vel_local.vx - w * wheel.y;
 		vels[i].y = veh_vel_local.vy + w * wheel.x;
 	}
+	return vels;
 }
 
 void VehicleBase::internal_internalGuiUpdate_sensors(
