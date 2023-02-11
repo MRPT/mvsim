@@ -609,12 +609,12 @@ void VehicleBase::create_multibody_system(b2World& world)
 
 		// Set the box density to be non-zero, so it will be dynamic.
 		b2MassData mass;
-		chassisPoly.ComputeMass(
-			&mass, 1);	// Mass with density=1 => compute area
+		// Mass with density=1 => compute area
+		chassisPoly.ComputeMass(&mass, 1);
 		fixtureDef.density = chassis_mass_ / mass.mass;
 
 		// Override the default friction.
-		fixtureDef.friction = 0.3f;
+		fixtureDef.friction = 0;
 
 		// Add the shape to the body.
 		fixture_chassis_ = b2dBody_->CreateFixture(&fixtureDef);
