@@ -388,22 +388,22 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	}
 
 	// Apply motor forces/torques:
-	const std::vector<double> torque_per_wheel =
-		invoke_motor_controllers(context);
+	const std::vector<double> wheelTorque = invoke_motor_controllers(context);
 
 	// Apply friction model at each wheel:
 	const size_t nW = getNumWheels();
-	ASSERT_EQUAL_(torque_per_wheel.size(), nW);
+	ASSERT_EQUAL_(wheelTorque.size(), nW);
 
+	// Part of the vehicle weight on each wheel:
 	const double gravity = getWorldObject()->get_gravity();
-	const double massPerWheel =
-		getChassisMass() / nW;	// Part of the vehicle weight on each wheel.
+	MRPT_TODO("Use chassis cog point");
+	const double massPerWheel = getChassisMass() / nW;
 	const double weightPerWheel = massPerWheel * gravity;
 
-	const std::vector<mrpt::math::TPoint2D> wheels_vels =
+	const std::vector<mrpt::math::TVector2D> wheelLocalVels =
 		getWheelsVelocityLocal(getVelocityLocal());
 
-	ASSERT_EQUAL_(wheels_vels.size(), nW);
+	ASSERT_EQUAL_(wheelLocalVels.size(), nW);
 
 	// For visualization only
 	std::vector<mrpt::math::TSegment3D> forceVectors;
@@ -414,9 +414,9 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		Wheel& w = getWheelInfo(i);
 
 		FrictionBase::TFrictionInput fi(context, w);
-		fi.motor_torque = -torque_per_wheel[i];	 // "-" => Forwards is negative
+		fi.motorTorque = -wheelTorque[i];  // "-" => Forwards is negative
 		fi.weight = weightPerWheel;
-		fi.wheel_speed = wheels_vels[i];
+		fi.wheelCogLocalVel = wheelLocalVels[i];
 
 		friction_->setLogger(
 			getLoggerPtr(LOGGER_WHEEL + std::to_string(i + 1)));
@@ -439,13 +439,13 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				DL_TIMESTAMP, context.simul_time);
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_TORQUE, fi.motor_torque);
+				WL_TORQUE, fi.motorTorque);
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_WEIGHT, fi.weight);
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_VEL_X, fi.wheel_speed.x);
+				WL_VEL_X, fi.wheelCogLocalVel.x);
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_VEL_Y, fi.wheel_speed.y);
+				WL_VEL_Y, fi.wheelCogLocalVel.y);
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_FRIC_X, net_force_.x);
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
@@ -522,7 +522,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 }
 
 /** Last time-step velocity of each wheel's center point (in local coords) */
-std::vector<mrpt::math::TPoint2D> VehicleBase::getWheelsVelocityLocal(
+std::vector<mrpt::math::TVector2D> VehicleBase::getWheelsVelocityLocal(
 	const mrpt::math::TTwist2D& veh_vel_local) const
 {
 	// Each wheel velocity is:
@@ -533,7 +533,7 @@ std::vector<mrpt::math::TPoint2D> VehicleBase::getWheelsVelocityLocal(
 	const double w = veh_vel_local.omega;  // vehicle w
 
 	const size_t nW = this->getNumWheels();
-	std::vector<mrpt::math::TPoint2D> vels(nW);
+	std::vector<mrpt::math::TVector2D> vels(nW);
 
 	for (size_t i = 0; i < nW; i++)
 	{

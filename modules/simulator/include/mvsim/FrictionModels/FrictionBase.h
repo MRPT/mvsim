@@ -34,21 +34,22 @@ class FrictionBase
 	{
 		const TSimulContext& context;
 		Wheel& wheel;
-		double weight;	//!< Weight on this wheel from the car chassis
-						//!(Newtons), excluding the weight of the wheel itself.
-		double motor_torque;  //!< The force applied by the motor to the wheel
-							  //!(Nm). Negative means backwards, which makes the
-							  //! vehicle go forwards.
-		mrpt::math::TPoint2D wheel_speed;  //!< Instantaneous velocity vector
-										   //!(in local coords) of the wheel
-										   //! center point.
+
+		/** Weight on this wheel from the car chassis (Newtons), excluding the
+		 * weight of the wheel itself.
+		 */
+		double weight = 0;
+
+		/** The force applied by the motor to the wheel (Nm). Negative means
+		 * backwards, which makes the vehicle go forwards. */
+		double motorTorque = 0;
+
+		/** Instantaneous velocity vector (in local coordinates) of the wheel
+		 *  center of gravity (cog) point. */
+		mrpt::math::TVector2D wheelCogLocalVel{0, 0};
 
 		TFrictionInput(const TSimulContext& _context, Wheel& _wheel)
-			: context(_context),
-			  wheel(_wheel),
-			  weight(.0),
-			  motor_torque(.0),
-			  wheel_speed(0, 0)
+			: context(_context), wheel(_wheel)
 		{
 		}
 	};

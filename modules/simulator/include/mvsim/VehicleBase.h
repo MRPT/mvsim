@@ -86,7 +86,7 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** Current velocity of each wheel's center point (in local coords). Call
 	 * with veh_vel_local=getVelocityLocal() for ground-truth.  */
-	std::vector<mrpt::math::TPoint2D> getWheelsVelocityLocal(
+	std::vector<mrpt::math::TVector2D> getWheelsVelocityLocal(
 		const mrpt::math::TTwist2D& veh_vel_local) const;
 
 	/** Gets the current estimation of odometry-based velocity as reconstructed

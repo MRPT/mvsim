@@ -41,7 +41,7 @@ void DefaultFriction::evaluate_friction(
 	const mrpt::poses::CPose2D wRot(0, 0, input.wheel.yaw);
 	const mrpt::poses::CPose2D wRotInv(0, 0, -input.wheel.yaw);
 	mrpt::math::TPoint2D vel_w;
-	wRotInv.composePoint(input.wheel_speed, vel_w);
+	wRotInv.composePoint(input.wheelCogLocalVel, vel_w);
 
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
@@ -85,7 +85,7 @@ void DefaultFriction::evaluate_friction(
 	// input.wheel_speed.x, 0.0);
 
 	const double I_yy = input.wheel.Iyy;
-	double F_friction_lon = (input.motor_torque - I_yy * desired_wheel_alpha -
+	double F_friction_lon = (input.motorTorque - I_yy * desired_wheel_alpha -
 							 C_damping * input.wheel.getW()) /
 							R;
 
@@ -93,7 +93,7 @@ void DefaultFriction::evaluate_friction(
 	F_friction_lon = b2Clamp(F_friction_lon, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
-	const double actual_wheel_alpha = (input.motor_torque - R * F_friction_lon -
+	const double actual_wheel_alpha = (input.motorTorque - R * F_friction_lon -
 									   C_damping * input.wheel.getW()) /
 									  I_yy;
 
