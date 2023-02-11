@@ -388,11 +388,12 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	}
 
 	// Apply motor forces/torques:
-	this->invoke_motor_controllers(context, torque_per_wheel_);
+	const std::vector<double> torque_per_wheel =
+		invoke_motor_controllers(context);
 
 	// Apply friction model at each wheel:
 	const size_t nW = getNumWheels();
-	ASSERT_EQUAL_(torque_per_wheel_.size(), nW);
+	ASSERT_EQUAL_(torque_per_wheel.size(), nW);
 
 	const double gravity = getWorldObject()->get_gravity();
 	const double massPerWheel =
@@ -413,7 +414,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		Wheel& w = getWheelInfo(i);
 
 		FrictionBase::TFrictionInput fi(context, w);
-		fi.motor_torque = -torque_per_wheel_[i];  // "-" => Forwards is negative
+		fi.motor_torque = -torque_per_wheel[i];	 // "-" => Forwards is negative
 		fi.weight = weightPerWheel;
 		fi.wheel_speed = wheels_vels[i];
 

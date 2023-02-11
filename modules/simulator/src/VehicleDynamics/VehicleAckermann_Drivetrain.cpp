@@ -228,10 +228,11 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 }
 
 // See docs in base class:
-void DynamicsAckermannDrivetrain::invoke_motor_controllers(
-	const TSimulContext& context, std::vector<double>& out_torque_per_wheel)
+std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
+	const TSimulContext& context)
 {
 	// Longitudinal forces at each wheel:
+	std::vector<double> out_torque_per_wheel;
 	out_torque_per_wheel.assign(4, 0.0);
 	double torque_split_per_wheel[4] = {0.0};
 
@@ -358,6 +359,7 @@ void DynamicsAckermannDrivetrain::invoke_motor_controllers(
 			co.steer_ang, wheels_info_[WHEEL_FL].yaw,
 			wheels_info_[WHEEL_FR].yaw);
 	}
+	return out_torque_per_wheel;
 }
 
 void DynamicsAckermannDrivetrain::computeFrontWheelAngles(

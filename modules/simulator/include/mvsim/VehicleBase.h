@@ -166,9 +166,8 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void dynamics_load_params_from_xml(
 		const rapidxml::xml_node<char>* xml_node) = 0;
 
-	virtual void invoke_motor_controllers(
-		const TSimulContext& context,
-		std::vector<double>& out_force_per_wheel) = 0;
+	virtual std::vector<double> invoke_motor_controllers(
+		const TSimulContext& context) = 0;
 
 	VisualObject* meAsVisualObject() override { return this; }
 
@@ -180,9 +179,6 @@ class VehicleBase : public VisualObject, public Simulable
 	FrictionBasePtr friction_;
 
 	TListSensors sensors_;	//!< Sensors aboard
-
-	/** Updated in simul_pre_timestep() */
-	std::vector<double> torque_per_wheel_;
 
 	// Chassis info:
 	double chassis_mass_ = 15.0;

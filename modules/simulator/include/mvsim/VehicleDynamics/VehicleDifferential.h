@@ -166,9 +166,8 @@ class DynamicsDifferential : public VehicleBase
 	virtual void dynamics_load_params_from_xml(
 		const rapidxml::xml_node<char>* xml_node) override;
 	// See base class docs
-	virtual void invoke_motor_controllers(
-		const TSimulContext& context,
-		std::vector<double>& out_force_per_wheel) override;
+	virtual std::vector<double> invoke_motor_controllers(
+		const TSimulContext& context) override;
 
 	/// Defined at ctor time:
 	const std::vector<ConfigPerWheel> configPerWheel_;
