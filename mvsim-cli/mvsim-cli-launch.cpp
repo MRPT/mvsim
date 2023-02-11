@@ -200,9 +200,6 @@ Available options:
 
 	const auto sXMLfilename = unlabeledArgs.at(1);
 
-	// Start network server:
-	commonLaunchServer();
-
 	app.emplace();
 
 	app->world.setMinLoggingLevel(verbosityLevel);
@@ -214,8 +211,20 @@ Available options:
 	if (cli->argHeadless.isSet()) app->world.headless(true);
 
 	// Load from XML:
-	rapidxml::file<> fil_xml(sXMLfilename.c_str());
-	app->world.load_from_XML(fil_xml.data(), sXMLfilename.c_str());
+	try
+	{
+		rapidxml::file<> fil_xml(sXMLfilename.c_str());
+		app->world.load_from_XML(fil_xml.data(), sXMLfilename.c_str());
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Error: " << e.what() << std::endl;
+		mvsim_launch_shutdown();
+		return 1;
+	}
+
+	// Start network server:
+	commonLaunchServer();
 
 	// Attach world as a mvsim communications node:
 	app->world.connectToServer();
