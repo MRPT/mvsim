@@ -122,7 +122,8 @@
 	      Object types
 	     ====================================== -->
 	<block:class name="shelf">
-		<mass>300</mass> <zmax>2.0</zmax> <ground_friction>100.0</ground_friction>
+		<static>true</static> <!-- Does not move -->
+		<mass>300</mass> <zmax>2.0</zmax> <ground_friction>1.0</ground_friction>
 		<shape_from_visual/> <!-- automatic size from 3D model file -->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
@@ -132,7 +133,8 @@
 	</block:class>
 
 	<block:class name="stairs">
-		<mass>5000</mass> <zmax>6.0</zmax> <ground_friction>100.0</ground_friction>
+		<static>true</static> <!-- Does not move -->
+		<mass>1000</mass> <zmax>6.0</zmax> <ground_friction>1.0</ground_friction>
 		<shape_from_visual/> <!-- automatic size from 3D model file -->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
@@ -183,7 +185,8 @@
 	</block:class>
 
 	<block:class name="extinguisher">
-		<mass>2</mass> <zmax>1.0</zmax> <ground_friction>100</ground_friction>
+		<static>true</static> <!-- Does not move -->
+		<mass>2</mass> <zmax>1.0</zmax> <ground_friction>1</ground_friction>
 		<shape_from_visual/> <!-- automatic size from 3D model file -->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
