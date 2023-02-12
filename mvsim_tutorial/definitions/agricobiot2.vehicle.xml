@@ -7,7 +7,7 @@
 -->
 <vehicle:class name="agricobiot2">
     <!--  Dynamical model -->
-    <dynamics class="ackermann">
+    <dynamics class="ackermann_drivetrain">
         <!-- Rear wheels -->
         <rl_wheel pos="0 -0.20 -0.245" mass="5.35" width="0.164" diameter="0.406">
                   <visual> <model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/wheel.dae</model_uri> <model_scale>1e-3</model_scale><model_offset_y>$f{-0.5*0.164}</model_offset_y> </visual>
@@ -42,7 +42,7 @@
             <!-- Params -->
             <KP>100</KP>  <KI>5</KI> <I_MAX>10</I_MAX> <KD>0</KD>
             <V>0.0</V><W>0</W>
-            <max_torque>100</max_torque>
+            <max_torque>400</max_torque>
         </controller>
 
         <!-- Available types: 
@@ -99,9 +99,9 @@
     </visual>
     
     <!-- Friction force simulation -->
-    <friction class="default">
+    <friction class="wardiagnemma">
         <mu>0.9</mu>
-        <C_damping>0.01</C_damping>
+        <C_damping>0.05</C_damping>
     </friction>
 
 </vehicle:class>

@@ -91,6 +91,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// Iyy_w * \Delta\omega_w = dt*\tau-  R*dt*Fri    -C_damp * \omega_w * dt
 	// "Damping" / internal friction of the wheel's shaft, etc.
 	const double C_damping = C_damping_;
+
 	// const mrpt::math::TPoint2D wheel_damping(- C_damping *
 	// input.wheel_speed.x, 0.0);
 

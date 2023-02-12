@@ -406,7 +406,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	ASSERT_EQUAL_(wheelLocalVels.size(), nW);
 
 	// For visualization only
-	std::vector<mrpt::math::TSegment3D> forceVectors;
+	std::vector<mrpt::math::TSegment3D> forceVectors, torqueVectors;
 
 	for (size_t i = 0; i < nW; i++)
 	{
@@ -456,21 +456,29 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		// save it for optional rendering:
 		if (world_->guiOptions_.show_forces)
 		{
-			const double forceScale =
-				world_->guiOptions_.force_scale;  // [meters/N]
+			// [meters/N]
+			const double forceScale = world_->guiOptions_.force_scale;
+
 			const mrpt::math::TPoint3D pt1(
 				wPt.x, wPt.y, chassis_z_max_ * 1.1 + getPose().z);
 			const mrpt::math::TPoint3D pt2 =
 				pt1 + mrpt::math::TPoint3D(wForce.x, wForce.y, 0) * forceScale;
-			forceVectors.push_back(mrpt::math::TSegment3D(pt1, pt2));
+
+			forceVectors.emplace_back(pt1, pt2);
+
+			const mrpt::math::TPoint3D pt2_t =
+				pt1 + mrpt::math::TPoint3D(0, 0, wheelTorque[i]) * forceScale;
+
+			torqueVectors.emplace_back(pt1, pt2_t);
 		}
 	}
 
 	// Save forces for optional rendering:
 	if (world_->guiOptions_.show_forces)
 	{
-		std::lock_guard<std::mutex> csl(force_segments_for_rendering_cs_);
-		force_segments_for_rendering_ = forceVectors;
+		std::lock_guard<std::mutex> csl(forceSegmentsForRenderingMtx_);
+		forceSegmentsForRendering_ = forceVectors;
+		torqueSegmentsForRendering_ = torqueVectors;
 	}
 }
 
@@ -558,14 +566,19 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 {
 	if (world_->guiOptions_.show_forces)
 	{
-		std::lock_guard<std::mutex> csl(force_segments_for_rendering_cs_);
-		gl_forces_->clear();
-		gl_forces_->appendLines(force_segments_for_rendering_);
-		gl_forces_->setVisibility(true);
+		std::lock_guard<std::mutex> csl(forceSegmentsForRenderingMtx_);
+		glForces_->clear();
+		glForces_->appendLines(forceSegmentsForRendering_);
+		glForces_->setVisibility(true);
+
+		glMotorTorques_->clear();
+		glMotorTorques_->appendLines(torqueSegmentsForRendering_);
+		glMotorTorques_->setVisibility(true);
 	}
 	else
 	{
-		gl_forces_->setVisibility(false);
+		glForces_->setVisibility(false);
+		glMotorTorques_->setVisibility(false);
 	}
 }
 
@@ -666,18 +679,18 @@ void VehicleBase::internalGuiUpdate(
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	const size_t nWs = this->getNumWheels();
-	if (!gl_chassis_ && viz && physical)
+	if (!glChassis_ && viz && physical)
 	{
-		gl_chassis_ = mrpt::opengl::CSetOfObjects::Create();
-		gl_chassis_->setName("vehicle_chassis_"s + name_);
+		glChassis_ = mrpt::opengl::CSetOfObjects::Create();
+		glChassis_->setName("vehicle_chassis_"s + name_);
 
 		// Wheels shape:
-		gl_wheels_.resize(nWs);
+		glWheels_.resize(nWs);
 		for (size_t i = 0; i < nWs; i++)
 		{
-			gl_wheels_[i] = mrpt::opengl::CSetOfObjects::Create();
-			this->getWheelInfo(i).getAs3DObject(*gl_wheels_[i]);
-			gl_chassis_->insert(gl_wheels_[i]);
+			glWheels_[i] = mrpt::opengl::CSetOfObjects::Create();
+			this->getWheelInfo(i).getAs3DObject(*glWheels_[i]);
+			glChassis_->insert(glWheels_[i]);
 		}
 
 		if (!childrenOnly)
@@ -687,11 +700,11 @@ void VehicleBase::internalGuiUpdate(
 				chassis_poly_, chassis_z_max_ - chassis_z_min_);
 			gl_poly->setLocation(0, 0, chassis_z_min_);
 			gl_poly->setColor_u8(chassis_color_);
-			gl_chassis_->insert(gl_poly);
+			glChassis_->insert(gl_poly);
 		}
 
-		viz->get().insert(gl_chassis_);
-		physical->get().insert(gl_chassis_);
+		viz->get().insert(glChassis_);
+		physical->get().insert(glChassis_);
 	}
 
 	// Update them:
@@ -701,13 +714,13 @@ void VehicleBase::internalGuiUpdate(
 	// need/can't acquire it again:
 	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-	if (gl_chassis_)
+	if (glChassis_)
 	{
-		gl_chassis_->setPose(objectPose);
+		glChassis_->setPose(objectPose);
 		for (size_t i = 0; i < nWs; i++)
 		{
 			const Wheel& w = getWheelInfo(i);
-			gl_wheels_[i]->setPose(mrpt::math::TPose3D(
+			glWheels_[i]->setPose(mrpt::math::TPose3D(
 				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
 
 			if (!w.linked_yaw_object_name.empty())
@@ -730,13 +743,21 @@ void VehicleBase::internalGuiUpdate(
 	}
 
 	// Init on first use:
-	if (!gl_forces_ && viz)
+	if (!glForces_ && viz)
 	{
 		// Visualization of forces:
-		gl_forces_ = mrpt::opengl::CSetOfLines::Create();
-		gl_forces_->setLineWidth(3.0);
-		gl_forces_->setColor_u8(0xff, 0xff, 0xff);
-		viz->get().insert(gl_forces_);	// forces are in global coords
+		glForces_ = mrpt::opengl::CSetOfLines::Create();
+		glForces_->setLineWidth(3.0);
+		glForces_->setColor_u8(0xff, 0xff, 0xff);
+		viz->get().insert(glForces_);  // forces are in global coords
+	}
+	if (!glMotorTorques_ && viz)
+	{
+		// Visualization of forces:
+		glMotorTorques_ = mrpt::opengl::CSetOfLines::Create();
+		glMotorTorques_->setLineWidth(3.0);
+		glMotorTorques_->setColor_u8(0xff, 0x00, 0x00);
+		viz->get().insert(glMotorTorques_);	 // torques are in global coords
 	}
 
 	// Other common stuff:
@@ -814,8 +835,8 @@ void VehicleBase::registerOnServer(mvsim::Client& c)
 
 void VehicleBase::chassisAndWheelsVisible(bool visible)
 {
-	if (gl_chassis_) gl_chassis_->setVisibility(visible);
-	for (auto& glW : gl_wheels_)
+	if (glChassis_) glChassis_->setVisibility(visible);
+	for (auto& glW : glWheels_)
 	{
 		if (glW) glW->setVisibility(visible);
 	}

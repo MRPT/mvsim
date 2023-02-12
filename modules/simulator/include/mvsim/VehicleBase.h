@@ -218,11 +218,14 @@ class VehicleBase : public VisualObject, public Simulable
 	// Called from internalGuiUpdate()
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 
-	mrpt::opengl::CSetOfObjects::Ptr gl_chassis_;
-	std::vector<mrpt::opengl::CSetOfObjects::Ptr> gl_wheels_;
-	mrpt::opengl::CSetOfLines::Ptr gl_forces_;
-	std::mutex force_segments_for_rendering_cs_;
-	std::vector<mrpt::math::TSegment3D> force_segments_for_rendering_;
+	mrpt::opengl::CSetOfObjects::Ptr glChassis_;
+	std::vector<mrpt::opengl::CSetOfObjects::Ptr> glWheels_;
+	mrpt::opengl::CSetOfLines::Ptr glForces_;
+	mrpt::opengl::CSetOfLines::Ptr glMotorTorques_;
+
+	std::vector<mrpt::math::TSegment3D> forceSegmentsForRendering_;
+	std::vector<mrpt::math::TSegment3D> torqueSegmentsForRendering_;
+	std::mutex forceSegmentsForRenderingMtx_;
 
    public:	// data logger header entries
 	static constexpr char DL_TIMESTAMP[] = "timestamp";

@@ -18,7 +18,7 @@
 namespace mvsim
 {
 /** The default friction model for interaction between each wheel-ground contact
- * point
+ * point. No rolling resistance.
  */
 class DefaultFriction : public FrictionBase
 {

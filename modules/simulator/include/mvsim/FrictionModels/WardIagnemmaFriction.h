@@ -35,8 +35,8 @@ class WardIagnemmaFriction : public FrictionBase
 
    private:
 	double mu_;	 //!< friction coeficient (non-dimensional)
-	double C_damping_ = 1.0;  //!< For wheels "internal friction" (N*m*s/rad)
+	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
 	/**  Ward-Iagnemma rolling resistance coefficient */
-	double A_roll_ = 50.0, R1_ = 0.08, R2_ = 0.05;
+	double A_roll_ = 50.0, R1_ = 0.0075, R2_ = 0.02;
 };
 }  // namespace mvsim
