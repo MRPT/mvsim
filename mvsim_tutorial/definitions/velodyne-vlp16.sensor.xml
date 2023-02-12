@@ -3,12 +3,22 @@
 
     <vert_fov_degrees>${vert_fov_degrees|30}</vert_fov_degrees>
     <vert_nrays>${vert_nrays|16}</vert_nrays>
-    <horz_nrays>${horz_nrays|200}</horz_nrays>
 
-    <fbo_nrows>${fbo_nrows|320}</fbo_nrows>
+    <!-- Horizontal / azimuth angular resolution:
+        The rotation of the Velodyne VLP16 ("PUCK") sensor is configurable
+        between 300 RPM and 1200 RPM => 5-20 Hz.
+        Firing timing of the sensor is fixed at 55.296 μs (=18.084 kHz).
+
+        Set the "sensor_rpm" variable from the parent XML to automatically
+        adjust the number of points per horizontal line, and the sensor
+        rate (Hz).
+    -->
+    <sensor_period>$f{60.0/${sensor_rpm|600}}</sensor_period>
+    <horz_nrays>$f{(60.0/${sensor_rpm|600})/55.296e-6}</horz_nrays>
+
+    <fbo_nrows>${fbo_nrows|350}</fbo_nrows>
 
     <range_std_noise>${sensor_std_noise|0.01}</range_std_noise>
-    <sensor_period>${sensor_period_sec|0.10}</sensor_period>
     <max_range>${max_range|80.0}</max_range>
     
     <visual> <model_uri>../models/velodyne-vlp16.dae</model_uri> <model_roll>90</model_roll> </visual>

@@ -122,8 +122,7 @@
 		  sensor_std_noise="0.02"
 		  sensor_publish="false"
 		  sensor_name="lidar1"
-		  horz_nrays="300"
-		  fbo_nrows="$f{30*16}"
+		  sensor_rpm="600"
 		/>
 		
 		<include file="definitions/camera.sensor.xml" 
