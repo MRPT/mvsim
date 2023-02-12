@@ -395,7 +395,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	ASSERT_EQUAL_(wheelTorque.size(), nW);
 
 	// Part of the vehicle weight on each wheel:
-	const double gravity = getWorldObject()->get_gravity();
+	const double gravity = parent()->get_gravity();
 	MRPT_TODO("Use chassis cog point");
 	const double massPerWheel = getChassisMass() / nW;
 	const double weightPerWheel = massPerWheel * gravity;

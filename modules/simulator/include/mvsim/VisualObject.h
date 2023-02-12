@@ -46,8 +46,8 @@ class VisualObject
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical);
 
-	World* getWorldObject() { return world_; }
-	const World* getWorldObject() const { return world_; }
+	World* parent() { return world_; }
+	const World* parent() const { return world_; }
 
 	void customVisualVisible(const bool visible);
 	bool customVisualVisible() const;

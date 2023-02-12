@@ -179,7 +179,7 @@ void ElevationMap::simul_pre_timestep(const TSimulContext& context)
 	// For each vehicle:
 	// 1) Compute its 3D pose according to the mesh tilt angle.
 	// 2) Apply gravity force
-	const double gravity = getWorldObject()->get_gravity();
+	const double gravity = parent()->get_gravity();
 
 	ASSERT_(gl_mesh_);
 

@@ -47,7 +47,7 @@ void DefaultFriction::evaluate_friction(
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
 	const double mu = mu_;
-	const double gravity = my_vehicle_.getWorldObject()->get_gravity();
+	const double gravity = myVehicle_.parent()->get_gravity();
 	const double partial_mass = input.weight / gravity + input.wheel.mass;
 	const double max_friction = mu * partial_mass * gravity;
 

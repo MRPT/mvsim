@@ -361,7 +361,7 @@ void Block::create_multibody_system(b2World& world)
 	// -----------------------------------------------------------------
 	const size_t nContactPoints = 2;
 	const double weight_per_contact_point =
-		mass_ * getWorldObject()->get_gravity() / nContactPoints;
+		mass_ * parent()->get_gravity() / nContactPoints;
 	const double mu = groundFriction_;
 	const double max_friction = mu * weight_per_contact_point;
 

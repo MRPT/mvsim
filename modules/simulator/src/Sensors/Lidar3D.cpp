@@ -23,7 +23,7 @@
 using namespace mvsim;
 using namespace rapidxml;
 
-MRPT_TODO("Also store obs as CObservationRotatingScan?");
+MRPT_TODO("Also store obs as CObservationRotatingScan?")
 
 Lidar3D::Lidar3D(Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent)

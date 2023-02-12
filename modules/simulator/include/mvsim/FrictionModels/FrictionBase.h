@@ -64,12 +64,12 @@ class FrictionBase
 
    protected:
 	World* world_;
-	VehicleBase& my_vehicle_;
+	VehicleBase& myVehicle_;
 
 	std::weak_ptr<CSVLogger> logger_;
 };
 
-typedef std::shared_ptr<FrictionBase> FrictionBasePtr;
+using FrictionBasePtr = std::shared_ptr<FrictionBase>;
 
 // Class factory:
 typedef ClassFactory<

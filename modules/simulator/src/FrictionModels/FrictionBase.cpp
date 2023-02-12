@@ -35,7 +35,7 @@ void register_all_friction()
 }
 
 FrictionBase::FrictionBase(VehicleBase& my_vehicle)
-	: world_(my_vehicle.getWorldObject()), my_vehicle_(my_vehicle)
+	: world_(my_vehicle.parent()), myVehicle_(my_vehicle)
 {
 }
 
