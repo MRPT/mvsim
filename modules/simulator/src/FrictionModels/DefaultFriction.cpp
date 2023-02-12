@@ -39,9 +39,10 @@ void DefaultFriction::evaluate_friction(
 {
 	// Rotate wheel velocity vector from veh. frame => wheel frame
 	const mrpt::poses::CPose2D wRot(0, 0, input.wheel.yaw);
-	const mrpt::poses::CPose2D wRotInv(0, 0, -input.wheel.yaw);
-	mrpt::math::TPoint2D vel_w;
-	wRotInv.composePoint(input.wheelCogLocalVel, vel_w);
+
+	// Velocity of the wheel cog in the frame of the wheel itself:
+	const mrpt::math::TVector2D vel_w =
+		wRot.inverseComposePoint(input.wheelCogLocalVel);
 
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
