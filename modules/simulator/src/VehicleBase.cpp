@@ -420,15 +420,16 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 		friction_->setLogger(
 			getLoggerPtr(LOGGER_WHEEL + std::to_string(i + 1)));
+
 		// eval friction:
-		mrpt::math::TPoint2D net_force_;
-		friction_->evaluate_friction(fi, net_force_);
+		const mrpt::math::TPoint2D F_r = friction_->evaluate_friction(fi);
 
 		// Apply force:
-		const b2Vec2 wForce = b2dBody_->GetWorldVector(b2Vec2(
-			net_force_.x, net_force_.y));  // Force vector -> world coords
-		const b2Vec2 wPt = b2dBody_->GetWorldPoint(
-			b2Vec2(w.x, w.y));	// Application point -> world coords
+		// Force vector -> world coords
+		const b2Vec2 wForce = b2dBody_->GetWorldVector(b2Vec2(F_r.x, F_r.y));
+		// Application point -> world coords
+		const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
+
 		// printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f
 		// Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
 
@@ -447,9 +448,9 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
 				WL_VEL_Y, fi.wheelCogLocalVel.y);
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_FRIC_X, net_force_.x);
+				WL_FRIC_X, F_r.x);
 			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_FRIC_Y, net_force_.y);
+				WL_FRIC_Y, F_r.y);
 		}
 
 		// save it for optional rendering:

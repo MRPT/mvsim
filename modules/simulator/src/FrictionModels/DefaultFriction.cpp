@@ -33,9 +33,8 @@ DefaultFriction::DefaultFriction(
 }
 
 // See docs in base class.
-void DefaultFriction::evaluate_friction(
-	const FrictionBase::TFrictionInput& input,
-	mrpt::math::TPoint2D& out_result_force_local) const
+mrpt::math::TVector2D DefaultFriction::evaluate_friction(
+	const FrictionBase::TFrictionInput& input) const
 {
 	// Rotate wheel velocity vector from veh. frame => wheel frame
 	const mrpt::poses::CPose2D wRot(0, 0, input.wheel.yaw);
@@ -73,8 +72,10 @@ void DefaultFriction::evaluate_friction(
 	// required wheel \omega:case '4':
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 	const double lon_constraint_desired_wheel_w = vel_w.x / R;
+
 	const double desired_wheel_w_impulse =
 		(lon_constraint_desired_wheel_w - input.wheel.getW());
+
 	const double desired_wheel_alpha =
 		desired_wheel_w_impulse / input.context.dt;
 
@@ -110,5 +111,7 @@ void DefaultFriction::evaluate_friction(
 		wheel_long_friction, wheel_lat_friction);
 
 	// Rotate to put: Wheel frame ==> vehicle local framework:
-	wRot.composePoint(result_force_wrt_wheel, out_result_force_local);
+	mrpt::math::TVector2D res;
+	wRot.composePoint(result_force_wrt_wheel, res);
+	return res;
 }

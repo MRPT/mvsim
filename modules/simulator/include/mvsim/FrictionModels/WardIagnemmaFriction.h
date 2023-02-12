@@ -30,14 +30,13 @@ class WardIagnemmaFriction : public FrictionBase
 		VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
 
 	// See docs in base class.
-	virtual void evaluate_friction(
-		const FrictionBase::TFrictionInput& input,
-		mrpt::math::TPoint2D& out_result_force_local) const override;
+	virtual mrpt::math::TVector2D evaluate_friction(
+		const FrictionBase::TFrictionInput& input) const override;
 
    private:
 	double mu_;	 //!< friction coeficient (non-dimensional)
-	double C_damping_;	//!< For wheels "internal friction" (N*m*s/rad)
-	double A_roll_, R1_,
-		R2_;  //!< Ward-Iagnemma rolling resistance coefficient
+	double C_damping_ = 1.0;  //!< For wheels "internal friction" (N*m*s/rad)
+	/**  Ward-Iagnemma rolling resistance coefficient */
+	double A_roll_ = 50.0, R1_ = 0.08, R2_ = 0.05;
 };
 }  // namespace mvsim

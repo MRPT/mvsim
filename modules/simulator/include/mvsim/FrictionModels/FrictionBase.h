@@ -54,11 +54,10 @@ class FrictionBase
 		}
 	};
 
-	/** Evaluates the net force on this wheel (in local coordinates). Refer to
-	 * the manual for the theorical model. */
-	virtual void evaluate_friction(
-		const FrictionBase::TFrictionInput& input,
-		mrpt::math::TPoint2D& out_result_force_local) const = 0;
+	/** Evaluates the net force on this wheel (in vehicle local coordinates).
+	 * Refer to the manual for the theorical model. */
+	virtual mrpt::math::TVector2D evaluate_friction(
+		const FrictionBase::TFrictionInput& input) const = 0;
 
 	void setLogger(const std::weak_ptr<CSVLogger>& logger);
 

@@ -101,7 +101,7 @@
     <!-- Friction force simulation -->
     <friction class="default">
         <mu>0.9</mu>
-        <C_damping>0.1</C_damping>
+        <C_damping>0.01</C_damping>
     </friction>
 
 </vehicle:class>

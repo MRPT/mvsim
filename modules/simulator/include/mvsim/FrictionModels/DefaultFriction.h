@@ -28,9 +28,8 @@ class DefaultFriction : public FrictionBase
 		VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
 
 	// See docs in base class.
-	virtual void evaluate_friction(
-		const FrictionBase::TFrictionInput& input,
-		mrpt::math::TPoint2D& out_result_force_local) const override;
+	virtual mrpt::math::TVector2D evaluate_friction(
+		const FrictionBase::TFrictionInput& input) const override;
 
    private:
 	double mu_;	 //!< friction coeficient (non-dimensional)
