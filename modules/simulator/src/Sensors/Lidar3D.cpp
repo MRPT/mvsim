@@ -45,6 +45,7 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["pose_3d"] = TParamEntry("%pose3d", &sensorPoseOnVeh_);
 	params["range_std_noise"] = TParamEntry("%lf", &rangeStdNoise_);
 	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
+	params["min_range"] = TParamEntry("%f", &minRange_);
 	params["max_range"] = TParamEntry("%f", &maxRange_);
 	params["viz_pointSize"] = TParamEntry("%f", &viz_pointSize_);
 	params["ignore_parent_body"] = TParamEntry("%bool", &ignore_parent_body_);
@@ -321,7 +322,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	cam.set6DOFMode(true);
 	cam.setProjectiveFromPinhole(camModel);
 
-	viewport->setViewportClipDistances(0.01, maxRange_);
+	viewport->setViewportClipDistances(minRange_, maxRange_);
 	mrpt::math::CMatrixFloat depthImage;
 
 	// make owner's own body invisible?

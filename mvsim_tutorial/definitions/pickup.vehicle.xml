@@ -1,0 +1,76 @@
+<!--
+  Vehicle class definition file.
+  Intended to be included into world XML files.
+  Common sensors could be included here, but they are left to be included in 
+  class instantiations.
+  Refer to mvsim_tutorial example files.
+-->
+<vehicle:class name="pickup">
+    <!--  Dynamical model -->
+    <dynamics class="ackermann">
+        <!-- Rear wheels -->
+        <rl_wheel pos="-1.8  0.9" mass="6.0" width="0.20" diameter="0.8" />
+        <rr_wheel pos="-1.8 -0.9" mass="6.0" width="0.20" diameter="0.8" />
+        
+        <!-- Front wheels -->
+        <fl_wheel mass="6.0" width="0.20" diameter="0.8" />
+        <fr_wheel mass="6.0" width="0.20" diameter="0.8" />
+        <f_wheels_x>1.7</f_wheels_x>
+        <f_wheels_d>1.85</f_wheels_d>
+        <max_steer_ang_deg>40.0</max_steer_ang_deg>
+
+        <chassis mass="2000.0" zmin="0.01" zmax="1.9">
+            <shape_from_visual/> <!-- automatic size from 3D model file -->
+        </chassis>
+
+        <!--   Motor controller -->
+        <controller class="twist_front_steer_pid">
+            <!-- Params -->
+            <KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+            <V>0.0</V><W>0</W>
+            <max_torque>600</max_torque>
+        </controller>
+
+        <!-- Available types: 
+            open_front
+            open_rear
+            open_4wd
+            torsen_front
+            torsen_rear
+            torsen_4wd -->
+        <drivetrain type="torsen_4wd">
+            <front_rear_split>0.5</front_rear_split>
+            <front_rear_bias>1.5</front_rear_bias>
+
+            <front_left_right_split>0.5</front_left_right_split>
+            <front_left_right_bias>1.5</front_left_right_bias>
+
+            <rear_left_right_split>0.5</rear_left_right_split>
+            <rear_left_right_bias>1.5</rear_left_right_bias>
+        </drivetrain>
+
+    </dynamics>
+
+    <!-- Friction force simulation -->
+    <friction class="default">
+        <mu>0.7</mu>
+        <C_damping>0.05</C_damping>
+    </friction>
+
+    <!--<friction class="wardiagnemma">
+        <mu>0.7</mu>
+        <C_damping>10</C_damping>
+        <A_roll>50</A_roll>
+        <R1>0.0075</R1>
+        <R2>0.02</R2>
+    </friction>-->
+
+    <!--  Custom vehicle visualization model -->
+    <!-- 3D model filename to load (local or remote http://uri ) -->
+    <visual>
+        <model_uri>https://mrpt.github.io/mvsim-models/vehicle_pickup.zip/vehicle_pickup/pickup.dae</model_uri>
+        <model_yaw>-90.0</model_yaw>
+        <model_roll>90.0</model_roll>
+    </visual>
+
+</vehicle:class>

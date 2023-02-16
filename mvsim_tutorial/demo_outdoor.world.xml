@@ -1,0 +1,86 @@
+<mvsim_world version="1.0">
+	<!-- General simulation options -->
+	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<cam_distance>35</cam_distance>
+		<fov_deg>60</fov_deg>
+		<refresh_fps>15</refresh_fps>
+		<!-- <follow_vehicle>r1</follow_vehicle> -->
+	</gui>
+
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+
+	<variable name="LANE_WIDTH" value="5.3"/>
+
+	<!-- ground -->
+	<element class="horizontal_plane">
+		<!--<cull_face>BACK</cull_face>-->
+		<x_min>-100</x_min><y_min>$f{LANE_WIDTH*(-0.5-0.25)}</y_min><x_max>100</x_max><y_max>$f{LANE_WIDTH*(0.5-0.25)}</y_max> <z>0.01</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneSolidLineRoadClean01_1K_BaseColor.png</texture>
+		<texture_size_x>$f{2*LANE_WIDTH}</texture_size_x>
+		<texture_size_y>$f{LANE_WIDTH}</texture_size_y>
+	</element>
+
+	<element class="horizontal_plane">
+		<x_min>-100</x_min><y_min>-100</y_min><x_max>100</x_max><y_max>100</y_max> <z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt01_512_BaseColor.png</texture>
+		<texture_size_x>1.5</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>
+	</element>
+
+	<!-- =============================
+		   Vehicle classes definition
+	     ============================= -->
+	<include file="definitions/pickup.vehicle.xml" />
+
+	<!-- ========================
+		   Vehicle(s) definition
+	     ======================== -->
+	<vehicle name="r1" class="pickup">
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<!-- Sensors -->
+		<include file="definitions/ouster-os1.sensor.xml"
+		  sensor_x="0.3" sensor_y="0" sensor_z="2.4" sensor_yaw="0"
+		  sensor_publish="false"
+		  sensor_name="lidar1"
+		  sensor_rpm="300"
+		/>
+	</vehicle>
+
+	<!-- ======================================
+	      Obstacle blocks classes definition
+	     ====================================== -->
+	<block:class name="power_plant">
+		<static>true</static> <!-- Does not move -->
+		<zmax>20.0</zmax>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/PowerPlant.zip/PowerPlant/powerplant.dae</model_uri>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<!-- ======================================
+	      Object instances
+	     ====================================== -->
+	<!-- You can assign an optional custom name to each object, as an attribute to block, like name="shelf_001", etc. -->
+
+	<!-- All coordinates are global coords: 
+	     SE(2) <init_pose>x y yaw(deg)</init_pose> or
+	     SE(3) <init_pose3d>x y z yaw(deg) pitch(deg) roll(deg)</init_pose3d> 
+	-->
+
+	<block class="power_plant">
+		<init_pose>30 50 180</init_pose>
+	</block>
+
+
+</mvsim_world>

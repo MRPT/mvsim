@@ -54,6 +54,7 @@ class Lidar3D : public SensorBase
 	bool ignore_parent_body_ = false;
 
 	float viz_pointSize_ = 3.0f;
+	float minRange_ = 0.01f;
 	float maxRange_ = 80.0f;
 	double vertical_fov_ = mrpt::DEG2RAD(30.0);
 	int vertNumRays_ = 16, horzNumRays_ = 180;
