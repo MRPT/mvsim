@@ -1,19 +1,30 @@
 <sensor class="lidar3d" name="${sensor_name|lidar1}">
     <pose_3d> ${sensor_x|0.5}  ${sensor_y|0.0}  ${sensor_z|0.7}  ${sensor_yaw|0.0} ${sensor_pitch|0.0} ${sensor_roll|0.0}</pose_3d>
 
-    <vert_fov_degrees>${vert_fov_degrees|90}</vert_fov_degrees>
     <vert_nrays>${vert_nrays|128}</vert_nrays>
 
+    <!-- Vertical FOV:
+         - OS0: 90deg
+         - OS1: 45deg
+         - OS2: 22.5deg
+    -->
+    <vert_fov_degrees>${vert_fov_degrees|22.5}</vert_fov_degrees>
+
     <!-- Horizontal / azimuth angular resolution:
+
+        Modes (number of "columns per lidar frame" x frame rate):
+        - 512 x {10,20} Hz
+        - 1024 x {10,20} Hz
+        - 2048 x 10 Hz
 
         Set the "sensor_rpm" variable from the parent XML to automatically
         adjust the number of points per horizontal line, and the sensor
         rate (Hz).
     -->
-    <sensor_period>$f{60.0/${sensor_rpm|300}}</sensor_period>
-    <horz_nrays>$f{(60.0/${sensor_rpm|300})/55.296e-6}</horz_nrays>
+    <sensor_period>${sensor_period_sec|0.10}</sensor_period>
+    <horz_nrays>${sensor_horz_nrays|1024}</horz_nrays>
 
-    <fbo_nrows>${fbo_nrows|600}</fbo_nrows>
+    <fbo_nrows>${fbo_nrows|500}</fbo_nrows>
 
     <range_std_noise>${sensor_std_noise|0.025}</range_std_noise>
     <min_range>${min_range|0.5}</min_range>
