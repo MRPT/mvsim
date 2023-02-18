@@ -28,7 +28,11 @@ Docs
 ----------
   * [Main documentation site](https://mvsimulator.readthedocs.io/en/latest/)
   * https://wiki.ros.org/mvsim
-  
+
+If you clone this repository, remember to checkout the git submodules too:
+
+    git clone https://github.com/MRPT/mvsim.git --recursive
+
 Launch demos
 --------------
 
@@ -36,7 +40,6 @@ Standalone:
 
     mvsim launch mvsim_tutorial/demo_warehouse.world.xml
     mvsim launch mvsim_tutorial/demo_2robots.world.xml
-    
     mvsim launch mvsim_tutorial/test_mesh.world.xml
 
 

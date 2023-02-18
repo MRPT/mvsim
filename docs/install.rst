@@ -23,14 +23,21 @@ See `next steps <first-steps.html>`_ on how to launch demo files.
 Build from sources
 ----------------------
 
-Dependencies:
+Clone the git repository, including the submodules:
+
+.. code-block:: bash
+
+ git clone https://github.com/MRPT/mvsim.git --recursive
+
+
+You will need these dependencies:
 
 - A decent C++17 compiler.
 - CMake >= 3.9
 - MRPT (>=2.5.6): In Windows, build from sources or install precompiled binaries.
 - Box2D (>=2.4): It will use an embedded copy (git submodule) if no (or too old) system version is found.
 
-In Ubuntu, this will install all requirements:
+In Ubuntu, all requirements can be satisfied executing:
 
 .. code-block:: bash
 
@@ -46,7 +53,7 @@ In Ubuntu, this will install all requirements:
    libpython3-dev 
 
 
-Compile as usual:
+Compile as usual in CMake projects:
 
 .. code-block:: bash
 
