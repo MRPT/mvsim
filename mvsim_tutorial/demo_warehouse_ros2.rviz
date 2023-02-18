@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /PointCloud21
         - /PointCloud21/Topic1
         - /Image1
       Splitter Ratio: 0.5
@@ -85,8 +84,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 5.107001781463623
-        Min Value: -0.02086019515991211
+        Max Value: 3.0364725589752197
+        Min Value: -0.019160747528076172
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -129,6 +128,22 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /camera1
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        mvsim.chassis_shape: true
+        mvsim.chassis_shape.wheel0: true
+        mvsim.chassis_shape.wheel1: true
+        mvsim.chassis_shape.wheel2: true
+        mvsim.chassis_shape.wheel3: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /chassis_markers
       Value: true
   Enabled: true
   Global Options:
@@ -176,25 +191,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 24.108495712280273
+      Distance: 27.848024368286133
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.07235617935657501
-        Y: 0.12432430684566498
-        Z: 0.3973599374294281
+        X: 7.518036842346191
+        Y: 9.04400634765625
+        Z: -2.008906126022339
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6453982591629028
+      Pitch: 0.7453979253768921
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.425439834594727
+      Yaw: 3.577254056930542
     Saved: ~
 Window Geometry:
   Displays:

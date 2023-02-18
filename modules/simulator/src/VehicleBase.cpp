@@ -421,7 +421,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		friction_->setLogger(
 			getLoggerPtr(LOGGER_WHEEL + std::to_string(i + 1)));
 
-		// eval friction:
+		// eval friction (in the frame of the vehicle):
 		const mrpt::math::TPoint2D F_r = friction_->evaluate_friction(fi);
 
 		// Apply force:
