@@ -18,6 +18,10 @@
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 
+#if MRPT_VERSION >= 0x270
+#include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
+#endif
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -221,6 +225,12 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		p.height = FBO_NROWS;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
+#if MRPT_VERSION >= 0x270
+		// Do the log->linear conversion ourselves for this sensor, since only a
+		// few depth points are actually used.
+		p.raw_depth = true;
+#endif
+
 		fbo_renderer_depth_ = std::make_shared<mrpt::opengl::CFBORender>(p);
 	}
 
@@ -339,6 +349,18 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		if (veh) veh->chassisAndWheelsVisible(false);
 	}
 
+#if MRPT_VERSION >= 0x270
+	// Do the log->linear conversion ourselves for this sensor,
+	// since only a few depth points are actually used:
+	constexpr int DEPTH_LOG2LIN_BITS = 18;
+	using depth_log2lin_t =
+		mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
+	auto& depth_log2lin = depth_log2lin_t::Instance();
+	const auto& depth_log2lin_lut =
+		depth_log2lin.lut_from_zn_zf(minRange_, maxRange_);
+
+#endif
+
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
 		const double thisRenderMidAngle =
@@ -368,35 +390,18 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		tleRender.stop();
 
 		// Add random noise:
+		// Each thread must create its own rng:
+		thread_local mrpt::random::CRandomGenerator rng;
+		thread_local std::vector<float> noiseSeq;
+		thread_local size_t noiseIdx = 0;
+		constexpr size_t noiseLen = 7823;  // prime
 		if (rangeStdNoise_ > 0)
 		{
-			// Each thread must create its own rng:
-			thread_local mrpt::random::CRandomGenerator rng;
-			thread_local std::vector<float> noiseSeq;
-			thread_local size_t noiseIdx = 0;
-			constexpr size_t noiseLen = 7823;  // prime
 			if (noiseSeq.empty())
 			{
 				noiseSeq.reserve(noiseLen);
 				for (size_t i = 0; i < noiseLen; i++)
 					noiseSeq.push_back(rng.drawGaussian1D(0.0, rangeStdNoise_));
-			}
-
-			auto tleStore = mrpt::system::CTimeLoggerEntry(
-				world_->getTimeLogger(), "sensor.3Dlidar.noise");
-
-			float* d = depthImage.data();
-			const size_t N = depthImage.size();
-			for (size_t i = 0; i < N; i++)
-			{
-				if (d[i] == 0) continue;  // it was an invalid ray return.
-
-				const float dNoisy = d[i] + noiseSeq[noiseIdx++];
-				if (noiseIdx >= noiseLen) noiseIdx = 0;
-
-				if (dNoisy < 0 || dNoisy > maxRange_) continue;
-
-				d[i] = dNoisy;
 			}
 		}
 
@@ -420,7 +425,32 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				ASSERTDEB_LT_(u, depthImage.cols());
 				ASSERTDEB_LT_(v, depthImage.rows());
 
-				const float d = depthImage(v, u);
+				// Depth:
+				float d = depthImage(v, u);
+
+				// Linearize:
+#if MRPT_VERSION >= 0x270
+				// Do the log->linear conversion ourselves for this sensor,
+				// since only a few depth points are actually used:
+
+				// map d in [-1.0f,+1.0f] ==> real depth values:
+				d = depth_log2lin_lut
+					[(d + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+#else
+				// "d" is already linear depth
+#endif
+				// Add noise:
+				if (d != 0)	 // invalid range
+				{
+					const float dNoisy = d + noiseSeq[noiseIdx++];
+					if (noiseIdx >= noiseLen) noiseIdx = 0;
+
+					if (dNoisy < 0 || dNoisy > maxRange_) continue;
+
+					d = dNoisy;
+				}
+
+				// un-project: depth -> range:
 				const float range = d * e.depth2range;
 
 				if (range <= 0 || range >= maxRange_) continue;	 // invalid

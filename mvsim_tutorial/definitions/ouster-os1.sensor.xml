@@ -16,15 +16,11 @@
         - 512 x {10,20} Hz
         - 1024 x {10,20} Hz
         - 2048 x 10 Hz
-
-        Set the "sensor_rpm" variable from the parent XML to automatically
-        adjust the number of points per horizontal line, and the sensor
-        rate (Hz).
     -->
     <sensor_period>${sensor_period_sec|0.10}</sensor_period>
     <horz_nrays>${sensor_horz_nrays|1024}</horz_nrays>
 
-    <fbo_nrows>${fbo_nrows|500}</fbo_nrows>
+    <fbo_nrows>${fbo_nrows|2000}</fbo_nrows>
 
     <range_std_noise>${sensor_std_noise|0.025}</range_std_noise>
     <min_range>${min_range|0.5}</min_range>
