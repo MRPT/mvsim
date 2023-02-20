@@ -45,6 +45,9 @@ class ElevationMap : public WorldElementBase
 	bool firstSceneRendering_ = true;
 	float resolution_ = 1.0f;
 
+	float textureExtensionX_ = 0;  //!< 0=auto
+	float textureExtensionY_ = 0;  //!< 0=auto
+
 	/** A copy of elevation data in gl_mesh_. Coordinate order is (x,y) */
 	mrpt::math::CMatrixFloat meshCacheZ_;
 

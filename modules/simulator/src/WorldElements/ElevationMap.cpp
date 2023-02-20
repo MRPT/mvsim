@@ -55,6 +55,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["mesh_color"] = TParamEntry("%color", &mesh_color);
 
 	params["resolution"] = TParamEntry("%f", &resolution_);
+	params["texture_extension_x"] = TParamEntry("%f", &textureExtensionX_);
+	params["texture_extension_y"] = TParamEntry("%f", &textureExtensionY_);
+
 	params["debug_show_contact_points"] =
 		TParamEntry("%bool", &debugShowContactPoints_);
 
@@ -100,7 +103,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	bool has_mesh_image = false;
 	if (!sTextureImgFile.empty())
 	{
-		sTextureImgFile = world_->local_to_abs_path(sTextureImgFile);
+		sTextureImgFile = world_->xmlPathToActualPath(sTextureImgFile);
 
 		if (!mesh_image.loadFromFile(sTextureImgFile))
 			throw std::runtime_error(mrpt::format(
@@ -116,10 +119,12 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	if (has_mesh_image)
 	{
-		ASSERT_EQUAL_(mesh_image.getWidth(), (size_t)elevation_data.cols());
-		ASSERT_EQUAL_(mesh_image.getHeight(), (size_t)elevation_data.rows());
-
 		gl_mesh_->assignImageAndZ(mesh_image, elevation_data);
+
+#if MRPT_VERSION >= 0x270
+		gl_mesh_->setMeshTextureExtension(
+			textureExtensionX_, textureExtensionY_);
+#endif
 	}
 	else
 	{
