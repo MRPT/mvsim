@@ -2,6 +2,34 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Support for SkyBox rendering (requires MRPT >=2.7.0)
+* More camera options in world.xml files (initial azimuth, elevation, etc.)
+* Terrain elevation models now support repeated textures (requires MRPT >=2.7.0)
+* Faster 3D Lidar rendering (Requires MRPT >=2.7.0)
+* Add Ouster OS1 sensor file
+* Fix default friction coefficients; draw motor torques too
+* More accurate Velodyne simulation based on sensor_rpm parameter
+* Clearer code and code style conventions
+* Add "<static>" XML tag for large, static world objects
+* Support for XML tag <if ...>
+* Refactor xml parser as a registry of tag->function
+* Examples renamed for conciseness: 'mvsim_demo\_*' to 'demo\_*'
+* Added a "greenhouse" example world
+* Wheels: allow linked-yaw-objects in vehicle viz
+* Support several <visual> tags in custom visualization models
+* pybind11 sources simplification.
+  Simplify into one single source tree with conditional compilation for different pybind versions.
+* Emit clearer warnings and earlier detection of wrong bounding boxes
+* BUGFIX: program did not quit if using a non-existing launch file.
+* BUGFIX: unneeded friction coefficient for chassis body
+* BUGFIX: bbox for compound vehicle models
+* BUGFIX: <for> loops ignored more than one inner tag
+* BUGFIX: Add epsilon value for bbox determination in 3D models
+* Controllers: Made threadsafe
+* Contributors: Fernando Cañadas, Jose Luis Blanco-Claraco
+
 0.5.2 (2023-01-27)
 ------------------
 * FIX build farm errors in armhf builds
