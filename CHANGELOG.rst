@@ -22,13 +22,14 @@ Forthcoming
 * pybind11 sources simplification.
   Simplify into one single source tree with conditional compilation for different pybind versions.
 * Emit clearer warnings and earlier detection of wrong bounding boxes
+* Add reference to (preprint) paper
+* Controllers: Made threadsafe
+* Contributors: Fernando Cañadas, Jose Luis Blanco-Claraco
 * BUGFIX: program did not quit if using a non-existing launch file.
 * BUGFIX: unneeded friction coefficient for chassis body
 * BUGFIX: bbox for compound vehicle models
 * BUGFIX: <for> loops ignored more than one inner tag
 * BUGFIX: Add epsilon value for bbox determination in 3D models
-* Controllers: Made threadsafe
-* Contributors: Fernando Cañadas, Jose Luis Blanco-Claraco
 
 0.5.2 (2023-01-27)
 ------------------
