@@ -11,6 +11,7 @@
 
 #include <mrpt/core/optional_ref.h>
 #include <mrpt/math/TBoundingBox.h>
+#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/opengl_frwds.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mvsim/basic_types.h>

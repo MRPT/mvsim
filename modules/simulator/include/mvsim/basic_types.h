@@ -36,7 +36,6 @@ namespace mrpt
 {
 namespace opengl
 {
-class COpenGLScene;
 class CSetOfObjects;
 }  // namespace opengl
 namespace slam

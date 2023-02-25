@@ -13,6 +13,7 @@
 #include <mvsim/WorldElements/HorizontalPlane.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/WorldElements/PointCloud.h>
+#include <mvsim/WorldElements/SkyBox.h>
 #include <mvsim/WorldElements/VerticalPlane.h>
 
 #include <map>
@@ -42,6 +43,7 @@ void register_all_world_elements()
 	REGISTER_WORLD_ELEMENT("horizontal_plane", HorizontalPlane)
 	REGISTER_WORLD_ELEMENT("vertical_plane", VerticalPlane)
 	REGISTER_WORLD_ELEMENT("pointcloud", PointCloud)
+	REGISTER_WORLD_ELEMENT("skybox", SkyBox)
 }
 
 WorldElementBase::Ptr WorldElementBase::factory(

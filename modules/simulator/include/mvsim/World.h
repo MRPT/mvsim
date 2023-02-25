@@ -318,10 +318,18 @@ class World : public mrpt::system::COutputLogger
 	auto& getListOfSimulableObjectsMtx() { return simulableObjectsMtx_; }
 
 	mrpt::system::CTimeLogger& getTimeLogger() { return timlogger_; }
+
 	/** Replace macros, prefix the base_path if input filename is relative, etc.
+	 *  \sa xmlPathToActualPath
 	 */
 	std::string local_to_abs_path(const std::string& in_path) const;
 
+	/** Parses URIs in all the forms explained in
+	 * RemoteResourcesManager::resolve_path(), then passes it through
+	 * local_to_abs_path().
+	 *
+	 *  \sa local_to_abs_path
+	 */
 	std::string xmlPathToActualPath(const std::string& modelURI) const;
 
 	/** @} */

@@ -6,8 +6,8 @@
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>50</cam_distance>
-		<fov_deg>60</fov_deg>
+		<cam_distance>30</cam_distance>
+		<fov_deg>80</fov_deg>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
@@ -17,16 +17,25 @@
 	     ======================== -->
 	<element class='elevation_map'>
 		<!-- File can be an image or a .txt matrix -->
-		<resolution>0.25</resolution>
+		<resolution>0.5</resolution>
 		<elevation_image>elevation_mesh1.png</elevation_image>
-		<elevation_image_min_z>0</elevation_image_min_z>
+		<elevation_image_min_z>-2</elevation_image_min_z>
 		<elevation_image_max_z>2.0</elevation_image_max_z>
 		
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
-		<texture_extension_x>1.0</texture_extension_x>
-		<texture_extension_y>1.0</texture_extension_y>
+		<texture_extension_x>2.0</texture_extension_x>
+		<texture_extension_y>2.0</texture_extension_y>
 		
 		<mesh_color>#a0e0a0</mesh_color> <!-- Used only if mesh_image is not provided -->
+	</element>
+
+	<!-- A SkyBox decoration -->
+	<element class='skybox'>
+		<!-- Provide the URI printf-like "pattern" to the six texture files, 
+		     such that replacing "%s" with the following strings gives the path
+		     to the files: "Up", "Right", "Left", "Front", "Down", "Back".
+		 -->
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/SunSet.zip/SunSet/SunSet%s.jpg</textures>
 	</element>
 	
 	

@@ -35,7 +35,8 @@ GroundGrid::GroundGrid(World* parent, const rapidxml::xml_node<char>* root)
 	loadConfigFrom(root);
 }
 
-GroundGrid::~GroundGrid() {}
+GroundGrid::~GroundGrid() = default;
+
 void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	if (!root) return;	// Assume defaults
