@@ -33,6 +33,20 @@ This project includes a C++ library `mvsim`, a standalone app, and a ROS1 node.
 
 Licensed under the permissive 3-clause BSD License.
 
+If you want to cite MVSim in your work, please use:
+
+.. code-block:: bibtex
+
+ @misc{mvsim,
+  doi = {10.48550/ARXIV.2302.11033},
+  url = {https://arxiv.org/abs/2302.11033},
+  author = {Blanco-Claraco, José-Luis and Tymchenko, Borys and Mañas-Alvarez, Francisco José and Cañadas-Aránega, Fernando and López-Gázquez, Ángel and Moreno, José Carlos},  
+  title = {MultiVehicle Simulator (MVSim): lightweight dynamics simulator for multiagents and mobile robotics research},  
+  publisher = {arXiv},
+  year = {2023}
+ }
+
+
 .. figure:: https://mrpt.github.io/mvsim-models/anims/warehouse-demo-mvsim.gif
   :alt: MVSIM Simulating Jackal Robot in ROS2
   :target: first-steps.html

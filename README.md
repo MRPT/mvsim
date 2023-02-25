@@ -15,10 +15,24 @@ MultiVehicle simulator (MVSIM)
 Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
 It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and accurate simulation of typical robot sensors (e.g. 2D and 3D lidars).
 
-This package includes C++ libraries, standalone applications, and ROS-1 and ROS-2 nodes.
+This package includes C++ libraries, standalone applications, and ROS 1 and ROS 2 nodes.
 
 License: 3-clause BSD License
 Copyright (C) 2014-2023 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
+
+Please, refer to [the MVSim paper](https://arxiv.org/abs/2302.11033) for a gentle introduction
+to the project architecture.
+If you want to cite MVSim in your work, please use:
+
+    @misc{mvsim,
+      doi = {10.48550/ARXIV.2302.11033},
+      url = {https://arxiv.org/abs/2302.11033},
+      author = {Blanco-Claraco, José-Luis and Tymchenko, Borys and Mañas-Alvarez, Francisco José and Cañadas-Aránega, Fernando and López-Gázquez, Ángel and Moreno, José Carlos},  
+      title = {MultiVehicle Simulator (MVSim): lightweight dynamics simulator for multiagents and mobile robotics research},  
+      publisher = {arXiv},
+      year = {2023}
+    }
+
 
 ![screenshot-demo](docs/imgs/mvsim-ros2-demo.gif)
 
