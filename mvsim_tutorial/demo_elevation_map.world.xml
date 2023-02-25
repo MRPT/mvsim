@@ -5,8 +5,10 @@
 	<!-- GUI options -->
 	<gui>
 		<ortho>false</ortho>
-		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>30</cam_distance>
+		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>5</cam_distance>
+		<cam_azimuth>150</cam_azimuth>
+		<cam_elevation>15</cam_elevation>
 		<fov_deg>80</fov_deg>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
@@ -19,8 +21,8 @@
 		<!-- File can be an image or a .txt matrix -->
 		<resolution>0.5</resolution>
 		<elevation_image>elevation_mesh1.png</elevation_image>
-		<elevation_image_min_z>-2</elevation_image_min_z>
-		<elevation_image_max_z>2.0</elevation_image_max_z>
+		<elevation_image_min_z>-1.0</elevation_image_min_z>
+		<elevation_image_max_z>1.0</elevation_image_max_z>
 		
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
 		<texture_extension_x>2.0</texture_extension_x>
@@ -48,7 +50,7 @@
 		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="jackal">
-		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>4 -8 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 
 		<!--<publish>
 		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
@@ -71,4 +73,43 @@
 		  show_3d_pointcloud="false"
 		/>
 	</vehicle>
+	
+	
+
+	<!-- ======================================
+	      Obstacle blocks classes definition
+	     ====================================== -->
+	<block:class name="rock_01">
+		<static>true</static> <!-- Does not move -->
+		<zmax>1.0</zmax>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/rock01.zip/rock01/FallingRock01.dae</model_uri>
+		</visual>
+	</block:class>
+
+	<block:class name="rock_02">
+		<static>true</static> <!-- Does not move -->
+		<zmax>1.0</zmax>
+		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/rock02.zip/rock02/FallingRock02.dae</model_uri>
+		</visual>
+	</block:class>
+
+
+	<!-- ========================
+		Obstacle blocks
+	     ======================== -->
+	<variable name="ROCKS_SPREAD_X" value="35.0"></variable>
+	<variable name="ROCKS_SPREAD_Y" value="35.0"></variable>
+	<variable name="ROCKS_SPREAD_Z" value="0.5"></variable>
+	     
+	<for var="i" from="1" to="12">
+		<block class="rock_01">
+			<!-- In global coords: x,y,z, yaw(deg),pitch(deg),roll(deg) -->
+			<init_pose3d>$f{(-0.5+rand())*ROCKS_SPREAD_X} $f{(-0.5+rand())*ROCKS_SPREAD_Y} $f{(-0.5+rand())*ROCKS_SPREAD_Z} $f{-180+rand()*360} 0 0</init_pose3d>
+		</block>
+	</for>
+
 </mvsim_world>

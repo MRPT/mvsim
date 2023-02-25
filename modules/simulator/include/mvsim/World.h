@@ -456,6 +456,8 @@ class World : public mrpt::system::COutputLogger
 		bool show_sensor_points = true;
 		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
+		double camera_azimuth_deg = 45.0;
+		double camera_elevation_deg = 40.0;
 		double fov_deg = 60.0;
 		float clip_plane_min = 0.05f;
 		float clip_plane_max = 10e3f;
@@ -478,6 +480,8 @@ class World : public mrpt::system::COutputLogger
 			{"clip_plane_min", {"%f", &clip_plane_min}},
 			{"clip_plane_max", {"%f", &clip_plane_max}},
 			{"cam_distance", {"%lf", &camera_distance}},
+			{"cam_azimuth", {"%lf", &camera_azimuth_deg}},
+			{"cam_elevation", {"%lf", &camera_elevation_deg}},
 			{"cam_point_to", {"%point3d", &camera_point_to}},
 		};
 
