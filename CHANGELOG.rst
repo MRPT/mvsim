@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.0 (2023-02-26)
+------------------
 * Support for SkyBox rendering (requires MRPT >=2.7.0)
 * More camera options in world.xml files (initial azimuth, elevation, etc.)
 * Terrain elevation models now support repeated textures (requires MRPT >=2.7.0)
