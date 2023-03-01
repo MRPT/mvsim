@@ -465,6 +465,8 @@ class World : public mrpt::system::COutputLogger
 		std::string follow_vehicle;	 //!< Vehicle name to follow (empty=none)
 		bool headless = false;
 
+		bool enable_shadows = false;
+
 		const TParameterDefinitions params = {
 			{"win_w", {"%u", &win_w}},
 			{"win_h", {"%u", &win_h}},
@@ -483,6 +485,7 @@ class World : public mrpt::system::COutputLogger
 			{"cam_azimuth", {"%lf", &camera_azimuth_deg}},
 			{"cam_elevation", {"%lf", &camera_elevation_deg}},
 			{"cam_point_to", {"%point3d", &camera_point_to}},
+			{"enable_shadows", {"%bool", &enable_shadows}},
 		};
 
 		TGUI_Options() = default;
