@@ -41,6 +41,7 @@ class VerticalPlane : public WorldElementBase
 
 	float x0_ = -10, x1_ = -10, y0_ = -10, y1_ = 10;
 	mrpt::img::TColor color_ = {0xa0, 0xa0, 0xa0, 0xff};
+	bool enableShadows_ = true;
 
 	/** If defined, it overrides the plain color in color_ */
 	std::string textureFileName_;

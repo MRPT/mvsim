@@ -452,10 +452,14 @@ void World::internal_GUI_thread()
 			guiOptions_.camera_point_to.z);
 
 #if MRPT_VERSION >= 0x270
-		worldVisual_->getViewport()->enableShadowCasting(
-			guiOptions_.enable_shadows);
-		worldPhysical_.getViewport()->enableShadowCasting(
-			guiOptions_.enable_shadows);
+		auto vv = worldVisual_->getViewport();
+		auto vp = worldPhysical_.getViewport();
+
+		vv->enableShadowCasting(guiOptions_.enable_shadows);
+		vp->enableShadowCasting(guiOptions_.enable_shadows);
+
+		vv->setLightShadowClipDistances(0.01f, 50.0f);
+		vp->setLightShadowClipDistances(0.01f, 50.0f);
 #endif
 
 		// Main GUI loop

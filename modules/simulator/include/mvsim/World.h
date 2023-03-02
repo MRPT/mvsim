@@ -465,7 +465,7 @@ class World : public mrpt::system::COutputLogger
 		std::string follow_vehicle;	 //!< Vehicle name to follow (empty=none)
 		bool headless = false;
 
-		bool enable_shadows = false;
+		bool enable_shadows = true;
 
 		const TParameterDefinitions params = {
 			{"win_w", {"%u", &win_w}},

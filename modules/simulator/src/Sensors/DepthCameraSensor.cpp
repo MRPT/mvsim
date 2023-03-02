@@ -304,8 +304,7 @@ void DepthCameraSensor::simulateOn3DScene(
 
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);
-		viewport->lightParameters().ambient = {
-			ambient_light_, ambient_light_, ambient_light_, 1.0f};
+		viewport->lightParameters().ambient = ambient_light_;
 
 		fbo_renderer_rgb_->render_RGB(world3DScene, curObs.intensityImage);
 

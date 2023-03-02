@@ -540,6 +540,12 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	cam.set6DOFMode(true);
 	cam.setProjectiveFromPinhole(camModel);
 
+	// Disable rendering of shadows for this sensor:
+#if MRPT_VERSION >= 0x270
+	const bool wasShadowEnabled = viewport->isShadowCastingEnabled();
+	viewport->enableShadowCasting(false);
+#endif
+
 	viewport->setViewportClipDistances(0.01, curObs->maxRange);
 	mrpt::math::CMatrixFloat depthImage;
 
@@ -632,6 +638,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		if (visVeh) visVeh->customVisualVisible(formerVisVehState);
 		if (veh) veh->chassisAndWheelsVisible(formerVisVehState);
 	}
+
+#if MRPT_VERSION >= 0x270
+	viewport->enableShadowCasting(wasShadowEnabled);
+#endif
 
 	// Store generated obs:
 	{

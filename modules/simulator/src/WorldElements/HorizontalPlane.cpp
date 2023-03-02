@@ -50,6 +50,7 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	TParameterDefinitions params;
 	params["color"] = TParamEntry("%color", &color_);
+	params["enable_shadows"] = TParamEntry("%bool", &enableShadows_);
 
 	params["x_min"] = TParamEntry("%f", &x_min_);
 	params["x_max"] = TParamEntry("%f", &x_max_);
@@ -84,6 +85,10 @@ void HorizontalPlane::internalGuiUpdate(
 		gl_plane_->setLocation(0, 0, z_);
 		gl_plane_->setName("HorizontalPlane_"s + getName());
 
+#if MRPT_VERSION >= 0x270
+		gl_plane_->enableLighting(enableShadows_);
+#endif
+
 		gl_plane_->setColor_u8(color_);
 
 #if MRPT_VERSION >= 0x240
@@ -114,6 +119,8 @@ void HorizontalPlane::internalGuiUpdate(
 
 		gl_plane_text_ = mrpt::opengl::CSetOfTexturedTriangles::Create();
 		gl_plane_text_->setName("HorizontalPlane_"s + getName());
+
+		gl_plane_text_->enableLight(enableShadows_);
 
 		{
 			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;

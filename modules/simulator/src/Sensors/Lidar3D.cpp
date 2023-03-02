@@ -242,6 +242,12 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	auto viewport = world3DScene.getViewport();
 
+	// Disable rendering of shadows for this sensor:
+#if MRPT_VERSION >= 0x270
+	const bool wasShadowEnabled = viewport->isShadowCastingEnabled();
+	viewport->enableShadowCasting(false);
+#endif
+
 	auto& cam = fbo_renderer_depth_->getCamera(world3DScene);
 
 	const auto fixedAxisConventionRot =
@@ -476,6 +482,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		if (visVeh) visVeh->customVisualVisible(formerVisVehState);
 		if (veh) veh->chassisAndWheelsVisible(formerVisVehState);
 	}
+
+#if MRPT_VERSION >= 0x270
+	viewport->enableShadowCasting(wasShadowEnabled);
+#endif
 
 	// Store generated obs:
 	{

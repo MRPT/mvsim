@@ -37,6 +37,7 @@ class HorizontalPlane : public WorldElementBase
 
 	float x_min_ = -10, x_max_ = 10, y_min_ = -10, y_max_ = 10;
 	mrpt::img::TColor color_ = {0xa0, 0xa0, 0xa0, 0xff};
+	bool enableShadows_ = true;
 
 	/** If defined, it overrides the plain color in color_ */
 	std::string textureFileName_;

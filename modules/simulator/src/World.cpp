@@ -9,6 +9,7 @@
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
+#include <mrpt/version.h>
 #include <mvsim/World.h>
 
 #include <algorithm>  // count()
@@ -72,8 +73,12 @@ void World::internal_initialize()
 	ASSERT_(!initialized_);
 	ASSERT_(worldVisual_);
 
+#if MRPT_VERSION >= 0x270
+	worldVisual_->getViewport()->lightParameters().ambient = 0.5f;
+#else
 	worldVisual_->getViewport()->lightParameters().ambient = {
 		0.5f, 0.5f, 0.5f, 1.0f};
+#endif
 
 	// Create group for sensor viz:
 	{

@@ -11,6 +11,8 @@
 		<refresh_fps>15</refresh_fps>
 		<cam_point_to>1.5 13</cam_point_to>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
+		
+		<enable_shadows>true</enable_shadows>
 	</gui>
 
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
@@ -116,7 +118,7 @@
 		  sensor_name="scanner1"
 		/>-->
 
-		<include file="definitions/velodyne-vlp16.sensor.xml"
+	<!--	<include file="definitions/velodyne-vlp16.sensor.xml"
 		  sensor_x="-0.34" sensor_y="0.01" sensor_z="1.53" sensor_yaw="180"
 		  sensor_std_noise="0.02"
 		  sensor_publish="false"
@@ -129,6 +131,8 @@
 		  sensor_period_sec="0.10"
 		  sensor_name="cam1"
 		  />		
+		  
+		  -->
 	</vehicle>
 
 	<!-- ======================================
