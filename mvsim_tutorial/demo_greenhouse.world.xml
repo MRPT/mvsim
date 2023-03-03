@@ -13,6 +13,8 @@
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 		
 		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>160.0</light_azimuth_deg>
+		<light_elevation_deg>40.0</light_elevation_deg>
 	</gui>
 
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
@@ -118,7 +120,7 @@
 		  sensor_name="scanner1"
 		/>-->
 
-	<!--	<include file="definitions/velodyne-vlp16.sensor.xml"
+		<include file="definitions/velodyne-vlp16.sensor.xml"
 		  sensor_x="-0.34" sensor_y="0.01" sensor_z="1.53" sensor_yaw="180"
 		  sensor_std_noise="0.02"
 		  sensor_publish="false"
@@ -131,8 +133,7 @@
 		  sensor_period_sec="0.10"
 		  sensor_name="cam1"
 		  />		
-		  
-		  -->
+
 	</vehicle>
 
 	<!-- ======================================

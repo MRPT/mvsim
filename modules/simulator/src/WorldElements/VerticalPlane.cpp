@@ -209,6 +209,7 @@ void VerticalPlane::internalGuiUpdate(
 			t.vertices[1].uv = {u_max, v_min};
 			t.vertices[2].uv = {u_max, v_max};
 
+			t.computeNormals();
 			gl_plane_text_->insertTriangle(t);
 		}
 		{
@@ -221,6 +222,7 @@ void VerticalPlane::internalGuiUpdate(
 			t.vertices[1].uv = {u_max, v_max};
 			t.vertices[2].uv = {u_min, v_max};
 
+			t.computeNormals();
 			gl_plane_text_->insertTriangle(t);
 		}
 

@@ -95,6 +95,7 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["depth_noise_sigma"] = TParamEntry("%f", &depth_noise_sigma_);
 	params["show_3d_pointcloud"] = TParamEntry("%bool", &show_3d_pointcloud_);
 
+	MRPT_TODO("REMOVE??");
 	params["ambient_light"] = TParamEntry("%f", &ambient_light_);
 
 	// Parse XML params:

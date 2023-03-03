@@ -72,6 +72,7 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["clip_min"] = TParamEntry("%f", &rgbClipMin_);
 	params["clip_max"] = TParamEntry("%f", &rgbClipMax_);
 
+	MRPT_TODO("REMOVE??");
 	params["ambient_light"] = TParamEntry("%f", &ambient_light_);
 
 	// Parse XML params:

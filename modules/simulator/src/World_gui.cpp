@@ -20,6 +20,7 @@
 #include <mrpt/version.h>
 #include <mvsim/World.h>
 
+#include <cmath>  // cos(), sin()
 #include <rapidxml.hpp>
 
 #include "xml_utils.h"
@@ -451,6 +452,9 @@ void World::internal_GUI_thread()
 			guiOptions_.camera_point_to.x, guiOptions_.camera_point_to.y,
 			guiOptions_.camera_point_to.z);
 
+		setLightDirectionFromAzimuthElevation(
+			guiOptions_.light_azimuth, guiOptions_.light_elevation);
+
 #if MRPT_VERSION >= 0x270
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
@@ -458,8 +462,10 @@ void World::internal_GUI_thread()
 		vv->enableShadowCasting(guiOptions_.enable_shadows);
 		vp->enableShadowCasting(guiOptions_.enable_shadows);
 
-		vv->setLightShadowClipDistances(0.01f, 50.0f);
-		vp->setLightShadowClipDistances(0.01f, 50.0f);
+		// TODO: expose as parameters
+		vv->setLightShadowClipDistances(0.01f, 1000.0f);
+		vp->setLightShadowClipDistances(0.01f, 1000.0f);
+
 #endif
 
 		// Main GUI loop
@@ -958,4 +964,22 @@ void World::internalGraphicsLoopTasksForSimulation()
 			*glUserObjsPhysical_ = *guiUserObjectsPhysical_;
 		if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
 	}
+}
+
+void World::setLightDirectionFromAzimuthElevation(
+	const float azimuth, const float elevation)
+{
+	const mrpt::math::TPoint3Df dir = {
+		-cos(azimuth) * cos(elevation), -sin(azimuth) * cos(elevation),
+		-sin(elevation)};
+
+	ASSERT_(worldVisual_);
+
+	auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+
+	auto vv = worldVisual_->getViewport();
+	auto vp = worldPhysical_.getViewport();
+
+	vv->lightParameters().direction = dir;
+	vp->lightParameters().direction = dir;
 }

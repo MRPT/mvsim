@@ -10,7 +10,10 @@
 		<fov_deg>60</fov_deg>
 		<refresh_fps>40</refresh_fps>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
+
 		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>60.0</light_azimuth_deg>
+		<light_elevation_deg>75.0</light_elevation_deg>
 	</gui>
 
 	<variable name="CEILING_HEIGHT" value="6.0"></variable>
@@ -95,14 +98,14 @@
 		</publish>-->
 
 		<!-- Sensors -->
-<!--		<include file="definitions/lidar2d.sensor.xml"
+		<include file="definitions/lidar2d.sensor.xml"
 		  sensor_x="-0.15" sensor_z="0.25" sensor_yaw="180"
 		  sensor_period_sec="0.10"
 		  raytrace_3d="false"
 		  sensor_name="scanner1"
-		/>-->
+		/>
 
-		<!--<include file="definitions/velodyne-vlp16.sensor.xml"
+		<include file="definitions/velodyne-vlp16.sensor.xml"
 		  sensor_x="0.15" sensor_z="$f{0.27 + 0.09}"
 		  sensor_std_noise="0.02"
 		  sensor_publish="false"
@@ -115,7 +118,7 @@
 		  sensor_period_sec="0.10"
 		  sensor_name="cam1"
 		  />
-		  -->		
+
 	</vehicle>
 
 	<!-- ======================================

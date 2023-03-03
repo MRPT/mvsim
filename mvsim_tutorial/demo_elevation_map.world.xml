@@ -11,6 +11,10 @@
 		<cam_elevation>15</cam_elevation>
 		<fov_deg>80</fov_deg>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
+		
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>-25.0</light_azimuth_deg>
+		<light_elevation_deg>10.0</light_elevation_deg>
 	</gui>
 
 	
@@ -72,6 +76,7 @@
 		  sensor_period_sec="0.10"
 		  show_3d_pointcloud="false"
 		/>
+
 	</vehicle>
 	
 	
