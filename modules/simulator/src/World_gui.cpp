@@ -459,8 +459,9 @@ void World::internal_GUI_thread()
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
 
-		vv->enableShadowCasting(guiOptions_.enable_shadows);
-		vp->enableShadowCasting(guiOptions_.enable_shadows);
+		const int sms = guiOptions_.shadow_map_size;
+		vv->enableShadowCasting(guiOptions_.enable_shadows, sms, sms);
+		vp->enableShadowCasting(guiOptions_.enable_shadows, sms, sms);
 
 		// TODO: expose as parameters
 		vv->setLightShadowClipDistances(0.01f, 1000.0f);

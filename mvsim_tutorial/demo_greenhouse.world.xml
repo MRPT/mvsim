@@ -13,6 +13,8 @@
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 		
 		<enable_shadows>true</enable_shadows>
+		<!-- <shadow_map_size>1024</shadow_map_size> -->
+		
 		<light_azimuth_deg>160.0</light_azimuth_deg>
 		<light_elevation_deg>40.0</light_elevation_deg>
 	</gui>
@@ -130,7 +132,7 @@
 		
 		<include file="definitions/camera.sensor.xml" 
 		  sensor_x="0.2"  sensor_y="0" sensor_z="0.9"
-		  sensor_period_sec="0.10"
+		  sensor_period_sec="0.20"
 		  sensor_name="cam1"
 		  />		
 

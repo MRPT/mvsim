@@ -466,6 +466,8 @@ class World : public mrpt::system::COutputLogger
 		bool headless = false;
 
 		bool enable_shadows = true;
+		int shadow_map_size = 2048;
+
 		double light_azimuth = mrpt::DEG2RAD(45.0);
 		double light_elevation = mrpt::DEG2RAD(70.0);
 
@@ -488,6 +490,7 @@ class World : public mrpt::system::COutputLogger
 			{"cam_elevation", {"%lf", &camera_elevation_deg}},
 			{"cam_point_to", {"%point3d", &camera_point_to}},
 			{"enable_shadows", {"%bool", &enable_shadows}},
+			{"shadow_map_size", {"%i", &shadow_map_size}},
 			{"light_azimuth_deg", {"%lf_deg", &light_azimuth}},
 			{"light_elevation_deg", {"%lf_deg", &light_elevation}},
 		};
