@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.1 (2023-03-04)
+------------------
 * New XML parameters to enable and tune shadowmap generation
 * Use finer timestep for prevent wrong simulation of ramp sliding
 * Fix code notation
