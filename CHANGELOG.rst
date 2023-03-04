@@ -2,6 +2,14 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* New XML parameters to enable and tune shadowmap generation
+* Use finer timestep for prevent wrong simulation of ramp sliding
+* Fix code notation
+* Temporary workaround to GH CI problem
+* Contributors: Jose Luis Blanco-Claraco
+
 0.6.0 (2023-02-26)
 ------------------
 * Support for SkyBox rendering (requires MRPT >=2.7.0)
