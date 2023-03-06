@@ -60,8 +60,9 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml"
+		<include file="definitions/rplidar-a2.sensor.xml"
 			raytrace_3d="true" sensor_x="1.7" sensor_z="1.01" sensor_yaw="0" sensor_name="laser1" 
+			sensor_hz="10.0"
 			sensor_publish="true"
 		/>
 		<!-- Sensors -->
