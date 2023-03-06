@@ -99,8 +99,32 @@ void World::GUI::prepare_control_window()
 		 vp->enableShadowCasting(b);
 		 parent_.guiOptions_.enable_shadows = b;
 	 })->setChecked(parent_.guiOptions_.enable_shadows);
-
 #endif
+
+	w->add<nanogui::Label>("Light azimuth:");
+	{
+		auto sl = w->add<nanogui::Slider>();
+		sl->setRange({-M_PI, M_PI});
+		sl->setValue(parent_.guiOptions_.light_azimuth);
+		sl->setCallback([this](float v) {
+			parent_.guiOptions_.light_azimuth = v;
+			parent_.setLightDirectionFromAzimuthElevation(
+				parent_.guiOptions_.light_azimuth,
+				parent_.guiOptions_.light_elevation);
+		});
+	}
+	w->add<nanogui::Label>("Light elevation:");
+	{
+		auto sl = w->add<nanogui::Slider>();
+		sl->setRange({0, M_PI * 0.5});
+		sl->setValue(parent_.guiOptions_.light_elevation);
+		sl->setCallback([this](float v) {
+			parent_.guiOptions_.light_elevation = v;
+			parent_.setLightDirectionFromAzimuthElevation(
+				parent_.guiOptions_.light_azimuth,
+				parent_.guiOptions_.light_elevation);
+		});
+	}
 
 	w->add<nanogui::CheckBox>("View forces", [&](bool b) {
 		 parent_.guiOptions_.show_forces = b;
