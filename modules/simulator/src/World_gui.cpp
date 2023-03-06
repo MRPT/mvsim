@@ -91,6 +91,17 @@ void World::GUI::prepare_control_window()
 		 gui_win->camera().setCameraProjective(!b);
 	 })->setChecked(parent_.guiOptions_.ortho);
 
+#if MRPT_VERSION >= 0x270
+	w->add<nanogui::CheckBox>("Enable shadows", [&](bool b) {
+		 auto vv = parent_.worldVisual_->getViewport();
+		 auto vp = parent_.worldPhysical_.getViewport();
+		 vv->enableShadowCasting(b);
+		 vp->enableShadowCasting(b);
+		 parent_.guiOptions_.enable_shadows = b;
+	 })->setChecked(parent_.guiOptions_.enable_shadows);
+
+#endif
+
 	w->add<nanogui::CheckBox>("View forces", [&](bool b) {
 		 parent_.guiOptions_.show_forces = b;
 	 })->setChecked(parent_.guiOptions_.show_forces);
@@ -466,7 +477,6 @@ void World::internal_GUI_thread()
 		// TODO: expose as parameters
 		vv->setLightShadowClipDistances(0.01f, 1000.0f);
 		vp->setLightShadowClipDistances(0.01f, 1000.0f);
-
 #endif
 
 		// Main GUI loop
