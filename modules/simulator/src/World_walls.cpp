@@ -143,10 +143,6 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 	// Parse XML params:
 	parse_xmlnode_children_as_param(node, params, user_defined_variables());
 
-	ASSERT_(!wallModelFileName.empty());
-	const std::string localFileName = xmlPathToActualPath(wallModelFileName);
-	ASSERT_FILE_EXISTS_(localFileName);
-
 	// Optional transformation:
 	auto HM = mrpt::math::CMatrixDouble44::Identity();
 	if (!sTransformation.empty())
@@ -161,19 +157,50 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 	}
 	const auto tf = mrpt::poses::CPose3D(HM);
 
-	MRPT_LOG_DEBUG_STREAM(
-		"Loading walls definition model from: " << localFileName);
+	// Walls shape can come from external model file, or from a "shape" entry:
+	const auto* xml_shape = node.first_node("shape");
 
-	auto glModel = mrpt::opengl::CAssimpModel::Create();
-	glModel->loadScene(localFileName);
-
-	const auto& points = glModel->shaderWireframeVertexPointBuffer();
-	MRPT_LOG_DEBUG_STREAM("Walls loaded, " << points.size() << " segments.");
-
-	// Transform them:
+	// Final coordinates for wall perimeter are defined here:
 	std::vector<mrpt::math::TPoint3Df> tfPts;
-	tfPts.reserve(points.size());
-	for (const auto& pt : points) tfPts.emplace_back(tf.composePoint(pt));
+
+	if (xml_shape)
+	{
+		// Load wall segments from "<shape>" tag.
+		mrpt::math::TPolygon2D segments;
+
+		mvsim::parse_xmlnode_shape(
+			*xml_shape, segments, "[World::process_load_walls]");
+
+		MRPT_LOG_DEBUG_STREAM(
+			"Walls loaded from <shape> tag, " << segments.size()
+											  << " segments.");
+
+		// Transform them:
+		tfPts.reserve(segments.size());
+		for (const auto& pt : segments) tfPts.emplace_back(tf.composePoint(pt));
+	}
+	else
+	{
+		// Load wall segments from external file.
+		ASSERT_(!wallModelFileName.empty());
+		const std::string localFileName =
+			xmlPathToActualPath(wallModelFileName);
+		ASSERT_FILE_EXISTS_(localFileName);
+
+		MRPT_LOG_DEBUG_STREAM(
+			"Loading walls definition model from: " << localFileName);
+
+		auto glModel = mrpt::opengl::CAssimpModel::Create();
+		glModel->loadScene(localFileName);
+
+		const auto& points = glModel->shaderWireframeVertexPointBuffer();
+		MRPT_LOG_DEBUG_STREAM(
+			"Walls loaded from model file, " << points.size() << " segments.");
+
+		// Transform them:
+		tfPts.reserve(points.size());
+		for (const auto& pt : points) tfPts.emplace_back(tf.composePoint(pt));
+	}
 
 	// Insert all points for KD-tree lookup:
 	mrpt::maps::CSimplePointsMap ptsMap;

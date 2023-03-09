@@ -1,0 +1,116 @@
+<!--
+	This "Turtlebot world" world file is intended to mimic
+	ROS2 Gazebo world that is launched with:
+	ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+-->
+<mvsim_world version="1.0">
+	<!-- General simulation options -->
+	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>35</cam_distance>
+		<fov_deg>60</fov_deg>
+		<refresh_fps>60</refresh_fps>
+		<!-- <follow_vehicle>r1</follow_vehicle> -->
+	</gui>
+
+	<!-- Light parameters -->
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<!-- <shadow_map_size>1024</shadow_map_size> -->
+		<light_azimuth_deg>160.0</light_azimuth_deg>
+		<light_elevation_deg>60.0</light_elevation_deg>
+	</lights>
+
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+	<!-- ground -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-20</x_min>
+		<y_min>-20</y_min>
+		<x_max> 20</x_max>
+		<y_max> 20</y_max>
+		<z>0.0</z>
+	</element>
+
+
+	<!-- =============================
+		   Vehicle classes definition
+	     ============================= -->
+	<include file="definitions/small_robot.vehicle.xml" />
+
+	<!-- ========================
+		   Vehicle(s) definition
+	     ======================== -->
+	<vehicle name="r1" class="small_robot">
+		<init_pose>-2 -0.5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<!-- Sensors -->
+		<include file="definitions/rplidar-a2.sensor.xml"
+			raytrace_3d="true" sensor_x="1.7" sensor_z="1.01" sensor_yaw="0" sensor_name="laser1" 
+			sensor_hz="10.0"
+		/>
+
+		<include file="definitions/camera.sensor.xml"
+			sensor_x="1.9" sensor_z="0.5" 
+		/>
+	</vehicle>
+
+	<!-- ======================================
+	      World
+	     ====================================== -->
+	<walls>
+	  <color>#404040</color>
+	  <wallThickness>0.3</wallThickness>
+	  <wallHeight>1.0</wallHeight>
+	  <!-- Walls shape must contain pairs of <pt>s defining wall segments -->
+	  <shape>
+	    <pt>-3 0</pt> <pt>-2 -2.75</pt>
+	    <pt>-2 -2.75</pt> <pt>2 -2.75</pt>
+	    <pt>2 -2.75</pt> <pt>3.5 0</pt>
+	    <pt>3.5 0</pt> <pt>2 2.75</pt>
+	    <pt>2 2.75</pt> <pt>-2 2.75</pt>
+	    <pt>-2 2.75</pt> <pt>-3 0</pt>
+	  </shape>
+	</walls>
+	
+	<block:class name="green_column_small">
+		<static>true</static> <!-- Does not move -->
+		<color>#00ff00</color>
+		<zmin>0</zmin>
+		<zmax>2</zmax>
+		<shape>
+			<pt>-0.75 -0.75</pt>
+			<pt>-0.75  0.75</pt>
+			<pt> 0.75  0.75</pt>
+			<pt> 0.75 -0.75</pt>
+		</shape>
+	</block:class>
+
+	<block:class name="green_column_large">
+		<static>true</static> <!-- Does not move -->
+		<color>#00ff00</color>
+		<zmin>0</zmin>
+		<zmax>2</zmax>
+		<shape>
+			<pt>-1.25 -1.25</pt>
+			<pt>-1.25  1.25</pt>
+			<pt> 1.25  1.25</pt>
+			<pt> 1.25 -1.25</pt>
+		</shape>
+	</block:class>
+	
+	<block class="green_column_small"> <init_pose>-2 -2.75 0</init_pose> </block>
+	<block class="green_column_small"> <init_pose>+2 -2.75 0</init_pose> </block>
+	<block class="green_column_small"> <init_pose>-2 +2.75 0</init_pose> </block>
+	<block class="green_column_small"> <init_pose>+2 +2.75 0</init_pose> </block>
+
+	<block class="green_column_large"> <init_pose>3 0 0</init_pose> </block>
+
+</mvsim_world>

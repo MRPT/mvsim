@@ -161,14 +161,22 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	}
 
 	// Shape node (optional, fallback to default shape if none found)
-	if (const rapidxml::xml_node<char>* xml_shape = nodes.first_node("shape");
-		xml_shape)
+	if (const auto* xml_shape = nodes.first_node("shape"); xml_shape)
 	{
 		mvsim::parse_xmlnode_shape(
 			*xml_shape, block->block_poly_, "[Block::factory]");
 		block->updateMaxRadiusFromPoly();
 	}
-
+	else if (const auto* xml_geom = nodes.first_node("geometry"); xml_geom)
+	{
+		block->internal_parseGeometry(*xml_geom);
+	}
+	else
+	{
+		THROW_EXCEPTION(
+			"<block> element must define its shape via either a <shape> or a "
+			"<geometry> tag, not none found.");
+	}
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
 	block->create_multibody_system(*parent->getBox2DWorld());
@@ -216,8 +224,8 @@ void Block::simul_pre_timestep(const TSimulContext& context)
 	Simulable::simul_pre_timestep(context);
 }
 
-/** Override to do any required process right after the integration of dynamic
- * equations for each timestep */
+/** Override to do any required process right after the integration of
+ * dynamic equations for each timestep */
 void Block::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
@@ -255,9 +263,9 @@ void Block::internalGuiUpdate(
 		}
 
 		// Update them:
-		// If "viz" does not have a value, it's because we are already inside a
-		// setPose() change event, so my caller already holds the mutex and we
-		// don't need/can't acquire it again:
+		// If "viz" does not have a value, it's because we are already
+		// inside a setPose() change event, so my caller already holds the
+		// mutex and we don't need/can't acquire it again:
 		const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
 		if (gl_block_) gl_block_->setPose(objectPose);
@@ -310,7 +318,8 @@ void Block::create_multibody_system(b2World& world)
 {
 	if (intangible_) return;
 
-	// Define the dynamic body. We set its position and call the body factory.
+	// Define the dynamic body. We set its position and call the body
+	// factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 
@@ -429,4 +438,10 @@ void DummyInvisibleBlock::internalGuiUpdate(
 	if (!viz || !physical) return;
 
 	for (auto& s : sensors_) s->guiUpdate(viz, physical);
+}
+
+void Block::internal_parseGeometry(
+	const rapidxml::xml_node<char>& xml_geom_node)
+{
+	//
 }

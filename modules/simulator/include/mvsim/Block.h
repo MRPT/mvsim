@@ -169,6 +169,8 @@ class Block : public VisualObject, public Simulable
    private:
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 
+	void internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node);
+
 	mrpt::opengl::CSetOfObjects::Ptr gl_block_;
 	mrpt::opengl::CSetOfLines::Ptr gl_forces_;
 	std::mutex force_segments_for_rendering_cs_;
