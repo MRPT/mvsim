@@ -11,7 +11,11 @@
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 	</gui>
 
-	
+	<!-- Light parameters -->
+	<lights>
+	</lights>
+
+
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->

@@ -38,8 +38,12 @@ void World::TGUI_Options::parse_from(
 		node, params, {}, "[World::TGUI_Options]", &logger);
 }
 
-// Text labels unique IDs:
-size_t ID_GLTEXT_CLOCK = 0;
+void World::LightOptions::parse_from(
+	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
+{
+	parse_xmlnode_children_as_param(
+		node, params, {}, "[World::LightOptions]", &logger);
+}
 
 //!< Return true if the GUI window is open, after a previous call to
 //! update_GUI()
@@ -97,32 +101,32 @@ void World::GUI::prepare_control_window()
 		 auto vp = parent_.worldPhysical_.getViewport();
 		 vv->enableShadowCasting(b);
 		 vp->enableShadowCasting(b);
-		 parent_.guiOptions_.enable_shadows = b;
-	 })->setChecked(parent_.guiOptions_.enable_shadows);
+		 parent_.lightOptions_.enable_shadows = b;
+	 })->setChecked(parent_.lightOptions_.enable_shadows);
 #endif
 
 	w->add<nanogui::Label>("Light azimuth:");
 	{
 		auto sl = w->add<nanogui::Slider>();
 		sl->setRange({-M_PI, M_PI});
-		sl->setValue(parent_.guiOptions_.light_azimuth);
+		sl->setValue(parent_.lightOptions_.light_azimuth);
 		sl->setCallback([this](float v) {
-			parent_.guiOptions_.light_azimuth = v;
+			parent_.lightOptions_.light_azimuth = v;
 			parent_.setLightDirectionFromAzimuthElevation(
-				parent_.guiOptions_.light_azimuth,
-				parent_.guiOptions_.light_elevation);
+				parent_.lightOptions_.light_azimuth,
+				parent_.lightOptions_.light_elevation);
 		});
 	}
 	w->add<nanogui::Label>("Light elevation:");
 	{
 		auto sl = w->add<nanogui::Slider>();
 		sl->setRange({0, M_PI * 0.5});
-		sl->setValue(parent_.guiOptions_.light_elevation);
+		sl->setValue(parent_.lightOptions_.light_elevation);
 		sl->setCallback([this](float v) {
-			parent_.guiOptions_.light_elevation = v;
+			parent_.lightOptions_.light_elevation = v;
 			parent_.setLightDirectionFromAzimuthElevation(
-				parent_.guiOptions_.light_azimuth,
-				parent_.guiOptions_.light_elevation);
+				parent_.lightOptions_.light_azimuth,
+				parent_.lightOptions_.light_elevation);
 		});
 	}
 
@@ -487,20 +491,30 @@ void World::internal_GUI_thread()
 			guiOptions_.camera_point_to.x, guiOptions_.camera_point_to.y,
 			guiOptions_.camera_point_to.z);
 
+		const auto& lo = lightOptions_;
+
 		setLightDirectionFromAzimuthElevation(
-			guiOptions_.light_azimuth, guiOptions_.light_elevation);
+			lo.light_azimuth, lo.light_elevation);
 
 #if MRPT_VERSION >= 0x270
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
 
-		const int sms = guiOptions_.shadow_map_size;
-		vv->enableShadowCasting(guiOptions_.enable_shadows, sms, sms);
-		vp->enableShadowCasting(guiOptions_.enable_shadows, sms, sms);
+		// enable shadows and set the shadow map texture size:
+		const int sms = lo.shadow_map_size;
+		vv->enableShadowCasting(lo.enable_shadows, sms, sms);
+		vp->enableShadowCasting(lo.enable_shadows, sms, sms);
 
-		// TODO: expose as parameters
-		vv->setLightShadowClipDistances(0.01f, 1000.0f);
-		vp->setLightShadowClipDistances(0.01f, 1000.0f);
+		// light color:
+		const auto colf = mrpt::img::TColorf(lightOptions_.light_color);
+		vv->lightParameters().color = colf;
+		vp->lightParameters().color = colf;
+
+		// light view frustrum near/far planes:
+		vv->setLightShadowClipDistances(
+			lo.light_clip_plane_min, lo.light_clip_plane_max);
+		vp->setLightShadowClipDistances(
+			lo.light_clip_plane_min, lo.light_clip_plane_max);
 #endif
 
 		// Main GUI loop
