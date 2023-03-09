@@ -54,21 +54,19 @@ class OccupancyGridMap : public WorldElementBase
 
 	struct TFixturePtr
 	{
-		b2Fixture* fixture;
-		TFixturePtr() : fixture(nullptr) {}
+		TFixturePtr() = default;
+		b2Fixture* fixture = nullptr;
 	};
 
 	struct TInfoPerCollidableobj
 	{
-		float max_obstacles_ranges;
-		mrpt::poses::CPose2D pose;
-		mrpt::obs::CObservation2DRangeScan::Ptr scan;
-		b2Body* collide_body;
-		std::vector<TFixturePtr> collide_fixtures;
+		TInfoPerCollidableobj() = default;
 
-		TInfoPerCollidableobj() : max_obstacles_ranges(0), collide_body(nullptr)
-		{
-		}
+		mrpt::poses::CPose2D pose;
+		b2Body* collide_body = nullptr;
+		mrpt::obs::CObservation2DRangeScan::Ptr scan;
+		std::vector<TFixturePtr> collide_fixtures;
+		float max_obstacles_ranges = 0;
 	};
 
 	std::vector<TInfoPerCollidableobj> obstacles_for_each_obj_;
