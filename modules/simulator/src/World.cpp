@@ -349,9 +349,9 @@ double World::get_simul_timestep() const
 
 	if (simulTimestep_ == 0)
 	{
-		// `0` means auto-determine as the minimum of 50 ms and the shortest
+		// `0` means auto-determine as the minimum of 5 ms and the shortest
 		// sensor sample period.
-		simulTimestep_ = 50e-3;
+		simulTimestep_ = 5e-3;
 
 		auto sensorMinPeriod = lambdaMinimumSensorPeriod();
 		if (sensorMinPeriod) mrpt::keep_min(simulTimestep_, *sensorMinPeriod);
