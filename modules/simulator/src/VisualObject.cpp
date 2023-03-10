@@ -234,7 +234,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 		bb = mrpt::math::TBoundingBox::FromUnsortedPoints(bb.min, bb.max);
 	}
 
-	if (bb.volume() < 1e-6)
+	if (bb.volume() < 1e-8)
 	{
 		THROW_EXCEPTION_FMT(
 			"Error: Bounding box of visual model ('%s') has almost null volume "
