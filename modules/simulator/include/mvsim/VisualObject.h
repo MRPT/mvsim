@@ -88,6 +88,13 @@ class VisualObject
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly = false) = 0;
 
+	void addCustomVisualization(
+		const mrpt::opengl::CRenderizable::Ptr& glModel,
+		const mrpt::math::TPose3D& modelPose = {},
+		const double modelScale = 1.0, const std::string& modelName = "group",
+		const std::string& modelURIForErrorReport = {},
+		const bool initialShowBoundingBox = false);
+
    private:
 	mrpt::math::TBoundingBox viz_bb_{{-1.0, -1.0, .0}, {1.0, 1.0, 1.0}};
 

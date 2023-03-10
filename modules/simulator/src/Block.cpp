@@ -11,6 +11,7 @@
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
+#include <mrpt/opengl/CCylinder.h>
 #include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/version.h>
@@ -443,5 +444,55 @@ void DummyInvisibleBlock::internalGuiUpdate(
 void Block::internal_parseGeometry(
 	const rapidxml::xml_node<char>& xml_geom_node)
 {
-	//
+	std::string type;  // cylinder, sphere, etc.
+	float radius = 0;
+	float length = 0;
+	int vertex_count = 0;
+
+	const TParameterDefinitions params = {
+		{"type", {"%s", &type}},
+		{"radius", {"%f", &radius}},
+		{"length", {"%f", &length}},
+		{"vertex_count", {"%i", &vertex_count}},
+	};
+
+	parse_xmlnode_attribs(
+		xml_geom_node, params, world_->user_defined_variables(),
+		"[Block::internal_parseGeometry]");
+
+	if (type.empty())
+	{
+		THROW_EXCEPTION(
+			"Geometry type attribute is missing, i.e. <geometry type='...' ... "
+			"/>");
+	}
+
+	if (type == "cylinder")
+	{
+		ASSERTMSG_(
+			radius > 0, "Missing 'radius' attribute for cylinder geometry");
+		ASSERTMSG_(
+			length > 0, "Missing 'length' attribute for cylinder geometry");
+
+		if (vertex_count == 0) vertex_count = 10;  // default
+
+		auto glCyl = mrpt::opengl::CCylinder::Create();
+		glCyl->setHeight(length);
+		glCyl->setRadius(radius);
+		glCyl->setSlicesCount(vertex_count);
+		addCustomVisualization(glCyl);
+	}
+	else if (type == "sphere")
+	{
+		ASSERTMSG_(
+			radius > 0, "Missing 'radius' attribute for cylinder geometry");
+	}
+	else if (type == "box")
+	{
+	}
+	else
+	{
+		THROW_EXCEPTION_FMT(
+			"Unknown type in <geometry type='%s'...>", type.c_str());
+	}
 }

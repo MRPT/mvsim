@@ -152,19 +152,79 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 	const std::string localFileName = world_->xmlPathToActualPath(modelURI);
 
-	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
-
 	auto& gModelsCache = ModelsCache::Instance();
 
 	auto glModel = gModelsCache.get(localFileName, opts);
 
+	// Add the 3D model as custom viz:
+	addCustomVisualization(
+		glModel, modelPose, modelScale, objectName, modelURI);
+
+	return true;  // yes, we have a custom viz model
+
+	MRPT_TRY_END
+}
+
+void VisualObject::showBoundingBox(bool show)
+{
+	if (!glBoundingBox_) return;
+	glBoundingBox_->setVisibility(show);
+}
+
+void VisualObject::customVisualVisible(const bool visible)
+{
+	if (!glCustomVisual_) return;
+
+	glCustomVisual_->setVisibility(visible);
+}
+
+bool VisualObject::customVisualVisible() const
+{
+	return glCustomVisual_ && glCustomVisual_->isVisible();
+}
+
+void VisualObject::addCustomVisualization(
+	const mrpt::opengl::CRenderizable::Ptr& glModel,
+	const mrpt::math::TPose3D& modelPose, const double modelScale,
+	const std::string& modelName, const std::string& modelURIForErrorReport,
+	const bool initialShowBoundingBox)
+{
 	// Make sure the points and vertices buffers are up to date, so we can
 	// access them:
-	glModel->onUpdateBuffers_all();
+	auto* oAssimp = dynamic_cast<mrpt::opengl::CAssimpModel*>(glModel.get());
+	if (oAssimp)
+	{
+		oAssimp->onUpdateBuffers_all();
+	}
+	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderTriangles*>(
+			glModel.get());
+		o)
+	{
+		o->onUpdateBuffers_Triangles();
+	}
+	if (auto* o =
+			dynamic_cast<mrpt::opengl::CRenderizableShaderTexturedTriangles*>(
+				glModel.get());
+		o)
+	{
+		o->onUpdateBuffers_TexturedTriangles();
+	}
+	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(
+			glModel.get());
+		o)
+	{
+		o->onUpdateBuffers_Wireframe();
+	}
+	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderPoints*>(
+			glModel.get());
+		o)
+	{
+		o->onUpdateBuffers_Points();
+	}
 
 	mrpt::math::TBoundingBox bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
 	// Slice bbox in z up to a given relevant height:
-	if (const Block* block = dynamic_cast<const Block*>(this); block)
+	if (const Block* block = dynamic_cast<const Block*>(this); block && oAssimp)
 	{
 		const auto zMin = block->block_z_min() - GeometryEpsilon;
 		const auto zMax = block->block_z_max() + GeometryEpsilon;
@@ -181,27 +241,27 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 		{
 			auto lck =
-				mrpt::lockHelper(glModel->shaderTrianglesBufferMutex().data);
-			const auto& tris = glModel->shaderTrianglesBuffer();
+				mrpt::lockHelper(oAssimp->shaderTrianglesBufferMutex().data);
+			const auto& tris = oAssimp->shaderTrianglesBuffer();
 			for (const auto& tri : tris)
 				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
 		}
 		{
 			auto lck =
-				mrpt::lockHelper(glModel->shaderPointsBuffersMutex().data);
-			const auto& pts = glModel->shaderPointsVertexPointBuffer();
+				mrpt::lockHelper(oAssimp->shaderPointsBuffersMutex().data);
+			const auto& pts = oAssimp->shaderPointsVertexPointBuffer();
 			for (const auto& pt : pts) lambdaUpdatePt(pt);
 		}
 		{
 			auto lck =
-				mrpt::lockHelper(glModel->shaderWireframeBuffersMutex().data);
-			const auto& pts = glModel->shaderWireframeVertexPointBuffer();
+				mrpt::lockHelper(oAssimp->shaderWireframeBuffersMutex().data);
+			const auto& pts = oAssimp->shaderWireframeVertexPointBuffer();
 			for (const auto& pt : pts) lambdaUpdatePt(pt);
 		}
 
 #if MRPT_VERSION >= 0x260
 		const auto& txtrdObjs =
-			glModel->texturedObjects();	 // [new mrpt v2.6.0]
+			oAssimp->texturedObjects();	 // [new mrpt v2.6.0]
 		for (const auto& obj : txtrdObjs)
 		{
 			if (!obj) continue;
@@ -240,8 +300,10 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 			"Error: Bounding box of visual model ('%s') has almost null volume "
 			"(=%g m³). A possible cause, if this is a <block>, is not enough "
 			"vertices within the given range [zmin,zmax]",
-			modelURI.c_str(), bb.volume());
+			modelURIForErrorReport.c_str(), bb.volume());
 	}
+
+	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 
 	// Note: we cannot apply pose/scale to the original glModel since
 	// it may be shared (many instances of the same object):
@@ -249,7 +311,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	glGroup->setScale(modelScale);
 	glGroup->setPose(modelPose);
 
-	glGroup->setName(objectName);
+	glGroup->setName(modelName);
 
 	const bool wasFirstCustomViz = !glCustomVisual_;
 
@@ -281,26 +343,4 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 		viz_bb_.updateWithPoint(bb.min);
 		viz_bb_.updateWithPoint(bb.max);
 	}
-
-	return true;  // yes, we have a custom viz model
-
-	MRPT_TRY_END
-}
-
-void VisualObject::showBoundingBox(bool show)
-{
-	if (!glBoundingBox_) return;
-	glBoundingBox_->setVisibility(show);
-}
-
-void VisualObject::customVisualVisible(const bool visible)
-{
-	if (!glCustomVisual_) return;
-
-	glCustomVisual_->setVisibility(visible);
-}
-
-bool VisualObject::customVisualVisible() const
-{
-	return glCustomVisual_ && glCustomVisual_->isVisible();
 }
