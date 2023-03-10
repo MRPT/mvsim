@@ -11,7 +11,9 @@
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>35</cam_distance>
+		<cam_distance>10</cam_distance>
+		<cam_azimuth>180</cam_azimuth>
+		<cam_elevation>70</cam_elevation>
 		<fov_deg>60</fov_deg>
 		<refresh_fps>60</refresh_fps>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
@@ -21,8 +23,8 @@
 	<lights>
 		<enable_shadows>true</enable_shadows>
 		<!-- <shadow_map_size>1024</shadow_map_size> -->
-		<light_azimuth_deg>160.0</light_azimuth_deg>
-		<light_elevation_deg>60.0</light_elevation_deg>
+		<light_azimuth_deg>-20.0</light_azimuth_deg>
+		<light_elevation_deg>70.0</light_elevation_deg>
 	</lights>
 
 	<!-- ========================
@@ -111,12 +113,35 @@
 			<pt> 1.25 -1.25</pt>
 		</shape>
 	</block:class>
-	
+
+    <!-- obstacle columns: radius=0.15m height=0.5m -->
+	<block:class name="white_column">
+		<static>true</static> <!-- Does not move -->
+		<color>#e0e0e0</color>
+		<zmin>0</zmin>
+		<zmax>0.5</zmax>
+		<shape>
+			<pt>-0.15 -0.15</pt>
+			<pt>-0.15  0.15</pt>
+			<pt> 0.15  0.15</pt>
+			<pt> 0.15 -0.15</pt>
+		</shape>
+	</block:class>
+
 	<block class="green_column_small"> <init_pose>-2 -2.75 0</init_pose> </block>
 	<block class="green_column_small"> <init_pose>+2 -2.75 0</init_pose> </block>
 	<block class="green_column_small"> <init_pose>-2 +2.75 0</init_pose> </block>
 	<block class="green_column_small"> <init_pose>+2 +2.75 0</init_pose> </block>
 
 	<block class="green_column_large"> <init_pose>3 0 0</init_pose> </block>
+	
+	
+	<for var="iX" from="0" to="2">
+		<for var="iY" from="0" to="2">
+			<block class="white_column">
+				<init_pose>$f{1.1*(iX-1)} $f{1.1*(iY-1)} 0</init_pose>
+			</block>
+		</for>
+	</for>
 
 </mvsim_world>
