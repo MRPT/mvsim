@@ -274,7 +274,8 @@ void VisualObject::addCustomVisualization(
 		}
 #endif
 #if 0
-		std::cout << "bbox for [" << modelURI << "] numTotalPts=" << numTotalPts
+		std::cout << "bbox for [" << modelURIForErrorReport
+				  << "] numTotalPts=" << numTotalPts
 				  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
 				  << " zMax=" << zMax << " bb=" << bb.asString()
 				  << " volume=" << bb.volume() << "\n";

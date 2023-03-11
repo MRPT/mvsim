@@ -139,6 +139,24 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 			*class_root, block->params_, parent->user_defined_variables(),
 			"[Block::factory]");
 
+	// Shape node (optional, fallback to default shape if none found)
+	if (const auto* xml_shape = nodes.first_node("shape"); xml_shape)
+	{
+		mvsim::parse_xmlnode_shape(
+			*xml_shape, block->block_poly_, "[Block::factory]");
+		block->updateMaxRadiusFromPoly();
+	}
+	else if (const auto* xml_geom = nodes.first_node("geometry"); xml_geom)
+	{
+		block->internal_parseGeometry(*xml_geom);
+	}
+	else
+	{
+		THROW_EXCEPTION(
+			"<block> element must define its shape via either a <shape> or a "
+			"<geometry> tag, not none found.");
+	}
+
 	// Auto shape node from visual?
 	if (const rapidxml::xml_node<char>* xml_shape_viz =
 			nodes.first_node("shape_from_visual");
@@ -161,23 +179,6 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		block->updateMaxRadiusFromPoly();
 	}
 
-	// Shape node (optional, fallback to default shape if none found)
-	if (const auto* xml_shape = nodes.first_node("shape"); xml_shape)
-	{
-		mvsim::parse_xmlnode_shape(
-			*xml_shape, block->block_poly_, "[Block::factory]");
-		block->updateMaxRadiusFromPoly();
-	}
-	else if (const auto* xml_geom = nodes.first_node("geometry"); xml_geom)
-	{
-		block->internal_parseGeometry(*xml_geom);
-	}
-	else
-	{
-		THROW_EXCEPTION(
-			"<block> element must define its shape via either a <shape> or a "
-			"<geometry> tag, not none found.");
-	}
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
 	block->create_multibody_system(*parent->getBox2DWorld());
