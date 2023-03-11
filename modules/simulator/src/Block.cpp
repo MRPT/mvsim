@@ -11,8 +11,10 @@
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
+#include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/CCylinder.h>
 #include <mrpt/opengl/CPolyhedron.h>
+#include <mrpt/opengl/CSphere.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/version.h>
 #include <mvsim/Block.h>
@@ -447,13 +449,16 @@ void Block::internal_parseGeometry(
 {
 	std::string type;  // cylinder, sphere, etc.
 	float radius = 0;
-	float length = 0;
+	float length = 0, lx = 0, ly = 0, lz = 0;
 	int vertex_count = 0;
 
 	const TParameterDefinitions params = {
 		{"type", {"%s", &type}},
 		{"radius", {"%f", &radius}},
 		{"length", {"%f", &length}},
+		{"lx", {"%f", &lx}},
+		{"ly", {"%f", &ly}},
+		{"lz", {"%f", &lz}},
 		{"vertex_count", {"%i", &vertex_count}},
 	};
 
@@ -481,15 +486,30 @@ void Block::internal_parseGeometry(
 		glCyl->setHeight(length);
 		glCyl->setRadius(radius);
 		glCyl->setSlicesCount(vertex_count);
+		glCyl->setColor_u8(block_color_);
 		addCustomVisualization(glCyl);
 	}
 	else if (type == "sphere")
 	{
 		ASSERTMSG_(
 			radius > 0, "Missing 'radius' attribute for cylinder geometry");
+
+		if (vertex_count == 0) vertex_count = 10;  // default
+
+		auto glSph = mrpt::opengl::CSphere::Create(radius, vertex_count);
+		glSph->setColor_u8(block_color_);
+		addCustomVisualization(glSph);
 	}
 	else if (type == "box")
 	{
+		ASSERTMSG_(lx > 0, "Missing 'lx' attribute for box geometry");
+		ASSERTMSG_(ly > 0, "Missing 'ly' attribute for box geometry");
+		ASSERTMSG_(lz > 0, "Missing 'lz' attribute for box geometry");
+
+		auto glBox = mrpt::opengl::CBox::Create();
+		glBox->setBoxCorners({0, 0, 0}, {lx, ly, lz});
+		glBox->setColor_u8(block_color_);
+		addCustomVisualization(glBox);
 	}
 	else
 	{

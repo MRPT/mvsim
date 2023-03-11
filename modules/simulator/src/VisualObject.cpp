@@ -196,6 +196,12 @@ void VisualObject::addCustomVisualization(
 	{
 		oAssimp->onUpdateBuffers_all();
 	}
+	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(
+			glModel.get());
+		o)
+	{
+		o->onUpdateBuffers_Wireframe();
+	}
 	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderTriangles*>(
 			glModel.get());
 		o)

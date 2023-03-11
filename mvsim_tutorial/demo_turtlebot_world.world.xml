@@ -92,27 +92,17 @@
 	<block:class name="green_column_small">
 		<static>true</static> <!-- Does not move -->
 		<color>#00ff00</color>
-		<zmin>0</zmin>
-		<zmax>2</zmax>
-		<shape>
-			<pt>-0.75 -0.75</pt>
-			<pt>-0.75  0.75</pt>
-			<pt> 0.75  0.75</pt>
-			<pt> 0.75 -0.75</pt>
-		</shape>
+		<zmin>0</zmin> <zmax>2</zmax>
+		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
+		<geometry type="cylinder" radius="0.75" length="2.0" vertex_count="6"/>
 	</block:class>
 
 	<block:class name="green_column_large">
 		<static>true</static> <!-- Does not move -->
 		<color>#00ff00</color>
-		<zmin>0</zmin>
-		<zmax>2</zmax>
-		<shape>
-			<pt>-1.25 -1.25</pt>
-			<pt>-1.25  1.25</pt>
-			<pt> 1.25  1.25</pt>
-			<pt> 1.25 -1.25</pt>
-		</shape>
+		<zmin>0</zmin> <zmax>2</zmax>
+		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
+		<geometry type="cylinder" radius="1.25" length="2.0" vertex_count="6"/>
 	</block:class>
 
 	<!-- obstacle columns: radius=0.15m height=0.5m -->
@@ -120,7 +110,7 @@
 		<static>true</static> <!-- Does not move -->
 		<color>#e0e0e0</color>
 		<zmin>0</zmin> <zmax>0.5</zmax>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
 		<geometry type="cylinder" radius="0.15" length="0.5" vertex_count="20"/>
 	</block:class>
 
