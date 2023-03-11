@@ -164,7 +164,15 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 			nodes.first_node("shape_from_visual");
 		xml_shape_viz)
 	{
-		const auto bb = block->getVisualModelBoundingBox();
+		const auto bbVis = block->getVisualModelBoundingBox();
+		if (!bbVis.has_value())
+		{
+			THROW_EXCEPTION(
+				"Error: Tag <shape_from_visual/> found but neither <visual> "
+				"nor <geometry> entries, while parsing <block>");
+		}
+		const auto& bb = bbVis.value();
+
 		if (bb.volume() == 0)
 		{
 			THROW_EXCEPTION(

@@ -55,12 +55,13 @@ class VisualObject
 
 	/** Returns bounding boxes, as loaded by parseVisual() from an XML config
 	 * file. */
-	const mrpt::math::TBoundingBox& getVisualModelBoundingBox() const
+	const std::optional<mrpt::math::TBoundingBox>& getVisualModelBoundingBox()
+		const
 	{
 		return viz_bb_;
 	}
 
-	void showBoundingBox(bool show);
+	void showCollisionShape(bool show);
 
 	static void FreeOpenGLResources();
 
@@ -77,7 +78,7 @@ class VisualObject
 	/** If not empty, will override the derived-class visualization for this
 	 * object. */
 	std::shared_ptr<mrpt::opengl::CSetOfObjects> glCustomVisual_;
-	std::shared_ptr<mrpt::opengl::CSetOfObjects> glBoundingBox_;
+	std::shared_ptr<mrpt::opengl::CSetOfObjects> glCollision_;
 	int32_t glCustomVisualId_ = -1;
 
 	const bool insertCustomVizIntoViz_ = true;
@@ -96,7 +97,7 @@ class VisualObject
 		const bool initialShowBoundingBox = false);
 
    private:
-	mrpt::math::TBoundingBox viz_bb_{{-1.0, -1.0, .0}, {1.0, 1.0, 1.0}};
+	std::optional<mrpt::math::TBoundingBox> viz_bb_;
 
 	/// Called by parseVisual once per "visual" block.
 	bool implParseVisual(const rapidxml::xml_node<char>& visual_node);

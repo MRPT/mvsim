@@ -67,18 +67,18 @@ void VisualObject::guiUpdate(
 		glCustomVisual_->setPose(objectPose);
 	}
 
-	if (glBoundingBox_ && viz.has_value())
+	if (glCollision_ && viz.has_value())
 	{
-		if (glBoundingBox_->empty())
+		if (glCollision_->empty() && viz_bb_)
 		{
 			auto glBox = mrpt::opengl::CBox::Create();
 			glBox->setWireframe(true);
-			glBox->setBoxCorners(viz_bb_.min, viz_bb_.max);
-			glBoundingBox_->insert(glBox);
-			glBoundingBox_->setVisibility(false);
-			viz->get().insert(glBoundingBox_);
+			glBox->setBoxCorners(viz_bb_->min, viz_bb_->max);
+			glCollision_->insert(glBox);
+			glCollision_->setVisibility(false);
+			viz->get().insert(glCollision_);
 		}
-		glBoundingBox_->setPose(objectPose);
+		glCollision_->setPose(objectPose);
 	}
 
 	const bool childrenOnly = !!glCustomVisual_;
@@ -165,10 +165,10 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	MRPT_TRY_END
 }
 
-void VisualObject::showBoundingBox(bool show)
+void VisualObject::showCollisionShape(bool show)
 {
-	if (!glBoundingBox_) return;
-	glBoundingBox_->setVisibility(show);
+	if (!glCollision_) return;
+	glCollision_->setVisibility(show);
 }
 
 void VisualObject::customVisualVisible(const bool visible)
@@ -266,8 +266,7 @@ void VisualObject::addCustomVisualization(
 		}
 
 #if MRPT_VERSION >= 0x260
-		const auto& txtrdObjs =
-			oAssimp->texturedObjects();	 // [new mrpt v2.6.0]
+		const auto& txtrdObjs = oAssimp->texturedObjects();	 // [new mrpt 2.6.0]
 		for (const auto& obj : txtrdObjs)
 		{
 			if (!obj) continue;
@@ -320,8 +319,6 @@ void VisualObject::addCustomVisualization(
 
 	glGroup->setName(modelName);
 
-	const bool wasFirstCustomViz = !glCustomVisual_;
-
 	if (!glCustomVisual_)
 	{
 		glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
@@ -329,17 +326,17 @@ void VisualObject::addCustomVisualization(
 	}
 	glCustomVisual_->insert(glGroup);
 
-	if (!glBoundingBox_)
+	if (!glCollision_)
 	{
-		glBoundingBox_ = mrpt::opengl::CSetOfObjects::Create();
-		glBoundingBox_->setName("bbox");
-		glBoundingBox_->setVisibility(initialShowBoundingBox);
+		glCollision_ = mrpt::opengl::CSetOfObjects::Create();
+		glCollision_->setName("bbox");
+		glCollision_->setVisibility(initialShowBoundingBox);
 	}
 
 	// Auto bounds from visual model bounding-box:
 
 	// Apply transformation to bounding box too:
-	if (wasFirstCustomViz)
+	if (!viz_bb_)
 	{
 		// Copy ...
 		viz_bb_ = bb;
@@ -347,7 +344,7 @@ void VisualObject::addCustomVisualization(
 	else
 	{
 		// ... or update bounding box:
-		viz_bb_.updateWithPoint(bb.min);
-		viz_bb_.updateWithPoint(bb.max);
+		viz_bb_->updateWithPoint(bb.min);
+		viz_bb_->updateWithPoint(bb.max);
 	}
 }

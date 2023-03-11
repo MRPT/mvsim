@@ -154,6 +154,16 @@ void World::GUI::prepare_control_window()
 		 const auto& objs = SensorBase::GetAllSensorsFOVViz();
 		 for (const auto& o : *objs) o->setVisibility(b);
 	 })->setChecked(false);
+
+	w->add<nanogui::CheckBox>("View collision shapes", [&](bool b) {
+		 auto lck = mrpt::lockHelper(parent_.simulableObjectsMtx_);
+		 for (auto& s : parent_.simulableObjects_)
+		 {
+			 auto* vis = dynamic_cast<VisualObject*>(s.second.get());
+			 if (!vis) continue;
+			 vis->showCollisionShape(b);
+		 }
+	 })->setChecked(false);
 }
 
 // Add Status window
@@ -283,7 +293,7 @@ void World::GUI::prepare_editor_window()
 			cb->setCallback([cb, ipo, this](bool check) {
 				// deselect former one:
 				if (gui_selectedObject.visual)
-					gui_selectedObject.visual->showBoundingBox(false);
+					gui_selectedObject.visual->showCollisionShape(false);
 				if (gui_selectedObject.cb)
 					gui_selectedObject.cb->setChecked(false);
 				gui_selectedObject = InfoPerObject();
@@ -294,7 +304,7 @@ void World::GUI::prepare_editor_window()
 				if (ipo.visual && check)
 				{
 					gui_selectedObject = ipo;
-					ipo.visual->showBoundingBox(true);
+					ipo.visual->showCollisionShape(true);
 				}
 
 				const bool btnsEnabled = !!gui_selectedObject.simulable;

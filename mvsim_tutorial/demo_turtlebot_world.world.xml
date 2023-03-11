@@ -55,7 +55,7 @@
 
 		<!-- Sensors -->
 		<include file="definitions/rplidar-a2.sensor.xml"
-			raytrace_3d="false"
+			raytrace_3d="true"
 			sensor_x="-0.032" sensor_z="0.171" sensor_yaw="0" sensor_name="laser1" 
 			sensor_hz="10.0"
 		/>

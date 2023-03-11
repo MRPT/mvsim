@@ -266,7 +266,15 @@ VehicleBase::Ptr VehicleBase::factory(
 				xml_chassis->first_node("shape_from_visual");
 			sfv)
 		{
-			const auto bb = veh->getVisualModelBoundingBox();
+			const auto bbVis = veh->getVisualModelBoundingBox();
+			if (!bbVis.has_value())
+			{
+				THROW_EXCEPTION(
+					"Error: Tag <shape_from_visual/> found but neither "
+					"<visual> "
+					"nor <geometry> entries, while parsing <block>");
+			}
+			const auto& bb = bbVis.value();
 			if (bb.volume() == 0)
 			{
 				THROW_EXCEPTION(
