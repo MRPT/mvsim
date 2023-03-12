@@ -339,9 +339,9 @@ void ElevationMap::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
 
-	MRPT_TODO(
-		"Save all elements positions in prestep, then here scale their "
-		"movements * cos(angle)");
+	// TODO: Think if this is still applicable:
+	// Save all elements positions in prestep, then here scale their
+	// movements * cos(angle)
 }
 
 static float calcz(

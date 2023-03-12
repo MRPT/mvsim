@@ -91,9 +91,9 @@ class VisualObject
 
 	void addCustomVisualization(
 		const mrpt::opengl::CRenderizable::Ptr& glModel,
-		const mrpt::math::TPose3D& modelPose = {},
-		const double modelScale = 1.0, const std::string& modelName = "group",
-		const std::string& modelURIForErrorReport = {},
+		const mrpt::poses::CPose3D& modelPose = {},
+		const float modelScale = 1.0f, const std::string& modelName = "group",
+		const std::optional<std::string>& modelURI = std::nullopt,
 		const bool initialShowBoundingBox = false);
 
    private:

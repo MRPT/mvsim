@@ -19,6 +19,7 @@
 #include <atomic>
 #include <rapidxml.hpp>
 
+#include "ConvexHullCache.h"
 #include "JointXMLnode.h"
 #include "ModelsCache.h"
 #include "xml_utils.h"
@@ -158,7 +159,8 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 	// Add the 3D model as custom viz:
 	addCustomVisualization(
-		glModel, modelPose, modelScale, objectName, modelURI);
+		glModel, mrpt::poses::CPose3D(modelPose), modelScale, objectName,
+		modelURI);
 
 	return true;  // yes, we have a custom viz model
 
@@ -185,139 +187,34 @@ bool VisualObject::customVisualVisible() const
 
 void VisualObject::addCustomVisualization(
 	const mrpt::opengl::CRenderizable::Ptr& glModel,
-	const mrpt::math::TPose3D& modelPose, const double modelScale,
-	const std::string& modelName, const std::string& modelURIForErrorReport,
+	const mrpt::poses::CPose3D& modelPose, const float modelScale,
+	const std::string& modelName, const std::optional<std::string>& modelURI,
 	const bool initialShowBoundingBox)
 {
-	// Make sure the points and vertices buffers are up to date, so we can
-	// access them:
-	auto* oAssimp = dynamic_cast<mrpt::opengl::CAssimpModel*>(glModel.get());
-	if (oAssimp)
-	{
-		oAssimp->onUpdateBuffers_all();
-	}
-	auto* oRSWF = dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(
-		glModel.get());
-	if (oRSWF)
-	{
-		oRSWF->onUpdateBuffers_Wireframe();
-	}
-	auto* oRST = dynamic_cast<mrpt::opengl::CRenderizableShaderTriangles*>(
-		glModel.get());
-	if (oRST)
-	{
-		oRST->onUpdateBuffers_Triangles();
-	}
-	auto* oRSTT =
-		dynamic_cast<mrpt::opengl::CRenderizableShaderTexturedTriangles*>(
-			glModel.get());
-	if (oRSTT)
-	{
-		oRSTT->onUpdateBuffers_TexturedTriangles();
-	}
-	auto* oRP =
-		dynamic_cast<mrpt::opengl::CRenderizableShaderPoints*>(glModel.get());
-	if (oRP)
-	{
-		oRP->onUpdateBuffers_Points();
-	}
+	ASSERT_(glModel);
 
-	mrpt::math::TBoundingBox bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
-	// Slice bbox in z up to a given relevant height:
+	auto& chc = ConvexHullCache::Instance();
+
+	float zMin = std::numeric_limits<float>::min();
+	float zMax = std::numeric_limits<float>::max();
+
 	if (const Block* block = dynamic_cast<const Block*>(this); block)
 	{
-		const auto zMin = block->block_z_min() - GeometryEpsilon;
-		const auto zMax = block->block_z_max() + GeometryEpsilon;
-
-		size_t numTotalPts = 0, numPassedPts = 0;
-
-		auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt) {
-			numTotalPts++;
-			auto pt = modelPose.composePoint(orgPt * modelScale);
-			if (pt.z < zMin || pt.z > zMax) return;	 // skip
-			bb.updateWithPoint(pt);
-			numPassedPts++;
-		};
-
-		if (oRST)
-		{
-			auto lck =
-				mrpt::lockHelper(oRST->shaderTrianglesBufferMutex().data);
-			const auto& tris = oRST->shaderTrianglesBuffer();
-			for (const auto& tri : tris)
-				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
-		}
-		if (oRSTT)
-		{
-			auto lck = mrpt::lockHelper(
-				oRSTT->shaderTexturedTrianglesBufferMutex().data);
-			const auto& tris = oRSTT->shaderTexturedTrianglesBuffer();
-			for (const auto& tri : tris)
-				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
-		}
-		if (oRP)
-		{
-			auto lck = mrpt::lockHelper(oRP->shaderPointsBuffersMutex().data);
-			const auto& pts = oRP->shaderPointsVertexPointBuffer();
-			for (const auto& pt : pts) lambdaUpdatePt(pt);
-		}
-		if (oRSWF)
-		{
-			auto lck =
-				mrpt::lockHelper(oRSWF->shaderWireframeBuffersMutex().data);
-			const auto& pts = oRSWF->shaderWireframeVertexPointBuffer();
-			for (const auto& pt : pts) lambdaUpdatePt(pt);
-		}
-
-#if MRPT_VERSION >= 0x260
-		if (oAssimp)
-		{
-			const auto& txtrdObjs =
-				oAssimp->texturedObjects();	 // [new mrpt 2.6.0]
-			for (const auto& obj : txtrdObjs)
-			{
-				if (!obj) continue;
-
-				auto lck = mrpt::lockHelper(
-					obj->shaderTexturedTrianglesBufferMutex().data);
-				const auto& tris = obj->shaderTexturedTrianglesBuffer();
-				for (const auto& tri : tris)
-					for (const auto& v : tri.vertices)
-						lambdaUpdatePt(v.xyzrgba.pt);
-			}
-		}
-#endif
-#if 0
-		std::cout << "bbox for [" << modelURIForErrorReport
-				  << "] glClass=" << glModel->GetRuntimeClass()->className
-				  << " numTotalPts=" << numTotalPts
-				  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
-				  << " zMax=" << zMax << " bb=" << bb.asString()
-				  << " volume=" << bb.volume() << "\n";
-#endif
+		zMin = block->block_z_min() - GeometryEpsilon;
+		zMax = block->block_z_max() + GeometryEpsilon;
 	}
 
-	if (bb.min == mrpt::math::TBoundingBox::PlusMinusInfinity().min ||
-		bb.max == mrpt::math::TBoundingBox::PlusMinusInfinity().max)
-	{
-		// default: the whole model bbox:
-		bb = glModel->getBoundingBox();
+	// Calculate its convex hull:
+	const auto shape =
+		chc.get(*glModel, zMin, zMax, modelPose, modelScale, modelURI);
 
-		// Apply transformation to bounding box too:
-		bb.min = modelPose.composePoint(bb.min * modelScale);
-		bb.max = modelPose.composePoint(bb.max * modelScale);
-		// Sort corners:
-		bb = mrpt::math::TBoundingBox::FromUnsortedPoints(bb.min, bb.max);
-	}
-
-	if (bb.volume() < 1e-8)
-	{
-		THROW_EXCEPTION_FMT(
-			"Error: Bounding box of visual model ('%s') has almost null volume "
-			"(=%g m³). A possible cause, if this is a <block>, is not enough "
-			"vertices within the given range [zmin,zmax]",
-			modelURIForErrorReport.c_str(), bb.volume());
-	}
+	mrpt::math::TBoundingBox bb;
+	bb.min.x = shape[0].x;
+	bb.min.y = shape[0].y;
+	bb.min.z = zMin;
+	bb.max.x = shape[2].x;
+	bb.max.y = shape[2].y;
+	bb.max.z = zMax;
 
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 
@@ -344,8 +241,6 @@ void VisualObject::addCustomVisualization(
 	}
 
 	// Auto bounds from visual model bounding-box:
-
-	// Apply transformation to bounding box too:
 	if (!viz_bb_)
 	{
 		// Copy ...
