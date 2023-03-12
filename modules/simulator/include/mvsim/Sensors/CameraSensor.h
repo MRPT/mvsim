@@ -54,7 +54,7 @@ class CameraSensor : public SensorBase
 
 	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_rgb_;
 
-	/** Whether gl_scan_ has to be updated upon next call of
+	/** Whether gl_* have to be updated upon next call of
 	 * internalGuiUpdate() from last_scan2gui_ */
 	bool gui_uptodate_ = false;
 

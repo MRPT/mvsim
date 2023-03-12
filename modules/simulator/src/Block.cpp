@@ -152,12 +152,6 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	{
 		block->internal_parseGeometry(*xml_geom);
 	}
-	else
-	{
-		THROW_EXCEPTION(
-			"<block> element must define its shape via either a <shape> or a "
-			"<geometry> tag, not none found.");
-	}
 
 	// Auto shape node from visual?
 	if (const rapidxml::xml_node<char>* xml_shape_viz =

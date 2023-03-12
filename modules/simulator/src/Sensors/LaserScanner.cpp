@@ -89,6 +89,8 @@ void LaserScanner::internalGuiUpdate(
 		physical,
 	[[maybe_unused]] bool childrenOnly)
 {
+	using namespace std::string_literals;
+
 	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
 	if (viz)
 	{
@@ -115,6 +117,8 @@ void LaserScanner::internalGuiUpdate(
 		gl_scan_->enableLine(viz_visibleLines_);
 
 		gl_scan_->setLocalRepresentativePoint({0, 0, 0.10f});
+		gl_scan_->setName(
+			"glScan veh:"s + vehicle_.getName() + " sensor:"s + this->name_);
 
 		glVizSensors->insert(gl_scan_);
 	}
