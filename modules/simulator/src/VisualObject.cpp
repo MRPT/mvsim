@@ -196,41 +196,35 @@ void VisualObject::addCustomVisualization(
 	{
 		oAssimp->onUpdateBuffers_all();
 	}
-	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(
-			glModel.get());
-		o)
+	auto* oRSWF = dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(
+		glModel.get());
+	if (oRSWF)
 	{
-		o->onUpdateBuffers_Wireframe();
+		oRSWF->onUpdateBuffers_Wireframe();
 	}
-	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderTriangles*>(
-			glModel.get());
-		o)
+	auto* oRST = dynamic_cast<mrpt::opengl::CRenderizableShaderTriangles*>(
+		glModel.get());
+	if (oRST)
 	{
-		o->onUpdateBuffers_Triangles();
+		oRST->onUpdateBuffers_Triangles();
 	}
-	if (auto* o =
-			dynamic_cast<mrpt::opengl::CRenderizableShaderTexturedTriangles*>(
-				glModel.get());
-		o)
-	{
-		o->onUpdateBuffers_TexturedTriangles();
-	}
-	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(
+	auto* oRSTT =
+		dynamic_cast<mrpt::opengl::CRenderizableShaderTexturedTriangles*>(
 			glModel.get());
-		o)
+	if (oRSTT)
 	{
-		o->onUpdateBuffers_Wireframe();
+		oRSTT->onUpdateBuffers_TexturedTriangles();
 	}
-	if (auto* o = dynamic_cast<mrpt::opengl::CRenderizableShaderPoints*>(
-			glModel.get());
-		o)
+	auto* oRP =
+		dynamic_cast<mrpt::opengl::CRenderizableShaderPoints*>(glModel.get());
+	if (oRP)
 	{
-		o->onUpdateBuffers_Points();
+		oRP->onUpdateBuffers_Points();
 	}
 
 	mrpt::math::TBoundingBox bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
 	// Slice bbox in z up to a given relevant height:
-	if (const Block* block = dynamic_cast<const Block*>(this); block && oAssimp)
+	if (const Block* block = dynamic_cast<const Block*>(this); block)
 	{
 		const auto zMin = block->block_z_min() - GeometryEpsilon;
 		const auto zMax = block->block_z_max() + GeometryEpsilon;
@@ -245,42 +239,58 @@ void VisualObject::addCustomVisualization(
 			numPassedPts++;
 		};
 
+		if (oRST)
 		{
 			auto lck =
-				mrpt::lockHelper(oAssimp->shaderTrianglesBufferMutex().data);
-			const auto& tris = oAssimp->shaderTrianglesBuffer();
+				mrpt::lockHelper(oRST->shaderTrianglesBufferMutex().data);
+			const auto& tris = oRST->shaderTrianglesBuffer();
 			for (const auto& tri : tris)
 				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
 		}
+		if (oRSTT)
 		{
-			auto lck =
-				mrpt::lockHelper(oAssimp->shaderPointsBuffersMutex().data);
-			const auto& pts = oAssimp->shaderPointsVertexPointBuffer();
+			auto lck = mrpt::lockHelper(
+				oRSTT->shaderTexturedTrianglesBufferMutex().data);
+			const auto& tris = oRSTT->shaderTexturedTrianglesBuffer();
+			for (const auto& tri : tris)
+				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
+		}
+		if (oRP)
+		{
+			auto lck = mrpt::lockHelper(oRP->shaderPointsBuffersMutex().data);
+			const auto& pts = oRP->shaderPointsVertexPointBuffer();
 			for (const auto& pt : pts) lambdaUpdatePt(pt);
 		}
+		if (oRSWF)
 		{
 			auto lck =
-				mrpt::lockHelper(oAssimp->shaderWireframeBuffersMutex().data);
-			const auto& pts = oAssimp->shaderWireframeVertexPointBuffer();
+				mrpt::lockHelper(oRSWF->shaderWireframeBuffersMutex().data);
+			const auto& pts = oRSWF->shaderWireframeVertexPointBuffer();
 			for (const auto& pt : pts) lambdaUpdatePt(pt);
 		}
 
 #if MRPT_VERSION >= 0x260
-		const auto& txtrdObjs = oAssimp->texturedObjects();	 // [new mrpt 2.6.0]
-		for (const auto& obj : txtrdObjs)
+		if (oAssimp)
 		{
-			if (!obj) continue;
+			const auto& txtrdObjs =
+				oAssimp->texturedObjects();	 // [new mrpt 2.6.0]
+			for (const auto& obj : txtrdObjs)
+			{
+				if (!obj) continue;
 
-			auto lck = mrpt::lockHelper(
-				obj->shaderTexturedTrianglesBufferMutex().data);
-			const auto& tris = obj->shaderTexturedTrianglesBuffer();
-			for (const auto& tri : tris)
-				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
+				auto lck = mrpt::lockHelper(
+					obj->shaderTexturedTrianglesBufferMutex().data);
+				const auto& tris = obj->shaderTexturedTrianglesBuffer();
+				for (const auto& tri : tris)
+					for (const auto& v : tri.vertices)
+						lambdaUpdatePt(v.xyzrgba.pt);
+			}
 		}
 #endif
 #if 0
 		std::cout << "bbox for [" << modelURIForErrorReport
-				  << "] numTotalPts=" << numTotalPts
+				  << "] glClass=" << glModel->GetRuntimeClass()->className
+				  << " numTotalPts=" << numTotalPts
 				  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
 				  << " zMax=" << zMax << " bb=" << bb.asString()
 				  << " volume=" << bb.volume() << "\n";
