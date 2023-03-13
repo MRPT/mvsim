@@ -175,7 +175,7 @@ void World::GUI::prepare_status_window()
 	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Status");
 #endif
 
-	w->setPosition({5, 255});
+	w->setPosition({5, 455});
 	w->setLayout(new nanogui::BoxLayout(
 		nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
 	w->setFixedWidth(320);

@@ -140,6 +140,9 @@ void LaserScanner::internalGuiUpdate(
 	if (!gl_sensor_fov_ && viz)
 	{
 		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
+#if MRPT_VERSION >= 0x270
+		gl_sensor_fov_->castShadows(false);
+#endif
 
 		auto fovScan = mrpt::opengl::CPlanarLaserScan::Create();
 		fovScan->enablePoints(false);

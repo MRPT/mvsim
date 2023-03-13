@@ -204,7 +204,6 @@ VehicleBase::Ptr VehicleBase::factory(
 					sClassName.c_str()));
 
 			nodes.add(class_root);
-			// cout << *class_root;
 		}
 	}
 
@@ -329,8 +328,8 @@ VehicleBase::Ptr VehicleBase::factory(
 		if (!frict_node)
 		{
 			// Default:
-			veh->friction_ = std::shared_ptr<FrictionBase>(
-				new DefaultFriction(*veh, nullptr /*default params*/));
+			veh->friction_ =
+				std::make_shared<DefaultFriction>(*veh, nullptr /*default */);
 		}
 		else
 		{
