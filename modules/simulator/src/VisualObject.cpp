@@ -29,6 +29,17 @@ using namespace mvsim;
 static std::atomic_int32_t g_uniqueCustomVisualId = 0;
 double VisualObject::GeometryEpsilon = 1e-3;
 
+VisualObject::VisualObject(
+	World* parent, bool insertCustomVizIntoViz,
+	bool insertCustomVizIntoPhysical)
+	: world_(parent),
+	  insertCustomVizIntoViz_(insertCustomVizIntoViz),
+	  insertCustomVizIntoPhysical_(insertCustomVizIntoPhysical)
+{
+	glCollision_ = mrpt::opengl::CSetOfObjects::Create();
+	glCollision_->setName("bbox");
+}
+
 VisualObject::~VisualObject() = default;
 
 void VisualObject::guiUpdate(
@@ -233,12 +244,7 @@ void VisualObject::addCustomVisualization(
 	}
 	glCustomVisual_->insert(glGroup);
 
-	if (!glCollision_)
-	{
-		glCollision_ = mrpt::opengl::CSetOfObjects::Create();
-		glCollision_->setName("bbox");
-		glCollision_->setVisibility(initialShowBoundingBox);
-	}
+	if (glCollision_) glCollision_->setVisibility(initialShowBoundingBox);
 
 	// Auto bounds from visual model bounding-box:
 	if (!viz_bb_)

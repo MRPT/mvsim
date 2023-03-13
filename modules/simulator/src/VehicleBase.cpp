@@ -291,6 +291,9 @@ VehicleBase::Ptr VehicleBase::factory(
 	}
 	veh->updateMaxRadiusFromPoly();
 
+	// Update shape
+	MRPT_TODO("shape");
+
 	// <Optional> Log path. If not specified, app folder will be used
 	// -----------------------------------------------------------
 	{

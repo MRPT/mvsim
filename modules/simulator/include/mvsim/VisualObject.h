@@ -30,12 +30,7 @@ class VisualObject
    public:
 	VisualObject(
 		World* parent, bool insertCustomVizIntoViz = true,
-		bool insertCustomVizIntoPhysical = true)
-		: world_(parent),
-		  insertCustomVizIntoViz_(insertCustomVizIntoViz),
-		  insertCustomVizIntoPhysical_(insertCustomVizIntoPhysical)
-	{
-	}
+		bool insertCustomVizIntoPhysical = true);
 
 	virtual ~VisualObject();
 
