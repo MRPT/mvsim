@@ -71,63 +71,59 @@ mrpt::math::TPolygon2D ConvexHullCache::get(
 	mrpt::math::TBoundingBox bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
 
 	// Slice bbox in z up to a given relevant height:
+	size_t numTotalPts = 0, numPassedPts = 0;
+
+	auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt) {
+		numTotalPts++;
+		auto pt = modelPose.composePoint(orgPt * modelScale);
+		if (pt.z < zMin || pt.z > zMax) return;	 // skip
+		bb.updateWithPoint(pt);
+		numPassedPts++;
+	};
+
+	if (oRST)
 	{
-		size_t numTotalPts = 0, numPassedPts = 0;
-
-		auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt) {
-			numTotalPts++;
-			auto pt = modelPose.composePoint(orgPt * modelScale);
-			if (pt.z < zMin || pt.z > zMax) return;	 // skip
-			bb.updateWithPoint(pt);
-			numPassedPts++;
-		};
-
-		if (oRST)
-		{
-			auto lck =
-				mrpt::lockHelper(oRST->shaderTrianglesBufferMutex().data);
-			const auto& tris = oRST->shaderTrianglesBuffer();
-			for (const auto& tri : tris)
-				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
-		}
-		if (oRSTT)
-		{
-			auto lck = mrpt::lockHelper(
-				oRSTT->shaderTexturedTrianglesBufferMutex().data);
-			const auto& tris = oRSTT->shaderTexturedTrianglesBuffer();
-			for (const auto& tri : tris)
-				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
-		}
-		if (oRP)
-		{
-			auto lck = mrpt::lockHelper(oRP->shaderPointsBuffersMutex().data);
-			const auto& pts = oRP->shaderPointsVertexPointBuffer();
-			for (const auto& pt : pts) lambdaUpdatePt(pt);
-		}
-		if (oRSWF)
-		{
-			auto lck =
-				mrpt::lockHelper(oRSWF->shaderWireframeBuffersMutex().data);
-			const auto& pts = oRSWF->shaderWireframeVertexPointBuffer();
-			for (const auto& pt : pts) lambdaUpdatePt(pt);
-		}
+		auto lck = mrpt::lockHelper(oRST->shaderTrianglesBufferMutex().data);
+		const auto& tris = oRST->shaderTrianglesBuffer();
+		for (const auto& tri : tris)
+			for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
+	}
+	if (oRSTT)
+	{
+		auto lck =
+			mrpt::lockHelper(oRSTT->shaderTexturedTrianglesBufferMutex().data);
+		const auto& tris = oRSTT->shaderTexturedTrianglesBuffer();
+		for (const auto& tri : tris)
+			for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
+	}
+	if (oRP)
+	{
+		auto lck = mrpt::lockHelper(oRP->shaderPointsBuffersMutex().data);
+		const auto& pts = oRP->shaderPointsVertexPointBuffer();
+		for (const auto& pt : pts) lambdaUpdatePt(pt);
+	}
+	if (oRSWF)
+	{
+		auto lck = mrpt::lockHelper(oRSWF->shaderWireframeBuffersMutex().data);
+		const auto& pts = oRSWF->shaderWireframeVertexPointBuffer();
+		for (const auto& pt : pts) lambdaUpdatePt(pt);
+	}
 
 #if MRPT_VERSION >= 0x260
-		if (oAssimp)
+	if (oAssimp)
+	{
+		const auto& txtrdObjs = oAssimp->texturedObjects();	 // mrpt>=2.6.0
+		for (const auto& o : txtrdObjs)
 		{
-			const auto& txtrdObjs = oAssimp->texturedObjects();	 // mrpt>=2.6.0
-			for (const auto& o : txtrdObjs)
-			{
-				if (!o) continue;
+			if (!o) continue;
 
-				auto lck = mrpt::lockHelper(
-					o->shaderTexturedTrianglesBufferMutex().data);
-				const auto& tris = o->shaderTexturedTrianglesBuffer();
-				for (const auto& tri : tris)
-					for (const auto& v : tri.vertices)
-						lambdaUpdatePt(v.xyzrgba.pt);
-			}
+			auto lck =
+				mrpt::lockHelper(o->shaderTexturedTrianglesBufferMutex().data);
+			const auto& tris = o->shaderTexturedTrianglesBuffer();
+			for (const auto& tri : tris)
+				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
 		}
+	}
 #endif
 #if 0
 		std::cout << "bbox for ["
@@ -138,7 +134,6 @@ mrpt::math::TPolygon2D ConvexHullCache::get(
 				  << " zMax=" << zMax << " bb=" << bb.asString()
 				  << " volume=" << bb.volume() << "\n";
 #endif
-	}
 
 	if (bb.min == mrpt::math::TBoundingBox::PlusMinusInfinity().min ||
 		bb.max == mrpt::math::TBoundingBox::PlusMinusInfinity().max)
