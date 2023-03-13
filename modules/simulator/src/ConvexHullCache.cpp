@@ -129,7 +129,7 @@ mrpt::math::TPolygon2D ConvexHullCache::get(
 			}
 		}
 #endif
-#if 1
+#if 0
 		std::cout << "bbox for ["
 				  << (modelFile.has_value() ? *modelFile : "none")
 				  << "] glClass=" << obj.GetRuntimeClass()->className

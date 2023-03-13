@@ -195,7 +195,7 @@ void VisualObject::addCustomVisualization(
 
 	auto& chc = ConvexHullCache::Instance();
 
-	float zMin = std::numeric_limits<float>::min();
+	float zMin = -std::numeric_limits<float>::max();
 	float zMax = std::numeric_limits<float>::max();
 
 	if (const Block* block = dynamic_cast<const Block*>(this); block)
