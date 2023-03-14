@@ -14,6 +14,7 @@
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/opengl_frwds.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mvsim/Shape2p5.h>
 #include <mvsim/basic_types.h>
 
 #include <cstdint>
@@ -48,12 +49,11 @@ class VisualObject
 	void customVisualVisible(const bool visible);
 	bool customVisualVisible() const;
 
-	/** Returns bounding boxes, as loaded by parseVisual() from an XML config
-	 * file. */
-	const std::optional<mrpt::math::TBoundingBox>& getVisualModelBoundingBox()
-		const
+	/** Returns the collision shape, if defined (should be for regular entities
+	 * after correct initialization). */
+	const std::optional<Shape2p5>& collisionShape() const
 	{
-		return viz_bb_;
+		return collisionShape_;
 	}
 
 	void showCollisionShape(bool show);
@@ -91,8 +91,16 @@ class VisualObject
 		const std::optional<std::string>& modelURI = std::nullopt,
 		const bool initialShowBoundingBox = false);
 
+	/** Defines (upon first call) or updates the current "2.5" collision space
+	 * of this entity.
+	 */
+	void updateCollisionShapeFromPoints(
+		const std::vector<mrpt::math::TPoint3Df>& pts);
+
+	void setCollisionShape(const Shape2p5& cs) { collisionShape_ = cs; }
+
    private:
-	std::optional<mrpt::math::TBoundingBox> viz_bb_;
+	std::optional<Shape2p5> collisionShape_;
 
 	/// Called by parseVisual once per "visual" block.
 	bool implParseVisual(const rapidxml::xml_node<char>& visual_node);

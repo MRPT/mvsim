@@ -7,8 +7,8 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/math/TPolygon2D.h>
 #include <mrpt/opengl/CRenderizable.h>
+#include <mvsim/Shape2p5.h>
 
 #include <map>
 #include <optional>
@@ -16,13 +16,13 @@
 
 namespace mvsim
 {
-class ConvexHullCache
+class CollisionShapeCache
 {
    public:
-	static ConvexHullCache& Instance();
+	static CollisionShapeCache& Instance();
 
 	/** Computes the convex hull of a given model, or gets it from the cache */
-	mrpt::math::TPolygon2D get(
+	Shape2p5 get(
 		mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
 		const mrpt::poses::CPose3D& modelPose, const float modelScale,
 		const std::optional<std::string>& modelFile = std::nullopt);
@@ -30,12 +30,12 @@ class ConvexHullCache
 	void clear() { cache.clear(); }
 
    private:
-	ConvexHullCache() = default;
-	~ConvexHullCache() = default;
+	CollisionShapeCache() = default;
+	~CollisionShapeCache() = default;
 
 	struct Entry
 	{
-		mrpt::math::TPolygon2D convexHull;
+		Shape2p5 convexHull;
 	};
 
 	std::map<std::string, Entry> cache;

@@ -7,20 +7,20 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include "ConvexHullCache.h"
+#include "CollisionShapeCache.h"
 
 #include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/version.h>
 
 using namespace mvsim;
 
-ConvexHullCache& ConvexHullCache::Instance()
+CollisionShapeCache& CollisionShapeCache::Instance()
 {
-	static ConvexHullCache o;
+	static CollisionShapeCache o;
 	return o;
 }
 
-mrpt::math::TPolygon2D ConvexHullCache::get(
+Shape2p5 CollisionShapeCache::get(
 	mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
 	const mrpt::poses::CPose3D& modelPose, const float modelScale,
 	const std::optional<std::string>& modelFile)
@@ -33,9 +33,8 @@ mrpt::math::TPolygon2D ConvexHullCache::get(
 	}
 
 	// No, it's a new model path, create its placeholder:
-	mrpt::math::TPolygon2D retVal;
-	mrpt::math::TPolygon2D& ret =
-		modelFile ? cache[*modelFile].convexHull : retVal;
+	Shape2p5 retVal;
+	Shape2p5& ret = modelFile ? cache[*modelFile].convexHull : retVal;
 
 	// Make sure the points and vertices buffers are up to date, so we can
 	// access them:
@@ -68,16 +67,16 @@ mrpt::math::TPolygon2D ConvexHullCache::get(
 		oRP->onUpdateBuffers_Points();
 	}
 
-	mrpt::math::TBoundingBox bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
-
 	// Slice bbox in z up to a given relevant height:
 	size_t numTotalPts = 0, numPassedPts = 0;
+
+	std::vector<mrpt::math::TPoint3Df> allPts;
 
 	auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt) {
 		numTotalPts++;
 		auto pt = modelPose.composePoint(orgPt * modelScale);
 		if (pt.z < zMin || pt.z > zMax) return;	 // skip
-		bb.updateWithPoint(pt);
+		allPts.push_back(pt);
 		numPassedPts++;
 	};
 
@@ -125,42 +124,31 @@ mrpt::math::TPolygon2D ConvexHullCache::get(
 		}
 	}
 #endif
+
+	// Convert all points into an actual 2.5 volume:
+	// ---------------------------------------------------------
+	ret = Shape2p5::CreateConvexHullFromPoints(allPts);
+
+	const auto vol = ret.volume();
+
 #if 0
-		std::cout << "bbox for ["
-				  << (modelFile.has_value() ? *modelFile : "none")
-				  << "] glClass=" << obj.GetRuntimeClass()->className
-				  << " numTotalPts=" << numTotalPts
-				  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
-				  << " zMax=" << zMax << " bb=" << bb.asString()
-				  << " volume=" << bb.volume() << "\n";
+	std::cout << "shape2.5 for ["
+			  << (modelFile.has_value() ? *modelFile : "none")
+			  << "] glClass=" << obj.GetRuntimeClass()->className
+			  << " numTotalPts=" << numTotalPts
+			  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
+			  << " zMax=" << zMax << " shape=" << ret.contour.size() << " pts, "
+			  << " volume=" << vol << "\n";
 #endif
 
-	if (bb.min == mrpt::math::TBoundingBox::PlusMinusInfinity().min ||
-		bb.max == mrpt::math::TBoundingBox::PlusMinusInfinity().max)
-	{
-		// default: the whole model bbox:
-		bb = obj.getBoundingBox();
-
-		// Apply transformation to bounding box too:
-		bb.min = modelPose.composePoint(bb.min * modelScale);
-		bb.max = modelPose.composePoint(bb.max * modelScale);
-		// Sort corners:
-		bb = mrpt::math::TBoundingBox::FromUnsortedPoints(bb.min, bb.max);
-	}
-
-	if (bb.volume() < 1e-8)
+	if (vol < 1e-8)
 	{
 		THROW_EXCEPTION_FMT(
-			"Error: Bounding box of visual model ('%s') has almost null volume "
-			"(=%g m³). A possible cause, if this is a <block>, is not enough "
-			"vertices within the given range [zmin,zmax]",
-			modelFile.has_value() ? modelFile->c_str() : "none", bb.volume());
+			"Error: Collision volume for visual model ('%s') has almost null "
+			"volume (=%g m³). A possible cause, if this is a <block>, is not "
+			"enough vertices within the given range [zmin,zmax]",
+			modelFile.has_value() ? modelFile->c_str() : "none", vol);
 	}
-
-	ret.emplace_back(bb.min.x, bb.min.y);
-	ret.emplace_back(bb.min.x, bb.max.y);
-	ret.emplace_back(bb.max.x, bb.max.y);
-	ret.emplace_back(bb.max.x, bb.min.y);
 
 	return ret;
 }

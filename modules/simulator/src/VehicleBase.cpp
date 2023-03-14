@@ -265,13 +265,13 @@ VehicleBase::Ptr VehicleBase::factory(
 				xml_chassis->first_node("shape_from_visual");
 			sfv)
 		{
-			const auto bbVis = veh->getVisualModelBoundingBox();
+			const auto& bbVis = veh->collisionShape();
 			if (!bbVis.has_value())
 			{
 				THROW_EXCEPTION(
-					"Error: Tag <shape_from_visual/> found but neither "
-					"<visual> "
-					"nor <geometry> entries, while parsing <block>");
+					"Error: Tag <shape_from_visual/> found but no "
+					"<visual> entry seems to have been found while parsing "
+					"<vehicle>");
 			}
 			const auto& bb = bbVis.value();
 			if (bb.volume() == 0)
@@ -281,18 +281,22 @@ VehicleBase::Ptr VehicleBase::factory(
 					"visual object seems incorrect, while parsing <vehicle>");
 			}
 
-			auto& poly = veh->chassis_poly_;
-			poly.clear();
-			poly.emplace_back(bb.min.x, bb.min.y);
-			poly.emplace_back(bb.min.x, bb.max.y);
-			poly.emplace_back(bb.max.x, bb.max.y);
-			poly.emplace_back(bb.max.x, bb.min.y);
+			// Set contour polygon:
+			veh->chassis_poly_ = bb.contour;
 		}
 	}
-	veh->updateMaxRadiusFromPoly();
+	else
+	{
+		// Update collision shape from shape loaded from XML:
+		Shape2p5 cs;
+		cs.contour = veh->chassis_poly_;
+		cs.zMin = veh->chassis_z_min_;
+		cs.zMax = veh->chassis_z_max_;
 
-	// Update shape
-	MRPT_TODO("shape");
+		veh->setCollisionShape(cs);
+	}
+
+	veh->updateMaxRadiusFromPoly();
 
 	// <Optional> Log path. If not specified, app folder will be used
 	// -----------------------------------------------------------

@@ -158,7 +158,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 			nodes.first_node("shape_from_visual");
 		xml_shape_viz)
 	{
-		const auto bbVis = block->getVisualModelBoundingBox();
+		const auto& bbVis = block->collisionShape();
 		if (!bbVis.has_value())
 		{
 			THROW_EXCEPTION(
@@ -174,14 +174,21 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 				"visual object seems incorrect, while parsing <block>");
 		}
 
-		block->block_poly_.clear();
-		block->block_poly_.emplace_back(bb.min.x, bb.min.y);
-		block->block_poly_.emplace_back(bb.min.x, bb.max.y);
-		block->block_poly_.emplace_back(bb.max.x, bb.max.y);
-		block->block_poly_.emplace_back(bb.max.x, bb.min.y);
-
-		block->updateMaxRadiusFromPoly();
+		// Set contour polygon:
+		block->block_poly_ = bb.contour;
 	}
+	else
+	{
+		// Update collision shape from shape loaded from XML:
+		Shape2p5 cs;
+		cs.contour = block->block_poly_;
+		cs.zMin = block->block_z_min_;
+		cs.zMax = block->block_z_max_;
+
+		block->setCollisionShape(cs);
+	}
+
+	block->updateMaxRadiusFromPoly();
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------

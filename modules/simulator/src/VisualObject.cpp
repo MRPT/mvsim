@@ -7,8 +7,8 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/version.h>
 #include <mvsim/Block.h>
@@ -19,7 +19,7 @@
 #include <atomic>
 #include <rapidxml.hpp>
 
-#include "ConvexHullCache.h"
+#include "CollisionShapeCache.h"
 #include "JointXMLnode.h"
 #include "ModelsCache.h"
 #include "xml_utils.h"
@@ -81,12 +81,19 @@ void VisualObject::guiUpdate(
 
 	if (glCollision_ && viz.has_value())
 	{
-		if (glCollision_->empty() && viz_bb_)
+		if (glCollision_->empty() && collisionShape_)
 		{
-			auto glBox = mrpt::opengl::CBox::Create();
-			glBox->setWireframe(true);
-			glBox->setBoxCorners(viz_bb_->min, viz_bb_->max);
-			glCollision_->insert(glBox);
+			const auto& cs = collisionShape_.value();
+
+			const double height = cs.zMax - cs.zMin;
+			ASSERT_(height > 0);
+
+			auto glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(
+				cs.contour, height);
+			glCS->setLocation(0, 0, cs.zMin);
+			glCS->setWireframe(true);
+
+			glCollision_->insert(glCS);
 			glCollision_->setVisibility(false);
 			viz->get().insert(glCollision_);
 		}
@@ -204,7 +211,7 @@ void VisualObject::addCustomVisualization(
 {
 	ASSERT_(glModel);
 
-	auto& chc = ConvexHullCache::Instance();
+	auto& chc = CollisionShapeCache::Instance();
 
 	float zMin = -std::numeric_limits<float>::max();
 	float zMax = std::numeric_limits<float>::max();
@@ -218,14 +225,6 @@ void VisualObject::addCustomVisualization(
 	// Calculate its convex hull:
 	const auto shape =
 		chc.get(*glModel, zMin, zMax, modelPose, modelScale, modelURI);
-
-	mrpt::math::TBoundingBox bb;
-	bb.min.x = shape[0].x;
-	bb.min.y = shape[0].y;
-	bb.min.z = zMin;
-	bb.max.x = shape[2].x;
-	bb.max.y = shape[2].y;
-	bb.max.z = zMax;
 
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 
@@ -247,15 +246,27 @@ void VisualObject::addCustomVisualization(
 	if (glCollision_) glCollision_->setVisibility(initialShowBoundingBox);
 
 	// Auto bounds from visual model bounding-box:
-	if (!viz_bb_)
+	if (!collisionShape_)
 	{
-		// Copy ...
-		viz_bb_ = bb;
+		// Copy:
+		collisionShape_ = shape;
 	}
 	else
 	{
-		// ... or update bounding box:
-		viz_bb_->updateWithPoint(bb.min);
-		viz_bb_->updateWithPoint(bb.max);
+		// ... or update collision volume:
+		collisionShape_->mergeWith(shape);
+	}
+}
+
+void VisualObject::updateCollisionShapeFromPoints(
+	const std::vector<mrpt::math::TPoint3Df>& pts)
+{
+	if (collisionShape_.has_value())
+	{
+		collisionShape_->mergeWith(pts);
+	}
+	else
+	{
+		collisionShape_ = Shape2p5::CreateConvexHullFromPoints(pts);
 	}
 }
