@@ -62,7 +62,6 @@ class CameraSensor : public SensorBase
 	std::mutex has_to_render_mtx_;
 
 	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
-	float ambient_light_ = 0.6f;
 
 	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
 		gl_sensor_origin_corner_;

@@ -72,9 +72,6 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["clip_min"] = TParamEntry("%f", &rgbClipMin_);
 	params["clip_max"] = TParamEntry("%f", &rgbClipMax_);
 
-	MRPT_TODO("REMOVE??");
-	params["ambient_light"] = TParamEntry("%f", &ambient_light_);
-
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
 
@@ -224,7 +221,6 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 	viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);
-	viewport->lightParameters().ambient = ambient_light_;
 
 	fbo_renderer_rgb_->render_RGB(world3DScene, curObs->image);
 

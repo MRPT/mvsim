@@ -79,6 +79,9 @@ void World::internal_initialize()
 	worldVisual_->getViewport()->lightParameters().ambient = {
 		0.5f, 0.5f, 0.5f, 1.0f};
 #endif
+	// Physical world light = visual world lights:
+	worldPhysical_.getViewport()->lightParameters() =
+		worldVisual_->getViewport()->lightParameters();
 
 	// Create group for sensor viz:
 	{
