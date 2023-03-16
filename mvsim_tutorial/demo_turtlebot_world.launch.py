@@ -1,4 +1,3 @@
-
 # ROS2 launch file
 
 from launch import LaunchDescription
@@ -9,15 +8,21 @@ from launch.actions import DeclareLaunchArgument
 from ament_index_python import get_package_share_directory
 import os
 
+mvsimDir = get_package_share_directory("mvsim")
+
+MVSIM_WORLD_FILE = os.path.join(mvsimDir, 'mvsim_tutorial',
+                                'demo_turtlebot_world.world.xml')
+MVSIM_ROS2_PARAMS_FILE = os.path.join(mvsimDir, 'mvsim_tutorial',
+                                      'mvsim_ros2_params.yaml')
+RVIZ2_FILE = os.path.join(mvsimDir, 'mvsim_tutorial',
+                          'demo_depth_camera_ros2.rviz')
+
 
 def generate_launch_description():
-    mvsimDir = get_package_share_directory("mvsim")
-    #print('mvsimDir: ' + mvsimDir)
-
     # args that can be set from the command line or a default will be used
     world_file_launch_arg = DeclareLaunchArgument(
         "world_file", default_value=TextSubstitution(
-            text=os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_depth_camera.world.xml')))
+            text=MVSIM_WORLD_FILE))
 
     mvsim_node = Node(
         package='mvsim',
@@ -25,10 +30,10 @@ def generate_launch_description():
         name='mvsim',
         output='screen',
         parameters=[
-            os.path.join(mvsimDir, 'mvsim_tutorial',
-                         'mvsim_ros2_params.yaml'),
+            MVSIM_ROS2_PARAMS_FILE,
             {
                 "world_file": LaunchConfiguration('world_file'),
+                "headless": False
             }]
     )
 
@@ -37,7 +42,7 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         arguments=[
-                '-d', [os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_depth_camera_ros2.rviz')]]
+                '-d', [RVIZ2_FILE]]
     )
 
     return LaunchDescription([
