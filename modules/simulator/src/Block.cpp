@@ -175,15 +175,14 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		}
 
 		// Set contour polygon:
-		block->block_poly_ = bb.contour;
+		block->block_poly_ = bb.getContour();
 	}
 	else
 	{
 		// Update collision shape from shape loaded from XML:
 		Shape2p5 cs;
-		cs.contour = block->block_poly_;
-		cs.zMin = block->block_z_min_;
-		cs.zMax = block->block_z_max_;
+		cs.setShapeManual(
+			block->block_poly_, block->block_z_min_, block->block_z_max_);
 
 		block->setCollisionShape(cs);
 	}

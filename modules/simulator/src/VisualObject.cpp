@@ -85,12 +85,12 @@ void VisualObject::guiUpdate(
 		{
 			const auto& cs = collisionShape_.value();
 
-			const double height = cs.zMax - cs.zMin;
+			const double height = cs.zMax() - cs.zMin();
 			ASSERT_(height > 0);
 
 			auto glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(
-				cs.contour, height);
-			glCS->setLocation(0, 0, cs.zMin);
+				cs.getContour(), height);
+			glCS->setLocation(0, 0, cs.zMin());
 			glCS->setWireframe(true);
 
 			glCollision_->insert(glCS);
@@ -255,18 +255,5 @@ void VisualObject::addCustomVisualization(
 	{
 		// ... or update collision volume:
 		collisionShape_->mergeWith(shape);
-	}
-}
-
-void VisualObject::updateCollisionShapeFromPoints(
-	const std::vector<mrpt::math::TPoint3Df>& pts)
-{
-	if (collisionShape_.has_value())
-	{
-		collisionShape_->mergeWith(pts);
-	}
-	else
-	{
-		collisionShape_ = Shape2p5::CreateConvexHullFromPoints(pts);
 	}
 }

@@ -282,15 +282,14 @@ VehicleBase::Ptr VehicleBase::factory(
 			}
 
 			// Set contour polygon:
-			veh->chassis_poly_ = bb.contour;
+			veh->chassis_poly_ = bb.getContour();
 		}
 		else
 		{
 			// Update collision shape from shape loaded from XML:
 			Shape2p5 cs;
-			cs.contour = veh->chassis_poly_;
-			cs.zMin = veh->chassis_z_min_;
-			cs.zMax = veh->chassis_z_max_;
+			cs.setShapeManual(
+				veh->chassis_poly_, veh->chassis_z_min_, veh->chassis_z_max_);
 
 			veh->setCollisionShape(cs);
 		}

@@ -9,29 +9,57 @@
 
 #pragma once
 
+#include <mrpt/containers/CDynamicGrid.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/math/TPolygon2D.h>
+#include <mrpt/opengl/TTriangle.h>
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace mvsim
 {
-/** A "2.5" shape: a 2D polygon + a [zMin,zMax] height range */
-struct Shape2p5
+/** A "2.5" shape: a 2D polygon + a [zMin,zMax] height range
+ *
+ *  The actual 2.5 shape is evaluated the first time getContour() is called,
+ *  given all former calls to buildAddPoint() or buildAddTriangle() and a
+ * ray-tracing algorithm.
+ *
+ */
+class Shape2p5
 {
+   public:
 	Shape2p5() = default;
 
-	static Shape2p5 CreateConvexHullFromPoints(
-		const std::vector<mrpt::math::TPoint3Df>& pts);
+	void buildInit(
+		const mrpt::math::TPoint2Df& bbMin, const mrpt::math::TPoint2Df& bbMax,
+		int numCells = 200);
+	void buildAddPoint(const mrpt::math::TPoint3Df& pt);
+	void buildAddTriangle(const mrpt::opengl::TTriangle& t);
+
+	const mrpt::math::TPolygon2D& getContour() const;
 
 	double volume() const;
 
 	void mergeWith(const Shape2p5& s);
 	void mergeWith(const std::vector<mrpt::math::TPoint3Df>& pts);
 
-	mrpt::math::TPolygon2D contour;
-	float zMin = 0, zMax = 0;
+	void setShapeManual(
+		const mrpt::math::TPolygon2D& contour, const float zMin,
+		const float zMax);
+
+	float zMin() const { return zMin_; }
+	float zMax() const { return zMax_; }
+
+   private:
+	mutable std::optional<mrpt::math::TPolygon2D> contour_;
+	mutable float zMin_ = 0, zMax_ = 0;
+
+	mutable std::optional<mrpt::containers::CDynamicGrid<uint8_t>> grid_;
+
+	/// Computes contour_ from the contents in grid_
+	void computeShape() const;
 };
 
 }  // namespace mvsim

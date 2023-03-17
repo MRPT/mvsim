@@ -91,12 +91,6 @@ class VisualObject
 		const std::optional<std::string>& modelURI = std::nullopt,
 		const bool initialShowBoundingBox = false);
 
-	/** Defines (upon first call) or updates the current "2.5" collision space
-	 * of this entity.
-	 */
-	void updateCollisionShapeFromPoints(
-		const std::vector<mrpt::math::TPoint3Df>& pts);
-
 	void setCollisionShape(const Shape2p5& cs) { collisionShape_ = cs; }
 
    private:
