@@ -56,7 +56,21 @@ class Shape2p5
 	mutable std::optional<mrpt::math::TPolygon2D> contour_;
 	mutable float zMin_ = 0, zMax_ = 0;
 
-	mutable std::optional<mrpt::containers::CDynamicGrid<uint8_t>> grid_;
+	class SimpleOccGrid : public mrpt::containers::CDynamicGrid<uint8_t>
+	{
+	   public:
+		template <typename... Args>
+		SimpleOccGrid(Args&&... args)
+			: mrpt::containers::CDynamicGrid<uint8_t>(
+				  std::forward<Args>(args)...)
+		{
+		}
+
+		// Used to debug (save grid to txt file)
+		float cell2float(const uint8_t& v) const override { return v; }
+	};
+
+	mutable std::optional<SimpleOccGrid> grid_;
 
 	/// Computes contour_ from the contents in grid_
 	void computeShape() const;
