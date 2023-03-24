@@ -12,6 +12,7 @@
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/version.h>
 #include <mvsim/Block.h>
+#include <mvsim/CollisionShapeCache.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/World.h>
@@ -19,7 +20,6 @@
 #include <atomic>
 #include <rapidxml.hpp>
 
-#include "CollisionShapeCache.h"
 #include "JointXMLnode.h"
 #include "ModelsCache.h"
 #include "xml_utils.h"

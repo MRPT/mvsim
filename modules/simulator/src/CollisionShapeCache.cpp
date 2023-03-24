@@ -7,10 +7,9 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include "CollisionShapeCache.h"
-
 #include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/version.h>
+#include <mvsim/CollisionShapeCache.h>
 
 using namespace mvsim;
 

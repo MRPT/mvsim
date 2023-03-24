@@ -25,7 +25,7 @@ DynamicsAckermann::ControllerRawForces::ControllerRawForces(
 
 // See base class docs
 void DynamicsAckermann::ControllerRawForces::control_step(
-	const DynamicsAckermann::TControllerInput& ci,
+	[[maybe_unused]] const DynamicsAckermann::TControllerInput& ci,
 	DynamicsAckermann::TControllerOutput& co)
 {
 	co.fl_torque = this->setpoint_wheel_torque_l;

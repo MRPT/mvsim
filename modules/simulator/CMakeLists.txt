@@ -31,6 +31,9 @@ add_library(${PROJECT_NAME}
 	${VehicleDynamics_SRCS}
 	${WorldElements_SRCS}
 )
+add_library(mvsim::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+mvsim_set_target_build_options(${PROJECT_NAME})
 
 source_group(Main FILES ${ROOT_SRCS})
 source_group(Sensors FILES ${Sensors_SRCS})

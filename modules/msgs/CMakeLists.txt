@@ -19,6 +19,7 @@ add_library(${PROJECT_NAME}
   ${PROTO_PY_FILES}
   ${PROTOBUF_DEFINITION_FILES}
 )
+#mvsim_set_target_build_options(${PROJECT_NAME})
 source_group(ProtobufMessages FILES
   ${PROTO_SRCS} ${PROTO_HDRS}
   ${PROTO_PY_FILES}
