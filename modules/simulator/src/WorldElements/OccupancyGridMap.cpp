@@ -164,7 +164,8 @@ void OccupancyGridMap::internalGuiUpdate(
 	}
 }
 
-void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
+void OccupancyGridMap::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 	// Make a list of objects subject to collide with the occupancy grid:
 	// - Vehicles

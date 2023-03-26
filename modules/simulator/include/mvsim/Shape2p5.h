@@ -34,7 +34,7 @@ class Shape2p5
 
 	void buildInit(
 		const mrpt::math::TPoint2Df& bbMin, const mrpt::math::TPoint2Df& bbMax,
-		int numCells = 200);
+		int numCells = 100);
 	void buildAddPoint(const mrpt::math::TPoint3Df& pt);
 	void buildAddTriangle(const mrpt::opengl::TTriangle& t);
 
@@ -74,6 +74,8 @@ class Shape2p5
 
 	/// Computes contour_ from the contents in grid_
 	void computeShape() const;
+
+	void internalGridFloodFill() const;
 };
 
 }  // namespace mvsim

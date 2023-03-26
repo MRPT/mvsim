@@ -69,7 +69,11 @@ Shape2p5 CollisionShapeCache::get(
 	// Slice bbox in z up to a given relevant height:
 	size_t numTotalPts = 0, numPassedPts = 0;
 
-	const auto coarseBB = obj.getBoundingBox();
+	auto rawBB = obj.getBoundingBox();
+	// transform and scale BBox too:
+	rawBB.max *= modelScale;
+	rawBB.min *= modelScale;
+	const auto coarseBB = rawBB.compose(modelPose);
 	ret.buildInit(
 		mrpt::math::TPoint2Df(coarseBB.min.x, coarseBB.min.y),
 		mrpt::math::TPoint2Df(coarseBB.max.x, coarseBB.max.y));
@@ -150,7 +154,7 @@ Shape2p5 CollisionShapeCache::get(
 	}
 #endif
 
-	// Convert all points into an actual 2.5 volume:
+	// Convert all points into an actual 2.5D volume:
 	// ---------------------------------------------------------
 	ret.getContour();  // evalute it now
 

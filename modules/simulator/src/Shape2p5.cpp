@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <queue>
 
 using namespace mvsim;
 
@@ -72,18 +73,21 @@ void Shape2p5::buildInit(
 {
 	contour_.reset();  // start from scratch
 
-	const float resolution = (bbMax - bbMin).norm() / numCells;
+	// grid resolution:
+	const float r = (bbMax - bbMin).norm() / numCells;
+	// border to ensure we have a free row/col all around the shape
+	const float b = r * 1.5f;
+	grid_.emplace(bbMin.x - b, bbMax.x + b, bbMin.y - b, bbMax.y + b, r);
 
-	grid_.emplace(bbMin.x, bbMax.x, bbMin.y, bbMax.y, resolution);
 	zMin_ = std::numeric_limits<float>::max();
-	zMin_ = -std::numeric_limits<float>::max();
+	zMax_ = -std::numeric_limits<float>::max();
 	grid_->fill(CELL_UNDEFINED);
 }
 
 void Shape2p5::buildAddPoint(const mrpt::math::TPoint3Df& pt)
 {
 	mrpt::keep_max(zMax_, pt.z);
-	mrpt::keep_max(zMin_, pt.z);
+	mrpt::keep_min(zMin_, pt.z);
 	uint8_t* c = grid_->cellByPos(pt.x, pt.y);
 	ASSERT_(c);
 	*c = CELL_OCCUPIED;
@@ -113,7 +117,7 @@ void Shape2p5::buildAddTriangle(const mrpt::opengl::TTriangle& t)
 
 			*c = CELL_OCCUPIED;
 			mrpt::keep_max(zMax_, p.z);
-			mrpt::keep_max(zMin_, p.z);
+			mrpt::keep_min(zMin_, p.z);
 		}
 	}
 }
@@ -124,9 +128,18 @@ void Shape2p5::computeShape() const
 	ASSERT_(grid_);
 	ASSERT_(!contour_);
 
-	// XXX
+	// 1) Flood-fill the grid with "FREE color" to allow detecting the outer
+	// shape:
+	internalGridFloodFill();
+
+#if 1
 	static int i = 0;
 	grid_->saveToTextFile(mrpt::format("grid_%03i.txt", i++));
+#endif
+
+	// 2) Detect the outer contour with full grid resolution:
+
+	// 3) Polygon pruning:
 
 	// Save result:
 	contour_.emplace();
@@ -145,4 +158,82 @@ void Shape2p5::setShapeManual(
 	contour_ = contour;
 	zMin_ = zMin;
 	zMax_ = zMax;
+}
+
+void Shape2p5::internalGridFloodFill() const
+{
+	ASSERT_(grid_);
+
+	// Algorithm:
+	// Heckbert, Paul S (1990). "IV.10: A Seed Fill Algorithm". In Glassner,
+	// Andrew S (ed.). Graphics Gems. Academic Press. pp. 275–277.
+	// https://en.wikipedia.org/wiki/Flood_fill
+
+	const int cxMax = grid_->getSizeX() - 1;
+	const int cyMax = grid_->getSizeY() - 1;
+
+	const auto Inside = [&](int x, int y) {
+		if (x < 0 || y < 0) return false;
+		if (x > cxMax || y > cyMax) return false;
+		uint8_t* c = grid_->cellByIndex(x, y);
+		if (!c) return false;
+
+		return *c == CELL_UNDEFINED;
+	};
+
+	const auto Set = [&](int x, int y) {
+		if (x < 0 || y < 0) return;
+		if (x > cxMax || y > cyMax) return;
+		uint8_t* c = grid_->cellByIndex(x, y);
+		if (!c) return;
+		*c = CELL_FREE;
+	};
+
+	int x = 0, y0 = 0;	// start pixel for flood fill.
+
+	if (!Inside(x, y0)) return;
+
+	struct Quad
+	{
+		Quad() = default;
+		Quad(int a, int b, int c, int d) : a_(a), b_(b), c_(c), d_(d){};
+
+		int a_ = 0, b_ = 0, c_ = 0, d_ = 0;
+	};
+
+	std::queue<Quad> s;
+
+	s.emplace(x, x, y0, 1);
+	// s.emplace(x, x, y0 - 1, -1); // outside already
+	while (!s.empty())
+	{
+		auto [x1, x2, y, dy] = s.front();
+		s.pop();
+		x = x1;
+		if (Inside(x, y))
+		{
+			while (Inside(x - 1, y))
+			{
+				Set(x - 1, y);
+				x--;
+			}
+		}
+
+		if (x < x1) s.emplace(x, x1 - 1, y - dy, -dy);
+
+		while (x1 <= x2)
+		{
+			while (Inside(x1, y))
+			{
+				Set(x1, y);
+				x1++;
+			}
+			s.emplace(x, x1 - 1, y + dy, dy);
+			if (x1 - 1 > x2) s.emplace(x2 + 1, x1 - 1, y - dy, -dy);
+			x1++;
+			while (x1 < x2 && !Inside(x1, y)) x1++;
+
+			x = x1;
+		}
+	}
 }

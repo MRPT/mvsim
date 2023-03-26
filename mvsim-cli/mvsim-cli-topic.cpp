@@ -185,7 +185,7 @@ int topicHz()
 	std::optional<double> lastMsgTim;
 	std::vector<double> measuredPeriods;
 
-	client.subscribe_topic_raw(topicName, [&](const zmq::message_t& msg) {
+	client.subscribe_topic_raw(topicName, [&](const zmq::message_t&) {
 		numMsgs++;
 		const double t = mrpt::Clock::nowDouble();
 		if (lastMsgTim)
