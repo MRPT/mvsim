@@ -132,7 +132,7 @@ void Shape2p5::computeShape() const
 	// shape:
 	internalGridFloodFill();
 
-#if 1
+#if 0
 	static int i = 0;
 	grid_->saveToTextFile(mrpt::format("grid_%03i.txt", i++));
 #endif
@@ -189,51 +189,80 @@ void Shape2p5::internalGridFloodFill() const
 		*c = CELL_FREE;
 	};
 
-	int x = 0, y0 = 0;	// start pixel for flood fill.
+	const int x0 = 0, y0 = 0;  // start pixel for flood fill.
 
-	if (!Inside(x, y0)) return;
+	/*
+	fn fill(x, y):
+		if not Inside(x, y) then return
+		let s = new empty stack or queue
+		Add (x, y) to s
+		while s is not empty:
+			Remove an (x, y) from s
+			let lx = x
+			while Inside(lx - 1, y):
+				Set(lx - 1, y)
+				lx = lx - 1
+			while Inside(x, y):
+				Set(x, y)
+				x = x + 1
+		  scan(lx, x - 1, y + 1, s)
+		  scan(lx, x - 1, y - 1, s)
 
-	struct Quad
+	fn scan(lx, rx, y, s):
+		let span_added = false
+		for x in lx .. rx:
+			if not Inside(x, y):
+				span_added = false
+			else if not span_added:
+				Add (x, y) to s
+				span_added = true
+	*/
+
+	if (!Inside(x0, y0)) return;
+
+	struct Coord
 	{
-		Quad() = default;
-		Quad(int a, int b, int c, int d) : a_(a), b_(b), c_(c), d_(d){};
+		Coord() = default;
+		Coord(int X, int Y) : x_(X), y_(Y) {}
 
-		int a_ = 0, b_ = 0, c_ = 0, d_ = 0;
+		int x_ = 0, y_ = 0;
 	};
 
-	std::queue<Quad> s;
+	std::queue<Coord> s;
 
-	s.emplace(x, x, y0, 1);
-	// s.emplace(x, x, y0 - 1, -1); // outside already
+	const auto lambdaScan = [&s, &Inside](int lx, int rx, int y) {
+		bool spanAdded = false;
+		for (int x = lx; x <= rx; x++)
+		{
+			if (!Inside(x, y))
+			{
+				spanAdded = false;
+			}
+			else if (!spanAdded)
+			{
+				s.emplace(x, y);
+				spanAdded = true;
+			}
+		}
+	};
+
+	s.emplace(x0, y0);
 	while (!s.empty())
 	{
-		auto [x1, x2, y, dy] = s.front();
+		auto [x, y] = s.front();
 		s.pop();
-		x = x1;
-		if (Inside(x, y))
+		int lx = x;
+		while (Inside(lx - 1, y))
 		{
-			while (Inside(x - 1, y))
-			{
-				Set(x - 1, y);
-				x--;
-			}
+			Set(lx - 1, y);
+			lx--;
 		}
-
-		if (x < x1) s.emplace(x, x1 - 1, y - dy, -dy);
-
-		while (x1 <= x2)
+		while (Inside(x, y))
 		{
-			while (Inside(x1, y))
-			{
-				Set(x1, y);
-				x1++;
-			}
-			s.emplace(x, x1 - 1, y + dy, dy);
-			if (x1 - 1 > x2) s.emplace(x2 + 1, x1 - 1, y - dy, -dy);
-			x1++;
-			while (x1 < x2 && !Inside(x1, y)) x1++;
-
-			x = x1;
+			Set(x, y);
+			x++;
 		}
+		lambdaScan(lx, x - 1, y + 1);
+		lambdaScan(lx, x - 1, y - 1);
 	}
 }
