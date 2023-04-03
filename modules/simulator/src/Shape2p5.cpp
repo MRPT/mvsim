@@ -19,6 +19,16 @@
 #include <iostream>
 #include <queue>
 
+// Uncomment only for development debugging
+#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+
+#ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+#include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CSetOfLines.h>
+#include <mrpt/opengl/CTexturedPlane.h>
+#include <mrpt/opengl/stock_objects.h>
+#endif
+
 using namespace mvsim;
 
 using mrpt::math::TPoint2Df;
@@ -27,6 +37,7 @@ using mrpt::math::TPoint3Df;
 constexpr uint8_t CELL_UNDEFINED = 0x80;
 constexpr uint8_t CELL_OCCUPIED = 0x00;
 constexpr uint8_t CELL_FREE = 0xff;
+constexpr uint8_t CELL_VISITED = 0x40;
 
 double Shape2p5::volume() const
 {
@@ -132,21 +143,66 @@ void Shape2p5::computeShape() const
 	// shape:
 	internalGridFloodFill();
 
-#if 0
-	static int i = 0;
-	grid_->saveToTextFile(mrpt::format("grid_%03i.txt", i++));
-#endif
-
 	// 2) Detect the outer contour with full grid resolution:
+	const mrpt::math::TPolygon2D rawGridContour = internalGridContour();
 
-	// 3) Polygon pruning:
+	// 3) convex hull:
+	// Eventually, b2Box library will use convex hull anyway, so let's use it
+	// here too:
 
-	// Save result:
+	// 4) Polygon pruning until edge count is <= b2_maxPolygonVertices
+
+	// 5) Save result if output structure:
 	contour_.emplace();
 	contour_->push_back({-0.25, -0.25});
 	contour_->push_back({-0.25, 0.25});
 	contour_->push_back({0.25, 0.25});
 	contour_->push_back({0.25, -0.25});
+
+// DEBUG:
+#ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+	{
+		mrpt::opengl::COpenGLScene scene;
+
+		auto glGrid = mrpt::opengl::CTexturedPlane::Create();
+		glGrid->setPlaneCorners(
+			grid_->getXMin(), grid_->getXMax(), grid_->getYMin(),
+			grid_->getYMax());
+
+		mrpt::math::CMatrixDouble mat;
+		grid_->getAsMatrix(mat);
+
+		mrpt::img::CImage im;
+		im.setFromMatrix(mat, false /* matrix is [0,255]*/);
+
+		glGrid->assignImage(im);
+
+		scene.insert(mrpt::opengl::stock_objects::CornerXYZSimple());
+		scene.insert(glGrid);
+
+		auto lambdaRenderPoly = [&scene](
+									const mrpt::math::TPolygon2D& p,
+									const mrpt::img::TColor& color, double z) {
+			auto glPoly = mrpt::opengl::CSetOfLines::Create();
+			glPoly->setColor_u8(color);
+			const auto N = p.size();
+			for (size_t j = 0; j < N; j++)
+			{
+				const size_t j1 = (j + 1) % N;
+				const auto& p0 = p.at(j);
+				const auto& p1 = p.at(j1);
+				glPoly->appendLine(p0.x, p0.y, z, p1.x, p1.y, z);
+			}
+			scene.insert(glPoly);
+		};
+
+		lambdaRenderPoly(*contour_, {0xff, 0x00, 0x00}, 0.10);
+		lambdaRenderPoly(rawGridContour, {0x00, 0xff, 0x00}, 0.05);
+
+		static int i = 0;
+		scene.saveToFile(mrpt::format("collision_grid_%03i.3Dscene", i++));
+	}
+#endif
 
 	grid_.reset();
 }
@@ -265,4 +321,79 @@ void Shape2p5::internalGridFloodFill() const
 		lambdaScan(lx, x - 1, y + 1);
 		lambdaScan(lx, x - 1, y - 1);
 	}
+}
+
+// Detects the outter polygon of the grid, after having been flood filled.
+mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
+{
+	ASSERT_(grid_);
+
+	mrpt::math::TPolygon2D p;
+
+	const int nx = grid_->getSizeX();
+	const int ny = grid_->getSizeY();
+
+	auto lambdaCellIsBorder = [&](int cx, int cy) {
+		auto* c = grid_->cellByIndex(cx, cy);
+		if (!c) return false;
+		if (*c != CELL_OCCUPIED) return false;
+
+		// check 4 neighbors:
+		if (auto* cS = grid_->cellByIndex(cx, cy - 1); cS && *cS == CELL_FREE)
+			return true;
+		if (auto* cN = grid_->cellByIndex(cx, cy + 1); cN && *cN == CELL_FREE)
+			return true;
+		if (auto* cE = grid_->cellByIndex(cx + 1, cy); cE && *cE == CELL_FREE)
+			return true;
+		if (auto* cW = grid_->cellByIndex(cx - 1, cy); cW && *cW == CELL_FREE)
+			return true;
+
+		return false;
+	};
+
+	// 1) Look for the first CELL_OCCUPIED cell:
+	int cx = 0, cy = 0;
+	while (*grid_->cellByIndex(cx, cy) != CELL_OCCUPIED)
+	{
+		cx++;
+		if (cx >= nx)
+		{
+			cx = 0;
+			cy++;
+			ASSERT_(cy < ny);
+		}
+	}
+
+	// 2) Iterate:
+	//    - mark current cell as CELL_VISITED, add to polygon.
+	//    - Look in 8 neighbors for a CELL_OCCUPIED with a CELL_FREE cell in
+	//    one of its 4 main directions.
+	for (;;)
+	{
+		auto* c = grid_->cellByIndex(cx, cy);
+		ASSERT_(c);
+		*c = CELL_VISITED;
+
+		// save into polygon too:
+		p.emplace_back(grid_->idx2x(cx), grid_->idx2y(cy));
+
+		bool cellDone = false;
+		for (int ix = -1; ix <= 1 && !cellDone; ix++)
+		{
+			for (int iy = -1; iy <= 1 && !cellDone; iy++)
+			{
+				if (lambdaCellIsBorder(cx + ix, cy + iy))
+				{
+					// Save for next iter:
+					cellDone = true;
+					cx = cx + ix;
+					cy = cy + iy;
+					break;
+				}
+			}
+		}
+		if (!cellDone) break;
+	}
+
+	return p;
 }

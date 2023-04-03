@@ -76,6 +76,7 @@ class Shape2p5
 	void computeShape() const;
 
 	void internalGridFloodFill() const;
+	mrpt::math::TPolygon2D internalGridContour() const;
 };
 
 }  // namespace mvsim
