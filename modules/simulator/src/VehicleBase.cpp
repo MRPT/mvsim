@@ -629,7 +629,9 @@ void VehicleBase::create_multibody_system(b2World& world)
 
 		b2PolygonShape chassisPoly;
 		chassisPoly.Set(&pts[0], nPts);
-		// chassisPoly.radius_ = 1e-3;  // The "skin" depth of the body
+
+		// FIXED value by design in b2Box: The "skin" depth of the body
+		chassisPoly.m_radius = 2.5e-3;	// b2_polygonRadius;
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;

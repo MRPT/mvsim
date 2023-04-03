@@ -7,7 +7,11 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <box2d/b2_settings.h>	// b2_maxPolygonVertices
 #include <mrpt/opengl/CAssimpModel.h>
+#include <mrpt/opengl/CBox.h>
+#include <mrpt/opengl/CCylinder.h>
+#include <mrpt/opengl/CSphere.h>
 #include <mrpt/version.h>
 #include <mvsim/CollisionShapeCache.h>
 
@@ -28,12 +32,107 @@ Shape2p5 CollisionShapeCache::get(
 	if (modelFile)
 	{
 		if (auto it = cache.find(modelFile.value()); it != cache.end())
-			return it->second.convexHull;
+			return it->second.shape;
 	}
 
 	// No, it's a new model path, create its placeholder:
 	Shape2p5 retVal;
-	Shape2p5& ret = modelFile ? cache[*modelFile].convexHull : retVal;
+	Shape2p5& ret = modelFile ? cache[*modelFile].shape : retVal;
+
+	// Now, decide whether it's a simple geometry, or an arbitrary model:
+	const auto simpleGeom =
+		processSimpleGeometries(obj, zMin, zMax, modelPose, modelScale);
+
+	if (simpleGeom)
+	{
+		ret = simpleGeom.value();
+	}
+	else
+	{
+		ret = processGenericGeometry(obj, zMin, zMax, modelPose, modelScale);
+	}
+
+	const auto vol = ret.volume();
+
+#if 1
+	std::cout << "shape2.5 for ["
+			  << (modelFile.has_value() ? *modelFile : "none")
+			  << "] glClass=" << obj.GetRuntimeClass()->className
+			  << " zMin = " << zMin << " zMax=" << zMax
+			  << " shape=" << ret.getContour().size() << " pts, "
+			  << " volume=" << vol
+			  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n";
+#endif
+
+	if (vol < 1e-8)
+	{
+		THROW_EXCEPTION_FMT(
+			"Error: Collision volume for visual model ('%s') has almost null "
+			"volume (=%g m³). A possible cause, if this is a <block>, is not "
+			"enough vertices within the given range [zmin,zmax]",
+			modelFile.has_value() ? modelFile->c_str() : "none", vol);
+	}
+
+	return ret;
+}
+
+std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
+	const mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
+	const mrpt::poses::CPose3D& modelPose, const float modelScale)
+{
+#if MRPT_VERSION >= 0x260
+	using namespace mrpt::literals;	 // _deg
+#else
+	using namespace mrpt;  // _deg
+#endif
+
+	if (auto oCyl = dynamic_cast<const mrpt::opengl::CCylinder*>(&obj); oCyl)
+	{
+		// ===============================
+		// Cylinder
+		// ===============================
+		// If the cylinder is not upright, skip and go for the generic algorithm
+		if (std::abs(modelPose.pitch()) > 0.02_deg ||
+			std::abs(modelPose.roll()) > 0.02_deg)
+			return {};
+
+		const size_t actualEdgeCount = oCyl->getSlicesCount();
+		double actualRadius =
+			std::max<double>(oCyl->getTopRadius(), oCyl->getBottomRadius());
+
+		return processCylinderLike(
+			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
+	}
+	else if (auto oSph = dynamic_cast<const mrpt::opengl::CSphere*>(&obj); oSph)
+	{
+		// ===============================
+		// Sphere
+		// ===============================
+#if MRPT_VERSION >= 0x271
+		const size_t actualEdgeCount = oSph->getNumberOfSegments();
+#else
+		// workaround mrpt <2.7.1
+		const size_t actualEdgeCount =
+			const_cast<mrpt::opengl::CSphere*>(oSph)->getNumberOfSegments();
+#endif
+
+		double actualRadius = oSph->getRadius();
+
+		return processCylinderLike(
+			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
+	}
+	else
+	{
+		// unknown:
+		return {};
+	}
+}
+
+Shape2p5 CollisionShapeCache::processGenericGeometry(
+	mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
+	const mrpt::poses::CPose3D& modelPose, const float modelScale)
+{
+	Shape2p5 ret;
 
 	// Make sure the points and vertices buffers are up to date, so we can
 	// access them:
@@ -158,27 +257,47 @@ Shape2p5 CollisionShapeCache::get(
 	// ---------------------------------------------------------
 	ret.getContour();  // evalute it now
 
-	const auto vol = ret.volume();
+	return ret;
+}
 
-#if 1
-	std::cout << "shape2.5 for ["
-			  << (modelFile.has_value() ? *modelFile : "none")
-			  << "] glClass=" << obj.GetRuntimeClass()->className
-			  << " numTotalPts=" << numTotalPts
-			  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
-			  << " zMax=" << zMax << " shape=" << ret.getContour().size()
-			  << " pts, "
-			  << " volume=" << vol << "\n";
-#endif
+Shape2p5 CollisionShapeCache::processCylinderLike(
+	const size_t actualEdgeCount, double actualRadius, float zMin, float zMax,
+	const mrpt::poses::CPose3D& modelPose, const float modelScale)
+{
+	const size_t maxEdges = b2_maxPolygonVertices;
 
-	if (vol < 1e-8)
+	const auto nFaces = std::min<size_t>(maxEdges, actualEdgeCount);
+
+	const bool isApprox = actualEdgeCount > maxEdges;
+	if (isApprox)
 	{
-		THROW_EXCEPTION_FMT(
-			"Error: Collision volume for visual model ('%s') has almost null "
-			"volume (=%g m³). A possible cause, if this is a <block>, is not "
-			"enough vertices within the given range [zmin,zmax]",
-			modelFile.has_value() ? modelFile->c_str() : "none", vol);
+		const int i = mrpt::round(nFaces / 4);
+		double newR = actualRadius;
+		for (int j = -1; j <= 1; j++)
+		{
+			const double ang = (i + j) * 2 * M_PI / nFaces;
+			const double angp1 = (i + j + 1) * 2 * M_PI / nFaces;
+			const mrpt::math::TPoint2D pt0 = {cos(ang), sin(ang)};
+			const mrpt::math::TPoint2D pt1 = {cos(angp1), sin(angp1)};
+
+			const double midDist = ((pt0 + pt1) * 0.5).norm();
+
+			newR = std::max(newR, actualRadius * (1.0 / midDist));
+		}
+		actualRadius = newR;
 	}
 
-	return ret;
+	mrpt::math::TPolygon2D contour;
+	for (size_t i = 0; i < nFaces; i++)
+	{
+		const double ang = i * 2 * M_PI / nFaces;
+		const mrpt::math::TPoint2D localPt = {
+			cos(ang) * actualRadius, sin(ang) * actualRadius};
+		const auto pt = modelPose.composePoint(localPt * modelScale);
+		contour.emplace_back(pt.x, pt.y);
+	}
+
+	Shape2p5 s;
+	s.setShapeManual(contour, zMin, zMax);
+	return {s};
 }

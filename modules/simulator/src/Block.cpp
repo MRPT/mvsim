@@ -177,15 +177,6 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		// Set contour polygon:
 		block->block_poly_ = bb.getContour();
 	}
-	else
-	{
-		// Update collision shape from shape loaded from XML:
-		Shape2p5 cs;
-		cs.setShapeManual(
-			block->block_poly_, block->block_z_min_, block->block_z_max_);
-
-		block->setCollisionShape(cs);
-	}
 
 	block->updateMaxRadiusFromPoly();
 
@@ -330,6 +321,13 @@ void Block::create_multibody_system(b2World& world)
 {
 	if (intangible_) return;
 
+	// Update collision shape from shape loaded from XML or set manually:
+	{
+		Shape2p5 cs;
+		cs.setShapeManual(block_poly_, block_z_min_, block_z_max_);
+		setCollisionShape(cs);
+	}
+
 	// Define the dynamic body. We set its position and call the body
 	// factory.
 	b2BodyDef bodyDef;
@@ -350,7 +348,9 @@ void Block::create_multibody_system(b2World& world)
 
 		b2PolygonShape blockPoly;
 		blockPoly.Set(&pts[0], nPts);
-		// blockPoly.radius_ = 1e-3;  // The "skin" depth of the body
+
+		// FIXED value by design in b2Box: The "skin" depth of the body
+		blockPoly.m_radius = 2.5e-3;  // b2_polygonRadius;
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;

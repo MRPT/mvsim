@@ -35,10 +35,26 @@ class CollisionShapeCache
 
 	struct Entry
 	{
-		Shape2p5 convexHull;
+		Shape2p5 shape;
 	};
 
 	std::map<std::string, Entry> cache;
+
+	/** Returns a valid shape if the geometry is recognized and shape already
+	 * filled in.
+	 */
+	std::optional<Shape2p5> processSimpleGeometries(
+		const mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
+		const mrpt::poses::CPose3D& modelPose, const float modelScale);
+
+	Shape2p5 processGenericGeometry(
+		mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
+		const mrpt::poses::CPose3D& modelPose, const float modelScale);
+
+	Shape2p5 processCylinderLike(
+		const size_t actualEdgeCount, double actualRadius, float zMin,
+		float zMax, const mrpt::poses::CPose3D& modelPose,
+		const float modelScale);
 };
 
 }  // namespace mvsim
