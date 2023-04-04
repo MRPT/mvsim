@@ -121,6 +121,35 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 		return processCylinderLike(
 			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
 	}
+	else if (auto oBox = dynamic_cast<const mrpt::opengl::CBox*>(&obj); oBox)
+	{
+		// ===============================
+		// Box
+		// ===============================
+		// If the object is not upright, skip and go for the generic algorithm
+		if (std::abs(modelPose.pitch()) > 0.02_deg ||
+			std::abs(modelPose.roll()) > 0.02_deg)
+			return {};
+
+		mrpt::math::TPoint3D p1, p2;
+		oBox->getBoxCorners(p1, p2);
+		p1 *= modelScale;
+		p2 *= modelScale;
+
+		const mrpt::math::TPoint3D corners[4] = {
+			modelPose.composePoint({p1.x, p1.y, 0}),
+			modelPose.composePoint({p1.x, p2.y, 0}),
+			modelPose.composePoint({p2.x, p2.y, 0}),
+			modelPose.composePoint({p2.x, p1.y, 0})};
+
+		mrpt::math::TPolygon2D contour;
+		for (int i = 0; i < 4; i++)
+			contour.emplace_back(corners[i].x, corners[i].y);
+
+		Shape2p5 s;
+		s.setShapeManual(contour, zMin, zMax);
+		return {s};
+	}
 	else
 	{
 		// unknown:

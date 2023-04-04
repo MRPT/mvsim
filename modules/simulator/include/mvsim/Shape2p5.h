@@ -77,6 +77,9 @@ class Shape2p5
 
 	void internalGridFloodFill() const;
 	mrpt::math::TPolygon2D internalGridContour() const;
+
+	void debugSaveGridTo3DSceneFile(
+		const mrpt::math::TPolygon2D& rawGridContour) const;
 };
 
 }  // namespace mvsim

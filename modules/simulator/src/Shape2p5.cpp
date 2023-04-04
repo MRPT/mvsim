@@ -13,6 +13,10 @@
 #include <mrpt/math/TLine2D.h>
 #include <mrpt/math/TObject2D.h>
 #include <mrpt/math/geometry.h>
+#include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CSetOfLines.h>
+#include <mrpt/opengl/CTexturedPlane.h>
+#include <mrpt/opengl/stock_objects.h>
 #include <mvsim/Shape2p5.h>
 
 #include <cmath>
@@ -20,14 +24,7 @@
 #include <queue>
 
 // Uncomment only for development debugging
-#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-
-#ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-#include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/CSetOfLines.h>
-#include <mrpt/opengl/CTexturedPlane.h>
-#include <mrpt/opengl/stock_objects.h>
-#endif
+//#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
 
 using namespace mvsim;
 
@@ -161,47 +158,7 @@ void Shape2p5::computeShape() const
 
 // DEBUG:
 #ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-	{
-		mrpt::opengl::COpenGLScene scene;
-
-		auto glGrid = mrpt::opengl::CTexturedPlane::Create();
-		glGrid->setPlaneCorners(
-			grid_->getXMin(), grid_->getXMax(), grid_->getYMin(),
-			grid_->getYMax());
-
-		mrpt::math::CMatrixDouble mat;
-		grid_->getAsMatrix(mat);
-
-		mrpt::img::CImage im;
-		im.setFromMatrix(mat, false /* matrix is [0,255]*/);
-
-		glGrid->assignImage(im);
-
-		scene.insert(mrpt::opengl::stock_objects::CornerXYZSimple());
-		scene.insert(glGrid);
-
-		auto lambdaRenderPoly = [&scene](
-									const mrpt::math::TPolygon2D& p,
-									const mrpt::img::TColor& color, double z) {
-			auto glPoly = mrpt::opengl::CSetOfLines::Create();
-			glPoly->setColor_u8(color);
-			const auto N = p.size();
-			for (size_t j = 0; j < N; j++)
-			{
-				const size_t j1 = (j + 1) % N;
-				const auto& p0 = p.at(j);
-				const auto& p1 = p.at(j1);
-				glPoly->appendLine(p0.x, p0.y, z, p1.x, p1.y, z);
-			}
-			scene.insert(glPoly);
-		};
-
-		lambdaRenderPoly(*contour_, {0xff, 0x00, 0x00}, 0.10);
-		lambdaRenderPoly(rawGridContour, {0x00, 0xff, 0x00}, 0.05);
-
-		static int i = 0;
-		scene.saveToFile(mrpt::format("collision_grid_%03i.3Dscene", i++));
-	}
+	debugSaveGridTo3DSceneFile(rawGridContour);
 #endif
 
 	grid_.reset();
@@ -378,22 +335,81 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 		p.emplace_back(grid_->idx2x(cx), grid_->idx2y(cy));
 
 		bool cellDone = false;
-		for (int ix = -1; ix <= 1 && !cellDone; ix++)
+		const std::vector<std::pair<int, int>> dirs = {
+			// first, straight directions (important!)
+			{+1, 0},
+			{-1, 0},
+			{0, +1},
+			{0, -1},
+			// second, diagonals:
+			{+1, +1},
+			{+1, -1},
+			{-1, +1},
+			{-1, -1},
+		};
+
+		for (const auto& dir : dirs)
 		{
-			for (int iy = -1; iy <= 1 && !cellDone; iy++)
+			const int ix = dir.first, iy = dir.second;
+
+			if (lambdaCellIsBorder(cx + ix, cy + iy))
 			{
-				if (lambdaCellIsBorder(cx + ix, cy + iy))
-				{
-					// Save for next iter:
-					cellDone = true;
-					cx = cx + ix;
-					cy = cy + iy;
-					break;
-				}
+				printf("move: %+i %+i => %i %i\n", ix, iy, cx + ix, cy + iy);
+#ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+				debugSaveGridTo3DSceneFile(p);
+#endif
+				// Save for next iter:
+				cellDone = true;
+				cx = cx + ix;
+				cy = cy + iy;
+				break;
 			}
 		}
 		if (!cellDone) break;
 	}
 
 	return p;
+}
+
+void Shape2p5::debugSaveGridTo3DSceneFile(
+	const mrpt::math::TPolygon2D& rawGridContour) const
+{
+	mrpt::opengl::COpenGLScene scene;
+
+	auto glGrid = mrpt::opengl::CTexturedPlane::Create();
+	glGrid->setPlaneCorners(
+		grid_->getXMin(), grid_->getXMax(), grid_->getYMin(), grid_->getYMax());
+
+	mrpt::math::CMatrixDouble mat;
+	grid_->getAsMatrix(mat);
+
+	mrpt::img::CImage im;
+	im.setFromMatrix(mat, false /* matrix is [0,255]*/);
+
+	glGrid->assignImage(im);
+
+	scene.insert(mrpt::opengl::stock_objects::CornerXYZSimple());
+	scene.insert(glGrid);
+
+	auto lambdaRenderPoly = [&scene](
+								const mrpt::math::TPolygon2D& p,
+								const mrpt::img::TColor& color, double z) {
+		auto glPoly = mrpt::opengl::CSetOfLines::Create();
+		glPoly->setColor_u8(color);
+		const auto N = p.size();
+		for (size_t j = 0; j < N; j++)
+		{
+			const size_t j1 = (j + 1) % N;
+			const auto& p0 = p.at(j);
+			const auto& p1 = p.at(j1);
+			glPoly->appendLine(p0.x, p0.y, z, p1.x, p1.y, z);
+		}
+		scene.insert(glPoly);
+	};
+
+	lambdaRenderPoly(*contour_, {0xff, 0x00, 0x00}, 0.10);
+	lambdaRenderPoly(rawGridContour, {0x00, 0xff, 0x00}, 0.05);
+
+	static int i = 0;
+	scene.saveToFile(mrpt::format("collision_grid_%05i.3Dscene", i++));
 }
