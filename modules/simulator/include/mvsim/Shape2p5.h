@@ -77,6 +77,17 @@ class Shape2p5
 
 	void internalGridFloodFill() const;
 	mrpt::math::TPolygon2D internalGridContour() const;
+	mrpt::math::TPolygon2D internalPrunePolygon(
+		const mrpt::math::TPolygon2D& poly) const;
+
+	struct RemovalCandidate
+	{
+		double loss = 0;
+		mrpt::math::TPolygon2D next;
+	};
+
+	std::optional<RemovalCandidate> lossOfRemovingVertex(
+		size_t i, const mrpt::math::TPolygon2D& p) const;
 
 	void debugSaveGridTo3DSceneFile(
 		const mrpt::math::TPolygon2D& rawGridContour) const;

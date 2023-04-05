@@ -14,6 +14,7 @@
 #include <mrpt/math/TObject2D.h>
 #include <mrpt/math/geometry.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CPointCloud.h>
 #include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/opengl/CTexturedPlane.h>
 #include <mrpt/opengl/stock_objects.h>
@@ -24,7 +25,7 @@
 #include <queue>
 
 // Uncomment only for development debugging
-//#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
 
 using namespace mvsim;
 
@@ -148,13 +149,10 @@ void Shape2p5::computeShape() const
 	// here too:
 
 	// 4) Polygon pruning until edge count is <= b2_maxPolygonVertices
+	const auto finalPoly = internalPrunePolygon(rawGridContour);
 
 	// 5) Save result if output structure:
-	contour_.emplace();
-	contour_->push_back({-0.25, -0.25});
-	contour_->push_back({-0.25, 0.25});
-	contour_->push_back({0.25, 0.25});
-	contour_->push_back({0.25, -0.25});
+	contour_.emplace(finalPoly);
 
 // DEBUG:
 #ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
@@ -354,7 +352,6 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 
 			if (lambdaCellIsBorder(cx + ix, cy + iy))
 			{
-				printf("move: %+i %+i => %i %i\n", ix, iy, cx + ix, cy + iy);
 #ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
 				debugSaveGridTo3DSceneFile(p);
 #endif
@@ -394,8 +391,11 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 	auto lambdaRenderPoly = [&scene](
 								const mrpt::math::TPolygon2D& p,
 								const mrpt::img::TColor& color, double z) {
+		auto glPts = mrpt::opengl::CPointCloud::Create();
 		auto glPoly = mrpt::opengl::CSetOfLines::Create();
 		glPoly->setColor_u8(color);
+		glPts->setColor_u8(color);
+		glPts->setPointSize(4.0f);
 		const auto N = p.size();
 		for (size_t j = 0; j < N; j++)
 		{
@@ -403,8 +403,10 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 			const auto& p0 = p.at(j);
 			const auto& p1 = p.at(j1);
 			glPoly->appendLine(p0.x, p0.y, z, p1.x, p1.y, z);
+			glPts->insertPoint(p0.x, p0.y, z);
 		}
 		scene.insert(glPoly);
+		scene.insert(glPts);
 	};
 
 	lambdaRenderPoly(*contour_, {0xff, 0x00, 0x00}, 0.10);
@@ -412,4 +414,73 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 
 	static int i = 0;
 	scene.saveToFile(mrpt::format("collision_grid_%05i.3Dscene", i++));
+}
+
+std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
+	size_t i, const mrpt::math::TPolygon2D& p) const
+{
+	// 1st: check if removing that vertex leads to edges crossing
+	// CELL_UNDEFINED or CELL_OCCUPIED cells:
+
+	size_t im1 = i > 0 ? i - 1 : (p.size() - 1);
+	size_t ip1 = i == (p.size() - 1) ? 0 : i + 1;
+
+	const auto& pt_im1 = p[im1];
+	const auto& pt_ip1 = p[ip1];
+	const auto delta = pt_ip1 - pt_im1;
+	const size_t nSteps =
+		static_cast<size_t>(ceil(delta.norm() / grid_->getResolution()));
+	const auto d = delta * (1.0 / nSteps);
+	for (size_t k = 0; k < nSteps; k++)
+	{
+		const auto pt = pt_im1 + d * k;
+		const auto* c = grid_->cellByPos(pt.x, pt.y);
+		if (!c) return {};	// should never happen (!)
+
+		// removing this vertex leads to unacceptable approximation:
+		if (*c == CELL_UNDEFINED || *c == CELL_OCCUPIED) return {};
+	}
+
+	// ok, removing the vertex is ok.
+	// now, let's quantify the increase in area ("loss"):
+	Shape2p5::RemovalCandidate rc;
+	rc.next = p;
+	rc.next.erase(rc.next.begin() + i);
+
+	const double originalArea = std::abs(mrpt::math::signedArea(p));
+	const double newArea = std::abs(mrpt::math::signedArea(rc.next));
+	rc.loss = newArea - originalArea;
+
+	return rc;
+}
+
+mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(
+	const mrpt::math::TPolygon2D& poly) const
+{
+	mrpt::math::TPolygon2D p = poly;
+
+	// Algorithm:
+	// Pass #1: go thru all vertices, and pick the one that minimizes
+	// the increase of polygon area while not crossing through any grid cell
+	// that is either CELL_UNDEFINED or CELL_OCCUPIED.
+	for (;;)
+	{
+		std::optional<RemovalCandidate> best;
+
+		for (size_t i = 0; i < p.size(); i++)
+		{
+			std::optional<RemovalCandidate> rc = lossOfRemovingVertex(i, p);
+			if (rc && (!best || rc->loss < best->loss)) best = *rc;
+		}
+
+		if (!best) break;  // No more vertices found to remove
+
+		p = best->next;
+
+#ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+		debugSaveGridTo3DSceneFile(p);
+#endif
+	}
+
+	return p;
 }
