@@ -87,10 +87,11 @@ class Shape2p5
 	};
 
 	std::optional<RemovalCandidate> lossOfRemovingVertex(
-		size_t i, const mrpt::math::TPolygon2D& p) const;
+		size_t i, const mrpt::math::TPolygon2D& p, bool allowApproxEdges) const;
 
 	void debugSaveGridTo3DSceneFile(
-		const mrpt::math::TPolygon2D& rawGridContour) const;
+		const mrpt::math::TPolygon2D& rawGridContour,
+		const std::string& debugStr = {}) const;
 };
 
 }  // namespace mvsim

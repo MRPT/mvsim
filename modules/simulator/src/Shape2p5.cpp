@@ -25,7 +25,7 @@
 #include <queue>
 
 // Uncomment only for development debugging
-#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+//#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
 
 using namespace mvsim;
 
@@ -369,7 +369,8 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 }
 
 void Shape2p5::debugSaveGridTo3DSceneFile(
-	const mrpt::math::TPolygon2D& rawGridContour) const
+	const mrpt::math::TPolygon2D& rawGridContour,
+	const std::string& debugStr) const
 {
 	mrpt::opengl::COpenGLScene scene;
 
@@ -412,12 +413,14 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 	lambdaRenderPoly(*contour_, {0xff, 0x00, 0x00}, 0.10);
 	lambdaRenderPoly(rawGridContour, {0x00, 0xff, 0x00}, 0.05);
 
+	if (!debugStr.empty()) scene.getViewport()->addTextMessage(5, 5, debugStr);
+
 	static int i = 0;
 	scene.saveToFile(mrpt::format("collision_grid_%05i.3Dscene", i++));
 }
 
 std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
-	size_t i, const mrpt::math::TPolygon2D& p) const
+	size_t i, const mrpt::math::TPolygon2D& p, bool allowApproxEdges) const
 {
 	// 1st: check if removing that vertex leads to edges crossing
 	// CELL_UNDEFINED or CELL_OCCUPIED cells:
@@ -437,8 +440,11 @@ std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
 		const auto* c = grid_->cellByPos(pt.x, pt.y);
 		if (!c) return {};	// should never happen (!)
 
-		// removing this vertex leads to unacceptable approximation:
-		if (*c == CELL_UNDEFINED || *c == CELL_OCCUPIED) return {};
+		if (!allowApproxEdges)
+		{
+			// removing this vertex leads to unacceptable approximation:
+			if (*c == CELL_UNDEFINED || *c == CELL_OCCUPIED) return {};
+		}
 	}
 
 	// ok, removing the vertex is ok.
@@ -451,35 +457,45 @@ std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
 	const double newArea = std::abs(mrpt::math::signedArea(rc.next));
 	rc.loss = newArea - originalArea;
 
+	if (allowApproxEdges) rc.loss = -rc.loss;
+
 	return rc;
 }
 
 mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(
 	const mrpt::math::TPolygon2D& poly) const
 {
+	using namespace std::string_literals;
+
 	mrpt::math::TPolygon2D p = poly;
 
 	// Algorithm:
 	// Pass #1: go thru all vertices, and pick the one that minimizes
 	// the increase of polygon area while not crossing through any grid cell
 	// that is either CELL_UNDEFINED or CELL_OCCUPIED.
-	for (;;)
+	// Pass #2: idem, but allow crossing cells.
+	for (int pass = 0; pass < 2; pass++)
 	{
-		std::optional<RemovalCandidate> best;
-
-		for (size_t i = 0; i < p.size(); i++)
+		while (p.size() > b2_maxPolygonVertices)
 		{
-			std::optional<RemovalCandidate> rc = lossOfRemovingVertex(i, p);
-			if (rc && (!best || rc->loss < best->loss)) best = *rc;
-		}
+			std::optional<RemovalCandidate> best;
 
-		if (!best) break;  // No more vertices found to remove
+			for (size_t i = 0; i < p.size(); i++)
+			{
+				std::optional<RemovalCandidate> rc =
+					lossOfRemovingVertex(i, p, pass == 1);
+				if (rc && (!best || rc->loss < best->loss)) best = *rc;
+			}
 
-		p = best->next;
+			if (!best) break;  // No more vertices found to remove
+
+			p = best->next;
 
 #ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-		debugSaveGridTo3DSceneFile(p);
+			debugSaveGridTo3DSceneFile(
+				p, mrpt::format("pass #%i loss=%f", pass, best->loss));
 #endif
+		}
 	}
 
 	return p;
