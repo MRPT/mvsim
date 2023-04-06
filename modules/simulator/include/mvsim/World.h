@@ -236,20 +236,20 @@ class World : public mrpt::system::COutputLogger
 	std::thread gui_thread_;
 
 	std::atomic_bool gui_thread_running_ = false;
-	std::atomic_bool gui_thread_must_close_ = false;
+	std::atomic_bool simulator_must_close_ = false;
 	mutable std::mutex gui_thread_start_mtx_;
 
-	bool gui_thread_must_close() const
+	bool simulator_must_close() const
 	{
 		gui_thread_start_mtx_.lock();
-		const bool v = gui_thread_must_close_;
+		const bool v = simulator_must_close_;
 		gui_thread_start_mtx_.unlock();
 		return v;
 	}
-	void gui_thread_must_close(bool value)
+	void simulator_must_close(bool value)
 	{
 		gui_thread_start_mtx_.lock();
-		gui_thread_must_close_ = value;
+		simulator_must_close_ = value;
 		gui_thread_start_mtx_.unlock();
 	}
 

@@ -69,7 +69,7 @@ void World::GUI::prepare_control_window()
 
 	w->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
 		->setCallback([this]() {
-			parent_.gui_thread_must_close(true);
+			parent_.simulator_must_close(true);
 			gui_win->setVisible(false);
 			nanogui::leave();
 		});
@@ -559,7 +559,7 @@ void World::internal_GUI_thread()
 		// The GUI must be closed from this same thread. Use a shared atomic
 		// bool:
 		auto lambdaLoopCallback = [](World& me) {
-			if (me.gui_thread_must_close()) nanogui::leave();
+			if (me.simulator_must_close()) nanogui::leave();
 
 			try
 			{
@@ -577,7 +577,7 @@ void World::internal_GUI_thread()
 				// abort. Otherwise, the error may repeat over and over forever
 				// and the main thread will never know about it.
 				me.logStr(mrpt::system::LVL_ERROR, e.what());
-				me.gui_thread_must_close(true);
+				me.simulator_must_close(true);
 				me.gui_.gui_win->setVisible(false);
 				nanogui::leave();
 			}
@@ -621,7 +621,7 @@ void World::internal_GUI_thread()
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
 
 		// to let other threads know that we are closing:
-		gui_thread_must_close(true);
+		simulator_must_close(true);
 
 		// Make sure opengl resources are freed from this thread, not from
 		// the main one upon destruction of the last ref to shared_ptr's to
@@ -1044,7 +1044,7 @@ void World::internalGraphicsLoopTasksForSimulation()
 		// abort. Otherwise, the error may repeat over and over forever
 		// and the main thread will never know about it.
 		MRPT_LOG_ERROR(e.what());
-		gui_thread_must_close(true);
+		simulator_must_close(true);
 	}
 }
 

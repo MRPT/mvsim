@@ -253,7 +253,7 @@ Available options:
 	while (!doExit)
 	{
 		// was the quit button hit in the GUI?
-		if (app->world.gui_thread_must_close()) break;
+		if (app->world.simulator_must_close()) break;
 
 		// Simulation
 		// ============================================================

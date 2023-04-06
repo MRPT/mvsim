@@ -180,7 +180,7 @@ mvsim_msgs::SrvShutdownAnswer World::srv_shutdown(
 	mvsim_msgs::SrvShutdownAnswer ans;
 	ans.set_accepted(true);
 
-	this->gui_thread_must_close(true);
+	this->simulator_must_close(true);
 
 	return ans;
 }
