@@ -70,7 +70,6 @@ void World::GUI::prepare_control_window()
 	w->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
 		->setCallback([this]() {
 			parent_.gui_thread_must_close(true);
-
 			gui_win->setVisible(false);
 			nanogui::leave();
 		});
@@ -562,13 +561,26 @@ void World::internal_GUI_thread()
 		auto lambdaLoopCallback = [](World& me) {
 			if (me.gui_thread_must_close()) nanogui::leave();
 
-			// Update 3D vehicles, sensors, run render-based sensors, etc:
-			me.internalGraphicsLoopTasksForSimulation();
+			try
+			{
+				// Update 3D vehicles, sensors, run render-based sensors, etc:
+				me.internalGraphicsLoopTasksForSimulation();
 
-			me.internal_process_pending_gui_user_tasks();
+				me.internal_process_pending_gui_user_tasks();
 
-			// handle mouse operations:
-			me.gui_.handle_mouse_operations();
+				// handle mouse operations:
+				me.gui_.handle_mouse_operations();
+			}
+			catch (const std::exception& e)
+			{
+				// In case of an exception in the functions above,
+				// abort. Otherwise, the error may repeat over and over forever
+				// and the main thread will never know about it.
+				me.logStr(mrpt::system::LVL_ERROR, e.what());
+				me.gui_thread_must_close(true);
+				me.gui_.gui_win->setVisible(false);
+				nanogui::leave();
+			}
 		};
 
 #if MRPT_VERSION >= 0x232
