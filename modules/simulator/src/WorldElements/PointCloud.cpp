@@ -90,4 +90,7 @@ void PointCloud::internalGuiUpdate(
 	}
 }
 
-void PointCloud::simul_pre_timestep(const TSimulContext& context) {}
+void PointCloud::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
+{
+}

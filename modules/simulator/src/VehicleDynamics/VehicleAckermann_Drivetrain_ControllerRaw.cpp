@@ -22,7 +22,7 @@ DynamicsAckermannDrivetrain::ControllerRawForces::ControllerRawForces(
 
 // See base class docs
 void DynamicsAckermannDrivetrain::ControllerRawForces::control_step(
-	const DynamicsAckermannDrivetrain::TControllerInput& ci,
+	[[maybe_unused]] const DynamicsAckermannDrivetrain::TControllerInput& ci,
 	DynamicsAckermannDrivetrain::TControllerOutput& co)
 {
 	co.drive_torque = this->setpoint_wheel_torque;
