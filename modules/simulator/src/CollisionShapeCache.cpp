@@ -54,11 +54,10 @@ Shape2p5 CollisionShapeCache::get(
 
 	const auto vol = ret.volume();
 
-#if 1
+#if 0
 	std::cout << "shape2.5 for ["
 			  << (modelFile.has_value() ? *modelFile : "none")
 			  << "] glClass=" << obj.GetRuntimeClass()->className
-			  << " zMin = " << zMin << " zMax=" << zMax
 			  << " shape=" << ret.getContour().size() << " pts, "
 			  << " volume=" << vol
 			  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n";

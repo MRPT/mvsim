@@ -88,8 +88,27 @@ void VisualObject::guiUpdate(
 			const double height = cs.zMax() - cs.zMin();
 			ASSERT_(height > 0);
 
-			auto glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(
-				cs.getContour(), height);
+			const auto c = cs.getContour();
+
+			// Adapt mrpt::math geometry epsilon to the scale of the smallest
+			// edge in this polygon, so we don't get false positives about
+			// wrong aligned points in a 3D face just becuase it's too small:
+			const auto savedMrptGeomEps = mrpt::math::getEpsilon();
+
+			double smallestEdge = std::abs(height);
+			for (size_t i = 0; i < c.size(); i++)
+			{
+				size_t im1 = i == 0 ? c.size() - 1 : i - 1;
+				const auto Ap = c[i] - c[im1];
+				mrpt::keep_min(smallestEdge, Ap.norm());
+			}
+			mrpt::math::setEpsilon(1e-5 * smallestEdge);
+
+			auto glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(c, height);
+
+			mrpt::math::setEpsilon(savedMrptGeomEps);
+			// Default epsilon is restored now
+
 			glCS->setLocation(0, 0, cs.zMin());
 			glCS->setWireframe(true);
 

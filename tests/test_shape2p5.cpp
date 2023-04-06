@@ -7,8 +7,10 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/opengl/CCylinder.h>
 #include <mrpt/opengl/CSphere.h>
+#include <mrpt/system/filesystem.h>	 // mrpt::system::pathJoin()
 #include <mrpt/system/os.h>
 #include <mvsim/CollisionShapeCache.h>
 
@@ -28,7 +30,7 @@ void shape_test_sphere()
 
 	const Shape2p5 shape = csc.get(*glSphere, -radius, +radius, {}, 1.0f);
 
-	std::cout << shape.getContour() << std::endl;
+	std::cout << "Sphere:\n" << shape.getContour() << std::endl;
 }
 
 void shape_test_cylinder()
@@ -40,7 +42,20 @@ void shape_test_cylinder()
 
 	const Shape2p5 shape = csc.get(*glCyl, 0, L, {}, 1.0f);
 
-	std::cout << shape.getContour() << std::endl;
+	std::cout << "Cylinder:\n" << shape.getContour() << std::endl;
+}
+
+void shape_test_simplecamera()
+{
+	auto& csc = CollisionShapeCache::Instance();
+
+	auto glModel = mrpt::opengl::CAssimpModel::Create();
+	glModel->loadScene(mrpt::system::pathJoin(
+		{MVSIM_TEST_DIR, "../models/simple_camera.dae"}));
+
+	const Shape2p5 shape = csc.get(*glModel, 0, 1.0, {}, 1.0f);
+
+	std::cout << "SimpleCamera .DAE:\n" << shape.getContour() << std::endl;
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
@@ -48,6 +63,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 	std::vector<std::pair<std::function<void(void)>, std::string>> lst = {
 		{&shape_test_sphere, "shape_test_sphere"},
 		{&shape_test_cylinder, "shape_test_cylinder"},
+		{&shape_test_simplecamera, "shape_test_simplecamera"},
 	};
 
 	bool anyFail = false;
