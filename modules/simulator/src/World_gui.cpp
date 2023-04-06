@@ -1016,24 +1016,35 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 
 void World::internalGraphicsLoopTasksForSimulation()
 {
-	// Update all GUI elements:
-	ASSERT_(worldVisual_);
-
-	auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
-
-	internalUpdate3DSceneObjects(*worldVisual_, worldPhysical_);
-
-	internalRunSensorsOn3DScene(worldPhysical_);
-
-	lckPhys.unlock();
-
-	// handle user custom 3D visual objects:
+	try
 	{
-		const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
-		// replace list of smart pointers (fast):
-		if (guiUserObjectsPhysical_)
-			*glUserObjsPhysical_ = *guiUserObjectsPhysical_;
-		if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
+		// Update all GUI elements:
+		ASSERT_(worldVisual_);
+
+		auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+
+		internalUpdate3DSceneObjects(*worldVisual_, worldPhysical_);
+
+		internalRunSensorsOn3DScene(worldPhysical_);
+
+		lckPhys.unlock();
+
+		// handle user custom 3D visual objects:
+		{
+			const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
+			// replace list of smart pointers (fast):
+			if (guiUserObjectsPhysical_)
+				*glUserObjsPhysical_ = *guiUserObjectsPhysical_;
+			if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
+		}
+	}
+	catch (const std::exception& e)
+	{
+		// In case of an exception in the functions above,
+		// abort. Otherwise, the error may repeat over and over forever
+		// and the main thread will never know about it.
+		MRPT_LOG_ERROR(e.what());
+		gui_thread_must_close(true);
 	}
 }
 
