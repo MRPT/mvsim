@@ -7,11 +7,12 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/version.h>
 #include <mvsim/Block.h>
+#include <mvsim/CollisionShapeCache.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/World.h>
@@ -27,6 +28,17 @@ using namespace mvsim;
 
 static std::atomic_int32_t g_uniqueCustomVisualId = 0;
 double VisualObject::GeometryEpsilon = 1e-3;
+
+VisualObject::VisualObject(
+	World* parent, bool insertCustomVizIntoViz,
+	bool insertCustomVizIntoPhysical)
+	: world_(parent),
+	  insertCustomVizIntoViz_(insertCustomVizIntoViz),
+	  insertCustomVizIntoPhysical_(insertCustomVizIntoPhysical)
+{
+	glCollision_ = mrpt::opengl::CSetOfObjects::Create();
+	glCollision_->setName("bbox");
+}
 
 VisualObject::~VisualObject() = default;
 
@@ -67,18 +79,44 @@ void VisualObject::guiUpdate(
 		glCustomVisual_->setPose(objectPose);
 	}
 
-	if (glBoundingBox_ && viz.has_value())
+	if (glCollision_ && viz.has_value())
 	{
-		if (glBoundingBox_->empty())
+		if (glCollision_->empty() && collisionShape_)
 		{
-			auto glBox = mrpt::opengl::CBox::Create();
-			glBox->setWireframe(true);
-			glBox->setBoxCorners(viz_bb_.min, viz_bb_.max);
-			glBoundingBox_->insert(glBox);
-			glBoundingBox_->setVisibility(false);
-			viz->get().insert(glBoundingBox_);
+			const auto& cs = collisionShape_.value();
+
+			const double height = cs.zMax() - cs.zMin();
+			ASSERT_(height > 0);
+
+			const auto c = cs.getContour();
+
+			// Adapt mrpt::math geometry epsilon to the scale of the smallest
+			// edge in this polygon, so we don't get false positives about
+			// wrong aligned points in a 3D face just becuase it's too small:
+			const auto savedMrptGeomEps = mrpt::math::getEpsilon();
+
+			double smallestEdge = std::abs(height);
+			for (size_t i = 0; i < c.size(); i++)
+			{
+				size_t im1 = i == 0 ? c.size() - 1 : i - 1;
+				const auto Ap = c[i] - c[im1];
+				mrpt::keep_min(smallestEdge, Ap.norm());
+			}
+			mrpt::math::setEpsilon(1e-5 * smallestEdge);
+
+			auto glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(c, height);
+
+			mrpt::math::setEpsilon(savedMrptGeomEps);
+			// Default epsilon is restored now
+
+			glCS->setLocation(0, 0, cs.zMin());
+			glCS->setWireframe(true);
+
+			glCollision_->insert(glCS);
+			glCollision_->setVisibility(false);
+			viz->get().insert(glCollision_);
 		}
-		glBoundingBox_->setPose(objectPose);
+		glCollision_->setPose(objectPose);
 	}
 
 	const bool childrenOnly = !!glCustomVisual_;
@@ -152,145 +190,24 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 	const std::string localFileName = world_->xmlPathToActualPath(modelURI);
 
-	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
-
 	auto& gModelsCache = ModelsCache::Instance();
 
 	auto glModel = gModelsCache.get(localFileName, opts);
 
-	// Make sure the points and vertices buffers are up to date, so we can
-	// access them:
-	glModel->onUpdateBuffers_all();
-
-	mrpt::math::TBoundingBox bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
-	// Slice bbox in z up to a given relevant height:
-	if (const Block* block = dynamic_cast<const Block*>(this); block)
-	{
-		const auto zMin = block->block_z_min() - GeometryEpsilon;
-		const auto zMax = block->block_z_max() + GeometryEpsilon;
-
-		size_t numTotalPts = 0, numPassedPts = 0;
-
-		auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt) {
-			numTotalPts++;
-			auto pt = modelPose.composePoint(orgPt * modelScale);
-			if (pt.z < zMin || pt.z > zMax) return;	 // skip
-			bb.updateWithPoint(pt);
-			numPassedPts++;
-		};
-
-		{
-			auto lck =
-				mrpt::lockHelper(glModel->shaderTrianglesBufferMutex().data);
-			const auto& tris = glModel->shaderTrianglesBuffer();
-			for (const auto& tri : tris)
-				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
-		}
-		{
-			auto lck =
-				mrpt::lockHelper(glModel->shaderPointsBuffersMutex().data);
-			const auto& pts = glModel->shaderPointsVertexPointBuffer();
-			for (const auto& pt : pts) lambdaUpdatePt(pt);
-		}
-		{
-			auto lck =
-				mrpt::lockHelper(glModel->shaderWireframeBuffersMutex().data);
-			const auto& pts = glModel->shaderWireframeVertexPointBuffer();
-			for (const auto& pt : pts) lambdaUpdatePt(pt);
-		}
-
-#if MRPT_VERSION >= 0x260
-		const auto& txtrdObjs =
-			glModel->texturedObjects();	 // [new mrpt v2.6.0]
-		for (const auto& obj : txtrdObjs)
-		{
-			if (!obj) continue;
-
-			auto lck = mrpt::lockHelper(
-				obj->shaderTexturedTrianglesBufferMutex().data);
-			const auto& tris = obj->shaderTexturedTrianglesBuffer();
-			for (const auto& tri : tris)
-				for (const auto& v : tri.vertices) lambdaUpdatePt(v.xyzrgba.pt);
-		}
-#endif
-#if 0
-		std::cout << "bbox for [" << modelURI << "] numTotalPts=" << numTotalPts
-				  << " numPassedPts=" << numPassedPts << " zMin = " << zMin
-				  << " zMax=" << zMax << " bb=" << bb.asString()
-				  << " volume=" << bb.volume() << "\n";
-#endif
-	}
-
-	if (bb.min == mrpt::math::TBoundingBox::PlusMinusInfinity().min ||
-		bb.max == mrpt::math::TBoundingBox::PlusMinusInfinity().max)
-	{
-		// default: the whole model bbox:
-		bb = glModel->getBoundingBox();
-
-		// Apply transformation to bounding box too:
-		bb.min = modelPose.composePoint(bb.min * modelScale);
-		bb.max = modelPose.composePoint(bb.max * modelScale);
-		// Sort corners:
-		bb = mrpt::math::TBoundingBox::FromUnsortedPoints(bb.min, bb.max);
-	}
-
-	if (bb.volume() < 1e-6)
-	{
-		THROW_EXCEPTION_FMT(
-			"Error: Bounding box of visual model ('%s') has almost null volume "
-			"(=%g m³). A possible cause, if this is a <block>, is not enough "
-			"vertices within the given range [zmin,zmax]",
-			modelURI.c_str(), bb.volume());
-	}
-
-	// Note: we cannot apply pose/scale to the original glModel since
-	// it may be shared (many instances of the same object):
-	glGroup->insert(glModel);
-	glGroup->setScale(modelScale);
-	glGroup->setPose(modelPose);
-
-	glGroup->setName(objectName);
-
-	const bool wasFirstCustomViz = !glCustomVisual_;
-
-	if (!glCustomVisual_)
-	{
-		glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
-		glCustomVisual_->setName("glCustomVisual");
-	}
-	glCustomVisual_->insert(glGroup);
-
-	if (!glBoundingBox_)
-	{
-		glBoundingBox_ = mrpt::opengl::CSetOfObjects::Create();
-		glBoundingBox_->setName("bbox");
-		glBoundingBox_->setVisibility(initialShowBoundingBox);
-	}
-
-	// Auto bounds from visual model bounding-box:
-
-	// Apply transformation to bounding box too:
-	if (wasFirstCustomViz)
-	{
-		// Copy ...
-		viz_bb_ = bb;
-	}
-	else
-	{
-		// ... or update bounding box:
-		viz_bb_.updateWithPoint(bb.min);
-		viz_bb_.updateWithPoint(bb.max);
-	}
+	// Add the 3D model as custom viz:
+	addCustomVisualization(
+		glModel, mrpt::poses::CPose3D(modelPose), modelScale, objectName,
+		modelURI);
 
 	return true;  // yes, we have a custom viz model
 
 	MRPT_TRY_END
 }
 
-void VisualObject::showBoundingBox(bool show)
+void VisualObject::showCollisionShape(bool show)
 {
-	if (!glBoundingBox_) return;
-	glBoundingBox_->setVisibility(show);
+	if (!glCollision_) return;
+	glCollision_->setVisibility(show);
 }
 
 void VisualObject::customVisualVisible(const bool visible)
@@ -303,4 +220,59 @@ void VisualObject::customVisualVisible(const bool visible)
 bool VisualObject::customVisualVisible() const
 {
 	return glCustomVisual_ && glCustomVisual_->isVisible();
+}
+
+void VisualObject::addCustomVisualization(
+	const mrpt::opengl::CRenderizable::Ptr& glModel,
+	const mrpt::poses::CPose3D& modelPose, const float modelScale,
+	const std::string& modelName, const std::optional<std::string>& modelURI,
+	const bool initialShowBoundingBox)
+{
+	ASSERT_(glModel);
+
+	auto& chc = CollisionShapeCache::Instance();
+
+	float zMin = -std::numeric_limits<float>::max();
+	float zMax = std::numeric_limits<float>::max();
+
+	if (const Block* block = dynamic_cast<const Block*>(this); block)
+	{
+		zMin = block->block_z_min() - GeometryEpsilon;
+		zMax = block->block_z_max() + GeometryEpsilon;
+	}
+
+	// Calculate its convex hull:
+	const auto shape =
+		chc.get(*glModel, zMin, zMax, modelPose, modelScale, modelURI);
+
+	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
+
+	// Note: we cannot apply pose/scale to the original glModel since
+	// it may be shared (many instances of the same object):
+	glGroup->insert(glModel);
+	glGroup->setScale(modelScale);
+	glGroup->setPose(modelPose);
+
+	glGroup->setName(modelName);
+
+	if (!glCustomVisual_)
+	{
+		glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
+		glCustomVisual_->setName("glCustomVisual");
+	}
+	glCustomVisual_->insert(glGroup);
+
+	if (glCollision_) glCollision_->setVisibility(initialShowBoundingBox);
+
+	// Auto bounds from visual model bounding-box:
+	if (!collisionShape_)
+	{
+		// Copy:
+		collisionShape_ = shape;
+	}
+	else
+	{
+		// ... or update collision volume:
+		collisionShape_->mergeWith(shape);
+	}
 }

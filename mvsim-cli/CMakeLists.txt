@@ -19,4 +19,6 @@ target_link_libraries(
 	${CMAKE_THREAD_LIBS_INIT}
 	)
 
+mvsim_set_target_build_options(${PROJECT_NAME})
+
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

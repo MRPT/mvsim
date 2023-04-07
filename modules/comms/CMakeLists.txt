@@ -10,6 +10,7 @@ file(GLOB Comms_SRCS
 add_library(${PROJECT_NAME}
 	${Comms_SRCS}
 )
+mvsim_set_target_build_options(${PROJECT_NAME})
 
 source_group(Comms FILES ${Comms_SRCS})
 

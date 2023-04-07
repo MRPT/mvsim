@@ -11,13 +11,17 @@
 		<refresh_fps>15</refresh_fps>
 		<cam_point_to>1.5 13</cam_point_to>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
-		
+
+	</gui>
+
+	<!-- Light parameters -->
+	<lights>
 		<enable_shadows>true</enable_shadows>
 		<!-- <shadow_map_size>1024</shadow_map_size> -->
-		
+
 		<light_azimuth_deg>160.0</light_azimuth_deg>
 		<light_elevation_deg>40.0</light_elevation_deg>
-	</gui>
+	</lights>
 
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
 	<variable name="NUM_TILTED_BEAMS_Y" value="10"></variable>

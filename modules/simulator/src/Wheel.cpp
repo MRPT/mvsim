@@ -11,6 +11,7 @@
 #include <mrpt/opengl/CCylinder.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/stock_objects.h>
+#include <mrpt/version.h>
 #include <mvsim/Wheel.h>
 #include <mvsim/World.h>
 
@@ -46,6 +47,9 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 			mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
 				mrpt::opengl::stock_objects::CornerXYZSimple(
 					0.9 * diameter, 2.0);
+#if MRPT_VERSION >= 0x270
+			gl_xyz->castShadows(false);
+#endif
 			gl_wheel_frame->insert(gl_xyz);
 		}
 		obj.insert(gl_wheel_frame);
@@ -92,9 +96,10 @@ void Wheel::recalcInertia()
 }
 
 void Wheel::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	bool childrenOnly)
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
+		physical,
+	[[maybe_unused]] bool childrenOnly)
 {
 	// nothing to do, already done in getAs3DObject()
 }

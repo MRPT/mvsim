@@ -236,20 +236,20 @@ class World : public mrpt::system::COutputLogger
 	std::thread gui_thread_;
 
 	std::atomic_bool gui_thread_running_ = false;
-	std::atomic_bool gui_thread_must_close_ = false;
+	std::atomic_bool simulator_must_close_ = false;
 	mutable std::mutex gui_thread_start_mtx_;
 
-	bool gui_thread_must_close() const
+	bool simulator_must_close() const
 	{
 		gui_thread_start_mtx_.lock();
-		const bool v = gui_thread_must_close_;
+		const bool v = simulator_must_close_;
 		gui_thread_start_mtx_.unlock();
 		return v;
 	}
-	void gui_thread_must_close(bool value)
+	void simulator_must_close(bool value)
 	{
 		gui_thread_start_mtx_.lock();
-		gui_thread_must_close_ = value;
+		simulator_must_close_ = value;
 		gui_thread_start_mtx_.unlock();
 	}
 
@@ -465,12 +465,6 @@ class World : public mrpt::system::COutputLogger
 		std::string follow_vehicle;	 //!< Vehicle name to follow (empty=none)
 		bool headless = false;
 
-		bool enable_shadows = true;
-		int shadow_map_size = 2048;
-
-		double light_azimuth = mrpt::DEG2RAD(45.0);
-		double light_elevation = mrpt::DEG2RAD(70.0);
-
 		const TParameterDefinitions params = {
 			{"win_w", {"%u", &win_w}},
 			{"win_h", {"%u", &win_h}},
@@ -489,10 +483,6 @@ class World : public mrpt::system::COutputLogger
 			{"cam_azimuth", {"%lf", &camera_azimuth_deg}},
 			{"cam_elevation", {"%lf", &camera_elevation_deg}},
 			{"cam_point_to", {"%point3d", &camera_point_to}},
-			{"enable_shadows", {"%bool", &enable_shadows}},
-			{"shadow_map_size", {"%i", &shadow_map_size}},
-			{"light_azimuth_deg", {"%lf_deg", &light_azimuth}},
-			{"light_elevation_deg", {"%lf_deg", &light_elevation}},
 		};
 
 		TGUI_Options() = default;
@@ -503,6 +493,38 @@ class World : public mrpt::system::COutputLogger
 	/** Some of these options are only used the first time the GUI window is
 	 * created. */
 	TGUI_Options guiOptions_;
+
+	struct LightOptions
+	{
+		LightOptions() = default;
+
+		void parse_from(
+			const rapidxml::xml_node<char>& node, COutputLogger& logger);
+
+		bool enable_shadows = true;
+		int shadow_map_size = 2048;
+
+		double light_azimuth = mrpt::DEG2RAD(45.0);
+		double light_elevation = mrpt::DEG2RAD(70.0);
+
+		float light_clip_plane_min = 0.01f;
+		float light_clip_plane_max = 1000.0f;
+
+		mrpt::img::TColor light_color = {0xff, 0xff, 0xff, 0xff};
+
+		const TParameterDefinitions params = {
+			{"enable_shadows", {"%bool", &enable_shadows}},
+			{"shadow_map_size", {"%i", &shadow_map_size}},
+			{"light_azimuth_deg", {"%lf_deg", &light_azimuth}},
+			{"light_elevation_deg", {"%lf_deg", &light_elevation}},
+			{"light_clip_plane_min", {"%f", &light_clip_plane_min}},
+			{"light_clip_plane_max", {"%f", &light_clip_plane_max}},
+			{"light_color", {"%color", &light_color}},
+		};
+	};
+
+	/** Options for lights */
+	LightOptions lightOptions_;
 
 	// -------- World contents ----------
 	/** Mutex protecting simulation objects from multi-thread access */
@@ -661,6 +683,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_block(const XmlParserContext& ctx);
 	void parse_tag_block_class(const XmlParserContext& ctx);
 	void parse_tag_gui(const XmlParserContext& ctx);
+	void parse_tag_lights(const XmlParserContext& ctx);
 	void parse_tag_walls(const XmlParserContext& ctx);
 	void parse_tag_include(const XmlParserContext& ctx);
 	void parse_tag_variable(const XmlParserContext& ctx);

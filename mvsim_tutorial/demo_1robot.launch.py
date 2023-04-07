@@ -25,7 +25,7 @@ def generate_launch_description():
         name='mvsim',
         output='screen',
         parameters=[
-            os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_1robot.yaml'),
+            os.path.join(mvsimDir, 'mvsim_tutorial', 'mvsim_ros2_params.yaml'),
             {
                 "world_file": LaunchConfiguration('world_file'),
             }]

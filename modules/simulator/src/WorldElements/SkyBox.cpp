@@ -91,7 +91,7 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 void SkyBox::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	bool childrenOnly)
+	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 

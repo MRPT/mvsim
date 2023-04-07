@@ -204,7 +204,6 @@ VehicleBase::Ptr VehicleBase::factory(
 					sClassName.c_str()));
 
 			nodes.add(class_root);
-			// cout << *class_root;
 		}
 	}
 
@@ -266,7 +265,15 @@ VehicleBase::Ptr VehicleBase::factory(
 				xml_chassis->first_node("shape_from_visual");
 			sfv)
 		{
-			const auto bb = veh->getVisualModelBoundingBox();
+			const auto& bbVis = veh->collisionShape();
+			if (!bbVis.has_value())
+			{
+				THROW_EXCEPTION(
+					"Error: Tag <shape_from_visual/> found but no "
+					"<visual> entry seems to have been found while parsing "
+					"<vehicle>");
+			}
+			const auto& bb = bbVis.value();
 			if (bb.volume() == 0)
 			{
 				THROW_EXCEPTION(
@@ -274,14 +281,20 @@ VehicleBase::Ptr VehicleBase::factory(
 					"visual object seems incorrect, while parsing <vehicle>");
 			}
 
-			auto& poly = veh->chassis_poly_;
-			poly.clear();
-			poly.emplace_back(bb.min.x, bb.min.y);
-			poly.emplace_back(bb.min.x, bb.max.y);
-			poly.emplace_back(bb.max.x, bb.max.y);
-			poly.emplace_back(bb.max.x, bb.min.y);
+			// Set contour polygon:
+			veh->chassis_poly_ = bb.getContour();
+		}
+		else
+		{
+			// Update collision shape from shape loaded from XML:
+			Shape2p5 cs;
+			cs.setShapeManual(
+				veh->chassis_poly_, veh->chassis_z_min_, veh->chassis_z_max_);
+
+			veh->setCollisionShape(cs);
 		}
 	}
+
 	veh->updateMaxRadiusFromPoly();
 
 	// <Optional> Log path. If not specified, app folder will be used
@@ -321,8 +334,8 @@ VehicleBase::Ptr VehicleBase::factory(
 		if (!frict_node)
 		{
 			// Default:
-			veh->friction_ = std::shared_ptr<FrictionBase>(
-				new DefaultFriction(*veh, nullptr /*default params*/));
+			veh->friction_ =
+				std::make_shared<DefaultFriction>(*veh, nullptr /*default */);
 		}
 		else
 		{
@@ -616,7 +629,9 @@ void VehicleBase::create_multibody_system(b2World& world)
 
 		b2PolygonShape chassisPoly;
 		chassisPoly.Set(&pts[0], nPts);
-		// chassisPoly.radius_ = 1e-3;  // The "skin" depth of the body
+
+		// FIXED value by design in b2Box: The "skin" depth of the body
+		chassisPoly.m_radius = 2.5e-3;	// b2_polygonRadius;
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;

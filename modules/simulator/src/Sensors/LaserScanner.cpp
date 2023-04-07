@@ -89,6 +89,8 @@ void LaserScanner::internalGuiUpdate(
 		physical,
 	[[maybe_unused]] bool childrenOnly)
 {
+	using namespace std::string_literals;
+
 	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
 	if (viz)
 	{
@@ -115,12 +117,17 @@ void LaserScanner::internalGuiUpdate(
 		gl_scan_->enableLine(viz_visibleLines_);
 
 		gl_scan_->setLocalRepresentativePoint({0, 0, 0.10f});
+		gl_scan_->setName(
+			"glScan veh:"s + vehicle_.getName() + " sensor:"s + this->name_);
 
 		glVizSensors->insert(gl_scan_);
 	}
 	if (!gl_sensor_origin_ && viz)
 	{
 		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+#if MRPT_VERSION >= 0x270
+		gl_sensor_origin_->castShadows(false);
+#endif
 		gl_sensor_origin_corner_ =
 			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
@@ -133,6 +140,9 @@ void LaserScanner::internalGuiUpdate(
 	if (!gl_sensor_fov_ && viz)
 	{
 		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
+#if MRPT_VERSION >= 0x270
+		gl_sensor_fov_->castShadows(false);
+#endif
 
 		auto fovScan = mrpt::opengl::CPlanarLaserScan::Create();
 		fovScan->enablePoints(false);

@@ -145,8 +145,9 @@ void OccupancyGridMap::internalGuiUpdate(
 			if (!gl_objs)
 			{
 				gl_objs = mrpt::opengl::CSetOfObjects::Create();
-				gl_objs->setName("OccupancyGridMap.obstacles");
-				MRPT_TODO("Add a name, and remove old ones in scene, etc.")
+				gl_objs->setName(
+					"OccupancyGridMap"s + this->getName() + ".obstacles["s +
+					std::to_string(i) + "]"s);
 				viz->get().insert(gl_objs);
 			}
 
@@ -163,7 +164,8 @@ void OccupancyGridMap::internalGuiUpdate(
 	}
 }
 
-void OccupancyGridMap::simul_pre_timestep(const TSimulContext& context)
+void OccupancyGridMap::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 	// Make a list of objects subject to collide with the occupancy grid:
 	// - Vehicles

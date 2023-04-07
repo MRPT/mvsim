@@ -175,12 +175,12 @@ mvsim_msgs::SrvSetControllerTwistAnswer World::srv_set_controller_twist(
 }
 
 mvsim_msgs::SrvShutdownAnswer World::srv_shutdown(
-	const mvsim_msgs::SrvShutdown& req)
+	[[maybe_unused]] const mvsim_msgs::SrvShutdown& req)
 {
 	mvsim_msgs::SrvShutdownAnswer ans;
 	ans.set_accepted(true);
 
-	this->gui_thread_must_close(true);
+	this->simulator_must_close(true);
 
 	return ans;
 }

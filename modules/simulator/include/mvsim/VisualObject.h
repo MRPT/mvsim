@@ -14,6 +14,7 @@
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/opengl_frwds.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mvsim/Shape2p5.h>
 #include <mvsim/basic_types.h>
 
 #include <cstdint>
@@ -30,12 +31,7 @@ class VisualObject
    public:
 	VisualObject(
 		World* parent, bool insertCustomVizIntoViz = true,
-		bool insertCustomVizIntoPhysical = true)
-		: world_(parent),
-		  insertCustomVizIntoViz_(insertCustomVizIntoViz),
-		  insertCustomVizIntoPhysical_(insertCustomVizIntoPhysical)
-	{
-	}
+		bool insertCustomVizIntoPhysical = true);
 
 	virtual ~VisualObject();
 
@@ -53,14 +49,14 @@ class VisualObject
 	void customVisualVisible(const bool visible);
 	bool customVisualVisible() const;
 
-	/** Returns bounding boxes, as loaded by parseVisual() from an XML config
-	 * file. */
-	const mrpt::math::TBoundingBox& getVisualModelBoundingBox() const
+	/** Returns the collision shape, if defined (should be for regular entities
+	 * after correct initialization). */
+	const std::optional<Shape2p5>& collisionShape() const
 	{
-		return viz_bb_;
+		return collisionShape_;
 	}
 
-	void showBoundingBox(bool show);
+	void showCollisionShape(bool show);
 
 	static void FreeOpenGLResources();
 
@@ -77,7 +73,7 @@ class VisualObject
 	/** If not empty, will override the derived-class visualization for this
 	 * object. */
 	std::shared_ptr<mrpt::opengl::CSetOfObjects> glCustomVisual_;
-	std::shared_ptr<mrpt::opengl::CSetOfObjects> glBoundingBox_;
+	std::shared_ptr<mrpt::opengl::CSetOfObjects> glCollision_;
 	int32_t glCustomVisualId_ = -1;
 
 	const bool insertCustomVizIntoViz_ = true;
@@ -88,8 +84,17 @@ class VisualObject
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly = false) = 0;
 
+	void addCustomVisualization(
+		const mrpt::opengl::CRenderizable::Ptr& glModel,
+		const mrpt::poses::CPose3D& modelPose = {},
+		const float modelScale = 1.0f, const std::string& modelName = "group",
+		const std::optional<std::string>& modelURI = std::nullopt,
+		const bool initialShowBoundingBox = false);
+
+	void setCollisionShape(const Shape2p5& cs) { collisionShape_ = cs; }
+
    private:
-	mrpt::math::TBoundingBox viz_bb_{{-1.0, -1.0, .0}, {1.0, 1.0, 1.0}};
+	std::optional<Shape2p5> collisionShape_;
 
 	/// Called by parseVisual once per "visual" block.
 	bool implParseVisual(const rapidxml::xml_node<char>& visual_node);

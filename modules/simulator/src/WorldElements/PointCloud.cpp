@@ -68,7 +68,7 @@ void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 void PointCloud::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	bool childrenOnly)
+	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 
@@ -90,4 +90,7 @@ void PointCloud::internalGuiUpdate(
 	}
 }
 
-void PointCloud::simul_pre_timestep(const TSimulContext& context) {}
+void PointCloud::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
+{
+}

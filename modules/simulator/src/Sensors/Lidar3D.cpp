@@ -90,6 +90,9 @@ void Lidar3D::internalGuiUpdate(
 	if (!gl_sensor_origin_ && viz)
 	{
 		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+#if MRPT_VERSION >= 0x270
+		gl_sensor_origin_->castShadows(false);
+#endif
 		gl_sensor_origin_corner_ =
 			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 

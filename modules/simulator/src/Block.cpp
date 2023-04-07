@@ -11,7 +11,10 @@
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
+#include <mrpt/opengl/CBox.h>
+#include <mrpt/opengl/CCylinder.h>
 #include <mrpt/opengl/CPolyhedron.h>
+#include <mrpt/opengl/CSphere.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/version.h>
 #include <mvsim/Block.h>
@@ -138,12 +141,32 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 			*class_root, block->params_, parent->user_defined_variables(),
 			"[Block::factory]");
 
+	// Shape node (optional, fallback to default shape if none found)
+	if (const auto* xml_shape = nodes.first_node("shape"); xml_shape)
+	{
+		mvsim::parse_xmlnode_shape(
+			*xml_shape, block->block_poly_, "[Block::factory]");
+		block->updateMaxRadiusFromPoly();
+	}
+	else if (const auto* xml_geom = nodes.first_node("geometry"); xml_geom)
+	{
+		block->internal_parseGeometry(*xml_geom);
+	}
+
 	// Auto shape node from visual?
 	if (const rapidxml::xml_node<char>* xml_shape_viz =
 			nodes.first_node("shape_from_visual");
 		xml_shape_viz)
 	{
-		const auto bb = block->getVisualModelBoundingBox();
+		const auto& bbVis = block->collisionShape();
+		if (!bbVis.has_value())
+		{
+			THROW_EXCEPTION(
+				"Error: Tag <shape_from_visual/> found but neither <visual> "
+				"nor <geometry> entries, while parsing <block>");
+		}
+		const auto& bb = bbVis.value();
+
 		if (bb.volume() == 0)
 		{
 			THROW_EXCEPTION(
@@ -151,23 +174,11 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 				"visual object seems incorrect, while parsing <block>");
 		}
 
-		block->block_poly_.clear();
-		block->block_poly_.emplace_back(bb.min.x, bb.min.y);
-		block->block_poly_.emplace_back(bb.min.x, bb.max.y);
-		block->block_poly_.emplace_back(bb.max.x, bb.max.y);
-		block->block_poly_.emplace_back(bb.max.x, bb.min.y);
-
-		block->updateMaxRadiusFromPoly();
+		// Set contour polygon:
+		block->block_poly_ = bb.getContour();
 	}
 
-	// Shape node (optional, fallback to default shape if none found)
-	if (const rapidxml::xml_node<char>* xml_shape = nodes.first_node("shape");
-		xml_shape)
-	{
-		mvsim::parse_xmlnode_shape(
-			*xml_shape, block->block_poly_, "[Block::factory]");
-		block->updateMaxRadiusFromPoly();
-	}
+	block->updateMaxRadiusFromPoly();
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
@@ -216,8 +227,8 @@ void Block::simul_pre_timestep(const TSimulContext& context)
 	Simulable::simul_pre_timestep(context);
 }
 
-/** Override to do any required process right after the integration of dynamic
- * equations for each timestep */
+/** Override to do any required process right after the integration of
+ * dynamic equations for each timestep */
 void Block::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
@@ -255,9 +266,9 @@ void Block::internalGuiUpdate(
 		}
 
 		// Update them:
-		// If "viz" does not have a value, it's because we are already inside a
-		// setPose() change event, so my caller already holds the mutex and we
-		// don't need/can't acquire it again:
+		// If "viz" does not have a value, it's because we are already
+		// inside a setPose() change event, so my caller already holds the
+		// mutex and we don't need/can't acquire it again:
 		const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
 		if (gl_block_) gl_block_->setPose(objectPose);
@@ -310,7 +321,15 @@ void Block::create_multibody_system(b2World& world)
 {
 	if (intangible_) return;
 
-	// Define the dynamic body. We set its position and call the body factory.
+	// Update collision shape from shape loaded from XML or set manually:
+	{
+		Shape2p5 cs;
+		cs.setShapeManual(block_poly_, block_z_min_, block_z_max_);
+		setCollisionShape(cs);
+	}
+
+	// Define the dynamic body. We set its position and call the body
+	// factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 
@@ -329,7 +348,9 @@ void Block::create_multibody_system(b2World& world)
 
 		b2PolygonShape blockPoly;
 		blockPoly.Set(&pts[0], nPts);
-		// blockPoly.radius_ = 1e-3;  // The "skin" depth of the body
+
+		// FIXED value by design in b2Box: The "skin" depth of the body
+		blockPoly.m_radius = 2.5e-3;  // b2_polygonRadius;
 
 		// Define the dynamic body fixture.
 		b2FixtureDef fixtureDef;
@@ -424,9 +445,83 @@ DummyInvisibleBlock::DummyInvisibleBlock(World* parent)
 void DummyInvisibleBlock::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	bool childrenOnly)
+	[[maybe_unused]] bool childrenOnly)
 {
 	if (!viz || !physical) return;
 
 	for (auto& s : sensors_) s->guiUpdate(viz, physical);
+}
+
+void Block::internal_parseGeometry(
+	const rapidxml::xml_node<char>& xml_geom_node)
+{
+	std::string type;  // cylinder, sphere, etc.
+	float radius = 0;
+	float length = 0, lx = 0, ly = 0, lz = 0;
+	int vertex_count = 0;
+
+	const TParameterDefinitions params = {
+		{"type", {"%s", &type}},
+		{"radius", {"%f", &radius}},
+		{"length", {"%f", &length}},
+		{"lx", {"%f", &lx}},
+		{"ly", {"%f", &ly}},
+		{"lz", {"%f", &lz}},
+		{"vertex_count", {"%i", &vertex_count}},
+	};
+
+	parse_xmlnode_attribs(
+		xml_geom_node, params, world_->user_defined_variables(),
+		"[Block::internal_parseGeometry]");
+
+	if (type.empty())
+	{
+		THROW_EXCEPTION(
+			"Geometry type attribute is missing, i.e. <geometry type='...' ... "
+			"/>");
+	}
+
+	if (type == "cylinder")
+	{
+		ASSERTMSG_(
+			radius > 0, "Missing 'radius' attribute for cylinder geometry");
+		ASSERTMSG_(
+			length > 0, "Missing 'length' attribute for cylinder geometry");
+
+		if (vertex_count == 0) vertex_count = 10;  // default
+
+		auto glCyl = mrpt::opengl::CCylinder::Create();
+		glCyl->setHeight(length);
+		glCyl->setRadius(radius);
+		glCyl->setSlicesCount(vertex_count);
+		glCyl->setColor_u8(block_color_);
+		addCustomVisualization(glCyl);
+	}
+	else if (type == "sphere")
+	{
+		ASSERTMSG_(
+			radius > 0, "Missing 'radius' attribute for cylinder geometry");
+
+		if (vertex_count == 0) vertex_count = 10;  // default
+
+		auto glSph = mrpt::opengl::CSphere::Create(radius, vertex_count);
+		glSph->setColor_u8(block_color_);
+		addCustomVisualization(glSph);
+	}
+	else if (type == "box")
+	{
+		ASSERTMSG_(lx > 0, "Missing 'lx' attribute for box geometry");
+		ASSERTMSG_(ly > 0, "Missing 'ly' attribute for box geometry");
+		ASSERTMSG_(lz > 0, "Missing 'lz' attribute for box geometry");
+
+		auto glBox = mrpt::opengl::CBox::Create();
+		glBox->setBoxCorners({0, 0, 0}, {lx, ly, lz});
+		glBox->setColor_u8(block_color_);
+		addCustomVisualization(glBox);
+	}
+	else
+	{
+		THROW_EXCEPTION_FMT(
+			"Unknown type in <geometry type='%s'...>", type.c_str());
+	}
 }

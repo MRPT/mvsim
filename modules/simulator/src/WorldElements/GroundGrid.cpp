@@ -64,8 +64,9 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void GroundGrid::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	bool childrenOnly)
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
+		physical,
+	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 

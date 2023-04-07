@@ -159,7 +159,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 void ElevationMap::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	bool childrenOnly)
+	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 
@@ -179,7 +179,8 @@ void ElevationMap::internalGuiUpdate(
 	}
 }
 
-void ElevationMap::simul_pre_timestep(const TSimulContext& context)
+void ElevationMap::simul_pre_timestep(
+	[[maybe_unused]] const TSimulContext& context)
 {
 	// For each vehicle:
 	// 1) Compute its 3D pose according to the mesh tilt angle.
@@ -339,9 +340,9 @@ void ElevationMap::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
 
-	MRPT_TODO(
-		"Save all elements positions in prestep, then here scale their "
-		"movements * cos(angle)");
+	// TODO: Think if this is still applicable:
+	// Save all elements positions in prestep, then here scale their
+	// movements * cos(angle)
 }
 
 static float calcz(

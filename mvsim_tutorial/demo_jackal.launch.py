@@ -26,7 +26,7 @@ def generate_launch_description():
         output='screen',
         parameters=[
             os.path.join(mvsimDir, 'mvsim_tutorial',
-                         'demo_depth_camera.yaml'),
+                         'mvsim_ros2_params.yaml'),
             {
                 "world_file": LaunchConfiguration('world_file'),
                 "headless": False

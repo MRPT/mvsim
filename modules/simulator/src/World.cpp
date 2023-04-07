@@ -32,7 +32,7 @@ World::~World()
 	if (gui_thread_.joinable())
 	{
 		MRPT_LOG_DEBUG("Dtor: Waiting for GUI thread to quit...");
-		gui_thread_must_close(true);
+		simulator_must_close(true);
 		gui_thread_.join();
 		MRPT_LOG_DEBUG("Dtor: GUI thread shut down successful.");
 	}
@@ -79,6 +79,9 @@ void World::internal_initialize()
 	worldVisual_->getViewport()->lightParameters().ambient = {
 		0.5f, 0.5f, 0.5f, 1.0f};
 #endif
+	// Physical world light = visual world lights:
+	worldPhysical_.getViewport()->lightParameters() =
+		worldVisual_->getViewport()->lightParameters();
 
 	// Create group for sensor viz:
 	{
@@ -129,7 +132,7 @@ void World::run_simulation(double dt)
 
 		// IMPORTANT: This must be inside the loop to allow breaking if we are
 		// closing the app and simulatedTime is not ticking anymore.
-		if (gui_thread_must_close()) break;
+		if (simulator_must_close()) break;
 	}
 
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
@@ -140,7 +143,7 @@ void World::run_simulation(double dt)
 /** Runs one individual time step */
 void World::internal_one_timestep(double dt)
 {
-	if (gui_thread_must_close()) return;
+	if (simulator_must_close()) return;
 
 	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
 

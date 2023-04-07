@@ -108,6 +108,7 @@ void World::register_standard_xml_tag_parsers()
 	register_tag_parser("element", &World::parse_tag_element);
 	register_tag_parser("sensor", &World::parse_tag_sensor);
 	register_tag_parser("gui", &World::parse_tag_gui);
+	register_tag_parser("lights", &World::parse_tag_lights);
 	register_tag_parser("walls", &World::parse_tag_walls);
 	register_tag_parser("include", &World::parse_tag_include);
 	register_tag_parser("variable", &World::parse_tag_variable);
@@ -216,6 +217,12 @@ void World::parse_tag_gui(const XmlParserContext& ctx)
 {
 	//
 	guiOptions_.parse_from(*ctx.node, *this);
+}
+
+void World::parse_tag_lights(const XmlParserContext& ctx)
+{
+	//
+	lightOptions_.parse_from(*ctx.node, *this);
 }
 
 void World::parse_tag_walls(const XmlParserContext& ctx)

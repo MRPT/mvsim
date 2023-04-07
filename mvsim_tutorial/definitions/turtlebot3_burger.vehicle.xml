@@ -1,0 +1,44 @@
+<!--
+  Vehicle class definition file.
+  Intended to be included into world XML files.
+  Common sensors could be included here, but they are left to be included in 
+  class instantiations.
+  Refer to mvsim_tutorial example files.
+-->
+<vehicle:class name="turtlebot3_burger">
+
+    <!--  Dynamical model -->
+    <dynamics class="differential">
+        <!-- Params -->
+        <l_wheel pos="0.0  0.08" mass="0.1" width="0.03" diameter="0.066" />
+        <r_wheel pos="0.0 -0.08" mass="0.1" width="0.03" diameter="0.066" />
+
+        <chassis mass="1.0" zmin="0.05" zmax="0.192">
+            <shape_from_visual/> <!-- automatic size from 3D model file -->
+        </chassis>
+
+        <!--   Motor controller -->
+        <controller class="twist_pid">
+            <!-- Params -->
+            <KP>1.0</KP>  <KI>1.0</KI> <I_MAX>1.0</I_MAX> <KD>0</KD>
+            <V>0.0</V><W>0</W>
+            <max_torque>5</max_torque>
+        </controller>
+    </dynamics>
+
+    <!-- Friction force simulation -->
+    <friction class="default">
+        <mu>0.8</mu>
+        <C_damping>0.01</C_damping>
+    </friction>
+
+    <!--  Custom vehicle visualization model -->
+    <!-- 3D model filename to load (local or remote http://uri ) -->
+    <visual>
+        <model_uri>https://mrpt.github.io/mvsim-models/turtlebot3.zip/turtlebot3/burger_base.dae</model_uri>
+        <model_roll>90.0</model_roll>
+        <model_scale>0.001</model_scale>
+        <model_color>#404040</model_color>
+    </visual>
+    
+</vehicle:class>

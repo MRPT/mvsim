@@ -95,9 +95,6 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["depth_noise_sigma"] = TParamEntry("%f", &depth_noise_sigma_);
 	params["show_3d_pointcloud"] = TParamEntry("%bool", &show_3d_pointcloud_);
 
-	MRPT_TODO("REMOVE??");
-	params["ambient_light"] = TParamEntry("%f", &ambient_light_);
-
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
 
@@ -141,6 +138,9 @@ void DepthCameraSensor::internalGuiUpdate(
 	if (!gl_sensor_origin_ && viz)
 	{
 		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+#if MRPT_VERSION >= 0x270
+		gl_sensor_origin_->castShadows(false);
+#endif
 		gl_sensor_origin_corner_ =
 			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
@@ -305,7 +305,6 @@ void DepthCameraSensor::simulateOn3DScene(
 
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);
-		viewport->lightParameters().ambient = ambient_light_;
 
 		fbo_renderer_rgb_->render_RGB(world3DScene, curObs.intensityImage);
 

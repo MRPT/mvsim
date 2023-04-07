@@ -1,2 +1,7 @@
+# This file describes python dependencies for an intermediary 
+# build stage within the cmake pipeline. 
+# See CMakeLists.txt. We must fix protobuf broken code: 
+# Read https://github.com/cpcloud/protoletariat
+# and https://github.com/protocolbuffers/protobuf/issues/1491
 protobuf
 protoletariat
