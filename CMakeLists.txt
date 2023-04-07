@@ -49,6 +49,12 @@ configure_file(
 	)
 #----
 
+# This is required for pybind11 to generate C++17 code in all OS versions:
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ version selection")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)  # optional, ensure standard is supported
+set(CMAKE_CXX_EXTENSIONS OFF)  # optional, keep compiler extensions off
+
+
 find_package(Threads)
 include(GNUInstallDirs)
 include(cmake/mvsim_cmake_functions.cmake REQUIRED)
