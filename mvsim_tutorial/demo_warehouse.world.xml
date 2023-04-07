@@ -130,8 +130,7 @@
 	     ====================================== -->
 	<block:class name="shelf">
 		<static>true</static> <!-- Does not move -->
-		<mass>300</mass> <zmax>2.0</zmax> <ground_friction>1.0</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/shelf_big_moveai.zip/shelf_big_moveai/shelf_big_movai.dae</model_uri>
@@ -141,8 +140,7 @@
 
 	<block:class name="stairs">
 		<static>true</static> <!-- Does not move -->
-		<mass>1000</mass> <zmax>6.0</zmax> <ground_friction>1.0</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/metal-stairs.dae</model_uri>
@@ -152,8 +150,8 @@
 	</block:class>
 
 	<block:class name="tote">
-		<mass>6</mass> <zmax>1.0</zmax> <ground_friction>0.1</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<mass>6</mass> <ground_friction>0.1</ground_friction>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/tote.dae</model_uri>
@@ -162,8 +160,8 @@
 	</block:class>
 
 	<block:class name="pallet">
-		<mass>2</mass> <zmax>0.1</zmax> <ground_friction>0.1</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<mass>2</mass> <ground_friction>0.1</ground_friction>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/pallet.zip/pallet/pallet.dae</model_uri>
@@ -172,8 +170,8 @@
 	</block:class>
 
 	<block:class name="pallet_jack">
-		<mass>20</mass> <zmax>1.5</zmax> <ground_friction>1.0</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<mass>20</mass> <ground_friction>1.0</ground_friction>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/pallet_jack.zip/pallet_jack/pallet_jack.dae</model_uri>
@@ -182,8 +180,8 @@
 	</block:class>
 
 	<block:class name="chair_x3">
-		<mass>6</mass> <zmax>1.0</zmax> <ground_friction>0.1</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<mass>6</mass> <ground_friction>0.1</ground_friction>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/chair_x3.dae</model_uri>
@@ -193,8 +191,8 @@
 
 	<block:class name="extinguisher">
 		<static>true</static> <!-- Does not move -->
-		<mass>2</mass> <zmax>1.0</zmax> <ground_friction>1</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<mass>2</mass> <ground_friction>1</ground_friction>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/extinguisher.zip/extinguisher/extinguisher.dae</model_uri>

@@ -20,7 +20,7 @@
         <max_steer_ang_deg>40.0</max_steer_ang_deg>
 
         <chassis mass="2000.0" zmin="0.01" zmax="1.9">
-            <shape_from_visual/> <!-- automatic size from 3D model file -->
+            <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
         </chassis>
 
         <!--   Motor controller -->

@@ -283,6 +283,8 @@ VehicleBase::Ptr VehicleBase::factory(
 
 			// Set contour polygon:
 			veh->chassis_poly_ = bb.getContour();
+			veh->chassis_z_min_ = bb.zMin();
+			veh->chassis_z_max_ = bb.zMax();
 		}
 		else
 		{

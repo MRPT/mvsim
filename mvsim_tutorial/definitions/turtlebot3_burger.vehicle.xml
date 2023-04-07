@@ -14,7 +14,7 @@
         <r_wheel pos="0.0 -0.08" mass="0.1" width="0.03" diameter="0.066" />
 
         <chassis mass="1.0" zmin="0.05" zmax="0.192">
-            <shape_from_visual/> <!-- automatic size from 3D model file -->
+            <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
         </chassis>
 
         <!--   Motor controller -->

@@ -64,8 +64,7 @@
 	     ====================================== -->
 	<block:class name="power_plant">
 		<static>true</static> <!-- Does not move -->
-		<zmax>20.0</zmax>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/PowerPlant.zip/PowerPlant/powerplant.dae</model_uri>

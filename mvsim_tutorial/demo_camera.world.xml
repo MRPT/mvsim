@@ -69,11 +69,9 @@
 
 
 	<block:class name="nurse_station">
-		<mass>300</mass>
+		<static>true</static> <!-- Does not move -->
 		<color>#0080ff</color>
-		<zmax>2.0</zmax>
-		<ground_friction>100.0</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model -->
 		<!-- 3D model filename to load (local or remote http://uri ) -->
 		<visual>

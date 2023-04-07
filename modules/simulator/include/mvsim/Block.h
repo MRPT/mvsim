@@ -116,6 +116,10 @@ class Block : public VisualObject, public Simulable
 		gl_block_.reset();	// regenerate 3D view
 	}
 
+	/// returns true if none of the min/max block z limits has been set
+	/// explicitly yet. Used while parsing the shape_from_visual tag.
+	bool default_block_z_min_max() const;
+
 	VisualObject* meAsVisualObject() override { return this; }
 
    protected:
@@ -134,9 +138,14 @@ class Block : public VisualObject, public Simulable
 	double mass_ = 30.0;
 	bool isStatic_ = false;
 	mrpt::math::TPolygon2D block_poly_;
-	double maxRadius_;	//!< Automatically computed from block_poly_ upon
-						//! each change via updateMaxRadiusFromPoly()
-	double block_z_min_ = 0.0, block_z_max_ = 1.0;
+
+	/// Automatically computed from block_poly_ upon each change via
+	/// updateMaxRadiusFromPoly()
+	double maxRadius_;
+
+	double block_z_min_ = std::numeric_limits<double>::quiet_NaN(),
+		   block_z_max_ = std::numeric_limits<double>::quiet_NaN();
+
 	mrpt::img::TColor block_color_{0x00, 0x00, 0xff};
 	mrpt::math::TPoint2D block_com_{.0, .0};  //!< In local coordinates
 

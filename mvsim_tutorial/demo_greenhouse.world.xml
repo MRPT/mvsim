@@ -147,8 +147,7 @@
 	     ====================================== -->
 	<block:class name="pole_tilted">
 		<static>true</static> <!-- Does not move -->
-		<zmax>1.0</zmax>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/pole_tilted_he120e.stl</model_uri>
@@ -159,8 +158,7 @@
 
 	<block:class name="pole_009">
 		<static>true</static> <!-- Does not move -->
-		<zmax>2.0</zmax>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/pole_009.stl</model_uri>
@@ -170,8 +168,7 @@
 
 	<block:class name="pole_004">
 		<static>true</static> <!-- Does not move -->
-		<zmax>2.0</zmax>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/pole_004.stl</model_uri>
@@ -181,8 +178,8 @@
 
 	<block:class name="plant_tomato">
 		<static>true</static> <!-- Does not move -->
-		<mass>5</mass> <zmax>2.5</zmax>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
+		<mass>5</mass>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/greenhouse.zip/greenhouse/tomato_plant_240cm.dae</model_uri>

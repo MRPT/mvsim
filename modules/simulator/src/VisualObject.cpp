@@ -235,11 +235,18 @@ void VisualObject::addCustomVisualization(
 	float zMin = -std::numeric_limits<float>::max();
 	float zMax = std::numeric_limits<float>::max();
 
-	if (const Block* block = dynamic_cast<const Block*>(this); block)
+	if (const Block* block = dynamic_cast<const Block*>(this);
+		block && !block->default_block_z_min_max())
 	{
+		std::cout << "MODEL:default_block_z_min_max() = "
+				  << block->default_block_z_min_max() << "\n";
+
 		zMin = block->block_z_min() - GeometryEpsilon;
 		zMax = block->block_z_max() + GeometryEpsilon;
 	}
+	std::cout << "MODEL: " << (modelURI ? *modelURI : "none")
+			  << " glModel: " << glModel->GetRuntimeClass()->className
+			  << " zmin=" << zMin << " zMax:" << zMax << "\n";
 
 	// Calculate its convex hull:
 	const auto shape =

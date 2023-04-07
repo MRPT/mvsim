@@ -25,7 +25,7 @@
 #include <queue>
 
 // Uncomment only for development debugging
-//#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+// #define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
 
 using namespace mvsim;
 
@@ -137,6 +137,15 @@ void Shape2p5::computeShape() const
 	ASSERT_(grid_);
 	ASSERT_(!contour_);
 
+#ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+	// Debug save initial grid:
+	debugSaveGridTo3DSceneFile({});
+#endif
+
+	// 0) Filter spurious occupied cells, due to (rare) lost points in the 3D
+	// model:
+	internalGridFilterSpurious();
+
 	// 1) Flood-fill the grid with "FREE color" to allow detecting the outer
 	// shape:
 	internalGridFloodFill();
@@ -171,6 +180,36 @@ void Shape2p5::setShapeManual(
 	zMax_ = zMax;
 }
 
+void Shape2p5::internalGridFilterSpurious() const
+{
+	ASSERT_(grid_);
+
+	const int cxMax = grid_->getSizeX() - 1;
+	const int cyMax = grid_->getSizeY() - 1;
+
+	for (int cx = 1; cx < cxMax; cx++)
+	{
+		for (int cy = 1; cy < cyMax; cy++)
+		{
+			auto* thisCell = grid_->cellByIndex(cx, cy);
+			if (*thisCell != CELL_OCCUPIED) continue;
+			// it's occupied:
+			// reset to unknown if no other neighbors is occupied:
+			bool anyNN =
+				(*grid_->cellByIndex(cx - 1, cy - 1) == CELL_OCCUPIED) ||
+				(*grid_->cellByIndex(cx - 1, cy + 0) == CELL_OCCUPIED) ||
+				(*grid_->cellByIndex(cx - 1, cy + 1) == CELL_OCCUPIED) ||
+				(*grid_->cellByIndex(cx + 0, cy - 1) == CELL_OCCUPIED) ||
+				(*grid_->cellByIndex(cx + 0, cy + 1) == CELL_OCCUPIED) ||
+				(*grid_->cellByIndex(cx + 1, cy - 1) == CELL_OCCUPIED) ||
+				(*grid_->cellByIndex(cx + 1, cy + 0) == CELL_OCCUPIED) ||
+				(*grid_->cellByIndex(cx + 1, cy + 1) == CELL_OCCUPIED);
+
+			if (!anyNN) *thisCell = CELL_UNDEFINED;
+		}
+	}
+}
+
 void Shape2p5::internalGridFloodFill() const
 {
 	ASSERT_(grid_);
@@ -183,7 +222,8 @@ void Shape2p5::internalGridFloodFill() const
 	const int cxMax = grid_->getSizeX() - 1;
 	const int cyMax = grid_->getSizeY() - 1;
 
-	const auto Inside = [&](int x, int y) {
+	const auto Inside = [&](int x, int y)
+	{
 		if (x < 0 || y < 0) return false;
 		if (x > cxMax || y > cyMax) return false;
 		uint8_t* c = grid_->cellByIndex(x, y);
@@ -192,7 +232,8 @@ void Shape2p5::internalGridFloodFill() const
 		return *c == CELL_UNDEFINED;
 	};
 
-	const auto Set = [&](int x, int y) {
+	const auto Set = [&](int x, int y)
+	{
 		if (x < 0 || y < 0) return;
 		if (x > cxMax || y > cyMax) return;
 		uint8_t* c = grid_->cellByIndex(x, y);
@@ -241,7 +282,8 @@ void Shape2p5::internalGridFloodFill() const
 
 	std::queue<Coord> s;
 
-	const auto lambdaScan = [&s, &Inside](int lx, int rx, int y) {
+	const auto lambdaScan = [&s, &Inside](int lx, int rx, int y)
+	{
 		bool spanAdded = false;
 		for (int x = lx; x <= rx; x++)
 		{
@@ -288,7 +330,8 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 	const int nx = grid_->getSizeX();
 	const int ny = grid_->getSizeY();
 
-	auto lambdaCellIsBorder = [&](int cx, int cy) {
+	auto lambdaCellIsBorder = [&](int cx, int cy)
+	{
 		auto* c = grid_->cellByIndex(cx, cy);
 		if (!c) return false;
 		if (*c != CELL_OCCUPIED) return false;
@@ -391,7 +434,8 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 
 	auto lambdaRenderPoly = [&scene](
 								const mrpt::math::TPolygon2D& p,
-								const mrpt::img::TColor& color, double z) {
+								const mrpt::img::TColor& color, double z)
+	{
 		auto glPts = mrpt::opengl::CPointCloud::Create();
 		auto glPoly = mrpt::opengl::CSetOfLines::Create();
 		glPoly->setColor_u8(color);

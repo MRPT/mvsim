@@ -75,6 +75,7 @@ class Shape2p5
 	/// Computes contour_ from the contents in grid_
 	void computeShape() const;
 
+	void internalGridFilterSpurious() const;
 	void internalGridFloodFill() const;
 	mrpt::math::TPolygon2D internalGridContour() const;
 	mrpt::math::TPolygon2D internalPrunePolygon(

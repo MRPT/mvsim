@@ -176,6 +176,18 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 		// Set contour polygon:
 		block->block_poly_ = bb.getContour();
+		block->block_z_min(bb.zMin());
+		block->block_z_max(bb.zMax());
+	}
+	else
+	{
+		// set zmin/zmax to defaults, if not set explicitly by the user in the
+		// XML file, and we didn't have a "shaped_from_visual" tag:
+		if (block->default_block_z_min_max())
+		{
+			block->block_z_min(0.0);
+			block->block_z_max(1.0);
+		}
 	}
 
 	block->updateMaxRadiusFromPoly();
@@ -524,4 +536,10 @@ void Block::internal_parseGeometry(
 		THROW_EXCEPTION_FMT(
 			"Unknown type in <geometry type='%s'...>", type.c_str());
 	}
+}
+
+bool Block::default_block_z_min_max() const
+{
+	return block_z_max_ == std::numeric_limits<double>::quiet_NaN() ||
+		   block_z_min_ == std::numeric_limits<double>::quiet_NaN();
 }
