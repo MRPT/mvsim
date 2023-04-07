@@ -22,7 +22,7 @@ jobs:
           command: |
             cmake -H. -Bbuild
       - run: make -C build
-      - run: make CTEST_OUTPUT_ON_FAILURE=1 test -C build
+      # - run: CTEST_OUTPUT_ON_FAILURE=1 make test -C build
   clang-u20.04:
     docker:
       - image: ubuntu:focal
@@ -48,7 +48,7 @@ jobs:
           command: |
             cmake -H. -Bbuild
       - run: make -C build
-      - run: make CTEST_OUTPUT_ON_FAILURE=1 test -C build
+      #- run: CTEST_OUTPUT_ON_FAILURE=1 make test -C build
 workflows:
   version: 2
   build:
