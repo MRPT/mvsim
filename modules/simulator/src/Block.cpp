@@ -540,6 +540,6 @@ void Block::internal_parseGeometry(
 
 bool Block::default_block_z_min_max() const
 {
-	return block_z_max_ == std::numeric_limits<double>::quiet_NaN() ||
-		   block_z_min_ == std::numeric_limits<double>::quiet_NaN();
+	// true if any of the limits is a nan:
+	return block_z_max_ != block_z_max_ || block_z_min_ != block_z_min_;
 }

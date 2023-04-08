@@ -25,7 +25,7 @@
 #include <queue>
 
 // Uncomment only for development debugging
-// #define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+//#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
 
 using namespace mvsim;
 
@@ -222,8 +222,7 @@ void Shape2p5::internalGridFloodFill() const
 	const int cxMax = grid_->getSizeX() - 1;
 	const int cyMax = grid_->getSizeY() - 1;
 
-	const auto Inside = [&](int x, int y)
-	{
+	const auto Inside = [&](int x, int y) {
 		if (x < 0 || y < 0) return false;
 		if (x > cxMax || y > cyMax) return false;
 		uint8_t* c = grid_->cellByIndex(x, y);
@@ -232,8 +231,7 @@ void Shape2p5::internalGridFloodFill() const
 		return *c == CELL_UNDEFINED;
 	};
 
-	const auto Set = [&](int x, int y)
-	{
+	const auto Set = [&](int x, int y) {
 		if (x < 0 || y < 0) return;
 		if (x > cxMax || y > cyMax) return;
 		uint8_t* c = grid_->cellByIndex(x, y);
@@ -282,8 +280,7 @@ void Shape2p5::internalGridFloodFill() const
 
 	std::queue<Coord> s;
 
-	const auto lambdaScan = [&s, &Inside](int lx, int rx, int y)
-	{
+	const auto lambdaScan = [&s, &Inside](int lx, int rx, int y) {
 		bool spanAdded = false;
 		for (int x = lx; x <= rx; x++)
 		{
@@ -330,11 +327,66 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 	const int nx = grid_->getSizeX();
 	const int ny = grid_->getSizeY();
 
-	auto lambdaCellIsBorder = [&](int cx, int cy)
-	{
+	const std::vector<std::pair<int, int>> dirs = {
+		// first, straight directions (important!)
+		{+1, 0},
+		{-1, 0},
+		{0, +1},
+		{0, -1},
+		// second, diagonals:
+		{+1, +1},
+		{+1, -1},
+		{-1, +1},
+		{-1, -1},
+	};
+
+	auto lambdaCellIsBorderSimple = [&](int cx, int cy) {
 		auto* c = grid_->cellByIndex(cx, cy);
 		if (!c) return false;
+
 		if (*c != CELL_OCCUPIED) return false;
+
+		// check 4 neighbors:
+		if (auto* cS = grid_->cellByIndex(cx, cy - 1); cS && *cS == CELL_FREE)
+			return true;
+		if (auto* cN = grid_->cellByIndex(cx, cy + 1); cN && *cN == CELL_FREE)
+			return true;
+		if (auto* cE = grid_->cellByIndex(cx + 1, cy); cE && *cE == CELL_FREE)
+			return true;
+		if (auto* cW = grid_->cellByIndex(cx - 1, cy); cW && *cW == CELL_FREE)
+			return true;
+
+		return false;
+	};
+
+	auto lambdaStillHasUnexploredNeighbors = [&](int cx, int cy) {
+		// precondition: (cx,cy) is VISITED.
+		// We check 8-neighbors:
+
+		for (const auto& dir : dirs)
+		{
+			const int ix = dir.first, iy = dir.second;
+			const bool isBorder = lambdaCellIsBorderSimple(cx + ix, cy + iy);
+			if (isBorder) return true;
+		}
+		return false;
+	};
+
+	auto lambdaCellIsBorder = [&](int cx, int cy, bool considerRevisits) {
+		auto* c = grid_->cellByIndex(cx, cy);
+		if (!c) return false;
+
+		if (*c == CELL_UNDEFINED) return false;
+		if (*c == CELL_FREE) return false;
+		if (*c == CELL_VISITED)
+		{
+			// only consider it if it still has possible free ways to move
+			// around:
+			if (considerRevisits && lambdaStillHasUnexploredNeighbors(cx, cy))
+				return true;
+			else
+				return false;
+		}
 
 		// check 4 neighbors:
 		if (auto* cS = grid_->cellByIndex(cx, cy - 1); cS && *cS == CELL_FREE)
@@ -376,33 +428,26 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 		p.emplace_back(grid_->idx2x(cx), grid_->idx2y(cy));
 
 		bool cellDone = false;
-		const std::vector<std::pair<int, int>> dirs = {
-			// first, straight directions (important!)
-			{+1, 0},
-			{-1, 0},
-			{0, +1},
-			{0, -1},
-			// second, diagonals:
-			{+1, +1},
-			{+1, -1},
-			{-1, +1},
-			{-1, -1},
-		};
 
-		for (const auto& dir : dirs)
+		for (int pass = 0; pass < 2 && !cellDone; pass++)
 		{
-			const int ix = dir.first, iy = dir.second;
-
-			if (lambdaCellIsBorder(cx + ix, cy + iy))
+			for (const auto& dir : dirs)
 			{
+				const int ix = dir.first, iy = dir.second;
+				const bool isBorder =
+					lambdaCellIsBorder(cx + ix, cy + iy, pass == 1);
+
+				if (isBorder)
+				{
 #ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-				debugSaveGridTo3DSceneFile(p);
+					debugSaveGridTo3DSceneFile(p);
 #endif
-				// Save for next iter:
-				cellDone = true;
-				cx = cx + ix;
-				cy = cy + iy;
-				break;
+					// Save for next iter:
+					cellDone = true;
+					cx = cx + ix;
+					cy = cy + iy;
+					break;
+				}
 			}
 		}
 		if (!cellDone) break;
@@ -434,8 +479,7 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 
 	auto lambdaRenderPoly = [&scene](
 								const mrpt::math::TPolygon2D& p,
-								const mrpt::img::TColor& color, double z)
-	{
+								const mrpt::img::TColor& color, double z) {
 		auto glPts = mrpt::opengl::CPointCloud::Create();
 		auto glPoly = mrpt::opengl::CSetOfLines::Create();
 		glPoly->setColor_u8(color);
@@ -447,8 +491,9 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 			const size_t j1 = (j + 1) % N;
 			const auto& p0 = p.at(j);
 			const auto& p1 = p.at(j1);
-			glPoly->appendLine(p0.x, p0.y, z, p1.x, p1.y, z);
-			glPts->insertPoint(p0.x, p0.y, z);
+			glPoly->appendLine(
+				p0.x, p0.y, z + 1e-4 * (j - 1), p1.x, p1.y, z + 1e-4 * j);
+			glPts->insertPoint(p0.x, p0.y, z + 1e-4 * j);
 		}
 		scene.insert(glPoly);
 		scene.insert(glPts);
