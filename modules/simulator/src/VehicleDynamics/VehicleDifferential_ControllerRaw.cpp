@@ -8,15 +8,15 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
-//#include <mvsim/World.h>
-//#include <rapidxml.hpp>
+// #include <mvsim/World.h>
+// #include <rapidxml.hpp>
 
 using namespace mvsim;
 using namespace std;
 
 // See base class docs
 void DynamicsDifferential::ControllerRawForces::control_step(
-	const DynamicsDifferential::TControllerInput& ci,
+	[[maybe_unused]] const DynamicsDifferential::TControllerInput& ci,
 	DynamicsDifferential::TControllerOutput& co)
 {
 	co.wheel_torque_l = this->setpoint_wheel_torque_l;
