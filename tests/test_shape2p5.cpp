@@ -45,6 +45,27 @@ void shape_test_cylinder()
 	std::cout << "Cylinder:\n" << shape.getContour() << std::endl;
 }
 
+void shape_test_merge()
+{
+	auto& csc = CollisionShapeCache::Instance();
+
+	const float radius = 0.5f, L = 2.0f;
+	auto glCyl = mrpt::opengl::CCylinder::Create(radius, radius, L);
+
+	const Shape2p5 s1 = csc.get(
+		*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(-0.15, 0, 0), 1.0f);
+
+	const Shape2p5 s2 = csc.get(
+		*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(0.15, 0, 0), 1.0f);
+
+	Shape2p5 s = s1;
+	s.mergeWith(s2);
+
+	std::cout << "Cylinder 1:\n" << s1.getContour() << std::endl;
+	std::cout << "Cylinder 2:\n" << s2.getContour() << std::endl;
+	std::cout << "Cylinder 1+2:\n" << s.getContour() << std::endl;
+}
+
 void shape_test_simplecamera()
 {
 	auto& csc = CollisionShapeCache::Instance();
@@ -63,6 +84,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 	std::vector<std::pair<std::function<void(void)>, std::string>> lst = {
 		{&shape_test_sphere, "shape_test_sphere"},
 		{&shape_test_cylinder, "shape_test_cylinder"},
+		{&shape_test_merge, "shape_test_merge"},
 		{&shape_test_simplecamera, "shape_test_simplecamera"},
 	};
 

@@ -43,7 +43,6 @@ class Shape2p5
 	double volume() const;
 
 	void mergeWith(const Shape2p5& s);
-	void mergeWith(const std::vector<mrpt::math::TPoint3Df>& pts);
 
 	void setShapeManual(
 		const mrpt::math::TPolygon2D& contour, const float zMin,

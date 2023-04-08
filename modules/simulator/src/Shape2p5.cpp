@@ -25,7 +25,7 @@
 #include <queue>
 
 // Uncomment only for development debugging
-//#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+// #define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
 
 using namespace mvsim;
 
@@ -39,35 +39,55 @@ constexpr uint8_t CELL_VISITED = 0x40;
 
 double Shape2p5::volume() const
 {
-	return std::abs(mrpt::math::signedArea(*contour_)) *
+	return std::abs(mrpt::math::signedArea(getContour())) *
 		   std::abs(zMin_ - zMax_);
 }
 
 void Shape2p5::mergeWith(const Shape2p5& s)
 {
-	ASSERT_(!s.contour_->empty());
+	using mrpt::math::TPoint3Df;
 
-#if 0
-	std::vector<mrpt::math::TPoint3Df> pts;
-	for (const auto& p : s.contour) pts.emplace_back(p.x, p.y, s.zMin);
-	pts.emplace_back(pts.front().x, pts.front().y, s.zMax);
-	mergeWith(pts);
-#endif
-}
+	const auto& ca = this->getContour();
+	const auto& cb = s.getContour();
 
-void Shape2p5::mergeWith(const std::vector<mrpt::math::TPoint3Df>& pts)
-{
-	ASSERT_(!contour_->empty());
+	// gross BB:
+	auto bb = mrpt::math::TBoundingBoxf::PlusMinusInfinity();
+	for (const auto& p : ca) bb.updateWithPoint(TPoint3Df(p.x, p.y, zMin()));
+	for (const auto& p : cb) bb.updateWithPoint(TPoint3Df(p.x, p.y, s.zMin()));
 
-#if 0
-	std::vector<mrpt::math::TPoint3Df> allPts;
-	for (const auto& p : contour) allPts.emplace_back(p.x, p.y, zMin);
-	allPts.emplace_back(allPts.front().x, allPts.front().y, zMax);
+	bb.updateWithPoint(TPoint3Df(bb.min.x, bb.min.y, s.zMax()));
+	bb.updateWithPoint(TPoint3Df(bb.max.x, bb.max.y, this->zMax()));
 
-	for (const auto& p : pts) allPts.emplace_back(p);
+	// convert to triangles:
+	Shape2p5 newShape;
+	newShape.buildInit({bb.min.x, bb.min.y}, {bb.max.x, bb.max.y});
+	for (size_t i = 0; i < ca.size(); i++)
+	{
+		size_t im1 = i == 0 ? (ca.size() - 1) : i - 1;
+		const auto p0 = ca.at(im1);
+		const auto p1 = ca.at(i);
 
-	*this = CreateConvexHullFromPoints(allPts);
-#endif
+		mrpt::opengl::TTriangle t;
+		t.vertex(0) = TPoint3Df(p0.x, p0.y, bb.min.z);
+		t.vertex(1) = TPoint3Df(p1.x, p1.y, bb.min.z);
+		t.vertex(2) = TPoint3Df(p1.x, p1.y, bb.max.z);
+		newShape.buildAddTriangle(t);
+	}
+	for (size_t i = 0; i < cb.size(); i++)
+	{
+		size_t im1 = i == 0 ? (cb.size() - 1) : i - 1;
+		const auto p0 = cb.at(im1);
+		const auto p1 = cb.at(i);
+
+		mrpt::opengl::TTriangle t;
+		t.vertex(0) = TPoint3Df(p0.x, p0.y, bb.min.z);
+		t.vertex(1) = TPoint3Df(p1.x, p1.y, bb.min.z);
+		t.vertex(2) = TPoint3Df(p1.x, p1.y, bb.max.z);
+		newShape.buildAddTriangle(t);
+	}
+
+	// re-generate again:
+	*this = newShape;
 }
 
 const mrpt::math::TPolygon2D& Shape2p5::getContour() const
