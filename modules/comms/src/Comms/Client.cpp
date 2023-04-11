@@ -275,6 +275,7 @@ void Client::doUnregisterClient()
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "doUnregisterClient");
 
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
+	if (!zmq_->mainReqSocket) return;
 	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::UnregisterNodeRequest rnq;

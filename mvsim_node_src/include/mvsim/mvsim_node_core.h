@@ -71,6 +71,8 @@ class MVSimNode
 	/** Destructor. */
 	~MVSimNode();
 
+	void terminateSimulation();
+
 	void launch_mvsim_server();
 
 	void loadWorldModel(const std::string& world_xml_file);
@@ -87,7 +89,8 @@ class MVSimNode
 
 	/// The mvsim library simulated world (includes everything: vehicles,
 	/// obstacles, etc.)
-	mvsim::World mvsim_world_;
+	std::shared_ptr<mvsim::World> mvsim_world_ =
+		std::make_shared<mvsim::World>();
 
 	mrpt::WorkerThreadsPool ros_publisher_workers_{
 		3 /*threads*/, mrpt::WorkerThreadsPool::POLICY_DROP_OLD};

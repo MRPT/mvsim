@@ -60,8 +60,8 @@ int main(int argc, char** argv)
 		if (!world_file.empty()) node->loadWorldModel(world_file);
 
 		// Attach world as a mvsim communications node:
-		node->mvsim_world_.headless(node->headless_);
-		node->mvsim_world_.connectToServer();
+		node->mvsim_world_->headless(node->headless_);
+		node->mvsim_world_->connectToServer();
 
 #if PACKAGE_ROS_VERSION == 1
 		// Set up a dynamic reconfigure server.
@@ -87,13 +87,16 @@ int main(int argc, char** argv)
 #else
 		auto ros_clock = rclcpp::Clock::make_shared();
 		auto timer_ = rclcpp::create_timer(
-			n, ros_clock, std::chrono::microseconds(periodMs),
-			[&]() { node->spin(); });
+			n, ros_clock, std::chrono::microseconds(periodMs), [&]() {
+				if (rclcpp::ok()) node->spin();
+			});
 
 		rclcpp::on_shutdown([&]() {
 			std::cout << "[rclcpp::on_shutdown] Destroying MVSIM node..."
 					  << std::endl;
-			node.reset();
+			node->terminateSimulation();
+			std::cout << "[rclcpp::on_shutdown] MVSIM node destroyed."
+					  << std::endl;
 		});
 
 		rclcpp::spin(n);

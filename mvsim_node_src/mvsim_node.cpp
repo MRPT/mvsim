@@ -178,7 +178,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	n_.setParam("/use_sim_time", true);
 #endif
 
-	mvsim_world_.registerCallbackOnObservation(
+	mvsim_world_->registerCallbackOnObservation(
 		[this](
 			const mvsim::Simulable& veh,
 			const mrpt::obs::CObservation::Ptr& obs) {
@@ -234,7 +234,7 @@ void MVSimNode::loadWorldModel(const std::string& world_xml_file)
 
 	// Load from XML:
 	rapidxml::file<> fil_xml(world_xml_file.c_str());
-	mvsim_world_.load_from_XML(fil_xml.data(), world_xml_file);
+	mvsim_world_->load_from_XML(fil_xml.data(), world_xml_file);
 
 	ROS12_INFO("[MVSimNode] World file load done.");
 	world_init_ok_ = true;
@@ -247,12 +247,23 @@ void MVSimNode::loadWorldModel(const std::string& world_xml_file)
  * ~MVSimNode()
  * Destructor.
  *----------------------------------------------------------------------------*/
-MVSimNode::~MVSimNode()
+MVSimNode::~MVSimNode() { terminateSimulation(); }
+
+void MVSimNode::terminateSimulation()
 {
+	if (!mvsim_world_) return;
+
+	mvsim_world_->simulator_must_close(true);
+
 	thread_params_.closing = true;
 	if (thGUI_.joinable()) thGUI_.join();
 
-	mvsim_world_.free_opengl_resources();
+	mvsim_world_->free_opengl_resources();
+
+	ros_publisher_workers_.clear();
+	// Don't destroy mvsim_server_ yet, since "world" needs to unregister.
+	mvsim_world_.reset();
+	std::cout << "[MVSimNode::terminateSimulation] All done." << std::endl;
 }
 
 #if PACKAGE_ROS_VERSION == 1
@@ -268,8 +279,8 @@ void MVSimNode::configCallback(
 	//  message = config.message.c_str();
 	ROS_INFO("MVSimNode::configCallback() called.");
 
-	if (mvsim_world_.is_GUI_open() && !config.show_gui)
-		mvsim_world_.close_GUI();
+	if (mvsim_world_->is_GUI_open() && !config.show_gui)
+		mvsim_world_->close_GUI();
 }
 #endif
 
@@ -281,6 +292,8 @@ void MVSimNode::spin()
 	using mrpt::DEG2RAD;
 	using mrpt::RAD2DEG;
 
+	if (!mvsim_world_) return;
+
 	// Do simulation itself:
 	// ========================================================================
 	// Handle 1st iter:
@@ -289,18 +302,16 @@ void MVSimNode::spin()
 	double t_new = realtime_tictac_.Tac();
 	double incr_time = realtime_factor_ * (t_new - t_old_);
 
-	if (incr_time < mvsim_world_.get_simul_timestep())	// Just in case the
-														// computer is *really
-														// fast*...
-		return;
+	// Just in case the computer is *really fast*...
+	if (incr_time < mvsim_world_->get_simul_timestep()) return;
 
 	// Simulate:
-	mvsim_world_.run_simulation(incr_time);
+	mvsim_world_->run_simulation(incr_time);
 
 	// t_old_simul = world.get_simul_time();
 	t_old_ = t_new;
 
-	const auto& vehs = mvsim_world_.getListOfVehicles();
+	const auto& vehs = mvsim_world_->getListOfVehicles();
 
 	// Publish new state to ROS
 	// ========================================================================
@@ -389,7 +400,7 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 				World::TUpdateGUIParams guiparams;
 				guiparams.msg_lines = obj->msg2gui_;
 
-				obj->mvsim_world_.update_GUI(&guiparams);
+				obj->mvsim_world_->update_GUI(&guiparams);
 
 				// Send key-strokes to the main thread:
 				if (guiparams.keyevent.keycode != 0)
@@ -400,11 +411,11 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 			}
 			else if (obj->world_init_ok_ && obj->headless_)
 			{
-				obj->mvsim_world_.internalGraphicsLoopTasksForSimulation();
+				obj->mvsim_world_->internalGraphicsLoopTasksForSimulation();
 
 				std::this_thread::sleep_for(
 					std::chrono::microseconds(static_cast<size_t>(
-						obj->mvsim_world_.get_simul_timestep() * 1000000)));
+						obj->mvsim_world_->get_simul_timestep() * 1000000)));
 			}
 			else
 			{
@@ -476,7 +487,7 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	static mrpt::system::CTicTac lastMapPublished;
 	if (lastMapPublished.Tac() > 2.0)
 	{
-		mvsim_world_.runVisitorOnWorldElements(
+		mvsim_world_->runVisitorOnWorldElements(
 			[this](mvsim::WorldElementBase& obj) {
 				publishWorldElements(obj);
 			});
@@ -484,12 +495,12 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	}
 #endif
 
-	mvsim_world_.runVisitorOnVehicles(
+	mvsim_world_->runVisitorOnVehicles(
 		[this](mvsim::VehicleBase& v) { publishVehicles(v); });
 
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
-	auto& vehs = mvsim_world_.getListOfVehicles();
+	auto& vehs = mvsim_world_->getListOfVehicles();
 	pubsub_vehicles_.clear();
 	pubsub_vehicles_.resize(vehs.size());
 	size_t idx = 0;
@@ -759,23 +770,32 @@ void MVSimNode::onROSMsgCmdVel(
 /** Publish everything to be published at each simulation iteration */
 void MVSimNode::spinNotifyROS()
 {
-	using namespace mvsim;
-	const auto& vehs = mvsim_world_.getListOfVehicles();
+	if (!mvsim_world_) return;
 
-	// Get current simulation time (for messages) and publish "/clock"
-	// ----------------------------------------------------------------
+	using namespace mvsim;
+	const auto& vehs = mvsim_world_->getListOfVehicles();
+
+	// skip if the node is already shutting down:
 #if PACKAGE_ROS_VERSION == 1
-	// sim_time_.fromSec(mvsim_world_.get_simul_time());
-	// clockMsg_.clock = sim_time_;
-	// pub_clock_.publish(clockMsg_);
+	if (!ros::ok()) return;
 #else
-	// sim_time_ = n_->get_clock()->now();
-	// MRPT_TODO("Publish /clock for ROS2 too?");
+	if (!rclcpp::ok()) return;
+#endif
+
+		// Get current simulation time (for messages) and publish "/clock"
+		// ----------------------------------------------------------------
+#if PACKAGE_ROS_VERSION == 1
+		// sim_time_.fromSec(mvsim_world_->get_simul_time());
+		// clockMsg_.clock = sim_time_;
+		// pub_clock_.publish(clockMsg_);
+#else
+		// sim_time_ = n_->get_clock()->now();
+		// MRPT_TODO("Publish /clock for ROS2 too?");
 #endif
 
 #if PACKAGE_ROS_VERSION == 2
 	// In ROS2,latching doesn't work, we must re-publish on a regular basis...
-	mvsim_world_.runVisitorOnWorldElements(
+	mvsim_world_->runVisitorOnWorldElements(
 		[this](mvsim::WorldElementBase& obj) { publishWorldElements(obj); });
 #endif
 
@@ -959,6 +979,13 @@ void MVSimNode::onNewObservation(
 
 	using mrpt::obs::CObservation2DRangeScan;
 
+	// skip if the node is already shutting down:
+#if PACKAGE_ROS_VERSION == 1
+	if (!ros::ok()) return;
+#else
+	if (!rclcpp::ok()) return;
+#endif
+
 	ASSERT_(obs);
 	ASSERT_(!obs->sensorLabel.empty());
 
@@ -1021,7 +1048,7 @@ std::string MVSimNode::vehVarName(
 {
 	using namespace std::string_literals;
 
-	if (mvsim_world_.getListOfVehicles().size() == 1)
+	if (mvsim_world_->getListOfVehicles().size() == 1)
 	{
 		return sVarName;
 	}
