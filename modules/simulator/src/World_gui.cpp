@@ -509,21 +509,33 @@ void World::internal_GUI_thread()
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
 
-		// enable shadows and set the shadow map texture size:
-		const int sms = lo.shadow_map_size;
-		vv->enableShadowCasting(lo.enable_shadows, sms, sms);
-		vp->enableShadowCasting(lo.enable_shadows, sms, sms);
+		auto lambdaSetLightParams =
+			[&lo](const mrpt::opengl::COpenGLViewport::Ptr& v) {
+				// enable shadows and set the shadow map texture size:
+				const int sms = lo.shadow_map_size;
+				v->enableShadowCasting(lo.enable_shadows, sms, sms);
 
-		// light color:
-		const auto colf = mrpt::img::TColorf(lightOptions_.light_color);
-		vv->lightParameters().color = colf;
-		vp->lightParameters().color = colf;
+				// light color:
+				const auto colf = mrpt::img::TColorf(lo.light_color);
 
-		// light view frustrum near/far planes:
-		vv->setLightShadowClipDistances(
-			lo.light_clip_plane_min, lo.light_clip_plane_max);
-		vp->setLightShadowClipDistances(
-			lo.light_clip_plane_min, lo.light_clip_plane_max);
+				auto& vlp = v->lightParameters();
+
+				vlp.color = colf;
+
+				// light view frustrum near/far planes:
+				v->setLightShadowClipDistances(
+					lo.light_clip_plane_min, lo.light_clip_plane_max);
+
+			// Shadow bias should be proportional to clip range:
+#if MRPT_VERSION >= 0x281
+				vlp.shadow_bias = lo.shadow_bias;
+				vlp.shadow_bias_cam2frag = lo.shadow_bias_cam2frag;
+				vlp.shadow_bias_normal = lo.shadow_bias_normal;
+#endif
+			};
+
+		lambdaSetLightParams(vv);
+		lambdaSetLightParams(vp);
 #endif
 
 		// Main GUI loop

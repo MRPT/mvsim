@@ -25,6 +25,15 @@
 		<!-- <shadow_map_size>4096</shadow_map_size> -->
 		<light_azimuth_deg>-20.0</light_azimuth_deg>
 		<light_elevation_deg>70.0</light_elevation_deg>
+		
+		<!-- clip planes for shadow calculation -->
+		<light_clip_plane_min>0.1</light_clip_plane_min>
+		<light_clip_plane_max>100</light_clip_plane_max>
+		
+		<!-- Tuning parameters for shadow rendering anti acne corrections. These should change if light_clip_* change -->
+		<shadow_bias>1e-5</shadow_bias>
+		<shadow_bias_cam2frag>1e-5</shadow_bias_cam2frag>
+		<shadow_bias_normal>1e-3</shadow_bias_normal>
 	</lights>
 
 	<!-- ========================

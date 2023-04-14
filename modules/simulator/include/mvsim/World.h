@@ -507,8 +507,12 @@ class World : public mrpt::system::COutputLogger
 		double light_azimuth = mrpt::DEG2RAD(45.0);
 		double light_elevation = mrpt::DEG2RAD(70.0);
 
-		float light_clip_plane_min = 0.01f;
-		float light_clip_plane_max = 1000.0f;
+		float light_clip_plane_min = 0.1f;
+		float light_clip_plane_max = 2000.0f;
+
+		float shadow_bias = 1e-5;
+		float shadow_bias_cam2frag = 1e-5;
+		float shadow_bias_normal = 1e-4;
 
 		mrpt::img::TColor light_color = {0xff, 0xff, 0xff, 0xff};
 
@@ -520,6 +524,9 @@ class World : public mrpt::system::COutputLogger
 			{"light_clip_plane_min", {"%f", &light_clip_plane_min}},
 			{"light_clip_plane_max", {"%f", &light_clip_plane_max}},
 			{"light_color", {"%color", &light_color}},
+			{"shadow_bias", {"%f", &shadow_bias}},
+			{"shadow_bias_cam2frag", {"%f", &shadow_bias_cam2frag}},
+			{"shadow_bias_normal", {"%f", &shadow_bias_normal}},
 		};
 	};
 
