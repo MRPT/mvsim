@@ -104,13 +104,40 @@ void VisualObject::guiUpdate(
 			}
 			mrpt::math::setEpsilon(1e-5 * smallestEdge);
 
-			auto glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(c, height);
+			mrpt::opengl::CPolyhedron::Ptr glCS;
+
+			try
+			{
+				glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(c, height);
+			}
+			catch (const std::exception& e)
+			{
+#if 0
+				std::cerr << "[mvsim::VisualObject] **WARNING**: Ignoring the "
+							 "following error while building the visualization "
+							 "of the collision shape for object named '"
+						  << meSim->getName()
+						  << "' placed by pose=" << meSim->getPose()
+						  << "). Falling back to rectangular collision shape "
+							 "from bounding box:\n"
+						  << e.what() << std::endl;
+#endif
+
+				mrpt::math::TPoint2D bbMax, bbMin;
+				cs.getContour().getBoundingBox(bbMin, bbMax);
+				mrpt::math::TPolygon2D p;
+				p.emplace_back(bbMin.x, bbMin.y);
+				p.emplace_back(bbMin.x, bbMax.y);
+				p.emplace_back(bbMax.x, bbMax.y);
+				p.emplace_back(bbMax.x, bbMin.y);
+				glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(p, height);
+			}
+			glCS->setWireframe(true);
 
 			mrpt::math::setEpsilon(savedMrptGeomEps);
 			// Default epsilon is restored now
 
 			glCS->setLocation(0, 0, cs.zMin());
-			glCS->setWireframe(true);
 
 			glCollision_->insert(glCS);
 			glCollision_->setVisibility(false);
