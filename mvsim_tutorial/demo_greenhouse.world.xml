@@ -135,7 +135,7 @@
 		/>
 		
 		<include file="definitions/camera.sensor.xml" 
-		  sensor_x="0.2"  sensor_y="0" sensor_z="0.9"
+		  sensor_x="0.9"  sensor_y="0" sensor_z="0.75"
 		  sensor_period_sec="0.20"
 		  sensor_name="cam1"
 		  />		
