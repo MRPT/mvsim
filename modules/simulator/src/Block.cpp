@@ -127,10 +127,6 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// -----------------------------------------------------------
 	block->parseSimulable(nodes);
 
-	// Custom visualization 3D model:
-	// -----------------------------------------------------------
-	block->parseVisual(nodes);
-
 	// Params:
 	// -----------------------------------------------------------
 	parse_xmlnode_children_as_param(
@@ -140,6 +136,10 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		parse_xmlnode_children_as_param(
 			*class_root, block->params_, parent->user_defined_variables(),
 			"[Block::factory]");
+
+	// Custom visualization 3D model:
+	// -----------------------------------------------------------
+	block->parseVisual(nodes);
 
 	// Shape node (optional, fallback to default shape if none found)
 	if (const auto* xml_shape = nodes.first_node("shape"); xml_shape)

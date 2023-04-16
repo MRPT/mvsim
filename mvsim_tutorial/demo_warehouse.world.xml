@@ -140,6 +140,7 @@
 
 	<block:class name="stairs">
 		<static>true</static> <!-- Does not move -->
+		<zmin>0.0</zmin> <zmax>0.5</zmax>
 		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
 		<visual>
