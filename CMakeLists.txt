@@ -210,7 +210,10 @@ set(EMBEDDED_box2d_DIR "${EMBEDDED_box2d_INSTALL_DIR}/lib/cmake/box2d/")
 # 1st) Try to locate it via CMake (installed in the system or precompiled somewhere)
 # Since box2d 2.4.1, the name changed "Box2D" -> "box2d". We now only support the version >=2.4.x
 # for compatibility with modern Ubuntu distros:
-find_package(box2d QUIET) # Defines: box2d::box2d
+#
+# Update: Since MVSIM 0.7.0, we now always ship a custom build of box2d to 
+# increase its default maximum number of polygon vertices:
+##find_package(box2d QUIET) # Defines: box2d::box2d
 
 if (NOT box2d_FOUND)
 	message(STATUS "--- Running CMake on external submodule 'box2d'...")

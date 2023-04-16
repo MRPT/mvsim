@@ -12,7 +12,6 @@ Build-Depends:
 	libmrpt-tfest-dev (>= 2.0.0),
 	libmrpt-tclap-dev (>= 2.0.0),
 	cmake,
-	libbox2d-dev,
 	protobuf-compiler,
 	libprotobuf-dev,
 	libzmq3-dev,
