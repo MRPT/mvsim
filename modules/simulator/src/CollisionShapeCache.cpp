@@ -59,7 +59,7 @@ Shape2p5 CollisionShapeCache::get(
 			  << (modelFile.has_value() ? *modelFile : "none")
 			  << "] glClass=" << obj.GetRuntimeClass()->className
 			  << " shape=" << ret.getContour().size() << " pts, "
-			  << " volume=" << vol
+			  << " volume=" << vol << " zMin=" << zMin << " zMax=" << zMax
 			  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n";
 #endif
 
@@ -283,6 +283,9 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 
 	// Convert all points into an actual 2.5D volume:
 	// ---------------------------------------------------------
+	ret.clipZMin(zMin);
+	ret.clipZMax(zMax);
+
 	ret.getContour();  // evalute it now
 
 	return ret;
