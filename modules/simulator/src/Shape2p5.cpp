@@ -512,7 +512,7 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 			const auto& p0 = p.at(j);
 			const auto& p1 = p.at(j1);
 			glPoly->appendLine(
-				p0.x, p0.y, z + 1e-4 * (j - 1), p1.x, p1.y, z + 1e-4 * j);
+				p0.x, p0.y, z + 1e-4 * j, p1.x, p1.y, z + 1e-4 * (j + 1));
 			glPts->insertPoint(p0.x, p0.y, z + 1e-4 * j);
 		}
 		scene.insert(glPoly);
@@ -608,4 +608,14 @@ mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(
 	}
 
 	return p;
+}
+
+void Shape2p5::clipZMin(float v)
+{
+	if (zMin_ < v) zMin_ = v;
+}
+
+void Shape2p5::clipZMax(float v)
+{
+	if (zMax_ > v) zMax_ = v;
 }
