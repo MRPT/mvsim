@@ -16,6 +16,7 @@
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CPointCloud.h>
 #include <mrpt/opengl/CSetOfLines.h>
+#include <mrpt/opengl/CSetOfTriangles.h>
 #include <mrpt/opengl/CTexturedPlane.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mvsim/Shape2p5.h>
@@ -26,6 +27,7 @@
 
 // Uncomment only for development debugging
 //#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+//#define DEBUG_DUMP_TRIANGLES
 
 using namespace mvsim;
 
@@ -96,6 +98,11 @@ const mrpt::math::TPolygon2D& Shape2p5::getContour() const
 	return *contour_;
 }
 
+// For debugging only:
+#ifdef DEBUG_DUMP_TRIANGLES
+static auto glDebugTriangles = mrpt::opengl::CSetOfTriangles::Create();
+#endif
+
 void Shape2p5::buildInit(
 	const mrpt::math::TPoint2Df& bbMin, const mrpt::math::TPoint2Df& bbMax,
 	int numCells)
@@ -111,6 +118,10 @@ void Shape2p5::buildInit(
 	zMin_ = std::numeric_limits<float>::max();
 	zMax_ = -std::numeric_limits<float>::max();
 	grid_->fill(CELL_UNDEFINED);
+
+#ifdef DEBUG_DUMP_TRIANGLES
+	glDebugTriangles->clearTriangles();
+#endif
 }
 
 void Shape2p5::buildAddPoint(const mrpt::math::TPoint3Df& pt)
@@ -149,6 +160,10 @@ void Shape2p5::buildAddTriangle(const mrpt::opengl::TTriangle& t)
 			mrpt::keep_min(zMin_, p.z);
 		}
 	}
+
+#ifdef DEBUG_DUMP_TRIANGLES
+	glDebugTriangles->insertTriangle(t);
+#endif
 }
 
 // Computes contour_ from the contents in grid_
@@ -189,6 +204,16 @@ void Shape2p5::computeShape() const
 #endif
 
 	grid_.reset();
+
+#ifdef DEBUG_DUMP_TRIANGLES
+	{
+		static int cnt = 0;
+		mrpt::opengl::COpenGLScene scene;
+		scene.insert(glDebugTriangles);
+		scene.saveToFile(
+			mrpt::format("debug_shape2p5_triangles_%04i.3Dscene", cnt++));
+	}
+#endif
 }
 
 void Shape2p5::setShapeManual(
