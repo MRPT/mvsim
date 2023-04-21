@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.0 (2023-04-21)
+------------------
 * Automatic detection of collision shapes
 * Add turtlebot world demo
 * Rely on custom build of Box2D to increase the maximum polygon vertices count (8 to 12).
