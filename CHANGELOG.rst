@@ -2,6 +2,31 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Automatic detection of collision shapes
+* Add turtlebot world demo
+* Rely on custom build of Box2D to increase the maximum polygon vertices count (8 to 12).
+* fix inconsistent use_sim_time value for ROS 2 (it should be false)
+* Expose shadow rendering parameters in the XML world file
+* Abort simulation on exceptions in headless mode too
+* ROS 1 and 2 nodes now quit cleanly and quickly with SIGINT
+* Add ros2 launch for turtlebot world demo
+* Automatic determination of zmin/zmax for blocks if not explicitly set in XML
+* Force c++17 for python module
+* Exit simulator on exceptions in GUI-related threads
+* More automated testing
+* Add unit tests in C++ too
+* Refactor collision shape determination
+* New UI checkbox: show collision shapes
+* Allow simply geometry definitions without external 3D model file for "blocks"
+* Light options are now under <light> XML tag.
+* Largest default physics simulation timestep changed from 50ms to 5ms
+* GUI: change light direction
+* Add GUI checkbox to enable/disable shadows
+* Add rplidar A2 sensor model
+* Contributors: Jose Luis Blanco-Claraco
+
 0.6.1 (2023-03-04)
 ------------------
 * New XML parameters to enable and tune shadowmap generation
