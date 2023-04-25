@@ -275,8 +275,7 @@ if (pybind11_FOUND)
 	add_custom_target(python-install
 			COMMAND ${CMAKE_COMMAND} -P ${mvsim_BINARY_DIR}/install-python.cmake
 			DEPENDS mvsim-msgs pymvsim_comms
-			COMMENT "Running 'python-install': ${_cmd}")
-	unset(_cmd)
+			COMMENT "Running 'python-install'")
 endif()
 
 # ========================== Show results ====================================
