@@ -174,8 +174,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	localn_.param(
 		"do_fake_localization", do_fake_localization_, do_fake_localization_);
 
-	// In case the user didn't set it:
-	n_.setParam("/use_sim_time", true);
+	// JLBC: At present, mvsim does not use sim_time for neither ROS 1 nor
+	// ROS 2. n_.setParam("/use_sim_time", false);
 #endif
 
 	mvsim_world_->registerCallbackOnObservation(
