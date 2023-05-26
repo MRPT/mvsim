@@ -105,6 +105,8 @@ class ControllerBaseTempl : public ControllerBaseInterface
 		const typename VEH_DYNAMICS::TControllerInput& ci,
 		typename VEH_DYNAMICS::TControllerOutput& co) = 0;
 
+	virtual void on_post_step([[maybe_unused]] const TSimulContext& context) {}
+
 	/** Override to load class-specific options from the <controller> node */
 	virtual void load_config(  //
 		[[maybe_unused]] const rapidxml::xml_node<char>& node)

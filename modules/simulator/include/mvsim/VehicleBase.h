@@ -168,6 +168,11 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual std::vector<double> invoke_motor_controllers(
 		const TSimulContext& context) = 0;
 
+	virtual void invoke_motor_controllers_post_step(
+		[[maybe_unused]] const TSimulContext& context)
+	{
+	}
+
 	VisualObject* meAsVisualObject() override { return this; }
 
 	/** user-supplied index number: must be set/get'ed with setVehicleIndex()

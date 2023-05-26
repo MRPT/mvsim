@@ -452,5 +452,14 @@ void Simulable::setTwist(const mrpt::math::TTwist2D& dq) const
 {
 	q_mtx_.lock();
 	const_cast<mrpt::math::TTwist2D&>(dq_) = dq;
+
+	if (b2dBody_)
+	{
+		mrpt::math::TTwist2D local_dq = dq.rotated(q_.yaw);
+
+		b2dBody_->SetLinearVelocity(b2Vec2(local_dq.vx, local_dq.vy));
+		b2dBody_->SetAngularVelocity(dq.omega);
+	}
+
 	q_mtx_.unlock();
 }

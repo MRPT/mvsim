@@ -150,6 +150,47 @@ class DynamicsDifferential : public VehicleBase
 		mutable std::mutex setpointMtx_;
 	};
 
+	/** Ideal ("fake") controller, which perfectly and instantaneously
+	 *  sets the vehicle twist setpoint as vehicle twist.
+	 */
+	class ControllerTwistIdeal : public ControllerBase
+	{
+	   public:
+		ControllerTwistIdeal(DynamicsDifferential& veh);
+		static const char* class_name() { return "twist_ideal"; }
+
+		void control_step(
+			const DynamicsDifferential::TControllerInput& ci,
+			DynamicsDifferential::TControllerOutput& co) override;
+		void on_post_step(const TSimulContext& context) override;
+
+		virtual void teleop_interface(
+			const TeleopInput& in, TeleopOutput& out) override;
+
+		// See base docs.
+		bool setTwistCommand(const mrpt::math::TTwist2D& t) override
+		{
+			setpointMtx_.lock();
+			setpoint_ = t;
+			setpointMtx_.unlock();
+			return true;
+		}
+
+		/** Returns the current setpoint of the controller */
+		mrpt::math::TTwist2D setpoint() const
+		{
+			setpointMtx_.lock();
+			auto t = setpoint_;
+			setpointMtx_.unlock();
+			return t;
+		}
+
+	   private:
+		double distWheels_ = 0;
+		mrpt::math::TTwist2D setpoint_{0, 0, 0};  //!< "vx" and "omega" only
+		mutable std::mutex setpointMtx_;
+	};
+
 	const ControllerBase::Ptr& getController() const { return controller_; }
 	ControllerBase::Ptr& getController() { return controller_; }
 	virtual ControllerBaseInterface* getControllerInterface() override
@@ -167,6 +208,8 @@ class DynamicsDifferential : public VehicleBase
 		const rapidxml::xml_node<char>* xml_node) override;
 	// See base class docs
 	virtual std::vector<double> invoke_motor_controllers(
+		const TSimulContext& context) override;
+	virtual void invoke_motor_controllers_post_step(
 		const TSimulContext& context) override;
 
 	/// Defined at ctor time:

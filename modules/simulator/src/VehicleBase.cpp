@@ -501,6 +501,8 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
  * equations for each timestep */
 void VehicleBase::simul_post_timestep(const TSimulContext& context)
 {
+	invoke_motor_controllers_post_step(context);
+
 	// Common part (update q_, dq_)
 	Simulable::simul_post_timestep(context);
 	for (auto& s : sensors_) s->simul_post_timestep(context);

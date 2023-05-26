@@ -1,0 +1,85 @@
+/*+-------------------------------------------------------------------------+
+  |                       MultiVehicle simulator (libmvsim)                 |
+  |                                                                         |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
+  | Distributed under 3-clause BSD License                                  |
+  |   See COPYING                                                           |
+  +-------------------------------------------------------------------------+ */
+
+#include <mvsim/VehicleDynamics/VehicleDifferential.h>
+
+using namespace mvsim;
+
+DynamicsDifferential::ControllerTwistIdeal::ControllerTwistIdeal(
+	DynamicsDifferential& veh)
+	: ControllerBase(veh)
+{
+	// Get distance between wheels:
+	// Warning: the controller *assumes* that both wheels are parallel (as it's
+	// a rule in differential robots!!)
+	distWheels_ = veh_.wheels_info_[0].y - veh_.wheels_info_[1].y;
+	ASSERT_(distWheels_ > 0);
+}
+
+void DynamicsDifferential::ControllerTwistIdeal::control_step(
+	[[maybe_unused]] const DynamicsDifferential::TControllerInput& ci,
+	DynamicsDifferential::TControllerOutput& co)
+{
+	co.wheel_torque_l = 0;
+	co.wheel_torque_r = 0;
+}
+
+void DynamicsDifferential::ControllerTwistIdeal::on_post_step(
+	[[maybe_unused]] const TSimulContext& context)
+{
+	// Fake controller: just set the setpoint as state and we are done.
+	const auto sp = setpoint();
+	this->veh_.setTwist(sp);
+}
+
+void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
+	const TeleopInput& in, TeleopOutput& out)
+{
+	ControllerBase::teleop_interface(in, out);
+
+	auto lck = mrpt::lockHelper(setpointMtx_);
+
+	switch (in.keycode)
+	{
+		case 'W':
+		case 'w':
+			setpoint_.vx += 0.1;
+			break;
+
+		case 'S':
+		case 's':
+			setpoint_.vx -= 0.1;
+			break;
+
+		case 'A':
+		case 'a':
+			setpoint_.omega += 2.0 * M_PI / 180;
+			break;
+
+		case 'D':
+		case 'd':
+			setpoint_.omega -= 2.0 * M_PI / 180;
+			break;
+
+		case ' ':
+		{
+			setpoint_ = {0, 0, 0};
+		}
+		break;
+	};
+	out.append_gui_lines += "[Controller=" + std::string(class_name()) +
+							"] Teleop keys:\n"
+							"w/s=forward/backward.\n"
+							"a/d=left/right.\n"
+							"spacebar=stop.\n";
+
+	out.append_gui_lines += mrpt::format(
+		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx,
+		180.0 / M_PI * setpoint_.omega);
+}

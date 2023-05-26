@@ -116,6 +116,8 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 				controller_ = std::make_shared<ControllerRawForces>(*this);
 			else if (sCtrlClass == ControllerTwistPID::class_name())
 				controller_ = std::make_shared<ControllerTwistPID>(*this);
+			else if (sCtrlClass == ControllerTwistIdeal::class_name())
+				controller_ = std::make_shared<ControllerTwistIdeal>(*this);
 			else
 				THROW_EXCEPTION_FMT(
 					"[DynamicsDifferential] Unknown 'class'='%s' in "
@@ -170,6 +172,12 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(
 		};
 	}
 	return otpw;
+}
+
+void DynamicsDifferential::invoke_motor_controllers_post_step(
+	const TSimulContext& context)
+{
+	if (controller_) controller_->on_post_step(context);
 }
 
 // See docs in base class:

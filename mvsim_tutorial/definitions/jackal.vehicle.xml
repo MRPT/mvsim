@@ -28,12 +28,7 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="twist_pid">
-            <!-- Params -->
-            <KP>5</KP>  <KI>10</KI> <I_MAX>1</I_MAX> <KD>0</KD>
-            <V>0.0</V><W>0</W>
-            <max_torque>100</max_torque>
-        </controller>
+        <controller class="twist_ideal" />
 
     </dynamics>
 
