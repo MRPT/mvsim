@@ -197,7 +197,7 @@ class MVSimNode
 #if PACKAGE_ROS_VERSION == 1
 		const geometry_msgs::Twist::ConstPtr& cmd,
 #else
-		const geometry_msgs::msg::Twist::SharedPtr cmd,
+		const geometry_msgs::msg::Twist::ConstSharedPtr& cmd,
 #endif
 		mvsim::VehicleBase* veh);
 	// === End ROS Hooks====

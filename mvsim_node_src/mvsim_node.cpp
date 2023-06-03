@@ -126,6 +126,11 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 		"do_fake_localization", do_fake_localization_);
 
 	// n_->declare_parameter("use_sim_time"); // already declared error?
+	if (true == n_->get_parameter_or("use_sim_time", false))
+	{
+		THROW_EXCEPTION(
+			"At present, MVSIM can only work with use_sim_time=false");
+	}
 #endif
 
 	// Launch GUI thread:
@@ -175,7 +180,13 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 		"do_fake_localization", do_fake_localization_, do_fake_localization_);
 
 	// JLBC: At present, mvsim does not use sim_time for neither ROS 1 nor
-	// ROS 2. n_.setParam("/use_sim_time", false);
+	// ROS 2.
+	// n_.setParam("use_sim_time", false);
+	if (true == localn_.param("use_sim_time", false))
+	{
+		THROW_EXCEPTION(
+			"At present, MVSIM can only work with use_sim_time=false");
+	}
 #endif
 
 	mvsim_world_->registerCallbackOnObservation(
@@ -555,7 +566,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 	pubsubs.sub_cmd_vel = n_->create_subscription<geometry_msgs::msg::Twist>(
 		vehVarName("cmd_vel", *veh), 10,
-		[this, veh](const geometry_msgs::msg::Twist::SharedPtr msg) {
+		[this, veh](const geometry_msgs::msg::Twist::ConstSharedPtr& msg) {
 			return this->onROSMsgCmdVel(msg, veh);
 		});
 #endif
@@ -660,9 +671,10 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			wheel_shape_msg.points[3].z = 0;
 			wheel_shape_msg.points[4] = wheel_shape_msg.points[0];
 
-			wheel_shape_msg.color.r = w.color.R / 255.0;
-			wheel_shape_msg.color.g = w.color.G / 255.0;
-			wheel_shape_msg.color.b = w.color.B / 255.0;
+			wheel_shape_msg.color.r = w.color.R / 255.0f;
+			wheel_shape_msg.color.g = w.color.G / 255.0f;
+			wheel_shape_msg.color.b = w.color.B / 255.0f;
+			wheel_shape_msg.color.a = 1.0f;
 
 			// Set local pose of the wheel wrt the vehicle:
 			wheel_shape_msg.pose = mrpt2ros::toROS_Pose(w.pose());
@@ -742,7 +754,7 @@ void MVSimNode::onROSMsgCmdVel(
 #if PACKAGE_ROS_VERSION == 1
 	const geometry_msgs::Twist::ConstPtr& cmd,
 #else
-	const geometry_msgs::msg::Twist::SharedPtr cmd,
+	const geometry_msgs::msg::Twist::ConstSharedPtr& cmd,
 #endif
 	mvsim::VehicleBase* veh)
 {
@@ -882,10 +894,6 @@ void MVSimNode::spinNotifyROS()
 
 					// TF: /map -> <Ri>/odom
 					{
-						MRPT_TODO(
-							"Save initial pose for each vehicle, set odometry "
-							"from that pose");
-
 						Msg_TransformStamped tx;
 						tx.header.frame_id = "map";
 						tx.child_frame_id = sOdomName;
