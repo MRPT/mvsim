@@ -2,7 +2,7 @@
 [![CI Linux](https://github.com/MRPT/mvsim/actions/workflows/build-linux.yml/badge.svg)](https://github.com/MRPT/mvsim/actions/workflows/build-linux.yml)
 [![CI Check clang-format](https://github.com/MRPT/mvsim/actions/workflows/check-clang-format.yml/badge.svg)](https://github.com/MRPT/mvsim/actions/workflows/check-clang-format.yml)
 
-MultiVehicle simulator (MVSIM)
+MultiVehicle simulator (MVSim)
 ======================================
 Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
 It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and accurate simulation of typical robot sensors (e.g. 2D and 3D lidars).
