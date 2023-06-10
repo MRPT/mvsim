@@ -188,6 +188,18 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 {
 	MRPT_TRY_START
 
+	{
+		bool visualEnabled = true;
+		TParameterDefinitions auxPar;
+		auxPar["enabled"] = TParamEntry("%bool", &visualEnabled);
+		parse_xmlnode_attribs(visNode, auxPar);
+		if (!visualEnabled)
+		{
+			// "enabled=false" -> Ignore the rest of the contents
+			return false;
+		}
+	}
+
 	std::string modelURI;
 	double modelScale = 1.0;
 	mrpt::math::TPose3D modelPose;
