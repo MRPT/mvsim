@@ -8,7 +8,9 @@
     <raytrace_3d>${raytrace_3d|false}</raytrace_3d>
     <max_range>${max_range|30.0}</max_range>
     
-    <visual> <model_uri>../models/hokuyo_utm30.dae</model_uri> </visual>
+    <visual enabled="${sensor_custom_visual|true}">
+        <model_uri>../models/hokuyo_utm30.dae</model_uri>
+    </visual>
 
     <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
     <publish enabled="${sensor_publish|false}">
