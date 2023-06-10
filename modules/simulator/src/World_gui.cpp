@@ -477,7 +477,7 @@ void World::internal_GUI_thread()
 		// Only if the world is empty: at least introduce a ground grid:
 		if (worldElements_.empty())
 		{
-			auto we = WorldElementBase::factory(this, nullptr, "groundgrid");
+			auto we = WorldElementBase::factory(this, nullptr, "ground_grid");
 			worldElements_.push_back(we);
 		}
 
