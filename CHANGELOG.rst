@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.1 (2023-06-11)
+------------------
 * ROS node: fix potential race condition creating publisher for highrate sensors
 * Add IMU sensors
 * New property <visual enabled='true|false'>
