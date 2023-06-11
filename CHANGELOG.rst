@@ -2,6 +2,20 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* ROS node: fix potential race condition creating publisher for highrate sensors
+* Add IMU sensors
+* New property <visual enabled='true|false'>
+* lidar2d xml: add option "sensor_custom_visual"
+* FIX: Crash if launching an empty world
+* Trigger an error if using use_sim_time to avoid mistakes
+* Add new (fake) controller: twist_ideal
+* ROS 1: don't enforce /use_sim_time
+* Add ROS 2 launch for the 2-robot demo
+* Fix cmake leftover
+* Contributors: Jose Luis Blanco-Claraco
+
 0.7.0 (2023-04-21)
 ------------------
 * Automatic detection of collision shapes
