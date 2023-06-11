@@ -104,6 +104,8 @@ class MVSimNode
 	/// vehicle without the need to launch additional nodes.
 	bool do_fake_localization_ = true;
 
+	int publisher_history_len_ = 50;
+
 	//!< (Default=0.1) Time tolerance for published TFs
 	double transform_tolerance_ = 0.1;
 
@@ -294,5 +296,7 @@ class MVSimNode
 	void internalOn(
 		const mvsim::VehicleBase& veh,
 		const mrpt::obs::CObservationPointCloud& obs);
+	void internalOn(
+		const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs);
 
 };	// end class
