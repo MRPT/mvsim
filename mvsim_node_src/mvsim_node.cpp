@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/obs/CObservationIMU.h>
 #include <mrpt/obs/CObservationPointCloud.h>
@@ -1084,6 +1085,7 @@ void MVSimNode::internalOn(
 	const mvsim::VehicleBase& veh,
 	const mrpt::obs::CObservation2DRangeScan& obs)
 {
+	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	// Create the publisher the first time an observation arrives:
@@ -1101,6 +1103,7 @@ void MVSimNode::internalOn(
 			vehVarName(obs.sensorLabel, veh), publisher_history_len_);
 #endif
 	}
+	lck.unlock();
 
 #if PACKAGE_ROS_VERSION == 2
 	rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr pubLidar =
@@ -1151,6 +1154,7 @@ void MVSimNode::internalOn(
 void MVSimNode::internalOn(
 	const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs)
 {
+	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	// Create the publisher the first time an observation arrives:
@@ -1166,8 +1170,10 @@ void MVSimNode::internalOn(
 #else
 		pub = n_->create_publisher<sensor_msgs::msg::Imu>(
 			vehVarName(obs.sensorLabel, veh), publisher_history_len_);
+		ASSERT_(pub);
 #endif
 	}
+	lck.unlock();
 
 #if PACKAGE_ROS_VERSION == 2
 	rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pubImu =
@@ -1219,6 +1225,7 @@ void MVSimNode::internalOn(
 void MVSimNode::internalOn(
 	const mvsim::VehicleBase& veh, const mrpt::obs::CObservationImage& obs)
 {
+	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	// Create the publisher the first time an observation arrives:
@@ -1236,6 +1243,7 @@ void MVSimNode::internalOn(
 			vehVarName(obs.sensorLabel, veh), publisher_history_len_);
 #endif
 	}
+	lck.unlock();
 
 #if PACKAGE_ROS_VERSION == 2
 	rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pubImg =
@@ -1288,6 +1296,7 @@ void MVSimNode::internalOn(
 {
 	using namespace std::string_literals;
 
+	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
@@ -1314,6 +1323,7 @@ void MVSimNode::internalOn(
 			vehVarName(lbPoints, veh), publisher_history_len_);
 #endif
 	}
+	lck.unlock();
 
 #if PACKAGE_ROS_VERSION == 2
 	rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubPoints =
@@ -1424,6 +1434,7 @@ void MVSimNode::internalOn(
 {
 	using namespace std::string_literals;
 
+	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
@@ -1444,6 +1455,7 @@ void MVSimNode::internalOn(
 			vehVarName(lbPoints, veh), publisher_history_len_);
 #endif
 	}
+	lck.unlock();
 
 #if PACKAGE_ROS_VERSION == 2
 	rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubPoints =
