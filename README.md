@@ -12,17 +12,20 @@ This package includes C++ libraries, standalone applications, and ROS 1 and ROS 
 License: 3-clause BSD License
 Copyright (C) 2014-2023 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
-Please, refer to [the MVSim paper](https://arxiv.org/abs/2302.11033) for a gentle introduction
-to the project architecture.
+Please, refer to [the MVSim SoftwareX paper](https://www.sciencedirect.com/science/article/pii/S2352711023001395) (or the [ArXiV preprint](https://arxiv.org/abs/2302.11033))
+for a gentle introduction to the project architecture.
 If you want to cite MVSim in your work, please use:
 
-    @misc{mvsim,
-      doi = {10.48550/ARXIV.2302.11033},
-      url = {https://arxiv.org/abs/2302.11033},
-      author = {Blanco-Claraco, José-Luis and Tymchenko, Borys and Mañas-Alvarez, Francisco José and Cañadas-Aránega, Fernando and López-Gázquez, Ángel and Moreno, José Carlos},  
-      title = {MultiVehicle Simulator (MVSim): lightweight dynamics simulator for multiagents and mobile robotics research},  
-      publisher = {arXiv},
-      year = {2023}
+    @article{BLANCOCLARACO2023101443,
+      title = {MultiVehicle Simulator (MVSim): Lightweight dynamics simulator for multiagents and mobile robotics research},
+      journal = {SoftwareX},
+      volume = {23},
+      pages = {101443},
+      year = {2023},
+      issn = {2352-7110},
+      doi = {https://doi.org/10.1016/j.softx.2023.101443},
+      url = {https://www.sciencedirect.com/science/article/pii/S2352711023001395},
+      author = {José-Luis Blanco-Claraco and Borys Tymchenko and Francisco José Mañas-Alvarez and Fernando Cañadas-Aránega and Ángel López-Gázquez and José Carlos Moreno}
     }
 
 
