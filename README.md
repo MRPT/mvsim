@@ -16,7 +16,7 @@ Please, refer to [the MVSim SoftwareX paper](https://www.sciencedirect.com/scien
 for a gentle introduction to the project architecture.
 If you want to cite MVSim in your work, please use:
 
-    @article{BLANCOCLARACO2023101443,
+    @article{blanco2023mvsim,
       title = {MultiVehicle Simulator (MVSim): Lightweight dynamics simulator for multiagents and mobile robotics research},
       journal = {SoftwareX},
       volume = {23},
