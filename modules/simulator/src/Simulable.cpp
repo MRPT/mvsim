@@ -83,6 +83,11 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		dq_.vy = vel(1);
 		dq_.omega = w;
 
+		// Estimate acceleration from finite differences:
+		ddq_lin_ =
+			(q_.translation() - former_q_.translation()) * (1.0 / context.dt);
+		former_q_ = q_;
+
 		// Instantaneous collision flag:
 		isInCollision_ = false;
 		if (b2ContactEdge* cl = b2dBody_->GetContactList();
@@ -444,6 +449,14 @@ mrpt::math::TTwist2D Simulable::getTwist() const
 {
 	q_mtx_.lock_shared();
 	mrpt::math::TTwist2D ret = dq_;
+	q_mtx_.unlock_shared();
+	return ret;
+}
+
+mrpt::math::TVector3D Simulable::getLinearAcceleration() const
+{
+	q_mtx_.lock_shared();
+	auto ret = ddq_lin_;
 	q_mtx_.unlock_shared();
 	return ret;
 }

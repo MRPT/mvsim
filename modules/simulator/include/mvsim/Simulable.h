@@ -70,6 +70,12 @@ class Simulable
 
 	mrpt::math::TTwist2D getTwist() const;
 
+	/** Last time-step acceleration of the ref. point (global coords).
+	 * Note this is the "coordinate acceleration" vector, not the proper
+	 * acceleration. It is simply estimated as a finite difference of dq_.
+	 */
+	mrpt::math::TVector3D getLinearAcceleration() const;
+
 	/** Manually override vehicle pose (Use with caution!) (purposely set a
 	 * "const")*/
 	void setPose(const mrpt::math::TPose3D& p) const;
@@ -128,7 +134,7 @@ class Simulable
    private:
 	World* simulable_parent_ = nullptr;
 
-	/** protects q_, dq_ */
+	/** protects q_, dq_, ddq_lin_ */
 	mutable std::shared_mutex q_mtx_;
 
 	/** Last time-step pose (of the ref. point, in global coords) */
@@ -136,6 +142,11 @@ class Simulable
 
 	/** Last time-step velocity (of the ref. point, in global coords) */
 	mrpt::math::TTwist2D dq_{0, 0, 0};
+
+	/// See notes of getLinearAcceleration()
+	mrpt::math::TVector3D ddq_lin_{0, 0, 0};
+
+	mrpt::math::TPose3D former_q_;	//!< Updated in simul_post_timestep()
 
 	// ============ ANIMATION VARIABLES ============
 	/** Initial pose, per configuration XML world file */

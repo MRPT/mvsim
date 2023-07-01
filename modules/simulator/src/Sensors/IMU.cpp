@@ -9,6 +9,7 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/opengl/stock_objects.h>
+#include <mrpt/version.h>
 #include <mvsim/Sensors/IMU.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -113,12 +114,19 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 	outObs->set(mrpt::obs::IMU_WZ, w.z);
 
 	// linear acceleration:
-	mrpt::math::TVector3D linAcc(0.0, 0.0, 0.0);
-	rng_.drawGaussian1DVector(linAcc, 0.0, linearAccelerationStdNoise_);
+	const auto g = mrpt::math::TVector3D(.0, .0, -world_->get_gravity());
 
-	outObs->set(mrpt::obs::IMU_X_ACC, linAcc.x);
-	outObs->set(mrpt::obs::IMU_Y_ACC, linAcc.y);
-	outObs->set(mrpt::obs::IMU_Z_ACC, linAcc.z);
+	mrpt::math::TVector3D linAccNoise(0, 0, 0);
+	rng_.drawGaussian1DVector(linAccNoise, 0.0, linearAccelerationStdNoise_);
+
+	const mrpt::math::TVector3D linAccLocal =
+		vehicle_.getPose().inverseComposePoint(
+			vehicle_.getLinearAcceleration() + g) +
+		linAccNoise;
+
+	outObs->set(mrpt::obs::IMU_X_ACC, linAccLocal.x);
+	outObs->set(mrpt::obs::IMU_Y_ACC, linAccLocal.y);
+	outObs->set(mrpt::obs::IMU_Z_ACC, linAccLocal.z);
 
 	// Save:
 	{
