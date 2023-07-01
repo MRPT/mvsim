@@ -1,22 +1,25 @@
 Installing
 ===========
 
-From ROS1 or ROS2 repositories
+From ROS 1 or ROS 2 repositories
 --------------------------------
 
-This is preferred for users to quickly and easily install MVSIM and all the example files.
+**Recommended**: This is probably the easiest way to install MVSim and all the example files.
 
-Once you have activated your ROS environment (`setup.bash`), just run:
+In Debian/Ubuntu systems, activateyour ROS environment (``setup.bash``) if not done automatically 
+in your ``~./bashrc`` file, then just run:
 
 .. code-block:: bash
 
     sudo apt install ros-$ROS_DISTRO-mvsim
 
+Check the `build status table <https://github.com/MRPT/mvsim#build-matrix-status>`_ to find out
+what MVSim version is available for your ROS distribution.
+
 See `next steps <first-steps.html>`_ on how to launch demo files.
 
-
 .. note::
-    You can also build MVSIM ROS nodes from sources, by cloning into a catkin or colcon workspace
+    You can also build MVSim **ROS nodes** from sources, by cloning into a catkin or colcon workspace
     and build as usual (`catkin build` or `colcon build`).
 
 
@@ -63,4 +66,9 @@ Compile as usual in CMake projects:
  make
  #make test
 
-
+.. note::
+   The instructions above will build the MVSim standalone CLI application, the C++ and the Python libraries.
+   If you also want the **ROS nodes**, make sure of having your ROS system activated (having sourced ``setup.bash``)
+   at the time of invoking the cmake configuration (``cmake ..``). In that case, using ``colcon`` or ``catkin`` as usual
+   is strongly recommended instead of manually invoking cmake. Just put MVSim under the workspace ``src`` directory as 
+   any other ROS package.

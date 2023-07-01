@@ -1,64 +1,32 @@
-Simulated world definition
+World definition
 ===========================
 
-Simulation happens inside a World object. This is the central class for
+Simulation happens inside an ``mvsim::World`` object. This is the central class for
 usage from user code, running the simulation, loading XML models,
 managing GUI visualization, etc. The ROS node acts as a bridge between
-this class and the ROS subsystem.
+this class and the ROS subsystem, and the standalone ``mvsim`` cli tool
+is just a thin wrapper loading a world model and running it.
 
 Simulated worlds are described via configuration files
-called "world" files, defined in the XML file format.
+called "world" files, defined via an XML file.
 
 Many examples can be found in the
 `mvsim_tutorial directory <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_.
 
-The next sections explain possible XML elements in a world file.
+The next pages cover the **main different parts** of a world file.
 
-1. Global XML tags
---------------------
+.. toctree::
+   :maxdepth: 2
 
-World definition begins with tag **<mvsim\_world>**. To define
-simulation timestep, use **<simul\_timestep>** with *float* value
-specified in seconds.
+   world_global
+   world_gui
 
-.. code-block:: xml
+Other key features of MVSim world files are summarized next.
 
-	<mvsim_world version="1.0">
-	...
-		<!-- General simulation options -->
-		<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [s], or 0 to auto-determine -->
-	...
-	</mvsim_world>
+.. toctree::
+   :maxdepth: 2
 
-
-2. GUI options
------------------
-
-GUI options are specified with tag *gui*. *gui* has several nested tags:
-
-.. code-block:: xml
-
-	<mvsim_world version="1.0">
-	...
-		<!-- GUI options -->
-		<gui>
-			<!-- Is camera orthographic or projective? -->
-			<ortho>false</ortho>
-
-			<!-- Show reaction forces on wheels with lines -->
-			<show_forces>true</show_forces>
-			<force_scale>0.01</force_scale> <!-- (Newtons to meters draw scale) -->
-
-			<!-- default camera distance in world units -->
-			<cam_distance>35</cam_distance>
-
-			<!-- camera vertical field of view in degrees -->
-			<fov_deg>60</fov_deg>
-
-			<!-- <follow_vehicle>r1</follow_vehicle> -->
-		</gui>
-	...
-	</mvsim_world>
+   world_includes
 
 
 3. "World elements"

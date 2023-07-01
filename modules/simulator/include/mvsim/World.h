@@ -402,7 +402,7 @@ class World : public mrpt::system::COutputLogger
 	std::vector<on_observation_callback_t> callbacksOnObservation_;
 
 	// -------- World Params ----------
-	/** Gravity acceleration (Default=9.8 m/s^2). Used to evaluate weights for
+	/** Gravity acceleration (Default=9.81 m/s^2). Used to evaluate weights for
 	 * friction, etc. */
 	double gravity_ = 9.81;
 
