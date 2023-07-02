@@ -16,6 +16,7 @@ MVSim: a lightweight MultiVehicle Simulator
    first-steps
    architecture
    world
+   mvsim-cli
    physics
    extending
    C++ API <doxygen/html/modules.html#http://>

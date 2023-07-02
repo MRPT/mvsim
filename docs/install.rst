@@ -6,7 +6,7 @@ From ROS 1 or ROS 2 repositories
 
 **Recommended**: This is probably the easiest way to install MVSim and all the example files.
 
-In Debian/Ubuntu systems, activateyour ROS environment (``setup.bash``) if not done automatically 
+In Debian/Ubuntu systems, activate your ROS environment (``setup.bash``) if not done automatically 
 in your ``~./bashrc`` file, then just run:
 
 .. code-block:: bash

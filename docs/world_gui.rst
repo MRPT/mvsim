@@ -12,7 +12,12 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
   cost. Publication of sensor readings, odometry, etc. is not affected at all by this parameter.
 
 - ``<show_sensor_points>true</show_sensor_points>``. If enabled (default),
-  obstacle readings will be visible in the GUI as pointclouds.
+  obstacle readings (RGBD cameras, 2D or 3D Lidars, etc.) will be visible as point clouds.
+  This option can be also dynamically switched from the UI:
+
+.. raw:: html
+
+   <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-gui-view-pointclouds.mp4" type="video/mp4"> </video>
 
 - ``<headless>false</headless>``. If enabled, MVSim will run without
   any interactive GUI. Useful to save some CPU/GPU usage or to run 
@@ -23,7 +28,12 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
 
 - ``<show_forces>false</show_forces>`` and ``<force_scale>0.01</force_scale>``. If
   ``show_forces`` is set to ``true``, reaction forces will be visible as thin lines, using
-  the given scale in meters/Newton.
+  the given scale in meters/Newton. This option can be also dynamically switched from the UI:
+
+.. raw:: html
+
+   <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-gui-view-forces.mp4" type="video/mp4"> </video>
+
 
 - ``<ortho>false</ortho>``. If set to ``true``, the GUI will show an orthographic view 
   of the world. Otherwise, it will use a standard perspective camera.
