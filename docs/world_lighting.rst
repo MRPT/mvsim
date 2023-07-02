@@ -75,7 +75,7 @@ Shadows control
 .. code-block:: xml
    :caption: Light and shadow tuning parameters: example
 
-  <mvsim_world version="1.0">
+   <mvsim_world version="1.0">
     ...
     <!-- light and shadow options -->
     <light>
@@ -86,7 +86,7 @@ Shadows control
       <light_elevation_deg>40.0</light_elevation_deg>
     </light>
     ...
-  </mvsim_world>
+   </mvsim_world>
 
 
 .. [Microsoft_Shadows] Common Techniques to Improve Shadow Depth Maps, Microsoft, https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps

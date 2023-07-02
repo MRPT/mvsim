@@ -1,7 +1,7 @@
 .. _world-definition-docs:
 
-World definition
-===========================
+Defining the simulation world
+=================================
 
 Simulation happens inside an ``mvsim::World`` object. This is the central class for
 usage from user code, running the simulation, loading XML models,
@@ -9,13 +9,27 @@ managing GUI visualization, etc. The ROS node acts as a bridge between
 this class and the ROS subsystem, and the standalone ``mvsim`` cli tool
 is just a thin wrapper loading a world model and running it.
 
-Simulated worlds are described via configuration files
-called "world" files, defined via an XML file.
+Simulated worlds are described via configuration XML files
+called **"world" files**.
 
-Many examples can be found in the
-`mvsim_tutorial directory <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_.
+.. note:: 
+   Many examples can be found in the `mvsim_tutorial directory <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_.
+   Look for the ``*.world.xml`` files.
 
-The next pages cover the **main different parts** of a world file.
+
+.. figure:: https://mrpt.github.io/mvsim-models/anims/mvsim-warehouse.gif
+
+   Demo "warehouse" world.
+
+
+The next pages cover the **main different parts** of a world file, so you can understand the
+provided examples, modify them, or **create your own worlds and robots**.
+
+
+Global settings
+-----------------------
+
+First, we have global definitions on the simulation itself, the GUI, and the lights and shadows:
 
 .. toctree::
    :maxdepth: 2
@@ -24,7 +38,33 @@ The next pages cover the **main different parts** of a world file.
    world_gui
    world_lighting
 
-Other key features of MVSim world files are summarized next.
+World contents
+-----------------------
+
+Then we have to populate the world. MVSim defines **three kinds of objects**: 
+
+1. **Elements** (like walls, the ground, etc.) which normally do not move, 
+2. **Blocks**: most normally, obstacles, furniture, etc. Any object that may move or not, but which is not a controllable robot/vehicle; and 
+3. **Vehicles**: the robots/vehicles/agents themselves.
+
+Both, blocks and vehicles share two common APIs or interfaces: ``Simulable`` and ``VisualObject``, hence
+the properties of such interfaces are explained below in independent pages:
+
+
+.. toctree::
+   :maxdepth: 2
+
+   world_elements
+   world_blocks
+   world_vehicles
+   world_simulable
+   world_visual_object
+
+
+Advanced features
+-----------------------
+
+Other key features of MVSim world files are summarized next:
 
 .. toctree::
    :maxdepth: 2
@@ -35,10 +75,8 @@ Other key features of MVSim world files are summarized next.
    world_value_parsing
 
 
-3. "World elements"
+1. "World elements"
 ---------------------
-
-Scenario defines the "level" where the simulation takes place.
 
 **<element class="occupancy\_grid">** depicts MRPT occupancy map which
 can be specified with both image file (black and while) and MRPT grid
