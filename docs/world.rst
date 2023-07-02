@@ -1,3 +1,5 @@
+.. _world-definition-docs:
+
 World definition
 ===========================
 
@@ -20,6 +22,7 @@ The next pages cover the **main different parts** of a world file.
 
    world_global
    world_gui
+   world_lighting
 
 Other key features of MVSim world files are summarized next.
 
@@ -27,6 +30,7 @@ Other key features of MVSim world files are summarized next.
    :maxdepth: 2
 
    world_includes
+   world_flow-control
 
 
 3. "World elements"

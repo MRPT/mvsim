@@ -49,6 +49,12 @@ If you use MVSim in your work, feel free of citing
   author = {José-Luis Blanco-Claraco and Borys Tymchenko and Francisco José Mañas-Alvarez and Fernando Cañadas-Aránega and Ángel López-Gázquez and José Carlos Moreno}
  }
 
+Getting started:
+
+- :ref:`installing`
+- :ref:`first-steps`
+- :ref:`world-definition-docs`
+
 
 .. figure:: https://mrpt.github.io/mvsim-models/anims/warehouse-demo-mvsim.gif
   :alt: MVSIM Simulating Jackal Robot in ROS2
