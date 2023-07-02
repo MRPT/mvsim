@@ -522,6 +522,13 @@ void World::internal_GUI_thread()
 
 				vlp.color = colf;
 
+#if MRPT_VERSION >= 0x2A0  // New in mrpt>=2.10.0
+				vlp.eyeDistance2lightShadowExtension =
+					lo.eye_distance_to_shadow_map_extension;
+
+				vlp.minimum_shadow_map_extension_ratio =
+					lo.minimum_shadow_map_extension_ratio;
+#endif
 				// light view frustrum near/far planes:
 				v->setLightShadowClipDistances(
 					lo.light_clip_plane_min, lo.light_clip_plane_max);

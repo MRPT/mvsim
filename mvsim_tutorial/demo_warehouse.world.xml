@@ -18,6 +18,8 @@
 		<enable_shadows>true</enable_shadows>
 		<light_azimuth_deg>60.0</light_azimuth_deg>
 		<light_elevation_deg>75.0</light_elevation_deg>
+		<!-- <eye_distance_to_shadow_map_extension>2</eye_distance_to_shadow_map_extension> -->
+		<!-- <minimum_shadow_map_extension_ratio>0.005</minimum_shadow_map_extension_ratio> -->
 	</lights>
 
 	<variable name="CEILING_HEIGHT" value="6.0"></variable>

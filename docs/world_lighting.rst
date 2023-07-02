@@ -18,6 +18,8 @@ Light control
 
 - ``<light_color>#ffffff</light_color>``: The light color (see formatting for :ref:`%color <world_value_parsing>`).
 
+- ``<light_ambient>0.5</light_ambient>``: Ambient component of the light (0 to 1).
+
 - ``<light_azimuth>45.0</light_azimuth>`` and ``<light_elevation>70.0</light_elevation>``: 
   The orbit-like azimuth and elevation angles (in **degrees**) of the directional light source.
   For example, an elevation of ``90`` means a pure vertical (downwards) light.
@@ -25,6 +27,7 @@ Light control
 .. raw:: html
 
    <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-light-direction.mp4" type="video/mp4"> </video>
+
 
 
 Shadows control
@@ -67,6 +70,13 @@ Shadows control
 - ``<shadow_bias>1e-5</shadow_bias>``, ``<shadow_bias_cam2frag>1e-5</shadow_bias_cam2frag>``, and 
   ``<shadow_bias_normal>1e-4</shadow_bias_normal>`` are all ``mrpt-opengl`` heuristic parameters to 
   fight the "Peter-Panning" and "shadow acne" artifacts in shadow casting [Microsoft_Shadows]_.
+
+- ``<eye_distance_to_shadow_map_extension>2.0</eye_distance_to_shadow_map_extension>``: This unitless (meter/meter)
+  scale factor determines the extension (in meters) of the light shadow-generation square fructum.
+
+- ``<minimum_shadow_map_extension_ratio>0.005</minimum_shadow_map_extension_ratio>``: Unitless (meter/meter)
+  ratio of ``light_clip_plane_max`` that determines the minimum size of the shadow map area. Larger values
+  are required for larger contiguous volumes of the world are visible at once, e.g. larger rooms.
 
 
 |

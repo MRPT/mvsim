@@ -74,10 +74,12 @@ void World::internal_initialize()
 	ASSERT_(worldVisual_);
 
 #if MRPT_VERSION >= 0x270
-	worldVisual_->getViewport()->lightParameters().ambient = 0.5f;
+	worldVisual_->getViewport()->lightParameters().ambient =
+		lightOptions_.light_ambient;
 #else
 	worldVisual_->getViewport()->lightParameters().ambient = {
-		0.5f, 0.5f, 0.5f, 1.0f};
+		lightOptions_.light_ambient, lightOptions_.light_ambient,
+		lightOptions_.light_ambient, 1.0f};
 #endif
 	// Physical world light = visual world lights:
 	worldPhysical_.getViewport()->lightParameters() =

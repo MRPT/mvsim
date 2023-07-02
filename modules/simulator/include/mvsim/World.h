@@ -515,6 +515,10 @@ class World : public mrpt::system::COutputLogger
 		float shadow_bias_normal = 1e-4;
 
 		mrpt::img::TColor light_color = {0xff, 0xff, 0xff, 0xff};
+		float light_ambient = 0.5f;
+
+		float eye_distance_to_shadow_map_extension = 2.0f;	//!< [m/m]
+		float minimum_shadow_map_extension_ratio = 0.005f;	//!< [0,1]
 
 		const TParameterDefinitions params = {
 			{"enable_shadows", {"%bool", &enable_shadows}},
@@ -527,6 +531,11 @@ class World : public mrpt::system::COutputLogger
 			{"shadow_bias", {"%f", &shadow_bias}},
 			{"shadow_bias_cam2frag", {"%f", &shadow_bias_cam2frag}},
 			{"shadow_bias_normal", {"%f", &shadow_bias_normal}},
+			{"light_ambient", {"%f", &light_ambient}},
+			{"eye_distance_to_shadow_map_extension",
+			 {"%f", &eye_distance_to_shadow_map_extension}},
+			{"minimum_shadow_map_extension_ratio",
+			 {"%f", &minimum_shadow_map_extension_ratio}},
 		};
 	};
 
