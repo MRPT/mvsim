@@ -30,7 +30,9 @@ Other key features of MVSim world files are summarized next.
    :maxdepth: 2
 
    world_includes
+   world_remote-resources
    world_flow-control
+   world_value_parsing
 
 
 3. "World elements"

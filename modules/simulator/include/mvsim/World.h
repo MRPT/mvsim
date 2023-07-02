@@ -508,7 +508,7 @@ class World : public mrpt::system::COutputLogger
 		double light_elevation = mrpt::DEG2RAD(70.0);
 
 		float light_clip_plane_min = 0.1f;
-		float light_clip_plane_max = 2000.0f;
+		float light_clip_plane_max = 900.0f;
 
 		float shadow_bias = 1e-5;
 		float shadow_bias_cam2frag = 1e-5;
