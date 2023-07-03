@@ -35,40 +35,55 @@ If you use MVSim in your work, feel free of citing
 `the MVSim SoftwareX paper <https://www.sciencedirect.com/science/article/pii/S2352711023001395>`_ 
 (or the `ArXiV preprint <https://arxiv.org/abs/2302.11033>`_): 
 
-.. code-block:: bibtex
+.. dropdown:: Citation in BibTex format
 
- @article{blanco2023mvsim,
-  title = {MultiVehicle Simulator (MVSim): Lightweight dynamics simulator for multiagents and mobile robotics research},
-  journal = {SoftwareX},
-  volume = {23},
-  pages = {101443},
-  year = {2023},
-  issn = {2352-7110},
-  doi = {https://doi.org/10.1016/j.softx.2023.101443},
-  url = {https://www.sciencedirect.com/science/article/pii/S2352711023001395},
-  author = {José-Luis Blanco-Claraco and Borys Tymchenko and Francisco José Mañas-Alvarez and Fernando Cañadas-Aránega and Ángel López-Gázquez and José Carlos Moreno}
- }
+    .. code-block:: bibtex
+    
+     @article{blanco2023mvsim,
+      title = {MultiVehicle Simulator (MVSim): Lightweight dynamics simulator for multiagents and mobile robotics research},
+      journal = {SoftwareX},
+      volume = {23},
+      pages = {101443},
+      year = {2023},
+      issn = {2352-7110},
+      doi = {https://doi.org/10.1016/j.softx.2023.101443},
+      url = {https://www.sciencedirect.com/science/article/pii/S2352711023001395},
+      author = {José-Luis Blanco-Claraco and Borys Tymchenko and Francisco José Mañas-Alvarez and Fernando Cañadas-Aránega and Ángel López-Gázquez and José Carlos Moreno}
+     }
 
-Getting started:
 
-- :ref:`installing`
-- :ref:`first-steps`
-- :ref:`world-definition-docs`
+.. card:: :octicon:`download` Installing
+    :link: installing
+    :link-type: ref
+
+    How to install or build from sources
+
+.. card:: :octicon:`mortar-board` First steps
+    :link: first-steps
+    :link-type: ref
+
+    Launch your first simulations and play around...
+
+.. card:: :octicon:`gear` World XML format specifications
+    :link: world-definition-docs
+    :link-type: ref
+
+    All the details about how to design simulated worlds and robots
 
 
 .. figure:: https://mrpt.github.io/mvsim-models/anims/warehouse-demo-mvsim.gif
   :alt: MVSIM Simulating Jackal Robot in ROS2
   :target: first-steps.html
 
-.. image:: https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg
-  :width: 400
-  :alt: MvSim intro
-  :target: https://www.youtube.com/watch?v=xMUMjEG8xlk
 
 Documentation credits:
 
    - Borys Tymchenko `@spsancti <https://github.com/spsancti>`_
    - Jose Luis Blanco Claraco `@jlblancoc <https://github.com/jlblancoc>`_
 
-Github repository: https://github.com/MRPT/mvsim
+
+.. card:: :octicon:`mark-github` GitHub repository
+    :link: https://github.com/MRPT/mvsim
+
+    Link to the main Git repository
 

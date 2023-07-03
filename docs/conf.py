@@ -59,7 +59,8 @@ master_doc = 'index'
 # ones.
 extensions = [
     'sphinx_rtd_theme',
-    'sphinx.ext.mathjax'
+    'sphinx.ext.mathjax',
+    'sphinx_design'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
