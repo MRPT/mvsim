@@ -4,50 +4,73 @@ First steps
 ===================
 
 After installing or building from sources, you are ready to test the
-standalone simulator applications to get used to MVSIM.
+simulator to get used to MVSIM.
 
-1. Manual vehicle teleop
----------------------------
+Launch it
+------------
 
-.. code-block:: bash
+We will launch a demo with a Jackal mobile robot in a warehouse.
+The commands required to launch it depends on the installation method:
 
-    mvsim launch mvsim_tutorial/demo_2robots.world.xml
+.. tab-set::
 
-You should see the GUI of a demo world with two robots equipped with a 2D
-lidar, scanning a model defined by means of an occupancy grid map and a couple
-of boxes.
+    .. tab-item:: ROS 1
 
-Use the keyboard to teleop the vehicle: ``w/s`` to increase/decrease the
-PI controller setpoint linear speed, and ``a/d`` to turn the Ackermann steering
-to the left/right. Use the spacebar as a brake.
+        If you installed MVSim as a ROS 1 package, just run:
 
-Select the active robot by pressing the keys ``1`` or ``2``.
+        .. code-block:: bash
 
-.. figure:: imgs/screenshot-demo-2robots.png
-   :alt: screenshot-demo-2robots
+            roslaunch mvsim demo_warehouse.launch
 
-   Screenshot of the ``demo_2robots`` example world.
+    .. tab-item:: ROS 2
+        :selected:
 
+        If you installed MVSim as a ROS 2 package, just run:
 
-2. ROS launch files
----------------------------
+        .. code-block:: bash
 
-Once the ROS1 or ROS2 mvsim package is installed, you should be able 
-to launch one of `the many demo files <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_, 
-for example:
+            ros2 launch mvsim demo_warehouse.launch.py
 
-.. code-block:: bash
+    .. tab-item:: Standalone MVSim build
 
-    # For ROS1:
-    roslaunch mvsim demo_jackal.launch
+        Assuming you compiled MVSim in the directory ``MVSIM_ROOT``,
+        with cmake build directory ``build-Release``, run:
 
-    # For ROS2:
-    ros2 launch mvsim demo_jackal.launch.py
+        .. code-block:: bash
+
+            cd MVSIM_ROOT
+            build-Release/bin/mvsim launch mvsim_tutorial/demo_warehouse.world.xml
 
 
-.. figure:: imgs/mvsim-ros2-demo.gif
-   :alt: MVSIM Simulating Jackal Robot in ROS2
+You should see the GUI of a demo world with a robot equipped with a 3D lidar and,
+if using the ROS version, an RViz window with a visualization of some of the the
+published sensor topics.
 
-   Screenshot of the ``demo_jackal`` ROS demo.
+.. raw:: html
 
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim-warehouse-teleop-demo.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
+|
+
+
+Move it
+------------
+
+Make sure of give the focus to the MVSim window, then use the keyboard to teleoperate the vehicle:
+
+- ``w/s`` to increase/decrease the PI controller setpoint linear speed, and
+- ``a/d`` to change the corresponding angular speed, that is, rotate to the left and right.
+- Use the spacebar as a brake.
+- In worlds with more than one robot, select the active robot by pressing the numeric 
+  keys ``1``, ``2``, etc.
+
+
+Next, you can jump straight into the many other demo worlds and launch files
+available under `mvsim_tutorial <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_,
+or continue reading these docs to better understand them.
 

@@ -11,7 +11,6 @@ MVSim: a lightweight MultiVehicle Simulator
    :hidden:
 
    Home <self>
-   features
    install
    first-steps
    architecture

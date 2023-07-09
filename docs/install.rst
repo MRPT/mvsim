@@ -18,7 +18,7 @@ in your ``~./bashrc`` file, then just run:
 Check the `build status table <https://github.com/MRPT/mvsim#build-matrix-status>`_ to find out
 what MVSim version is available for your ROS distribution.
 
-See `next steps <first-steps.html>`_ on how to launch demo files.
+Now, you can see `first steps <first-steps.html>`_ on how to launch demo files.
 
 .. note::
     You can also build MVSim **ROS nodes** from sources, by cloning into a catkin or colcon workspace
