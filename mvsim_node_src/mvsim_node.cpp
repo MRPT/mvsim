@@ -345,6 +345,7 @@ void MVSimNode::spin()
 
 		std::string txt2gui_tmp;
 		World::TGUIKeyEvent keyevent = gui_key_events_;
+		const auto js = gui_js_status_;
 
 		// Global keys:
 		switch (keyevent.keycode)
@@ -388,6 +389,7 @@ void MVSimNode::spin()
 					ControllerBaseInterface::TeleopInput teleop_in;
 					ControllerBaseInterface::TeleopOutput teleop_out;
 					teleop_in.keycode = keyevent.keycode;
+					teleop_in.joystick = js;
 					controller->teleop_interface(teleop_in, teleop_out);
 					txt2gui_tmp += teleop_out.append_gui_lines;
 				}

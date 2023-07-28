@@ -103,7 +103,8 @@ void mvsim_install_signal_handler()
 
 // returns log strings
 std::string mvsim_launch_handle_teleop(
-	const mvsim::World::TGUIKeyEvent keyevent)
+	const mvsim::World::TGUIKeyEvent keyevent,
+	const std::optional<mvsim::TJoyStickEvent>& js)
 {
 	using namespace mvsim;
 
@@ -145,6 +146,7 @@ std::string mvsim_launch_handle_teleop(
 			ControllerBaseInterface::TeleopInput teleop_in;
 			ControllerBaseInterface::TeleopOutput teleop_out;
 			teleop_in.keycode = keyevent.keycode;
+			teleop_in.js = js;
 			controller->teleop_interface(teleop_in, teleop_out);
 			txt2gui_tmp += teleop_out.append_gui_lines;
 		}
@@ -298,7 +300,9 @@ Available options:
 				break;
 		};
 
-		const auto txt2gui_tmp = mvsim_launch_handle_teleop(keyevent);
+		const auto js = app->world.getJoystickState();
+
+		const auto txt2gui_tmp = mvsim_launch_handle_teleop(keyevent, js);
 
 		// Clear the keystroke buffer
 		gui_key_events_mtx.lock();

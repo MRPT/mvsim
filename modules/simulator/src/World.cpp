@@ -405,3 +405,21 @@ bool World::sensor_has_to_create_egl_context()
 	first = false;
 	return ret;
 }
+
+std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
+{
+	if (!joystickEnabled_) return {};
+
+	if (!joystick_)
+	{
+		joystick_.emplace();
+	}
+
+	mvsim::TJoyStickEvent js;
+
+	const int nJoy = 0;	 // TODO: Expose param for multiple joysticks?
+
+	joystick_->getJoystickPosition(nJoy, js.x, js.y, js.z, js.buttons);
+
+	return js;
+}

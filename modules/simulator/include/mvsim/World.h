@@ -25,6 +25,7 @@
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Block.h>
 #include <mvsim/Comms/Client.h>
+#include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
@@ -393,6 +394,12 @@ class World : public mrpt::system::COutputLogger
 		return userDefinedVariables_;
 	}
 
+	/** If joystick usage is enabled (via XML file option, for example),
+	 *  this will read the joystick state and return it. Otherwise (or on device
+	 * error or disconnection), a null optional variable is returned.
+	 */
+	std::optional<mvsim::TJoyStickEvent> getJoystickState() const;
+
    private:
 	friend class VehicleBase;
 	friend class Block;
@@ -412,6 +419,9 @@ class World : public mrpt::system::COutputLogger
 	 */
 	mutable double simulTimestep_ = 0;
 
+	bool joystickEnabled_ = false;
+	mutable std::optional<Joystick> joystick_;
+
 	/** Velocity and position iteration count (refer to libbox2d docs) */
 	int b2dVelIters_ = 8, b2dPosIters_ = 3;
 
@@ -423,6 +433,7 @@ class World : public mrpt::system::COutputLogger
 		{"simul_timestep", {"%lf", &simulTimestep_}},
 		{"b2d_vel_iters", {"%i", &b2dVelIters_}},
 		{"b2d_pos_iters", {"%i", &b2dPosIters_}},
+		{"joystick_enabled", {"%bool", &joystickEnabled_}},
 	};
 
 	/** User-defined variables as defined via `<variable name='' value='' />`

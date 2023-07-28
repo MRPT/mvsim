@@ -16,6 +16,9 @@ Available parameters (all are optional):
 - ``<gravity>9.81</gravity>``. Gravity acceleration (m/s²), in the negative Z axis 
   direction (i.e. downwards).
 
+- ``<joystick_enabled>false</joystick_enabled>``. If enabled, a gamepad or joystick 
+  can be used to control the selected vehicle. (Default is ``false`` hence no responding to gamepads).
+
 - ``<server_address>localhost</server_address>``. The IP address the server
   must be bound to. Refer to :ref:`architecture`.
 
