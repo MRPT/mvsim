@@ -73,11 +73,41 @@ void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
 		}
 		break;
 	};
-	out.append_gui_lines += "[Controller=" + std::string(class_name()) +
-							"] Teleop keys:\n"
-							"w/s=forward/backward.\n"
-							"a/d=left/right.\n"
-							"spacebar=stop.\n";
+
+	out.append_gui_lines += "[Controller=" + std::string(class_name()) + "]";
+
+	if (in.js)
+	{
+		const auto& js = in.js.value();
+		setpoint_.vx = -js.y * joyMaxLinSpeed;
+		setpoint_.omega = -js.x * joyMaxAngSpeed;
+
+		if (js.buttons.size() >= 7)
+		{
+			if (js.buttons[5]) joyMaxLinSpeed *= 1.01;
+			if (js.buttons[7]) joyMaxLinSpeed /= 1.01;
+
+			if (js.buttons[4]) joyMaxAngSpeed *= 1.01;
+			if (js.buttons[6]) joyMaxAngSpeed /= 1.01;
+
+			// brake
+			if (js.buttons[3]) setpoint_ = {0, 0, 0};
+		}
+
+		out.append_gui_lines += mrpt::format(
+			"Teleop joystick:\n"
+			"maxLinSpeed=%.03f m/s\n"
+			"maxAngSpeed=%.03f deg/s\n",
+			joyMaxLinSpeed, mrpt::RAD2DEG(joyMaxAngSpeed));
+	}
+	else
+	{
+		out.append_gui_lines +=
+			"Teleop keys:\n"
+			"w/s=forward/backward.\n"
+			"a/d=left/right.\n"
+			"spacebar=stop.\n";
+	}
 
 	out.append_gui_lines += mrpt::format(
 		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx,

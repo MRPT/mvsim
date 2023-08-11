@@ -18,7 +18,7 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="twist_pid">
+        <controller class="twist_ideal"> <!-- or "twist_pid" -->
             <!-- Params -->
             <KP>1.0</KP>  <KI>1.0</KI> <I_MAX>1.0</I_MAX> <KD>0</KD>
             <V>0.0</V><W>0</W>

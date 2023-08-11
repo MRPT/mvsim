@@ -60,6 +60,7 @@ void DynamicsDifferential::ControllerRawForces::teleop_interface(
 			setpoint_wheel_torque_l = setpoint_wheel_torque_r = 0.0;
 			break;
 	};
+
 	out.append_gui_lines += "[Controller=" + string(class_name()) +
 							"] Teleop keys:\n"
 							"w/s=incr/decr both torques.\n"

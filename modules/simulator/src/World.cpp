@@ -421,5 +421,12 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 
 	joystick_->getJoystickPosition(nJoy, js.x, js.y, js.z, js.buttons);
 
+	if (js.z != 0 && gui_.gui_win)
+	{
+		auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
+		auto& cam = gui_.gui_win->camera();
+		cam.setAzimuthDegrees(cam.getAzimuthDegrees() - js.z);
+	}
+
 	return js;
 }

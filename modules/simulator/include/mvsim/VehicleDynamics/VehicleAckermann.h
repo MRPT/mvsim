@@ -109,6 +109,9 @@ class DynamicsAckermann : public VehicleBase
 	   private:
 		double dist_fWheels_, r2f_L_;
 		PID_Controller PID_[2];	 //<! [0]:fl, [1]: fr
+
+		double joyMaxLinSpeed = 1.0;
+		double joyMaxAngSpeed = 0.7;
 	};
 
 	/** PID controller that controls the vehicle with front traction & steering
@@ -135,6 +138,9 @@ class DynamicsAckermann : public VehicleBase
 	   private:
 		ControllerTwistFrontSteerPID twist_control_;
 		double r2f_L_;
+
+		double joyMaxLinSpeed = 1.0;
+		double joyMaxSteerAng = 0.7;
 	};
 
 	const ControllerBase::Ptr& getController() const { return controller_; }
