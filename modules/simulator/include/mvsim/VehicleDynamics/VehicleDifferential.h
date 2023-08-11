@@ -148,6 +148,9 @@ class DynamicsDifferential : public VehicleBase
 		std::array<PID_Controller, 2> PIDs_;
 		mrpt::math::TTwist2D setpoint_{0, 0, 0};  //!< "vx" and "omega" only
 		mutable std::mutex setpointMtx_;
+
+		double joyMaxLinSpeed = 1.0;
+		double joyMaxAngSpeed = 0.5;
 	};
 
 	/** Ideal ("fake") controller, which perfectly and instantaneously
@@ -189,6 +192,9 @@ class DynamicsDifferential : public VehicleBase
 		double distWheels_ = 0;
 		mrpt::math::TTwist2D setpoint_{0, 0, 0};  //!< "vx" and "omega" only
 		mutable std::mutex setpointMtx_;
+
+		double joyMaxLinSpeed = 1.0;
+		double joyMaxAngSpeed = 0.5;
 	};
 
 	const ControllerBase::Ptr& getController() const { return controller_; }

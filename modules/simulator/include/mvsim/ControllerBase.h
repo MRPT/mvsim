@@ -11,6 +11,8 @@
 
 #include <mvsim/basic_types.h>
 
+#include <optional>
+
 namespace mvsim
 {
 /** Interface of ControllerBaseTempl<> for teleoperation, etc.
@@ -21,9 +23,12 @@ class ControllerBaseInterface
    public:
 	struct TeleopInput
 	{
-		int keycode;
-		TeleopInput() : keycode(0) {}
+		int keycode = 0;
+		std::optional<TJoyStickEvent> js;
+
+		TeleopInput() = default;
 	};
+
 	struct TeleopOutput
 	{
 		std::string append_gui_lines;

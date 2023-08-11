@@ -120,6 +120,9 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	   private:
 		double dist_fWheels_, r2f_L_;
 		PID_Controller PID_;
+
+		double joyMaxLinSpeed = 1.0;
+		double joyMaxAngSpeed = 0.7;
 	};
 
 	class ControllerFrontSteerPID : public ControllerBase

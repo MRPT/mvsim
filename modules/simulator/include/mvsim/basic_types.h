@@ -16,6 +16,7 @@
 
 #include <cstdint>	// uintptr_t
 #include <string>
+#include <vector>
 
 class b2World;
 class b2Body;
@@ -62,5 +63,13 @@ struct TSimulContext
 
 /// Used to signal a Box2D fixture as "invisible" to sensors.
 constexpr uintptr_t INVISIBLE_FIXTURE_USER_DATA = 1;
+
+struct TJoyStickEvent
+{
+	float x = .0f, y = .0f, z = .0f;
+	std::vector<bool> buttons;
+
+	TJoyStickEvent() = default;
+};
 
 }  // namespace mvsim

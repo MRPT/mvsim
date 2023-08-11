@@ -405,3 +405,28 @@ bool World::sensor_has_to_create_egl_context()
 	first = false;
 	return ret;
 }
+
+std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
+{
+	if (!joystickEnabled_) return {};
+
+	if (!joystick_)
+	{
+		joystick_.emplace();
+	}
+
+	mvsim::TJoyStickEvent js;
+
+	const int nJoy = 0;	 // TODO: Expose param for multiple joysticks?
+
+	joystick_->getJoystickPosition(nJoy, js.x, js.y, js.z, js.buttons);
+
+	if (js.z != 0 && gui_.gui_win)
+	{
+		auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
+		auto& cam = gui_.gui_win->camera();
+		cam.setAzimuthDegrees(cam.getAzimuthDegrees() - js.z);
+	}
+
+	return js;
+}

@@ -1,0 +1,259 @@
+/*+-------------------------------------------------------------------------+
+  |                       MultiVehicle simulator (libmvsim)                 |
+  |                                                                         |
+  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
+  | Distributed under 3-clause BSD License                                  |
+  |   See COPYING                                                           |
+  +-------------------------------------------------------------------------+ */
+
+// NOTE: This file is borrowed from mrpt-hwdrivers (BSD-3 License)
+
+/* +------------------------------------------------------------------------+
+   |                     Mobile Robot Programming Toolkit (MRPT)            |
+   |                          https://www.mrpt.org/                         |
+   |                                                                        |
+   | Copyright (c) 2005-2023, Individual contributors, see AUTHORS file     |
+   | See: https://www.mrpt.org/Authors - All rights reserved.               |
+   | Released under BSD License. See: https://www.mrpt.org/License          |
+   +------------------------------------------------------------------------+ */
+
+#include <mrpt/config.h>
+#include <mrpt/core/exceptions.h>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+//
+#include <mmsystem.h>
+
+#if !defined(__GNUC__)
+#pragma comment(lib, "WINMM.LIB")
+#endif
+#endif
+
+#if defined(MRPT_OS_LINUX) || defined(__APPLE__)
+// Linux
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#if defined(MRPT_OS_LINUX) && defined(HAVE_LINUX_INPUT_H)
+#include <linux/input.h>
+#include <linux/joystick.h>
+#endif
+#endif
+
+#include <mvsim/Joystick.h>
+
+using mvsim::Joystick;
+
+/*---------------------------------------------------------------
+					Constructor
+ ---------------------------------------------------------------*/
+Joystick::Joystick() { setLimits(); }
+/*---------------------------------------------------------------
+					Destructor
+ ---------------------------------------------------------------*/
+Joystick::~Joystick()
+{
+#if defined(MRPT_OS_LINUX) && defined(HAVE_LINUX_INPUT_H)
+	// Close joystick, if open:
+	if (m_joy_fd > 0)
+	{
+		close(m_joy_fd);
+		m_joy_fd = -1;
+	}
+#endif
+}
+
+/*---------------------------------------------------------------
+					getJoysticksCount
+  Returns the number of Joysticks in the computer.
+ ---------------------------------------------------------------*/
+int Joystick::getJoysticksCount()
+{
+	MRPT_START
+#ifdef _WIN32
+	return joyGetNumDevs();
+#elif defined(MRPT_OS_LINUX) && defined(HAVE_LINUX_INPUT_H)
+	// Try to open several joy devs:
+	int joy_fd = -1;
+	int nJoys = 0;
+
+	do
+	{
+		if (-1 !=
+			(joy_fd = open(
+				 mrpt::format("/dev/input/js%i", nJoys).c_str(), O_RDONLY)))
+		{
+			nJoys++;
+			close(joy_fd);
+		}
+	} while (joy_fd != -1);
+
+	return nJoys;
+#else
+	// Apple:
+	return 0;
+#endif
+	MRPT_END
+}
+
+/*---------------------------------------------------------------
+  Gets joystick information.
+
+  \return Returns true if successfull, false on error, for example, if joystick
+ is not present.
+ ---------------------------------------------------------------*/
+bool Joystick::getJoystickPosition(
+	int nJoy, float& x, float& y, float& z, std::vector<bool>& buttons,
+	int* raw_x_pos, int* raw_y_pos, int* raw_z_pos)
+{
+	MRPT_START
+#ifdef _WIN32
+	JOYINFO jinfo;
+
+	int ID = JOYSTICKID1 + nJoy;
+
+	// Get joy pos:
+	if (JOYERR_NOERROR != joyGetPos(ID, &jinfo)) return false;	// Error.
+
+	// Output data:
+	x = (jinfo.wXpos - m_x_min) / (float)(m_x_max - m_x_min);
+	y = (jinfo.wYpos - m_y_min) / (float)(m_y_max - m_y_min);
+	z = (jinfo.wZpos - m_z_min) / (float)(m_z_max - m_z_min);
+
+	x = 2 * x - 1;
+	y = 2 * y - 1;
+	z = 2 * z - 1;
+
+	buttons.resize(4);
+
+	buttons[0] = 0 != (jinfo.wButtons & JOY_BUTTON1);
+	buttons[1] = 0 != (jinfo.wButtons & JOY_BUTTON2);
+	buttons[2] = 0 != (jinfo.wButtons & JOY_BUTTON3);
+	buttons[3] = 0 != (jinfo.wButtons & JOY_BUTTON4);
+
+	if (raw_x_pos) *raw_x_pos = jinfo.wXpos;
+	if (raw_y_pos) *raw_y_pos = jinfo.wYpos;
+	if (raw_z_pos) *raw_z_pos = jinfo.wZpos;
+
+	return true;
+#elif defined(MRPT_OS_LINUX) && defined(HAVE_LINUX_INPUT_H)
+	// Already open?
+	if (m_joy_index == nJoy && m_joy_fd != -1)
+	{
+		// Ok
+	}
+	else
+	{
+		// Close previous opened joy?
+		if (m_joy_fd != -1) close(m_joy_fd);
+
+		// Go, try open joystick:
+		if ((m_joy_fd = open(
+				 mrpt::format("/dev/input/js%i", nJoy).c_str(), O_RDONLY)) < 0)
+			return false;
+
+		// Perfect!
+		m_joy_index = nJoy;
+
+		// Read in non-blocking way: **** Refer to sources of "jstest"!!!! ***
+		fcntl(m_joy_fd, F_SETFL, O_NONBLOCK);
+	}
+
+	struct js_event js;
+
+	while (read(m_joy_fd, &js, sizeof(struct js_event)) ==
+		   sizeof(struct js_event))
+	{
+		// Button?
+		if (js.type & JS_EVENT_BUTTON)
+		{
+			// js.number: Button number
+			if (m_joystate_btns.size() < (size_t)js.number + 1)
+				m_joystate_btns.resize(js.number + 1);
+			m_joystate_btns[js.number] = js.value != 0;
+		}
+
+		// Axes?
+		if (js.type & JS_EVENT_AXIS)
+		{
+			// std::cout << "joy: event axis" << std::endl;
+			if (m_joystate_axes.size() < (size_t)js.number + 1)
+				m_joystate_axes.resize(js.number + 1);
+			m_joystate_axes[js.number] = js.value;
+		}
+	}
+
+	if (errno != EAGAIN)
+	{
+		// Joystick disconnected?
+		m_joy_fd = -1;
+		m_joy_index = -1;
+		return false;
+	}
+
+	// Fill out data:
+	const size_t nAxis = m_joystate_axes.size();
+	if (nAxis >= 1)
+	{
+		x = -1 +
+			2 * (m_joystate_axes[0] - m_x_min) / (float)(m_x_max - m_x_min);
+		if (raw_x_pos) *raw_x_pos = m_joystate_axes[0];
+	}
+
+	if (nAxis >= 2)
+	{
+		y = -1 +
+			2 * (m_joystate_axes[1] - m_y_min) / (float)(m_y_max - m_y_min);
+		if (raw_y_pos) *raw_y_pos = m_joystate_axes[1];
+	}
+
+	if (nAxis >= 3)
+	{
+		z = -1 +
+			2 * (m_joystate_axes[2] - m_z_min) / (float)(m_z_max - m_z_min);
+		if (raw_z_pos) *raw_z_pos = m_joystate_axes[2];
+	}
+	else
+	{
+		z = 0;
+	}
+
+	buttons = m_joystate_btns;
+
+	return true;
+#else
+	// Apple.
+	return false;
+#endif
+	MRPT_END
+}
+
+/** Set the axis limit values, for computing a [-1,1] position index easily.
+ *   It seems that these values must been calibrated for each joystick model.
+ *
+ * \sa getJoystickPosition
+ */
+void Joystick::setLimits(
+	int x_min, int x_max, int y_min, int y_max, int z_min, int z_max)
+{
+	m_x_max = x_max;
+	m_x_min = x_min;
+
+	m_y_max = y_max;
+	m_y_min = y_min;
+
+	m_z_max = z_max;
+	m_z_min = z_min;
+}

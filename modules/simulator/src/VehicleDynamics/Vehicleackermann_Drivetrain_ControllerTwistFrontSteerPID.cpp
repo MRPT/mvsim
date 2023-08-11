@@ -109,12 +109,46 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
 			setpoint_ang_speed = .0;
 			break;
 	};
-	out.append_gui_lines += "[Controller=" + string(class_name()) +
-							"] Teleop keys:\n"
-							"w/s=incr/decr lin speed.\n"
-							"a/d=left/right steering.\n"
-							"spacebar=stop.\n";
+
+	out.append_gui_lines += "[Controller=" + std::string(class_name()) + "]";
+
+	if (in.js)
+	{
+		const auto& js = in.js.value();
+		setpoint_lin_speed = -js.y * joyMaxLinSpeed;
+		setpoint_ang_speed = -js.x * joyMaxAngSpeed;
+
+		if (js.buttons.size() >= 7)
+		{
+			if (js.buttons[5]) joyMaxLinSpeed *= 1.01;
+			if (js.buttons[7]) joyMaxLinSpeed /= 1.01;
+
+			if (js.buttons[4]) joyMaxAngSpeed *= 1.01;
+			if (js.buttons[6]) joyMaxAngSpeed /= 1.01;
+
+			if (js.buttons[3])	// brake
+			{
+				setpoint_lin_speed = 0;
+				setpoint_ang_speed = 0;
+			}
+		}
+
+		out.append_gui_lines += mrpt::format(
+			"Teleop joystick:\n"
+			"maxLinSpeed=%.03f m/s\n"
+			"maxAngSpeed=%.03f deg/s\n",
+			joyMaxLinSpeed, mrpt::RAD2DEG(joyMaxAngSpeed));
+	}
+	else
+	{
+		out.append_gui_lines +=
+			"Teleop keys:\n"
+			"w/s=forward/backward.\n"
+			"a/d=left/right.\n"
+			"spacebar=stop.\n";
+	}
+
 	out.append_gui_lines += mrpt::format(
-		"setpoint: v=%.03f w=%.03f deg/s\n", setpoint_lin_speed,
-		setpoint_ang_speed * 180.0 / M_PI);
+		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_lin_speed,
+		180.0 / M_PI * setpoint_ang_speed);
 }
