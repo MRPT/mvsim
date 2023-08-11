@@ -248,7 +248,6 @@ class MVSimNode
 	/// for teleoperation from the GUI (selects the focused" vehicle)
 	size_t teleop_idx_veh_ = 0;
 	mvsim::World::TGUIKeyEvent gui_key_events_;
-	mvsim::TJoyStickStatus gui_js_status_;
 	std::string msg2gui_;
 
 	std::thread thGUI_;

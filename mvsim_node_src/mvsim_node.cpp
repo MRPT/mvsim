@@ -345,7 +345,6 @@ void MVSimNode::spin()
 
 		std::string txt2gui_tmp;
 		World::TGUIKeyEvent keyevent = gui_key_events_;
-		const auto js = gui_js_status_;
 
 		// Global keys:
 		switch (keyevent.keycode)
