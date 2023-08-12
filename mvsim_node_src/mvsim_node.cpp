@@ -388,7 +388,7 @@ void MVSimNode::spin()
 					ControllerBaseInterface::TeleopInput teleop_in;
 					ControllerBaseInterface::TeleopOutput teleop_out;
 					teleop_in.keycode = keyevent.keycode;
-					teleop_in.joystick = js;
+					teleop_in.js = mvsim_world_->getJoystickState();
 					controller->teleop_interface(teleop_in, teleop_out);
 					txt2gui_tmp += teleop_out.append_gui_lines;
 				}

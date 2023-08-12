@@ -413,6 +413,16 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 	if (!joystick_)
 	{
 		joystick_.emplace();
+		const auto nJoy = joystick_->getJoysticksCount();
+		if (!nJoy)
+		{
+			MRPT_LOG_WARN(
+				"[World::getJoystickState()] No Joystick found, disabling "
+				"joystick-based controllers.");
+			joystickEnabled_ = false;
+			joystick_.reset();
+			return {};
+		}
 	}
 
 	mvsim::TJoyStickEvent js;

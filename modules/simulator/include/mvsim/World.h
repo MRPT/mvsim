@@ -419,7 +419,7 @@ class World : public mrpt::system::COutputLogger
 	 */
 	mutable double simulTimestep_ = 0;
 
-	bool joystickEnabled_ = false;
+	mutable bool joystickEnabled_ = false;
 	mutable std::optional<Joystick> joystick_;
 
 	/** Velocity and position iteration count (refer to libbox2d docs) */
