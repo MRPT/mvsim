@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.2 (2023-08-12)
+------------------
 * Joystick driving: added support for direct driving the vehicles with a joystick.
 * Fix rviz for ros1 demo
 * Better docs and more modern RST style.
