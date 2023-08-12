@@ -15,6 +15,7 @@ MVSim: a lightweight MultiVehicle Simulator
    first-steps
    architecture
    world
+   teleoperation
    mvsim-cli
    physics
    extending
@@ -24,7 +25,7 @@ MVSim: a lightweight MultiVehicle Simulator
 
 
 Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
-It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and
+It is tailored to analysis of vehicle dynamics, wheel-ground contact forces, and
 accurate simulation of typical robot sensors.
 
 This project includes C++ and Python libraries, the standalone CLI application ``mvsim``,

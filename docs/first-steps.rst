@@ -55,13 +55,15 @@ published sensor topics.
    </div>
 
 
-|
-
-
 Move it
 ------------
 
-Make sure of give the focus to the MVSim window, then use the keyboard to teleoperate the vehicle:
+If you are running MVSim as a ROS node, you can launch any standard teleoperation node 
+and send motion commands to ``/cmd_vel`` as with any other robot or simulator.
+
+Additionally, MVSim allows you to **move the robot directly using the keyboard or a joystick**.
+Make sure of giving the focus to the MVSim window first,
+then use these keys:
 
 - ``w/s`` to increase/decrease the PI controller setpoint linear speed, and
 - ``a/d`` to change the corresponding angular speed, that is, rotate to the left and right.
@@ -69,6 +71,7 @@ Make sure of give the focus to the MVSim window, then use the keyboard to teleop
 - In worlds with more than one robot, select the active robot by pressing the numeric 
   keys ``1``, ``2``, etc.
 
+All the details on **keyboard and joystick-based control** are listed `here <teleoperation.html>`_.
 
 Next, you can jump straight into the many other demo worlds and launch files
 available under `mvsim_tutorial <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_,

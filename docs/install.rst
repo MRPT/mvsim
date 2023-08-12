@@ -39,7 +39,8 @@ You will need these dependencies:
 
 - A decent C++17 compiler.
 - CMake >= 3.9
-- MRPT (>=2.5.6): In Windows, build from sources or install precompiled binaries.
+- MRPT (>=2.5.6): In Windows, `build from sources <https://docs.mrpt.org/reference/latest/compiling.html>`_
+  or `get the precompiled installer <https://docs.mrpt.org/reference/latest/download-mrpt.html>`_.
 - Box2D (>=2.4): It will use an embedded copy (git submodule) if no (or too old) system version is found.
 
 In Ubuntu, all requirements can be satisfied executing:
