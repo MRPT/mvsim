@@ -2,6 +2,15 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Joystick driving: added support for direct driving the vehicles with a joystick.
+* Fix rviz for ros1 demo
+* Better docs and more modern RST style.
+* More shadow tuning parameters.
+* IMU sensor now reads real vehicle linear acceleration.
+* Contributors: Jose Luis Blanco-Claraco
+
 0.7.1 (2023-06-11)
 ------------------
 * ROS node: fix potential race condition creating publisher for highrate sensors
