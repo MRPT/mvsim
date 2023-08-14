@@ -17,6 +17,7 @@ MVSim: a lightweight MultiVehicle Simulator
    world
    teleoperation
    mvsim-cli
+   mvsim_node
    physics
    extending
    C++ API <doxygen/html/modules.html#http://>
