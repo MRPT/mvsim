@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.3 (2023-08-23)
+------------------
 * Update python module install method to pip (fixes deprecation)
 * Improved docs
 * Contributors: Jose Luis Blanco-Claraco
