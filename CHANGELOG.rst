@@ -2,6 +2,12 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update python module install method to pip (fixes deprecation)
+* Improved docs
+* Contributors: Jose Luis Blanco-Claraco
+
 0.7.2 (2023-08-12)
 ------------------
 * Joystick driving: added support for direct driving the vehicles with a joystick.
