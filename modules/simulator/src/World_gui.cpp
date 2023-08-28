@@ -203,7 +203,9 @@ void World::GUI::prepare_editor_window()
 	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Editor");
 #endif
 
-	const int pnWidth = 250, pnHeight = 200;
+	constexpr int pnWidth = 300, pnHeight = 200;
+	constexpr int COORDS_LABEL_WIDTH = 60;
+	constexpr int slidersWidth = pnWidth - 80 - COORDS_LABEL_WIDTH;
 
 	w->setPosition({1, 230});
 	w->setLayout(new nanogui::BoxLayout(
@@ -222,6 +224,7 @@ void World::GUI::prepare_editor_window()
 	// being able to load its current pose in the GUI controls yet to be
 	// constructed later on:
 	static std::function<void(const mrpt::math::TPose3D)> onEntitySelected;
+	static std::function<void(const mrpt::math::TPose3D)> onEntityMoved;
 
 	auto lckListObjs = mrpt::lockHelper(parent_.getListOfSimulableObjectsMtx());
 	if (!parent_.getListOfSimulableObjects().empty())
@@ -384,10 +387,40 @@ void World::GUI::prepare_editor_window()
 	// Reorient (yaw/pitch/roll):
 	constexpr float REPOSITION_SLIDER_RANGE = 1.0;	// Meters
 
+	nanogui::Slider* slidersCoordScale = nullptr;
+	nanogui::Label* slidersCoordScaleValue = nullptr;
+	{
+		auto pn = w->add<nanogui::Widget>();
+		pn->setLayout(new nanogui::BoxLayout(
+			nanogui::Orientation::Horizontal, nanogui::Alignment::Fill, 2, 2));
+		pn->add<nanogui::Label>("Change scale:");
+
+		auto slCoord = pn->add<nanogui::Slider>();
+		slidersCoordScale = slCoord;
+
+		slCoord->setRange({-4.0, 1.0});
+
+		slCoord->setCallback([this]([[maybe_unused]] float v) {
+			// Re-generate the other 6 sliders with this new scale:
+			if (!gui_selectedObject.simulable || !onEntitySelected) return;
+			onEntitySelected(gui_selectedObject.simulable->getRelativePose());
+		});
+		slCoord->setFixedWidth(slidersWidth - 30);
+		btns_selectedOps.push_back(slCoord);
+
+		slidersCoordScaleValue = pn->add<nanogui::Label>(" ");
+		slidersCoordScaleValue->setFixedWidth(70);
+	}
+
 	std::array<nanogui::Slider*, 6> slidersCoords;
+	std::array<nanogui::Label*, 6> slidersCoordsValues;
 	const std::array<const char*, 6> coordsNames = {
-		"Move 'x':",	   "Move 'y':",			"Move 'z':",
-		"Reorient 'yaw':", "Reorient 'pitch':", "Reorient 'roll':"};
+		"    Move 'x':",  //
+		"    Move 'y':",  //
+		"    Move 'z':",  //
+		"Rotate   yaw:",  //
+		"Rotate pitch:",  //
+		"Rotate  roll:"};
 
 	for (int axis = 0; axis < 6; axis++)
 	{
@@ -399,35 +432,60 @@ void World::GUI::prepare_editor_window()
 		auto slCoord = pn->add<nanogui::Slider>();
 		slidersCoords[axis] = slCoord;
 
-		if (axis >= 3)
-			slCoord->setRange({-M_PI, M_PI});
-		else
-			slCoord->setRange(
-				{-REPOSITION_SLIDER_RANGE, REPOSITION_SLIDER_RANGE});
+		// Dummy. Correct ones set in onEntitySelected()
+		slCoord->setRange({-1.0, 1.0});
 
 		slCoord->setCallback([this, axis](float v) {
 			if (!gui_selectedObject.simulable) return;
 			auto p = gui_selectedObject.simulable->getRelativePose();
 			p[axis] = v;
 			gui_selectedObject.simulable->setRelativePose(p);
+			onEntityMoved(p);
 		});
-		slCoord->setFixedWidth(170);
+		slCoord->setFixedWidth(slidersWidth);
 		btns_selectedOps.push_back(slCoord);
+
+		slidersCoordsValues[axis] = pn->add<nanogui::Label>("(...)");
+		slidersCoordsValues[axis]->setFixedWidth(COORDS_LABEL_WIDTH);
 	}
 
 	// Now, we can define the lambda for filling in the current object pose in
 	// the GUI controls:
-	onEntitySelected = [slidersCoords](const mrpt::math::TPose3D p) {
+	onEntitySelected = [slidersCoords, slidersCoordScale,
+						slidersCoordScaleValue](const mrpt::math::TPose3D p) {
+		ASSERT_(slidersCoordScale);
+		const double scale =
+			std::pow(10.0, mrpt::round(slidersCoordScale->value()));
+
+		slidersCoordScaleValue->setCaption(mrpt::format("%.01e", scale));
+
 		// Positions:
 		for (int i = 0; i < 3; i++)
 		{
 			slidersCoords[i]->setRange(
-				{p[i] - REPOSITION_SLIDER_RANGE,
-				 p[i] + REPOSITION_SLIDER_RANGE});
+				{p[i] - scale * REPOSITION_SLIDER_RANGE,
+				 p[i] + scale * REPOSITION_SLIDER_RANGE});
 			slidersCoords[i]->setValue(p[i]);
 		}
 		// Angles:
-		for (int i = 0; i < 3; i++) slidersCoords[i + 3]->setValue(p[i + 3]);
+		for (int i = 0; i < 3; i++)
+		{
+			slidersCoords[i + 3]->setRange(
+				{p[i + 3] - scale * M_PI, p[i + 3] + scale * M_PI});
+			slidersCoords[i + 3]->setValue(p[i + 3]);
+		}
+
+		onEntityMoved(p);
+	};
+
+	onEntityMoved = [slidersCoordsValues](const mrpt::math::TPose3D p) {
+		// Positions:
+		for (int i = 0; i < 3; i++)
+			slidersCoordsValues[i]->setCaption(mrpt::format("%.04f", p[i]));
+		// Angles:
+		for (int i = 0; i < 3; i++)
+			slidersCoordsValues[i + 3]->setCaption(
+				mrpt::format("%.02f deg", mrpt::RAD2DEG(p[i + 3])));
 	};
 
 	// Replace with coordinates:
