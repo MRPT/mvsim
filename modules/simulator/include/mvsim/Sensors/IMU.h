@@ -44,6 +44,13 @@ class IMU : public SensorBase
 			physical,
 		[[maybe_unused]] bool childrenOnly) override;
 
+	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
+
+	mrpt::math::TPose3D getRelativePose() const override { return {}; }
+	void setRelativePose(const mrpt::math::TPose3D&) override
+	{
+		// sensor_params_.setSensorPose(mrpt::poses::CPose3D(p));
+	}
 	void internal_simulate_imu(const TSimulContext& context);
 
 	double angularVelocityStdNoise_ = 2e-4;	 //!< [rad/s]

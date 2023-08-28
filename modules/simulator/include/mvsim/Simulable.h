@@ -65,6 +65,12 @@ class Simulable
 	 */
 	mrpt::math::TPose3D getPose() const;
 
+	/** Like getPose(), but gets the relative pose with respect to the parent
+	 * object, or just exactly like getPose() (global pose) if this is a
+	 * top-level entity.
+	 */
+	virtual mrpt::math::TPose3D getRelativePose() const { return getPose(); }
+
 	/// No thread-safe version. Used internally only.
 	mrpt::math::TPose3D getPoseNoLock() const;
 
@@ -78,7 +84,11 @@ class Simulable
 
 	/** Manually override vehicle pose (Use with caution!) (purposely set a
 	 * "const")*/
-	void setPose(const mrpt::math::TPose3D& p) const;
+	void setPose(const mrpt::math::TPose3D& p, bool notifyChange = true) const;
+
+	/** Changes the relative pose of this object with respect to its parent, or
+	 * the global frame if its a top-level entity. */
+	virtual void setRelativePose(const mrpt::math::TPose3D& p) { setPose(p); }
 
 	void setTwist(const mrpt::math::TTwist2D& dq) const;
 
@@ -130,6 +140,14 @@ class Simulable
 		const JointXMLnode<>& node, const ParseSimulableParams& p = {});
 
 	void internalHandlePublish(const TSimulContext& context);
+
+	/** Will be called after the global pose of the object has changed due to a
+	 * direct call to setPose() */
+	virtual void notifySimulableSetPose(
+		[[maybe_unused]] const mrpt::math::TPose3D& newPose)
+	{
+		// Default: do nothing
+	}
 
    private:
 	World* simulable_parent_ = nullptr;

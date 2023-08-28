@@ -420,7 +420,7 @@ void Simulable::registerOnServer(mvsim::Client& c)
 	MRPT_END
 }
 
-void Simulable::setPose(const mrpt::math::TPose3D& p) const
+void Simulable::setPose(const mrpt::math::TPose3D& p, bool notifyChange) const
 {
 	q_mtx_.lock();
 
@@ -433,6 +433,8 @@ void Simulable::setPose(const mrpt::math::TPose3D& p) const
 		vo->guiUpdate(std::nullopt, std::nullopt);
 
 	q_mtx_.unlock();
+
+	if (notifyChange) const_cast<Simulable*>(this)->notifySimulableSetPose(p);
 }
 
 mrpt::math::TPose3D Simulable::getPose() const

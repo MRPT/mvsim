@@ -48,6 +48,17 @@ class Lidar3D : public SensorBase
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
+	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
+
+	mrpt::math::TPose3D getRelativePose() const override
+	{
+		return sensorPoseOnVeh_.asTPose();
+	}
+	void setRelativePose(const mrpt::math::TPose3D& p) override
+	{
+		sensorPoseOnVeh_ = mrpt::poses::CPose3D(p);
+	}
+
 	mrpt::poses::CPose3D sensorPoseOnVeh_;
 
 	double rangeStdNoise_ = 0.01;

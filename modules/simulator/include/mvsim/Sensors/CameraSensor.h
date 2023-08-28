@@ -43,6 +43,17 @@ class CameraSensor : public SensorBase
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
+	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
+
+	mrpt::math::TPose3D getRelativePose() const override
+	{
+		return sensor_params_.sensorPose();
+	}
+	void setRelativePose(const mrpt::math::TPose3D& p) override
+	{
+		sensor_params_.setSensorPose(mrpt::poses::CPose3D(p));
+	}
+
 	// Store here all sensor intrinsic parameters. This obj will be copied as a
 	// "pattern" to fill it with actual scan data.
 	mrpt::obs::CObservationImage sensor_params_;

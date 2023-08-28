@@ -229,6 +229,19 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 			internal_simulate_lidar_2d_mode(context);
 		}
 	}
+
+	// Keep sensor global pose up-to-date:
+	const auto& p = vehicle_.getPose();
+	const auto globalSensorPose = p + scan_model_.sensorPose.asTPose();
+	Simulable::setPose(globalSensorPose, false /*do not notify*/);
+}
+
+void LaserScanner::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
+{
+	// The editor has moved the sensor in global coordinates.
+	// Convert back to local:
+	const auto& p = vehicle_.getPose();
+	scan_model_.sensorPose = mrpt::poses::CPose3D(newPose - p);
 }
 
 void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)

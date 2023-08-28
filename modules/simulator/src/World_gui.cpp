@@ -218,14 +218,22 @@ void World::GUI::prepare_editor_window()
 
 	w->add<nanogui::Label>("Selected object", "sans-bold");
 
+	// Auxiliary lambda placeholder for when the user clicks on an object
+	// being able to load its current pose in the GUI controls yet to be
+	// constructed later on:
+	static std::function<void(const mrpt::math::TPose3D)> onEntitySelected;
+
 	auto lckListObjs = mrpt::lockHelper(parent_.getListOfSimulableObjectsMtx());
 	if (!parent_.getListOfSimulableObjects().empty())
 	{
 		auto tab = w->add<nanogui::TabWidget>();
 
-		nanogui::Widget* tabs[4] = {
-			tab->createTab("Vehicles"), tab->createTab("Blocks"),
-			tab->createTab("Elements"), tab->createTab("Misc.")};
+		constexpr size_t NUM_TABS = 5;
+
+		std::array<nanogui::Widget*, NUM_TABS> tabs = {
+			tab->createTab("Vehicles"), tab->createTab("Sensors"),
+			tab->createTab("Blocks"), tab->createTab("Elements"),
+			tab->createTab("Misc.")};
 
 		tab->setActiveTab(0);
 
@@ -234,18 +242,16 @@ void World::GUI::prepare_editor_window()
 				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3,
 				3));
 
-		nanogui::VScrollPanel* vscrolls[4] = {
-			tabs[0]->add<nanogui::VScrollPanel>(),
-			tabs[1]->add<nanogui::VScrollPanel>(),
-			tabs[2]->add<nanogui::VScrollPanel>(),
-			tabs[3]->add<nanogui::VScrollPanel>()};
+		std::array<nanogui::VScrollPanel*, NUM_TABS> vscrolls;
+		for (size_t i = 0; i < NUM_TABS; i++)
+			vscrolls[i] = tabs[i]->add<nanogui::VScrollPanel>();
 
 		for (auto vs : vscrolls) vs->setFixedSize({pnWidth, pnHeight});
 
 		// vscroll should only have *ONE* child. this is what `wrapper`
 		// is for
-		nanogui::Widget* wrappers[4];
-		for (int i = 0; i < 4; i++)
+		std::array<nanogui::Widget*, NUM_TABS> wrappers;
+		for (size_t i = 0; i < NUM_TABS; i++)
 		{
 			wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
 			wrappers[i]->setFixedSize({pnWidth, pnHeight});
@@ -254,31 +260,57 @@ void World::GUI::prepare_editor_window()
 				nanogui::Alignment::Minimum, 3, 3));
 		}
 
+		// Extend the list of world objects with the robot sensors:
+		SimulableList listAllObjs = parent_.getListOfSimulableObjects();
+		// Yes: we iterate over parent.getList...(), *not* the local copy, since
+		// it will be modified within the loop.
 		for (const auto& o : parent_.getListOfSimulableObjects())
+		{
+			if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
+			{
+				auto& sensors = v->getSensors();
+				for (auto& sensor : sensors)
+				{
+					const auto sensorFullName =
+						sensor->vehicle().getName() + "."s + sensor->getName();
+					listAllObjs.insert({sensorFullName, sensor});
+				}
+			}
+		}
+
+		// Now, fill the editor list with all the existing objects:
+		for (const auto& o : listAllObjs)
 		{
 			InfoPerObject ipo;
 
 			const auto& name = o.first;
-			bool isVehicle = false;
+			int wrapperIdx = -1;  // default. The tag "page" to show this at.
 			if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
 			{
-				isVehicle = true;
+				wrapperIdx = 0;
 				ipo.visual = dynamic_cast<VisualObject*>(v);
 			}
-			bool isBlock = false;
 			if (auto v = dynamic_cast<Block*>(o.second.get()); v)
 			{
-				isBlock = true;
+				wrapperIdx = 2;
+				ipo.visual = dynamic_cast<VisualObject*>(v);
+			}
+			if (auto v = dynamic_cast<SensorBase*>(o.second.get()); v)
+			{
+				wrapperIdx = 1;
 				ipo.visual = dynamic_cast<VisualObject*>(v);
 			}
 			// bool isWorldElement = false;
 			if (auto v = dynamic_cast<WorldElementBase*>(o.second.get()); v)
 			{
 				// isWorldElement = true;
+				wrapperIdx = 3;
 				ipo.visual = dynamic_cast<VisualObject*>(v);
 			}
-			auto wrapper =
-				isVehicle ? wrappers[0] : (isBlock ? wrappers[1] : wrappers[2]);
+
+			if (wrapperIdx < 0) continue;  // unknown / non-editable item.
+
+			auto wrapper = wrappers[wrapperIdx];
 
 			std::string label = name;
 			if (label.empty()) label = "(unnamed)";
@@ -308,12 +340,16 @@ void World::GUI::prepare_editor_window()
 
 				const bool btnsEnabled = !!gui_selectedObject.simulable;
 				for (auto b : btns_selectedOps) b->setEnabled(btnsEnabled);
+
+				// Set current coordinates in controls:
+				if (ipo.simulable && onEntitySelected)
+					onEntitySelected(ipo.simulable->getRelativePose());
 			});
 		}
 
 		// "misc." tab
 		// --------------
-		wrappers[3]
+		wrappers[4]
 			->add<nanogui::Button>("Save 3D scene...", ENTYPO_ICON_EXPORT)
 			->setCallback([this]() {
 				try
@@ -340,27 +376,61 @@ void World::GUI::prepare_editor_window()
 
 	w->add<nanogui::Label>(" ");
 
+	// Replace with mouse:
 	btnReplaceObject = w->add<nanogui::Button>("Click to replace...");
 	btnReplaceObject->setFlags(nanogui::Button::Flags::ToggleButton);
 	btns_selectedOps.push_back(btnReplaceObject);
 
+	// Reorient (yaw/pitch/roll):
+	constexpr float REPOSITION_SLIDER_RANGE = 1.0;	// Meters
+
+	std::array<nanogui::Slider*, 6> slidersCoords;
+	const std::array<const char*, 6> coordsNames = {
+		"Move 'x':",	   "Move 'y':",			"Move 'z':",
+		"Reorient 'yaw':", "Reorient 'pitch':", "Reorient 'roll':"};
+
+	for (int axis = 0; axis < 6; axis++)
 	{
 		auto pn = w->add<nanogui::Widget>();
 		pn->setLayout(new nanogui::BoxLayout(
 			nanogui::Orientation::Horizontal, nanogui::Alignment::Fill, 2, 2));
-		pn->add<nanogui::Label>("Reorient:");
-		auto slAngle = pn->add<nanogui::Slider>();
-		slAngle->setRange({-M_PI, M_PI});
-		slAngle->setCallback([this](float v) {
+		pn->add<nanogui::Label>(coordsNames[axis]);
+
+		auto slCoord = pn->add<nanogui::Slider>();
+		slidersCoords[axis] = slCoord;
+
+		if (axis >= 3)
+			slCoord->setRange({-M_PI, M_PI});
+		else
+			slCoord->setRange(
+				{-REPOSITION_SLIDER_RANGE, REPOSITION_SLIDER_RANGE});
+
+		slCoord->setCallback([this, axis](float v) {
 			if (!gui_selectedObject.simulable) return;
-			auto p = gui_selectedObject.simulable->getPose();
-			p.yaw = v;
-			gui_selectedObject.simulable->setPose(p);
+			auto p = gui_selectedObject.simulable->getRelativePose();
+			p[axis] = v;
+			gui_selectedObject.simulable->setRelativePose(p);
 		});
-		slAngle->setFixedWidth(150);
-		btns_selectedOps.push_back(slAngle);
+		slCoord->setFixedWidth(170);
+		btns_selectedOps.push_back(slCoord);
 	}
 
+	// Now, we can define the lambda for filling in the current object pose in
+	// the GUI controls:
+	onEntitySelected = [slidersCoords](const mrpt::math::TPose3D p) {
+		// Positions:
+		for (int i = 0; i < 3; i++)
+		{
+			slidersCoords[i]->setRange(
+				{p[i] - REPOSITION_SLIDER_RANGE,
+				 p[i] + REPOSITION_SLIDER_RANGE});
+			slidersCoords[i]->setValue(p[i]);
+		}
+		// Angles:
+		for (int i = 0; i < 3; i++) slidersCoords[i + 3]->setValue(p[i + 3]);
+	};
+
+	// Replace with coordinates:
 	auto btnPlaceCoords = w->add<nanogui::Button>("Replace by coordinates...");
 	btns_selectedOps.push_back(btnPlaceCoords);
 	btnPlaceCoords->setCallback([this]() {
@@ -371,30 +441,37 @@ void World::GUI::prepare_editor_window()
 		formPose->setLayout(new nanogui::GridLayout(
 			nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill, 5));
 
-		nanogui::TextBox* lbs[3];
+		nanogui::TextBox* lbs[6];
 
-		formPose->add<nanogui::Label>("x coordinate:");
+		formPose->add<nanogui::Label>("x:");
 		lbs[0] = formPose->add<nanogui::TextBox>();
-		formPose->add<nanogui::Label>("y coordinate:");
+		formPose->add<nanogui::Label>("y:");
 		lbs[1] = formPose->add<nanogui::TextBox>();
-		formPose->add<nanogui::Label>("Orientation:");
+		formPose->add<nanogui::Label>("z:");
 		lbs[2] = formPose->add<nanogui::TextBox>();
+		formPose->add<nanogui::Label>("Yaw:");
+		lbs[3] = formPose->add<nanogui::TextBox>();
+		formPose->add<nanogui::Label>("Pitch:");
+		lbs[4] = formPose->add<nanogui::TextBox>();
+		formPose->add<nanogui::Label>("Roll:");
+		lbs[5] = formPose->add<nanogui::TextBox>();
 
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			lbs[i]->setEditable(true);
 			lbs[i]->setFixedSize({100, 20});
 			lbs[i]->setValue("0.0");
-			lbs[i]->setUnits(i == 2 ? "[deg]" : "[m]");
+			lbs[i]->setUnits(i >= 3 ? "[deg]" : "[m]");
 			lbs[i]->setDefaultValue("0.0");
 			lbs[i]->setFontSize(16);
 			lbs[i]->setFormat("[-]?[0-9]*\\.?[0-9]+");
 		}
 
-		const auto pos = gui_selectedObject.simulable->getPose();
-		lbs[0]->setValue(std::to_string(pos.x));
-		lbs[1]->setValue(std::to_string(pos.y));
-		lbs[2]->setValue(std::to_string(mrpt::RAD2DEG(pos.yaw)));
+		const auto pos = gui_selectedObject.simulable->getRelativePose();
+		for (int i = 0; i < 3; i++) lbs[i]->setValue(std::to_string(pos[i]));
+
+		for (int i = 3; i < 6; i++)
+			lbs[i]->setValue(std::to_string(mrpt::RAD2DEG(pos[i])));
 
 		formPose->add<nanogui::Label>("");
 		formPose->add<nanogui::Label>("");
@@ -404,19 +481,23 @@ void World::GUI::prepare_editor_window()
 
 		formPose->add<nanogui::Button>("Accept")->setCallback(
 			[formPose, this, lbs]() {
-				gui_selectedObject.simulable->setPose(
-					{// X:
-					 std::stod(lbs[0]->value()),
-					 // Y:
-					 std::stod(lbs[1]->value()),
-					 // Z:
-					 .0,
-					 // Yaw
-					 mrpt::DEG2RAD(std::stod(lbs[2]->value())),
-					 // Pitch
-					 0.0,
-					 // Roll:
-					 0.0});
+				const mrpt::math::TPose3D newPose = {
+					// X:
+					std::stod(lbs[0]->value()),
+					// Y:
+					std::stod(lbs[1]->value()),
+					// Z:
+					std::stod(lbs[2]->value()),
+					// Yaw
+					mrpt::DEG2RAD(std::stod(lbs[3]->value())),
+					// Pitch
+					mrpt::DEG2RAD(std::stod(lbs[4]->value())),
+					// Roll:
+					mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
+
+				gui_selectedObject.simulable->setRelativePose(newPose);
+				onEntitySelected(newPose);
+
 				formPose->dispose();
 			});
 
@@ -425,6 +506,7 @@ void World::GUI::prepare_editor_window()
 		formPose->setVisible(true);
 	});
 
+	// Disable all edit-controls since no object is selected:
 	for (auto b : btns_selectedOps) b->setEnabled(false);
 
 		// Minimize subwindow:

@@ -92,6 +92,10 @@ void IMU::simul_post_timestep(const TSimulContext& context)
 	{
 		internal_simulate_imu(context);
 	}
+	// Keep sensor global pose up-to-date:
+	const auto& p = vehicle_.getPose();
+	const auto globalSensorPose = p + obs_model_.sensorPose.asTPose();
+	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
 
 void IMU::internal_simulate_imu(const TSimulContext& context)
@@ -136,6 +140,14 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 
 	// publish as generic Protobuf (mrpt serialized) object:
 	SensorBase::reportNewObservation(last_obs_, context);
+}
+
+void IMU::notifySimulableSetPose(const mrpt::math::TPose3D&)
+{
+	// The editor has moved the sensor in global coordinates.
+	// Convert back to local:
+	// const auto& p = vehicle_.getPose();
+	// sensor_params_.sensorPose = mrpt::poses::CPose3D(newPose - p);
 }
 
 void IMU::registerOnServer(mvsim::Client& c)

@@ -150,8 +150,9 @@ void CameraSensor::internalGuiUpdate(
 	gl_sensor_fov_->setPose(p);
 	gl_sensor_origin_->setPose(p);
 
-	if (glCustomVisual_)
-		glCustomVisual_->setPose(p + sensor_params_.cameraPose.asTPose());
+	const auto globalSensorPose = p + sensor_params_.cameraPose.asTPose();
+
+	if (glCustomVisual_) glCustomVisual_->setPose(globalSensorPose);
 }
 
 void CameraSensor::simul_pre_timestep(
@@ -253,6 +254,19 @@ void CameraSensor::simul_post_timestep(const TSimulContext& context)
 		has_to_render_ = context;
 		world_->mark_as_pending_running_sensors_on_3D_scene();
 	}
+
+	// Keep sensor global pose up-to-date:
+	const auto& p = vehicle_.getPose();
+	const auto globalSensorPose = p + sensor_params_.cameraPose.asTPose();
+	Simulable::setPose(globalSensorPose, false /*do not notify*/);
+}
+
+void CameraSensor::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
+{
+	// The editor has moved the sensor in global coordinates.
+	// Convert back to local:
+	const auto& p = vehicle_.getPose();
+	sensor_params_.cameraPose = mrpt::poses::CPose3D(newPose - p);
 }
 
 void CameraSensor::freeOpenGLResources() { fbo_renderer_rgb_.reset(); }

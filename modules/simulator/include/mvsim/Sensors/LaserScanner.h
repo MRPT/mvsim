@@ -52,11 +52,22 @@ class LaserScanner : public SensorBase
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		bool childrenOnly) override;
 
+	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
+
+	mrpt::math::TPose3D getRelativePose() const override
+	{
+		return scan_model_.sensorPose.asTPose();
+	}
+	void setRelativePose(const mrpt::math::TPose3D& p) override
+	{
+		scan_model_.setSensorPose(mrpt::poses::CPose3D(p));
+	}
+
 	// when not using the 3D raytrace mode.
 	void internal_simulate_lidar_2d_mode(const TSimulContext& context);
 
 	int z_order_;  //!< to help rendering multiple scans
-	mrpt::poses::CPose2D sensor_pose_on_veh_;
+
 	double rangeStdNoise_ = 0.01;
 	double angleStdNoise_ = mrpt::DEG2RAD(0.01);
 	/** Whether all box2d "fixtures" are visible (solid) or not (Default=true)

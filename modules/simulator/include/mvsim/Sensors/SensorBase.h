@@ -60,6 +60,10 @@ class SensorBase : public VisualObject, public Simulable
 
 	double sensor_period() const { return sensor_period_; }
 
+	/** The vehicle this sensor is attached to */
+	Simulable& vehicle() { return vehicle_; }
+	const Simulable& vehicle() const { return vehicle_; }
+
    protected:
 	/** Should be called within each derived class simul_post_timestep() method
 	 *  to update sensor_last_timestamp_ and check if the sensor should be
