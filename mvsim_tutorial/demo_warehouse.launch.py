@@ -1,4 +1,3 @@
-
 # ROS2 launch file
 
 from launch import LaunchDescription
@@ -12,12 +11,15 @@ import os
 
 def generate_launch_description():
     mvsimDir = get_package_share_directory("mvsim")
-    #print('mvsimDir: ' + mvsimDir)
+    # print('mvsimDir: ' + mvsimDir)
 
     # args that can be set from the command line or a default will be used
     world_file_launch_arg = DeclareLaunchArgument(
         "world_file", default_value=TextSubstitution(
             text=os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_warehouse.world.xml')))
+
+    headless_launch_arg = DeclareLaunchArgument(
+        "headless", default_value='False')
 
     mvsim_node = Node(
         package='mvsim',
@@ -29,7 +31,7 @@ def generate_launch_description():
                          'mvsim_ros2_params.yaml'),
             {
                 "world_file": LaunchConfiguration('world_file'),
-                "headless": False
+                "headless": LaunchConfiguration('headless'),
             }]
     )
 
@@ -43,6 +45,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         world_file_launch_arg,
+        headless_launch_arg,
         mvsim_node,
         rviz2_node
     ])
