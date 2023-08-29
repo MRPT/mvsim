@@ -10,7 +10,10 @@ this class and the ROS subsystem, and the standalone ``mvsim`` cli tool
 is just a thin wrapper loading a world model and running it.
 
 Simulated worlds are described via configuration XML files
-called **"world" files**.
+called **"world" files**, which describes both,
+the environment itself and the vehicles or robots that move in it.
+By means of :ref:`includes <world-includes>`, robots, sensors, or environment objects
+can be defined in their own files for the sake of reusability.
 
 .. note:: 
    Many examples can be found in the `mvsim_tutorial directory <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_.
@@ -79,7 +82,7 @@ Simulation execution
 ----------------------
 
 Simulation executes step-by-step with user-defined :math:`\Delta t` time
-between steps. Each step has several sub steps:
+between steps. Each step comprises:
 
 -  Before time step - sets actions, updates models, etc.
 
@@ -97,3 +100,4 @@ Limitations
 .. code-block::
 
 	Box2D/Box2D/Collision/Shapes/b2PolygonShape.cpp:158: void b2PolygonShape::Set(const b2Vec2*, int32): Assertion `false' failed.
+

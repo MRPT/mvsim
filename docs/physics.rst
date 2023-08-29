@@ -124,11 +124,11 @@ Ward-Iagnemma friction
 ~~~~~~~~~~~~~~~~~~~~~~
 
 This type of friction is an implementation of paper from Chris Ward and
-Karl Iagnemma :raw-latex:`\cite{ward-iagnemma-friction}`.
+Karl Iagnemma :cite:`ward2008dynamic`.
 
 Rolling resistance is generally modeled as a combination of static- and
 velocity-dependant forces [17], [21]. Authors propose function with form
-similar to Pacejka’s model :raw-latex:`\cite{pacejka_tire_model}` as a
+similar to Pacejka’s model as a
 continuously differentiable formulation of the rolling resistance with
 the static force smoothed at zero velocity to avoid a singularity. The
 rolling resistance is
@@ -205,7 +205,7 @@ motion.
 
 .. math:: \nu_y = 0
 
- Where :math:`\omega_{veh}` is angular velocity of the robot,
+Where :math:`\omega_{veh}` is angular velocity of the robot,
 :math:`R_i` - radius of the wheel, :math:`y_i` is the y position of the
 wheel, :math:`\omega_i` is the angular velocity of the wheel. All
 calculations in the robot’s local frame.
@@ -226,7 +226,7 @@ of different radii.
 
 .. math:: \alpha_{inner} = atan(cot(|\alpha| - \frac{w}{2l})
 
- where :math:`\alpha` is the desired equivalent steering angle,
+where :math:`\alpha` is the desired equivalent steering angle,
 :math:`w` is wheels distance and :math:`l` is wheels base. Outer and
 inner wheel are defined by the turn direction.
 
@@ -239,7 +239,7 @@ inner wheel are defined by the turn direction.
 
 .. math:: \nu_y = 0
 
- Where :math:`\omega_{veh}` is angular velocity of the robot,
+where :math:`\omega_{veh}` is angular velocity of the robot,
 :math:`R_{ri}` - radius of the rear wheel, :math:`y_{ri}` is the y
 position of the rear wheel, :math:`\omega_{ri}` is the angular velocity
 of the rear wheel. All calculations in the robot’s local frame.
@@ -258,7 +258,7 @@ There are two types of differentials:
 -  Open differntial
 
 -  Torsen-like locking differential
-   :raw-latex:`\cite{torsen-whitepaper}`
+   :cite:`chocholek1988development`
 
 Each type of differential can be linked with following configurations:
 
