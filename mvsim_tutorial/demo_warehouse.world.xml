@@ -113,12 +113,16 @@
 		  sensor_name="scanner1"
 		/>
 
-		<include file="definitions/velodyne-vlp16.sensor.xml"
-		  sensor_x="0.15" sensor_z="$f{0.27 + 0.09}"
-		  sensor_std_noise="0.02"
+		<!-- velodyne-vlp16.sensor.xml -->
+		<!-- helios-32.sensor.xml -->
+		<include file="definitions/helios-32.sensor.xml"
+		  sensor_x="0.15" sensor_z="$f{0.27 + 0.08}"
+		  sensor_std_noise="0.005"
 		  sensor_publish="false"
 		  sensor_name="lidar1"
 		  sensor_rpm="600"
+		  horz_resolution_factor="2.0"
+		  vert_resolution_factor="2.0"
 		/>
 		
 		<include file="definitions/camera.sensor.xml" 

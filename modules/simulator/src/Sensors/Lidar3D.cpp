@@ -18,6 +18,8 @@
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 
+//#include "rapidxml_print.hpp"
+
 #if MRPT_VERSION >= 0x270
 #include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
 #endif
@@ -57,8 +59,10 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["vert_fov_degrees"] = TParamEntry("%lf_deg", &vertical_fov_);
 	params["vert_nrays"] = TParamEntry("%i", &vertNumRays_);
 	params["horz_nrays"] = TParamEntry("%i", &horzNumRays_);
-
-	params["fbo_nrows"] = TParamEntry("%i", &fbo_nrows_);
+	params["horz_resolution_factor"] =
+		TParamEntry("%lf", &horzResolutionFactor_);
+	params["vert_resolution_factor"] =
+		TParamEntry("%lf", &vertResolutionFactor_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
@@ -123,8 +127,6 @@ void Lidar3D::internalGuiUpdate(
 			if (last_scan2gui_ && last_scan2gui_->pointcloud)
 			{
 				glPoints_->loadFromPointsMap(last_scan2gui_->pointcloud.get());
-				gl_sensor_origin_corner_->setPose(last_scan2gui_->sensorPose);
-
 				last_scan2gui_.reset();
 			}
 		}
@@ -218,21 +220,26 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	constexpr double camModel_hFOV = 120.01_deg;
-	const int FBO_NROWS = fbo_nrows_;
-	// This FBO is for camModel_hFOV only:
-	const int FBO_NCOLS = horzNumRays_;
 
-	// worst vFOV case: at each sub-scan render corner:
-	const double camModel_vFOV =
-		std::min(179.0_deg, 2.05 * atan2(1.0, 1.0 / cos(camModel_hFOV * 0.5)));
+	// This FBO is for camModel_hFOV only:
+	// Minimum horz resolution=360deg /120 deg
+	const int FBO_NCOLS =
+		mrpt::round(horzResolutionFactor_ * horzNumRays_ / 3.0);
 
 	mrpt::img::TCamera camModel;
 	camModel.ncols = FBO_NCOLS;
-	camModel.nrows = FBO_NROWS;
 	camModel.cx(camModel.ncols / 2.0);
-	camModel.cy(camModel.nrows / 2.0);
 	camModel.fx(camModel.cx() / tan(camModel_hFOV * 0.5));	// tan(FOV/2)=cx/fx
-	camModel.fy(camModel.cy() / tan(camModel_vFOV * 0.5));
+
+	// worst vFOV case: at each sub-scan render corner:
+	// (derivation in hand notes... to be passed to a paper)
+	using mrpt::square;
+	const double tanFOVhalf = ::tan(vertical_fov_ * 0.5);
+	const int FBO_NROWS = vertResolutionFactor_ * 2 * tanFOVhalf *
+						  sqrt(square(camModel.fx()) + square(camModel.cx()));
+	camModel.nrows = FBO_NROWS;
+	camModel.cy(camModel.nrows / 2.0);
+	camModel.fy(camModel.fx());
 
 	if (!fbo_renderer_depth_)
 	{

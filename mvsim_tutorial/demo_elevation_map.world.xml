@@ -68,7 +68,7 @@
 
 		<include file="definitions/velodyne-vlp16.sensor.xml"
 		  sensor_x="0.15" sensor_y="0" sensor_z="0.38" sensor_yaw="0"
-		  sensor_std_noise="0.02"
+		  sensor_std_noise="0.005"
 		  sensor_publish="false"
 		  sensor_name="lidar1"
 		  sensor_rpm="600"

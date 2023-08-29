@@ -1,3 +1,5 @@
+These 3D models are used in vehicle and sensor definitions in [mvsim_tutorials/definitions](../mvsim_tutorial/definitions/).
+
 Attributions:
 
 - `jackal_description`: Files from [jackal](https://github.com/jackal/jackal) repository.
