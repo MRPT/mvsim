@@ -19,7 +19,7 @@
     <raytrace_3d>${raytrace_3d|false}</raytrace_3d>
     <max_range>${max_range|16.0}</max_range>
     
-    <visual> 
+    <visual>
         <model_uri>https://mrpt.github.io/mvsim-models/turtlebot3.zip/turtlebot3/lds.dae</model_uri>
         <model_roll>90</model_roll>
         <model_scale>0.001</model_scale>

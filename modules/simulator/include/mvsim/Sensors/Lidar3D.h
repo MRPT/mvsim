@@ -67,7 +67,17 @@ class Lidar3D : public SensorBase
 	float viz_pointSize_ = 3.0f;
 	float minRange_ = 0.01f;
 	float maxRange_ = 80.0f;
+
+	/** vertical FOV will be symmetric above and below the horizontal line,
+	 *  unless vertical_ray_angles_str_ is set */
 	double vertical_fov_ = mrpt::DEG2RAD(30.0);
+
+	/** If not empty, will define the list of ray vertical angles, in degrees,
+	 * separated by whitespaces. Positive angles are above, negative below
+	 * the horizontal plane.
+	 */
+	std::string vertical_ray_angles_str_;
+
 	int vertNumRays_ = 16, horzNumRays_ = 180;
 	double horzResolutionFactor_ = 1.0;
 	double vertResolutionFactor_ = 1.0;
@@ -101,5 +111,9 @@ class Lidar3D : public SensorBase
 	};
 
 	std::vector<PerHorzAngleLUT> lut_;
+
+	/// Upon initialization, vertical_rays_str_ is parsed in this vector of
+	/// angles in radians.
+	std::vector<double> vertical_ray_angles_;
 };
 }  // namespace mvsim

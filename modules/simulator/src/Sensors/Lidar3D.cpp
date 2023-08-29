@@ -57,6 +57,9 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["ignore_parent_body"] = TParamEntry("%bool", &ignore_parent_body_);
 
 	params["vert_fov_degrees"] = TParamEntry("%lf_deg", &vertical_fov_);
+	params["vertical_ray_angles"] =
+		TParamEntry("%s", &vertical_ray_angles_str_);
+
 	params["vert_nrays"] = TParamEntry("%i", &vertNumRays_);
 	params["horz_nrays"] = TParamEntry("%i", &horzNumRays_);
 	params["horz_resolution_factor"] =
@@ -223,23 +226,69 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// This FBO is for camModel_hFOV only:
 	// Minimum horz resolution=360deg /120 deg
-	const int FBO_NCOLS =
-		mrpt::round(horzResolutionFactor_ * horzNumRays_ / 3.0);
+	const int FBO_NCOLS = mrpt::round(
+		horzResolutionFactor_ * horzNumRays_ / (2 * M_PI / camModel_hFOV));
 
 	mrpt::img::TCamera camModel;
 	camModel.ncols = FBO_NCOLS;
 	camModel.cx(camModel.ncols / 2.0);
 	camModel.fx(camModel.cx() / tan(camModel_hFOV * 0.5));	// tan(FOV/2)=cx/fx
 
+	// Build list of vertical angles, in increasing order (first negative, below
+	// horizontal plane, final ones positive, above it):
+	if (vertical_ray_angles_.empty())
+	{
+		if (vertical_ray_angles_str_.empty())
+		{
+			// even distribution:
+			vertical_ray_angles_.resize(vertNumRays_);
+			for (int i = 0; i < vertNumRays_; i++)
+			{
+				vertical_ray_angles_[i] =
+					vertical_fov_ * (-0.5 + i * 1.0 / (vertNumRays_ - 1));
+			}
+		}
+		else
+		{
+			// custom distribution:
+			std::vector<std::string> vertAnglesStrs;
+			mrpt::system::tokenize(
+				vertical_ray_angles_str_, " \t\r\n", vertAnglesStrs);
+			ASSERT_EQUAL_(
+				vertAnglesStrs.size(), static_cast<size_t>(vertNumRays_));
+			std::set<double> angs;
+			for (const auto& s : vertAnglesStrs) angs.insert(std::stod(s));
+			ASSERT_EQUAL_(angs.size(), static_cast<size_t>(vertNumRays_));
+			for (const auto a : angs) vertical_ray_angles_.push_back(a);
+		}
+
+#if 0
+		std::cout << "vertical_ray_angles: ";
+		for (const double a : vertical_ray_angles_) std::cout << a << " ";
+		std::cout << "\n";
+#endif
+
+		// Pass to radians:
+		for (double& a : vertical_ray_angles_) a = mrpt::DEG2RAD(a);
+	}
+
 	// worst vFOV case: at each sub-scan render corner:
 	// (derivation in hand notes... to be passed to a paper)
 	using mrpt::square;
-	const double tanFOVhalf = ::tan(vertical_fov_ * 0.5);
+	const double largestVertFOV = std::max(
+		std::abs(vertical_ray_angles_.front()),
+		std::abs(vertical_ray_angles_.back()));
+
+	const double tanFOVhalf = ::tan(largestVertFOV);
 	const int FBO_NROWS = vertResolutionFactor_ * 2 * tanFOVhalf *
 						  sqrt(square(camModel.fx()) + square(camModel.cx()));
 	camModel.nrows = FBO_NROWS;
 	camModel.cy(camModel.nrows / 2.0);
 	camModel.fy(camModel.fx());
+
+#if 1
+	camModel.asYAML().printAsYAML();
+#endif
 
 	if (!fbo_renderer_depth_)
 	{
@@ -329,9 +378,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			{
 				auto& entry = lut_[i].column[j];
 
-				const auto vertAng =
-					-vertical_fov_ * 0.5 + j * vertical_fov_ / (nRows - 1);
-
+				const double vertAng = vertical_ray_angles_.at(j);
 				const double cosVertAng = std::cos(vertAng);
 
 				const auto pixel_v = mrpt::round(
@@ -351,7 +398,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	else
 	{
 		// check:
-		ASSERT_EQUAL_(lut_.size(), numHorzRaysPerRender);
+		ASSERT_EQUAL_(lut_.size(), static_cast<size_t>(numHorzRaysPerRender));
 		ASSERT_EQUAL_(lut_.at(0).column.size(), nRows);
 	}
 
@@ -387,7 +434,6 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	auto& depth_log2lin = depth_log2lin_t::Instance();
 	const auto& depth_log2lin_lut =
 		depth_log2lin.lut_from_zn_zf(minRange_, maxRange_);
-
 #endif
 
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
