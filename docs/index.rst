@@ -15,6 +15,8 @@ MVSim: a lightweight MultiVehicle Simulator
    first-steps
    architecture
    world
+   vehicles
+   sensors
    teleoperation
    mvsim-cli
    mvsim_node

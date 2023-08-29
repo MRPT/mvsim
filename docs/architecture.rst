@@ -1,4 +1,4 @@
-.. _architecture:
+.. .. _architecture:
 
 Architecture
 =================================
@@ -8,7 +8,7 @@ for a gentle introduction to the project architecture.
 
 The project comprises:
 
-- C++ libraries: ``libmvsim-comms``, ``libmvsim-comms``, ``libmvsim-comms``, 
+- C++ libraries: ``libmvsim_comms``, ``libmvsim_msgs``, ``libmvsim_simulator``.
 - A ROS 1 and ROS 2 node (both in the same git branch).
 - Python3 wrappers.
 - ``mvsim-cli``: A standalone program to run the simulation and, optionally,
