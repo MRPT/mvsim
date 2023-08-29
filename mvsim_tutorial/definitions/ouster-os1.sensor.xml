@@ -21,8 +21,8 @@
     <horz_nrays>${sensor_horz_nrays|1024}</horz_nrays>
 
     <!-- 1.0=minimum (faster), larger values=potentially finer details captured -->
-    <horz_resolution_factor>${horz_resolution_factor|2.0}</horz_resolution_factor>
-    <vert_resolution_factor>${vert_resolution_factor|2.0}</vert_resolution_factor>
+    <horz_resolution_factor>${horz_resolution_factor|1.0}</horz_resolution_factor>
+    <vert_resolution_factor>${vert_resolution_factor|1.0}</vert_resolution_factor>
 
     <range_std_noise>${sensor_std_noise|0.005}</range_std_noise>
     <min_range>${min_range|0.5}</min_range>

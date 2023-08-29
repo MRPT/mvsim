@@ -119,8 +119,6 @@
 		  sensor_publish="false"
 		  sensor_name="lidar1"
 		  sensor_rate="5.0"
-		  horz_resolution_factor="1.0"
-		  vert_resolution_factor="1.0"
 		/>
 		
 		<include file="definitions/camera.sensor.xml" 

@@ -275,15 +275,19 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	// worst vFOV case: at each sub-scan render corner:
 	// (derivation in hand notes... to be passed to a paper)
 	using mrpt::square;
-	const double largestVertFOV = std::max(
-		std::abs(vertical_ray_angles_.front()),
-		std::abs(vertical_ray_angles_.back()));
+	const double vertFOVMax = vertical_ray_angles_.back();
+	const double vertFOVMin = std::abs(vertical_ray_angles_.front());
 
-	const double tanFOVhalf = ::tan(largestVertFOV);
-	const int FBO_NROWS = vertResolutionFactor_ * 2 * tanFOVhalf *
-						  sqrt(square(camModel.fx()) + square(camModel.cx()));
+	const int FBO_NROWS_UP =
+		vertResolutionFactor_ * tan(vertFOVMax) *
+		sqrt(square(camModel.fx()) + square(camModel.cx()));
+	const int FBO_NROWS_DOWN =
+		vertResolutionFactor_ * tan(vertFOVMin) *
+		sqrt(square(camModel.fx()) + square(camModel.cx()));
+
+	const int FBO_NROWS = FBO_NROWS_DOWN + FBO_NROWS_UP + 1;
 	camModel.nrows = FBO_NROWS;
-	camModel.cy(camModel.nrows / 2.0);
+	camModel.cy(FBO_NROWS_UP + 1);
 	camModel.fy(camModel.fx());
 
 #if 0
