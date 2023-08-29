@@ -286,7 +286,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	camModel.cy(camModel.nrows / 2.0);
 	camModel.fy(camModel.fx());
 
-#if 1
+#if 0
 	camModel.asYAML().printAsYAML();
 #endif
 
