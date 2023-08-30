@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.4 (2023-08-30)
+------------------
 * Add new LIDAR 3D models: Helios 32.
 * Removed LIDAR3D fbo_nrows parameter, automatically computed now from geometry solutions.
 * More optimal simulation of asymmetric 3D lidars.
