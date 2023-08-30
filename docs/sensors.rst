@@ -3,39 +3,62 @@ Sensors
 
 This page describes the predefined sensors and their parameters.
 
-.. contents:: List of sensors
-   :depth: 1
+.. contents::
+   :depth: 2
    :local:
    :backlinks: none
 
-3D LIDAR
-------------------
+Sensor definition and common parameters
+-----------------------------------------
 
-Due to the very specific details of LIDAR models which needs to be accounted for
-an accurate simulation of real commercial devices, MVSim provides ready-to-use
-XML "includes" for some common models:
+A sensor is attached to a vehicle by adding an XML block with the 
+tag name ``<sensor>.... </sensor>`` inside:
 
-HELIOS 32 (26 deg FOV)
-##########################
+- the ``<vehicle>...</vehicle>`` that instantiates a particular robot, or
+- the ``<vehicle:class>`` to have *all* vehicles of that type with the same sensors installed.
 
-.. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
-   :open:
+All sensors, via the common base C++ class ``mvsim::SensorBase``, have the 
+common parameters below, with their meaning explained in the XML comments.
 
-   .. code-block:: xml
+.. code-block:: xml
 
-		<include file="definitions/helios-32-FOV-26.sensor.xml"
-		  sensor_x="0.10" sensor_z="0.30"
-		  sensor_std_noise="0.005"
-		  sensor_name="lidar1"
-		  sensor_rate="10.0"
-		/>
+	<!-- 
+	 ``class``: One of the registered sensor classes.
+	 ``name``: A name for the sensor, must be unique for each robot. If not provided,
+	           an automatic name will be generated. The name is important since it is
+	           used when publishing the sensor ROS or ZMQ topics.
+	-->
+	<sensor class="camera" name="camera1">
+		<!-- Period (in seconds) between each sensor observation.
+		     Mathematical expressions can be used with $f{} to specify rates in Hz.
+		 -->
+		<sensor_period>0.1</sensor_period>
+		<!-- <sensor_period>$f{1/20.0}</sensor_period> -->
 
-.. dropdown:: Include file helios-32-FOV-26.sensor.xml
+		<!-- See notes below -->
+		<visual>
+			...
+		</visual>
 
-   File: `mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml>`_
+		<!-- Publish sensor on MVSIM ZMQ topic? (Note, **not** related to ROS at all) -->
+		<!-- <publish>
+			<publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
+		</publish> -->
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml
-      :language: xml
+		<!-- Normally disabled: If this tag is present, *all* sensor data is also stored
+		 into an MRPT rawlog file. Useful for collecting datasets without ROS. -->
+		<!-- <save_to_rawlog>sensor_dataset.rawlog</save_to_rawlog> -->
+	</sensor>
+
+The ``<visual>`` tag is explained in the :ref:`world_visual_object`, and
+the ``<publish>`` tag in :ref:`world_simulable`, since those tags are common
+to sensors and many other entities.
+
+Also, note that you can use the XML-level variables ``${PARENT_NAME}`` and 
+``${NAME}`` anywhere inside the sensor definition tag to refer to the parent vehicle and own sensor names,
+respectively.
+
+Each sensor ``class`` has its own additional parameters, listed in the next sections.
 
 
 HELIOS 32 (31 deg FOV)
@@ -54,7 +77,7 @@ HELIOS 32 (31 deg FOV)
 		/>
 
 
-.. dropdown:: Include file helios-32-FOV-31.sensor.xml
+.. dropdown:: All parameters available in helios-32-FOV-31.sensor.xml
 
    File: `mvsim_tutorial/definitions/helios-32-FOV-31.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/helios-32-FOV-31.sensor.xml>`_
 
@@ -77,7 +100,7 @@ HELIOS 32 (70 deg FOV)
 		  sensor_rate="10.0"
 		/>
 
-.. dropdown:: Include file helios-32-FOV-70.sensor.xml
+.. dropdown:: All parameters available in helios-32-FOV-70.sensor.xml
 
    File: `mvsim_tutorial/definitions/helios-32-FOV-70.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/helios-32-FOV-70.sensor.xml>`_
 
@@ -100,7 +123,7 @@ OUSTER OS1
 		  sensor_period_sec="0.10"
 		/>
 
-.. dropdown:: Include file ouster-os1.sensor.xml
+.. dropdown:: All parameters available in ouster-os1.sensor.xml
 
    File: `mvsim_tutorial/definitions/ouster-os1.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/ouster-os1.sensor.xml>`_
 
@@ -124,7 +147,7 @@ Velodyne VLP-16
 		  sensor_rpm="600"
 		/>
 
-.. dropdown:: Include file velodyne-vlp16.sensor.xml
+.. dropdown:: All parameters available in velodyne-vlp16.sensor.xml
 
    File: `mvsim_tutorial/definitions/velodyne-vlp16.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/velodyne-vlp16.sensor.xml>`_
 
@@ -153,7 +176,7 @@ The user must provide the camera intrinsic and extrinsic parameters:
 			sensor_visual_scale="0.2"
 		/>
 
-.. dropdown:: Include file camera.sensor.xml
+.. dropdown:: All parameters available in camera.sensor.xml
 
    File: `mvsim_tutorial/definitions/camera.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/camera.sensor.xml>`_
 
@@ -164,43 +187,112 @@ The user must provide the camera intrinsic and extrinsic parameters:
 IMU
 ------------------
 
-Write me!
+An inertial sensor that measures (in the current version of MVSim):
+
+- 3D linear proper acceleration.
+- 3D angular velocity.
+
+.. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
+   :open:
+
+   .. code-block:: xml
+
+		<include file="definitions/imu.sensor.xml"
+			sensor_x="0.0" sensor_y="0.0" sensor_z="0.0"
+			sensor_period_sec="$f{1/200.0}"
+		/>
+
+.. dropdown:: All parameters available in imu.sensor.xml
+
+   File: `mvsim_tutorial/definitions/imu.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/imu.sensor.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/definitions/imu.sensor.xml
+      :language: xml
+
 
 
 2D laser scanner
 ------------------
 
-Write me!
+"Classical" lidars that scan obstacles in a plane only.
+These includes are available for these sensors:
+
+Generic 2D LIDAR
+##########################
+
+.. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
+   :open:
+
+   Important parameters:
+   
+   - ``raytrace_3d=false`` (**DEFAULT**),  Very fast simulation using approximate 2D shapes of world elements.
+   - ``raytrace_3d=true``: It uses GPU-based raytracing for exact distance calculation to world elements of arbitrary 3D shapes.
+
+   .. code-block:: xml
+
+		<include file="definitions/lidar2d.sensor.xml"
+			sensor_x="0.2" sensor_y="0" sensor_z="0.50" sensor_yaw="0"
+			sensor_period_sec="0.10"
+			sensor_nrays="181"
+			raytrace_3d="true"
+			fov_degrees="270"
+			sensor_name="scanner1"
+		>
+
+.. dropdown:: All parameters available in lidar2d.sensor.xml
+
+   File: `mvsim_tutorial/definitions/lidar2d.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/lidar2d.sensor.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/definitions/lidar2d.sensor.xml
+      :language: xml
+
+
+RPLidar A2
+##########################
+
+Just like the generic Lidar above, but with a custom visualization for this particular commercial model.
+
+.. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
+   :open:
+
+   Important parameter: See notes on ``raytrace_3d`` above.
+   
+   .. code-block:: xml
+
+		<include file="definitions/rplidar-a2.sensor.xml"
+			sensor_x="0.2" sensor_y="0" sensor_z="0.50" sensor_yaw="0"
+			sensor_period_sec="0.10"
+			sensor_nrays="181"
+			raytrace_3d="true"
+			fov_degrees="270"
+			sensor_name="scanner1"
+		>
+
+.. dropdown:: All parameters available in rplidar-a2.sensor.xml
+
+   File: `mvsim_tutorial/definitions/rplidar-a2.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/rplidar-a2.sensor.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/definitions/rplidar-a2.sensor.xml
+      :language: xml
 
 
 Depth (RGBD) camera
 ---------------------
 
-Write me!
+.. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
+   :open:
 
+   .. code-block:: xml
 
-Generic definitions for all sensors
------------------------------------------
+		<include file="definitions/rgbd_camera.sensor.xml"
+		  sensor_x="0.2" sensor_y="0"  sensor_z="0.29"
+		  sensor_period_sec="0.10"
+		  show_3d_pointcloud="true"
+		/>
 
-Sensors are defined with **<sensor>** tag. It has attributes *type* and
-*name*.
+.. dropdown:: All parameters available in rgbd_camera.sensor.xml
 
-2D Lidar sensor: its type is *laser*. Subtags are:
+   File: `mvsim_tutorial/definitions/rgbd_camera.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/rgbd_camera.sensor.xml>`_
 
--  **<pose>** - an MRPT CPose3D string value
-
--  **<fov\_degrees>** - FOV of the laser scanner
-
--  **<sensor\_period>** - period in seconds when sensor sends updates
-
--  **<nrays>** - laser scanner rays per FOV
-
--  **<range\_std\_noise>** - standard deviation of noise in distance
-   measurements
-
--  **<angle\_std\_noise\_deg>** - standatd deviation of noise in angles
-   of rays
-
--  **<bodies\_visible>** - boolean flag to see other robots or not
-
-
+   .. literalinclude:: ../mvsim_tutorial/definitions/rgbd_camera.sensor.xml
+      :language: xml

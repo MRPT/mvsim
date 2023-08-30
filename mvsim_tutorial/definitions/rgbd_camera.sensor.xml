@@ -1,10 +1,10 @@
-<sensor class="rgbd_camera" name="camera1">
+<sensor class="rgbd_camera" name="${sensor_name|camera1}">
     <!--
         * pose_3d: Pose of the depth sensor on the robot (+X forward)
         * relativePoseIntensityWRTDepth: RGB camera wrt depth sensor (+Z forward, and possibly an offset)
         See: https://docs.mrpt.org/reference/latest/class_mrpt_obs_CObservation3DRangeScan.html
     -->
-    <pose_3d> ${sensor_x|0.65}  ${sensor_y|0.0}  ${sensor_z|1.0}  ${sensor_yaw|0.0} 0.0 0.0</pose_3d>
+    <pose_3d> ${sensor_x|0.65}  ${sensor_y|0.0}  ${sensor_z|1.0}  ${sensor_yaw|0.0} ${sensor_pitch|0.0} ${sensor_roll|0.0}</pose_3d>
     
     <!-- the yaw=-90deg roll=-90deg rotation is required since RGB axis convention is +Z forward, depth sensor is +X forward -->
     <relativePoseIntensityWRTDepth>0.0 0.0 0.0  -90.0 0.0 -90.0</relativePoseIntensityWRTDepth>

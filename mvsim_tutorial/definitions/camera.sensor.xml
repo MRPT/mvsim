@@ -1,4 +1,4 @@
-<sensor class="camera" name="camera1">
+<sensor class="camera" name="${sensor_name|camera1}">
     <!--
         * pose_3d: Pose of the RGB camera sensor on the robot (+Z forward)
         See: https://docs.mrpt.org/reference/latest/class_mrpt_obs_CObservationImage.html
