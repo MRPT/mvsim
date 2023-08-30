@@ -262,7 +262,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			for (const auto a : angs) vertical_ray_angles_.push_back(a);
 		}
 
-#if 1
+#if 0
 		std::cout << "vertical_ray_angles: ";
 		for (const double a : vertical_ray_angles_) std::cout << a << " ";
 		std::cout << "\n";
