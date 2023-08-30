@@ -56,7 +56,7 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["viz_pointSize"] = TParamEntry("%f", &viz_pointSize_);
 	params["ignore_parent_body"] = TParamEntry("%bool", &ignore_parent_body_);
 
-	params["vert_fov_degrees"] = TParamEntry("%lf_deg", &vertical_fov_);
+	params["vert_fov_degrees"] = TParamEntry("%lf", &vertical_fov_);
 	params["vertical_ray_angles"] =
 		TParamEntry("%s", &vertical_ray_angles_str_);
 
@@ -262,7 +262,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			for (const auto a : angs) vertical_ray_angles_.push_back(a);
 		}
 
-#if 0
+#if 1
 		std::cout << "vertical_ray_angles: ";
 		for (const double a : vertical_ray_angles_) std::cout << a << " ";
 		std::cout << "\n";

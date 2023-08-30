@@ -3,7 +3,7 @@
 Parameters entries and expected formatting
 ---------------------------------------------------
 
-Describe the formats in TParameterDefinitions and TParamEntry.
+Describe the formats in ``TParameterDefinitions`` and ``TParamEntry``.
 
 All those defined by standard ``sscanf``, plus these extensions:
 

@@ -70,7 +70,7 @@ class Lidar3D : public SensorBase
 
 	/** vertical FOV will be symmetric above and below the horizontal line,
 	 *  unless vertical_ray_angles_str_ is set */
-	double vertical_fov_ = mrpt::DEG2RAD(30.0);
+	double vertical_fov_ = 30.0;  //!< In *degrees* !!
 
 	/** If not empty, will define the list of ray vertical angles, in degrees,
 	 * separated by whitespaces. Positive angles are above, negative below

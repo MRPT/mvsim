@@ -20,13 +20,6 @@
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->
-<!--	<element class="occupancy_grid">
-		<file>demo_world1.png</file>
-		<resolution>0.5</resolution>
-		<centerpixel_x>100</centerpixel_x>
-		<centerpixel_y>100</centerpixel_y>
-	</element>
--->
 	<!-- ground -->
 	<element class="horizontal_plane">
 		<cull_face>BACK</cull_face>
