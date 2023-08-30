@@ -2,6 +2,17 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add new LIDAR 3D models: Helios 32.
+* Removed LIDAR3D fbo_nrows parameter, automatically computed now from geometry solutions.
+* More optimal simulation of asymmetric 3D lidars.
+* Progress with RTD documentation.
+* Add proper bibliography; fix all docs warnings
+* ROS 2 warehouse demo: show 2D lidar in RVIZ too; add headless launch argument
+* New GUI editor feature: move sensor poses
+* Contributors: Jose Luis Blanco-Claraco
+
 0.7.3 (2023-08-23)
 ------------------
 * Update python module install method to pip (fixes deprecation)
