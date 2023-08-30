@@ -61,8 +61,39 @@ respectively.
 Each sensor ``class`` has its own additional parameters, listed in the next sections.
 
 
+HELIOS 32 (26 deg FOV)
+##########################
+
+.. image:: https://mrpt.github.io/imgs/mvsim-lidar-helios32-26.png
+   :width: 100%
+   :alt: sensor preview in MVSim
+
+.. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
+   :open:
+
+   .. code-block:: xml
+
+		<include file="definitions/helios-32-FOV-26.sensor.xml"
+		  sensor_x="0.10" sensor_z="0.30"
+		  sensor_std_noise="0.005"
+		  sensor_name="lidar1"
+		  sensor_rate="10.0"
+		/>
+
+
+.. dropdown:: All parameters available in helios-32-FOV-26.sensor.xml
+
+   File: `mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml
+      :language: xml
+
 HELIOS 32 (31 deg FOV)
 ##########################
+
+.. image:: https://mrpt.github.io/imgs/mvsim-lidar-helios32-31.png
+   :width: 100%
+   :alt: sensor preview in MVSim
 
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
    :open:
@@ -88,6 +119,10 @@ HELIOS 32 (31 deg FOV)
 HELIOS 32 (70 deg FOV)
 ##########################
 
+.. image:: https://mrpt.github.io/imgs/mvsim-lidar-helios32-70.png
+   :width: 100%
+   :alt: sensor preview in MVSim
+
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
    :open:
 
@@ -110,6 +145,10 @@ HELIOS 32 (70 deg FOV)
 
 OUSTER OS1
 ##########################
+
+.. image:: https://mrpt.github.io/imgs/mvsim-lidar-ouster-os1.png
+   :width: 100%
+   :alt: sensor preview in MVSim
 
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
    :open:
@@ -134,6 +173,10 @@ OUSTER OS1
 
 Velodyne VLP-16
 ##########################
+
+.. image:: https://mrpt.github.io/imgs/mvsim-lidar-velodyne-vlp16.png
+   :width: 100%
+   :alt: sensor preview in MVSim
 
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
    :open:
@@ -214,6 +257,10 @@ An inertial sensor that measures (in the current version of MVSim):
 2D laser scanner
 ------------------
 
+.. image:: https://mrpt.github.io/imgs/mvsim-2d-lidar.png
+   :width: 100%
+   :alt: sensor preview in MVSim
+
 "Classical" lidars that scan obstacles in a plane only.
 These includes are available for these sensors:
 
@@ -278,6 +325,10 @@ Just like the generic Lidar above, but with a custom visualization for this part
 
 Depth (RGBD) camera
 ---------------------
+
+.. image:: https://mrpt.github.io/imgs/mvsim-rgbd-camera.png
+   :width: 100%
+   :alt: sensor preview in MVSim
 
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
    :open:
