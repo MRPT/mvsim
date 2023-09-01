@@ -45,7 +45,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="../mvsim_tutorial/definitions/ackermann.vehicle.xml" />
+	<include file="../definitions/ackermann.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -56,7 +56,7 @@
 
 
 		<!-- Sensors -->
-		<include file="../mvsim_tutorial/definitions/lidar2d.sensor.xml"
+		<include file="../definitions/lidar2d.sensor.xml"
 			raytrace_3d="true"
 			sensor_x="1.7" sensor_z="1.01" sensor_yaw="0"
 			sensor_name="laser1"
