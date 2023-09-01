@@ -53,7 +53,7 @@ Visualization Manager:
           Value: true
         base_link:
           Value: true
-        camera1:
+        cam1:
           Value: true
         lidar1_points:
           Value: true
@@ -77,7 +77,7 @@ Visualization Manager:
               base_link:
                 base_footprint:
                   {}
-                camera1:
+                cam1:
                   {}
                 lidar1_points:
                   {}
@@ -88,8 +88,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 6.029715061187744
-        Min Value: -0.0068430304527282715
+        Max Value: 5.152361869812012
+        Min Value: -0.007653355598449707
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -131,7 +131,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /camera1
+        Value: /cam1
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
@@ -229,7 +229,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 18.43376350402832
+      Distance: 15.757888793945312
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
