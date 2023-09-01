@@ -346,7 +346,9 @@ std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> mvsim::readXmlAndGetRoot(
 	// Special variables:
 	std::map<std::string, std::string> childVariables = variables;
 	childVariables["MVSIM_CURRENT_FILE_DIRECTORY"] =
-		mrpt::system::extractFileDirectory(pathToFile);
+		mrpt::system::toAbsolutePath(
+			mrpt::system::extractFileDirectory(pathToFile),
+			false /*canonical*/);
 
 	xmlDoc->documentData = mvsim::parse_variables(
 		mrpt::io::file_get_contents(pathToFile), childVariables, varsRetain);

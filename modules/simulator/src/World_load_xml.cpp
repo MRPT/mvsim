@@ -39,8 +39,9 @@ void World::load_from_XML(
 	using namespace rapidxml;
 
 	// Extract base path of file:
-	basePath_ =
-		mrpt::system::trim(mrpt::system::extractFileDirectory(fileNameForPath));
+	basePath_ = mrpt::system::toAbsolutePath(
+		mrpt::system::extractFileDirectory(fileNameForPath),
+		false /*canonical*/);
 	// printf("[World] INFO: Using base path='%s'\n",basePath_.c_str());
 
 	// Special variables:
@@ -266,8 +267,7 @@ void World::parse_tag_include(const XmlParserContext& ctx)
 	(void)xml;	// unused
 
 	// recursive parse:
-	const auto newBasePath =
-		mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
+	const auto newBasePath = mrpt::system::extractFileDirectory(absFile);
 	internal_recursive_parse_XML({root, newBasePath});
 }
 

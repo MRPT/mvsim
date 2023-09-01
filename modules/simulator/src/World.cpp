@@ -262,17 +262,11 @@ std::string World::local_to_abs_path(const std::string& s_in) const
 		is_relative = false;
 	if (s.size() > 0 && (s[0] == '/' || s[0] == '\\')) is_relative = false;
 	if (is_relative)
-	{
-		ret = basePath_;
-		if (!ret.empty() && ret[ret.size() - 1] != '/' &&
-			ret[ret.size() - 1] != '\\')
-			ret += string("/");
-		ret += s;
-	}
+		ret = mrpt::system::pathJoin({basePath_, s});
 	else
 		ret = s;
 
-	return mrpt::system::filePathSeparatorsToNative(ret);
+	return mrpt::system::toAbsolutePath(ret);
 }
 
 void World::runVisitorOnVehicles(const vehicle_visitor_t& v)
