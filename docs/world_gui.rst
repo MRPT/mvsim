@@ -44,6 +44,8 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
 - ``<cam_distance>80.0</cam_distance>``. The initial distance from the camera
   point-to location and the camera focal point.
 
+- ``<cam_point_to>0 0 0</cam_point_to>``: The initial camera will be pointing to this XYZ location.
+
 - ``<cam_azimuth>45.0</cam_azimuth>`` and ``<cam_elevation>40.0</cam_elevation>``. 
   The initial elevation and azimuth of the orbit model to define
   the camera placement and pose.

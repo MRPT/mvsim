@@ -19,6 +19,13 @@ Example:
     
     ... x="${POS_X}" ...
 
+Special variables
+====================
+
+- ``${MVSIM_CURRENT_FILE_DIRECTORY}`` is resolved to the base directory of the current file being parsed.
+  It is evaluated on the fly as the file is read, so it can be used within included files (see: :ref:`world-includes`)
+  to refer to their physical path.
+
 Environment variables
 ========================
 

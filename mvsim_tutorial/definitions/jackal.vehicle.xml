@@ -11,16 +11,16 @@
     <dynamics class="differential_4_wheels">
         <!-- Params -->
         <lf_wheel pos="0.13  0.16" mass="1.0" width="0.03" diameter="0.20">
-          <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </lf_wheel>
         <rf_wheel pos="0.13 -0.16" mass="1.0" width="0.03" diameter="0.20">
-          <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </rf_wheel>
         <lr_wheel pos="-0.13  0.16" mass="1.0" width="0.03" diameter="0.20">
-          <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </lr_wheel>
         <rr_wheel pos="-0.13 -0.16" mass="1.0" width="0.03" diameter="0.20">
-          <visual> <model_uri>../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </rr_wheel>
 
         <chassis mass="10.0" zmin="0.05" zmax="0.25">
@@ -41,7 +41,7 @@
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->
     <visual>
-        <model_uri>../models/jackal_description/jackal.dae</model_uri>
+        <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal.dae</model_uri>
         <model_yaw>0.0</model_yaw>
         <model_pitch>0.0</model_pitch>
         <model_roll>90.0</model_roll>

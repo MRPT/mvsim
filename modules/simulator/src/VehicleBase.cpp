@@ -164,6 +164,9 @@ VehicleBase::Ptr VehicleBase::factory(
 			mrpt::format("XML parser: including file: '%s'", absFile.c_str()));
 
 		std::map<std::string, std::string> vars;
+		// Inherit the user-defined variables from parent scope
+		vars = parent->user_defined_variables();
+		// Plus new ones:
 		for (auto attr = n->first_attribute(); attr;
 			 attr = attr->next_attribute())
 		{

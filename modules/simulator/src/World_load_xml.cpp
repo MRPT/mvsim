@@ -43,6 +43,9 @@ void World::load_from_XML(
 		mrpt::system::trim(mrpt::system::extractFileDirectory(fileNameForPath));
 	// printf("[World] INFO: Using base path='%s'\n",basePath_.c_str());
 
+	// Special variables:
+	userDefinedVariables_["MVSIM_CURRENT_FILE_DIRECTORY"] = basePath_;
+
 	auto lck = mrpt::lockHelper(world_cs_);	 // Protect multithread access
 
 	// Clear the existing world.
@@ -128,6 +131,8 @@ void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
 	// push relative directory state:
 	const auto savedBasePath = basePath_;
 	basePath_ = ctx.currentBasePath;
+	// Special variables:
+	userDefinedVariables_["MVSIM_CURRENT_FILE_DIRECTORY"] = basePath_;
 
 	// Known tag parser?
 	if (auto itParser = xmlParsers_.find(node->name());
@@ -149,6 +154,8 @@ void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
 
 	// pop relative directory state:
 	basePath_ = savedBasePath;
+	// Special variables:
+	userDefinedVariables_["MVSIM_CURRENT_FILE_DIRECTORY"] = basePath_;
 }
 
 void World::parse_tag_element(const XmlParserContext& ctx)

@@ -40,7 +40,7 @@ within a :ref:`world definition file <world-definition-docs>`:
 
   .. code-block:: xml
 
-    <model_uri>../models/simple_camera.dae</model_uri>
+    <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/simple_camera.dae</model_uri>
     ...
     <model_uri>${MY_REPO_DIR}/models.zip/vehicle.dae</model_uri>
 

@@ -11,6 +11,7 @@
 
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
+#include <mrpt/core/get_env.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/io/vector_loadsave.h>  // file_get_contents()
 #include <mrpt/math/TPolygon2D.h>
@@ -342,8 +343,14 @@ std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> mvsim::readXmlAndGetRoot(
 
 	auto xmlDoc = std::make_shared<XML_Doc_Data>();
 
+	// Special variables:
+	std::map<std::string, std::string> childVariables = variables;
+	childVariables["MVSIM_CURRENT_FILE_DIRECTORY"] =
+		mrpt::system::extractFileDirectory(pathToFile);
+
 	xmlDoc->documentData = mvsim::parse_variables(
-		mrpt::io::file_get_contents(pathToFile), variables, varsRetain);
+		mrpt::io::file_get_contents(pathToFile), childVariables, varsRetain);
+
 	auto [xml, root] = readXmlTextAndGetRoot(xmlDoc->documentData, pathToFile);
 
 	xmlDoc->doc = std::move(xml);
@@ -434,7 +441,7 @@ static std::string parseVars(
 		else
 		{
 			THROW_EXCEPTION_FMT(
-				"MVSIM parseVars(): Undefined variable: ${%s}",
+				"mvsim::parseVars(): Undefined variable: ${%s}",
 				varname.c_str());
 		}
 	}
@@ -448,5 +455,18 @@ std::string mvsim::parse_variables(
 	const std::string& in, const std::map<std::string, std::string>& variables,
 	const std::set<std::string>& varsRetain)
 {
-	return parseVars(in, variables, varsRetain);
+	const auto ret = parseVars(in, variables, varsRetain);
+
+	thread_local const bool MVSIM_VERBOSE_PARSE =
+		mrpt::get_env<bool>("MVSIM_VERBOSE_PARSE", false);
+	if (MVSIM_VERBOSE_PARSE)
+	{
+		std::cout << "[parse_variables] Input:\n" << in << "\n";
+		std::cout << "[parse_variables] Output:\n" << ret << "\n";
+		std::cout << "[parse_variables] variables: ";
+		for (const auto& kv : variables) std::cout << kv.first << ",";
+		std::cout << "\n";
+	}
+
+	return ret;
 }
