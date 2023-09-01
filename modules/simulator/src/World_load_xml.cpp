@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/format.h>
+#include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/system/filesystem.h>	 // extractFileDirectory()
 #include <mvsim/World.h>
@@ -275,6 +276,17 @@ void World::parse_tag_variable(const XmlParserContext& ctx)
 
 	const std::string finalValue =
 		mvsim::parse(valueAttr->value(), userDefinedVariables_);
+
+	thread_local const bool MVSIM_VERBOSE_PARSE =
+		mrpt::get_env<bool>("MVSIM_VERBOSE_PARSE", false);
+
+	if (MVSIM_VERBOSE_PARSE)
+	{
+		printf(
+			"[mvsim] Parsed <variable>: name='%s' value='%s' (original "
+			"expression='%s')\n",
+			name, finalValue.c_str(), valueAttr->value());
+	}
 
 	userDefinedVariables_[name] = finalValue;
 }
