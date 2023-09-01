@@ -38,7 +38,7 @@
     <rgb_clip_min>${rgb_clip_min|1e-2}</rgb_clip_min>
     <rgb_clip_max>${rgb_clip_max|1e+4}</rgb_clip_max>
 
-    <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/simple_camera.dae</model_uri> <model_pitch>90</model_pitch> </visual>
+    <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_camera.dae</model_uri> <model_pitch>90</model_pitch> </visual>
 
     <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
     <publish enabled="${sensor_publish|false}">

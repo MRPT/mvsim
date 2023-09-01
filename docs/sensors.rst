@@ -73,7 +73,7 @@ HELIOS 32 (26 deg FOV)
 
    .. code-block:: xml
 
-		<include file="definitions/helios-32-FOV-26.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/helios-32-FOV-26.sensor.xml"
 		  sensor_x="0.10" sensor_z="0.30"
 		  sensor_std_noise="0.005"
 		  sensor_name="lidar1"
@@ -100,7 +100,7 @@ HELIOS 32 (31 deg FOV)
 
    .. code-block:: xml
 
-		<include file="definitions/helios-32-FOV-31.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/helios-32-FOV-31.sensor.xml"
 		  sensor_x="0.10" sensor_z="0.30"
 		  sensor_std_noise="0.005"
 		  sensor_name="lidar1"
@@ -128,7 +128,7 @@ HELIOS 32 (70 deg FOV)
 
    .. code-block:: xml
 
-		<include file="definitions/helios-32-FOV-70.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/helios-32-FOV-70.sensor.xml"
 		  sensor_x="0.10" sensor_z="0.30"
 		  sensor_std_noise="0.005"
 		  sensor_name="lidar1"
@@ -155,7 +155,7 @@ OUSTER OS1
 
    .. code-block:: xml
 
-		<include file="definitions/ouster-os1.sensor"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/ouster-os1.sensor"
 		  sensor_x="0.10" sensor_z="0.30"
 		  sensor_std_noise="0.005"
 		  sensor_name="lidar1"
@@ -183,7 +183,7 @@ Velodyne VLP-16
 
    .. code-block:: xml
 
-		<include file="definitions/velodyne-vlp16.sensor"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/velodyne-vlp16.sensor"
 		  sensor_x="0.10" sensor_z="0.30"
 		  sensor_std_noise="0.005"
 		  sensor_name="lidar1"
@@ -209,7 +209,7 @@ The user must provide the camera intrinsic and extrinsic parameters:
 
    .. code-block:: xml
 
-		<include file="definitions/camera.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/camera.sensor.xml"
 			sensor_x="0.1" sensor_y="0.0" sensor_z="0.8"
 			ncols="800"    nrows="600"
 			cx="$f{800/2}" cy="$f{600/2}"
@@ -240,7 +240,7 @@ An inertial sensor that measures (in the current version of MVSim):
 
    .. code-block:: xml
 
-		<include file="definitions/imu.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/imu.sensor.xml"
 			sensor_x="0.0" sensor_y="0.0" sensor_z="0.0"
 			sensor_period_sec="$f{1/200.0}"
 		/>
@@ -277,7 +277,7 @@ Generic 2D LIDAR
 
    .. code-block:: xml
 
-		<include file="definitions/lidar2d.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/lidar2d.sensor.xml"
 			sensor_x="0.2" sensor_y="0" sensor_z="0.50" sensor_yaw="0"
 			sensor_period_sec="0.10"
 			sensor_nrays="181"
@@ -306,7 +306,7 @@ Just like the generic Lidar above, but with a custom visualization for this part
    
    .. code-block:: xml
 
-		<include file="definitions/rplidar-a2.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/rplidar-a2.sensor.xml"
 			sensor_x="0.2" sensor_y="0" sensor_z="0.50" sensor_yaw="0"
 			sensor_period_sec="0.10"
 			sensor_nrays="181"
@@ -335,7 +335,7 @@ Depth (RGBD) camera
 
    .. code-block:: xml
 
-		<include file="definitions/rgbd_camera.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/rgbd_camera.sensor.xml"
 		  sensor_x="0.2" sensor_y="0"  sensor_z="0.29"
 		  sensor_period_sec="0.10"
 		  show_3d_pointcloud="true"

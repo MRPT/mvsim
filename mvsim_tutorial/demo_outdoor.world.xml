@@ -40,7 +40,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/pickup.vehicle.xml" />
+	<include file="../definitions/pickup.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -50,7 +50,7 @@
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<!-- Sensors -->
-		<include file="definitions/ouster-os1.sensor.xml"
+		<include file="../definitions/ouster-os1.sensor.xml"
 		  sensor_x="0.3" sensor_y="0" sensor_z="2.4" sensor_yaw="0"
 		  sensor_publish="false"
 		  sensor_name="lidar1"

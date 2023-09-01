@@ -35,25 +35,15 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/jackal.vehicle.xml" />
+	<include file="../definitions/jackal.vehicle.xml"
+		default_sensors="true"
+	/>
 
 	<!-- ========================
 		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="jackal">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
-
-		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml" 
-		  sensor_x="0.15" sensor_z="0.33" sensor_yaw="0" sensor_name="laser1" 
-		/>
-
-		<include file="definitions/rgbd_camera.sensor.xml" 
-		  sensor_x="0.22" sensor_z="0.29"
-		  sensor_period_sec="0.10"
-		  show_3d_pointcloud="true"
-		/>
 	</vehicle>
 
 	<!-- ======================================

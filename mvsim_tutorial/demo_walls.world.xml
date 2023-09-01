@@ -49,7 +49,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/ackermann.vehicle.xml" />
+	<include file="../definitions/ackermann.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -64,13 +64,13 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="definitions/rplidar-a2.sensor.xml"
+		<include file="../definitions/rplidar-a2.sensor.xml"
 			raytrace_3d="true" sensor_x="1.7" sensor_z="1.01" sensor_yaw="0" sensor_name="laser1" 
 			sensor_hz="10.0"
 			sensor_publish="true"
 		/>
 		<!-- Sensors -->
-		<include file="definitions/camera.sensor.xml"
+		<include file="../definitions/camera.sensor.xml"
 			sensor_x="1.9" sensor_z="0.5" 
 			sensor_publish="true"
 		/>

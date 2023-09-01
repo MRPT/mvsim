@@ -386,6 +386,7 @@ if (BUILD_FOR_ROS)
 
 	# Mark other files for installation (e.g. launch and bag files, etc.)
 	install(DIRECTORY
+		definitions
 		mvsim_tutorial
 		models
 		DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}

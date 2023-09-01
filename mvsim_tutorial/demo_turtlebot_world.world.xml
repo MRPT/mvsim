@@ -55,36 +55,15 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/turtlebot3_burger.vehicle.xml" />
+	<include file="../definitions/turtlebot3_burger.vehicle.xml" 
+		default_sensors="true"
+	/>
 
 	<!-- ========================
 		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="turtlebot3_burger">
 		<init_pose>-2 -0.5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
-
-		<!-- Sensors -->
-		<include file="definitions/rplidar-a2.sensor.xml"
-			raytrace_3d="true"
-			sensor_x="-0.032" sensor_z="0.171" sensor_yaw="0" sensor_name="laser1" 
-			sensor_hz="10.0"
-		/>
-
-		<include file="definitions/camera.sensor.xml"
-			sensor_x="0.069" sensor_y="-0.047" sensor_z="0.107"
-			ncols="1920"    nrows="1080"
-			cx="$f{1920/2}" cy="$f{1080/2}"
-			fx="800" fy="800"
-			sensor_period_sec="$f{1/30.0}"
-			clip_min="0.02" clip_max="300"
-			sensor_visual_scale="0.2"
-		/>
-
-		<include file="definitions/imu.sensor.xml"
-			sensor_x="0.0" sensor_y="0.0" sensor_z="0.0"
-			sensor_period_sec="$f{1/200.0}"
-		/>
 	</vehicle>
 
 	<!-- ======================================

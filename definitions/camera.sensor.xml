@@ -19,7 +19,7 @@
     <clip_max>${clip_max|1e+4}</clip_max>
 
     <visual>
-      <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/simple_camera.dae</model_uri>
+      <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_camera.dae</model_uri>
       <model_scale>${sensor_visual_scale|1.0}</model_scale>
     </visual>
 

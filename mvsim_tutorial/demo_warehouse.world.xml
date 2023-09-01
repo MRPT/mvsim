@@ -92,41 +92,15 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/jackal.vehicle.xml" />
+	<include file="../definitions/jackal.vehicle.xml"
+		default_sensors="true"
+	/>
 
 	<!-- ========================
 		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="jackal">
 		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-
-		<!--<publish>
-		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
-		  <publish_pose_period>50e-3</publish_pose_period>
-		</publish>-->
-
-		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml"
-		  sensor_x="-0.15" sensor_z="0.25" sensor_yaw="180"
-		  sensor_period_sec="0.10"
-		  raytrace_3d="false"
-		  sensor_name="scanner1"
-		/>
-
-		<include file="definitions/helios-32-FOV-31.sensor.xml"
-		  sensor_x="0.15" sensor_z="$f{0.27 + 0.08}"
-		  sensor_std_noise="0.005"
-		  sensor_publish="false"
-		  sensor_name="lidar1"
-		  sensor_rate="5.0"
-		/>
-		
-		<include file="definitions/camera.sensor.xml" 
-		  sensor_x="0.2"  sensor_y="0" sensor_z="0.27"
-		  sensor_period_sec="0.10"
-		  sensor_name="cam1"
-		  />
-
 	</vehicle>
 
 	<!-- ======================================

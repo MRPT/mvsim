@@ -11,16 +11,16 @@
     <dynamics class="differential_4_wheels">
         <!-- Params -->
         <lf_wheel pos="0.13  0.16" mass="1.0" width="0.03" diameter="0.20">
-          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </lf_wheel>
         <rf_wheel pos="0.13 -0.16" mass="1.0" width="0.03" diameter="0.20">
-          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </rf_wheel>
         <lr_wheel pos="-0.13  0.16" mass="1.0" width="0.03" diameter="0.20">
-          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </lr_wheel>
         <rr_wheel pos="-0.13 -0.16" mass="1.0" width="0.03" diameter="0.20">
-          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
         </rr_wheel>
 
         <chassis mass="10.0" zmin="0.05" zmax="0.25">
@@ -41,11 +41,35 @@
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->
     <visual>
-        <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/jackal_description/jackal.dae</model_uri>
+        <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal.dae</model_uri>
         <model_yaw>0.0</model_yaw>
         <model_pitch>0.0</model_pitch>
         <model_roll>90.0</model_roll>
     </visual>
 
+
+    <if condition="${default_sensors|true}">
+      <!-- Sensors -->
+      <include file="lidar2d.sensor.xml"
+        sensor_x="-0.15" sensor_z="0.25" sensor_yaw="180"
+        sensor_period_sec="0.10"
+        raytrace_3d="false"
+        sensor_name="scanner1"
+      />
+
+      <include file="helios-32-FOV-31.sensor.xml"
+        sensor_x="0.15" sensor_z="$f{0.27 + 0.08}"
+        sensor_std_noise="0.005"
+        sensor_publish="false"
+        sensor_name="lidar1"
+        sensor_rate="5.0"
+      />
+
+      <include file="camera.sensor.xml" 
+        sensor_x="0.2"  sensor_y="0" sensor_z="0.27"
+        sensor_period_sec="0.10"
+        sensor_name="cam1"
+        />
+    </if>
 
 </vehicle:class>

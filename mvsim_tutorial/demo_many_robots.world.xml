@@ -35,7 +35,7 @@
 	<!-- =============================
 		   Vehicle classes definition 
 	     ============================= -->
-	<include file="definitions/small_robot.vehicle.xml" />
+	<include file="../definitions/small_robot.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition 
@@ -49,7 +49,7 @@
 			<init_pose>$f{-11+rand()*ROBOTS_SPREAD_X} $f{-3+rand()*ROBOTS_SPREAD_Y} $f{-180+rand()*360}</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 
 			<!-- Sensors -->
-			<include file="definitions/lidar2d.sensor.xml" 
+			<include file="../definitions/lidar2d.sensor.xml" 
 			sensor_x="0.55" sensor_y="0" sensor_z="0.61" sensor_yaw="0"
 			fov_degrees="360"
 			sensor_nrays="100"

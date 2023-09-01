@@ -29,7 +29,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/small_robot.vehicle.xml" />
+	<include file="../definitions/small_robot.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -44,7 +44,7 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="definitions/camera.sensor.xml" 
+		<include file="../definitions/camera.sensor.xml" 
 		  sensor_x="0.6"  sensor_y="0" sensor_z="0.65"
 		  sensor_period_sec="0.10"
 		  />

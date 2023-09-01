@@ -107,7 +107,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/agricobiot2.vehicle.xml" />
+	<include file="../definitions/agricobiot2.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -121,7 +121,7 @@
 		</publish>-->
 
 		<!-- Sensors -->
-<!--		<include file="definitions/lidar2d.sensor.xml"
+<!--		<include file="../definitions/lidar2d.sensor.xml"
 		  sensor_x="-0.15" sensor_z="0.25" sensor_yaw="180"
 		  sensor_period_sec="0.10"
 		  raytrace_3d="false"
@@ -130,7 +130,7 @@
 
 		<!-- velodyne-vlp16.sensor.xml -->
 		<!-- helios-32.sensor.xml -->
-		<include file="definitions/velodyne-vlp16.sensor.xml"
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
 		  sensor_x="-0.34" sensor_y="0.01" sensor_z="1.53" sensor_yaw="180"
 		  sensor_std_noise="0.005"
 		  sensor_publish="false"
@@ -140,7 +140,7 @@
 		  vert_resolution_factor="1.0"
 		/>
 		
-		<include file="definitions/camera.sensor.xml" 
+		<include file="../definitions/camera.sensor.xml" 
 		  sensor_x="0.9"  sensor_y="0" sensor_z="0.75"
 		  sensor_period_sec="0.20"
 		  sensor_name="cam1"

@@ -51,7 +51,9 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/jackal.vehicle.xml" />
+	<include file="../definitions/jackal.vehicle.xml"
+		default_sensors="false"
+	/>
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -59,14 +61,9 @@
 	<vehicle name="r1" class="jackal">
 		<init_pose>4 -8 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 
-		<!--<publish>
-		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
-		  <publish_pose_period>50e-3</publish_pose_period>
-		</publish>-->
-
 		<!-- Sensors -->
 
-		<include file="definitions/velodyne-vlp16.sensor.xml"
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
 		  sensor_x="0.15" sensor_y="0" sensor_z="0.38" sensor_yaw="0"
 		  sensor_std_noise="0.005"
 		  sensor_publish="false"
@@ -74,7 +71,7 @@
 		  sensor_rpm="600"
 		/>
 		
-		<include file="definitions/rgbd_camera.sensor.xml" 
+		<include file="../definitions/rgbd_camera.sensor.xml" 
 		  sensor_x="0.22" sensor_z="0.29"
 		  sensor_period_sec="0.10"
 		  show_3d_pointcloud="false"

@@ -1,29 +1,34 @@
 <sensor class="lidar3d" name="${sensor_name|lidar1}">
     <pose_3d> ${sensor_x|0.5}  ${sensor_y|0.0}  ${sensor_z|0.7}  ${sensor_yaw|0.0} ${sensor_pitch|0.0} ${sensor_roll|0.0}</pose_3d>
 
-    <vert_fov_degrees>${vert_fov_degrees|30}</vert_fov_degrees>
-    <vert_nrays>${vert_nrays|16}</vert_nrays>
+    <vert_nrays>${vert_nrays|128}</vert_nrays>
+
+    <!-- Vertical FOV:
+         - OS0: 90deg
+         - OS1: 45deg
+         - OS2: 22.5deg
+    -->
+    <vert_fov_degrees>${vert_fov_degrees|22.5}</vert_fov_degrees>
 
     <!-- Horizontal / azimuth angular resolution:
-        The rotation of the Velodyne VLP16 ("PUCK") sensor is configurable
-        between 300 RPM and 1200 RPM => 5-20 Hz.
-        Firing timing of the sensor is fixed at 55.296 μs (=18.084 kHz).
 
-        Set the "sensor_rpm" variable from the parent XML to automatically
-        adjust the number of points per horizontal line, and the sensor
-        rate (Hz).
+        Modes (number of "columns per lidar frame" x frame rate):
+        - 512 x {10,20} Hz
+        - 1024 x {10,20} Hz
+        - 2048 x 10 Hz
     -->
-    <sensor_period>$f{60.0/${sensor_rpm|600}}</sensor_period>
-    <horz_nrays>$f{(60.0/${sensor_rpm|600})/55.296e-6}</horz_nrays>
+    <sensor_period>${sensor_period_sec|0.10}</sensor_period>
+    <horz_nrays>${sensor_horz_nrays|1024}</horz_nrays>
 
     <!-- 1.0=minimum (faster), larger values=potentially finer details captured -->
     <horz_resolution_factor>${horz_resolution_factor|1.0}</horz_resolution_factor>
     <vert_resolution_factor>${vert_resolution_factor|1.0}</vert_resolution_factor>
 
     <range_std_noise>${sensor_std_noise|0.005}</range_std_noise>
-    <max_range>${max_range|80.0}</max_range>
+    <min_range>${min_range|0.5}</min_range>
+    <max_range>${max_range|90.0}</max_range>
     
-    <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../../models/velodyne-vlp16.dae</model_uri> <model_roll>90</model_roll> </visual>
+    <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/velodyne-vlp16.dae</model_uri> <model_roll>90</model_roll> </visual>
 
     <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
     <publish enabled="${sensor_publish|false}">

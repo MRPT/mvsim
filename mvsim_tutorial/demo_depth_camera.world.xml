@@ -32,7 +32,7 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="definitions/small_robot.vehicle.xml" />
+	<include file="../definitions/small_robot.vehicle.xml" />
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -47,12 +47,12 @@
 		</publish>
 
 		<!-- Sensors -->
-		<include file="definitions/lidar2d.sensor.xml" 
+		<include file="../definitions/lidar2d.sensor.xml" 
 		  sensor_x="0.5" sensor_y="0" sensor_z="0.70" sensor_yaw="0" sensor_name="laser1" raytrace_3d="true" 
 		  sensor_period_sec="0.10" 
 		/>
 
-		<include file="definitions/rgbd_camera.sensor.xml" 
+		<include file="../definitions/rgbd_camera.sensor.xml" 
 		  sensor_x="0.6"  sensor_y="0" sensor_z="0.65"
 		  sensor_period_sec="0.10"
 		  show_3d_pointcloud="true"
