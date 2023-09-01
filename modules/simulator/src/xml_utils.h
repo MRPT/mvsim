@@ -93,6 +93,14 @@ void parse_xmlnodelist_children_as_param(
 		parse_xmlnode_children_as_param(*node, params, functionNameContext);
 }
 
+/** Convert an XML node into a string, solving in the way,
+ all found "include"s. For this later task, we need a reference
+to the World object (to solve for variables, current local dir, etc.)
+*/
+std::string xml_to_str_solving_includes(
+	const World& parent, const rapidxml::xml_node<char>* xml_node,
+	const std::set<std::string>& varsRetain = {});
+
 // Bits:
 
 /** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and

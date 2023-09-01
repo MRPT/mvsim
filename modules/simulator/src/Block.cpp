@@ -22,9 +22,6 @@
 
 #include <map>
 #include <rapidxml.hpp>
-#include <rapidxml_print.hpp>
-#include <rapidxml_utils.hpp>
-#include <sstream>	// std::stringstream
 #include <string>
 
 #include "JointXMLnode.h"
@@ -49,7 +46,8 @@ Block::Block(World* parent) : VisualObject(parent), Simulable(parent)
 
 /** Register a new class of vehicles from XML description of type
  * "<vehicle:class name='name'>...</vehicle:class>".  */
-void Block::register_block_class(const rapidxml::xml_node<char>* xml_node)
+void Block::register_block_class(
+	const World& parent, const rapidxml::xml_node<char>* xml_node)
 {
 	// Sanity checks:
 	if (!xml_node)
@@ -61,12 +59,8 @@ void Block::register_block_class(const rapidxml::xml_node<char>* xml_node)
 			"('block:class' expected)",
 			xml_node->name()));
 
-	// rapidxml doesn't allow making copied of objects.
-	// So: convert to txt; then re-parse.
-	std::stringstream ss;
-	ss << *xml_node;
-
-	block_classes_registry.add(ss.str());
+	// Parse XML to solve for includes:
+	block_classes_registry.add(xml_to_str_solving_includes(parent, xml_node));
 }
 
 Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)

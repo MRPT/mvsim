@@ -191,7 +191,7 @@ void World::parse_tag_vehicle(const XmlParserContext& ctx)
 void World::parse_tag_vehicle_class(const XmlParserContext& ctx)
 {
 	// <vehicle:class> entries:
-	VehicleBase::register_vehicle_class(ctx.node);
+	VehicleBase::register_vehicle_class(*this, ctx.node);
 }
 
 void World::parse_tag_sensor(const XmlParserContext& ctx)
@@ -219,7 +219,7 @@ void World::parse_tag_block(const XmlParserContext& ctx)
 void World::parse_tag_block_class(const XmlParserContext& ctx)
 {
 	//
-	Block::register_block_class(ctx.node);
+	Block::register_block_class(*this, ctx.node);
 }
 
 void World::parse_tag_gui(const XmlParserContext& ctx)
@@ -342,7 +342,19 @@ void World::parse_tag_for(const XmlParserContext& ctx)
 
 void World::parse_tag_if(const XmlParserContext& ctx)
 {
-	auto varCond = ctx.node->first_attribute("condition");
+	bool isTrue = evaluate_tag_if(*ctx.node);
+	if (!isTrue) return;
+
+	for (auto childNode = ctx.node->first_node(); childNode;
+		 childNode = childNode->next_sibling())
+	{
+		internal_recursive_parse_XML({childNode, basePath_});
+	}
+}
+
+bool World::evaluate_tag_if(const rapidxml::xml_node<char>& node) const
+{
+	auto varCond = node.first_attribute("condition");
 	ASSERTMSG_(
 		varCond, "XML tag '<if />' must have a 'condition=\"xxx\"' attribute)");
 	const auto str = mvsim::parse(varCond->value(), userDefinedVariables_);
@@ -358,11 +370,5 @@ void World::parse_tag_if(const XmlParserContext& ctx)
 				  str == "TRUE" || str == "on" || str == "ON" || str == "On" ||
 				  (intVal.has_value() && intVal.value() != 0);
 
-	if (!isTrue) return;
-
-	for (auto childNode = ctx.node->first_node(); childNode;
-		 childNode = childNode->next_sibling())
-	{
-		internal_recursive_parse_XML({childNode, basePath_});
-	}
+	return isTrue;
 }

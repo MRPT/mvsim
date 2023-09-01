@@ -44,7 +44,8 @@ class Block : public VisualObject, public Simulable
 
 	/** Register a new class of blocks from XML description of type
 	 * "<block:class name='name'>...</block:class>".  */
-	static void register_block_class(const rapidxml::xml_node<char>* xml_node);
+	static void register_block_class(
+		const World& parent, const rapidxml::xml_node<char>* xml_node);
 
 	// ------- Interface with "World" ------
 	virtual void simul_pre_timestep(const TSimulContext& context) override;

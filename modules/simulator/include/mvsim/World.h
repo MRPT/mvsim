@@ -400,6 +400,8 @@ class World : public mrpt::system::COutputLogger
 	 */
 	std::optional<mvsim::TJoyStickEvent> getJoystickState() const;
 
+	bool evaluate_tag_if(const rapidxml::xml_node<char>& node) const;
+
    private:
 	friend class VehicleBase;
 	friend class Block;

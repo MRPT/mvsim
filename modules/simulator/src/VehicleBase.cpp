@@ -22,9 +22,6 @@
 
 #include <map>
 #include <rapidxml.hpp>
-#include <rapidxml_print.hpp>
-#include <rapidxml_utils.hpp>
-#include <sstream>	// std::stringstream
 #include <string>
 
 #include "JointXMLnode.h"
@@ -100,7 +97,7 @@ VehicleBase::VehicleBase(World* parent, size_t nWheels)
 /** Register a new class of vehicles from XML description of type
  * "<vehicle:class name='name'>...</vehicle:class>".  */
 void VehicleBase::register_vehicle_class(
-	const rapidxml::xml_node<char>* xml_node)
+	const World& parent, const rapidxml::xml_node<char>* xml_node)
 {
 	// Sanity checks:
 	if (!xml_node)
@@ -112,12 +109,14 @@ void VehicleBase::register_vehicle_class(
 			"('vehicle:class' expected)",
 			xml_node->name()));
 
-	// rapidxml doesn't allow making copied of objects.
-	// So: convert to txt; then re-parse.
-	std::stringstream ss;
-	ss << *xml_node;
+	// Delay the replacement of this variable (used in Sensors) until
+	// "veh" is constructed and we actually have a name:
+	const std::set<std::string> varsRetain = {
+		"NAME" /*sensor name*/, "PARENT_NAME" /*vehicle name*/};
 
-	veh_classes_registry.add(ss.str());
+	// Parse XML to solve for includes:
+	veh_classes_registry.add(
+		xml_to_str_solving_includes(parent, xml_node, varsRetain));
 }
 
 /** Class factory: Creates a vehicle from XML description of type
@@ -185,34 +184,30 @@ VehicleBase::Ptr VehicleBase::factory(
 		scopedLifeDocs.emplace_back(xml);
 
 		// recursive parse:
-		const auto newBasePath =
-			mrpt::system::trim(mrpt::system::extractFileDirectory(absFile));
-
 		nodes.add(nRoot->parent());
 	}
 
 	// ---
+	// Always search in root. Also in the class root, if any:
+	nodes.add(root);
+
+	if (const xml_attribute<>* veh_class = root->first_attribute("class");
+		veh_class)
 	{
-		// Always search in root. Also in the class root, if any:
-		nodes.add(root);
+		const string sClassName = veh_class->value();
+		const rapidxml::xml_node<char>* class_root =
+			veh_classes_registry.get(sClassName);
+		if (!class_root)
+			throw runtime_error(mrpt::format(
+				"[VehicleBase::factory] Vehicle class '%s' undefined",
+				sClassName.c_str()));
 
-		const xml_attribute<>* veh_class = root->first_attribute("class");
-		if (veh_class)
-		{
-			const string sClassName = veh_class->value();
-			const rapidxml::xml_node<char>* class_root =
-				veh_classes_registry.get(sClassName);
-			if (!class_root)
-				throw runtime_error(mrpt::format(
-					"[VehicleBase::factory] Vehicle class '%s' undefined",
-					sClassName.c_str()));
-
-			nodes.add(class_root);
-		}
+		nodes.add(class_root);
 	}
 
 	// Class factory according to: <dynamics class="XXX">
 	// -------------------------------------------------
+
 	const xml_node<>* dyn_node = nodes.first_node("dynamics");
 	if (!dyn_node)
 		throw runtime_error(

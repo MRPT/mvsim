@@ -19,6 +19,9 @@ Example:
     
     ... x="${POS_X}" ...
 
+.. note::
+    ``<variable>`` tags can be defined only as children of the top-level ``<world>`` tag at the global scope.
+
 Special variables
 ====================
 

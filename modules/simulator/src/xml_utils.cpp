@@ -20,9 +20,13 @@
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/string_utils.h>
+#include <mvsim/World.h>
 #include <mvsim/basic_types.h>
 
 #include <cstdio>
+#include <rapidxml_print.hpp>
+#include <rapidxml_utils.hpp>
+#include <sstream>	// std::stringstream
 
 #include "parse_utils.h"
 
@@ -471,4 +475,88 @@ std::string mvsim::parse_variables(
 	}
 
 	return ret;
+}
+
+static void recursive_xml_to_str_solving_includes(
+	const World& parent, const rapidxml::xml_node<char>* n,
+	const std::set<std::string>& varsRetain, std::stringstream& ss)
+{
+	// TAG: <include>
+	if (strcmp(n->name(), "include") == 0)
+	{
+		auto fileAttrb = n->first_attribute("file");
+		ASSERTMSG_(
+			fileAttrb,
+			"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
+
+		const std::string relFile =
+			mvsim::parse(fileAttrb->value(), parent.user_defined_variables());
+		const auto absFile = parent.local_to_abs_path(relFile);
+		parent.logStr(
+			mrpt::system::LVL_DEBUG,
+			mrpt::format("XML parser: including file: '%s'", absFile.c_str()));
+
+		std::map<std::string, std::string> vars;
+		// Inherit the user-defined variables from parent scope
+		vars = parent.user_defined_variables();
+		// Plus new ones:
+		for (auto attr = n->first_attribute(); attr;
+			 attr = attr->next_attribute())
+		{
+			if (strcmp(attr->name(), "file") == 0) continue;
+			vars[attr->name()] = attr->value();
+		}
+
+		const auto [xml, nRoot] = readXmlAndGetRoot(absFile, vars, varsRetain);
+		(void)xml;
+
+		ss << "<!-- INCLUDE: '" << absFile << "' -->\n";
+		recursive_xml_to_str_solving_includes(parent, nRoot, varsRetain, ss);
+	}
+	// TAG: <if>
+	else if (strcmp(n->name(), "if") == 0)
+	{
+		bool isTrue = parent.evaluate_tag_if(*n);
+		if (!isTrue) return;
+
+		for (auto childNode = n->first_node(); childNode;
+			 childNode = childNode->next_sibling())
+		{
+			recursive_xml_to_str_solving_includes(
+				parent, childNode, varsRetain, ss);
+		}
+	}
+	else
+	{
+		// anything else: just print as is:
+		ss << *n;
+	}
+}
+
+std::string mvsim::xml_to_str_solving_includes(
+	const World& parent, const rapidxml::xml_node<char>* xml_node,
+	const std::set<std::string>& varsRetain)
+{
+	// rapidxml doesn't allow making copied of objects.
+	// So: convert to txt; then re-parse later on.
+	// Also, this allow us to solve "include"s.
+	std::stringstream ss;
+
+	// Parent opening tag + attributes:
+	// "<vehicle:class name="foo">"
+	ss << "<" << xml_node->name();
+	for (auto a = xml_node->first_attribute(); a; a = a->next_attribute())
+		ss << " " << a->name() << "=\"" << a->value() << "\"";
+	ss << ">\n";
+
+	// Solve includes:
+	for (auto n = xml_node->first_node(); n; n = n->next_sibling())
+	{
+		recursive_xml_to_str_solving_includes(parent, n, varsRetain, ss);
+	}
+
+	// "</vehicle:class>"
+	ss << "</" << xml_node->name() << ">\n";
+
+	return ss.str();
 }

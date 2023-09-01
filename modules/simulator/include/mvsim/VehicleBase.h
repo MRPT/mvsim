@@ -52,7 +52,7 @@ class VehicleBase : public VisualObject, public Simulable
 	/** Register a new class of vehicles from XML description of type
 	 * "<vehicle:class name='name'>...</vehicle:class>".  */
 	static void register_vehicle_class(
-		const rapidxml::xml_node<char>* xml_node);
+		const World& parent, const rapidxml::xml_node<char>* xml_node);
 
 	// ------- Interface with "World" ------
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
