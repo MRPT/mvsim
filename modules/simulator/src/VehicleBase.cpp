@@ -156,7 +156,8 @@ VehicleBase::Ptr VehicleBase::factory(
 			fileAttrb,
 			"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
 
-		const std::string relFile = mvsim::parse(fileAttrb->value(), {});
+		const std::string relFile =
+			mvsim::parse(fileAttrb->value(), parent->user_defined_variables());
 		const auto absFile = parent->local_to_abs_path(relFile);
 		parent->logStr(
 			mrpt::system::LVL_DEBUG,

@@ -245,6 +245,9 @@ void World::parse_tag_include(const XmlParserContext& ctx)
 	MRPT_LOG_DEBUG_STREAM("XML parser: including file: '" << absFile << "'");
 
 	std::map<std::string, std::string> vars;
+	// Inherit the user-defined variables from parent scope
+	vars = user_defined_variables();
+	// Plus new variables as XML attributes, local only:
 	for (auto attr = ctx.node->first_attribute(); attr;
 		 attr = attr->next_attribute())
 	{

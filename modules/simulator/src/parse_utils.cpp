@@ -91,11 +91,20 @@ static std::string parseVars(
 	}
 	else
 	{
+		std::string allKnown;
+		for (const auto& kv : variableNamesValues)
+		{
+			allKnown += kv.first;
+			allKnown += ",";
+		}
+
 		THROW_EXCEPTION_FMT(
-			"parseEnvVars(): Undefined variable found: ${%s}", varname.c_str());
+			"parseVars(): Undefined variable found: ${%s}. Known ones are: %s",
+			varname.c_str(), allKnown.c_str());
 	}
 
-	return parseEnvVars(pre + varvalue + post.substr(post_end + 1));
+	return parseVars(
+		pre + varvalue + post.substr(post_end + 1), variableNamesValues);
 	MRPT_TRY_END
 }
 
@@ -215,7 +224,7 @@ std::string mvsim::parse(
 	if (MVSIM_VERBOSE_PARSE)
 	{
 		std::cout << "[mvsim::parse] Input : '" << input << "' "
-				  << " with these variables: ";
+				  << "with these variables: ";
 		for (const auto& kv : variableNamesValues)
 			std::cout << kv.first << ", ";
 		std::cout << "\n";
