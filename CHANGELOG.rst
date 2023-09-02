@@ -2,6 +2,17 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Recursive `<include>`s are now possible.
+* All vehicle and sensor definitions are now exposed in public directory 'definitions' and are safe to be included from user worlds
+* ROS warehouse demos: fix wrong camera topicn ame in rviz
+* Add missing ROS 2 launch demo for greenhouse world
+* Add new variable: MVSIM_CURRENT_FILE_DIRECTORY
+* BUGFIX: In parseVars() in the XML parser
+* Debugging feature: MVSIM_VERBOSE_PARSE now also traces <variable> definitions
+* Contributors: Jose Luis Blanco-Claraco
+
 0.7.4 (2023-08-30)
 ------------------
 * Add new LIDAR 3D models: Helios 32.
