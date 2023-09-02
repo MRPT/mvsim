@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /TF1/Frames1
         - /TF1/Tree1
+        - /Image1
       Splitter Ratio: 0.6176469922065735
     Tree Height: 274
   - Class: rviz/Selection
@@ -67,7 +68,7 @@ Visualization Manager:
           Value: true
         base_link:
           Value: true
-        camera1:
+        cam1:
           Value: true
         lidar1_points:
           Value: true
@@ -92,7 +93,7 @@ Visualization Manager:
               base_link:
                 base_footprint:
                   {}
-                camera1:
+                cam1:
                   {}
                 lidar1_points:
                   {}
@@ -177,7 +178,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /camera1
+      Image Topic: /cam1
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -215,7 +216,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 9.56735610961914
+      Distance: 16.860950469970703
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -223,17 +224,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 1.839355707168579
-        Y: -0.5950260758399963
-        Z: 0.39415112137794495
+        X: 1.7664518356323242
+        Y: -1.349634051322937
+        Z: 0.3784293234348297
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.629797101020813
+      Pitch: 0.6547970771789551
       Target Frame: <Fixed Frame>
-      Yaw: 3.060393810272217
+      Yaw: 2.675391912460327
     Saved: ~
 Window Geometry:
   Displays:
@@ -255,5 +256,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1535
-  X: 1165
-  Y: 46
+  X: 1990
+  Y: 27
