@@ -38,10 +38,11 @@ void World::load_from_XML(
 	using namespace std;
 	using namespace rapidxml;
 
+	std::string fileDir = mrpt::system::extractFileDirectory(fileNameForPath);
+	if (fileDir.empty()) fileDir = ".";
+
 	// Extract base path of file:
-	basePath_ = mrpt::system::toAbsolutePath(
-		mrpt::system::extractFileDirectory(fileNameForPath),
-		false /*canonical*/);
+	basePath_ = mrpt::system::toAbsolutePath(fileDir, false /*canonical*/);
 	// printf("[World] INFO: Using base path='%s'\n",basePath_.c_str());
 
 	// Special variables:
