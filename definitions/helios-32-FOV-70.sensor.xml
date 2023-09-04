@@ -27,7 +27,7 @@
     <min_range>${min_range|0.20}</min_range>
     <max_range>${max_range|110.0}</max_range>
     
-    <visual> <model_uri>../models/velodyne-vlp16.dae</model_uri> <model_roll>90</model_roll> </visual>
+    <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/velodyne-vlp16.dae</model_uri> <model_roll>90</model_roll> </visual>
 
     <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
     <publish enabled="${sensor_publish|false}">
