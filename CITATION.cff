@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+preferred-citation:
+  title: "MultiVehicle Simulator (MVSim): Lightweight dynamics simulator for multiagents and mobile robotics research"
+  doi: "10.1016/j.softx.2023.101443"
+  year: "2023"
+  type: article
+  journal: "SoftwareX"
+  url: https://www.sciencedirect.com/science/article/pii/S2352711023001395
+  codeurl: https://github.com/MRPT/mvsim/
+  authors:
+    - family-names: Blanco-Claraco
+      given-names: José-Luis
+    - family-names: Tymchenko
+      given-names: Borys
+    - family-names: Mañas-Alvarez
+      given-names: Francisco José
+    - family-names: Cañadas-Aránega
+      given-names: Fernando
+    - family-names: López-Gázquez
+      given-names: Ángel
+    - family-names: Moreno
+      given-names: José Carlos
