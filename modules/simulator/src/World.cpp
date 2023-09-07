@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TTwist2D.h>
+#include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mrpt/version.h>
 #include <mvsim/World.h>
@@ -236,6 +237,13 @@ void World::internal_one_timestep(double dt)
 	}
 	tle4.stop();
 
+	// 5) If we have .rawlog generation enabled, process odometry, etc.
+	mrpt::system::CTimeLoggerEntry tle5(timlogger_, "timestep.5.post_rawlog");
+
+	internalPostSimulStepForRawlog();
+
+	tle5.stop();
+
 	const double ts = timer_iteration_.Tac();
 	timlogger_.registerUserMeasure("timestep", ts);
 	if (ts > dt) timlogger_.registerUserMeasure("timestep.too_slow_alert", ts);
@@ -433,4 +441,71 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 	}
 
 	return js;
+}
+
+void World::dispatchOnObservation(
+	const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
+{
+	internalOnObservation(veh, obs);
+	for (const auto& cb : callbacksOnObservation_) cb(veh, obs);
+}
+
+void World::internalOnObservation(
+	const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
+{
+	using namespace std::string_literals;
+
+	// Save to .rawlog, if enabled:
+	if (save_to_rawlog_.empty() || vehicles_.empty()) return;
+
+	auto lck = mrpt::lockHelper(rawlog_io_mtx_);
+	if (rawlog_io_per_veh_.empty())
+	{
+		for (const auto& v : vehicles_)
+		{
+			const std::string fileName = mrpt::system::fileNameChangeExtension(
+				save_to_rawlog_, v.first + ".rawlog"s);
+
+			MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
+
+			rawlog_io_per_veh_[v.first] =
+				std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
+		}
+	}
+
+	// Store:
+	auto arch =
+		mrpt::serialization::archiveFrom(*rawlog_io_per_veh_.at(veh.getName()));
+	arch << *obs;
+}
+
+void World::internalPostSimulStepForRawlog()
+{
+	if (save_to_rawlog_.empty()) return;
+
+	ASSERT_GT_(rawlog_odometry_rate_, 0.0);
+
+	const double now = get_simul_time();
+	const double T_odom = 1.0 / rawlog_odometry_rate_;
+
+	if (rawlog_last_odom_time_.has_value() &&
+		(now - *rawlog_last_odom_time_) < T_odom)
+	{
+		return;	 // not yet
+	}
+
+	rawlog_last_odom_time_ = now;
+
+	// Create one observation per robot:
+	for (const auto& veh : vehicles_)
+	{
+		auto obs = mrpt::obs::CObservationOdometry::Create();
+		obs->timestamp = get_simul_timestamp();
+		obs->sensorLabel = "odom";
+		obs->odometry = veh.second->getCPose2D();
+
+		MRPT_TODO("Simul noisy odometry and odom velocity");
+
+		internalOnObservation(*veh.second, obs);
+	}
 }

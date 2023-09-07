@@ -16,6 +16,7 @@
 #include <mrpt/gui/CDisplayWindowGUI.h>
 #include <mrpt/img/CImage.h>
 #include <mrpt/img/TColor.h>
+#include <mrpt/io/CFileGZOutputStream.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/obs/CObservationImage.h>
@@ -366,10 +367,7 @@ class World : public mrpt::system::COutputLogger
 
 	/** Calls all registered callbacks: */
 	void dispatchOnObservation(
-		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
-	{
-		for (const auto& cb : callbacksOnObservation_) cb(veh, obs);
-	}
+		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
 	/** @} */
 
@@ -429,6 +427,11 @@ class World : public mrpt::system::COutputLogger
 
 	std::string serverAddress_ = "localhost";
 
+	/** If non-empty, all observations will be saved to a .rawlog */
+	std::string save_to_rawlog_;
+
+	double rawlog_odometry_rate_ = 10.0;  //!< In Hz.
+
 	const TParameterDefinitions otherWorldParams_ = {
 		{"server_address", {"%s", &serverAddress_}},
 		{"gravity", {"%lf", &gravity_}},
@@ -436,6 +439,8 @@ class World : public mrpt::system::COutputLogger
 		{"b2d_vel_iters", {"%i", &b2dVelIters_}},
 		{"b2d_pos_iters", {"%i", &b2dPosIters_}},
 		{"joystick_enabled", {"%bool", &joystickEnabled_}},
+		{"save_to_rawlog", {"%s", &save_to_rawlog_}},
+		{"rawlog_odometry_rate", {"%lf", &rawlog_odometry_rate_}},
 	};
 
 	/** User-defined variables as defined via `<variable name='' value='' />`
@@ -722,6 +727,16 @@ class World : public mrpt::system::COutputLogger
 	// ======== end of XML parser tags ========
 
 	mutable RemoteResourcesManager remoteResources_;
+
+	void internalOnObservation(
+		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
+
+	void internalPostSimulStepForRawlog();
+
+	std::mutex rawlog_io_mtx_;
+	std::map<std::string, std::shared_ptr<mrpt::io::CFileGZOutputStream>>
+		rawlog_io_per_veh_;
+	std::optional<double> rawlog_last_odom_time_;
 
 	// Services:
 	void internal_advertiseServices();	// called from connectToServer()

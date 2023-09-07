@@ -11,8 +11,6 @@
 
     <sensor_period>${sensor_period_sec|0.1}</sensor_period>
 
-    <!-- <save_to_rawlog>dataset_depth_cam.rawlog</save_to_rawlog> -->
-
     <sense_depth>${sense_depth|true}</sense_depth>
     <sense_rgb>${sense_rgb|true}</sense_rgb>
     

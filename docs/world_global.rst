@@ -25,6 +25,13 @@ Available parameters (all are optional):
 - ``<b2d_vel_iters>8</b2d_vel_iters>`` and ``<b2d_pos_iters>3</b2d_pos_iters>``. 
   Velocity and position iteration count (refer to libbox2d docs).
 
+- ``<save_to_rawlog>my_dataset.rawlog</save_to_rawlog>``: If present, all sensor observations
+  will be saved into an MRPT dataset in ``.rawlog`` format. One file will be created per vehicle,
+  by adding the vehicle name to the provided file name.
+
+- ``<rawlog_odometry_rate>10.0</rawlog_odometry_rate>``: If ``save_to_rawlog`` is enabled,
+  this parameter defines the rate (in Hz) to generate (wheels) odometry observations (Default is 10 Hz).
+
 
 .. code-block:: xml
    :caption: Top-level and global settings example
@@ -32,6 +39,10 @@ Available parameters (all are optional):
 	<mvsim_world version="1.0">
 		<!-- General simulation options -->
 		<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [s], or 0 to auto-determine -->
+
+		<!-- Normally disabled: If this tag is present, *all* sensor data is also stored
+		 into an MRPT rawlog file. Useful for collecting datasets without ROS. -->
+		<!-- <save_to_rawlog>sensor_dataset.rawlog</save_to_rawlog> -->
 		...
 	</mvsim_world>
 

@@ -2,6 +2,12 @@
 	<!-- General simulation options -->
 	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
 
+	<!-- Optional: save all sensor data into an MRPT .rawlog dataset file: -->
+	<!-- <save_to_rawlog>jackal_dataset.rawlog</save_to_rawlog> -->
+	<!-- If save_to_rawlog is enabled, this defines the rate in Hz to generate odometry observations -->
+	<!-- <rawlog_odometry_rate>20.0</rawlog_odometry_rate> -->
+
+
 	<!-- GUI options -->
 	<gui>
 		<ortho>false</ortho>

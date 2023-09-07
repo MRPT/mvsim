@@ -7,8 +7,6 @@
 
     <sensor_period>${sensor_period_sec|0.1}</sensor_period>
 
-    <!-- <save_to_rawlog>camera.rawlog</save_to_rawlog> -->
-
     <ncols>${ncols|640}</ncols>
     <nrows>${nrows|480}</nrows>
     <cx>${cx|320}</cx>

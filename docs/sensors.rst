@@ -44,10 +44,6 @@ common parameters below, with their meaning explained in the XML comments.
 		<!-- <publish>
 			<publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
 		</publish> -->
-
-		<!-- Normally disabled: If this tag is present, *all* sensor data is also stored
-		 into an MRPT rawlog file. Useful for collecting datasets without ROS. -->
-		<!-- <save_to_rawlog>sensor_dataset.rawlog</save_to_rawlog> -->
 	</sensor>
 
 The ``<visual>`` tag is explained in the :ref:`world_visual_object`, and

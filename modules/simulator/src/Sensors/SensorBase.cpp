@@ -183,19 +183,6 @@ void SensorBase::reportNewObservation(
 		context.world->commsClient().publishTopic(publishTopic_, msg);
 	}
 #endif
-
-	// Save to .rawlog:
-	if (!save_to_rawlog_.empty())
-	{
-		if (!rawlog_io_)
-		{
-			rawlog_io_ = std::make_shared<mrpt::io::CFileGZOutputStream>(
-				save_to_rawlog_);
-		}
-
-		auto arch = mrpt::serialization::archiveFrom(*rawlog_io_);
-		arch << *obs;
-	}
 }
 
 void SensorBase::reportNewObservation_lidar_2d(
@@ -262,7 +249,6 @@ void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	TParameterDefinitions params;
 	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
-	params["save_to_rawlog"] = TParamEntry("%s", &save_to_rawlog_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);

@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <mrpt/io/CFileGZOutputStream.h>
 #include <mrpt/obs/obs_frwds.h>
 #include <mrpt/opengl/opengl_frwds.h>
 #include <mrpt/poses/CPose3D.h>
@@ -82,9 +81,6 @@ class SensorBase : public VisualObject, public Simulable
 
 	/** Generate one sensor reading every this period [s] (Default = 0.1) */
 	double sensor_period_ = 0.1;
-
-	std::string save_to_rawlog_;
-	std::shared_ptr<mrpt::io::CFileGZOutputStream> rawlog_io_;
 
 	/** The last sensor reading timestamp. See  sensor_period_ */
 	double sensor_last_timestamp_ = 0;
