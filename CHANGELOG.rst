@@ -2,6 +2,14 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Move the rawlog-generation option to the World global options instead of sensor-wise.
+* Create CITATION.cff
+* helios 32fov70 sensor.xml: Fix missing MVSIM_CURRENT_FILE_DIRECTORY tag
+* Fix crash in edge case with world file path in the current directory
+* Contributors: Jose Luis Blanco-Claraco
+
 0.8.0 (2023-09-02)
 ------------------
 * Recursive `<include>`s are now possible.
