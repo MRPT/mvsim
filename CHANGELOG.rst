@@ -12,7 +12,7 @@ Forthcoming
 
 0.8.0 (2023-09-02)
 ------------------
-* Recursive `<include>`s are now possible.
+* Recursive "include"s are now possible.
 * All vehicle and sensor definitions are now exposed in public directory 'definitions' and are safe to be included from user worlds
 * ROS warehouse demos: fix wrong camera topicn ame in rviz
 * Add missing ROS 2 launch demo for greenhouse world
