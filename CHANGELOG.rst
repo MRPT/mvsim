@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.1 (2023-09-07)
+------------------
 * Move the rawlog-generation option to the World global options instead of sensor-wise.
 * Create CITATION.cff
 * helios 32fov70 sensor.xml: Fix missing MVSIM_CURRENT_FILE_DIRECTORY tag
