@@ -79,9 +79,9 @@ HELIOS 32 (26 deg FOV)
 
 .. dropdown:: All parameters available in helios-32-FOV-26.sensor.xml
 
-   File: `mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/helios-32-FOV-26.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/helios-32-FOV-26.sensor.xml
+   .. literalinclude:: ../definitions/helios-32-FOV-26.sensor.xml
       :language: xml
 
 HELIOS 32 (31 deg FOV)
@@ -106,9 +106,9 @@ HELIOS 32 (31 deg FOV)
 
 .. dropdown:: All parameters available in helios-32-FOV-31.sensor.xml
 
-   File: `mvsim_tutorial/definitions/helios-32-FOV-31.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/helios-32-FOV-31.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/helios-32-FOV-31.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/helios-32-FOV-31.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/helios-32-FOV-31.sensor.xml
+   .. literalinclude:: ../definitions/helios-32-FOV-31.sensor.xml
       :language: xml
 
 
@@ -133,9 +133,9 @@ HELIOS 32 (70 deg FOV)
 
 .. dropdown:: All parameters available in helios-32-FOV-70.sensor.xml
 
-   File: `mvsim_tutorial/definitions/helios-32-FOV-70.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/helios-32-FOV-70.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/helios-32-FOV-70.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/helios-32-FOV-70.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/helios-32-FOV-70.sensor.xml
+   .. literalinclude:: ../definitions/helios-32-FOV-70.sensor.xml
       :language: xml
 
 
@@ -160,9 +160,9 @@ OUSTER OS1
 
 .. dropdown:: All parameters available in ouster-os1.sensor.xml
 
-   File: `mvsim_tutorial/definitions/ouster-os1.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/ouster-os1.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/ouster-os1.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/ouster-os1.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/ouster-os1.sensor.xml
+   .. literalinclude:: ../definitions/ouster-os1.sensor.xml
       :language: xml
 
 
@@ -188,9 +188,9 @@ Velodyne VLP-16
 
 .. dropdown:: All parameters available in velodyne-vlp16.sensor.xml
 
-   File: `mvsim_tutorial/definitions/velodyne-vlp16.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/velodyne-vlp16.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/velodyne-vlp16.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/velodyne-vlp16.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/velodyne-vlp16.sensor.xml
+   .. literalinclude:: ../definitions/velodyne-vlp16.sensor.xml
       :language: xml
 
 
@@ -217,9 +217,9 @@ The user must provide the camera intrinsic and extrinsic parameters:
 
 .. dropdown:: All parameters available in camera.sensor.xml
 
-   File: `mvsim_tutorial/definitions/camera.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/camera.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/camera.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/camera.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/camera.sensor.xml
+   .. literalinclude:: ../definitions/camera.sensor.xml
       :language: xml
 
 
@@ -243,9 +243,9 @@ An inertial sensor that measures (in the current version of MVSim):
 
 .. dropdown:: All parameters available in imu.sensor.xml
 
-   File: `mvsim_tutorial/definitions/imu.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/imu.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/imu.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/imu.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/imu.sensor.xml
+   .. literalinclude:: ../definitions/imu.sensor.xml
       :language: xml
 
 
@@ -284,9 +284,9 @@ Generic 2D LIDAR
 
 .. dropdown:: All parameters available in lidar2d.sensor.xml
 
-   File: `mvsim_tutorial/definitions/lidar2d.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/lidar2d.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/lidar2d.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/lidar2d.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/lidar2d.sensor.xml
+   .. literalinclude:: ../definitions/lidar2d.sensor.xml
       :language: xml
 
 
@@ -313,9 +313,9 @@ Just like the generic Lidar above, but with a custom visualization for this part
 
 .. dropdown:: All parameters available in rplidar-a2.sensor.xml
 
-   File: `mvsim_tutorial/definitions/rplidar-a2.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/rplidar-a2.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/rplidar-a2.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/rplidar-a2.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/rplidar-a2.sensor.xml
+   .. literalinclude:: ../definitions/rplidar-a2.sensor.xml
       :language: xml
 
 
@@ -339,7 +339,7 @@ Depth (RGBD) camera
 
 .. dropdown:: All parameters available in rgbd_camera.sensor.xml
 
-   File: `mvsim_tutorial/definitions/rgbd_camera.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/definitions/rgbd_camera.sensor.xml>`_
+   File: `mvsim_tutorial/definitions/rgbd_camera.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/rgbd_camera.sensor.xml>`_
 
-   .. literalinclude:: ../mvsim_tutorial/definitions/rgbd_camera.sensor.xml
+   .. literalinclude:: ../definitions/rgbd_camera.sensor.xml
       :language: xml

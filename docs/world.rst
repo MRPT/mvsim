@@ -92,8 +92,8 @@ between steps. Each step comprises:
 -  After time step - everything needed to be done with updated state
 
 
-Limitations
--------------
+Simulation limitations
+------------------------
 
 -  A limitation of box2d is that no element can be thinner than 0.05 units, or
    the following assert will be raised while loading the world model:
