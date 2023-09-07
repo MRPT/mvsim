@@ -504,7 +504,10 @@ void World::internalPostSimulStepForRawlog()
 		obs->sensorLabel = "odom";
 		obs->odometry = veh.second->getCPose2D();
 
-		MRPT_TODO("Simul noisy odometry and odom velocity");
+		obs->hasVelocities = true;
+		obs->velocityLocal = veh.second->getVelocityLocal();
+
+		// TODO: Simul noisy odometry and odom velocity
 
 		internalOnObservation(*veh.second, obs);
 	}
