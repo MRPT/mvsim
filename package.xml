@@ -32,8 +32,9 @@
   <depend>boost</depend>
   <depend>pybind11-dev</depend>
   <depend>protobuf-dev</depend>
-  <depend>python3-venv</depend>
+  <depend>python3-pip</depend>
   <depend>python3-protobuf</depend>
+  <depend>python3-venv</depend>
   <depend>wget</depend>
   <depend>unzip</depend>
 
