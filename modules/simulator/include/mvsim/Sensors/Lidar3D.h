@@ -81,6 +81,8 @@ class Lidar3D : public SensorBase
 	int vertNumRays_ = 16, horzNumRays_ = 180;
 	double horzResolutionFactor_ = 1.0;
 	double vertResolutionFactor_ = 1.0;
+	float maxDepthInterpolationStepVert_ = 0.30f;
+	float maxDepthInterpolationStepHorz_ = 0.10f;
 
 	/** Last simulated scan */
 	mrpt::obs::CObservationPointCloud::Ptr last_scan2gui_, last_scan_;
@@ -102,7 +104,7 @@ class Lidar3D : public SensorBase
 
 	struct PerRayLUT
 	{
-		int u = 0, v = 0;  //!< Pixel coords
+		float u = 0, v = 0;	 //!< Pixel coords
 		float depth2range = 0;
 	};
 	struct PerHorzAngleLUT

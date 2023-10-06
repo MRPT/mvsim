@@ -54,7 +54,6 @@
 		  sensor_x="0.3" sensor_y="0" sensor_z="2.4" sensor_yaw="0"
 		  sensor_publish="false"
 		  sensor_name="lidar1"
-		  sensor_horz_nrays="1024"
 		/>
 		<!-- vert_fov_degrees="90" -->
 	</vehicle>

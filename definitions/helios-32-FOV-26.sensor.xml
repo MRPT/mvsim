@@ -20,8 +20,12 @@
     <horz_nrays>$f{(1.0/${sensor_rate|10})/55.296e-6}</horz_nrays>
 
     <!-- 1.0=minimum (faster), larger values=potentially finer details captured -->
-    <horz_resolution_factor>${horz_resolution_factor|1.5}</horz_resolution_factor>
+    <horz_resolution_factor>${horz_resolution_factor|1.0}</horz_resolution_factor>
     <vert_resolution_factor>${vert_resolution_factor|1.0}</vert_resolution_factor>
+
+    <!-- Depth ratio (0 to 1) between adjacent depth image to allow linear interpolation of ranges -->
+    <max_vert_relative_depth_to_interpolatate>${max_vert_relative_depth_to_interpolatate|0.3}</max_vert_relative_depth_to_interpolatate>
+    <max_horz_relative_depth_to_interpolatate>${max_horz_relative_depth_to_interpolatate|0.1}</max_horz_relative_depth_to_interpolatate>
 
     <range_std_noise>${sensor_std_noise|0.005}</range_std_noise>
     <min_range>${min_range|0.20}</min_range>

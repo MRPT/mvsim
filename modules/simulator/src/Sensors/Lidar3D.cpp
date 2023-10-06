@@ -67,6 +67,11 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["vert_resolution_factor"] =
 		TParamEntry("%lf", &vertResolutionFactor_);
 
+	params["max_vert_relative_depth_to_interpolatate"] =
+		TParamEntry("%f", &maxDepthInterpolationStepVert_);
+	params["max_horz_relative_depth_to_interpolatate"] =
+		TParamEntry("%f", &maxDepthInterpolationStepHorz_);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
 }
@@ -189,6 +194,102 @@ void Lidar3D::freeOpenGLResources()
 {
 	// Free fbo:
 	fbo_renderer_depth_.reset();
+}
+
+#if MRPT_VERSION >= 0x270
+// Do the log->linear conversion ourselves for this sensor,
+// since only a few depth points are actually used:
+// (older mrpt versions already returned the linearized depth)
+constexpr int DEPTH_LOG2LIN_BITS = 20;
+using depth_log2lin_t =
+	mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
+#endif
+
+static float safeInterpolateRangeImage(
+	const mrpt::math::CMatrixFloat& depthImage,
+	const float maxDepthInterpolationStepVert,
+	const float maxDepthInterpolationStepHorz, const int NCOLS, const int NROWS,
+	float v, float u
+#if MRPT_VERSION >= 0x270
+	,
+	const depth_log2lin_t::lut_t& depth_log2lin_lut
+#endif
+)
+{
+	const int u0 = static_cast<int>(u);
+	const int v0 = static_cast<int>(v);
+	const int u1 = std::min(u0 + 1, NCOLS - 1);
+	const int v1 = std::min(v0 + 1, NROWS - 1);
+
+	const float uw = u - u0;
+	const float vw = v - v0;
+
+	const float raw_d00 = depthImage(v0, u0);
+	const float raw_d01 = depthImage(v1, u0);
+	const float raw_d10 = depthImage(v0, u1);
+	const float raw_d11 = depthImage(v1, u1);
+
+	// Linearize:
+#if MRPT_VERSION >= 0x270
+	// Do the log->linear conversion ourselves for this sensor,
+	// since only a few depth points are actually used:
+
+	// map d in [-1.0f,+1.0f] ==> real depth values:
+	const float d00 = depth_log2lin_lut
+		[(raw_d00 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+	const float d01 = depth_log2lin_lut
+		[(raw_d01 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+	const float d10 = depth_log2lin_lut
+		[(raw_d10 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+	const float d11 = depth_log2lin_lut
+		[(raw_d11 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+#else
+	// "d" is already linear depth
+	const float d00 = raw_d00;
+	const float d01 = raw_d01;
+	const float d10 = raw_d10;
+	const float d11 = raw_d11;
+#endif
+
+	// max relative range difference in u and v directions:
+	const float A_u = std::max(std::abs(d00 - d10), std::abs(d01 - d11));
+	const float A_v = std::max(std::abs(d00 - d01), std::abs(d10 - d11));
+
+	const auto maxStepU = maxDepthInterpolationStepHorz * d00;
+	const auto maxStepV = maxDepthInterpolationStepVert * d00;
+
+	if (A_v < maxStepV && A_u < maxStepU)
+	{
+		// smooth bilinear interpolation in (u,v):
+		return d00 * (1.0f - uw) * (1.0f - vw) +  //
+			   d01 * (1.0f - uw) * vw +	 //
+			   d10 * uw * (1.0f - vw) +	 //
+			   d11 * uw * vw;
+	}
+	else if (A_v < maxStepV)
+	{
+		// Linear interpolation in "v" only:
+		// Pick closest "u":
+		const float d0 = uw < 0.5f ? d00 : d10;
+		const float d1 = uw < 0.5f ? d01 : d11;
+
+		return d0 * (1.0f - vw) + d1 * vw;
+	}
+	else if (A_u < maxStepU)
+	{
+		// Linear interpolation in "u" only:
+
+		// Pick closest "v":
+		const float d0 = vw < 0.5f ? d00 : d01;
+		const float d1 = vw < 0.5f ? d10 : d11;
+
+		return d0 * (1.0f - uw) + d1 * uw;
+	}
+	else
+	{
+		// too many changes in depth, do not interpolate:
+		return d00;
+	}
 }
 
 void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
@@ -374,9 +475,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 			const double cosHorzAng = std::cos(horzAng);
 
-			const auto pixel_u = mrpt::saturate_val<int>(
-				mrpt::round(camModel.cx() - camModel.fx() * std::tan(horzAng)),
-				0, camModel.ncols - 1);
+			const auto pixel_u = mrpt::saturate_val<float>(
+				camModel.cx() - camModel.fx() * std::tan(horzAng), 0,
+				camModel.ncols - 1);
 
 			for (size_t j = 0; j < nRows; j++)
 			{
@@ -385,9 +486,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				const double vertAng = vertical_ray_angles_.at(j);
 				const double cosVertAng = std::cos(vertAng);
 
-				const auto pixel_v = mrpt::round(
-					camModel.cy() -
-					camModel.fy() * std::tan(vertAng) / cosHorzAng);
+				const auto pixel_v = camModel.cy() - camModel.fy() *
+														 std::tan(vertAng) /
+														 cosHorzAng;
 
 				// out of the simulated camera (should not happen?)
 				if (pixel_v < 0 || pixel_v >= static_cast<int>(camModel.nrows))
@@ -432,9 +533,6 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 #if MRPT_VERSION >= 0x270
 	// Do the log->linear conversion ourselves for this sensor,
 	// since only a few depth points are actually used:
-	constexpr int DEPTH_LOG2LIN_BITS = 18;
-	using depth_log2lin_t =
-		mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
 	auto& depth_log2lin = depth_log2lin_t::Instance();
 	const auto& depth_log2lin_lut =
 		depth_log2lin.lut_from_zn_zf(minRange_, maxRange_);
@@ -505,19 +603,15 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				ASSERTDEB_LT_(v, depthImage.rows());
 
 				// Depth:
-				float d = depthImage(v, u);
-
-				// Linearize:
+				float d = safeInterpolateRangeImage(
+					depthImage, maxDepthInterpolationStepVert_,
+					maxDepthInterpolationStepHorz_, FBO_NCOLS, FBO_NROWS, v, u
 #if MRPT_VERSION >= 0x270
-				// Do the log->linear conversion ourselves for this sensor,
-				// since only a few depth points are actually used:
-
-				// map d in [-1.0f,+1.0f] ==> real depth values:
-				d = depth_log2lin_lut
-					[(d + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-#else
-				// "d" is already linear depth
+					,
+					depth_log2lin_lut
 #endif
+				);
+
 				// Add noise:
 				if (d != 0)	 // invalid range
 				{

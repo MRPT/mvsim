@@ -59,10 +59,10 @@
 
       <include file="helios-32-FOV-31.sensor.xml"
         sensor_x="0.15" sensor_z="$f{0.27 + 0.08}"
-        sensor_std_noise="0.005"
+        sensor_std_noise="0.0025"
         sensor_publish="false"
         sensor_name="lidar1"
-        sensor_rate="5.0"
+        sensor_rate="10.0"
         horz_resolution_factor="1.5"
         vert_resolution_factor="1.0"
       />
