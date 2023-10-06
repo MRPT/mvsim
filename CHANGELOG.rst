@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.2 (2023-10-06)
+------------------
 * 3D LIDARs: Bilinear interpolation (when it makes sense) to obtain much smoother point cloud simulations
 * Add missing build dep on python3-pip.
   This was triggering errors on ROS 1 build farm dev builds.
