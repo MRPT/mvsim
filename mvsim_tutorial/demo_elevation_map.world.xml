@@ -69,6 +69,8 @@
 		  sensor_publish="false"
 		  sensor_name="lidar1"
 		  sensor_rpm="600"
+		  horz_resolution_factor="2.0"
+		  vert_resolution_factor="2.0"
 		/>
 		
 		<include file="../definitions/rgbd_camera.sensor.xml" 

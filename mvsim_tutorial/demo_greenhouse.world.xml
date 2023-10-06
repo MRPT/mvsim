@@ -136,7 +136,7 @@
 		  sensor_publish="false"
 		  sensor_name="lidar1"
 		  sensor_rpm="600"
-		  horz_resolution_factor="1.0"
+		  horz_resolution_factor="1.5"
 		  vert_resolution_factor="1.0"
 		/>
 		
