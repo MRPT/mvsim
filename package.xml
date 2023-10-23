@@ -41,6 +41,7 @@
   <!-- ROS1 -->
   <depend           condition="$ROS_VERSION == 1">roscpp</depend>
   <depend           condition="$ROS_VERSION == 1">dynamic_reconfigure</depend>
+  <depend           condition="$ROS_VERSION == 1">rviz_plugin_tutorials</depend>
   <test_depend      condition="$ROS_VERSION == 1">gtest</test_depend>
   
   <!-- ROS2 -->
