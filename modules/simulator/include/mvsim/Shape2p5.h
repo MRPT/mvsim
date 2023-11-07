@@ -54,6 +54,8 @@ class Shape2p5
 	void clipZMin(float v);
 	void clipZMax(float v);
 
+	std::string asString() const;
+
    private:
 	mutable std::optional<mrpt::math::TPolygon2D> contour_;
 	mutable float zMin_ = 0, zMax_ = 0;

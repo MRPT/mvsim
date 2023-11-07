@@ -283,7 +283,8 @@ void VisualObject::addCustomVisualization(
 #if 0
 	std::cout << "MODEL: " << (modelURI ? *modelURI : "none")
 			  << " glModel: " << glModel->GetRuntimeClass()->className
-			  << " zmin=" << zMin << " zMax:" << zMax << "\n";
+			  << " modelScale: " << modelScale << " zmin=" << zMin
+			  << " zMax:" << zMax << "\n";
 #endif
 
 	// Calculate its convex hull:

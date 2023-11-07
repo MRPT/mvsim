@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <box2d/b2_settings.h>	// b2_maxPolygonVertices
+#include <mrpt/containers/yaml.h>
 #include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/math/TBoundingBox.h>
 #include <mrpt/math/TLine2D.h>
@@ -643,4 +644,11 @@ void Shape2p5::clipZMin(float v)
 void Shape2p5::clipZMax(float v)
 {
 	if (zMax_ > v) zMax_ = v;
+}
+
+std::string Shape2p5::asString() const
+{
+	std::stringstream s;
+	s << getContour().asYAML();
+	return s.str();
 }

@@ -60,7 +60,9 @@ Shape2p5 CollisionShapeCache::get(
 			  << "] glClass=" << obj.GetRuntimeClass()->className
 			  << " shape=" << ret.getContour().size() << " pts, "
 			  << " volume=" << vol << " zMin=" << zMin << " zMax=" << zMax
-			  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n";
+			  << " modelScale= " << modelScale
+			  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n"
+			  << ret.getContour().asYAML() << "\n\n";
 #endif
 
 	if (vol < 1e-8)
