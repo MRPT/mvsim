@@ -55,7 +55,9 @@ Command ``mvsim launch``
    -v, --verbosity         Set verbosity level: DEBUG, INFO (default), WARN, ERROR
 
 
-Write me!
+This can be used to launch the simulation of a world given the path to its XML definition file. Then you can interact with the robot(s) via keyboard, mouse, or joystick, or via the Python API.
+
+If you want the simulator to communicate via ROS, you must launch the `ROS node <mvsim_node.html>`_ instead.
 
 
 Command ``mvsim server``
@@ -71,7 +73,8 @@ Command ``mvsim server``
    -v, --verbosity      Set verbosity level: DEBUG, INFO (default), WARN, ERROR
 
 
-Write me!
+MVSim uses a communication server, and then the simulation of the world happens in a client called "World". This command can be used to launch an independent, new server.
+Normally you will not need to use this command unless you are developing a custom C++-based simulation based on the MVSim libraries.
 
 
 Command ``mvsim node``
@@ -85,7 +88,7 @@ Command ``mvsim node``
       mvsim node --help     Show this help
       mvsim node list       List all nodes connected to the server.
 
-Write me!
+Request what MVSim network nodes are active and connected to the running server.
 
 
 Command ``mvsim topic``
@@ -101,6 +104,5 @@ Command ``mvsim topic``
       mvsim topic echo <topicName>  Subscribe and print a topic
       mvsim topic hz <topicName>    Estimate topic publication rate (in Hz)
 
-Write me!
-
-
+Can be used to list or inspect the publication of MVSim (not ROS!) topics with sensor and pose data.
+These topics are accessible via the provided Python API, refer to examples: https://github.com/MRPT/mvsim/tree/develop/mvsim_tutorial/python
