@@ -245,6 +245,8 @@ class MVSimNode
 	double period_ms_teleop_refresh_ = 100;
 	mrpt::system::CTicTac tim_teleop_refresh_;
 
+	std::map<mvsim::VehicleBase*, double> lastCmdVelTimestamp_;
+
 	/// for teleoperation from the GUI (selects the focused" vehicle)
 	size_t teleop_idx_veh_ = 0;
 	mvsim::World::TGUIKeyEvent gui_key_events_;

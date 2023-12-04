@@ -92,6 +92,8 @@ namespace mrpt2ros = mrpt::ros2bridge;
 #define ROS12_ERROR(...) RCLCPP_ERROR(n_->get_logger(), __VA_ARGS__)
 #endif
 
+const double MAX_CMD_VEL_AGE_SECONDS = 1.0;
+
 /*------------------------------------------------------------------------------
  * MVSimNode()
  * Constructor.
@@ -401,6 +403,29 @@ void MVSimNode::spin()
 		if (keyevent.keycode != 0) gui_key_events_ = World::TGUIKeyEvent();
 
 	}  // end refresh teleop stuff
+
+// Check cmd_vel timeout:
+#if PACKAGE_ROS_VERSION == 1
+	const double rosNow = ros::Time::now().toSec();
+#else
+	const double rosNow = n_->get_clock()->now().nanoseconds() * 1e-9;
+#endif
+	std::set<mvsim::VehicleBase*> toRemove;
+	for (const auto& [veh, cmdVelTimestamp] : lastCmdVelTimestamp_)
+	{
+		if (rosNow - cmdVelTimestamp > MAX_CMD_VEL_AGE_SECONDS)
+		{
+			mvsim::ControllerBaseInterface* controller =
+				veh->getControllerInterface();
+
+			controller->setTwistCommand({0, 0, 0});
+			toRemove.insert(veh);
+		}
+	}
+	for (auto* veh : toRemove)
+	{
+		lastCmdVelTimestamp_.erase(veh);
+	}
 }
 
 /*------------------------------------------------------------------------------
@@ -769,6 +794,14 @@ void MVSimNode::onROSMsgCmdVel(
 	mvsim::VehicleBase* veh)
 {
 	mvsim::ControllerBaseInterface* controller = veh->getControllerInterface();
+
+// Update cmd_vel timestamp:
+#if PACKAGE_ROS_VERSION == 1
+	const double rosNow = ros::Time::now().toSec();
+#else
+	const double rosNow = n_->get_clock()->now().nanoseconds() * 1e-9;
+#endif
+	lastCmdVelTimestamp_[veh] = rosNow;
 
 	const bool ctrlAcceptTwist = controller->setTwistCommand(
 		{cmd->linear.x, cmd->linear.y, cmd->angular.z});
