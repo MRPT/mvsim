@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.3 (2023-12-05)
+------------------
 * Generate ground truth trajectory files in the TUM format
 * ROS nodes: add a timeout for cmd_vel commands, so the robots stop if input messages stop
 * Add rviz_plugin_tutorials dependency for ROS1
