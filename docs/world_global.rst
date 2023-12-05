@@ -32,6 +32,13 @@ Available parameters (all are optional):
 - ``<rawlog_odometry_rate>10.0</rawlog_odometry_rate>``: If ``save_to_rawlog`` is enabled,
   this parameter defines the rate (in Hz) to generate (wheels) odometry observations (Default is 10 Hz).
 
+- ``<save_ground_truth_trajectory>gt.txt</save_ground_truth_trajectory>``: If non-empty, the
+  ground truth trajectory of all vehicles will be saved to a text file in the 
+  `TUM trajectory format <https://github.com/MichaelGrupp/evo/wiki/Formats#tum---tum-rgb-d-dataset-trajectory-format>`_.
+  One file will be created per vehicle,  by adding the vehicle name to the provided file name.
+
+- ``<ground_truth_rate>50.0</ground_truth_rate>``: If ``save_ground_truth_trajectory`` is enabled,
+  this parameter defines the rate (in Hz) to generate entries in the trajectory file (Default is 50 Hz).
 
 .. code-block:: xml
    :caption: Top-level and global settings example

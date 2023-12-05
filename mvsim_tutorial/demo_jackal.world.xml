@@ -6,7 +6,7 @@
 	<!-- <save_to_rawlog>jackal_dataset.rawlog</save_to_rawlog> -->
 	<!-- If save_to_rawlog is enabled, this defines the rate in Hz to generate odometry observations -->
 	<!-- <rawlog_odometry_rate>20.0</rawlog_odometry_rate> -->
-
+	<!-- <save_ground_truth_trajectory>gt.txt</save_ground_truth_trajectory> -->
 
 	<!-- GUI options -->
 	<gui>

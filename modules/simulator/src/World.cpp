@@ -9,6 +9,7 @@
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/obs/CObservationOdometry.h>
+#include <mrpt/poses/CPose3DQuat.h>
 #include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mrpt/version.h>
 #include <mvsim/World.h>
@@ -241,6 +242,7 @@ void World::internal_one_timestep(double dt)
 	mrpt::system::CTimeLoggerEntry tle5(timlogger_, "timestep.5.post_rawlog");
 
 	internalPostSimulStepForRawlog();
+	internalPostSimulStepForTrajectory();
 
 	tle5.stop();
 
@@ -510,5 +512,54 @@ void World::internalPostSimulStepForRawlog()
 		// TODO: Simul noisy odometry and odom velocity
 
 		internalOnObservation(*veh.second, obs);
+	}
+}
+
+void World::internalPostSimulStepForTrajectory()
+{
+	using namespace std::string_literals;
+
+	if (save_ground_truth_trajectory_.empty()) return;
+
+	ASSERT_GT_(ground_truth_rate_, 0.0);
+
+	const double now = get_simul_time();
+	const double T_odom = 1.0 / ground_truth_rate_;
+
+	if (gt_last_time_.has_value() && (now - *gt_last_time_) < T_odom)
+	{
+		return;	 // not yet
+	}
+
+	gt_last_time_ = now;
+
+	// Create one entry per robot.
+	// First, create the output files if this is the first time:
+	auto lck = mrpt::lockHelper(gt_io_mtx_);
+	if (gt_io_per_veh_.empty())
+	{
+		for (const auto& [vehName, veh] : vehicles_)
+		{
+			const std::string fileName = mrpt::system::fileNameChangeExtension(
+				save_ground_truth_trajectory_, vehName + ".txt"s);
+
+			MRPT_LOG_INFO_STREAM("Creating ground truth file: " << fileName);
+
+			gt_io_per_veh_[vehName] = std::fstream(fileName, std::ios::out);
+		}
+	}
+
+	const double t = mrpt::Clock::toDouble(get_simul_timestamp());
+
+	for (const auto& [vehName, veh] : vehicles_)
+	{
+		const auto p = mrpt::poses::CPose3DQuat(veh->getCPose3D());
+
+		// each row contains these elements separated by spaces:
+		// timestamp x y z q_x q_y q_z q_w
+
+		gt_io_per_veh_.at(vehName) << mrpt::format(
+			"%f %f %f %f %f %f %f %f\n", t, p.x(), p.y(), p.z(), p.quat().x(),
+			p.quat().y(), p.quat().z(), p.quat().w());
 	}
 }

@@ -432,6 +432,12 @@ class World : public mrpt::system::COutputLogger
 
 	double rawlog_odometry_rate_ = 10.0;  //!< In Hz.
 
+	/** If non-empty, the ground truth trajectory of all vehicles will be saved
+	 * to a text file in the TUM trajectory format */
+	std::string save_ground_truth_trajectory_;
+
+	double ground_truth_rate_ = 50.0;  //!< In Hz.
+
 	const TParameterDefinitions otherWorldParams_ = {
 		{"server_address", {"%s", &serverAddress_}},
 		{"gravity", {"%lf", &gravity_}},
@@ -441,6 +447,9 @@ class World : public mrpt::system::COutputLogger
 		{"joystick_enabled", {"%bool", &joystickEnabled_}},
 		{"save_to_rawlog", {"%s", &save_to_rawlog_}},
 		{"rawlog_odometry_rate", {"%lf", &rawlog_odometry_rate_}},
+		{"save_ground_truth_trajectory",
+		 {"%s", &save_ground_truth_trajectory_}},
+		{"ground_truth_rate", {"%lf", &ground_truth_rate_}},
 	};
 
 	/** User-defined variables as defined via `<variable name='' value='' />`
@@ -732,11 +741,16 @@ class World : public mrpt::system::COutputLogger
 		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
 	void internalPostSimulStepForRawlog();
+	void internalPostSimulStepForTrajectory();
 
 	std::mutex rawlog_io_mtx_;
 	std::map<std::string, std::shared_ptr<mrpt::io::CFileGZOutputStream>>
 		rawlog_io_per_veh_;
 	std::optional<double> rawlog_last_odom_time_;
+
+	std::mutex gt_io_mtx_;
+	std::map<std::string, std::fstream> gt_io_per_veh_;
+	std::optional<double> gt_last_time_;
 
 	// Services:
 	void internal_advertiseServices();	// called from connectToServer()
