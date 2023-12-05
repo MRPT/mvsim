@@ -2,6 +2,13 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Generate ground truth trajectory files in the TUM format
+* ROS nodes: add a timeout for cmd_vel commands, so the robots stop if input messages stop
+* Add rviz_plugin_tutorials dependency for ROS1
+* Contributors: Jose Luis Blanco-Claraco, Michael Grupp
+
 0.8.2 (2023-10-06)
 ------------------
 * 3D LIDARs: Bilinear interpolation (when it makes sense) to obtain much smoother point cloud simulations
