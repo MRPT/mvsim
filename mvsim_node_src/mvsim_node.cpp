@@ -68,6 +68,14 @@ using Msg_TransformStamped = geometry_msgs::TransformStamped;
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #endif
 
+#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
+#define HAVE_POINTS_XYZIRT
+#endif
+
+#if defined(HAVE_POINTS_XYZIRT)
+#include <mrpt/maps/CPointsMapXYZIRT.h>
+#endif
+
 // usings:
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
@@ -1534,7 +1542,7 @@ void MVSimNode::internalOn(
 		mrpt::obs::T3DPointsProjectionParams pp;
 		pp.takeIntoAccountSensorPoseOnRobot = false;
 
-#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
+#if defined(HAVE_POINTS_XYZIRT)
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(
 				obs.pointcloud.get());
 			xyzirt)
