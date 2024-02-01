@@ -21,6 +21,9 @@ def generate_launch_description():
     headless_launch_arg = DeclareLaunchArgument(
         "headless", default_value='False')
 
+    do_fake_localization_arg = DeclareLaunchArgument(
+        "do_fake_localization", default_value='True', description='publish tf odom -> base_link')
+
     mvsim_node = Node(
         package='mvsim',
         executable='mvsim_node',
@@ -32,6 +35,7 @@ def generate_launch_description():
             {
                 "world_file": LaunchConfiguration('world_file'),
                 "headless": LaunchConfiguration('headless'),
+                "do_fake_localization": LaunchConfiguration('do_fake_localization'),
             }]
     )
 
@@ -46,6 +50,7 @@ def generate_launch_description():
     return LaunchDescription([
         world_file_launch_arg,
         headless_launch_arg,
+        do_fake_localization_arg,
         mvsim_node,
         rviz2_node
     ])
