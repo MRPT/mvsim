@@ -569,7 +569,7 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	}
 
 	// Publish the static transform /world -> /map
-	sendStaticTF("world", "map", tfIdentity_, myNow());
+	// sendStaticTF("world", "map", tfIdentity_, myNow());
 }
 
 #if PACKAGE_ROS_VERSION == 1
