@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.0 (2024-03-02)
+------------------
 * Do not publish tf world->map
 * Expose do_fake_localization as ROS 2 launch file argument
 * fix build with older mrpt
