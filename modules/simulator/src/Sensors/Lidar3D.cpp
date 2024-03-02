@@ -24,12 +24,20 @@
 #include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
 #endif
 
+#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
+#define HAVE_POINTS_XYZIRT
+#endif
+
+#if defined(HAVE_POINTS_XYZIRT)
+#include <mrpt/maps/CPointsMapXYZIRT.h>
+#endif
+
 #include "xml_utils.h"
 
 using namespace mvsim;
 using namespace rapidxml;
 
-MRPT_TODO("Also store obs as CObservationRotatingScan?")
+// TODO(jlbc): Also store obs as CObservationRotatingScan??
 
 Lidar3D::Lidar3D(Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent)
@@ -318,7 +326,12 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	curObs->timestamp = world_->get_simul_timestamp();
 	curObs->sensorLabel = name_;
 
+#if defined(HAVE_POINTS_XYZIRT)
+	auto curPtsPtr = mrpt::maps::CPointsMapXYZIRT::Create();
+#else
 	auto curPtsPtr = mrpt::maps::CSimplePointsMap::Create();
+#endif
+
 	auto& curPts = *curPtsPtr;
 	curObs->pointcloud = curPtsPtr;
 
@@ -639,6 +652,11 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 					d * (v - camModel.cy()) / camModel.fy(), d};
 				curPts.insertPoint(
 					thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
+
+				// Add "ring" field:
+#if defined(HAVE_POINTS_XYZIRT)
+				curPtsPtr->getPointsBufferRef_ring()->push_back(j);
+#endif
 			}
 		}
 		tleStore.stop();

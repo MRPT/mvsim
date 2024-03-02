@@ -23,6 +23,8 @@ def generate_launch_description():
     world_file_launch_arg = DeclareLaunchArgument(
         "world_file", default_value=TextSubstitution(
             text=MVSIM_WORLD_FILE))
+    do_fake_localization_arg = DeclareLaunchArgument(
+        "do_fake_localization", default_value='True', description='publish tf odom -> base_link')
 
     mvsim_node = Node(
         package='mvsim',
@@ -33,7 +35,8 @@ def generate_launch_description():
             MVSIM_ROS2_PARAMS_FILE,
             {
                 "world_file": LaunchConfiguration('world_file'),
-                "headless": False
+                "headless": False,
+                "do_fake_localization": LaunchConfiguration('do_fake_localization'),
             }]
     )
 
@@ -47,6 +50,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         world_file_launch_arg,
+        do_fake_localization_arg,
         mvsim_node,
         rviz2_node
     ])
