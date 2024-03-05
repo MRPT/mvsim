@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.1 (2024-03-05)
+------------------
 * Fix use of mrpt bridge to publish XYZIRT point clouds too for ROS 1
 * Contributors: Jose Luis Blanco-Claraco
 
