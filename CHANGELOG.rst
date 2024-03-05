@@ -2,6 +2,11 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix use of mrpt bridge to publish XYZIRT point clouds too for ROS 1
+* Contributors: Jose Luis Blanco-Claraco
+
 0.9.0 (2024-03-02)
 ------------------
 * Do not publish tf world->map
