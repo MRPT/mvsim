@@ -1539,9 +1539,6 @@ void MVSimNode::internalOn(
 		msg_header.stamp = now;
 		msg_header.frame_id = sSensorFrameId_points;
 
-		mrpt::obs::T3DPointsProjectionParams pp;
-		pp.takeIntoAccountSensorPoseOnRobot = false;
-
 #if defined(HAVE_POINTS_XYZIRT)
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(
 				obs.pointcloud.get());
