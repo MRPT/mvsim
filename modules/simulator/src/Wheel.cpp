@@ -24,7 +24,8 @@ using namespace std;
 
 Wheel::Wheel(World* world) : VisualObject(world) { recalcInertia(); }
 
-void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
+void Wheel::getAs3DObject(
+	mrpt::opengl::CSetOfObjects& obj, bool isPhysicalScene)
 {
 	obj.clear();
 
@@ -40,19 +41,22 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 		gl_wheel->setPose(
 			mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
 
-		auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
-		gl_wheel_frame->setName("gl_wheel_frame");
-		gl_wheel_frame->insert(gl_wheel);
+		if (!isPhysicalScene)
 		{
-			mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
-				mrpt::opengl::stock_objects::CornerXYZSimple(
-					0.9 * diameter, 2.0);
+			auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
+			gl_wheel_frame->setName("gl_wheel_frame");
+			gl_wheel_frame->insert(gl_wheel);
+			{
+				mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
+					mrpt::opengl::stock_objects::CornerXYZSimple(
+						0.9 * diameter, 2.0);
 #if MRPT_VERSION >= 0x270
-			gl_xyz->castShadows(false);
+				gl_xyz->castShadows(false);
 #endif
-			gl_wheel_frame->insert(gl_xyz);
+				gl_wheel_frame->insert(gl_xyz);
+			}
+			obj.insert(gl_wheel_frame);
 		}
-		obj.insert(gl_wheel_frame);
 	}
 
 	obj.setPose(mrpt::math::TPose3D(x, y, 0.5 * diameter, yaw, 0.0, 0.0));

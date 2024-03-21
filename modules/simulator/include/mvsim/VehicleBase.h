@@ -223,8 +223,9 @@ class VehicleBase : public VisualObject, public Simulable
 	// Called from internalGuiUpdate()
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 
-	mrpt::opengl::CSetOfObjects::Ptr glChassis_;
-	std::vector<mrpt::opengl::CSetOfObjects::Ptr> glWheels_;
+	mrpt::opengl::CSetOfObjects::Ptr glChassisViz_, glChassisPhysical_;
+	std::vector<mrpt::opengl::CSetOfObjects::Ptr> glWheelsViz_,
+		glWheelsPhysical_;
 	mrpt::opengl::CSetOfLines::Ptr glForces_;
 	mrpt::opengl::CSetOfLines::Ptr glMotorTorques_;
 

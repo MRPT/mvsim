@@ -497,10 +497,13 @@ void MVSimNode::publishVehicles([[maybe_unused]] mvsim::VehicleBase& veh)
 void MVSimNode::publishWorldElements(mvsim::WorldElementBase& obj)
 {
 	// GridMaps --------------
+	static mrpt::system::CTicTac lastMapPublished;
 	if (mvsim::OccupancyGridMap* grid =
 			dynamic_cast<mvsim::OccupancyGridMap*>(&obj);
-		grid)
+		grid && lastMapPublished.Tac() > 2.0)
 	{
+		lastMapPublished.Tic();
+
 		static Msg_OccupancyGrid ros_map;
 		static mvsim::OccupancyGridMap* cachedGrid = nullptr;
 
@@ -542,11 +545,12 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	static mrpt::system::CTicTac lastMapPublished;
 	if (lastMapPublished.Tac() > 2.0)
 	{
+		lastMapPublished.Tic();
+
 		mvsim_world_->runVisitorOnWorldElements(
 			[this](mvsim::WorldElementBase& obj) {
 				publishWorldElements(obj);
 			});
-		lastMapPublished.Tic();
 	}
 #endif
 
@@ -1538,9 +1542,6 @@ void MVSimNode::internalOn(
 #endif
 		msg_header.stamp = now;
 		msg_header.frame_id = sSensorFrameId_points;
-
-		mrpt::obs::T3DPointsProjectionParams pp;
-		pp.takeIntoAccountSensorPoseOnRobot = false;
 
 #if defined(HAVE_POINTS_XYZIRT)
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(

@@ -697,18 +697,26 @@ void VehicleBase::internalGuiUpdate(
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	const size_t nWs = this->getNumWheels();
-	if (!glChassis_ && viz && physical)
+	if (!glChassisViz_ && viz && physical)
 	{
-		glChassis_ = mrpt::opengl::CSetOfObjects::Create();
-		glChassis_->setName("vehicle_chassis_"s + name_);
+		glChassisViz_ = mrpt::opengl::CSetOfObjects::Create();
+		glChassisViz_->setName("vehicle_chassis_"s + name_);
+
+		glChassisPhysical_ = mrpt::opengl::CSetOfObjects::Create();
+		glChassisPhysical_->setName("vehicle_chassis_"s + name_);
 
 		// Wheels shape:
-		glWheels_.resize(nWs);
+		glWheelsViz_.resize(nWs);
+		glWheelsPhysical_.resize(nWs);
 		for (size_t i = 0; i < nWs; i++)
 		{
-			glWheels_[i] = mrpt::opengl::CSetOfObjects::Create();
-			this->getWheelInfo(i).getAs3DObject(*glWheels_[i]);
-			glChassis_->insert(glWheels_[i]);
+			glWheelsViz_[i] = mrpt::opengl::CSetOfObjects::Create();
+			this->getWheelInfo(i).getAs3DObject(*glWheelsViz_[i], false);
+			glChassisViz_->insert(glWheelsViz_[i]);
+
+			glWheelsPhysical_[i] = mrpt::opengl::CSetOfObjects::Create();
+			this->getWheelInfo(i).getAs3DObject(*glWheelsPhysical_[i], true);
+			glChassisPhysical_->insert(glWheelsPhysical_[i]);
 		}
 
 		if (!childrenOnly)
@@ -718,11 +726,12 @@ void VehicleBase::internalGuiUpdate(
 				chassis_poly_, chassis_z_max_ - chassis_z_min_);
 			gl_poly->setLocation(0, 0, chassis_z_min_);
 			gl_poly->setColor_u8(chassis_color_);
-			glChassis_->insert(gl_poly);
+			glChassisViz_->insert(gl_poly);
+			glChassisPhysical_->insert(gl_poly);
 		}
 
-		viz->get().insert(glChassis_);
-		physical->get().insert(glChassis_);
+		viz->get().insert(glChassisViz_);
+		physical->get().insert(glChassisPhysical_);
 	}
 
 	// Update them:
@@ -732,13 +741,18 @@ void VehicleBase::internalGuiUpdate(
 	// need/can't acquire it again:
 	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-	if (glChassis_)
+	if (glChassisViz_)
 	{
-		glChassis_->setPose(objectPose);
+		ASSERT_(glChassisPhysical_);
+
+		glChassisViz_->setPose(objectPose);
+		glChassisPhysical_->setPose(objectPose);
 		for (size_t i = 0; i < nWs; i++)
 		{
 			const Wheel& w = getWheelInfo(i);
-			glWheels_[i]->setPose(mrpt::math::TPose3D(
+			glWheelsPhysical_[i]->setPose(mrpt::math::TPose3D(
+				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+			glWheelsViz_[i]->setPose(mrpt::math::TPose3D(
 				w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
 
 			if (!w.linked_yaw_object_name.empty())
@@ -853,8 +867,8 @@ void VehicleBase::registerOnServer(mvsim::Client& c)
 
 void VehicleBase::chassisAndWheelsVisible(bool visible)
 {
-	if (glChassis_) glChassis_->setVisibility(visible);
-	for (auto& glW : glWheels_)
+	if (glChassisViz_) glChassisViz_->setVisibility(visible);
+	for (auto& glW : glWheelsViz_)
 	{
 		if (glW) glW->setVisibility(visible);
 	}
