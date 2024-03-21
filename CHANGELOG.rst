@@ -2,6 +2,14 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* BUG FIX: 3D lidars should not 'see' XYZ corners of wheels
+* BUG FIX: gridmaps were published at a too high rate in the ROS 2 node
+* remove dead code
+* update header version
+* Contributors: Jose Luis Blanco-Claraco
+
 0.9.1 (2024-03-05)
 ------------------
 * Fix use of mrpt bridge to publish XYZIRT point clouds too for ROS 1
