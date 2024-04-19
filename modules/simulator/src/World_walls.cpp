@@ -177,7 +177,8 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 
 		// Transform them:
 		tfPts.reserve(segments.size());
-		for (const auto& pt : segments) tfPts.emplace_back(tf.composePoint(pt));
+		for (const auto& pt : segments)
+			tfPts.emplace_back(tf.composePoint(mrpt::math::TPoint3D(pt)));
 	}
 	else
 	{

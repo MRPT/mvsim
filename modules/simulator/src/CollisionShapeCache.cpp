@@ -207,14 +207,16 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 		mrpt::math::TPoint2Df(coarseBB.min.x, coarseBB.min.y),
 		mrpt::math::TPoint2Df(coarseBB.max.x, coarseBB.max.y));
 
-	auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt) {
+	auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt)
+	{
 		numTotalPts++;
 		auto pt = modelPose.composePoint(orgPt * modelScale);
 		if (pt.z < zMin || pt.z > zMax) return;	 // skip
 		ret.buildAddPoint(pt);
 		numPassedPts++;
 	};
-	auto lambdaUpdateTri = [&](const mrpt::opengl::TTriangle& tri) {
+	auto lambdaUpdateTri = [&](const mrpt::opengl::TTriangle& tri)
+	{
 		numTotalPts += 3;
 		// transform the whole triangle, then compare with [z,z] limits:
 		mrpt::opengl::TTriangle t = tri;
@@ -324,8 +326,8 @@ Shape2p5 CollisionShapeCache::processCylinderLike(
 	for (size_t i = 0; i < nFaces; i++)
 	{
 		const double ang = i * 2 * M_PI / nFaces;
-		const mrpt::math::TPoint2D localPt = {
-			cos(ang) * actualRadius, sin(ang) * actualRadius};
+		const mrpt::math::TPoint3D localPt = {
+			cos(ang) * actualRadius, sin(ang) * actualRadius, .0};
 		const auto pt = modelPose.composePoint(localPt * modelScale);
 		contour.emplace_back(pt.x, pt.y);
 	}
