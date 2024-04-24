@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.3 (2024-04-24)
+------------------
 * Fix usage of (new explicit) TPoint3D constructors
 * Contributors: Jose Luis Blanco-Claraco
 
