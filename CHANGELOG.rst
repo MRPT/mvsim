@@ -2,6 +2,11 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.3 (2024-04-24)
+------------------
+* Fix usage of (new explicit) TPoint3D constructors
+* Contributors: Jose Luis Blanco-Claraco
+
 0.9.2 (2024-03-21)
 ------------------
 * BUG FIX: 3D lidars should not 'see' XYZ corners of wheels
