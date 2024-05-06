@@ -543,10 +543,6 @@ void Client::publishTopic(
 
 	mvsim::sendMessage(msg, ipat.pubSocket);
 
-#if 0
-	std::cout << "Published on topic " << topicName << std::endl;
-#endif
-
 #else
 	THROW_EXCEPTION("MVSIM built without ZMQ & PROTOBUF");
 #endif
@@ -742,12 +738,15 @@ void Client::subscribeTopic(
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
-	subscribe_topic_raw(topicName, [callback](const zmq::message_t& m) {
-		const auto [sType, sData] = mvsim::internal::parseMessageToParts(m);
-		std::vector<uint8_t> d(sData.size());
-		::memcpy(d.data(), sData.data(), sData.size());
-		callback(sType, d);
-	});
+	subscribe_topic_raw(
+		topicName,
+		[callback](const zmq::message_t& m)
+		{
+			const auto [sType, sData] = mvsim::internal::parseMessageToParts(m);
+			std::vector<uint8_t> d(sData.size());
+			::memcpy(d.data(), sData.data(), sData.size());
+			callback(sType, d);
+		});
 #endif
 	MRPT_END
 }

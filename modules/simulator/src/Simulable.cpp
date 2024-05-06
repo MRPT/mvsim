@@ -245,14 +245,6 @@ bool Simulable::parseSimulable(
 			mrpt::system::tokenize(
 				mrpt::system::trim(listObjects), " ,",
 				publishRelativePoseOfOtherObjects_);
-
-#if 0
-		std::cout << "[DEBUG] "
-					 "Publishing relative poses of "
-				  << publishRelativePoseOfOtherObjects_.size() << " objects ("
-				  << listObjects << ") to topic " << publishRelativePoseTopic_
-				  << std::endl;
-#endif
 		}
 		ASSERT_(
 			(publishRelativePoseOfOtherObjects_.empty() &&
