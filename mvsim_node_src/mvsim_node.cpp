@@ -37,11 +37,13 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/Bool.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 // usings:
 using Msg_OccupancyGrid = nav_msgs::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::TransformStamped;
+using Msg_Bool = std_msgs::Bool;
 #else
 // ===========================================
 //                    ROS 2
@@ -60,6 +62,7 @@ using Msg_TransformStamped = geometry_msgs::TransformStamped;
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <std_msgs/msg/bool.hpp>
 
 // see: https://github.com/ros2/geometry2/pull/416
 #if defined(MVSIM_HAS_TF2_GEOMETRY_MSGS_HPP)
@@ -72,6 +75,7 @@ using Msg_TransformStamped = geometry_msgs::TransformStamped;
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
+using Msg_Bool = std_msgs::msg::Bool;
 #endif
 
 #if MRPT_VERSION >= 0x020b04  // >=2.11.4?
@@ -622,13 +626,22 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	// pub: <VEH>/base_pose_ground_truth
 	pubsubs.pub_ground_truth = n_.advertise<nav_msgs::Odometry>(
 		vehVarName("base_pose_ground_truth", *veh), publisher_history_len_);
+
+	// pub: <VEH>/collision
+	pubsubs.pub_collision = n_.advertise<std_msgs::Bool>(
+		vehVarName("collision", *veh), publisher_history_len_);
 #else
 	// pub: <VEH>/odom
 	pubsubs.pub_odom = n_->create_publisher<nav_msgs::msg::Odometry>(
 		vehVarName("odom", *veh), publisher_history_len_);
+
 	// pub: <VEH>/base_pose_ground_truth
 	pubsubs.pub_ground_truth = n_->create_publisher<nav_msgs::msg::Odometry>(
 		vehVarName("base_pose_ground_truth", *veh), publisher_history_len_);
+
+	// pub: <VEH>/collision
+	pubsubs.pub_collision = n_->create_publisher<std_msgs::msg::Bool>(
+		vehVarName("collision", *veh), publisher_history_len_);
 #endif
 
 	// pub: <VEH>/chassis_markers
@@ -874,6 +887,7 @@ void MVSimNode::spinNotifyROS()
 		for (auto it = vehs.begin(); it != vehs.end(); ++it, ++i)
 		{
 			const VehicleBase::Ptr& veh = it->second;
+			auto& pubs = pubsub_vehicles_[i];
 
 			const std::string sOdomName = vehVarName("odom", *veh);
 			const std::string sBaseLinkFrame = vehVarName("base_link", *veh);
@@ -903,9 +917,9 @@ void MVSimNode::spinNotifyROS()
 				gtOdoMsg.child_frame_id = sBaseLinkFrame;
 
 #if PACKAGE_ROS_VERSION == 1
-				pubsub_vehicles_[i].pub_ground_truth.publish(gtOdoMsg);
+				pubs.pub_ground_truth.publish(gtOdoMsg);
 #else
-				pubsub_vehicles_[i].pub_ground_truth->publish(gtOdoMsg);
+				pubs.pub_ground_truth->publish(gtOdoMsg);
 #endif
 				if (do_fake_localization_)
 				{
@@ -924,11 +938,9 @@ void MVSimNode::spinNotifyROS()
 						particleCloud.poses.resize(1);
 						particleCloud.poses[0] = gtOdoMsg.pose.pose;
 #if PACKAGE_ROS_VERSION == 1
-						pubsub_vehicles_[i].pub_particlecloud.publish(
-							particleCloud);
+						pubs.pub_particlecloud.publish(particleCloud);
 #else
-						pubsub_vehicles_[i].pub_particlecloud->publish(
-							particleCloud);
+						pubs.pub_particlecloud->publish(particleCloud);
 #endif
 					}
 
@@ -937,9 +949,9 @@ void MVSimNode::spinNotifyROS()
 						currentPos.header = gtOdoMsg.header;
 						currentPos.pose.pose = gtOdoMsg.pose.pose;
 #if PACKAGE_ROS_VERSION == 1
-						pubsub_vehicles_[i].pub_amcl_pose.publish(currentPos);
+						pubs.pub_amcl_pose.publish(currentPos);
 #else
-						pubsub_vehicles_[i].pub_amcl_pose->publish(currentPos);
+						pubs.pub_amcl_pose->publish(currentPos);
 #endif
 					}
 
@@ -962,7 +974,7 @@ void MVSimNode::spinNotifyROS()
 			// pub: <VEH>/chassis_markers
 			{
 				// visualization_msgs::MarkerArray
-				auto& msg_shapes = pubsub_vehicles_[i].chassis_shape_msg;
+				auto& msg_shapes = pubs.chassis_shape_msg;
 				ASSERT_EQUAL_(
 					msg_shapes.markers.size(), (1 + veh->getNumWheels()));
 
@@ -981,9 +993,9 @@ void MVSimNode::spinNotifyROS()
 
 				// Publish Initial pose
 #if PACKAGE_ROS_VERSION == 1
-				pubsub_vehicles_[i].pub_chassis_markers.publish(msg_shapes);
+				pubs.pub_chassis_markers.publish(msg_shapes);
 #else
-				pubsub_vehicles_[i].pub_chassis_markers->publish(msg_shapes);
+				pubs.pub_chassis_markers->publish(msg_shapes);
 #endif
 			}
 
@@ -1018,11 +1030,31 @@ void MVSimNode::spinNotifyROS()
 
 					// publish:
 #if PACKAGE_ROS_VERSION == 1
-					pubsub_vehicles_[i].pub_odom.publish(odoMsg);
+					pubs.pub_odom.publish(odoMsg);
 #else
-					pubsub_vehicles_[i].pub_odom->publish(odoMsg);
+					pubs.pub_odom->publish(odoMsg);
 #endif
 				}
+			}
+
+			// 4) Collision status
+			// --------------------------------------------
+			const bool col = veh->hadCollision();
+			veh->resetCollisionFlag();
+			{
+#if PACKAGE_ROS_VERSION == 1
+				std_msgs::Bool colMsg;
+#else
+				std_msgs::msg::Bool colMsg;
+#endif
+				colMsg.data = col;
+
+				// publish:
+#if PACKAGE_ROS_VERSION == 1
+				pubs.pub_collision.publish(colMsg);
+#else
+				pubs.pub_collision->publish(colMsg);
+#endif
 			}
 
 		}  // end for each vehicle
