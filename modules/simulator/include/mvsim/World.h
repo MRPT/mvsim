@@ -712,9 +712,9 @@ class World : public mrpt::system::COutputLogger
 		const std::string& xmlTagName,
 		void (World::*f)(const XmlParserContext& ctx))
 	{
-		xmlParsers_.emplace(xmlTagName, [this, f](const XmlParserContext& ctx) {
-			(this->*f)(ctx);
-		});
+		xmlParsers_.emplace(
+			xmlTagName,
+			[this, f](const XmlParserContext& ctx) { (this->*f)(ctx); });
 	}
 
 	// ======== XML parser tags ========

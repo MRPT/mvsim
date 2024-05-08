@@ -30,8 +30,8 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <rosgraph_msgs/Clock.h>
-#include <visualization_msgs/MarkerArray.h>
 #include <std_msgs/Bool.h>
+#include <visualization_msgs/MarkerArray.h>
 #else
 #include <geometry_msgs/msg/polygon.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
