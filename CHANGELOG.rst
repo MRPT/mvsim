@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.4 (2024-05-08)
+------------------
 * Better detection of "in collision" flag.
 * Update to clang-format-14
 * Upgrade Joystick API so it works correctly with an arbitrary number of axes
