@@ -196,11 +196,13 @@ void Client::advertiseService(
 {
 	doAdvertiseService(
 		serviceName, INPUT_MSG_T::descriptor(), OUTPUT_MSG_T::descriptor(),
-		service_callback_t([callback](const std::string& inData) {
-			INPUT_MSG_T in;
-			in.ParseFromString(inData);
-			return std::make_shared<OUTPUT_MSG_T>(callback(in));
-		}));
+		service_callback_t(
+			[callback](const std::string& inData)
+			{
+				INPUT_MSG_T in;
+				in.ParseFromString(inData);
+				return std::make_shared<OUTPUT_MSG_T>(callback(in));
+			}));
 }
 
 template <typename MSG_T>
@@ -210,11 +212,13 @@ void Client::subscribeTopic(
 {
 	doSubscribeTopic(
 		topicName, MSG_T::descriptor(),
-		topic_callback_t([callback](const zmq::message_t& m) {
-			MSG_T in;
-			mvsim::parseMessage(m, in);
-			callback(in);
-		}));
+		topic_callback_t(
+			[callback](const zmq::message_t& m)
+			{
+				MSG_T in;
+				mvsim::parseMessage(m, in);
+				callback(in);
+			}));
 }
 
 template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>

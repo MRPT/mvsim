@@ -25,6 +25,10 @@ Available parameters (all are optional):
 - ``<b2d_vel_iters>8</b2d_vel_iters>`` and ``<b2d_pos_iters>3</b2d_pos_iters>``. 
   Velocity and position iteration count (refer to libbox2d docs).
 
+- ``<collision_threshold>0.03</collision_threshold>``: If the distance between the closest points of 
+  a contact manifold (see box2d docs) for two bodies is below this distance, it is marked as "in collision",
+  and reported as such by the collision API.
+
 - ``<save_to_rawlog>my_dataset.rawlog</save_to_rawlog>``: If present, all sensor observations
   will be saved into an MRPT dataset in ``.rawlog`` format. One file will be created per vehicle,
   by adding the vehicle name to the provided file name.

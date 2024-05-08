@@ -2,6 +2,15 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.4 (2024-05-08)
+------------------
+* Better detection of "in collision" flag.
+* Update to clang-format-14
+* Upgrade Joystick API so it works correctly with an arbitrary number of axes
+* ROS nodes: add collision state publishers for each vehicle
+* remove dead code
+* Contributors: Jose Luis Blanco-Claraco
+
 0.9.3 (2024-04-24)
 ------------------
 * Fix usage of (new explicit) TPoint3D constructors

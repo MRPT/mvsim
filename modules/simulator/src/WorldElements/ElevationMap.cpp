@@ -266,12 +266,6 @@ void ElevationMap::simul_pre_timestep(
 
 			optimalTf_ = mrpt::poses::CPose3D(tmpl);
 
-#if 0
-			std::cout << "iter: " << iter << " poseErr:"
-					  << std::sqrt(corrs.overallSquareError(optimal_transf_))
-					  << " p:" << optimal_transf_ << "\n";
-#endif
-
 			new_pose.z = optimalTf_.z();
 			new_pose.yaw = optimalTf_.yaw();
 			new_pose.pitch = optimalTf_.pitch();
@@ -287,19 +281,6 @@ void ElevationMap::simul_pre_timestep(
 			gl_debugWheelsContactPoints_->clear();
 			for (const auto& c : corrs_)
 				gl_debugWheelsContactPoints_->insertPoint(c.global);
-
-#if 0
-			// DEBUG:
-			for (float x = -60; x < 60; x += 0.5)
-				for (float y = -60; y < 60; y += 0.5)
-				{
-					float z;
-					if (!getElevationAt(x /*in*/, y /*in*/, z /*out*/))
-						continue;
-					gl_debugWheelsContactPoints_->insertPoint(x, y, z);
-				}
-			debugShowContactPoints_ = false;
-#endif
 		}
 
 		// compute "down" direction:

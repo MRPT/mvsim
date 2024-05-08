@@ -115,8 +115,11 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
 	if (in.js)
 	{
 		const auto& js = in.js.value();
-		setpoint_lin_speed = -js.y * joyMaxLinSpeed;
-		setpoint_ang_speed = -js.x * joyMaxAngSpeed;
+		const float js_x = js.axes[0];
+		const float js_y = js.axes[1];
+
+		setpoint_lin_speed = -js_y * joyMaxLinSpeed;
+		setpoint_ang_speed = -js_x * joyMaxAngSpeed;
 
 		if (js.buttons.size() >= 7)
 		{

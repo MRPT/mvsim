@@ -299,12 +299,14 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 		// Avoid the lidar seeing the vehicle owns shape:
 		std::map<b2Fixture*, uintptr_t> orgUserData;
 
-		auto makeFixtureInvisible = [&](b2Fixture* f) {
+		auto makeFixtureInvisible = [&](b2Fixture* f)
+		{
 			if (!f) return;
 			orgUserData[f] = f->GetUserData().pointer;
 			f->GetUserData().pointer = INVISIBLE_FIXTURE_USER_DATA;
 		};
-		auto undoInvisibleFixtures = [&]() {
+		auto undoInvisibleFixtures = [&]()
+		{
 			for (auto& kv : orgUserData)
 				kv.first->GetUserData().pointer = kv.second;
 		};

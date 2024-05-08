@@ -376,12 +376,6 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			for (const auto a : angs) vertical_ray_angles_.push_back(a);
 		}
 
-#if 0
-		std::cout << "vertical_ray_angles: ";
-		for (const double a : vertical_ray_angles_) std::cout << a << " ";
-		std::cout << "\n";
-#endif
-
 		// Pass to radians:
 		for (double& a : vertical_ray_angles_) a = mrpt::DEG2RAD(a);
 	}
@@ -403,10 +397,6 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	camModel.nrows = FBO_NROWS;
 	camModel.cy(FBO_NROWS_UP + 1);
 	camModel.fy(camModel.fx());
-
-#if 0
-	camModel.asYAML().printAsYAML();
-#endif
 
 	if (!fbo_renderer_depth_)
 	{

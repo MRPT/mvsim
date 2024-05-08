@@ -400,6 +400,8 @@ class World : public mrpt::system::COutputLogger
 
 	bool evaluate_tag_if(const rapidxml::xml_node<char>& node) const;
 
+	float collisionThreshold() const {return collisionThreshold_;}
+
    private:
 	friend class VehicleBase;
 	friend class Block;
@@ -424,6 +426,9 @@ class World : public mrpt::system::COutputLogger
 
 	/** Velocity and position iteration count (refer to libbox2d docs) */
 	int b2dVelIters_ = 8, b2dPosIters_ = 3;
+	
+	/** Distance between two body edges to be considered a collision. */
+	float collisionThreshold_ = 0.03f;
 
 	std::string serverAddress_ = "localhost";
 
@@ -444,6 +449,7 @@ class World : public mrpt::system::COutputLogger
 		{"simul_timestep", {"%lf", &simulTimestep_}},
 		{"b2d_vel_iters", {"%i", &b2dVelIters_}},
 		{"b2d_pos_iters", {"%i", &b2dPosIters_}},
+		{"collision_threshold", {"%f", &collisionThreshold_}},
 		{"joystick_enabled", {"%bool", &joystickEnabled_}},
 		{"save_to_rawlog", {"%s", &save_to_rawlog_}},
 		{"rawlog_odometry_rate", {"%lf", &rawlog_odometry_rate_}},
@@ -712,9 +718,9 @@ class World : public mrpt::system::COutputLogger
 		const std::string& xmlTagName,
 		void (World::*f)(const XmlParserContext& ctx))
 	{
-		xmlParsers_.emplace(xmlTagName, [this, f](const XmlParserContext& ctx) {
-			(this->*f)(ctx);
-		});
+		xmlParsers_.emplace(
+			xmlTagName,
+			[this, f](const XmlParserContext& ctx) { (this->*f)(ctx); });
 	}
 
 	// ======== XML parser tags ========

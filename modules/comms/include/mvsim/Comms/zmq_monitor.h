@@ -42,24 +42,26 @@ class SocketMonitor : public zmq::monitor_t
 		const std::string endpoint =
 			mrpt::format("inproc://monitor%i_%p.req", v, s.operator void*());
 
-		runningMonitor_ = std::thread([&, endpoint]() {
-			try
+		runningMonitor_ = std::thread(
+			[&, endpoint]()
 			{
-				zmq::monitor_t::monitor(s, endpoint, ZMQ_EVENT_ALL);
-			}
-			catch (const std::exception& e)
-			{
-				if (zmq_errno() == ETERM)
+				try
 				{
-					// Not a real error, just we are shutting down.
+					zmq::monitor_t::monitor(s, endpoint, ZMQ_EVENT_ALL);
 				}
-				else
+				catch (const std::exception& e)
 				{
-					std::cerr << "[MySocketMonitor] Error: " << e.what()
-							  << " (zmq_errno=" << zmq_errno() << ")\n";
+					if (zmq_errno() == ETERM)
+					{
+						// Not a real error, just we are shutting down.
+					}
+					else
+					{
+						std::cerr << "[MySocketMonitor] Error: " << e.what()
+								  << " (zmq_errno=" << zmq_errno() << ")\n";
+					}
 				}
-			}
-		});
+			});
 	}
 
 	void setConnected(bool v)

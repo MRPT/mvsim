@@ -259,7 +259,8 @@ void Server::send_topic_publishers_to_subscribed_clients(
 
 	ASSERT_(mainThreadZMQcontext_);
 
-	auto lambdaSendToSub = [&](const std::string& subUpdtEndPoint) {
+	auto lambdaSendToSub = [&](const std::string& subUpdtEndPoint)
+	{
 		try
 		{
 			MRPT_LOG_DEBUG_STREAM(

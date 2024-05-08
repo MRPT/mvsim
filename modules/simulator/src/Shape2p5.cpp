@@ -268,7 +268,8 @@ void Shape2p5::internalGridFloodFill() const
 	const int cxMax = grid_->getSizeX() - 1;
 	const int cyMax = grid_->getSizeY() - 1;
 
-	const auto Inside = [&](int x, int y) {
+	const auto Inside = [&](int x, int y)
+	{
 		if (x < 0 || y < 0) return false;
 		if (x > cxMax || y > cyMax) return false;
 		uint8_t* c = grid_->cellByIndex(x, y);
@@ -277,7 +278,8 @@ void Shape2p5::internalGridFloodFill() const
 		return *c == CELL_UNDEFINED;
 	};
 
-	const auto Set = [&](int x, int y) {
+	const auto Set = [&](int x, int y)
+	{
 		if (x < 0 || y < 0) return;
 		if (x > cxMax || y > cyMax) return;
 		uint8_t* c = grid_->cellByIndex(x, y);
@@ -326,7 +328,8 @@ void Shape2p5::internalGridFloodFill() const
 
 	std::queue<Coord> s;
 
-	const auto lambdaScan = [&s, &Inside](int lx, int rx, int y) {
+	const auto lambdaScan = [&s, &Inside](int lx, int rx, int y)
+	{
 		bool spanAdded = false;
 		for (int x = lx; x <= rx; x++)
 		{
@@ -386,7 +389,8 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 		{-1, -1},
 	};
 
-	auto lambdaCellIsBorderSimple = [&](int cx, int cy) {
+	auto lambdaCellIsBorderSimple = [&](int cx, int cy)
+	{
 		auto* c = grid_->cellByIndex(cx, cy);
 		if (!c) return false;
 
@@ -405,7 +409,8 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 		return false;
 	};
 
-	auto lambdaStillHasUnexploredNeighbors = [&](int cx, int cy) {
+	auto lambdaStillHasUnexploredNeighbors = [&](int cx, int cy)
+	{
 		// precondition: (cx,cy) is VISITED.
 		// We check 8-neighbors:
 
@@ -418,7 +423,8 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 		return false;
 	};
 
-	auto lambdaCellIsBorder = [&](int cx, int cy, bool considerRevisits) {
+	auto lambdaCellIsBorder = [&](int cx, int cy, bool considerRevisits)
+	{
 		auto* c = grid_->cellByIndex(cx, cy);
 		if (!c) return false;
 
@@ -525,7 +531,8 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 
 	auto lambdaRenderPoly = [&scene](
 								const mrpt::math::TPolygon2D& p,
-								const mrpt::img::TColor& color, double z) {
+								const mrpt::img::TColor& color, double z)
+	{
 		auto glPts = mrpt::opengl::CPointCloud::Create();
 		auto glPoly = mrpt::opengl::CSetOfLines::Create();
 		glPoly->setColor_u8(color);

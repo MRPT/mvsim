@@ -22,9 +22,7 @@
 #include <mvsim/mvsim-msgs/SrvShutdownAnswer.pb.h>
 #endif
 
-#include <algorithm>  // count()
 #include <map>
-#include <stdexcept>
 
 using namespace mvsim;
 

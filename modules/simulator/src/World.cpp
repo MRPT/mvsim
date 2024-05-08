@@ -339,7 +339,8 @@ double World::get_simul_timestep() const
 	ASSERT_GE_(simulTimestep_, .0);
 	static bool firstTimeCheck = true;
 
-	auto lambdaMinimumSensorPeriod = [this]() -> std::optional<double> {
+	auto lambdaMinimumSensorPeriod = [this]() -> std::optional<double>
+	{
 		std::optional<double> ret;
 		for (const auto& veh : vehicles_)
 		{
@@ -429,17 +430,23 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 		}
 	}
 
-	mvsim::TJoyStickEvent js;
-
 	const int nJoy = 0;	 // TODO: Expose param for multiple joysticks?
+	mvsim::Joystick::State joyState;
 
-	joystick_->getJoystickPosition(nJoy, js.x, js.y, js.z, js.buttons);
+	joystick_->getJoystickPosition(nJoy, joyState);
 
-	if (js.z != 0 && gui_.gui_win)
+	mvsim::TJoyStickEvent js;
+	js.axes = joyState.axes;
+	js.buttons = joyState.buttons;
+
+	const size_t JOY_AXIS_AZIMUTH = 3;
+
+	if (js.axes.size() > JOY_AXIS_AZIMUTH && gui_.gui_win)
 	{
 		auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
 		auto& cam = gui_.gui_win->camera();
-		cam.setAzimuthDegrees(cam.getAzimuthDegrees() - js.z);
+		cam.setAzimuthDegrees(
+			cam.getAzimuthDegrees() - js.axes[JOY_AXIS_AZIMUTH]);
 	}
 
 	return js;

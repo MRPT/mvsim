@@ -30,6 +30,7 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <rosgraph_msgs/Clock.h>
+#include <std_msgs/Bool.h>
 #include <visualization_msgs/MarkerArray.h>
 #else
 #include <geometry_msgs/msg/polygon.hpp>
@@ -38,6 +39,7 @@
 #include <nav_msgs/msg/map_meta_data.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include "rclcpp/clock.hpp"
@@ -154,6 +156,7 @@ class MVSimNode
 
 		ros::Publisher pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
 		ros::Publisher pub_chassis_shape;  //!< "<VEH>/chassis_shape"
+		ros::Publisher pub_collision;  //!< "<VEH>/collision"
 
 		visualization_msgs::MarkerArray chassis_shape_msg;
 #else
@@ -179,6 +182,9 @@ class MVSimNode
 		/// "<VEH>/chassis_shape"
 		rclcpp::Publisher<geometry_msgs::msg::Polygon>::SharedPtr
 			pub_chassis_shape;
+
+		/// "<VEH>/collision"
+		rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_collision;
 
 		visualization_msgs::msg::MarkerArray chassis_shape_msg;
 #endif

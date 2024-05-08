@@ -133,8 +133,11 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 	if (in.js)
 	{
 		const auto& js = in.js.value();
-		setpoint_.vx = -js.y * joyMaxLinSpeed;
-		setpoint_.omega = -js.x * joyMaxAngSpeed;
+		const float js_x = js.axes[0];
+		const float js_y = js.axes[1];
+
+		setpoint_.vx = -js_y * joyMaxLinSpeed;
+		setpoint_.omega = -js_x * joyMaxAngSpeed;
 
 		if (js.buttons.size() >= 7)
 		{

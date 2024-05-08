@@ -87,17 +87,21 @@ int main(int argc, char** argv)
 #else
 		auto ros_clock = rclcpp::Clock::make_shared();
 		auto timer_ = rclcpp::create_timer(
-			n, ros_clock, std::chrono::microseconds(periodMs), [&]() {
+			n, ros_clock, std::chrono::microseconds(periodMs),
+			[&]()
+			{
 				if (rclcpp::ok()) node->spin();
 			});
 
-		rclcpp::on_shutdown([&]() {
-			std::cout << "[rclcpp::on_shutdown] Destroying MVSIM node..."
-					  << std::endl;
-			node->terminateSimulation();
-			std::cout << "[rclcpp::on_shutdown] MVSIM node destroyed."
-					  << std::endl;
-		});
+		rclcpp::on_shutdown(
+			[&]()
+			{
+				std::cout << "[rclcpp::on_shutdown] Destroying MVSIM node..."
+						  << std::endl;
+				node->terminateSimulation();
+				std::cout << "[rclcpp::on_shutdown] MVSIM node destroyed."
+						  << std::endl;
+			});
 
 		rclcpp::spin(n);
 		rclcpp::shutdown();

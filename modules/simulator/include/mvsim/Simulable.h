@@ -105,15 +105,15 @@ class Simulable
 	void setName(const std::string& s) { name_ = s; }
 
 	/** Whether is is in collision right now. \sa  */
-	bool isInCollision() const { return isInCollision_; }
+	bool isInCollision() const;
 
 	/** Whether a collision occurred since the last time this flag was manually
 	 * reset.
 	 * \sa isInCollision(), resetCollisionFlag()  */
-	bool hadCollision() const { return hadCollisionFlag_; }
+	bool hadCollision() const;
 
 	/** Resets the condition reported by hadCollision() to false */
-	void resetCollisionFlag() { hadCollisionFlag_ = false; }
+	void resetCollisionFlag();
 
 	virtual void registerOnServer(mvsim::Client& c);
 
@@ -178,7 +178,9 @@ class Simulable
 	bool isInCollision_ = false;
 
 	/** Whether a collision occurred since the last time this flag was manually
-	 * reset  */
+	 * reset.
+	 * Multithreading: protected by q_mtx_
+	 */
 	bool hadCollisionFlag_ = false;
 
 	/** If not empty, publish the pose on this topic */
