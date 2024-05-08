@@ -60,7 +60,8 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 {
 	if (b2dBody_)
 	{
-		q_mtx_.lock();
+		std::unique_lock lck(q_mtx_);
+
 		// simulable_parent_->physical_objects_mtx(): already locked by caller
 
 		// Pos:
@@ -90,17 +91,18 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 
 		// Instantaneous collision flag:
 		isInCollision_ = false;
-		if (b2ContactEdge* cl = b2dBody_->GetContactList();
-			cl != nullptr && cl->contact != nullptr &&
-			cl->contact->IsTouching())
+		if (b2ContactEdge* cl = b2dBody_->GetContactList(); cl != nullptr)
 		{
-			// We may store with which other bodies it's in collision...
-			isInCollision_ = true;
+			for (auto contact = cl->contact; contact != nullptr;
+				 contact = contact->GetNext())
+			{
+				// We may store with which other bodies it's in collision?
+				if (cl->contact->IsTouching()) isInCollision_ = true;
+			}
 		}
+
 		// Reseteable collision flag:
 		hadCollisionFlag_ = hadCollisionFlag_ || isInCollision_;
-
-		q_mtx_.unlock();
 	}
 
 	// Optional publish to topics:
@@ -133,6 +135,24 @@ mrpt::poses::CPose3D Simulable::getCPose3D() const
 {
 	std::shared_lock lck(q_mtx_);
 	return mrpt::poses::CPose3D(q_);
+}
+
+bool Simulable::isInCollision() const
+{
+	std::shared_lock lck(q_mtx_);
+	return isInCollision_;
+}
+
+bool Simulable::hadCollision() const
+{
+	std::shared_lock lck(q_mtx_);
+	return hadCollisionFlag_;
+}
+
+void Simulable::resetCollisionFlag()
+{
+	std::unique_lock lck(q_mtx_);
+	hadCollisionFlag_ = false;
 }
 
 bool Simulable::parseSimulable(
@@ -414,50 +434,45 @@ void Simulable::registerOnServer(mvsim::Client& c)
 
 void Simulable::setPose(const mrpt::math::TPose3D& p, bool notifyChange) const
 {
-	q_mtx_.lock();
+	{
+		std::unique_lock lck(q_mtx_);
 
-	Simulable& me = const_cast<Simulable&>(*this);
+		Simulable& me = const_cast<Simulable&>(*this);
 
-	me.q_ = p;
+		me.q_ = p;
 
-	// Update the GUI element poses only:
-	if (auto* vo = me.meAsVisualObject(); vo)
-		vo->guiUpdate(std::nullopt, std::nullopt);
-
-	q_mtx_.unlock();
+		// Update the GUI element poses only:
+		if (auto* vo = me.meAsVisualObject(); vo)
+			vo->guiUpdate(std::nullopt, std::nullopt);
+	}
 
 	if (notifyChange) const_cast<Simulable*>(this)->notifySimulableSetPose(p);
 }
 
 mrpt::math::TPose3D Simulable::getPose() const
 {
-	q_mtx_.lock_shared();
-	mrpt::math::TPose3D ret = q_;
-	q_mtx_.unlock_shared();
-	return ret;
+	std::shared_lock lck(q_mtx_);
+	return q_;
 }
 
 mrpt::math::TPose3D Simulable::getPoseNoLock() const { return q_; }
 
 mrpt::math::TTwist2D Simulable::getTwist() const
 {
-	q_mtx_.lock_shared();
-	mrpt::math::TTwist2D ret = dq_;
-	q_mtx_.unlock_shared();
-	return ret;
+	std::shared_lock lck(q_mtx_);
+	return dq_;
 }
 
 mrpt::math::TVector3D Simulable::getLinearAcceleration() const
 {
-	q_mtx_.lock_shared();
-	auto ret = ddq_lin_;
-	q_mtx_.unlock_shared();
-	return ret;
+	std::shared_lock lck(q_mtx_);
+	return ddq_lin_;
 }
 
 void Simulable::setTwist(const mrpt::math::TTwist2D& dq) const
 {
-	q_mtx_.lock();
+	std::unique_lock lck(q_mtx_);
+
 	const_cast<mrpt::math::TTwist2D&>(dq_) = dq;
 
 	if (b2dBody_)
@@ -467,6 +482,4 @@ void Simulable::setTwist(const mrpt::math::TTwist2D& dq) const
 		b2dBody_->SetLinearVelocity(b2Vec2(local_dq.vx, local_dq.vy));
 		b2dBody_->SetAngularVelocity(dq.omega);
 	}
-
-	q_mtx_.unlock();
 }

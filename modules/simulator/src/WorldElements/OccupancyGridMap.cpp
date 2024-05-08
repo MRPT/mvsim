@@ -289,15 +289,13 @@ void OccupancyGridMap::simul_pre_timestep(
 
 				if (!scan->getScanRangeValidity(k))
 				{
-					ipv.collide_fixtures[k].fixture->SetSensor(
-						true);	// Box2D's way of saying: don't collide with
-								// this!
+					// Box2D's way of saying: don't collide with this!
+					ipv.collide_fixtures[k].fixture->SetSensor(true);
 					ipv.collide_fixtures[k].fixture->GetUserData().pointer =
 						INVISIBLE_FIXTURE_USER_DATA;
 				}
 				else
 				{
-					// Box2D's way of saying: don't collide with this!
 					ipv.collide_fixtures[k].fixture->SetSensor(false);
 					ipv.collide_fixtures[k].fixture->GetUserData().pointer = 0;
 

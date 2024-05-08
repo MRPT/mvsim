@@ -66,7 +66,7 @@ constexpr uintptr_t INVISIBLE_FIXTURE_USER_DATA = 1;
 
 struct TJoyStickEvent
 {
-	float x = .0f, y = .0f, z = .0f;
+	std::vector<float> axes;
 	std::vector<bool> buttons;
 
 	TJoyStickEvent() = default;
