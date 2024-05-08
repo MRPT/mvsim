@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <box2d/b2_contact.h>
+#include <box2d/b2_distance.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
@@ -97,7 +98,29 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 				 contact = contact->GetNext())
 			{
 				// We may store with which other bodies it's in collision?
-				if (cl->contact->IsTouching()) isInCollision_ = true;
+				const auto shA = cl->contact->GetFixtureA()->GetShape();
+				const auto shB = cl->contact->GetFixtureB()->GetShape();
+
+				if (cl->contact->GetFixtureA()->IsSensor()) continue;
+				if (cl->contact->GetFixtureB()->IsSensor()) continue;
+
+				b2DistanceInput di;
+				di.proxyA.Set(shA, 0 /*index for chains*/);
+				di.proxyB.Set(shB, 0 /*index for chains*/);
+				di.transformA =
+					cl->contact->GetFixtureA()->GetBody()->GetTransform();
+				di.transformB =
+					cl->contact->GetFixtureB()->GetBody()->GetTransform();
+				di.useRadii = true;
+
+				b2SimplexCache dc;
+				dc.count = 0;
+				b2DistanceOutput dO;
+				b2Distance(&dO, &dc, &di);
+
+				if (dO.distance < simulable_parent_->collisionThreshold() ||
+					cl->contact->IsTouching())
+					isInCollision_ = true;
 			}
 		}
 
