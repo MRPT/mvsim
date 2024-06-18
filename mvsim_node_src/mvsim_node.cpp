@@ -710,7 +710,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			// Init values. Copy the contents from the chassis msg
 			wheel_shape_msg = msg_shapes.markers[0];
 
-			chassis_shape_msg.ns = mrpt::format(
+			wheel_shape_msg.ns = mrpt::format(
 				"mvsim.chassis_shape.wheel%u", static_cast<unsigned int>(i));
 			wheel_shape_msg.points.resize(5);
 			wheel_shape_msg.points[0].x = lx;
