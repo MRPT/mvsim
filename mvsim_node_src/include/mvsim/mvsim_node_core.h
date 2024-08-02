@@ -186,6 +186,10 @@ class MVSimNode
 		/// "<VEH>/collision"
 		rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_collision;
 
+		/// "<VEH>/tf", "<VEH>/tf_static"
+		rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr pub_tf;
+		rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr pub_tf_static;
+
 		visualization_msgs::msg::MarkerArray chassis_shape_msg;
 #endif
 	};
