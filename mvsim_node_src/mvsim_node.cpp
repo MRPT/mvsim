@@ -642,6 +642,16 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	// pub: <VEH>/collision
 	pubsubs.pub_collision = n_->create_publisher<std_msgs::msg::Bool>(
 		vehVarName("collision", *veh), publisher_history_len_);
+
+	// "<VEH>/tf", "<VEH>/tf_static"
+	rclcpp::QoS qosLatched10(rclcpp::KeepLast(10));
+	qosLatched10.durability(
+		rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
+	pubsubs.pub_tf = n_->create_publisher<tf2_msgs::msg::TFMessage>(
+		vehVarName("tf", *veh), qosLatched10);
+	pubsubs.pub_tf_static = n_->create_publisher<tf2_msgs::msg::TFMessage>(
+		vehVarName("tf_static", *veh), qosLatched10);
 #endif
 
 	// pub: <VEH>/chassis_markers
@@ -651,13 +661,13 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			n_.advertise<visualization_msgs::MarkerArray>(
 				vehVarName("chassis_markers", *veh), 5, true /*latch*/);
 #else
-		rclcpp::QoS qosLatched(rclcpp::KeepLast(5));
-		qosLatched.durability(rmw_qos_durability_policy_t::
-								  RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+		rclcpp::QoS qosLatched5(rclcpp::KeepLast(5));
+		qosLatched5.durability(rmw_qos_durability_policy_t::
+								   RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
 
 		pubsubs.pub_chassis_markers =
 			n_->create_publisher<visualization_msgs::msg::MarkerArray>(
-				vehVarName("chassis_markers", *veh), qosLatched);
+				vehVarName("chassis_markers", *veh), qosLatched5);
 #endif
 		const mrpt::math::TPolygon2D& poly = veh->getChassisShape();
 
@@ -752,13 +762,13 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 		geometry_msgs::Polygon poly_msg;
 #else
-		rclcpp::QoS qosLatched(rclcpp::KeepLast(1));
-		qosLatched.durability(rmw_qos_durability_policy_t::
-								  RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+		rclcpp::QoS qosLatched1(rclcpp::KeepLast(1));
+		qosLatched1.durability(rmw_qos_durability_policy_t::
+								   RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
 
 		pubsubs.pub_chassis_shape =
 			n_->create_publisher<geometry_msgs::msg::Polygon>(
-				vehVarName("chassis_polygon", *veh), qosLatched);
+				vehVarName("chassis_polygon", *veh), qosLatched1);
 
 		geometry_msgs::msg::Polygon poly_msg;
 #endif
@@ -804,6 +814,16 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	sendStaticTF(
 		vehVarName("base_link", *veh), vehVarName("base_footprint", *veh),
 		tfIdentity_, myNow());
+
+	Msg_TransformStamped tx;
+	tx.header.frame_id = vehVarName("base_link", *veh);
+	tx.child_frame_id = vehVarName("base_footprint", *veh);
+	tx.header.stamp = myNow();
+	tx.transform = tf2::toMsg(tfIdentity_);
+
+	tf2_msgs::msg::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tx);
+	pubsubs.pub_tf_static->publish(tfMsg);
 }
 
 void MVSimNode::onROSMsgCmdVel(
@@ -963,8 +983,12 @@ void MVSimNode::spinNotifyROS()
 						tx.header.stamp = myNow();
 						tx.transform =
 							tf2::toMsg(tf2::Transform::getIdentity());
-
 						tf_br_.sendTransform(tx);
+
+						// TF: <Ri>/map -> <Ri>/odom
+						tx.header.frame_id = vehVarName("map", *veh);
+						tfMsg.transforms.push_back(tx);
+						pubs.pub_tf->publish(tfMsg);
 					}
 				}
 			}
@@ -1012,6 +1036,10 @@ void MVSimNode::spinNotifyROS()
 					tx.transform =
 						tf2::toMsg(mrpt2ros::toROS_tfTransform(odo_pose));
 					tf_br_.sendTransform(tx);
+
+					tf2_msgs::msg::TFMessage tfMsg;
+					tfMsg.transforms.push_back(tx);
+					pubs.pub_tf->publish(tfMsg);
 				}
 
 				// Apart from TF, publish to the "odom" topic as well
@@ -1201,6 +1229,10 @@ void MVSimNode::internalOn(
 	tfStmp.header.stamp = myNow();
 	tf_br_.sendTransform(tfStmp);
 
+	tf2_msgs::msg::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf->publish(tfMsg);
+
 	// Send observation:
 	{
 		// Convert observation MRPT -> ROS
@@ -1271,6 +1303,10 @@ void MVSimNode::internalOn(
 	tfStmp.header.stamp = myNow();
 	tf_br_.sendTransform(tfStmp);
 
+	tf2_msgs::msg::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf->publish(tfMsg);
+
 	// Send observation:
 	{
 		// Convert observation MRPT -> ROS
@@ -1340,6 +1376,10 @@ void MVSimNode::internalOn(
 	tfStmp.header.frame_id = vehVarName("base_link", veh);
 	tfStmp.header.stamp = myNow();
 	tf_br_.sendTransform(tfStmp);
+
+	tf2_msgs::msg::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf->publish(tfMsg);
 
 	// Send observation:
 	{
@@ -1433,6 +1473,10 @@ void MVSimNode::internalOn(
 		tfStmp.header.stamp = now;
 		tf_br_.sendTransform(tfStmp);
 
+		tf2_msgs::msg::TFMessage tfMsg;
+		tfMsg.transforms.push_back(tfStmp);
+		pubs.pub_tf->publish(tfMsg);
+
 		// Send observation:
 		{
 			// Convert observation MRPT -> ROS
@@ -1471,6 +1515,10 @@ void MVSimNode::internalOn(
 		tfStmp.header.frame_id = vehVarName("base_link", veh);
 		tfStmp.header.stamp = now;
 		tf_br_.sendTransform(tfStmp);
+
+		tf2_msgs::msg::TFMessage tfMsg;
+		tfMsg.transforms.push_back(tfStmp);
+		pubs.pub_tf->publish(tfMsg);
 
 		// Send observation:
 		{
@@ -1556,6 +1604,10 @@ void MVSimNode::internalOn(
 	tfStmp.header.frame_id = vehVarName("base_link", veh);
 	tfStmp.header.stamp = now;
 	tf_br_.sendTransform(tfStmp);
+
+	tf2_msgs::msg::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf->publish(tfMsg);
 
 	// Send observation:
 	{
