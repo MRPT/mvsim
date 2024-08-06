@@ -986,6 +986,7 @@ void MVSimNode::spinNotifyROS()
 						tf_br_.sendTransform(tx);
 
 						// TF: <Ri>/map -> <Ri>/odom
+						tf2_msgs::msg::TFMessage tfMsg;
 						tx.header.frame_id = vehVarName("map", *veh);
 						tfMsg.transforms.push_back(tx);
 						pubs.pub_tf->publish(tfMsg);
