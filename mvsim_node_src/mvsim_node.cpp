@@ -630,6 +630,12 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	// pub: <VEH>/collision
 	pubsubs.pub_collision = n_.advertise<std_msgs::Bool>(
 		vehVarName("collision", *veh), publisher_history_len_);
+
+	// pub: <VEH>/tf, <VEH>/tf_static
+	pubsubs.pub_tf = n_.advertise<tf2_msgs::TFMessage>(
+		vehVarName("tf", *veh), publisher_history_len_);
+	pubsubs.pub_tf_static = n_.advertise<tf2_msgs::TFMessage>(
+		vehVarName("tf_static", *veh), publisher_history_len_);
 #else
 	// pub: <VEH>/odom
 	pubsubs.pub_odom = n_->create_publisher<nav_msgs::msg::Odometry>(
@@ -821,9 +827,18 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	tx.header.stamp = myNow();
 	tx.transform = tf2::toMsg(tfIdentity_);
 
+	// TF STATIC(namespace <Ri>): /base_link -> /base_footprint
+	tx.header.frame_id = "base_link";
+	tx.child_frame_id = "base_footprint";
+#if PACKAGE_ROS_VERSION == 1
+	tf2_msgs::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tx);
+	pubsubs.pub_tf_static.publish(tfMsg);
+#else
 	tf2_msgs::msg::TFMessage tfMsg;
 	tfMsg.transforms.push_back(tx);
 	pubsubs.pub_tf_static->publish(tfMsg);
+#endif
 }
 
 void MVSimNode::onROSMsgCmdVel(
@@ -985,11 +1000,17 @@ void MVSimNode::spinNotifyROS()
 							tf2::toMsg(tf2::Transform::getIdentity());
 						tf_br_.sendTransform(tx);
 
-						// TF: <Ri>/map -> <Ri>/odom
+						// TF(namespace <Ri>): /map -> /odom
+						tx.child_frame_id = "odom";
+#if PACKAGE_ROS_VERSION == 1
+						tf2_msgs::TFMessage tfMsg;
+						tfMsg.transforms.push_back(tx);
+						pubs.pub_tf.publish(tfMsg);
+#else
 						tf2_msgs::msg::TFMessage tfMsg;
-						tx.header.frame_id = vehVarName("map", *veh);
 						tfMsg.transforms.push_back(tx);
 						pubs.pub_tf->publish(tfMsg);
+#endif
 					}
 				}
 			}
@@ -1038,9 +1059,18 @@ void MVSimNode::spinNotifyROS()
 						tf2::toMsg(mrpt2ros::toROS_tfTransform(odo_pose));
 					tf_br_.sendTransform(tx);
 
+					// TF(namespace <Ri>): /odom -> /base_link
+					tx.header.frame_id = "odom";
+					tx.child_frame_id = "base_link";
+#if PACKAGE_ROS_VERSION == 1
+					tf2_msgs::TFMessage tfMsg;
+					tfMsg.transforms.push_back(tx);
+					pubs.pub_tf.publish(tfMsg);
+#else
 					tf2_msgs::msg::TFMessage tfMsg;
 					tfMsg.transforms.push_back(tx);
 					pubs.pub_tf->publish(tfMsg);
+#endif
 				}
 
 				// Apart from TF, publish to the "odom" topic as well
@@ -1225,14 +1255,22 @@ void MVSimNode::internalOn(
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.child_frame_id = sSensorFrameId;
 	tfStmp.header.frame_id = vehVarName("base_link", veh);
+	tfStmp.child_frame_id = sSensorFrameId;
 	tfStmp.header.stamp = myNow();
 	tf_br_.sendTransform(tfStmp);
 
+	tfStmp.header.frame_id = "base_link";
+	tfStmp.child_frame_id = obs.sensorLabel;
+#if PACKAGE_ROS_VERSION == 1
+	tf2_msgs::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf.publish(tfMsg);
+#else
 	tf2_msgs::msg::TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
+#endif
 
 	// Send observation:
 	{
@@ -1299,14 +1337,22 @@ void MVSimNode::internalOn(
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.child_frame_id = sSensorFrameId;
 	tfStmp.header.frame_id = vehVarName("base_link", veh);
+	tfStmp.child_frame_id = sSensorFrameId;
 	tfStmp.header.stamp = myNow();
 	tf_br_.sendTransform(tfStmp);
 
+	tfStmp.header.frame_id = "base_link";
+	tfStmp.child_frame_id = obs.sensorLabel;
+#if PACKAGE_ROS_VERSION == 1
+	tf2_msgs::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf.publish(tfMsg);
+#else
 	tf2_msgs::msg::TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
+#endif
 
 	// Send observation:
 	{
@@ -1373,14 +1419,22 @@ void MVSimNode::internalOn(
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.child_frame_id = sSensorFrameId;
 	tfStmp.header.frame_id = vehVarName("base_link", veh);
+	tfStmp.child_frame_id = sSensorFrameId;
 	tfStmp.header.stamp = myNow();
 	tf_br_.sendTransform(tfStmp);
 
+	tfStmp.header.frame_id = "base_link";
+	tfStmp.child_frame_id = obs.sensorLabel;
+#if PACKAGE_ROS_VERSION == 1
+	tf2_msgs::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf.publish(tfMsg);
+#else
 	tf2_msgs::msg::TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
+#endif
 
 	// Send observation:
 	{
@@ -1469,14 +1523,22 @@ void MVSimNode::internalOn(
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
-		tfStmp.child_frame_id = sSensorFrameId_image;
 		tfStmp.header.frame_id = vehVarName("base_link", veh);
+		tfStmp.child_frame_id = sSensorFrameId_image;
 		tfStmp.header.stamp = now;
 		tf_br_.sendTransform(tfStmp);
 
+		tfStmp.header.frame_id = "base_link";
+		tfStmp.child_frame_id = lbImage;
+#if PACKAGE_ROS_VERSION == 1
+		tf2_msgs::TFMessage tfMsg;
+		tfMsg.transforms.push_back(tfStmp);
+		pubs.pub_tf.publish(tfMsg);
+#else
 		tf2_msgs::msg::TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
+#endif
 
 		// Send observation:
 		{
@@ -1512,14 +1574,22 @@ void MVSimNode::internalOn(
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
-		tfStmp.child_frame_id = sSensorFrameId_points;
 		tfStmp.header.frame_id = vehVarName("base_link", veh);
+		tfStmp.child_frame_id = sSensorFrameId_points;
 		tfStmp.header.stamp = now;
 		tf_br_.sendTransform(tfStmp);
 
+		tfStmp.header.frame_id = "base_link";
+		tfStmp.child_frame_id = lbPoints;
+#if PACKAGE_ROS_VERSION == 1
+		tf2_msgs::TFMessage tfMsg;
+		tfMsg.transforms.push_back(tfStmp);
+		pubs.pub_tf.publish(tfMsg);
+#else
 		tf2_msgs::msg::TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
+#endif
 
 		// Send observation:
 		{
@@ -1601,14 +1671,22 @@ void MVSimNode::internalOn(
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.child_frame_id = sSensorFrameId_points;
 	tfStmp.header.frame_id = vehVarName("base_link", veh);
+	tfStmp.child_frame_id = sSensorFrameId_points;
 	tfStmp.header.stamp = now;
 	tf_br_.sendTransform(tfStmp);
 
+	tfStmp.header.frame_id = "base_link";
+	tfStmp.child_frame_id = lbPoints;
+#if PACKAGE_ROS_VERSION == 1
+	tf2_msgs::TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf.publish(tfMsg);
+#else
 	tf2_msgs::msg::TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
+#endif
 
 	// Send observation:
 	{

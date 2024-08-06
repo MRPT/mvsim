@@ -159,6 +159,9 @@ class MVSimNode
 		ros::Publisher pub_collision;  //!< "<VEH>/collision"
 
 		visualization_msgs::MarkerArray chassis_shape_msg;
+
+		ros::Publisher pub_tf;
+		ros::Publisher pub_tf_static;
 #else
 		/// Subscribers vehicle's "cmd_vel" topic
 		rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel;
