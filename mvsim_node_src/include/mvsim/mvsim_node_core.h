@@ -138,8 +138,8 @@ class MVSimNode
 	// === ROS Publishers ====
 	/// used for simul_map publication
 #if PACKAGE_ROS_VERSION == 1
-	ros::Publisher pub_map_ros_, pub_map_metadata_;
-	// ros::Publisher pub_clock_;
+	mvsim_node::shared_ptr<ros::Publisher> pub_map_ros_, pub_map_metadata_;
+	// mvsim_node::shared_ptr<ros::Publisher> pub_clock_;
 #else
 	rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_ros_;
 	rclcpp::Publisher<nav_msgs::msg::MapMetaData>::SharedPtr pub_map_metadata_;

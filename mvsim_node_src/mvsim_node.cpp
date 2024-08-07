@@ -208,12 +208,12 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	// Init ROS publishers:
 #if PACKAGE_ROS_VERSION == 1
-	// pub_clock_ = n_.advertise<rosgraph_msgs::Clock>("/clock", 10);
+	// pub_clock_ = mvsim_node::make_shared<ros::Publisher>(n_.advertise<rosgraph_msgs::Clock>("/clock", 10));
 
-	pub_map_ros_ = n_.advertise<Msg_OccupancyGrid>(
-		"simul_map", 1 /*queue len*/, true /*latch*/);
-	pub_map_metadata_ = n_.advertise<Msg_MapMetaData>(
-		"simul_map_metadata", 1 /*queue len*/, true /*latch*/);
+	pub_map_ros_ = mvsim_node::make_shared<ros::Publisher>(n_.advertise<Msg_OccupancyGrid>(
+		"simul_map", 1 /*queue len*/, true /*latch*/));
+	pub_map_metadata_ = mvsim_node::make_shared<ros::Publisher>(n_.advertise<Msg_MapMetaData>(
+		"simul_map_metadata", 1 /*queue len*/, true /*latch*/));
 #else
 	rclcpp::QoS qosLatched(rclcpp::KeepLast(10));
 	qosLatched.durability(
@@ -563,15 +563,8 @@ void MVSimNode::publishWorldElements(mvsim::WorldElementBase& obj)
 		ros_map.header.frame_id = "map";
 #endif
 
-#if PACKAGE_ROS_VERSION == 1
-		auto& pubMap = pub_map_ros_;
-		auto& pubMapMeta = pub_map_metadata_;
-#else
-		auto& pubMap = *pub_map_ros_;
-		auto& pubMapMeta = *pub_map_metadata_;
-#endif
-		pubMap.publish(ros_map);
-		pubMapMeta.publish(ros_map.info);
+		pub_map_ros_->publish(ros_map);
+		pub_map_metadata_->publish(ros_map.info);
 
 	}  // end gridmap
 
@@ -905,7 +898,7 @@ void MVSimNode::spinNotifyROS()
 #if PACKAGE_ROS_VERSION == 1
 		// sim_time_.fromSec(mvsim_world_->get_simul_time());
 		// clockMsg_.clock = sim_time_;
-		// pub_clock_.publish(clockMsg_);
+		// pub_clock_->publish(clockMsg_);
 #else
 		// sim_time_ = n_->get_clock()->now();
 		// MRPT_TODO("Publish /clock for ROS2 too?");
