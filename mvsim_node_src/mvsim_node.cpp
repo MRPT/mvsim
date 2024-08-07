@@ -42,6 +42,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 // usings:
+using ros::ok;
+
 using Msg_Header = std_msgs::Header;
 
 using Msg_Pose = geometry_msgs::Pose;
@@ -77,6 +79,8 @@ using Msg_Marker = visualization_msgs::Marker;
 #endif
 
 // usings:
+using rclcpp::ok;
+
 using Msg_Header = std_msgs::msg::Header;
 
 using Msg_Pose = geometry_msgs::msg::Pose;
@@ -103,8 +107,8 @@ namespace mrpt2ros = mrpt::ros2bridge;
 #define ROS12_ERROR(...) ROS_ERROR(__VA_ARGS__)
 #else
 #define ROS12_INFO(...) RCLCPP_INFO(n_->get_logger(), __VA_ARGS__)
-#define ROS12_WARN_THROTTLE(...) RCLCPP_WARN_THROTTLE(n_->get_logger(), *n_->get_clock(), __VA_ARGS__)
-#define ROS12_WARN_STREAM_THROTTLE(...) RCLCPP_WARN_STREAM_THROTTLE(n_->get_logger(), *n_->get_clock(), __VA_ARGS__)
+#define ROS12_WARN_THROTTLE(...) RCLCPP_WARN_THROTTLE(n_->get_logger(), *clock_, __VA_ARGS__)
+#define ROS12_WARN_STREAM_THROTTLE(...) RCLCPP_WARN_STREAM_THROTTLE(n_->get_logger(), *clock_, __VA_ARGS__)
 #define ROS12_ERROR(...) RCLCPP_ERROR(n_->get_logger(), __VA_ARGS__)
 #endif
 
@@ -121,7 +125,29 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 #endif
 	: n_(n)
 {
-#if PACKAGE_ROS_VERSION == 2
+	// Node parameters:
+#if PACKAGE_ROS_VERSION == 1
+	double t;
+	if (!localn_.getParam("base_watchdog_timeout", t)) t = 0.2;
+	base_watchdog_timeout_.fromSec(t);
+	localn_.param("realtime_factor", realtime_factor_, 1.0);
+	localn_.param(
+		"gui_refresh_period", gui_refresh_period_ms_, gui_refresh_period_ms_);
+	localn_.param("headless", headless_, headless_);
+	localn_.param(
+		"period_ms_publish_tf", period_ms_publish_tf_, period_ms_publish_tf_);
+	localn_.param(
+		"do_fake_localization", do_fake_localization_, do_fake_localization_);
+
+	// JLBC: At present, mvsim does not use sim_time for neither ROS 1 nor
+	// ROS 2.
+	// n_.setParam("use_sim_time", false);
+	if (true == localn_.param("use_sim_time", false))
+	{
+		THROW_EXCEPTION(
+			"At present, MVSIM can only work with use_sim_time=false");
+	}
+#else
 	clock_ = n_->get_clock();
 	ts_.attachClock(clock_);
 
@@ -190,30 +216,6 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 #else
 	// sim_time_ = rclcpp::Time(0);
 	base_last_cmd_ = rclcpp::Time(0);
-#endif
-
-	// Node parameters:
-#if PACKAGE_ROS_VERSION == 1
-	double t;
-	if (!localn_.getParam("base_watchdog_timeout", t)) t = 0.2;
-	base_watchdog_timeout_.fromSec(t);
-	localn_.param("realtime_factor", realtime_factor_, 1.0);
-	localn_.param(
-		"gui_refresh_period", gui_refresh_period_ms_, gui_refresh_period_ms_);
-	localn_.param("headless", headless_, headless_);
-	localn_.param(
-		"period_ms_publish_tf", period_ms_publish_tf_, period_ms_publish_tf_);
-	localn_.param(
-		"do_fake_localization", do_fake_localization_, do_fake_localization_);
-
-	// JLBC: At present, mvsim does not use sim_time for neither ROS 1 nor
-	// ROS 2.
-	// n_.setParam("use_sim_time", false);
-	if (true == localn_.param("use_sim_time", false))
-	{
-		THROW_EXCEPTION(
-			"At present, MVSIM can only work with use_sim_time=false");
-	}
 #endif
 
 	mvsim_world_->registerCallbackOnObservation(
@@ -416,11 +418,7 @@ void MVSimNode::spin()
 	}  // end refresh teleop stuff
 
 // Check cmd_vel timeout:
-#if PACKAGE_ROS_VERSION == 1
-	const double rosNow = ros::Time::now().toSec();
-#else
-	const double rosNow = n_->get_clock()->now().nanoseconds() * 1e-9;
-#endif
+	const double rosNow = myNowSec();
 	std::set<mvsim::VehicleBase*> toRemove;
 	for (const auto& [veh, cmdVelTimestamp] : lastCmdVelTimestamp_)
 	{
@@ -515,12 +513,11 @@ void MVSimNode::publishWorldElements(mvsim::WorldElementBase& obj)
 
 #if PACKAGE_ROS_VERSION == 1
 		static size_t loop_count = 0;
-		ros_map.header.stamp = ros::Time::now();
 		ros_map.header.seq = loop_count++;
 #else
-		ros_map.header.stamp = clock_->now();
 		ros_map.header.frame_id = "map";
 #endif
+		ros_map.header.stamp = myNow();
 
 		pub_map_ros_->publish(ros_map);
 		pub_map_metadata_->publish(ros_map.info);
@@ -568,20 +565,26 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	// sendStaticTF("world", "map", tfIdentity_, myNow());
 }
 
+ros_Time MVSimNode::myNow() const {
 #if PACKAGE_ROS_VERSION == 1
-ros::Time MVSimNode::myNow() const { return ros::Time::now(); }
+	return ros::Time::now();
 #else
-rclcpp::Time MVSimNode::myNow() const { return n_->get_clock()->now(); }
+	return clock_->now();
 #endif
+}
+
+double MVSimNode::myNowSec() const {
+#if PACKAGE_ROS_VERSION == 1
+	return ros::Time::now().toSec();
+#else
+	return clock_->now().nanoseconds() * 1e-9;
+#endif
+}
 
 void MVSimNode::sendStaticTF(
 	const std::string& frame_id, const std::string& child_frame_id,
 	const tf2::Transform& txf,
-#if PACKAGE_ROS_VERSION == 1
-	const ros::Time& stamp
-#else
-	const rclcpp::Time& stamp
-#endif
+	const ros_Time& stamp
 )
 {
 	Msg_TransformStamped tx;
@@ -815,12 +818,7 @@ void MVSimNode::onROSMsgCmdVel(
 	mvsim::ControllerBaseInterface* controller = veh->getControllerInterface();
 
 // Update cmd_vel timestamp:
-#if PACKAGE_ROS_VERSION == 1
-	const double rosNow = ros::Time::now().toSec();
-#else
-	const double rosNow = n_->get_clock()->now().nanoseconds() * 1e-9;
-#endif
-	lastCmdVelTimestamp_[veh] = rosNow;
+	lastCmdVelTimestamp_[veh] = myNowSec();
 
 	const bool ctrlAcceptTwist = controller->setTwistCommand(
 		{cmd->linear.x, cmd->linear.y, cmd->angular.z});
@@ -842,11 +840,7 @@ void MVSimNode::spinNotifyROS()
 	const auto& vehs = mvsim_world_->getListOfVehicles();
 
 	// skip if the node is already shutting down:
-#if PACKAGE_ROS_VERSION == 1
-	if (!ros::ok()) return;
-#else
-	if (!rclcpp::ok()) return;
-#endif
+	if (!ok()) return;
 
 		// Get current simulation time (for messages) and publish "/clock"
 		// ----------------------------------------------------------------
@@ -855,7 +849,7 @@ void MVSimNode::spinNotifyROS()
 		// clockMsg_.clock = sim_time_;
 		// pub_clock_->publish(clockMsg_);
 #else
-		// sim_time_ = n_->get_clock()->now();
+		// sim_time_ = myNow();
 		// MRPT_TODO("Publish /clock for ROS2 too?");
 #endif
 
@@ -1029,11 +1023,7 @@ void MVSimNode::onNewObservation(
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "onNewObservation");
 
 	// skip if the node is already shutting down:
-#if PACKAGE_ROS_VERSION == 1
-	if (!ros::ok()) return;
-#else
-	if (!rclcpp::ok()) return;
-#endif
+	if (!ok()) return;
 
 	ASSERT_(obs);
 	ASSERT_(!obs->sensorLabel.empty());

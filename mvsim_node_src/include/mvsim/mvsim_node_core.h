@@ -44,6 +44,9 @@
 #include <visualization_msgs/MarkerArray.h>
 
 // usings:
+using ros_Time = ros::Time;
+using ros_Duration = ros::Duration;
+
 using Msg_Polygon = geometry_msgs::Polygon;
 using Msg_PoseArray = geometry_msgs::PoseArray;
 using Msg_PoseWithCovarianceStamped = geometry_msgs::PoseWithCovarianceStamped;
@@ -73,6 +76,9 @@ using Msg_MarkerArray = visualization_msgs::MarkerArray;
 #include "wrapper/publisher_wrapper.h"
 
 // usings:
+using ros_Time = rclcpp::Time;
+using ros_Duration = rclcpp::Duration;
+
 using Msg_Polygon = geometry_msgs::msg::Polygon;
 using Msg_PoseArray = geometry_msgs::msg::PoseArray;
 using Msg_PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
@@ -264,14 +270,10 @@ class MVSimNode
 
 #if PACKAGE_ROS_VERSION == 1
 	// rosgraph_msgs::Clock clockMsg_;
-	// ros::Time sim_time_;  //!< Current simulation time
-	ros::Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
-	ros::Duration base_watchdog_timeout_;
-#else
-	// rclcpp::Time sim_time_;	 //!< Current simulation time
-	rclcpp::Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
-	rclcpp::Duration base_watchdog_timeout_ = std::chrono::seconds(1);
 #endif
+	// ros_Time sim_time_;	 //!< Current simulation time
+	ros_Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
+	ros_Duration base_watchdog_timeout_ = ros_Duration(1, 0);
 
 	/// Unit transform (const, once)
 	const tf2::Transform tfIdentity_ = tf2::Transform::getIdentity();
@@ -327,18 +329,11 @@ class MVSimNode
 	void sendStaticTF(
 		const std::string& frame_id, const std::string& child_frame_id,
 		const tf2::Transform& tx,
-#if PACKAGE_ROS_VERSION == 1
-		const ros::Time& stamp
-#else
-		const rclcpp::Time& stamp
-#endif
+		const ros_Time& stamp
 	);
 
-#if PACKAGE_ROS_VERSION == 1
-	ros::Time myNow() const;
-#else
-	rclcpp::Time myNow() const;
-#endif
+	ros_Time myNow() const;
+	double myNowSec() const;
 
 	mrpt::system::CTimeLogger profiler_{true /*enabled*/, "mvsim_node"};
 
