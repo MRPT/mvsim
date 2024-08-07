@@ -18,6 +18,17 @@
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include "mvsim/mvsim_node_core.h"
 
+#include <iostream>
+#include <rapidxml_utils.hpp>
+
+#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
+#define HAVE_POINTS_XYZIRT
+#endif
+
+#if defined(HAVE_POINTS_XYZIRT)
+#include <mrpt/maps/CPointsMapXYZIRT.h>
+#endif
+
 #if PACKAGE_ROS_VERSION == 1
 // ===========================================
 //                    ROS 1
@@ -119,17 +130,6 @@ using Msg_TFMessage = tf2_msgs::msg::TFMessage;
 using Msg_Marker = visualization_msgs::msg::Marker;
 using Msg_MarkerArray = visualization_msgs::msg::MarkerArray;
 #endif
-
-#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
-#define HAVE_POINTS_XYZIRT
-#endif
-
-#if defined(HAVE_POINTS_XYZIRT)
-#include <mrpt/maps/CPointsMapXYZIRT.h>
-#endif
-
-#include <iostream>
-#include <rapidxml_utils.hpp>
 
 #if PACKAGE_ROS_VERSION == 1
 namespace mrpt2ros = mrpt::ros1bridge;
@@ -361,8 +361,6 @@ void MVSimNode::spin()
 {
 	using namespace mvsim;
 	using namespace std::string_literals;
-	using mrpt::DEG2RAD;
-	using mrpt::RAD2DEG;
 
 	if (!mvsim_world_) return;
 
@@ -485,15 +483,13 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 {
 	try
 	{
-		using namespace mvsim;
-
 		MVSimNode* obj = thread_params.obj;
 
 		while (!thread_params.closing)
 		{
 			if (obj->world_init_ok_ && !obj->headless_)
 			{
-				World::TUpdateGUIParams guiparams;
+				mvsim::World::TUpdateGUIParams guiparams;
 				guiparams.msg_lines = obj->msg2gui_;
 
 				obj->mvsim_world_->update_GUI(&guiparams);
@@ -650,8 +646,6 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		vehVarName("cmd_vel", *veh), 10,
 		boost::bind(&MVSimNode::onROSMsgCmdVel, this, _1, veh)));
 #else
-	using std::placeholders::_1;
-
 	pubsubs.sub_cmd_vel = n_->create_subscription<Msg_Twist>(
 		vehVarName("cmd_vel", *veh), 10,
 		[this, veh](const geometry_msgs::msg::Twist::ConstSharedPtr& msg)
@@ -900,7 +894,6 @@ void MVSimNode::spinNotifyROS()
 {
 	if (!mvsim_world_) return;
 
-	using namespace mvsim;
 	const auto& vehs = mvsim_world_->getListOfVehicles();
 
 	// skip if the node is already shutting down:
@@ -938,7 +931,7 @@ void MVSimNode::spinNotifyROS()
 
 		for (auto it = vehs.begin(); it != vehs.end(); ++it, ++i)
 		{
-			const VehicleBase::Ptr& veh = it->second;
+			const mvsim::VehicleBase::Ptr& veh = it->second;
 			auto& pubs = pubsub_vehicles_[i];
 
 			const std::string sOdomName = vehVarName("odom", *veh);
@@ -1090,8 +1083,6 @@ void MVSimNode::onNewObservation(
 {
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "onNewObservation");
 
-	using mrpt::obs::CObservation2DRangeScan;
-
 	// skip if the node is already shutting down:
 #if PACKAGE_ROS_VERSION == 1
 	if (!ros::ok()) return;
@@ -1110,7 +1101,7 @@ void MVSimNode::onNewObservation(
 	// Observation: 2d laser scans
 	// -----------------------------
 	if (const auto* o2DLidar =
-			dynamic_cast<const CObservation2DRangeScan*>(obs.get());
+			dynamic_cast<const mrpt::obs::CObservation2DRangeScan*>(obs.get());
 		o2DLidar)
 	{
 		internalOn(veh, *o2DLidar);
@@ -1165,8 +1156,6 @@ void MVSimNode::onNewObservation(
 std::string MVSimNode::vehVarName(
 	const std::string& sVarName, const mvsim::VehicleBase& veh) const
 {
-	using namespace std::string_literals;
-
 	if (mvsim_world_->getListOfVehicles().size() == 1)
 	{
 		return sVarName;
