@@ -160,8 +160,8 @@ class MVSimNode
 
 		visualization_msgs::MarkerArray chassis_shape_msg;
 
-		ros::Publisher pub_tf;
-		ros::Publisher pub_tf_static;
+		std::shared_ptr<ros::Publisher> pub_tf;
+		std::shared_ptr<ros::Publisher> pub_tf_static;
 #else
 		/// Subscribers vehicle's "cmd_vel" topic
 		rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel;

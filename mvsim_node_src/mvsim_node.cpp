@@ -636,10 +636,10 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		vehVarName("collision", *veh), publisher_history_len_);
 
 	// pub: <VEH>/tf, <VEH>/tf_static
-	pubsubs.pub_tf = n_.advertise<Msg_TFMessage>(
-		vehVarName("tf", *veh), publisher_history_len_);
-	pubsubs.pub_tf_static = n_.advertise<Msg_TFMessage>(
-		vehVarName("tf_static", *veh), publisher_history_len_);
+	pubsubs.pub_tf = std::make_shared<ros::Publisher>(n_.advertise<Msg_TFMessage>(
+		vehVarName("tf", *veh), publisher_history_len_));
+	pubsubs.pub_tf_static = std::make_shared<ros::Publisher>(n_.advertise<Msg_TFMessage>(
+		vehVarName("tf_static", *veh), publisher_history_len_));
 #else
 	// pub: <VEH>/odom
 	pubsubs.pub_odom = n_->create_publisher<nav_msgs::msg::Odometry>(
@@ -834,11 +834,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tx);
-#if PACKAGE_ROS_VERSION == 1
-	pubsubs.pub_tf_static.publish(tfMsg);
-#else
 	pubsubs.pub_tf_static->publish(tfMsg);
-#endif
 }
 
 void MVSimNode::onROSMsgCmdVel(
@@ -1004,11 +1000,7 @@ void MVSimNode::spinNotifyROS()
 						tx.child_frame_id = "odom";
 						Msg_TFMessage tfMsg;
 						tfMsg.transforms.push_back(tx);
-#if PACKAGE_ROS_VERSION == 1
-						pubs.pub_tf.publish(tfMsg);
-#else
 						pubs.pub_tf->publish(tfMsg);
-#endif
 					}
 				}
 			}
@@ -1062,11 +1054,7 @@ void MVSimNode::spinNotifyROS()
 					tx.child_frame_id = "base_link";
 					Msg_TFMessage tfMsg;
 					tfMsg.transforms.push_back(tx);
-#if PACKAGE_ROS_VERSION == 1
-					pubs.pub_tf.publish(tfMsg);
-#else
 					pubs.pub_tf->publish(tfMsg);
-#endif
 				}
 
 				// Apart from TF, publish to the "odom" topic as well
@@ -1260,11 +1248,7 @@ void MVSimNode::internalOn(
 	tfStmp.child_frame_id = obs.sensorLabel;
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-#if PACKAGE_ROS_VERSION == 1
-	pubs.pub_tf.publish(tfMsg);
-#else
 	pubs.pub_tf->publish(tfMsg);
-#endif
 
 	// Send observation:
 	{
@@ -1340,11 +1324,7 @@ void MVSimNode::internalOn(
 	tfStmp.child_frame_id = obs.sensorLabel;
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-#if PACKAGE_ROS_VERSION == 1
-	pubs.pub_tf.publish(tfMsg);
-#else
 	pubs.pub_tf->publish(tfMsg);
-#endif
 
 	// Send observation:
 	{
@@ -1420,11 +1400,7 @@ void MVSimNode::internalOn(
 	tfStmp.child_frame_id = obs.sensorLabel;
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-#if PACKAGE_ROS_VERSION == 1
-	pubs.pub_tf.publish(tfMsg);
-#else
 	pubs.pub_tf->publish(tfMsg);
-#endif
 
 	// Send observation:
 	{
@@ -1522,11 +1498,7 @@ void MVSimNode::internalOn(
 		tfStmp.child_frame_id = lbImage;
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
-#if PACKAGE_ROS_VERSION == 1
-		pubs.pub_tf.publish(tfMsg);
-#else
 		pubs.pub_tf->publish(tfMsg);
-#endif
 
 		// Send observation:
 		{
@@ -1571,11 +1543,7 @@ void MVSimNode::internalOn(
 		tfStmp.child_frame_id = lbPoints;
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
-#if PACKAGE_ROS_VERSION == 1
-		pubs.pub_tf.publish(tfMsg);
-#else
 		pubs.pub_tf->publish(tfMsg);
-#endif
 
 		// Send observation:
 		{
@@ -1666,11 +1634,7 @@ void MVSimNode::internalOn(
 	tfStmp.child_frame_id = lbPoints;
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-#if PACKAGE_ROS_VERSION == 1
-	pubs.pub_tf.publish(tfMsg);
-#else
 	pubs.pub_tf->publish(tfMsg);
-#endif
 
 	// Send observation:
 	{
