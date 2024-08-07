@@ -144,24 +144,25 @@ class MVSimNode
 	struct TPubSubPerVehicle
 	{
 #if PACKAGE_ROS_VERSION == 1
-		ros::Subscriber sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
-		ros::Publisher pub_odom;  //!< Publisher of "odom" topic
-		ros::Publisher pub_ground_truth;  //!< "base_pose_ground_truth" topic
+		std::shared_ptr<ros::Subscriber> sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
+		std::shared_ptr<ros::Publisher> pub_odom;  //!< Publisher of "odom" topic
+		std::shared_ptr<ros::Publisher> pub_ground_truth;  //!< "base_pose_ground_truth" topic
 
 		/// "fake_localization" pubs:
-		ros::Publisher pub_amcl_pose, pub_particlecloud;
+		std::shared_ptr<ros::Publisher> pub_amcl_pose;  //!< Publisher of "amcl_pose" topic
+		std::shared_ptr<ros::Publisher> pub_particlecloud;  //!< Publisher of "particlecloud" topic
 
 		/// Map <sensor_label> => publisher
-		std::map<std::string, ros::Publisher> pub_sensors;
+		std::map<std::string, std::shared_ptr<ros::Publisher>> pub_sensors;
 
-		ros::Publisher pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
-		ros::Publisher pub_chassis_shape;  //!< "<VEH>/chassis_shape"
-		ros::Publisher pub_collision;  //!< "<VEH>/collision"
+		std::shared_ptr<ros::Publisher> pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
+		std::shared_ptr<ros::Publisher> pub_chassis_shape;  //!< "<VEH>/chassis_shape"
+		std::shared_ptr<ros::Publisher> pub_collision;  //!< "<VEH>/collision"
+
+		std::shared_ptr<ros::Publisher> pub_tf;	 //!< "<VEH>/tf"
+		std::shared_ptr<ros::Publisher> pub_tf_static;	 //!< "<VEH>/tf_static"
 
 		visualization_msgs::MarkerArray chassis_shape_msg;
-
-		std::shared_ptr<ros::Publisher> pub_tf;
-		std::shared_ptr<ros::Publisher> pub_tf_static;
 #else
 		/// Subscribers vehicle's "cmd_vel" topic
 		rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel;
@@ -185,7 +186,6 @@ class MVSimNode
 		/// "<VEH>/chassis_shape"
 		rclcpp::Publisher<geometry_msgs::msg::Polygon>::SharedPtr
 			pub_chassis_shape;
-
 		/// "<VEH>/collision"
 		rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_collision;
 
