@@ -139,9 +139,13 @@ namespace mrpt2ros = mrpt::ros2bridge;
 
 #if PACKAGE_ROS_VERSION == 1
 #define ROS12_INFO(...) ROS_INFO(__VA_ARGS__)
+#define ROS12_WARN_THROTTLE(...) ROS_WARN_THROTTLE(__VA_ARGS__)
+#define ROS12_WARN_STREAM_THROTTLE(...) ROS_WARN_STREAM_THROTTLE(__VA_ARGS__)
 #define ROS12_ERROR(...) ROS_ERROR(__VA_ARGS__)
 #else
 #define ROS12_INFO(...) RCLCPP_INFO(n_->get_logger(), __VA_ARGS__)
+#define ROS12_WARN_THROTTLE(...) RCLCPP_WARN_THROTTLE(n_->get_logger(), *n_->get_clock(), __VA_ARGS__)
+#define ROS12_WARN_STREAM_THROTTLE(...) RCLCPP_WARN_STREAM_THROTTLE(n_->get_logger(), *n_->get_clock(), __VA_ARGS__)
 #define ROS12_ERROR(...) RCLCPP_ERROR(n_->get_logger(), __VA_ARGS__)
 #endif
 
@@ -349,7 +353,7 @@ void MVSimNode::configCallback(
 	// Set class variables to new values. They should match what is input at the
 	// dynamic reconfigure GUI.
 	//  message = config.message.c_str();
-	ROS_INFO("MVSimNode::configCallback() called.");
+	ROS12_INFO("MVSimNode::configCallback() called.");
 
 	if (mvsim_world_->is_GUI_open() && !config.show_gui)
 		mvsim_world_->close_GUI();
@@ -875,17 +879,10 @@ void MVSimNode::onROSMsgCmdVel(
 
 	if (!ctrlAcceptTwist)
 	{
-#if PACKAGE_ROS_VERSION == 1
-		ROS_WARN_THROTTLE(
+		ROS12_WARN_THROTTLE(
 			1.0,
 			"*Warning* Vehicle's controller ['%s'] refuses Twist commands!",
 			veh->getName().c_str());
-#else
-		RCLCPP_WARN_THROTTLE(
-			n_->get_logger(), *n_->get_clock(), 1.0,
-			"*Warning* Vehicle's controller ['%s'] refuses Twist commands!",
-			veh->getName().c_str());
-#endif
 	}
 }
 
@@ -1135,18 +1132,10 @@ void MVSimNode::onNewObservation(
 	else
 	{
 		// Don't know how to emit this observation to ROS!
-#if PACKAGE_ROS_VERSION == 1
-		ROS_WARN_STREAM_THROTTLE(
+		ROS12_WARN_STREAM_THROTTLE(
 			1.0, "Do not know how to publish this observation to ROS: '"
 					 << obs->sensorLabel
 					 << "', class: " << obs->GetRuntimeClass()->className);
-#else
-		RCLCPP_WARN_STREAM_THROTTLE(
-			n_->get_logger(), *n_->get_clock(), 1.0,
-			"Do not know how to publish this observation to ROS: '"
-				<< obs->sensorLabel
-				<< "', class: " << obs->GetRuntimeClass()->className);
-#endif
 	}
 
 }  // end of onNewObservation()
