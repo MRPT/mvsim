@@ -8,18 +8,13 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/obs/CObservation3DRangeScan.h>
-#include <mrpt/obs/CObservationIMU.h>
-#include <mrpt/obs/CObservationPointCloud.h>
-#include <mrpt/system/CTicTac.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
-#include "mvsim/mvsim_node_core.h"
+#include <mvsim/mvsim_node_core.h>
 
-#include <iostream>
-#include <rapidxml_utils.hpp>
+#include "rapidxml_utils.hpp"
 
 #if MRPT_VERSION >= 0x020b04  // >=2.11.4?
 #define HAVE_POINTS_XYZIRT
@@ -40,44 +35,24 @@
 #include <mrpt/ros1bridge/point_cloud2.h>
 #include <mrpt/ros1bridge/pose.h>
 
-#include <nav_msgs/GetMap.h>
-#include <nav_msgs/MapMetaData.h>
-#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <std_msgs/Bool.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-#include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PoseArray.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-
 // usings:
-using Msg_Bool = std_msgs::Bool;
 using Msg_Header = std_msgs::Header;
 
-using Msg_Polygon = geometry_msgs::Polygon;
 using Msg_Pose = geometry_msgs::Pose;
-using Msg_PoseArray = geometry_msgs::PoseArray;
-using Msg_PoseWithCovarianceStamped = geometry_msgs::PoseWithCovarianceStamped;
 using Msg_TransformStamped = geometry_msgs::TransformStamped;
-using Msg_Twist = geometry_msgs::Twist;
-
-using Msg_MapMetaData = nav_msgs::MapMetaData;
-using Msg_OccupancyGrid = nav_msgs::OccupancyGrid;
-using Msg_Odometry = nav_msgs::Odometry;
 
 using Msg_Image = sensor_msgs::Image;
 using Msg_Imu = sensor_msgs::Imu;
 using Msg_LaserScan = sensor_msgs::LaserScan;
 using Msg_PointCloud2 = sensor_msgs::PointCloud2;
 
-using Msg_TFMessage = tf2_msgs::TFMessage;
-
 using Msg_Marker = visualization_msgs::Marker;
-using Msg_MarkerArray = visualization_msgs::MarkerArray;
 #else
 // ===========================================
 //                    ROS 2
@@ -89,14 +64,10 @@ using Msg_MarkerArray = visualization_msgs::MarkerArray;
 #include <mrpt/ros2bridge/point_cloud2.h>
 #include <mrpt/ros2bridge/pose.h>
 
-#include <nav_msgs/msg/map_meta_data.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <nav_msgs/srv/get_map.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <std_msgs/msg/bool.hpp>
 
 // see: https://github.com/ros2/geometry2/pull/416
 #if defined(MVSIM_HAS_TF2_GEOMETRY_MSGS_HPP)
@@ -106,29 +77,17 @@ using Msg_MarkerArray = visualization_msgs::MarkerArray;
 #endif
 
 // usings:
-using Msg_Bool = std_msgs::msg::Bool;
 using Msg_Header = std_msgs::msg::Header;
 
-using Msg_Polygon = geometry_msgs::msg::Polygon;
 using Msg_Pose = geometry_msgs::msg::Pose;
-using Msg_PoseArray = geometry_msgs::msg::PoseArray;
-using Msg_PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
 using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
-using Msg_Twist = geometry_msgs::msg::Twist;
-
-using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
-using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
-using Msg_Odometry = nav_msgs::msg::Odometry;
 
 using Msg_Image = sensor_msgs::msg::Image;
 using Msg_Imu = sensor_msgs::msg::Imu;
 using Msg_LaserScan = sensor_msgs::msg::LaserScan;
 using Msg_PointCloud2 = sensor_msgs::msg::PointCloud2;
 
-using Msg_TFMessage = tf2_msgs::msg::TFMessage;
-
 using Msg_Marker = visualization_msgs::msg::Marker;
-using Msg_MarkerArray = visualization_msgs::msg::MarkerArray;
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -645,7 +604,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 #else
 	pubsubs.sub_cmd_vel = n_->create_subscription<Msg_Twist>(
 		vehVarName("cmd_vel", *veh), 10,
-		[this, veh](const geometry_msgs::msg::Twist::ConstSharedPtr& msg)
+		[this, veh](Msg_Twist_CSPtr msg)
 		{ return this->onROSMsgCmdVel(msg, veh); });
 #endif
 
@@ -850,11 +809,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 }
 
 void MVSimNode::onROSMsgCmdVel(
-#if PACKAGE_ROS_VERSION == 1
-	const geometry_msgs::Twist::ConstPtr& cmd,
-#else
-	const geometry_msgs::msg::Twist::ConstSharedPtr& cmd,
-#endif
+	Msg_Twist_CSPtr cmd,
 	mvsim::VehicleBase* veh)
 {
 	mvsim::ControllerBaseInterface* controller = veh->getControllerInterface();
