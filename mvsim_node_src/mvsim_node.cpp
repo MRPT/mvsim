@@ -603,7 +603,8 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 #if PACKAGE_ROS_VERSION == 1
 	pubsubs.sub_cmd_vel = mvsim_node::make_shared<ros::Subscriber>(n_.subscribe<Msg_Twist>(
 		vehVarName("cmd_vel", *veh), 10,
-		boost::bind(&MVSimNode::onROSMsgCmdVel, this, _1, veh)));
+		[this, veh](Msg_Twist_CSPtr msg)
+		{ return this->onROSMsgCmdVel(msg, veh); }));
 #else
 	pubsubs.sub_cmd_vel = n_->create_subscription<Msg_Twist>(
 		vehVarName("cmd_vel", *veh), 10,
