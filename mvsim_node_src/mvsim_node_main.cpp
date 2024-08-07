@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 	try
 	{
 		// Create a "Node" object.
-		std::shared_ptr<MVSimNode> node = std::make_shared<MVSimNode>(n);
+		mvsim_node::shared_ptr<MVSimNode> node = mvsim_node::make_shared<MVSimNode>(n);
 
 		// Declare variables that can be modified by launch file or command
 		// line.

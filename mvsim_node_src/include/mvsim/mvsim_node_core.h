@@ -45,10 +45,32 @@
 #include "rclcpp/clock.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/time_source.hpp"
+
+#include "wrapper/publisher_wrapper.h"
 #endif
 
 #include <atomic>
 #include <thread>
+
+namespace mvsim_node {
+#if PACKAGE_ROS_VERSION == 1
+	template <typename T, typename... Args>
+	boost::shared_ptr<T> make_shared(Args&&... args) {
+			return boost::make_shared<T>(std::forward<Args>(args)...);
+	}
+
+	template <typename T>
+	using shared_ptr = boost::shared_ptr<T>;
+#else
+	template <typename T, typename... Args>
+	std::shared_ptr<T> make_shared(Args&&... args) {
+			return std::make_shared<T>(std::forward<Args>(args)...);
+	}
+
+	template <typename T>
+	using shared_ptr = std::shared_ptr<T>;
+#endif
+}
 
 namespace mrpt
 {
@@ -91,8 +113,8 @@ class MVSimNode
 
 	/// The mvsim library simulated world (includes everything: vehicles,
 	/// obstacles, etc.)
-	std::shared_ptr<mvsim::World> mvsim_world_ =
-		std::make_shared<mvsim::World>();
+	mvsim_node::shared_ptr<mvsim::World> mvsim_world_ =
+		mvsim_node::make_shared<mvsim::World>();
 
 	mrpt::WorkerThreadsPool ros_publisher_workers_{
 		4 /*threads*/, mrpt::WorkerThreadsPool::POLICY_FIFO};
@@ -112,7 +134,7 @@ class MVSimNode
 	double transform_tolerance_ = 0.1;
 
    protected:
-	std::shared_ptr<mvsim::Server> mvsim_server_;
+	mvsim_node::shared_ptr<mvsim::Server> mvsim_server_;
 
 #if PACKAGE_ROS_VERSION == 1
 	ros::NodeHandle& n_;
@@ -144,23 +166,23 @@ class MVSimNode
 	struct TPubSubPerVehicle
 	{
 #if PACKAGE_ROS_VERSION == 1
-		std::shared_ptr<ros::Subscriber> sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
-		std::shared_ptr<ros::Publisher> pub_odom;  //!< Publisher of "odom" topic
-		std::shared_ptr<ros::Publisher> pub_ground_truth;  //!< "base_pose_ground_truth" topic
+		mvsim_node::shared_ptr<ros::Subscriber> sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
+		mvsim_node::shared_ptr<ros::Publisher> pub_odom;  //!< Publisher of "odom" topic
+		mvsim_node::shared_ptr<ros::Publisher> pub_ground_truth;  //!< "base_pose_ground_truth" topic
 
 		/// "fake_localization" pubs:
-		std::shared_ptr<ros::Publisher> pub_amcl_pose;  //!< Publisher of "amcl_pose" topic
-		std::shared_ptr<ros::Publisher> pub_particlecloud;  //!< Publisher of "particlecloud" topic
+		mvsim_node::shared_ptr<ros::Publisher> pub_amcl_pose;  //!< Publisher of "amcl_pose" topic
+		mvsim_node::shared_ptr<ros::Publisher> pub_particlecloud;  //!< Publisher of "particlecloud" topic
 
 		/// Map <sensor_label> => publisher
-		std::map<std::string, std::shared_ptr<ros::Publisher>> pub_sensors;
+		std::map<std::string, mvsim_node::shared_ptr<ros::Publisher>> pub_sensors;
 
-		std::shared_ptr<ros::Publisher> pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
-		std::shared_ptr<ros::Publisher> pub_chassis_shape;  //!< "<VEH>/chassis_shape"
-		std::shared_ptr<ros::Publisher> pub_collision;  //!< "<VEH>/collision"
+		mvsim_node::shared_ptr<ros::Publisher> pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
+		mvsim_node::shared_ptr<ros::Publisher> pub_chassis_shape;  //!< "<VEH>/chassis_shape"
+		mvsim_node::shared_ptr<ros::Publisher> pub_collision;  //!< "<VEH>/collision"
 
-		std::shared_ptr<ros::Publisher> pub_tf;	 //!< "<VEH>/tf"
-		std::shared_ptr<ros::Publisher> pub_tf_static;	 //!< "<VEH>/tf_static"
+		mvsim_node::shared_ptr<ros::Publisher> pub_tf;	 //!< "<VEH>/tf"
+		mvsim_node::shared_ptr<ros::Publisher> pub_tf_static;	 //!< "<VEH>/tf_static"
 
 		visualization_msgs::MarkerArray chassis_shape_msg;
 #else
@@ -178,7 +200,7 @@ class MVSimNode
 			pub_particlecloud;
 
 		/// Map <sensor_label> => publisher
-		std::map<std::string, rclcpp::PublisherBase::SharedPtr> pub_sensors;
+		std::map<std::string, mvsim_node::shared_ptr<PublisherWrapperBase>> pub_sensors;
 
 		/// "<VEH>/chassis_markers"
 		rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
