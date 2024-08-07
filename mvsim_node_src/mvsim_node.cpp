@@ -16,20 +16,19 @@
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
+#include "mvsim/mvsim_node_core.h"
 
 #if PACKAGE_ROS_VERSION == 1
 // ===========================================
 //                    ROS 1
 // ===========================================
-#include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PoseArray.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <mrpt/ros1bridge/image.h>
 #include <mrpt/ros1bridge/imu.h>
 #include <mrpt/ros1bridge/laser_scan.h>
 #include <mrpt/ros1bridge/map.h>
 #include <mrpt/ros1bridge/point_cloud2.h>
 #include <mrpt/ros1bridge/pose.h>
+
 #include <nav_msgs/GetMap.h>
 #include <nav_msgs/MapMetaData.h>
 #include <nav_msgs/Odometry.h>
@@ -39,11 +38,17 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Bool.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+#include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+
 // usings:
 using Msg_OccupancyGrid = nav_msgs::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::TransformStamped;
 using Msg_Bool = std_msgs::Bool;
+using Msg_TFMessage = tf2_msgs::TFMessage;
 #else
 // ===========================================
 //                    ROS 2
@@ -76,6 +81,7 @@ using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
 using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
 using Msg_Bool = std_msgs::msg::Bool;
+using Msg_TFMessage = tf2_msgs::msg::TFMessage;
 #endif
 
 #if MRPT_VERSION >= 0x020b04  // >=2.11.4?
@@ -88,8 +94,6 @@ using Msg_Bool = std_msgs::msg::Bool;
 
 #include <iostream>
 #include <rapidxml_utils.hpp>
-
-#include "mvsim/mvsim_node_core.h"
 
 #if PACKAGE_ROS_VERSION == 1
 namespace mrpt2ros = mrpt::ros1bridge;
@@ -632,9 +636,9 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		vehVarName("collision", *veh), publisher_history_len_);
 
 	// pub: <VEH>/tf, <VEH>/tf_static
-	pubsubs.pub_tf = n_.advertise<tf2_msgs::TFMessage>(
+	pubsubs.pub_tf = n_.advertise<Msg_TFMessage>(
 		vehVarName("tf", *veh), publisher_history_len_);
-	pubsubs.pub_tf_static = n_.advertise<tf2_msgs::TFMessage>(
+	pubsubs.pub_tf_static = n_.advertise<Msg_TFMessage>(
 		vehVarName("tf_static", *veh), publisher_history_len_);
 #else
 	// pub: <VEH>/odom
@@ -654,9 +658,9 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	qosLatched10.durability(
 		rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
 
-	pubsubs.pub_tf = n_->create_publisher<tf2_msgs::msg::TFMessage>(
+	pubsubs.pub_tf = n_->create_publisher<Msg_TFMessage>(
 		vehVarName("tf", *veh), qosLatched10);
-	pubsubs.pub_tf_static = n_->create_publisher<tf2_msgs::msg::TFMessage>(
+	pubsubs.pub_tf_static = n_->create_publisher<Msg_TFMessage>(
 		vehVarName("tf_static", *veh), qosLatched10);
 #endif
 
@@ -821,22 +825,18 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		vehVarName("base_link", *veh), vehVarName("base_footprint", *veh),
 		tfIdentity_, myNow());
 
+	// TF STATIC(namespace <Ri>): /base_link -> /base_footprint
 	Msg_TransformStamped tx;
-	tx.header.frame_id = vehVarName("base_link", *veh);
-	tx.child_frame_id = vehVarName("base_footprint", *veh);
+	tx.header.frame_id = "base_link";
+	tx.child_frame_id = "base_footprint";
 	tx.header.stamp = myNow();
 	tx.transform = tf2::toMsg(tfIdentity_);
 
-	// TF STATIC(namespace <Ri>): /base_link -> /base_footprint
-	tx.header.frame_id = "base_link";
-	tx.child_frame_id = "base_footprint";
-#if PACKAGE_ROS_VERSION == 1
-	tf2_msgs::TFMessage tfMsg;
+	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tx);
+#if PACKAGE_ROS_VERSION == 1
 	pubsubs.pub_tf_static.publish(tfMsg);
 #else
-	tf2_msgs::msg::TFMessage tfMsg;
-	tfMsg.transforms.push_back(tx);
 	pubsubs.pub_tf_static->publish(tfMsg);
 #endif
 }
@@ -1002,13 +1002,11 @@ void MVSimNode::spinNotifyROS()
 
 						// TF(namespace <Ri>): /map -> /odom
 						tx.child_frame_id = "odom";
-#if PACKAGE_ROS_VERSION == 1
-						tf2_msgs::TFMessage tfMsg;
+						Msg_TFMessage tfMsg;
 						tfMsg.transforms.push_back(tx);
+#if PACKAGE_ROS_VERSION == 1
 						pubs.pub_tf.publish(tfMsg);
 #else
-						tf2_msgs::msg::TFMessage tfMsg;
-						tfMsg.transforms.push_back(tx);
 						pubs.pub_tf->publish(tfMsg);
 #endif
 					}
@@ -1062,13 +1060,11 @@ void MVSimNode::spinNotifyROS()
 					// TF(namespace <Ri>): /odom -> /base_link
 					tx.header.frame_id = "odom";
 					tx.child_frame_id = "base_link";
-#if PACKAGE_ROS_VERSION == 1
-					tf2_msgs::TFMessage tfMsg;
+					Msg_TFMessage tfMsg;
 					tfMsg.transforms.push_back(tx);
+#if PACKAGE_ROS_VERSION == 1
 					pubs.pub_tf.publish(tfMsg);
 #else
-					tf2_msgs::msg::TFMessage tfMsg;
-					tfMsg.transforms.push_back(tx);
 					pubs.pub_tf->publish(tfMsg);
 #endif
 				}
@@ -1262,13 +1258,11 @@ void MVSimNode::internalOn(
 
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
-#if PACKAGE_ROS_VERSION == 1
-	tf2_msgs::TFMessage tfMsg;
+	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
+#if PACKAGE_ROS_VERSION == 1
 	pubs.pub_tf.publish(tfMsg);
 #else
-	tf2_msgs::msg::TFMessage tfMsg;
-	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
 #endif
 
@@ -1344,13 +1338,11 @@ void MVSimNode::internalOn(
 
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
-#if PACKAGE_ROS_VERSION == 1
-	tf2_msgs::TFMessage tfMsg;
+	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
+#if PACKAGE_ROS_VERSION == 1
 	pubs.pub_tf.publish(tfMsg);
 #else
-	tf2_msgs::msg::TFMessage tfMsg;
-	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
 #endif
 
@@ -1426,13 +1418,11 @@ void MVSimNode::internalOn(
 
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
-#if PACKAGE_ROS_VERSION == 1
-	tf2_msgs::TFMessage tfMsg;
+	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
+#if PACKAGE_ROS_VERSION == 1
 	pubs.pub_tf.publish(tfMsg);
 #else
-	tf2_msgs::msg::TFMessage tfMsg;
-	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
 #endif
 
@@ -1530,13 +1520,11 @@ void MVSimNode::internalOn(
 
 		tfStmp.header.frame_id = "base_link";
 		tfStmp.child_frame_id = lbImage;
-#if PACKAGE_ROS_VERSION == 1
-		tf2_msgs::TFMessage tfMsg;
+		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
+#if PACKAGE_ROS_VERSION == 1
 		pubs.pub_tf.publish(tfMsg);
 #else
-		tf2_msgs::msg::TFMessage tfMsg;
-		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
 #endif
 
@@ -1581,13 +1569,11 @@ void MVSimNode::internalOn(
 
 		tfStmp.header.frame_id = "base_link";
 		tfStmp.child_frame_id = lbPoints;
-#if PACKAGE_ROS_VERSION == 1
-		tf2_msgs::TFMessage tfMsg;
+		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
+#if PACKAGE_ROS_VERSION == 1
 		pubs.pub_tf.publish(tfMsg);
 #else
-		tf2_msgs::msg::TFMessage tfMsg;
-		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
 #endif
 
@@ -1678,13 +1664,11 @@ void MVSimNode::internalOn(
 
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = lbPoints;
-#if PACKAGE_ROS_VERSION == 1
-	tf2_msgs::TFMessage tfMsg;
+	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
+#if PACKAGE_ROS_VERSION == 1
 	pubs.pub_tf.publish(tfMsg);
 #else
-	tf2_msgs::msg::TFMessage tfMsg;
-	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
 #endif
 
