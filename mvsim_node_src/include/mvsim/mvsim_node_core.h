@@ -16,7 +16,7 @@
 
 #include <mrpt/core/WorkerThreadsPool.h>
 #include <mrpt/obs/CObservation.h>
-#include <mrpt/obs/obs_frwds.h>
+#include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Comms/Server.h>
@@ -71,14 +71,6 @@ namespace mvsim_node {
 	using shared_ptr = std::shared_ptr<T>;
 #endif
 }
-
-namespace mrpt
-{
-namespace obs
-{
-class CObservationPointCloud;
-}
-}  // namespace mrpt
 
 /** A class to wrap libmvsim as a ROS node
  */
