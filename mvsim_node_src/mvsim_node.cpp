@@ -230,7 +230,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 			const mvsim::Simulable* vehPtr = &veh;
 			const mrpt::obs::CObservation::Ptr obsCopy = obs;
-			auto fut = ros_publisher_workers_.enqueue(
+			const auto fut = ros_publisher_workers_.enqueue(
 				[this, vehPtr, obsCopy]()
 				{
 					try
@@ -334,8 +334,8 @@ void MVSimNode::spin()
 	// Handle 1st iter:
 	if (t_old_ < 0) t_old_ = realtime_tictac_.Tac();
 	// Compute how much time has passed to simulate in real-time:
-	double t_new = realtime_tictac_.Tac();
-	double incr_time = realtime_factor_ * (t_new - t_old_);
+	const double t_new = realtime_tictac_.Tac();
+	const double incr_time = realtime_factor_ * (t_new - t_old_);
 
 	// Just in case the computer is *really fast*...
 	if (incr_time < mvsim_world_->get_simul_timestep()) return;
@@ -398,7 +398,7 @@ void MVSimNode::spin()
 				// Generic teleoperation interface for any controller that
 				// supports it:
 				{
-					ControllerBaseInterface* controller =
+					auto* controller =
 						it_veh->second->getControllerInterface();
 					ControllerBaseInterface::TeleopInput teleop_in;
 					ControllerBaseInterface::TeleopOutput teleop_out;
@@ -424,7 +424,7 @@ void MVSimNode::spin()
 	{
 		if (rosNow - cmdVelTimestamp > MAX_CMD_VEL_AGE_SECONDS)
 		{
-			mvsim::ControllerBaseInterface* controller =
+			auto* controller =
 				veh->getControllerInterface();
 
 			controller->setTwistCommand({0, 0, 0});
@@ -548,7 +548,7 @@ void MVSimNode::notifyROSWorldIsUpdated()
 
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
-	auto& vehs = mvsim_world_->getListOfVehicles();
+	const auto& vehs = mvsim_world_->getListOfVehicles();
 	pubsub_vehicles_.clear();
 	pubsub_vehicles_.resize(vehs.size());
 	size_t idx = 0;
@@ -669,7 +669,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			n_->create_publisher<Msg_MarkerArray>(
 				vehVarName("chassis_markers", *veh), qosLatched5);
 #endif
-		const mrpt::math::TPolygon2D& poly = veh->getChassisShape();
+		const auto& poly = veh->getChassisShape();
 
 		// Create one "ROS marker" for each wheel + 1 for the chassis:
 		auto& msg_shapes = pubsubs.chassis_shape_msg;
@@ -708,7 +708,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		for (size_t i = 0; i < veh->getNumWheels(); i++)
 		{
 			auto& wheel_shape_msg = msg_shapes.markers[1 + i];
-			const mvsim::Wheel& w = veh->getWheelInfo(i);
+			const auto& w = veh->getWheelInfo(i);
 
 			const double lx = w.diameter * 0.5, ly = w.width * 0.5;
 
@@ -762,7 +762,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		Msg_Polygon poly_msg;
 
 		// Do the first (and unique) publish:
-		const mrpt::math::TPolygon2D& poly = veh->getChassisShape();
+		const auto& poly = veh->getChassisShape();
 		poly_msg.points.resize(poly.size());
 		for (size_t i = 0; i < poly.size(); i++)
 		{
@@ -816,7 +816,7 @@ void MVSimNode::onROSMsgCmdVel(
 	Msg_Twist_CSPtr cmd,
 	mvsim::VehicleBase* veh)
 {
-	mvsim::ControllerBaseInterface* controller = veh->getControllerInterface();
+	auto* controller = veh->getControllerInterface();
 
 // Update cmd_vel timestamp:
 	lastCmdVelTimestamp_[veh] = myNowSec();
@@ -871,7 +871,7 @@ void MVSimNode::spinNotifyROS()
 
 		for (auto it = vehs.begin(); it != vehs.end(); ++it, ++i)
 		{
-			const mvsim::VehicleBase::Ptr& veh = it->second;
+			const auto& veh = it->second;
 			auto& pubs = pubsub_vehicles_[i];
 
 			const std::string sOdomName = vehVarName("odom", *veh);
@@ -952,7 +952,7 @@ void MVSimNode::spinNotifyROS()
 				{
 					// visualization_msgs::Marker
 					auto& wheel_shape_msg = msg_shapes.markers[1 + j];
-					const mvsim::Wheel& w = veh->getWheelInfo(j);
+					const auto& w = veh->getWheelInfo(j);
 
 					// Set local pose of the wheel wrt the vehicle:
 					wheel_shape_msg.pose = mrpt2ros::toROS_Pose(w.pose());
@@ -1099,7 +1099,7 @@ void MVSimNode::internalOn(
 	const mrpt::obs::CObservation2DRangeScan& obs)
 {
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub =
@@ -1121,10 +1121,8 @@ void MVSimNode::internalOn(
 	const std::string sSensorFrameId = vehVarName(obs.sensorLabel, veh);
 
 	// Send TF:
-	mrpt::poses::CPose3D sensorPose;
-	obs.getSensorPose(sensorPose);
-
-	tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
+	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
@@ -1156,7 +1154,7 @@ void MVSimNode::internalOn(
 	const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs)
 {
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub =
@@ -1178,10 +1176,8 @@ void MVSimNode::internalOn(
 	const std::string sSensorFrameId = vehVarName(obs.sensorLabel, veh);
 
 	// Send TF:
-	mrpt::poses::CPose3D sensorPose;
-	obs.getSensorPose(sensorPose);
-
-	tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
+	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
@@ -1214,7 +1210,7 @@ void MVSimNode::internalOn(
 	const mvsim::VehicleBase& veh, const mrpt::obs::CObservationImage& obs)
 {
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub =
@@ -1238,8 +1234,7 @@ void MVSimNode::internalOn(
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose;
 	obs.getSensorPose(sensorPose);
-
-	tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
@@ -1273,7 +1268,7 @@ void MVSimNode::internalOn(
 	using namespace std::string_literals;
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
 	const auto lbImage = obs.sensorLabel + "_image"s;
@@ -1313,8 +1308,7 @@ void MVSimNode::internalOn(
 		// Send TF:
 		mrpt::poses::CPose3D sensorPose =
 			obs.sensorPose + obs.relativePoseIntensityWRTDepth;
-
-		tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+		auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
@@ -1347,8 +1341,7 @@ void MVSimNode::internalOn(
 	{
 		// Send TF:
 		mrpt::poses::CPose3D sensorPose = obs.sensorPose;
-
-		tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+		auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
@@ -1389,7 +1382,7 @@ void MVSimNode::internalOn(
 	using namespace std::string_literals;
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	TPubSubPerVehicle& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
 
@@ -1420,8 +1413,7 @@ void MVSimNode::internalOn(
 
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
-
-	tf2::Transform transform = mrpt2ros::toROS_tfTransform(sensorPose);
+	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);

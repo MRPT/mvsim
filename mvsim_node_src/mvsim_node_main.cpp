@@ -87,8 +87,8 @@ int main(int argc, char** argv)
 			r.sleep();
 		}
 #else
-		auto ros_clock = rclcpp::Clock::make_shared();
-		auto timer_ = rclcpp::create_timer(
+		const auto ros_clock = rclcpp::Clock::make_shared();
+		const auto timer_ = rclcpp::create_timer(
 			n, ros_clock, std::chrono::microseconds(periodMs),
 			[&node]()
 			{
