@@ -9,9 +9,6 @@
 
 #pragma once
 
-#include <atomic>
-#include <thread>
-
 #include <mrpt/core/WorkerThreadsPool.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
@@ -25,20 +22,21 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 
+#include <atomic>
+#include <thread>
+
 #if PACKAGE_ROS_VERSION == 1
-#include <ros/ros.h>
-#include <ros/time.h>
-
 #include <dynamic_reconfigure/server.h>
-#include <mvsim/mvsimNodeConfig.h>
-
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/Twist.h>
+#include <mvsim/mvsimNodeConfig.h>
+#include <nav_msgs/MapMetaData.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Odometry.h>
-#include <nav_msgs/MapMetaData.h>
+#include <ros/ros.h>
+#include <ros/time.h>
 #include <rosgraph_msgs/Clock.h>
 #include <std_msgs/Bool.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -59,17 +57,16 @@ using Msg_Bool = std_msgs::Bool;
 using Msg_TFMessage = tf2_msgs::TFMessage;
 using Msg_MarkerArray = visualization_msgs::MarkerArray;
 #else
-#include <rclcpp/clock.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/time_source.hpp>
-
 #include <geometry_msgs/msg/polygon.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/map_meta_data.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <nav_msgs/msg/map_meta_data.hpp>
+#include <rclcpp/clock.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/time_source.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
@@ -81,7 +78,8 @@ using ros_Duration = rclcpp::Duration;
 
 using Msg_Polygon = geometry_msgs::msg::Polygon;
 using Msg_PoseArray = geometry_msgs::msg::PoseArray;
-using Msg_PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
+using Msg_PoseWithCovarianceStamped =
+	geometry_msgs::msg::PoseWithCovarianceStamped;
 using Msg_Twist = geometry_msgs::msg::Twist;
 using Msg_Twist_CSPtr = geometry_msgs::msg::Twist::ConstSharedPtr;
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
@@ -92,25 +90,28 @@ using Msg_TFMessage = tf2_msgs::msg::TFMessage;
 using Msg_MarkerArray = visualization_msgs::msg::MarkerArray;
 #endif
 
-namespace mvsim_node {
+namespace mvsim_node
+{
 #if PACKAGE_ROS_VERSION == 1
-	template <typename T, typename... Args>
-	boost::shared_ptr<T> make_shared(Args&&... args) {
-			return boost::make_shared<T>(std::forward<Args>(args)...);
-	}
-
-	template <typename T>
-	using shared_ptr = boost::shared_ptr<T>;
-#else
-	template <typename T, typename... Args>
-	std::shared_ptr<T> make_shared(Args&&... args) {
-			return std::make_shared<T>(std::forward<Args>(args)...);
-	}
-
-	template <typename T>
-	using shared_ptr = std::shared_ptr<T>;
-#endif
+template <typename T, typename... Args>
+boost::shared_ptr<T> make_shared(Args&&... args)
+{
+	return boost::make_shared<T>(std::forward<Args>(args)...);
 }
+
+template <typename T>
+using shared_ptr = boost::shared_ptr<T>;
+#else
+template <typename T, typename... Args>
+std::shared_ptr<T> make_shared(Args&&... args)
+{
+	return std::make_shared<T>(std::forward<Args>(args)...);
+}
+
+template <typename T>
+using shared_ptr = std::shared_ptr<T>;
+#endif
+}  // namespace mvsim_node
 
 /** A class to wrap libmvsim as a ROS node
  */
@@ -198,23 +199,33 @@ class MVSimNode
 	struct TPubSubPerVehicle
 	{
 #if PACKAGE_ROS_VERSION == 1
-		mvsim_node::shared_ptr<ros::Subscriber> sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
-		mvsim_node::shared_ptr<ros::Publisher> pub_odom;  //!< Publisher of "odom" topic
-		mvsim_node::shared_ptr<ros::Publisher> pub_ground_truth;  //!< "base_pose_ground_truth" topic
+		mvsim_node::shared_ptr<ros::Subscriber>
+			sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_odom;  //!< Publisher of "odom" topic
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_ground_truth;  //!< "base_pose_ground_truth" topic
 
 		/// "fake_localization" pubs:
-		mvsim_node::shared_ptr<ros::Publisher> pub_amcl_pose;  //!< Publisher of "amcl_pose" topic
-		mvsim_node::shared_ptr<ros::Publisher> pub_particlecloud;  //!< Publisher of "particlecloud" topic
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_amcl_pose;	//!< Publisher of "amcl_pose" topic
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_particlecloud;	//!< Publisher of "particlecloud" topic
 
 		/// Map <sensor_label> => publisher
-		std::map<std::string, mvsim_node::shared_ptr<ros::Publisher>> pub_sensors;
+		std::map<std::string, mvsim_node::shared_ptr<ros::Publisher>>
+			pub_sensors;
 
-		mvsim_node::shared_ptr<ros::Publisher> pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
-		mvsim_node::shared_ptr<ros::Publisher> pub_chassis_shape;  //!< "<VEH>/chassis_shape"
-		mvsim_node::shared_ptr<ros::Publisher> pub_collision;  //!< "<VEH>/collision"
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_chassis_markers;  //!< "<VEH>/chassis_markers"
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_chassis_shape;	//!< "<VEH>/chassis_shape"
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_collision;	//!< "<VEH>/collision"
 
-		mvsim_node::shared_ptr<ros::Publisher> pub_tf;	 //!< "<VEH>/tf"
-		mvsim_node::shared_ptr<ros::Publisher> pub_tf_static;	 //!< "<VEH>/tf_static"
+		mvsim_node::shared_ptr<ros::Publisher> pub_tf;	//!< "<VEH>/tf"
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_tf_static;	//!< "<VEH>/tf_static"
 
 		Msg_MarkerArray chassis_shape_msg;
 #else
@@ -226,20 +237,18 @@ class MVSimNode
 		rclcpp::Publisher<Msg_Odometry>::SharedPtr pub_ground_truth;
 
 		/// "fake_localization" pubs:
-		rclcpp::Publisher<Msg_PoseWithCovarianceStamped>::
-			SharedPtr pub_amcl_pose;
-		rclcpp::Publisher<Msg_PoseArray>::SharedPtr
-			pub_particlecloud;
+		rclcpp::Publisher<Msg_PoseWithCovarianceStamped>::SharedPtr
+			pub_amcl_pose;
+		rclcpp::Publisher<Msg_PoseArray>::SharedPtr pub_particlecloud;
 
 		/// Map <sensor_label> => publisher
-		std::map<std::string, mvsim_node::shared_ptr<PublisherWrapperBase>> pub_sensors;
+		std::map<std::string, mvsim_node::shared_ptr<PublisherWrapperBase>>
+			pub_sensors;
 
 		/// "<VEH>/chassis_markers"
-		rclcpp::Publisher<Msg_MarkerArray>::SharedPtr
-			pub_chassis_markers;
+		rclcpp::Publisher<Msg_MarkerArray>::SharedPtr pub_chassis_markers;
 		/// "<VEH>/chassis_shape"
-		rclcpp::Publisher<Msg_Polygon>::SharedPtr
-			pub_chassis_shape;
+		rclcpp::Publisher<Msg_Polygon>::SharedPtr pub_chassis_shape;
 		/// "<VEH>/collision"
 		rclcpp::Publisher<Msg_Bool>::SharedPtr pub_collision;
 
@@ -263,9 +272,7 @@ class MVSimNode
 	// === End ROS Publishers ====
 
 	// === ROS Hooks ====
-	void onROSMsgCmdVel(
-		Msg_Twist_CSPtr cmd,
-		mvsim::VehicleBase* veh);
+	void onROSMsgCmdVel(Msg_Twist_CSPtr cmd, mvsim::VehicleBase* veh);
 	// === End ROS Hooks====
 
 #if PACKAGE_ROS_VERSION == 1
@@ -328,9 +335,7 @@ class MVSimNode
 
 	void sendStaticTF(
 		const std::string& frame_id, const std::string& child_frame_id,
-		const tf2::Transform& tx,
-		const ros_Time& stamp
-	);
+		const tf2::Transform& tx, const ros_Time& stamp);
 
 	ros_Time myNow() const;
 	double myNowSec() const;

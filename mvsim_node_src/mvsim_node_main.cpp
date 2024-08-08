@@ -30,7 +30,8 @@ int main(int argc, char** argv)
 	try
 	{
 		// Create a "Node" object.
-		mvsim_node::shared_ptr<MVSimNode> node = mvsim_node::make_shared<MVSimNode>(n);
+		mvsim_node::shared_ptr<MVSimNode> node =
+			mvsim_node::make_shared<MVSimNode>(n);
 
 		// Declare variables that can be modified by launch file or command
 		// line.
@@ -70,9 +71,7 @@ int main(int argc, char** argv)
 		dynamic_reconfigure::Server<mvsim::mvsimNodeConfig> dr_srv;
 		dr_srv.setCallback(
 			[&node](mvsim::mvsimNodeConfig& config, uint32_t level)
-			{
-				return node->configCallback(config, level);
-			});
+			{ return node->configCallback(config, level); });
 #endif
 
 		// Tell ROS how fast to run this node->
