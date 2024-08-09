@@ -850,8 +850,8 @@ void MVSimNode::spinNotifyROS()
 				gtOdoMsg.twist.twist.angular.z = gh_veh_vel.omega;
 
 				gtOdoMsg.header.stamp = myNow();
-				gtOdoMsg.header.frame_id = sOdomName;
-				gtOdoMsg.child_frame_id = sBaseLinkFrame;
+				gtOdoMsg.header.frame_id = "odom";
+				gtOdoMsg.child_frame_id = "base_link";
 
 				pubs.pub_ground_truth->publish(gtOdoMsg);
 				if (do_fake_localization_)
@@ -946,8 +946,8 @@ void MVSimNode::spinNotifyROS()
 
 					// first, we'll populate the header for the odometry msg
 					odoMsg.header.stamp = myNow();
-					odoMsg.header.frame_id = sOdomName;
-					odoMsg.child_frame_id = sBaseLinkFrame;
+					odoMsg.header.frame_id = "odom";
+					odoMsg.child_frame_id = "base_link";
 
 					// publish:
 					pubs.pub_odom->publish(odoMsg);
@@ -1086,7 +1086,7 @@ void MVSimNode::internalOn(
 		Msg_LaserScan msg_laser;
 		// Force usage of simulation time:
 		msg_laser.header.stamp = myNow();
-		msg_laser.header.frame_id = sSensorFrameId;
+		msg_laser.header.frame_id = obs.sensorLabel;
 		mrpt2ros::toROS(obs, msg_laser, msg_pose_laser);
 		pub->publish(mvsim_node::make_shared<Msg_LaserScan>(msg_laser));
 	}
@@ -1140,7 +1140,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 		Msg_Header msg_header;
 		// Force usage of simulation time:
 		msg_header.stamp = myNow();
-		msg_header.frame_id = sSensorFrameId;
+		msg_header.frame_id = obs.sensorLabel;
 		mrpt2ros::toROS(obs, msg_header, msg_imu);
 		pub->publish(mvsim_node::make_shared<Msg_Imu>(msg_imu));
 	}
@@ -1193,7 +1193,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 		Msg_Image msg_img;
 		Msg_Header msg_header;
 		msg_header.stamp = myNow();
-		msg_header.frame_id = sSensorFrameId;
+		msg_header.frame_id = obs.sensorLabel;
 		msg_img = mrpt2ros::toROS(obs.image, msg_header);
 		pub->publish(mvsim_node::make_shared<Msg_Image>(msg_img));
 	}
@@ -1264,7 +1264,7 @@ void MVSimNode::internalOn(
 			Msg_Image msg_img;
 			Msg_Header msg_header;
 			msg_header.stamp = now;
-			msg_header.frame_id = sSensorFrameId_image;
+			msg_header.frame_id = lbImage;
 			msg_img = mrpt2ros::toROS(obs.intensityImage, msg_header);
 			pubImg->publish(mvsim_node::make_shared<Msg_Image>(msg_img));
 		}
@@ -1297,7 +1297,7 @@ void MVSimNode::internalOn(
 			Msg_PointCloud2 msg_pts;
 			Msg_Header msg_header;
 			msg_header.stamp = now;
-			msg_header.frame_id = sSensorFrameId_points;
+			msg_header.frame_id = lbPoints;
 
 			mrpt::obs::T3DPointsProjectionParams pp;
 			pp.takeIntoAccountSensorPoseOnRobot = false;
@@ -1367,7 +1367,7 @@ void MVSimNode::internalOn(
 		Msg_PointCloud2 msg_pts;
 		Msg_Header msg_header;
 		msg_header.stamp = now;
-		msg_header.frame_id = sSensorFrameId_points;
+		msg_header.frame_id = lbPoints;
 
 #if defined(HAVE_POINTS_XYZIRT)
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(obs.pointcloud.get());
