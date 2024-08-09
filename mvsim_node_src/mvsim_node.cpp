@@ -189,17 +189,6 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	// pub_clock_ =
 	// mvsim_node::make_shared<ros::Publisher>(n_.advertise<rosgraph_msgs::Clock>("/clock",
 	// 10));
-
-	pub_map_ros_ = mvsim_node::make_shared<ros::Publisher>(
-		n_.advertise<Msg_OccupancyGrid>("simul_map", 1 /*queue len*/, true /*latch*/));
-	pub_map_metadata_ = mvsim_node::make_shared<ros::Publisher>(
-		n_.advertise<Msg_MapMetaData>("simul_map_metadata", 1 /*queue len*/, true /*latch*/));
-#else
-	rclcpp::QoS qosLatched(rclcpp::KeepLast(10));
-	qosLatched.durability(rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
-
-	pub_map_ros_ = n_->create_publisher<Msg_OccupancyGrid>("simul_map", qosLatched);
-	pub_map_metadata_ = n_->create_publisher<Msg_MapMetaData>("simul_map_metadata", qosLatched);
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -468,7 +457,7 @@ void MVSimNode::publishVehicles([[maybe_unused]] mvsim::VehicleBase& veh)
 
 // Visitor: World elements
 // ----------------------------------------
-void MVSimNode::publishWorldElements(mvsim::WorldElementBase& obj)
+void MVSimNode::publishWorldElements(mvsim::WorldElementBase& obj, TPubSubPerVehicle& pubsubs)
 {
 	// GridMaps --------------
 	static mrpt::system::CTicTac lastMapPublished;
@@ -494,8 +483,8 @@ void MVSimNode::publishWorldElements(mvsim::WorldElementBase& obj)
 #endif
 		ros_map.header.stamp = myNow();
 
-		pub_map_ros_->publish(ros_map);
-		pub_map_metadata_->publish(ros_map.info);
+		pubsubs.pub_map_ros->publish(ros_map);
+		pubsubs.pub_map_metadata->publish(ros_map.info);
 
 	}  // end gridmap
 
@@ -504,19 +493,6 @@ void MVSimNode::publishWorldElements(mvsim::WorldElementBase& obj)
 // ROS: Publish grid map for visualization purposes:
 void MVSimNode::notifyROSWorldIsUpdated()
 {
-#if PACKAGE_ROS_VERSION == 2
-	// In ROS1 latching works so we only need to do this once, here.
-	// In ROS2,latching doesn't work, we must re-publish on a regular basis...
-	static mrpt::system::CTicTac lastMapPublished;
-	if (lastMapPublished.Tac() > 2.0)
-	{
-		lastMapPublished.Tic();
-
-		mvsim_world_->runVisitorOnWorldElements([this](mvsim::WorldElementBase& obj)
-												{ publishWorldElements(obj); });
-	}
-#endif
-
 	mvsim_world_->runVisitorOnVehicles([this](mvsim::VehicleBase& v) { publishVehicles(v); });
 
 	// Create subscribers & publishers for each vehicle's stuff:
@@ -530,11 +506,23 @@ void MVSimNode::notifyROSWorldIsUpdated()
 		mvsim::VehicleBase* veh = dynamic_cast<mvsim::VehicleBase*>(it->second.get());
 		if (!veh) continue;
 
-		initPubSubs(pubsub_vehicles_[idx], veh);
-	}
+		auto& pubsubs = pubsub_vehicles_[idx];
 
-	// Publish the static transform /world -> /map
-	// sendStaticTF("world", "map", tfIdentity_, myNow());
+		initPubSubs(pubsubs, veh);
+
+#if PACKAGE_ROS_VERSION == 2
+		// In ROS1 latching works so we only need to do this once, here.
+		// In ROS2,latching doesn't work, we must re-publish on a regular basis...
+		static mrpt::system::CTicTac lastMapPublished;
+		if (lastMapPublished.Tac() > 2.0)
+		{
+			lastMapPublished.Tic();
+
+			mvsim_world_->runVisitorOnWorldElements([this, &pubsubs](mvsim::WorldElementBase& obj)
+													{ publishWorldElements(obj, pubsubs); });
+		}
+#endif
+	}
 }
 
 ros_Time MVSimNode::myNow() const
@@ -583,6 +571,12 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
+	// pub: <VEH>/simul_map, <VEH>/simul_map_metadata
+	pubsubs.pub_map_ros = mvsim_node::make_shared<ros::Publisher>(
+		n_.advertise<Msg_OccupancyGrid>(vehVarName("simul_map", *veh), 1 /*queue len*/, true /*latch*/));
+	pubsubs.pub_map_metadata = mvsim_node::make_shared<ros::Publisher>(
+		n_.advertise<Msg_MapMetaData>(vehVarName("simul_map_metadata", *veh), 1 /*queue len*/, true /*latch*/));
+
 	// pub: <VEH>/odom
 	pubsubs.pub_odom = mvsim_node::make_shared<ros::Publisher>(
 		n_.advertise<Msg_Odometry>(vehVarName("odom", *veh), publisher_history_len_));
@@ -601,6 +595,13 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	pubsubs.pub_tf_static = mvsim_node::make_shared<ros::Publisher>(
 		n_.advertise<Msg_TFMessage>(vehVarName("tf_static", *veh), publisher_history_len_));
 #else
+	// pub: <VEH>/simul_map, <VEH>/simul_map_metadata
+	rclcpp::QoS qosLatched(rclcpp::KeepLast(10));
+	qosLatched.durability(rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
+	pubsubs.pub_map_ros = n_->create_publisher<Msg_OccupancyGrid>(vehVarName("simul_map", *veh), qosLatched);
+	pubsubs.pub_map_metadata = n_->create_publisher<Msg_MapMetaData>(vehVarName("simul_map_metadata", *veh), qosLatched);
+
 	// pub: <VEH>/odom
 	pubsubs.pub_odom =
 		n_->create_publisher<Msg_Odometry>(vehVarName("odom", *veh), publisher_history_len_);
@@ -649,7 +650,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		chassis_shape_msg.action = Msg_Marker::MODIFY;
 		chassis_shape_msg.type = Msg_Marker::LINE_STRIP;
 
-		chassis_shape_msg.header.frame_id = vehVarName("base_link", *veh);
+		chassis_shape_msg.header.frame_id = "base_link";
 		chassis_shape_msg.ns = "mvsim.chassis_shape";
 		chassis_shape_msg.id = veh->getVehicleIndex();
 		chassis_shape_msg.scale.x = 0.05;
@@ -813,8 +814,13 @@ void MVSimNode::spinNotifyROS()
 
 #if PACKAGE_ROS_VERSION == 2
 	// In ROS2,latching doesn't work, we must re-publish on a regular basis...
-	mvsim_world_->runVisitorOnWorldElements([this](mvsim::WorldElementBase& obj)
-											{ publishWorldElements(obj); });
+	for (size_t idx = 0; idx < vehs.size(); ++idx)
+	{
+		auto& pubs = pubsub_vehicles_[idx];
+
+		mvsim_world_->runVisitorOnWorldElements([this, &pubs](mvsim::WorldElementBase& obj)
+												{ publishWorldElements(obj, pubs); });
+	}
 #endif
 
 	// Publish all TFs for each vehicle:
