@@ -55,7 +55,7 @@ AlignTrailingComments: false # Should be off, causes many dummy problems!!
 BreakBeforeBraces: Allman
 #BreakBeforeTernaryOperators: true
 #BreakConstructorInitializersBeforeComma: false
-ColumnLimit: 80
+ColumnLimit: 100
 #CommentPragmas:  ''
 #ConstructorInitializerAllOnOneLineOrOnePerLine: true
 #ConstructorInitializerIndentWidth: 4

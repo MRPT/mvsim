@@ -78,8 +78,7 @@ using ros_Duration = rclcpp::Duration;
 
 using Msg_Polygon = geometry_msgs::msg::Polygon;
 using Msg_PoseArray = geometry_msgs::msg::PoseArray;
-using Msg_PoseWithCovarianceStamped =
-	geometry_msgs::msg::PoseWithCovarianceStamped;
+using Msg_PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
 using Msg_Twist = geometry_msgs::msg::Twist;
 using Msg_Twist_CSPtr = geometry_msgs::msg::Twist::ConstSharedPtr;
 using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
@@ -141,13 +140,11 @@ class MVSimNode
 	void configCallback(mvsim::mvsimNodeConfig& config, uint32_t level);
 #endif
 
-	void onNewObservation(
-		const mvsim::Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
+	void onNewObservation(const mvsim::Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
 	/// The mvsim library simulated world (includes everything: vehicles,
 	/// obstacles, etc.)
-	mvsim_node::shared_ptr<mvsim::World> mvsim_world_ =
-		mvsim_node::make_shared<mvsim::World>();
+	mvsim_node::shared_ptr<mvsim::World> mvsim_world_ = mvsim_node::make_shared<mvsim::World>();
 
 	mrpt::WorkerThreadsPool ros_publisher_workers_{
 		4 /*threads*/, mrpt::WorkerThreadsPool::POLICY_FIFO};
@@ -201,31 +198,24 @@ class MVSimNode
 #if PACKAGE_ROS_VERSION == 1
 		mvsim_node::shared_ptr<ros::Subscriber>
 			sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
-		mvsim_node::shared_ptr<ros::Publisher>
-			pub_odom;  //!< Publisher of "odom" topic
+		mvsim_node::shared_ptr<ros::Publisher> pub_odom;  //!< Publisher of "odom" topic
 		mvsim_node::shared_ptr<ros::Publisher>
 			pub_ground_truth;  //!< "base_pose_ground_truth" topic
 
 		/// "fake_localization" pubs:
-		mvsim_node::shared_ptr<ros::Publisher>
-			pub_amcl_pose;	//!< Publisher of "amcl_pose" topic
+		mvsim_node::shared_ptr<ros::Publisher> pub_amcl_pose;  //!< Publisher of "amcl_pose" topic
 		mvsim_node::shared_ptr<ros::Publisher>
 			pub_particlecloud;	//!< Publisher of "particlecloud" topic
 
 		/// Map <sensor_label> => publisher
-		std::map<std::string, mvsim_node::shared_ptr<ros::Publisher>>
-			pub_sensors;
+		std::map<std::string, mvsim_node::shared_ptr<ros::Publisher>> pub_sensors;
 
-		mvsim_node::shared_ptr<ros::Publisher>
-			pub_chassis_markers;  //!< "<VEH>/chassis_markers"
-		mvsim_node::shared_ptr<ros::Publisher>
-			pub_chassis_shape;	//!< "<VEH>/chassis_shape"
-		mvsim_node::shared_ptr<ros::Publisher>
-			pub_collision;	//!< "<VEH>/collision"
+		mvsim_node::shared_ptr<ros::Publisher> pub_chassis_markers;	 //!< "<VEH>/chassis_markers"
+		mvsim_node::shared_ptr<ros::Publisher> pub_chassis_shape;  //!< "<VEH>/chassis_shape"
+		mvsim_node::shared_ptr<ros::Publisher> pub_collision;  //!< "<VEH>/collision"
 
 		mvsim_node::shared_ptr<ros::Publisher> pub_tf;	//!< "<VEH>/tf"
-		mvsim_node::shared_ptr<ros::Publisher>
-			pub_tf_static;	//!< "<VEH>/tf_static"
+		mvsim_node::shared_ptr<ros::Publisher> pub_tf_static;  //!< "<VEH>/tf_static"
 
 		Msg_MarkerArray chassis_shape_msg;
 #else
@@ -237,13 +227,11 @@ class MVSimNode
 		rclcpp::Publisher<Msg_Odometry>::SharedPtr pub_ground_truth;
 
 		/// "fake_localization" pubs:
-		rclcpp::Publisher<Msg_PoseWithCovarianceStamped>::SharedPtr
-			pub_amcl_pose;
+		rclcpp::Publisher<Msg_PoseWithCovarianceStamped>::SharedPtr pub_amcl_pose;
 		rclcpp::Publisher<Msg_PoseArray>::SharedPtr pub_particlecloud;
 
 		/// Map <sensor_label> => publisher
-		std::map<std::string, mvsim_node::shared_ptr<PublisherWrapperBase>>
-			pub_sensors;
+		std::map<std::string, mvsim_node::shared_ptr<PublisherWrapperBase>> pub_sensors;
 
 		/// "<VEH>/chassis_markers"
 		rclcpp::Publisher<Msg_MarkerArray>::SharedPtr pub_chassis_markers;
@@ -330,12 +318,11 @@ class MVSimNode
 
 	/** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than
 	 * one vehicle in the World, or "/<VAR_NAME>" otherwise. */
-	std::string vehVarName(
-		const std::string& sVarName, const mvsim::VehicleBase& veh) const;
+	std::string vehVarName(const std::string& sVarName, const mvsim::VehicleBase& veh) const;
 
 	void sendStaticTF(
-		const std::string& frame_id, const std::string& child_frame_id,
-		const tf2::Transform& tx, const ros_Time& stamp);
+		const std::string& frame_id, const std::string& child_frame_id, const tf2::Transform& tx,
+		const ros_Time& stamp);
 
 	ros_Time myNow() const;
 	double myNowSec() const;
@@ -345,18 +332,10 @@ class MVSimNode
 	void publishWorldElements(mvsim::WorldElementBase& obj);
 	void publishVehicles(mvsim::VehicleBase& veh);
 
-	void internalOn(
-		const mvsim::VehicleBase& veh,
-		const mrpt::obs::CObservation2DRangeScan& obs);
-	void internalOn(
-		const mvsim::VehicleBase& veh, const mrpt::obs::CObservationImage& obs);
-	void internalOn(
-		const mvsim::VehicleBase& veh,
-		const mrpt::obs::CObservation3DRangeScan& obs);
-	void internalOn(
-		const mvsim::VehicleBase& veh,
-		const mrpt::obs::CObservationPointCloud& obs);
-	void internalOn(
-		const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs);
+	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservation2DRangeScan& obs);
+	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationImage& obs);
+	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservation3DRangeScan& obs);
+	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationPointCloud& obs);
+	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs);
 
 };	// end class
