@@ -543,18 +543,6 @@ double MVSimNode::myNowSec() const
 #endif
 }
 
-void MVSimNode::sendStaticTF(
-	const std::string& frame_id, const std::string& child_frame_id, const tf2::Transform& txf,
-	const ros_Time& stamp)
-{
-	Msg_TransformStamped tx;
-	tx.header.frame_id = frame_id;
-	tx.child_frame_id = child_frame_id;
-	tx.header.stamp = stamp;
-	tx.transform = tf2::toMsg(txf);
-	static_tf_br_.sendTransform(tx);
-}
-
 /** Initialize all pub/subs required for each vehicle, for the specific vehicle
  * \a veh */
 void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
@@ -614,7 +602,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	pubsubs.pub_collision =
 		n_->create_publisher<Msg_Bool>(vehVarName("collision", *veh), publisher_history_len_);
 
-	// "<VEH>/tf", "<VEH>/tf_static"
+	// pub: <VEH>/tf, <VEH>/tf_static
 	rclcpp::QoS qosLatched10(rclcpp::KeepLast(10));
 	qosLatched10.durability(rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
 
@@ -757,10 +745,6 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 #endif
 	}
 
-	// STATIC Identity transform <VEH>/base_link -> <VEH>/base_footprint
-	sendStaticTF(
-		vehVarName("base_link", *veh), vehVarName("base_footprint", *veh), tfIdentity_, myNow());
-
 	// TF STATIC(namespace <Ri>): /base_link -> /base_footprint
 	Msg_TransformStamped tx;
 	tx.header.frame_id = "base_link";
@@ -837,9 +821,6 @@ void MVSimNode::spinNotifyROS()
 			const auto& veh = it->second;
 			auto& pubs = pubsub_vehicles_[i];
 
-			const std::string sOdomName = vehVarName("odom", *veh);
-			const std::string sBaseLinkFrame = vehVarName("base_link", *veh);
-
 			// 1) Ground-truth pose and velocity
 			// --------------------------------------------
 			const mrpt::math::TPose3D& gh_veh_pose = veh->getPose();
@@ -881,17 +862,14 @@ void MVSimNode::spinNotifyROS()
 						pubs.pub_amcl_pose->publish(currentPos);
 					}
 
-					// TF: /map -> <Ri>/odom
+					// TF(namespace <Ri>): /map -> /odom
 					{
 						Msg_TransformStamped tx;
 						tx.header.frame_id = "map";
-						tx.child_frame_id = sOdomName;
+						tx.child_frame_id = "odom";
 						tx.header.stamp = myNow();
 						tx.transform = tf2::toMsg(tf2::Transform::getIdentity());
-						tf_br_.sendTransform(tx);
 
-						// TF(namespace <Ri>): /map -> /odom
-						tx.child_frame_id = "odom";
 						Msg_TFMessage tfMsg;
 						tfMsg.transforms.push_back(tx);
 						pubs.pub_tf->publish(tfMsg);
@@ -929,17 +907,14 @@ void MVSimNode::spinNotifyROS()
 			{
 				const mrpt::math::TPose3D odo_pose = gh_veh_pose;
 
+				// TF(namespace <Ri>): /odom -> /base_link
 				{
 					Msg_TransformStamped tx;
-					tx.header.frame_id = sOdomName;
-					tx.child_frame_id = sBaseLinkFrame;
-					tx.header.stamp = myNow();
-					tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(odo_pose));
-					tf_br_.sendTransform(tx);
-
-					// TF(namespace <Ri>): /odom -> /base_link
 					tx.header.frame_id = "odom";
 					tx.child_frame_id = "base_link";
+					tx.header.stamp = myNow();
+					tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(odo_pose));
+
 					Msg_TFMessage tfMsg;
 					tfMsg.transforms.push_back(tx);
 					pubs.pub_tf->publish(tfMsg);
@@ -1066,21 +1041,16 @@ void MVSimNode::internalOn(
 	}
 	lck.unlock();
 
-	const std::string sSensorFrameId = vehVarName(obs.sensorLabel, veh);
-
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
 	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = vehVarName("base_link", veh);
-	tfStmp.child_frame_id = sSensorFrameId;
-	tfStmp.header.stamp = myNow();
-	tf_br_.sendTransform(tfStmp);
-
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
+	tfStmp.header.stamp = myNow();
+
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
@@ -1119,21 +1089,16 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	}
 	lck.unlock();
 
-	const std::string sSensorFrameId = vehVarName(obs.sensorLabel, veh);
-
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
 	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = vehVarName("base_link", veh);
-	tfStmp.child_frame_id = sSensorFrameId;
-	tfStmp.header.stamp = myNow();
-	tf_br_.sendTransform(tfStmp);
-
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
+	tfStmp.header.stamp = myNow();
+
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
@@ -1173,8 +1138,6 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	}
 	lck.unlock();
 
-	const std::string sSensorFrameId = vehVarName(obs.sensorLabel, veh);
-
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose;
 	obs.getSensorPose(sensorPose);
@@ -1182,13 +1145,10 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = vehVarName("base_link", veh);
-	tfStmp.child_frame_id = sSensorFrameId;
-	tfStmp.header.stamp = myNow();
-	tf_br_.sendTransform(tfStmp);
-
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
+	tfStmp.header.stamp = myNow();
+
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);
@@ -1238,9 +1198,6 @@ void MVSimNode::internalOn(
 	}
 	lck.unlock();
 
-	const std::string sSensorFrameId_image = vehVarName(lbImage, veh);
-	const std::string sSensorFrameId_points = vehVarName(lbPoints, veh);
-
 	const auto now = myNow();
 
 	// IMAGE
@@ -1253,13 +1210,10 @@ void MVSimNode::internalOn(
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
-		tfStmp.header.frame_id = vehVarName("base_link", veh);
-		tfStmp.child_frame_id = sSensorFrameId_image;
-		tfStmp.header.stamp = now;
-		tf_br_.sendTransform(tfStmp);
-
 		tfStmp.header.frame_id = "base_link";
 		tfStmp.child_frame_id = lbImage;
+		tfStmp.header.stamp = now;
+
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
@@ -1286,13 +1240,10 @@ void MVSimNode::internalOn(
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
-		tfStmp.header.frame_id = vehVarName("base_link", veh);
-		tfStmp.child_frame_id = sSensorFrameId_points;
-		tfStmp.header.stamp = now;
-		tf_br_.sendTransform(tfStmp);
-
 		tfStmp.header.frame_id = "base_link";
 		tfStmp.child_frame_id = lbPoints;
+		tfStmp.header.stamp = now;
+
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
@@ -1343,8 +1294,6 @@ void MVSimNode::internalOn(
 	}
 	lck.unlock();
 
-	const std::string sSensorFrameId_points = vehVarName(lbPoints, veh);
-
 	const auto now = myNow();
 
 	// POINTS
@@ -1356,13 +1305,10 @@ void MVSimNode::internalOn(
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = vehVarName("base_link", veh);
-	tfStmp.child_frame_id = sSensorFrameId_points;
-	tfStmp.header.stamp = now;
-	tf_br_.sendTransform(tfStmp);
-
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = lbPoints;
+	tfStmp.header.stamp = now;
+
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
 	pubs.pub_tf->publish(tfMsg);

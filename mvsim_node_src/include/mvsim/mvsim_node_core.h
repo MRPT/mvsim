@@ -181,14 +181,6 @@ class MVSimNode
 	rclcpp::Clock::SharedPtr clock_;
 #endif
 
-#if PACKAGE_ROS_VERSION == 1
-	tf2_ros::TransformBroadcaster tf_br_;  //!< Use to send data to TF
-	tf2_ros::StaticTransformBroadcaster static_tf_br_;
-#else
-	tf2_ros::TransformBroadcaster tf_br_{n_};  //!< Use to send data to TF
-	tf2_ros::StaticTransformBroadcaster static_tf_br_{n_};
-#endif
-
 	struct TPubSubPerVehicle
 	{
 #if PACKAGE_ROS_VERSION == 1
@@ -325,10 +317,6 @@ class MVSimNode
 	/** Creates the string "/<VEH_NAME>/<VAR_NAME>" if there're more than
 	 * one vehicle in the World, or "/<VAR_NAME>" otherwise. */
 	std::string vehVarName(const std::string& sVarName, const mvsim::VehicleBase& veh) const;
-
-	void sendStaticTF(
-		const std::string& frame_id, const std::string& child_frame_id, const tf2::Transform& tx,
-		const ros_Time& stamp);
 
 	ros_Time myNow() const;
 	double myNowSec() const;
