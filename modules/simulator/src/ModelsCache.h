@@ -24,8 +24,7 @@ class ModelsCache
 		std::string modelCull = "NONE";
 	};
 
-	mrpt::opengl::CAssimpModel::Ptr get(
-		const std::string& url, const Options& options);
+	mrpt::opengl::CAssimpModel::Ptr get(const std::string& url, const Options& options);
 
 	void clear() { cache.clear(); }
 

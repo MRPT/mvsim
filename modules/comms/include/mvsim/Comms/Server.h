@@ -124,8 +124,7 @@ class Server : public mrpt::system::COutputLogger
 		const std::string& serviceName, std::string& publisherEndpoint,
 		std::string& nodeName) const;
 
-	void db_add_topic_subscriber(
-		const std::string& topicName, const std::string& updatesEndPoint);
+	void db_add_topic_subscriber(const std::string& topicName, const std::string& updatesEndPoint);
 
 	/** Send to updatesEndPoint only, if given; otherwise, send to all
 	 * subscribers */
@@ -153,8 +152,7 @@ class Server : public mrpt::system::COutputLogger
 	struct InfoPerPublisher
 	{
 		InfoPerPublisher(
-			const std::string& topic_name,
-			const std::string& publisher_node_name,
+			const std::string& topic_name, const std::string& publisher_node_name,
 			const std::string& publisher_endpoint)
 			: topicName(topic_name),
 			  publisherNodeName(publisher_node_name),
@@ -168,11 +166,8 @@ class Server : public mrpt::system::COutputLogger
 
 	struct InfoPerSubscriber
 	{
-		InfoPerSubscriber(
-			const std::string& topic_name,
-			const std::string& sub_updates_endpoint)
-			: topicName(topic_name),
-			  subscriberUpdatesEndpoint(sub_updates_endpoint)
+		InfoPerSubscriber(const std::string& topic_name, const std::string& sub_updates_endpoint)
+			: topicName(topic_name), subscriberUpdatesEndpoint(sub_updates_endpoint)
 		{
 		}
 		const std::string topicName;
@@ -182,8 +177,7 @@ class Server : public mrpt::system::COutputLogger
 	struct InfoPerTopic
 	{
 		InfoPerTopic() = default;
-		InfoPerTopic(
-			const std::string& name, const std::string& topic_type_name)
+		InfoPerTopic(const std::string& name, const std::string& topic_type_name)
 			: topicName(name), topicTypeName(topic_type_name)
 		{
 		}

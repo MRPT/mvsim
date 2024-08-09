@@ -27,8 +27,7 @@ class FrictionBase
 
 	/** Class factory: Creates a friction object from XML description of type
 	 * "<friction>...</friction>".  */
-	static FrictionBase::Ptr factory(
-		VehicleBase& parent, const rapidxml::xml_node<char>* xml_node);
+	static FrictionBase::Ptr factory(VehicleBase& parent, const rapidxml::xml_node<char>* xml_node);
 
 	struct TFrictionInput
 	{
@@ -71,18 +70,14 @@ class FrictionBase
 using FrictionBasePtr = std::shared_ptr<FrictionBase>;
 
 // Class factory:
-typedef ClassFactory<
-	FrictionBase, VehicleBase&, const rapidxml::xml_node<char>*>
+typedef ClassFactory<FrictionBase, VehicleBase&, const rapidxml::xml_node<char>*>
 	TClassFactory_friction;
 extern TClassFactory_friction classFactory_friction;
 
-#define DECLARES_REGISTER_FRICTION(CLASS_NAME)  \
-	DECLARES_REGISTER_CLASS2(                   \
-		CLASS_NAME, FrictionBase, VehicleBase&, \
-		const rapidxml::xml_node<char>*)
+#define DECLARES_REGISTER_FRICTION(CLASS_NAME) \
+	DECLARES_REGISTER_CLASS2(                  \
+		CLASS_NAME, FrictionBase, VehicleBase&, const rapidxml::xml_node<char>*)
 
-#define REGISTER_FRICTION(TEXTUAL_NAME, CLASS_NAME)                  \
-	REGISTER_CLASS2(                                                 \
-		TClassFactory_friction, classFactory_friction, TEXTUAL_NAME, \
-		CLASS_NAME)
+#define REGISTER_FRICTION(TEXTUAL_NAME, CLASS_NAME) \
+	REGISTER_CLASS2(TClassFactory_friction, classFactory_friction, TEXTUAL_NAME, CLASS_NAME)
 }  // namespace mvsim

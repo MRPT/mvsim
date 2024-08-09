@@ -24,8 +24,7 @@ class DefaultFriction : public FrictionBase
 {
 	DECLARES_REGISTER_FRICTION(DefaultFriction)
    public:
-	DefaultFriction(
-		VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
+	DefaultFriction(VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
 
 	// See docs in base class.
 	virtual mrpt::math::TVector2D evaluate_friction(

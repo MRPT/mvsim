@@ -40,8 +40,7 @@ class PointCloud : public WorldElementBase
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	mrpt::maps::CPointsMap::Ptr points_;
 

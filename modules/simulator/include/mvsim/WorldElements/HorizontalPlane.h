@@ -32,8 +32,7 @@ class HorizontalPlane : public WorldElementBase
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	float x_min_ = -10, x_max_ = 10, y_min_ = -10, y_max_ = 10;
 	mrpt::img::TColor color_ = {0xa0, 0xa0, 0xa0, 0xff};

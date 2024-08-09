@@ -45,15 +45,11 @@ class Lidar3D : public SensorBase
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
-	mrpt::math::TPose3D getRelativePose() const override
-	{
-		return sensorPoseOnVeh_.asTPose();
-	}
+	mrpt::math::TPose3D getRelativePose() const override { return sensorPoseOnVeh_.asTPose(); }
 	void setRelativePose(const mrpt::math::TPose3D& p) override
 	{
 		sensorPoseOnVeh_ = mrpt::poses::CPose3D(p);
@@ -93,8 +89,7 @@ class Lidar3D : public SensorBase
 	bool gui_uptodate_ = false;
 
 	mrpt::opengl::CPointCloudColoured::Ptr glPoints_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
-		gl_sensor_origin_corner_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_;
 
 	std::optional<TSimulContext> has_to_render_;

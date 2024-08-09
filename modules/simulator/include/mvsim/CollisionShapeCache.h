@@ -52,9 +52,8 @@ class CollisionShapeCache
 		const mrpt::poses::CPose3D& modelPose, const float modelScale);
 
 	Shape2p5 processCylinderLike(
-		const size_t actualEdgeCount, double actualRadius, float zMin,
-		float zMax, const mrpt::poses::CPose3D& modelPose,
-		const float modelScale);
+		const size_t actualEdgeCount, double actualRadius, float zMin, float zMax,
+		const mrpt::poses::CPose3D& modelPose, const float modelScale);
 };
 
 }  // namespace mvsim

@@ -1,16 +1,10 @@
 #include "mvsim/CsvLogger.h"
 
-CSVLogger::CSVLogger()
-{
-	file_ = std::make_shared<std::ofstream>(std::ofstream());
-}
+CSVLogger::CSVLogger() { file_ = std::make_shared<std::ofstream>(std::ofstream()); }
 
 CSVLogger::~CSVLogger() { close(); }
 void CSVLogger::addColumn(std::string name) { columns_[name] = 0.0; }
-void CSVLogger::updateColumn(std::string name, double value)
-{
-	columns_[name] = value;
-}
+void CSVLogger::updateColumn(std::string name, double value) { columns_[name] = value; }
 
 bool CSVLogger::writeHeader()
 {
@@ -56,9 +50,9 @@ bool CSVLogger::open()
 {
 	if (file_)
 	{
-		file_->open((std::string("session") + std::to_string(currentSession) +
-					 std::string("-") + filepath_)
-						.c_str());
+		file_->open(
+			(std::string("session") + std::to_string(currentSession) + std::string("-") + filepath_)
+				.c_str());
 		return isOpen();
 	}
 	return false;

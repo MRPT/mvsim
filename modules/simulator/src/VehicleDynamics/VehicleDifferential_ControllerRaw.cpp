@@ -66,6 +66,5 @@ void DynamicsDifferential::ControllerRawForces::teleop_interface(
 							"w/s=incr/decr both torques.\n"
 							"a/d=left/right. spacebar=stop.\n";
 	out.append_gui_lines += mrpt::format(
-		"setpoint: tl=%.03f tr=%.03f deg\n", setpoint_wheel_torque_l,
-		setpoint_wheel_torque_r);
+		"setpoint: tl=%.03f tr=%.03f deg\n", setpoint_wheel_torque_l, setpoint_wheel_torque_r);
 }

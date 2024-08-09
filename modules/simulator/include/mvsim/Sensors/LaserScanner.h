@@ -49,8 +49,7 @@ class LaserScanner : public SensorBase
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
@@ -101,8 +100,7 @@ class LaserScanner : public SensorBase
 	bool gui_uptodate_ = false;
 
 	mrpt::opengl::CPlanarLaserScan::Ptr gl_scan_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
-		gl_sensor_origin_corner_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_;
 
 	std::optional<TSimulContext> has_to_render_;

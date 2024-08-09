@@ -28,8 +28,7 @@ mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
 	const std::string& localFileName, const Options& options)
 {
 	// already cached?
-	if (auto it = cache.find(localFileName); it != cache.end())
-		return it->second;
+	if (auto it = cache.find(localFileName); it != cache.end()) return it->second;
 
 	// No, it's a new model path, create its placeholder:
 	auto m = cache[localFileName] = mrpt::opengl::CAssimpModel::Create();
@@ -50,8 +49,7 @@ mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
 
 	m->loadScene(localFileName, loadFlags);
 
-	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
-		options.modelCull));
+	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(options.modelCull));
 
 	return m;
 }

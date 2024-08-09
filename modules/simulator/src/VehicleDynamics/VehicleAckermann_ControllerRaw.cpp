@@ -14,8 +14,7 @@
 using namespace mvsim;
 using namespace std;
 
-DynamicsAckermann::ControllerRawForces::ControllerRawForces(
-	DynamicsAckermann& veh)
+DynamicsAckermann::ControllerRawForces::ControllerRawForces(DynamicsAckermann& veh)
 	: ControllerBase(veh),
 	  setpoint_wheel_torque_l(0),
 	  setpoint_wheel_torque_r(0),
@@ -33,8 +32,7 @@ void DynamicsAckermann::ControllerRawForces::control_step(
 	co.steer_ang = this->setpoint_steer_ang;
 }
 
-void DynamicsAckermann::ControllerRawForces::load_config(
-	const rapidxml::xml_node<char>& node)
+void DynamicsAckermann::ControllerRawForces::load_config(const rapidxml::xml_node<char>& node)
 {
 	TParameterDefinitions params;
 	params["fl_torque"] = TParamEntry("%lf", &setpoint_wheel_torque_l);

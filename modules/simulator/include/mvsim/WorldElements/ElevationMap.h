@@ -29,14 +29,12 @@ class ElevationMap : public WorldElementBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	bool getElevationAt(
-		double x, double y, float& z) const;  //!< return false if out of bounds
+	bool getElevationAt(double x, double y, float& z) const;  //!< return false if out of bounds
 
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */

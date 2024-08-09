@@ -21,7 +21,6 @@ namespace mvsim
  *
  */
 std::string parse(
-	const std::string& input,
-	const std::map<std::string, std::string>& variableNamesValues = {});
+	const std::string& input, const std::map<std::string, std::string>& variableNamesValues = {});
 
 }  // namespace mvsim

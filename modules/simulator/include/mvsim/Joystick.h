@@ -113,8 +113,7 @@ class Joystick
 	 *
 	 * \sa getJoystickPosition
 	 */
-	void setLimits(
-		const std::vector<int>& minPerAxis, const std::vector<int>& maxPerAxis);
+	void setLimits(const std::vector<int>& minPerAxis, const std::vector<int>& maxPerAxis);
 
 };	// End of class def.
 

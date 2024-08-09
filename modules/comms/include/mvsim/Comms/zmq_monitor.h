@@ -71,15 +71,13 @@ class SocketMonitor : public zmq::monitor_t
 	}
 
 	void on_event_disconnected(
-		[[maybe_unused]] const zmq_event_t& event_,
-		[[maybe_unused]] const char* addr_) override
+		[[maybe_unused]] const zmq_event_t& event_, [[maybe_unused]] const char* addr_) override
 	{
 		setConnected(false);
 	}
 
 	void on_event_connected(
-		[[maybe_unused]] const zmq_event_t& event_,
-		[[maybe_unused]] const char* addr_) override
+		[[maybe_unused]] const zmq_event_t& event_, [[maybe_unused]] const char* addr_) override
 	{
 		setConnected(true);
 	}
