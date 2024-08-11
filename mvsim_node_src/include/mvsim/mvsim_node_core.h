@@ -174,23 +174,11 @@ class MVSimNode
 #endif
 
 	// === ROS Publishers ====
-	/// used for simul_map publication
 #if PACKAGE_ROS_VERSION == 1
-	mvsim_node::shared_ptr<ros::Publisher> pub_map_ros_, pub_map_metadata_;
 	// mvsim_node::shared_ptr<ros::Publisher> pub_clock_;
 #else
-	rclcpp::Publisher<Msg_OccupancyGrid>::SharedPtr pub_map_ros_;
-	rclcpp::Publisher<Msg_MapMetaData>::SharedPtr pub_map_metadata_;
 	rclcpp::TimeSource ts_{n_};
 	rclcpp::Clock::SharedPtr clock_;
-#endif
-
-#if PACKAGE_ROS_VERSION == 1
-	tf2_ros::TransformBroadcaster tf_br_;  //!< Use to send data to TF
-	tf2_ros::StaticTransformBroadcaster static_tf_br_;
-#else
-	tf2_ros::TransformBroadcaster tf_br_{n_};  //!< Use to send data to TF
-	tf2_ros::StaticTransformBroadcaster static_tf_br_{n_};
 #endif
 
 	struct TPubSubPerVehicle
@@ -198,6 +186,12 @@ class MVSimNode
 #if PACKAGE_ROS_VERSION == 1
 		mvsim_node::shared_ptr<ros::Subscriber>
 			sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
+
+		/// used for simul_map publication
+		mvsim_node::shared_ptr<ros::Publisher> pub_map_ros;	 //!< Publisher of "simul_map" topic
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_map_metadata;  //!< Publisher of "simul_map_metadata" topic
+
 		mvsim_node::shared_ptr<ros::Publisher> pub_odom;  //!< Publisher of "odom" topic
 		mvsim_node::shared_ptr<ros::Publisher>
 			pub_ground_truth;  //!< "base_pose_ground_truth" topic
@@ -221,6 +215,11 @@ class MVSimNode
 #else
 		/// Subscribers vehicle's "cmd_vel" topic
 		rclcpp::Subscription<Msg_Twist>::SharedPtr sub_cmd_vel;
+
+		/// used for simul_map publication
+		rclcpp::Publisher<Msg_OccupancyGrid>::SharedPtr pub_map_ros;
+		rclcpp::Publisher<Msg_MapMetaData>::SharedPtr pub_map_metadata;
+
 		/// Publisher of "odom" topic
 		rclcpp::Publisher<Msg_Odometry>::SharedPtr pub_odom;
 		/// "base_pose_ground_truth" topic
@@ -320,16 +319,12 @@ class MVSimNode
 	 * one vehicle in the World, or "/<VAR_NAME>" otherwise. */
 	std::string vehVarName(const std::string& sVarName, const mvsim::VehicleBase& veh) const;
 
-	void sendStaticTF(
-		const std::string& frame_id, const std::string& child_frame_id, const tf2::Transform& tx,
-		const ros_Time& stamp);
-
 	ros_Time myNow() const;
 	double myNowSec() const;
 
 	mrpt::system::CTimeLogger profiler_{true /*enabled*/, "mvsim_node"};
 
-	void publishWorldElements(mvsim::WorldElementBase& obj);
+	void publishWorldElements(mvsim::WorldElementBase& obj, TPubSubPerVehicle& pubsubs);
 	void publishVehicles(mvsim::VehicleBase& veh);
 
 	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservation2DRangeScan& obs);

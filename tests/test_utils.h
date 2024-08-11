@@ -9,23 +9,20 @@
 
 #pragma once
 
-#include <mrpt/version.h>
 #include <mrpt/system/os.h>
+#include <mrpt/version.h>
 
 static inline void setConsoleErrorColor()
 {
-	mrpt::system::consoleColorAndStyle(
-		mrpt::system::ConsoleForegroundColor::RED);
+	mrpt::system::consoleColorAndStyle(mrpt::system::ConsoleForegroundColor::RED);
 }
 
 static inline void setConsoleNormalColor()
 {
-	mrpt::system::consoleColorAndStyle(
-		mrpt::system::ConsoleForegroundColor::DEFAULT);
+	mrpt::system::consoleColorAndStyle(mrpt::system::ConsoleForegroundColor::DEFAULT);
 }
 
 static inline void setConsoleBlueColor()
 {
-	mrpt::system::consoleColorAndStyle(
-		mrpt::system::ConsoleForegroundColor::BLUE);
+	mrpt::system::consoleColorAndStyle(mrpt::system::ConsoleForegroundColor::BLUE);
 }
