@@ -560,10 +560,11 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 #if PACKAGE_ROS_VERSION == 1
 	// pub: <VEH>/simul_map, <VEH>/simul_map_metadata
-	pubsubs.pub_map_ros = mvsim_node::make_shared<ros::Publisher>(
-		n_.advertise<Msg_OccupancyGrid>(vehVarName("simul_map", *veh), 1 /*queue len*/, true /*latch*/));
-	pubsubs.pub_map_metadata = mvsim_node::make_shared<ros::Publisher>(
-		n_.advertise<Msg_MapMetaData>(vehVarName("simul_map_metadata", *veh), 1 /*queue len*/, true /*latch*/));
+	pubsubs.pub_map_ros = mvsim_node::make_shared<ros::Publisher>(n_.advertise<Msg_OccupancyGrid>(
+		vehVarName("simul_map", *veh), 1 /*queue len*/, true /*latch*/));
+	pubsubs.pub_map_metadata =
+		mvsim_node::make_shared<ros::Publisher>(n_.advertise<Msg_MapMetaData>(
+			vehVarName("simul_map_metadata", *veh), 1 /*queue len*/, true /*latch*/));
 
 	// pub: <VEH>/odom
 	pubsubs.pub_odom = mvsim_node::make_shared<ros::Publisher>(
@@ -587,8 +588,10 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	rclcpp::QoS qosLatched(rclcpp::KeepLast(10));
 	qosLatched.durability(rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
 
-	pubsubs.pub_map_ros = n_->create_publisher<Msg_OccupancyGrid>(vehVarName("simul_map", *veh), qosLatched);
-	pubsubs.pub_map_metadata = n_->create_publisher<Msg_MapMetaData>(vehVarName("simul_map_metadata", *veh), qosLatched);
+	pubsubs.pub_map_ros =
+		n_->create_publisher<Msg_OccupancyGrid>(vehVarName("simul_map", *veh), qosLatched);
+	pubsubs.pub_map_metadata =
+		n_->create_publisher<Msg_MapMetaData>(vehVarName("simul_map_metadata", *veh), qosLatched);
 
 	// pub: <VEH>/odom
 	pubsubs.pub_odom =

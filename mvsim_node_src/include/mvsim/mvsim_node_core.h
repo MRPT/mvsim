@@ -188,8 +188,9 @@ class MVSimNode
 			sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
 
 		/// used for simul_map publication
-		mvsim_node::shared_ptr<ros::Publisher> pub_map_ros;  //!< Publisher of "simul_map" topic
-		mvsim_node::shared_ptr<ros::Publisher> pub_map_metadata;  //!< Publisher of "simul_map_metadata" topic
+		mvsim_node::shared_ptr<ros::Publisher> pub_map_ros;	 //!< Publisher of "simul_map" topic
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_map_metadata;  //!< Publisher of "simul_map_metadata" topic
 
 		mvsim_node::shared_ptr<ros::Publisher> pub_odom;  //!< Publisher of "odom" topic
 		mvsim_node::shared_ptr<ros::Publisher>
