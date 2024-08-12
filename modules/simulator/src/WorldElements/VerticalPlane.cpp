@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
