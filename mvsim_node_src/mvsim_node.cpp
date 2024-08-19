@@ -733,15 +733,20 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	{
 #if PACKAGE_ROS_VERSION == 1
 		// pub: <VEH>/amcl_pose
-		pubsubs.pub_amcl_pose = mvsim_node::make_shared<ros::Publisher>(
-			n_.advertise<Msg_PoseWithCovarianceStamped>(vehVarName("amcl_pose", *veh), 1));
+		pubsubs.pub_amcl_pose =
+			mvsim_node::make_shared<ros::Publisher>(n_.advertise<Msg_PoseWithCovarianceStamped>(
+				vehVarName("amcl_pose", *veh), 1, true /*latch*/));
 		// pub: <VEH>/particlecloud
 		pubsubs.pub_particlecloud = mvsim_node::make_shared<ros::Publisher>(
 			n_.advertise<Msg_PoseArray>(vehVarName("particlecloud", *veh), 1));
 #else
+		rclcpp::QoS qosLatched1(rclcpp::KeepLast(1));
+		qosLatched1.durability(
+			rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
 		// pub: <VEH>/amcl_pose
-		pubsubs.pub_amcl_pose =
-			n_->create_publisher<Msg_PoseWithCovarianceStamped>(vehVarName("amcl_pose", *veh), 1);
+		pubsubs.pub_amcl_pose = n_->create_publisher<Msg_PoseWithCovarianceStamped>(
+			vehVarName("amcl_pose", *veh), qosLatched1);
 		// pub: <VEH>/particlecloud
 		pubsubs.pub_particlecloud =
 			n_->create_publisher<Msg_PoseArray>(vehVarName("particlecloud", *veh), 1);
