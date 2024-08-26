@@ -22,7 +22,12 @@
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
   <!-- COMMON DEPS -->
-  <depend>mrpt2</depend>
+  <depend>mrpt_libmaps</depend>
+  <depend>mrpt_libtclap</depend>
+  <depend>mrpt_libgui</depend>
+  <depend>mrpt_libposes</depend>  <!-- for mrpt::tfest -->
+  <depend>mrpt_libros_bridge</depend>
+
   <depend>sensor_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>nav_msgs</depend>
