@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.10.0 (2024-08-28)
+-------------------
 * Depend on new mrpt_lib packages (deprecate mrpt2)
 * Merge pull request `#52 <https://github.com/MRPT/mvsim/issues/52>`_ from finani/fix-fake-amcl
   Fix fake amcl topic (QoS Durability)
