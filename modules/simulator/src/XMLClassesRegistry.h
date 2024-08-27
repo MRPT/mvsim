@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -38,14 +38,10 @@ class XmlClassesRegistry
    public:
 	/** Define the xml tag, e.g. "vehicle:class" for "<vehicle:class
 	 * name='xxx'>...</vehicle:class>" */
-	XmlClassesRegistry(const std::string& xml_class_tag)
-		: tagname_(xml_class_tag)
-	{
-	}
+	XmlClassesRegistry(const std::string& xml_class_tag) : tagname_(xml_class_tag) {}
 
 	/** Return an XML node with the class definition, or nullptr if not found */
-	const rapidxml::xml_node<char>* get(
-		const std::string& xml_node_class) const;
+	const rapidxml::xml_node<char>* get(const std::string& xml_node_class) const;
 
 	/** Register a new class, given its XML definition as a text block */
 	void add(const std::string& input_xml_node_class);

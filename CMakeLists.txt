@@ -3,7 +3,7 @@
 # |                                                                         |
 # |  https://github.com/ual-arm-ros-pkg/multivehicle-simulator              |
 # |                                                                         |
-# | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+# | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
 # | Distributed under 3-clause BSD License                                  |
 # |   See COPYING                                                           |
 # +-------------------------------------------------------------------------+
@@ -16,7 +16,7 @@ if("$ENV{ROS_VERSION}" STREQUAL "2")
 elseif("$ENV{ROS_VERSION}" STREQUAL "1")
 	set(DETECTED_ROS1 TRUE)
 	set(PACKAGE_ROS_VERSION 1)
-	set (CMAKE_CXX_STANDARD 14)
+	set(CMAKE_CXX_STANDARD 14)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -68,7 +68,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS_SANITIZEADDRESS "-fsanitize=address  -fsanitize=leak -g")
 	set(CMAKE_EXE_LINKER_FLAGS_SANITIZEADDRESS "-fsanitize=address  -fsanitize=leak")
 	set(CMAKE_SHARED_LINKER_FLAGS_SANITIZEADDRESS "-fsanitize=address  -fsanitize=leak")
-	
+
 	# BUILD_TYPE: SanitizeThread
 	set(CMAKE_CXX_FLAGS_SANITIZETHREAD "-fsanitize=thread -g")
 	set(CMAKE_EXE_LINKER_FLAGS_SANITIZETHREAD "-fsanitize=thread")
@@ -211,7 +211,7 @@ set(EMBEDDED_box2d_DIR "${EMBEDDED_box2d_INSTALL_DIR}/lib/cmake/box2d/")
 # Since box2d 2.4.1, the name changed "Box2D" -> "box2d". We now only support the version >=2.4.x
 # for compatibility with modern Ubuntu distros:
 #
-# Update: Since MVSIM 0.7.0, we now always ship a custom build of box2d to 
+# Update: Since MVSIM 0.7.0, we now always ship a custom build of box2d to
 # increase its default maximum number of polygon vertices:
 ##find_package(box2d QUIET) # Defines: box2d::box2d
 
@@ -290,8 +290,9 @@ if (BUILD_FOR_ROS)
 		mvsim_node_src/mvsim_node.cpp
 		mvsim_node_src/mvsim_node_main.cpp
 		mvsim_node_src/include/mvsim/mvsim_node_core.h
+		mvsim_node_src/include/wrapper/publisher_wrapper.h
 	)
-	
+
 	mvsim_set_target_build_options(mvsim_node)
 
 	target_include_directories(mvsim_node PRIVATE "mvsim_node_src/include")
@@ -307,7 +308,7 @@ if (BUILD_FOR_ROS)
 			mvsim_gencfg
 		)
 
-		target_link_libraries(mvsim_node 
+		target_link_libraries(mvsim_node
 			#PRIVATE  # ros catkin already used the plain signature, we cannot use this here...
 			${catkin_LIBRARIES}
 			mrpt::ros1bridge
@@ -410,7 +411,7 @@ option(MVSIM_UNIT_TESTS "Build and run MVSIM unit tests (requires Python and ZMQ
 
 # Disable tests in armhf, since they fail due to (probably?) very slow rendering capabilities.
 # See: https://github.com/ros-infrastructure/ros_buildfarm_config/pull/220
-if (MVSIM_UNIT_TESTS AND 
+if (MVSIM_UNIT_TESTS AND
 	(
 	("armhf" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}") OR
 	("arm64" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}") OR

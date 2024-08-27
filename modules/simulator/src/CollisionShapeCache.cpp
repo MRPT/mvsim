@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -24,15 +24,13 @@ CollisionShapeCache& CollisionShapeCache::Instance()
 }
 
 Shape2p5 CollisionShapeCache::get(
-	mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
-	const mrpt::poses::CPose3D& modelPose, const float modelScale,
-	const std::optional<std::string>& modelFile)
+	mrpt::opengl::CRenderizable& obj, float zMin, float zMax, const mrpt::poses::CPose3D& modelPose,
+	const float modelScale, const std::optional<std::string>& modelFile)
 {
 	// already cached?
 	if (modelFile)
 	{
-		if (auto it = cache.find(modelFile.value()); it != cache.end())
-			return it->second.shape;
+		if (auto it = cache.find(modelFile.value()); it != cache.end()) return it->second.shape;
 	}
 
 	// No, it's a new model path, create its placeholder:
@@ -40,8 +38,7 @@ Shape2p5 CollisionShapeCache::get(
 	Shape2p5& ret = modelFile ? cache[*modelFile].shape : retVal;
 
 	// Now, decide whether it's a simple geometry, or an arbitrary model:
-	const auto simpleGeom =
-		processSimpleGeometries(obj, zMin, zMax, modelPose, modelScale);
+	const auto simpleGeom = processSimpleGeometries(obj, zMin, zMax, modelPose, modelScale);
 
 	if (simpleGeom)
 	{
@@ -93,13 +90,11 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 		// Cylinder
 		// ===============================
 		// If the cylinder is not upright, skip and go for the generic algorithm
-		if (std::abs(modelPose.pitch()) > 0.02_deg ||
-			std::abs(modelPose.roll()) > 0.02_deg)
+		if (std::abs(modelPose.pitch()) > 0.02_deg || std::abs(modelPose.roll()) > 0.02_deg)
 			return {};
 
 		const size_t actualEdgeCount = oCyl->getSlicesCount();
-		double actualRadius =
-			std::max<double>(oCyl->getTopRadius(), oCyl->getBottomRadius());
+		double actualRadius = std::max<double>(oCyl->getTopRadius(), oCyl->getBottomRadius());
 
 		return processCylinderLike(
 			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
@@ -128,8 +123,7 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 		// Box
 		// ===============================
 		// If the object is not upright, skip and go for the generic algorithm
-		if (std::abs(modelPose.pitch()) > 0.02_deg ||
-			std::abs(modelPose.roll()) > 0.02_deg)
+		if (std::abs(modelPose.pitch()) > 0.02_deg || std::abs(modelPose.roll()) > 0.02_deg)
 			return {};
 
 		mrpt::math::TPoint3D p1, p2;
@@ -138,14 +132,11 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 		p2 *= modelScale;
 
 		const mrpt::math::TPoint3D corners[4] = {
-			modelPose.composePoint({p1.x, p1.y, 0}),
-			modelPose.composePoint({p1.x, p2.y, 0}),
-			modelPose.composePoint({p2.x, p2.y, 0}),
-			modelPose.composePoint({p2.x, p1.y, 0})};
+			modelPose.composePoint({p1.x, p1.y, 0}), modelPose.composePoint({p1.x, p2.y, 0}),
+			modelPose.composePoint({p2.x, p2.y, 0}), modelPose.composePoint({p2.x, p1.y, 0})};
 
 		mrpt::math::TPolygon2D contour;
-		for (int i = 0; i < 4; i++)
-			contour.emplace_back(corners[i].x, corners[i].y);
+		for (int i = 0; i < 4; i++) contour.emplace_back(corners[i].x, corners[i].y);
 
 		Shape2p5 s;
 		s.setShapeManual(contour, zMin, zMax);
@@ -159,8 +150,8 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 }
 
 Shape2p5 CollisionShapeCache::processGenericGeometry(
-	mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
-	const mrpt::poses::CPose3D& modelPose, const float modelScale)
+	mrpt::opengl::CRenderizable& obj, float zMin, float zMax, const mrpt::poses::CPose3D& modelPose,
+	const float modelScale)
 {
 	Shape2p5 ret;
 
@@ -171,20 +162,17 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	{
 		oAssimp->onUpdateBuffers_all();
 	}
-	auto* oRSWF =
-		dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(&obj);
+	auto* oRSWF = dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(&obj);
 	if (oRSWF)
 	{
 		oRSWF->onUpdateBuffers_Wireframe();
 	}
-	auto* oRST =
-		dynamic_cast<mrpt::opengl::CRenderizableShaderTriangles*>(&obj);
+	auto* oRST = dynamic_cast<mrpt::opengl::CRenderizableShaderTriangles*>(&obj);
 	if (oRST)
 	{
 		oRST->onUpdateBuffers_Triangles();
 	}
-	auto* oRSTT =
-		dynamic_cast<mrpt::opengl::CRenderizableShaderTexturedTriangles*>(&obj);
+	auto* oRSTT = dynamic_cast<mrpt::opengl::CRenderizableShaderTexturedTriangles*>(&obj);
 	if (oRSTT)
 	{
 		oRSTT->onUpdateBuffers_TexturedTriangles();
@@ -220,8 +208,7 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 		numTotalPts += 3;
 		// transform the whole triangle, then compare with [z,z] limits:
 		mrpt::opengl::TTriangle t = tri;
-		for (int i = 0; i < 3; i++)
-			t.vertex(i) = modelPose.composePoint(t.vertex(i) * modelScale);
+		for (int i = 0; i < 3; i++) t.vertex(i) = modelPose.composePoint(t.vertex(i) * modelScale);
 
 		// does any of the point lie within the valid Z range, or is the
 		// triangle going all the way down to top?
@@ -251,8 +238,7 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	}
 	if (oRSTT)
 	{
-		auto lck =
-			mrpt::lockHelper(oRSTT->shaderTexturedTrianglesBufferMutex().data);
+		auto lck = mrpt::lockHelper(oRSTT->shaderTexturedTrianglesBufferMutex().data);
 		const auto& tris = oRSTT->shaderTexturedTrianglesBuffer();
 		for (const auto& tri : tris) lambdaUpdateTri(tri);
 	}
@@ -277,8 +263,7 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 		{
 			if (!o) continue;
 
-			auto lck =
-				mrpt::lockHelper(o->shaderTexturedTrianglesBufferMutex().data);
+			auto lck = mrpt::lockHelper(o->shaderTexturedTrianglesBufferMutex().data);
 			const auto& tris = o->shaderTexturedTrianglesBuffer();
 			for (const auto& tri : tris) lambdaUpdateTri(tri);
 		}
@@ -326,8 +311,7 @@ Shape2p5 CollisionShapeCache::processCylinderLike(
 	for (size_t i = 0; i < nFaces; i++)
 	{
 		const double ang = i * 2 * M_PI / nFaces;
-		const mrpt::math::TPoint3D localPt = {
-			cos(ang) * actualRadius, sin(ang) * actualRadius, .0};
+		const mrpt::math::TPoint3D localPt = {cos(ang) * actualRadius, sin(ang) * actualRadius, .0};
 		const auto pt = modelPose.composePoint(localPt * modelScale);
 		contour.emplace_back(pt.x, pt.y);
 	}

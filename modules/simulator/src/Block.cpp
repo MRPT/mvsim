@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -46,13 +46,10 @@ Block::Block(World* parent) : VisualObject(parent), Simulable(parent)
 
 /** Register a new class of vehicles from XML description of type
  * "<vehicle:class name='name'>...</vehicle:class>".  */
-void Block::register_block_class(
-	const World& parent, const rapidxml::xml_node<char>* xml_node)
+void Block::register_block_class(const World& parent, const rapidxml::xml_node<char>* xml_node)
 {
 	// Sanity checks:
-	if (!xml_node)
-		throw runtime_error(
-			"[Block::register_vehicle_class] XML node is nullptr");
+	if (!xml_node) throw runtime_error("[Block::register_vehicle_class] XML node is nullptr");
 	if (0 != strcmp(xml_node->name(), "block:class"))
 		throw runtime_error(mrpt::format(
 			"[Block::register_block_class] XML element is '%s' "
@@ -71,8 +68,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	if (!root) throw runtime_error("[Block::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "block"))
 		throw runtime_error(mrpt::format(
-			"[Block::factory] XML root element is '%s' ('block' expected)",
-			root->name()));
+			"[Block::factory] XML root element is '%s' ('block' expected)", root->name()));
 
 	// "class": When there is a 'class="XXX"' attribute, look for each parameter
 	//  in the set of "root" + "class_root" XML nodes:
@@ -82,15 +78,12 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	{
 		// Always search in root. Also in the class root, if any:
 		nodes.add(root);
-		if (const xml_attribute<>* block_class = root->first_attribute("class");
-			block_class)
+		if (const xml_attribute<>* block_class = root->first_attribute("class"); block_class)
 		{
 			const string sClassName = block_class->value();
-			if (class_root = block_classes_registry.get(sClassName);
-				!class_root)
+			if (class_root = block_classes_registry.get(sClassName); !class_root)
 				THROW_EXCEPTION_FMT(
-					"[Block::factory] Block class '%s' undefined",
-					sClassName.c_str());
+					"[Block::factory] Block class '%s' undefined", sClassName.c_str());
 
 			nodes.add(class_root);
 		}
@@ -124,12 +117,10 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// Params:
 	// -----------------------------------------------------------
 	parse_xmlnode_children_as_param(
-		*root, block->params_, parent->user_defined_variables(),
-		"[Block::factory]");
+		*root, block->params_, parent->user_defined_variables(), "[Block::factory]");
 	if (class_root)
 		parse_xmlnode_children_as_param(
-			*class_root, block->params_, parent->user_defined_variables(),
-			"[Block::factory]");
+			*class_root, block->params_, parent->user_defined_variables(), "[Block::factory]");
 
 	// Custom visualization 3D model:
 	// -----------------------------------------------------------
@@ -138,8 +129,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// Shape node (optional, fallback to default shape if none found)
 	if (const auto* xml_shape = nodes.first_node("shape"); xml_shape)
 	{
-		mvsim::parse_xmlnode_shape(
-			*xml_shape, block->block_poly_, "[Block::factory]");
+		mvsim::parse_xmlnode_shape(*xml_shape, block->block_poly_, "[Block::factory]");
 		block->updateMaxRadiusFromPoly();
 	}
 	else if (const auto* xml_geom = nodes.first_node("geometry"); xml_geom)
@@ -148,8 +138,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	}
 
 	// Auto shape node from visual?
-	if (const rapidxml::xml_node<char>* xml_shape_viz =
-			nodes.first_node("shape_from_visual");
+	if (const rapidxml::xml_node<char>* xml_shape_viz = nodes.first_node("shape_from_visual");
 		xml_shape_viz)
 	{
 		const auto& bbVis = block->collisionShape();
@@ -219,11 +208,10 @@ Block::Ptr Block::factory(World* parent, const std::string& xml_text)
 	}
 	catch (rapidxml::parse_error& e)
 	{
-		unsigned int line =
-			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
+		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
 		throw std::runtime_error(mrpt::format(
-			"[Block::factory] XML parse error (Line %u): %s",
-			static_cast<unsigned>(line), e.what()));
+			"[Block::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line),
+			e.what()));
 	}
 	return Block::factory(parent, xml.first_node());
 }
@@ -242,8 +230,7 @@ void Block::simul_post_timestep(const TSimulContext& context)
 
 void Block::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	bool childrenOnly)
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly)
 {
 	// 1st time call?? -> Create objects
 	// ----------------------------------
@@ -349,8 +336,7 @@ void Block::create_multibody_system(b2World& world)
 		ASSERT_(nPts >= 3);
 		ASSERT_LE_(nPts, (size_t)b2_maxPolygonVertices);
 		std::vector<b2Vec2> pts(nPts);
-		for (size_t i = 0; i < nPts; i++)
-			pts[i] = b2Vec2(block_poly_[i].x, block_poly_[i].y);
+		for (size_t i = 0; i < nPts; i++) pts[i] = b2Vec2(block_poly_[i].x, block_poly_[i].y);
 
 		b2PolygonShape blockPoly;
 		blockPoly.Set(&pts[0], nPts);
@@ -387,15 +373,13 @@ void Block::create_multibody_system(b2World& world)
 	// Create "archor points" to simulate friction with the ground:
 	// -----------------------------------------------------------------
 	const size_t nContactPoints = 2;
-	const double weight_per_contact_point =
-		mass_ * parent()->get_gravity() / nContactPoints;
+	const double weight_per_contact_point = mass_ * parent()->get_gravity() / nContactPoints;
 	const double mu = groundFriction_;
 	const double max_friction = mu * weight_per_contact_point;
 
 	// Location (local coords) of each contact-point:
 	const mrpt::math::TPoint2D pt_loc[nContactPoints] = {
-		mrpt::math::TPoint2D(maxRadius_, 0),
-		mrpt::math::TPoint2D(-maxRadius_, 0)};
+		mrpt::math::TPoint2D(maxRadius_, 0), mrpt::math::TPoint2D(-maxRadius_, 0)};
 
 	b2FrictionJointDef fjd;
 
@@ -411,20 +395,18 @@ void Block::create_multibody_system(b2World& world)
 		fjd.maxForce = max_friction;
 		fjd.maxTorque = 0;
 
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>(
-			world_->getBox2DWorld()->CreateJoint(&fjd));
+		b2FrictionJoint* b2_friction =
+			dynamic_cast<b2FrictionJoint*>(world_->getBox2DWorld()->CreateJoint(&fjd));
 		friction_joints_.push_back(b2_friction);
 	}
 }
 
-void Block::apply_force(
-	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
+void Block::apply_force(const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
 	if (intangible_) return;
 	ASSERT_(b2dBody_);
 	// Application point -> world coords
-	const b2Vec2 wPt =
-		b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
+	const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
 	b2dBody_->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }
 
@@ -443,10 +425,7 @@ void Block::setIsStatic(bool b)
 }
 
 // Protected ctor:
-DummyInvisibleBlock::DummyInvisibleBlock(World* parent)
-	: VisualObject(parent), Simulable(parent)
-{
-}
+DummyInvisibleBlock::DummyInvisibleBlock(World* parent) : VisualObject(parent), Simulable(parent) {}
 
 void DummyInvisibleBlock::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
@@ -458,8 +437,7 @@ void DummyInvisibleBlock::internalGuiUpdate(
 	for (auto& s : sensors_) s->guiUpdate(viz, physical);
 }
 
-void Block::internal_parseGeometry(
-	const rapidxml::xml_node<char>& xml_geom_node)
+void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node)
 {
 	std::string type;  // cylinder, sphere, etc.
 	float radius = 0;
@@ -477,8 +455,7 @@ void Block::internal_parseGeometry(
 	};
 
 	parse_xmlnode_attribs(
-		xml_geom_node, params, world_->user_defined_variables(),
-		"[Block::internal_parseGeometry]");
+		xml_geom_node, params, world_->user_defined_variables(), "[Block::internal_parseGeometry]");
 
 	if (type.empty())
 	{
@@ -489,10 +466,8 @@ void Block::internal_parseGeometry(
 
 	if (type == "cylinder")
 	{
-		ASSERTMSG_(
-			radius > 0, "Missing 'radius' attribute for cylinder geometry");
-		ASSERTMSG_(
-			length > 0, "Missing 'length' attribute for cylinder geometry");
+		ASSERTMSG_(radius > 0, "Missing 'radius' attribute for cylinder geometry");
+		ASSERTMSG_(length > 0, "Missing 'length' attribute for cylinder geometry");
 
 		if (vertex_count == 0) vertex_count = 10;  // default
 
@@ -505,8 +480,7 @@ void Block::internal_parseGeometry(
 	}
 	else if (type == "sphere")
 	{
-		ASSERTMSG_(
-			radius > 0, "Missing 'radius' attribute for cylinder geometry");
+		ASSERTMSG_(radius > 0, "Missing 'radius' attribute for cylinder geometry");
 
 		if (vertex_count == 0) vertex_count = 10;  // default
 
@@ -527,8 +501,7 @@ void Block::internal_parseGeometry(
 	}
 	else
 	{
-		THROW_EXCEPTION_FMT(
-			"Unknown type in <geometry type='%s'...>", type.c_str());
+		THROW_EXCEPTION_FMT("Unknown type in <geometry type='%s'...>", type.c_str());
 	}
 }
 

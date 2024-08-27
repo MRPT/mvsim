@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -22,8 +22,7 @@
 using namespace mvsim;
 using namespace rapidxml;
 
-DepthCameraSensor::DepthCameraSensor(
-	Simulable& parent, const rapidxml::xml_node<char>* root)
+DepthCameraSensor::DepthCameraSensor(Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent)
 {
 	DepthCameraSensor::loadConfigFrom(root);
@@ -42,8 +41,7 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	fbo_renderer_rgb_.reset();
 
 	using namespace mrpt;  // _deg
-	sensor_params_.sensorPose =
-		mrpt::poses::CPose3D(0, 0, 0.5, 90.0_deg, 0, 90.0_deg);
+	sensor_params_.sensorPose = mrpt::poses::CPose3D(0, 0, 0.5, 90.0_deg, 0, 90.0_deg);
 
 	// Default values:
 	{
@@ -113,8 +111,7 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void DepthCameraSensor::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
-		physical,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
@@ -130,8 +127,7 @@ void DepthCameraSensor::internalGuiUpdate(
 	{
 		gl_obs_ = mrpt::opengl::CPointCloudColoured::Create();
 		gl_obs_->setPointSize(2.0f);
-		gl_obs_->setLocalRepresentativePoint(
-			sensor_params_.sensorPose.translation());
+		gl_obs_->setLocalRepresentativePoint(sensor_params_.sensorPose.translation());
 		glVizSensors->insert(gl_obs_);
 	}
 
@@ -141,8 +137,7 @@ void DepthCameraSensor::internalGuiUpdate(
 #if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
 #endif
-		gl_sensor_origin_corner_ =
-			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
@@ -179,8 +174,8 @@ void DepthCameraSensor::internalGuiUpdate(
 					gl_sensor_frustum_ = mrpt::opengl::CSetOfObjects::Create();
 
 					const float frustumScale = 0.4e-3;
-					auto frustum = mrpt::opengl::CFrustum::Create(
-						last_obs2gui_->cameraParams, frustumScale);
+					auto frustum =
+						mrpt::opengl::CFrustum::Create(last_obs2gui_->cameraParams, frustumScale);
 
 					gl_sensor_frustum_->insert(frustum);
 					gl_sensor_fov_->insert(gl_sensor_frustum_);
@@ -201,17 +196,12 @@ void DepthCameraSensor::internalGuiUpdate(
 	if (gl_sensor_fov_) gl_sensor_fov_->setPose(p);
 	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
 
-	if (glCustomVisual_)
-		glCustomVisual_->setPose(p + sensor_params_.sensorPose.asTPose());
+	if (glCustomVisual_) glCustomVisual_->setPose(p + sensor_params_.sensorPose.asTPose());
 }
 
-void DepthCameraSensor::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
-{
-}
+void DepthCameraSensor::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
 
-void DepthCameraSensor::simulateOn3DScene(
-	mrpt::opengl::COpenGLScene& world3DScene)
+void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 {
 	using namespace mrpt;  // _deg
 
@@ -220,11 +210,9 @@ void DepthCameraSensor::simulateOn3DScene(
 		if (!has_to_render_.has_value()) return;
 	}
 
-	auto tleWhole =
-		mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD");
+	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD");
 
-	auto tle1 = mrpt::system::CTimeLoggerEntry(
-		world_->getTimeLogger(), "sensor.RGBD.acqGuiMtx");
+	auto tle1 = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.acqGuiMtx");
 
 	tle1.stop();
 
@@ -240,8 +228,8 @@ void DepthCameraSensor::simulateOn3DScene(
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	if (!fbo_renderer_rgb_ && sense_rgb_)
 	{
-		auto tle2 = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.RGBD.createFBO");
+		auto tle2 =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.createFBO");
 
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = sensor_params_.cameraParamsIntensity.ncols;
@@ -253,8 +241,8 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	if (!fbo_renderer_depth_ && sense_depth_)
 	{
-		auto tle2 = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.RGBD.createFBO");
+		auto tle2 =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.createFBO");
 
 		mrpt::opengl::CFBORender::Parameters p;
 		p.width = sensor_params_.cameraParams.ncols;
@@ -266,12 +254,8 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	auto viewport = world3DScene.getViewport();
 
-	auto* camDepth = fbo_renderer_depth_
-						 ? &fbo_renderer_depth_->getCamera(world3DScene)
-						 : nullptr;
-	auto* camRGB = fbo_renderer_rgb_
-					   ? &fbo_renderer_rgb_->getCamera(world3DScene)
-					   : nullptr;
+	auto* camDepth = fbo_renderer_depth_ ? &fbo_renderer_depth_->getCamera(world3DScene) : nullptr;
+	auto* camRGB = fbo_renderer_rgb_ ? &fbo_renderer_rgb_->getCamera(world3DScene) : nullptr;
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
@@ -288,16 +272,15 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
 
-	const auto depthSensorPose =
-		vehiclePose + curObs.sensorPose + fixedAxisConventionRot;
+	const auto depthSensorPose = vehiclePose + curObs.sensorPose + fixedAxisConventionRot;
 
 	const auto rgbSensorPose =
 		vehiclePose + curObs.sensorPose + curObs.relativePoseIntensityWRTDepth;
 
 	if (fbo_renderer_rgb_)
 	{
-		auto tle2 = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.RGBD.renderRGB");
+		auto tle2 =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderRGB");
 
 		camRGB->set6DOFMode(true);
 		camRGB->setProjectiveFromPinhole(curObs.cameraParamsIntensity);
@@ -320,8 +303,7 @@ void DepthCameraSensor::simulateOn3DScene(
 	// ----------------------------------------------------------
 	if (fbo_renderer_depth_)
 	{
-		auto tle2 = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.RGBD.renderD");
+		auto tle2 = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderD");
 
 		camDepth->setProjectiveFromPinhole(curObs.cameraParams);
 
@@ -334,8 +316,8 @@ void DepthCameraSensor::simulateOn3DScene(
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(depth_clip_min_, depth_clip_max_);
 
-		auto tle2c = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.RGBD.renderD_core");
+		auto tle2c =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderD_core");
 
 		fbo_renderer_depth_->render_depth(world3DScene, depthImage_);
 
@@ -345,14 +327,13 @@ void DepthCameraSensor::simulateOn3DScene(
 		curObs.hasRangeImage = true;
 		curObs.range_is_depth = true;
 
-		auto tle2cnv = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.RGBD.renderD_cast");
+		auto tle2cnv =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderD_cast");
 
 		// float -> uint16_t with "curObs.rangeUnits" units:
 		curObs.rangeImage_setSize(depthImage_.rows(), depthImage_.cols());
-		curObs.rangeImage = (depthImage_.asEigen().cwiseMin(curObs.maxRange) /
-							 curObs.rangeUnits)
-								.cast<uint16_t>();
+		curObs.rangeImage =
+			(depthImage_.asEigen().cwiseMin(curObs.maxRange) / curObs.rangeUnits).cast<uint16_t>();
 
 		tle2cnv.stop();
 
@@ -370,8 +351,7 @@ void DepthCameraSensor::simulateOn3DScene(
 				for (size_t i = 0; i < noiseLen; i++)
 				{
 					noiseSeq.push_back(static_cast<int16_t>(mrpt::round(
-						rng.drawGaussian1D(0.0, depth_noise_sigma_) /
-						curObs.rangeUnits)));
+						rng.drawGaussian1D(0.0, depth_noise_sigma_) / curObs.rangeUnits)));
 				}
 			}
 
@@ -381,15 +361,13 @@ void DepthCameraSensor::simulateOn3DScene(
 			uint16_t* d = curObs.rangeImage.data();
 			const size_t N = curObs.rangeImage.size();
 
-			const int16_t maxRangeInts =
-				static_cast<int16_t>(curObs.maxRange / curObs.rangeUnits);
+			const int16_t maxRangeInts = static_cast<int16_t>(curObs.maxRange / curObs.rangeUnits);
 
 			for (size_t i = 0; i < N; i++)
 			{
 				if (d[i] == 0) continue;  // it was an invalid ray return.
 
-				const int16_t dNoisy =
-					static_cast<int16_t>(d[i]) + noiseSeq[noiseIdx++];
+				const int16_t dNoisy = static_cast<int16_t>(d[i]) + noiseSeq[noiseIdx++];
 
 				if (noiseIdx >= noiseLen) noiseIdx = 0;
 
@@ -406,8 +384,8 @@ void DepthCameraSensor::simulateOn3DScene(
 
 	// Store generated obs:
 	{
-		auto tle3 = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.RGBD.acqObsMtx");
+		auto tle3 =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.acqObsMtx");
 
 		std::lock_guard<std::mutex> csl(last_obs_cs_);
 		last_obs_ = std::move(curObsPtr);
@@ -417,8 +395,7 @@ void DepthCameraSensor::simulateOn3DScene(
 	{
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
 
-		auto tlePub = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.RGBD.report");
+		auto tlePub = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.report");
 
 		SensorBase::reportNewObservation(last_obs_, *has_to_render_);
 
@@ -447,8 +424,7 @@ void DepthCameraSensor::simul_post_timestep(const TSimulContext& context)
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
 
-void DepthCameraSensor::notifySimulableSetPose(
-	const mrpt::math::TPose3D& newPose)
+void DepthCameraSensor::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:

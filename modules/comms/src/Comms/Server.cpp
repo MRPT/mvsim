@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -51,8 +51,7 @@ void Server::start()
 #endif
 
 #else
-	THROW_EXCEPTION(
-		"MVSIM needs building with ZMQ and PROTOBUF to enable client/server");
+	THROW_EXCEPTION("MVSIM needs building with ZMQ and PROTOBUF to enable client/server");
 #endif
 }
 
@@ -69,8 +68,7 @@ void Server::shutdown() noexcept
 	}
 	catch (const std::exception& e)
 	{
-		MRPT_LOG_ERROR_STREAM(
-			"shutdown: Exception: " << mrpt::exception_to_str(e));
+		MRPT_LOG_ERROR_STREAM("shutdown: Exception: " << mrpt::exception_to_str(e));
 	}
 }
 
@@ -103,18 +101,15 @@ void Server::internalServerThread()
 
 			// Variant with all valid client requests:
 			using client_requests_t = std::variant<
-				mvsim_msgs::RegisterNodeRequest,
-				mvsim_msgs::UnregisterNodeRequest, mvsim_msgs::SubscribeRequest,
-				mvsim_msgs::ListNodesRequest, mvsim_msgs::ListTopicsRequest,
-				mvsim_msgs::AdvertiseTopicRequest,
-				mvsim_msgs::AdvertiseServiceRequest,
-				mvsim_msgs::GetServiceInfoRequest>;
+				mvsim_msgs::RegisterNodeRequest, mvsim_msgs::UnregisterNodeRequest,
+				mvsim_msgs::SubscribeRequest, mvsim_msgs::ListNodesRequest,
+				mvsim_msgs::ListTopicsRequest, mvsim_msgs::AdvertiseTopicRequest,
+				mvsim_msgs::AdvertiseServiceRequest, mvsim_msgs::GetServiceInfoRequest>;
 
 			// Parse and dispatch:
 			try
 			{
-				client_requests_t req =
-					mvsim::parseMessageVariant<client_requests_t>(request);
+				client_requests_t req = mvsim::parseMessageVariant<client_requests_t>(request);
 
 				std::visit(
 					overloaded{
@@ -134,19 +129,16 @@ void Server::internalServerThread()
 		{
 			// This simply means someone called requestMainThreadTermination().
 			// Just exit silently.
-			MRPT_LOG_DEBUG_STREAM(
-				"Server thread about to exit for ZMQ term signal.");
+			MRPT_LOG_DEBUG_STREAM("Server thread about to exit for ZMQ term signal.");
 		}
 		else
 		{
-			MRPT_LOG_ERROR_STREAM(
-				"internalServerThread: ZMQ error: " << e.what());
+			MRPT_LOG_ERROR_STREAM("internalServerThread: ZMQ error: " << e.what());
 		}
 	}
 	catch (const std::exception& e)
 	{
-		MRPT_LOG_ERROR_STREAM(
-			"internalServerThread: Exception: " << mrpt::exception_to_str(e));
+		MRPT_LOG_ERROR_STREAM("internalServerThread: Exception: " << mrpt::exception_to_str(e));
 	}
 	MRPT_LOG_DEBUG_STREAM("Server thread quitted.");
 
@@ -205,20 +197,17 @@ void Server::db_advertise_topic(
 	// 1) Add as a source of this topic:
 	auto& dbTopic = knownTopics_[topicName];
 
-	if (!dbTopic.topicTypeName.empty() &&
-		dbTopic.topicTypeName != topicTypeName)
+	if (!dbTopic.topicTypeName.empty() && dbTopic.topicTypeName != topicTypeName)
 	{
 		throw std::runtime_error(mrpt::format(
 			"Trying to register topic `%s` [%s] but already known with type "
 			"[%s]",
-			topicName.c_str(), topicTypeName.c_str(),
-			dbTopic.topicTypeName.c_str()));
+			topicName.c_str(), topicTypeName.c_str(), dbTopic.topicTypeName.c_str()));
 	}
 	dbTopic.topicName = topicName;
 	dbTopic.topicTypeName = topicTypeName;
 
-	dbTopic.publishers.try_emplace(
-		nodeName, topicName, nodeName, publisherEndpoint);
+	dbTopic.publishers.try_emplace(nodeName, topicName, nodeName, publisherEndpoint);
 
 	// 2) If clients are already waiting for this topic, inform them so they
 	// can subscribe to this new source of data:
@@ -232,17 +221,14 @@ void Server::db_add_topic_subscriber(
 
 	auto& dbTopic = knownTopics_[topicName];
 
-	dbTopic.subscribers.try_emplace(
-		updatesEndPoint, topicName, updatesEndPoint);
+	dbTopic.subscribers.try_emplace(updatesEndPoint, topicName, updatesEndPoint);
 
 	// Send all currently-existing publishers:
-	send_topic_publishers_to_subscribed_clients(
-		topicName, updatesEndPoint /*only this one*/);
+	send_topic_publishers_to_subscribed_clients(topicName, updatesEndPoint /*only this one*/);
 }
 
 void Server::send_topic_publishers_to_subscribed_clients(
-	const std::string& topicName,
-	const std::optional<std::string>& updatesEndPoint)
+	const std::string& topicName, const std::optional<std::string>& updatesEndPoint)
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	auto& dbTopic = knownTopics_[topicName];
@@ -265,9 +251,8 @@ void Server::send_topic_publishers_to_subscribed_clients(
 		{
 			MRPT_LOG_DEBUG_STREAM(
 				"[send_topic_publishers_to_subscribed_clients] Letting "
-				<< subUpdtEndPoint << " know about "
-				<< dbTopic.publishers.size() << " publishers for topic '"
-				<< topicName << "'");
+				<< subUpdtEndPoint << " know about " << dbTopic.publishers.size()
+				<< " publishers for topic '" << topicName << "'");
 
 			zmq::socket_t s(*mainThreadZMQcontext_, ZMQ_PAIR);
 			s.connect(subUpdtEndPoint);
@@ -286,8 +271,7 @@ void Server::send_topic_publishers_to_subscribed_clients(
 		catch (const std::exception& e)
 		{
 			MRPT_LOG_ERROR_STREAM(
-				"Error sending topic updates to endpoint " << subUpdtEndPoint
-														   << ":\n"
+				"Error sending topic updates to endpoint " << subUpdtEndPoint << ":\n"
 														   << e.what());
 		}
 	};
@@ -319,8 +303,7 @@ void Server::db_advertise_service(
 	auto& dbSrv = knownServices_[serviceName];
 
 	if (!dbSrv.inputTypeName.empty() &&
-		(dbSrv.inputTypeName != inputTypeName ||
-		 dbSrv.outputTypeName != outputTypeName))
+		(dbSrv.inputTypeName != inputTypeName || dbSrv.outputTypeName != outputTypeName))
 	{
 		throw std::runtime_error(mrpt::format(
 			"Trying to register service `%s` [%s->%s] but already known "
@@ -338,8 +321,7 @@ void Server::db_advertise_service(
 }
 
 bool Server::db_get_service_info(
-	const std::string& serviceName, std::string& publisherEndpoint,
-	std::string& nodeName) const
+	const std::string& serviceName, std::string& publisherEndpoint, std::string& nodeName) const
 {
 	std::shared_lock lck(dbMutex);
 
@@ -361,8 +343,7 @@ bool Server::db_get_service_info(
 void Server::handle(const mvsim_msgs::RegisterNodeRequest& m, zmq::socket_t& s)
 {
 	//  Send reply back to client
-	MRPT_LOG_DEBUG_STREAM(
-		"Registering new node named '" << m.nodename() << "'");
+	MRPT_LOG_DEBUG_STREAM("Registering new node named '" << m.nodename() << "'");
 
 	// Make sure we don't have already a node named like this:
 	// Don't raise an error if the name was already registered, since it
@@ -377,8 +358,7 @@ void Server::handle(const mvsim_msgs::RegisterNodeRequest& m, zmq::socket_t& s)
 }
 
 // mvsim_msgs::UnregisterNodeRequest
-void Server::handle(
-	const mvsim_msgs::UnregisterNodeRequest& m, zmq::socket_t& s)
+void Server::handle(const mvsim_msgs::UnregisterNodeRequest& m, zmq::socket_t& s)
 {
 	//  Send reply back to client
 	MRPT_LOG_DEBUG_STREAM("Unregistering node named '" << m.nodename() << "'");
@@ -394,8 +374,7 @@ void Server::handle(
 void Server::handle(const mvsim_msgs::SubscribeRequest& m, zmq::socket_t& s)
 {
 	//  Send reply back to client
-	MRPT_LOG_DEBUG_STREAM(
-		"Subscription request for topic " << m.topic() << "'");
+	MRPT_LOG_DEBUG_STREAM("Subscription request for topic " << m.topic() << "'");
 
 	// Include in our DB of subscriptions:
 	// This also sends the subcriber the list of existing endpoints it must
@@ -409,12 +388,10 @@ void Server::handle(const mvsim_msgs::SubscribeRequest& m, zmq::socket_t& s)
 }
 
 // mvsim_msgs::GetServiceInfoRequest
-void Server::handle(
-	const mvsim_msgs::GetServiceInfoRequest& m, zmq::socket_t& s)
+void Server::handle(const mvsim_msgs::GetServiceInfoRequest& m, zmq::socket_t& s)
 {
 	//  Send reply back to client
-	MRPT_LOG_DEBUG_STREAM(
-		"GetServiceInfo request for service '" << m.servicename() << "'");
+	MRPT_LOG_DEBUG_STREAM("GetServiceInfo request for service '" << m.servicename() << "'");
 
 	mvsim_msgs::GetServiceInfoAnswer ans;
 	std::string node, endpoint;
@@ -428,8 +405,7 @@ void Server::handle(
 	else
 	{
 		ans.set_success(false);
-		ans.set_errormessage(mrpt::format(
-			"Could not find service `%s`", m.servicename().c_str()));
+		ans.set_errormessage(mrpt::format("Could not find service `%s`", m.servicename().c_str()));
 	}
 
 	mvsim::sendMessage(ans, s);
@@ -453,8 +429,7 @@ void Server::handle(const mvsim_msgs::ListTopicsRequest& m, zmq::socket_t& s)
 		const auto& t = kv.second;
 		const auto& name = t.topicName;
 
-		if (!queryPrefix.empty() ||
-			name.substr(0, queryPrefix.size()) == queryPrefix)
+		if (!queryPrefix.empty() || name.substr(0, queryPrefix.size()) == queryPrefix)
 		{
 			auto tInfo = ans.add_topics();
 			tInfo->set_topicname(name);
@@ -484,8 +459,7 @@ void Server::handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s)
 	{
 		const auto& name = n.second.nodeName;
 
-		if (!queryPrefix.empty() ||
-			name.substr(0, queryPrefix.size()) == queryPrefix)
+		if (!queryPrefix.empty() || name.substr(0, queryPrefix.size()) == queryPrefix)
 		{
 			ans.add_nodes(name);
 		}
@@ -494,20 +468,17 @@ void Server::handle(const mvsim_msgs::ListNodesRequest& m, zmq::socket_t& s)
 }
 
 // mvsim_msgs::AdvertiseTopicRequest
-void Server::handle(
-	const mvsim_msgs::AdvertiseTopicRequest& m, zmq::socket_t& s)
+void Server::handle(const mvsim_msgs::AdvertiseTopicRequest& m, zmq::socket_t& s)
 {
 	//  Send reply back to client
 	MRPT_LOG_DEBUG_FMT(
-		"Received new topic advertiser: `%s` [%s] @ %s (%s)",
-		m.topicname().c_str(), m.topictypename().c_str(), m.endpoint().c_str(),
-		m.nodename().c_str());
+		"Received new topic advertiser: `%s` [%s] @ %s (%s)", m.topicname().c_str(),
+		m.topictypename().c_str(), m.endpoint().c_str(), m.nodename().c_str());
 
 	mvsim_msgs::GenericAnswer ans;
 	try
 	{
-		db_advertise_topic(
-			m.topicname(), m.topictypename(), m.endpoint(), m.nodename());
+		db_advertise_topic(m.topicname(), m.topictypename(), m.endpoint(), m.nodename());
 		ans.set_success(true);
 	}
 	catch (const std::exception& e)
@@ -519,21 +490,19 @@ void Server::handle(
 }
 
 // mvsim_msgs::AdvertiseServiceRequest
-void Server::handle(
-	const mvsim_msgs::AdvertiseServiceRequest& m, zmq::socket_t& s)
+void Server::handle(const mvsim_msgs::AdvertiseServiceRequest& m, zmq::socket_t& s)
 {
 	//  Send reply back to client
 	MRPT_LOG_DEBUG_FMT(
-		"Received new service offering: `%s` [%s->%s] @ %s (%s)",
-		m.servicename().c_str(), m.inputtypename().c_str(),
-		m.outputtypename().c_str(), m.endpoint().c_str(), m.nodename().c_str());
+		"Received new service offering: `%s` [%s->%s] @ %s (%s)", m.servicename().c_str(),
+		m.inputtypename().c_str(), m.outputtypename().c_str(), m.endpoint().c_str(),
+		m.nodename().c_str());
 
 	mvsim_msgs::GenericAnswer ans;
 	try
 	{
 		db_advertise_service(
-			m.servicename(), m.inputtypename(), m.outputtypename(),
-			m.endpoint(), m.nodename());
+			m.servicename(), m.inputtypename(), m.outputtypename(), m.endpoint(), m.nodename());
 		ans.set_success(true);
 	}
 	catch (const std::exception& e)

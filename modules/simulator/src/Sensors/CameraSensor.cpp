@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -22,8 +22,7 @@
 using namespace mvsim;
 using namespace rapidxml;
 
-CameraSensor::CameraSensor(
-	Simulable& parent, const rapidxml::xml_node<char>* root)
+CameraSensor::CameraSensor(Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent)
 {
 	this->loadConfigFrom(root);
@@ -41,8 +40,7 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	fbo_renderer_rgb_.reset();
 
 	using namespace mrpt;  // _deg
-	sensor_params_.cameraPose =
-		mrpt::poses::CPose3D(0, 0, 0.5, 90.0_deg, 0, 90.0_deg);
+	sensor_params_.cameraPose = mrpt::poses::CPose3D(0, 0, 0.5, 90.0_deg, 0, 90.0_deg);
 
 	// Default values:
 	{
@@ -84,8 +82,7 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void CameraSensor::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
-		physical,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	if (!gl_sensor_origin_ && viz)
@@ -94,8 +91,7 @@ void CameraSensor::internalGuiUpdate(
 #if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
 #endif
-		gl_sensor_origin_corner_ =
-			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
@@ -124,8 +120,8 @@ void CameraSensor::internalGuiUpdate(
 					gl_sensor_frustum_ = mrpt::opengl::CSetOfObjects::Create();
 
 					const float frustumScale = 0.4e-3;
-					auto frustum = mrpt::opengl::CFrustum::Create(
-						last_obs2gui_->cameraParams, frustumScale);
+					auto frustum =
+						mrpt::opengl::CFrustum::Create(last_obs2gui_->cameraParams, frustumScale);
 
 					gl_sensor_frustum_->insert(frustum);
 					gl_sensor_fov_->insert(gl_sensor_frustum_);
@@ -135,8 +131,7 @@ void CameraSensor::internalGuiUpdate(
 
 				gl_sensor_frustum_->setPose(
 					last_obs2gui_->cameraPose +
-					(-mrpt::poses::CPose3D::FromYawPitchRoll(
-						-90.0_deg, 0.0_deg, -90.0_deg)));
+					(-mrpt::poses::CPose3D::FromYawPitchRoll(-90.0_deg, 0.0_deg, -90.0_deg)));
 
 				last_obs2gui_.reset();
 			}
@@ -155,10 +150,7 @@ void CameraSensor::internalGuiUpdate(
 	if (glCustomVisual_) glCustomVisual_->setPose(globalSensorPose);
 }
 
-void CameraSensor::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
-{
-}
+void CameraSensor::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
 
 void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 {
@@ -169,8 +161,7 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		if (!has_to_render_.has_value()) return;
 	}
 
-	auto tleWhole =
-		mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGB");
+	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGB");
 
 	if (glCustomVisual_) glCustomVisual_->setVisibility(false);
 
@@ -217,8 +208,7 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	ASSERT_(fbo_renderer_rgb_);
 
-	auto tle2 = mrpt::system::CTimeLoggerEntry(
-		world_->getTimeLogger(), "sensor.RGB.render");
+	auto tle2 = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGB.render");
 
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 	viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);

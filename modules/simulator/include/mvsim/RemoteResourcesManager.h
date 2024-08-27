@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -50,8 +50,7 @@ class RemoteResourcesManager : public mrpt::system::COutputLogger
 	/** Returns {true, zip_uri, internal_uri} if the URI refers to a ZIP file,
 	 * or {false, uri, ""} otherwise.
 	 */
-	static std::tuple<bool, std::string, std::string> zip_uri_split(
-		const std::string& uri);
+	static std::tuple<bool, std::string, std::string> zip_uri_split(const std::string& uri);
 
 	static std::string cache_directory();
 

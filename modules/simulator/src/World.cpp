@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -23,10 +23,7 @@ using namespace mvsim;
 using namespace std;
 
 // Default ctor: inits empty world.
-World::World() : mrpt::system::COutputLogger("mvsim::World")
-{
-	this->clear_all();
-}
+World::World() : mrpt::system::COutputLogger("mvsim::World") { this->clear_all(); }
 
 // Dtor.
 World::~World()
@@ -76,12 +73,11 @@ void World::internal_initialize()
 	ASSERT_(worldVisual_);
 
 #if MRPT_VERSION >= 0x270
-	worldVisual_->getViewport()->lightParameters().ambient =
-		lightOptions_.light_ambient;
+	worldVisual_->getViewport()->lightParameters().ambient = lightOptions_.light_ambient;
 #else
 	worldVisual_->getViewport()->lightParameters().ambient = {
-		lightOptions_.light_ambient, lightOptions_.light_ambient,
-		lightOptions_.light_ambient, 1.0f};
+		lightOptions_.light_ambient, lightOptions_.light_ambient, lightOptions_.light_ambient,
+		1.0f};
 #endif
 	// Physical world light = visual world lights:
 	worldPhysical_.getViewport()->lightParameters() =
@@ -109,8 +105,7 @@ void World::run_simulation(double dt)
 	const double t0 = mrpt::Clock::nowDouble();
 
 	// Define start of simulation time:
-	if (!simul_start_wallclock_time_.has_value())
-		simul_start_wallclock_time_ = t0 - dt;
+	if (!simul_start_wallclock_time_.has_value()) simul_start_wallclock_time_ = t0 - dt;
 
 	timlogger_.registerUserMeasure("run_simulation.dt", dt);
 
@@ -131,8 +126,7 @@ void World::run_simulation(double dt)
 		const double remainingTime = end_time - get_simul_time();
 		if (remainingTime <= 0) break;
 
-		internal_one_timestep(
-			remainingTime >= simulTimestep ? simulTimestep : remainingTime);
+		internal_one_timestep(remainingTime >= simulTimestep ? simulTimestep : remainingTime);
 
 		// IMPORTANT: This must be inside the loop to allow breaking if we are
 		// closing the app and simulatedTime is not ticking anymore.
@@ -171,8 +165,7 @@ void World::internal_one_timestep(double dt)
 
 	// 2) Run dynamics
 	{
-		mrpt::system::CTimeLoggerEntry tle(
-			timlogger_, "timestep.1.dynamics_integrator");
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.1.dynamics_integrator");
 
 		box2d_world_->Step(dt, b2dVelIters_, b2dPosIters_);
 
@@ -186,8 +179,7 @@ void World::internal_one_timestep(double dt)
 	// can be answered straight away without waiting for the main simulation
 	// mutex:
 	{
-		mrpt::system::CTimeLoggerEntry tle(
-			timlogger_, "timestep.3.save_dynstate");
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.3.save_dynstate");
 
 		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 		const auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
@@ -202,16 +194,14 @@ void World::internal_one_timestep(double dt)
 			copy_of_objects_dynstate_pose_[e.first] = e.second->getPose();
 			copy_of_objects_dynstate_twist_[e.first] = e.second->getTwist();
 
-			if (e.second->hadCollision())
-				copy_of_objects_had_collision_.insert(e.first);
+			if (e.second->hadCollision()) copy_of_objects_had_collision_.insert(e.first);
 		}
 	}
 	{
 		const auto lckCollis = mrpt::lockHelper(reset_collision_flags_mtx_);
 		for (const auto& sId : reset_collision_flags_)
 		{
-			if (auto itV = simulableObjects_.find(sId);
-				itV != simulableObjects_.end())
+			if (auto itV = simulableObjects_.find(sId); itV != simulableObjects_.end())
 				itV->second->resetCollisionFlag();
 		}
 		reset_collision_flags_.clear();
@@ -219,8 +209,7 @@ void World::internal_one_timestep(double dt)
 	lckListObjs.unlock();  // for simulableObjects_
 
 	// 4) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
-	mrpt::system::CTimeLoggerEntry tle4(
-		timlogger_, "timestep.4.wait_3D_sensors");
+	mrpt::system::CTimeLoggerEntry tle4(timlogger_, "timestep.4.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
 		// Use a huge timeout here to avoid timing out in build farms / cloud
@@ -268,8 +257,7 @@ std::string World::local_to_abs_path(const std::string& s_in) const
 	// "X:\*", "/*"
 	// -------------------
 	bool is_relative = true;
-	if (s.size() > 2 && s[1] == ':' && (s[2] == '/' || s[2] == '\\'))
-		is_relative = false;
+	if (s.size() > 2 && s[1] == ':' && (s[2] == '/' || s[2] == '\\')) is_relative = false;
 	if (s.size() > 0 && (s[0] == '/' || s[0] == '\\')) is_relative = false;
 	if (is_relative)
 		ret = mrpt::system::pathJoin({basePath_, s});
@@ -330,8 +318,7 @@ void World::insertBlock(const Block::Ptr& block)
 
 	simulableObjects_.insert(
 		simulableObjects_.end(),
-		std::make_pair(
-			block->getName(), std::dynamic_pointer_cast<Simulable>(block)));
+		std::make_pair(block->getName(), std::dynamic_pointer_cast<Simulable>(block)));
 }
 
 double World::get_simul_timestep() const
@@ -445,22 +432,19 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 	{
 		auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
 		auto& cam = gui_.gui_win->camera();
-		cam.setAzimuthDegrees(
-			cam.getAzimuthDegrees() - js.axes[JOY_AXIS_AZIMUTH]);
+		cam.setAzimuthDegrees(cam.getAzimuthDegrees() - js.axes[JOY_AXIS_AZIMUTH]);
 	}
 
 	return js;
 }
 
-void World::dispatchOnObservation(
-	const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
+void World::dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
 	internalOnObservation(veh, obs);
 	for (const auto& cb : callbacksOnObservation_) cb(veh, obs);
 }
 
-void World::internalOnObservation(
-	const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
+void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
 	using namespace std::string_literals;
 
@@ -472,19 +456,17 @@ void World::internalOnObservation(
 	{
 		for (const auto& v : vehicles_)
 		{
-			const std::string fileName = mrpt::system::fileNameChangeExtension(
-				save_to_rawlog_, v.first + ".rawlog"s);
+			const std::string fileName =
+				mrpt::system::fileNameChangeExtension(save_to_rawlog_, v.first + ".rawlog"s);
 
 			MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
 
-			rawlog_io_per_veh_[v.first] =
-				std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
+			rawlog_io_per_veh_[v.first] = std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
 		}
 	}
 
 	// Store:
-	auto arch =
-		mrpt::serialization::archiveFrom(*rawlog_io_per_veh_.at(veh.getName()));
+	auto arch = mrpt::serialization::archiveFrom(*rawlog_io_per_veh_.at(veh.getName()));
 	arch << *obs;
 }
 
@@ -497,8 +479,7 @@ void World::internalPostSimulStepForRawlog()
 	const double now = get_simul_time();
 	const double T_odom = 1.0 / rawlog_odometry_rate_;
 
-	if (rawlog_last_odom_time_.has_value() &&
-		(now - *rawlog_last_odom_time_) < T_odom)
+	if (rawlog_last_odom_time_.has_value() && (now - *rawlog_last_odom_time_) < T_odom)
 	{
 		return;	 // not yet
 	}
@@ -566,7 +547,7 @@ void World::internalPostSimulStepForTrajectory()
 		// timestamp x y z q_x q_y q_z q_w
 
 		gt_io_per_veh_.at(vehName) << mrpt::format(
-			"%f %f %f %f %f %f %f %f\n", t, p.x(), p.y(), p.z(), p.quat().x(),
-			p.quat().y(), p.quat().z(), p.quat().w());
+			"%f %f %f %f %f %f %f %f\n", t, p.x(), p.y(), p.z(), p.quat().x(), p.quat().y(),
+			p.quat().z(), p.quat().w());
 	}
 }

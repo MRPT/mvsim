@@ -5,7 +5,7 @@
   <description>A lightweight multivehicle simulation framework.</description>
 
   <!-- All version numbers in CMake scripts are taken from this line: -->
-  <version>0.9.4</version>
+  <version>0.10.0</version>
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
   <license>BSD</license>
@@ -22,10 +22,28 @@
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
   <!-- COMMON DEPS -->
-  <depend>mrpt2</depend>
+  <depend>mrpt_libmaps</depend>
+  <depend>mrpt_libtclap</depend>
+  <depend>mrpt_libgui</depend>
+  <depend>mrpt_libposes</depend>  <!-- for mrpt::tfest -->
+  <depend>mrpt_libros_bridge</depend>
+<!-- DEPS for mrpt_libros_bridge (can be removed after release of mrpt_libros_bridge>=2.13.8) -->
+  <depend>cv_bridge</depend>
+  <!--<depend>nav_msgs</depend>-->
+  <!--<depend>sensor_msgs</depend>-->
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <!--<depend>stereo_msgs</depend>-->
+  <!--<depend>tf2</depend>-->
+  <!--<depend condition="$ROS_VERSION == 1">roscpp</depend>-->
+  <depend condition="$ROS_VERSION == 2">rclcpp</depend>
+  <!-- -->
+  
+
   <depend>sensor_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>nav_msgs</depend>
+  <depend>stereo_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>libzmq3-dev</depend>

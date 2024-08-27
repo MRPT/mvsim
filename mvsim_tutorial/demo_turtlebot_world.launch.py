@@ -36,7 +36,7 @@ def generate_launch_description():
             MVSIM_ROS2_PARAMS_FILE,
             {
                 "world_file": LaunchConfiguration('world_file'),
-                "headless": False
+                "headless": False,
                 "do_fake_localization": LaunchConfiguration('do_fake_localization'),
             }]
     )

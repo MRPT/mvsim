@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -34,15 +34,13 @@ using namespace std;
 void World::TGUI_Options::parse_from(
 	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
-	parse_xmlnode_children_as_param(
-		node, params, {}, "[World::TGUI_Options]", &logger);
+	parse_xmlnode_children_as_param(node, params, {}, "[World::TGUI_Options]", &logger);
 }
 
 void World::LightOptions::parse_from(
 	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
-	parse_xmlnode_children_as_param(
-		node, params, {}, "[World::LightOptions]", &logger);
+	parse_xmlnode_children_as_param(node, params, {}, "[World::LightOptions]", &logger);
 }
 
 //!< Return true if the GUI window is open, after a previous call to
@@ -64,8 +62,8 @@ void World::GUI::prepare_control_window()
 	gui_win->getSubWindowsUI()->setPosition({1, 1});
 
 	w->setPosition({1, 80});
-	w->setLayout(new nanogui::BoxLayout(
-		nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 5));
+	w->setLayout(
+		new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 5));
 
 	w->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
 		->setCallback(
@@ -95,8 +93,7 @@ void World::GUI::prepare_control_window()
 		});
 
 	w->add<nanogui::CheckBox>(
-		 "Orthogonal view",
-		 [&](bool b) { gui_win->camera().setCameraProjective(!b); })
+		 "Orthogonal view", [&](bool b) { gui_win->camera().setCameraProjective(!b); })
 		->setChecked(parent_.guiOptions_.ortho);
 
 #if MRPT_VERSION >= 0x270
@@ -123,8 +120,7 @@ void World::GUI::prepare_control_window()
 			{
 				parent_.lightOptions_.light_azimuth = v;
 				parent_.setLightDirectionFromAzimuthElevation(
-					parent_.lightOptions_.light_azimuth,
-					parent_.lightOptions_.light_elevation);
+					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
 			});
 	}
 	w->add<nanogui::Label>("Light elevation:");
@@ -137,13 +133,11 @@ void World::GUI::prepare_control_window()
 			{
 				parent_.lightOptions_.light_elevation = v;
 				parent_.setLightDirectionFromAzimuthElevation(
-					parent_.lightOptions_.light_azimuth,
-					parent_.lightOptions_.light_elevation);
+					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
 			});
 	}
 
-	w->add<nanogui::CheckBox>(
-		 "View forces", [&](bool b) { parent_.guiOptions_.show_forces = b; })
+	w->add<nanogui::CheckBox>("View forces", [&](bool b) { parent_.guiOptions_.show_forces = b; })
 		->setChecked(parent_.guiOptions_.show_forces);
 
 	w->add<nanogui::CheckBox>(
@@ -152,9 +146,8 @@ void World::GUI::prepare_control_window()
 		 {
 			 std::lock_guard<std::mutex> lck(gui_win->background_scene_mtx);
 
-			 auto glVizSensors =
-				 std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
-					 gui_win->background_scene->getByName("group_sensors_viz"));
+			 auto glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+				 gui_win->background_scene->getByName("group_sensors_viz"));
 			 ASSERT_(glVizSensors);
 
 			 glVizSensors->setVisibility(b);
@@ -204,8 +197,7 @@ void World::GUI::prepare_status_window()
 #endif
 
 	w->setPosition({5, 455});
-	w->setLayout(new nanogui::BoxLayout(
-		nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
+	w->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
 	w->setFixedWidth(320);
 
 #if MRPT_VERSION < 0x211
@@ -216,8 +208,7 @@ void World::GUI::prepare_status_window()
 
 	lbCpuUsage = w->add<nanogui::Label>(" ");
 	lbStatuses.resize(12);
-	for (size_t i = 0; i < lbStatuses.size(); i++)
-		lbStatuses[i] = w->add<nanogui::Label>(" ");
+	for (size_t i = 0; i < lbStatuses.size(); i++) lbStatuses[i] = w->add<nanogui::Label>(" ");
 }
 
 // Add editor window
@@ -237,8 +228,8 @@ void World::GUI::prepare_editor_window()
 	constexpr int slidersWidth = pnWidth - 80 - COORDS_LABEL_WIDTH;
 
 	w->setPosition({1, 230});
-	w->setLayout(new nanogui::BoxLayout(
-		nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 3, 3));
+	w->setLayout(
+		new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 3, 3));
 	w->setFixedWidth(pnWidth);
 
 #if MRPT_VERSION < 0x211
@@ -263,20 +254,17 @@ void World::GUI::prepare_editor_window()
 		constexpr size_t NUM_TABS = 5;
 
 		std::array<nanogui::Widget*, NUM_TABS> tabs = {
-			tab->createTab("Vehicles"), tab->createTab("Sensors"),
-			tab->createTab("Blocks"), tab->createTab("Elements"),
-			tab->createTab("Misc.")};
+			tab->createTab("Vehicles"), tab->createTab("Sensors"), tab->createTab("Blocks"),
+			tab->createTab("Elements"), tab->createTab("Misc.")};
 
 		tab->setActiveTab(0);
 
 		for (auto t : tabs)
 			t->setLayout(new nanogui::BoxLayout(
-				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3,
-				3));
+				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3, 3));
 
 		std::array<nanogui::VScrollPanel*, NUM_TABS> vscrolls;
-		for (size_t i = 0; i < NUM_TABS; i++)
-			vscrolls[i] = tabs[i]->add<nanogui::VScrollPanel>();
+		for (size_t i = 0; i < NUM_TABS; i++) vscrolls[i] = tabs[i]->add<nanogui::VScrollPanel>();
 
 		for (auto vs : vscrolls) vs->setFixedSize({pnWidth, pnHeight});
 
@@ -288,8 +276,8 @@ void World::GUI::prepare_editor_window()
 			wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
 			wrappers[i]->setFixedSize({pnWidth, pnHeight});
 			wrappers[i]->setLayout(new nanogui::GridLayout(
-				nanogui::Orientation::Horizontal, 1 /*columns */,
-				nanogui::Alignment::Minimum, 3, 3));
+				nanogui::Orientation::Horizontal, 1 /*columns */, nanogui::Alignment::Minimum, 3,
+				3));
 		}
 
 		// Extend the list of world objects with the robot sensors:
@@ -359,8 +347,7 @@ void World::GUI::prepare_editor_window()
 					// deselect former one:
 					if (gui_selectedObject.visual)
 						gui_selectedObject.visual->showCollisionShape(false);
-					if (gui_selectedObject.cb)
-						gui_selectedObject.cb->setChecked(false);
+					if (gui_selectedObject.cb) gui_selectedObject.cb->setChecked(false);
 					gui_selectedObject = InfoPerObject();
 
 					cb->setChecked(check);
@@ -391,23 +378,18 @@ void World::GUI::prepare_editor_window()
 					try
 					{
 						const std::string outFile = nanogui::file_dialog(
-							{{"3Dscene", "MRPT 3D scene file (*.3Dsceme)"}},
-							true /*save*/);
+							{{"3Dscene", "MRPT 3D scene file (*.3Dsceme)"}}, true /*save*/);
 						if (outFile.empty()) return;
 
-						auto lck =
-							mrpt::lockHelper(parent_.physical_objects_mtx());
+						auto lck = mrpt::lockHelper(parent_.physical_objects_mtx());
 						parent_.worldPhysical_.saveToFile(outFile);
 
-						std::cout
-							<< "[mvsim gui] Saved world scene to: " << outFile
-							<< std::endl;
+						std::cout << "[mvsim gui] Saved world scene to: " << outFile << std::endl;
 					}
 					catch (const std::exception& e)
 					{
-						std::cerr
-							<< "[mvsim gui] Exception while saving 3D scene:\n"
-							<< e.what() << std::endl;
+						std::cerr << "[mvsim gui] Exception while saving 3D scene:\n"
+								  << e.what() << std::endl;
 					}
 				});
 	}
@@ -440,8 +422,7 @@ void World::GUI::prepare_editor_window()
 			{
 				// Re-generate the other 6 sliders with this new scale:
 				if (!gui_selectedObject.simulable || !onEntitySelected) return;
-				onEntitySelected(
-					gui_selectedObject.simulable->getRelativePose());
+				onEntitySelected(gui_selectedObject.simulable->getRelativePose());
 			});
 		slCoord->setFixedWidth(slidersWidth - 30);
 		btns_selectedOps.push_back(slCoord);
@@ -491,12 +472,11 @@ void World::GUI::prepare_editor_window()
 
 	// Now, we can define the lambda for filling in the current object pose in
 	// the GUI controls:
-	onEntitySelected = [slidersCoords, slidersCoordScale,
-						slidersCoordScaleValue](const mrpt::math::TPose3D p)
+	onEntitySelected =
+		[slidersCoords, slidersCoordScale, slidersCoordScaleValue](const mrpt::math::TPose3D p)
 	{
 		ASSERT_(slidersCoordScale);
-		const double scale =
-			std::pow(10.0, mrpt::round(slidersCoordScale->value()));
+		const double scale = std::pow(10.0, mrpt::round(slidersCoordScale->value()));
 
 		slidersCoordScaleValue->setCaption(mrpt::format("%.01e", scale));
 
@@ -504,15 +484,13 @@ void World::GUI::prepare_editor_window()
 		for (int i = 0; i < 3; i++)
 		{
 			slidersCoords[i]->setRange(
-				{p[i] - scale * REPOSITION_SLIDER_RANGE,
-				 p[i] + scale * REPOSITION_SLIDER_RANGE});
+				{p[i] - scale * REPOSITION_SLIDER_RANGE, p[i] + scale * REPOSITION_SLIDER_RANGE});
 			slidersCoords[i]->setValue(p[i]);
 		}
 		// Angles:
 		for (int i = 0; i < 3; i++)
 		{
-			slidersCoords[i + 3]->setRange(
-				{p[i + 3] - scale * M_PI, p[i + 3] + scale * M_PI});
+			slidersCoords[i + 3]->setRange({p[i + 3] - scale * M_PI, p[i + 3] + scale * M_PI});
 			slidersCoords[i + 3]->setValue(p[i + 3]);
 		}
 
@@ -522,8 +500,7 @@ void World::GUI::prepare_editor_window()
 	onEntityMoved = [slidersCoordsValues](const mrpt::math::TPose3D p)
 	{
 		// Positions:
-		for (int i = 0; i < 3; i++)
-			slidersCoordsValues[i]->setCaption(mrpt::format("%.04f", p[i]));
+		for (int i = 0; i < 3; i++) slidersCoordsValues[i]->setCaption(mrpt::format("%.04f", p[i]));
 		// Angles:
 		for (int i = 0; i < 3; i++)
 			slidersCoordsValues[i + 3]->setCaption(
@@ -539,11 +516,9 @@ void World::GUI::prepare_editor_window()
 			//
 			if (!gui_selectedObject.simulable) return;
 
-			auto* formPose =
-				new nanogui::Window(gui_win.get(), "Enter new pose");
+			auto* formPose = new nanogui::Window(gui_win.get(), "Enter new pose");
 			formPose->setLayout(new nanogui::GridLayout(
-				nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill,
-				5));
+				nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill, 5));
 
 			nanogui::TextBox* lbs[6];
 
@@ -572,34 +547,31 @@ void World::GUI::prepare_editor_window()
 			}
 
 			const auto pos = gui_selectedObject.simulable->getRelativePose();
-			for (int i = 0; i < 3; i++)
-				lbs[i]->setValue(std::to_string(pos[i]));
+			for (int i = 0; i < 3; i++) lbs[i]->setValue(std::to_string(pos[i]));
 
-			for (int i = 3; i < 6; i++)
-				lbs[i]->setValue(std::to_string(mrpt::RAD2DEG(pos[i])));
+			for (int i = 3; i < 6; i++) lbs[i]->setValue(std::to_string(mrpt::RAD2DEG(pos[i])));
 
 			formPose->add<nanogui::Label>("");
 			formPose->add<nanogui::Label>("");
 
-			formPose->add<nanogui::Button>("Cancel")->setCallback(
-				[formPose]() { formPose->dispose(); });
+			formPose->add<nanogui::Button>("Cancel")->setCallback([formPose]()
+																  { formPose->dispose(); });
 
 			formPose->add<nanogui::Button>("Accept")->setCallback(
 				[formPose, this, lbs]()
 				{
-					const mrpt::math::TPose3D newPose = {
-						// X:
-						std::stod(lbs[0]->value()),
-						// Y:
-						std::stod(lbs[1]->value()),
-						// Z:
-						std::stod(lbs[2]->value()),
-						// Yaw
-						mrpt::DEG2RAD(std::stod(lbs[3]->value())),
-						// Pitch
-						mrpt::DEG2RAD(std::stod(lbs[4]->value())),
-						// Roll:
-						mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
+					const mrpt::math::TPose3D newPose = {// X:
+														 std::stod(lbs[0]->value()),
+														 // Y:
+														 std::stod(lbs[1]->value()),
+														 // Z:
+														 std::stod(lbs[2]->value()),
+														 // Yaw
+														 mrpt::DEG2RAD(std::stod(lbs[3]->value())),
+														 // Pitch
+														 mrpt::DEG2RAD(std::stod(lbs[4]->value())),
+														 // Roll:
+														 mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
 
 					gui_selectedObject.simulable->setRelativePose(newPose);
 					onEntitySelected(newPose);
@@ -619,8 +591,7 @@ void World::GUI::prepare_editor_window()
 #if MRPT_VERSION >= 0x231
 	gui_win->subwindowMinimize(subwinIdx);
 #else
-	if (auto btnMinimize =
-			dynamic_cast<nanogui::Button*>(w->buttonPanel()->children().at(0));
+	if (auto btnMinimize = dynamic_cast<nanogui::Button*>(w->buttonPanel()->children().at(0));
 		btnMinimize)
 	{
 		btnMinimize->callback()();	// "push" button
@@ -641,8 +612,8 @@ void World::internal_GUI_thread()
 		mrpt::gui::CDisplayWindowGUI_Params cp;
 		cp.maximized = guiOptions_.start_maximized;
 
-		gui_.gui_win = mrpt::gui::CDisplayWindowGUI::Create(
-			"mvsim", guiOptions_.win_w, guiOptions_.win_h, cp);
+		gui_.gui_win =
+			mrpt::gui::CDisplayWindowGUI::Create("mvsim", guiOptions_.win_w, guiOptions_.win_h, cp);
 
 		// zmin / zmax of opengl viewport:
 		worldVisual_->getViewport()->setViewportClipDistances(
@@ -690,15 +661,13 @@ void World::internal_GUI_thread()
 
 		const auto& lo = lightOptions_;
 
-		setLightDirectionFromAzimuthElevation(
-			lo.light_azimuth, lo.light_elevation);
+		setLightDirectionFromAzimuthElevation(lo.light_azimuth, lo.light_elevation);
 
 #if MRPT_VERSION >= 0x270
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
 
-		auto lambdaSetLightParams =
-			[&lo](const mrpt::opengl::COpenGLViewport::Ptr& v)
+		auto lambdaSetLightParams = [&lo](const mrpt::opengl::COpenGLViewport::Ptr& v)
 		{
 			// enable shadows and set the shadow map texture size:
 			const int sms = lo.shadow_map_size;
@@ -712,15 +681,12 @@ void World::internal_GUI_thread()
 			vlp.color = colf;
 
 #if MRPT_VERSION >= 0x2A0  // New in mrpt>=2.10.0
-			vlp.eyeDistance2lightShadowExtension =
-				lo.eye_distance_to_shadow_map_extension;
+			vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
 
-			vlp.minimum_shadow_map_extension_ratio =
-				lo.minimum_shadow_map_extension_ratio;
+			vlp.minimum_shadow_map_extension_ratio = lo.minimum_shadow_map_extension_ratio;
 #endif
 			// light view frustrum near/far planes:
-			v->setLightShadowClipDistances(
-				lo.light_clip_plane_min, lo.light_clip_plane_max);
+			v->setLightShadowClipDistances(lo.light_clip_plane_min, lo.light_clip_plane_max);
 
 			// Shadow bias should be proportional to clip range:
 #if MRPT_VERSION >= 0x281
@@ -753,8 +719,7 @@ void World::internal_GUI_thread()
 
 				lastKeyEvent_.keycode = key;
 				lastKeyEvent_.modifierShift = (modifiers & GLFW_MOD_SHIFT) != 0;
-				lastKeyEvent_.modifierCtrl =
-					(modifiers & GLFW_MOD_CONTROL) != 0;
+				lastKeyEvent_.modifierCtrl = (modifiers & GLFW_MOD_CONTROL) != 0;
 				lastKeyEvent_.modifierSuper = (modifiers & GLFW_MOD_SUPER) != 0;
 				lastKeyEvent_.modifierAlt = (modifiers & GLFW_MOD_ALT) != 0;
 
@@ -802,23 +767,21 @@ void World::internal_GUI_thread()
 
 		// Register observation callback:
 		const auto lambdaOnObservation =
-			[this](
-				const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
+			[this](const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 		{
 			// obs->getDescriptionAsText(std::cout);
-			this->enqueue_task_to_run_in_gui_thread(
-				[this, obs, &veh]() { internal_gui_on_observation(veh, obs); });
+			this->enqueue_task_to_run_in_gui_thread([this, obs, &veh]()
+													{ internal_gui_on_observation(veh, obs); });
 		};
 
 		this->registerCallbackOnObservation(lambdaOnObservation);
 
 		// ============= Mainloop =============
-		const int refresh_ms =
-			std::max(1, mrpt::round(1000 / guiOptions_.refresh_fps));
+		const int refresh_ms = std::max(1, mrpt::round(1000 / guiOptions_.refresh_fps));
 
 		MRPT_LOG_DEBUG_FMT(
-			"[World::internal_GUI_thread] Using GUI FPS=%i (T=%i ms)",
-			guiOptions_.refresh_fps, refresh_ms);
+			"[World::internal_GUI_thread] Using GUI FPS=%i (T=%i ms)", guiOptions_.refresh_fps,
+			refresh_ms);
 
 #if MRPT_VERSION >= 0x253
 		const int idleLoopTasks_ms = 10;
@@ -844,8 +807,7 @@ void World::internal_GUI_thread()
 
 		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 
-		for (auto& obj : getListOfSimulableObjects())
-			obj.second->freeOpenGLResources();
+		for (auto& obj : getListOfSimulableObjects()) obj.second->freeOpenGLResources();
 
 		lckListObjs.unlock();
 
@@ -858,8 +820,7 @@ void World::internal_GUI_thread()
 	}
 	catch (const std::exception& e)
 	{
-		MRPT_LOG_ERROR_STREAM(
-			"[internal_GUI_init] Exception: " << mrpt::exception_to_str(e));
+		MRPT_LOG_ERROR_STREAM("[internal_GUI_init] Exception: " << mrpt::exception_to_str(e));
 	}
 	gui_thread_running_ = false;
 }
@@ -882,8 +843,7 @@ void World::GUI::handle_mouse_operations()
 	vp->get3DRayForPixelCoord(mousePt.x(), mousePt.y(), ray);
 
 	// Create a 3D plane, i.e. Z=0
-	const auto ground_plane =
-		mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
+	const auto ground_plane = mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
 
 	// Intersection of the line with the plane:
 	mrpt::math::TObject3D inters;
@@ -945,11 +905,9 @@ void World::internal_process_pending_gui_user_tasks()
 	guiUserPendingTasksMtx_.unlock();
 }
 
-void World::internalRunSensorsOn3DScene(
-	mrpt::opengl::COpenGLScene& physicalObjects)
+void World::internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObjects)
 {
-	auto tle = mrpt::system::CTimeLoggerEntry(
-		timlogger_, "internalRunSensorsOn3DScene");
+	auto tle = mrpt::system::CTimeLoggerEntry(timlogger_, "internalRunSensorsOn3DScene");
 
 	for (auto& v : vehicles_)
 		for (auto& sensor : v.second->getSensors())
@@ -964,8 +922,7 @@ void World::internalUpdate3DSceneObjects(
 {
 	// Update view of map elements
 	// -----------------------------
-	auto tle =
-		mrpt::system::CTimeLoggerEntry(timlogger_, "update_GUI.2.map-elements");
+	auto tle = mrpt::system::CTimeLoggerEntry(timlogger_, "update_GUI.2.map-elements");
 
 	for (auto& e : worldElements_) e->guiUpdate(viz, physical);
 
@@ -993,14 +950,12 @@ void World::internalUpdate3DSceneObjects(
 	if (gui_.lbCpuUsage)
 	{
 		// 1st line: time
-		double cpu_usage_ratio =
-			std::max(1e-10, timlogger_.getMeanTime("run_simulation.cpu_dt")) /
-			std::max(1e-10, timlogger_.getMeanTime("run_simulation.dt"));
+		double cpu_usage_ratio = std::max(1e-10, timlogger_.getMeanTime("run_simulation.cpu_dt")) /
+								 std::max(1e-10, timlogger_.getMeanTime("run_simulation.dt"));
 
 		gui_.lbCpuUsage->setCaption(mrpt::format(
 			"Time: %s (CPU usage: %.03f%%)",
-			mrpt::system::formatTimeInterval(get_simul_time()).c_str(),
-			cpu_usage_ratio * 100.0));
+			mrpt::system::formatTimeInterval(get_simul_time()).c_str(), cpu_usage_ratio * 100.0));
 
 		// User supplied-lines:
 		guiMsgLinesMtx_.lock();
@@ -1013,8 +968,7 @@ void World::internalUpdate3DSceneObjects(
 			// split lines:
 			std::vector<std::string> lines;
 			mrpt::system::tokenize(msg_lines, "\r\n", lines);
-			for (const auto& l : lines)
-				gui_.lbStatuses.at(nextStatusLine++)->setCaption(l);
+			for (const auto& l : lines) gui_.lbStatuses.at(nextStatusLine++)->setCaption(l);
 		}
 		gui_.lbStatuses.at(nextStatusLine++)
 			->setCaption(std::string("Mouse: ") + gui_.clickedPt.asString());
@@ -1026,8 +980,7 @@ void World::internalUpdate3DSceneObjects(
 	// -----------------------
 	if (!guiOptions_.follow_vehicle.empty())
 	{
-		if (auto it = vehicles_.find(guiOptions_.follow_vehicle);
-			it != vehicles_.end())
+		if (auto it = vehicles_.find(guiOptions_.follow_vehicle); it != vehicles_.end())
 		{
 			const mrpt::poses::CPose2D pose = it->second->getCPose2D();
 			gui_.gui_win->camera().setCameraPointing(pose.x(), pose.y(), 0.0f);
@@ -1061,8 +1014,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			const int MVSIM_OPEN_GUI_TIMEOUT_MS =
 				mrpt::get_env<int>("MVSIM_OPEN_GUI_TIMEOUT_MS", 3000);
 
-			for (int timeout = 0; timeout < MVSIM_OPEN_GUI_TIMEOUT_MS / 10;
-				 timeout++)
+			for (int timeout = 0; timeout < MVSIM_OPEN_GUI_TIMEOUT_MS / 10; timeout++)
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 				if (gui_thread_running_) break;
@@ -1114,23 +1066,18 @@ void World::internal_gui_on_observation(
 {
 	if (!obs) return;
 
-	if (auto obs3D =
-			std::dynamic_pointer_cast<mrpt::obs::CObservation3DRangeScan>(obs);
-		obs3D)
+	if (auto obs3D = std::dynamic_pointer_cast<mrpt::obs::CObservation3DRangeScan>(obs); obs3D)
 	{
 		internal_gui_on_observation_3Dscan(veh, obs3D);
 	}
-	else if (auto obsIm =
-				 std::dynamic_pointer_cast<mrpt::obs::CObservationImage>(obs);
-			 obsIm)
+	else if (auto obsIm = std::dynamic_pointer_cast<mrpt::obs::CObservationImage>(obs); obsIm)
 	{
 		internal_gui_on_observation_image(veh, obsIm);
 	}
 }
 
 void World::internal_gui_on_observation_3Dscan(
-	const Simulable& veh,
-	const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs)
+	const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs)
 {
 	using namespace std::string_literals;
 
@@ -1141,14 +1088,12 @@ void World::internal_gui_on_observation_3Dscan(
 	if (obs->hasIntensityImage)
 	{
 		rgbImageWinSize = internal_gui_on_image(
-			veh.getName() + "/"s + obs->sensorLabel + "_rgb"s,
-			obs->intensityImage, 5);
+			veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->intensityImage, 5);
 	}
 	if (obs->hasRangeImage)
 	{
 		mrpt::math::CMatrixFloat d;
-		d = obs->rangeImage.asEigen().cast<float>() *
-			(obs->rangeUnits / obs->maxRange);
+		d = obs->rangeImage.asEigen().cast<float>() * (obs->rangeUnits / obs->maxRange);
 
 		mrpt::img::CImage imDepth;
 		imDepth.setFromMatrix(d, true /* in range [0,1] */);
@@ -1160,8 +1105,7 @@ void World::internal_gui_on_observation_3Dscan(
 }
 
 void World::internal_gui_on_observation_image(
-	const Simulable& veh,
-	const std::shared_ptr<mrpt::obs::CObservationImage>& obs)
+	const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservationImage>& obs)
 {
 	using namespace std::string_literals;
 
@@ -1169,8 +1113,8 @@ void World::internal_gui_on_observation_image(
 
 	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
 
-	rgbImageWinSize = internal_gui_on_image(
-		veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->image, 5);
+	rgbImageWinSize =
+		internal_gui_on_image(veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->image, 5);
 }
 
 mrpt::math::TPoint2D World::internal_gui_on_image(
@@ -1181,8 +1125,7 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 	// Once creation:
 	if (!guiObsViz_.count(label))
 	{
-		auto& w = guiObsViz_[label] =
-			gui_.gui_win->createManagedSubWindow(label);
+		auto& w = guiObsViz_[label] = gui_.gui_win->createManagedSubWindow(label);
 
 		w->setLayout(new nanogui::GridLayout(
 			nanogui::Orientation::Vertical, 1, nanogui::Alignment::Fill, 2, 2));
@@ -1202,8 +1145,7 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 		glControl->setFixedSize({winW, winH});
 
 		static std::map<int, int> numGuiWindows;
-		w->setPosition(
-			{winPosX, 20 + (numGuiWindows[winPosX]++) * (winH + 10)});
+		w->setPosition({winPosX, 20 + (numGuiWindows[winPosX]++) * (winH + 10)});
 
 		auto lck = mrpt::lockHelper(glControl->scene_mtx);
 
@@ -1214,8 +1156,7 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 	// Update from sensor data:
 	auto& w = guiObsViz_[label];
 
-	glControl =
-		dynamic_cast<mrpt::gui::MRPT2NanoguiGLCanvas*>(w->children().at(1));
+	glControl = dynamic_cast<mrpt::gui::MRPT2NanoguiGLCanvas*>(w->children().at(1));
 	ASSERT_(glControl != nullptr);
 
 	auto lck = mrpt::lockHelper(glControl->scene_mtx);
@@ -1243,8 +1184,7 @@ void World::internalGraphicsLoopTasksForSimulation()
 		{
 			const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
 			// replace list of smart pointers (fast):
-			if (guiUserObjectsPhysical_)
-				*glUserObjsPhysical_ = *guiUserObjectsPhysical_;
+			if (guiUserObjectsPhysical_) *glUserObjsPhysical_ = *guiUserObjectsPhysical_;
 			if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
 		}
 	}
@@ -1258,12 +1198,10 @@ void World::internalGraphicsLoopTasksForSimulation()
 	}
 }
 
-void World::setLightDirectionFromAzimuthElevation(
-	const float azimuth, const float elevation)
+void World::setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation)
 {
 	const mrpt::math::TPoint3Df dir = {
-		-cos(azimuth) * cos(elevation), -sin(azimuth) * cos(elevation),
-		-sin(elevation)};
+		-cos(azimuth) * cos(elevation), -sin(azimuth) * cos(elevation), -sin(elevation)};
 
 	ASSERT_(worldVisual_);
 

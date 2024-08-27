@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -43,8 +43,7 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	TParameterDefinitions params;
 	params["floating"] = TParamEntry("%bool", &is_floating_);
-	params["floating_focus"] =
-		TParamEntry("%s", &float_center_at_vehicle_name_);
+	params["floating_focus"] = TParamEntry("%s", &float_center_at_vehicle_name_);
 	params["color"] = TParamEntry("%color", &color_);
 	params["line_width"] = TParamEntry("%lf", &line_width_);
 
@@ -54,8 +53,7 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["y_max"] = TParamEntry("%lf", &y_max_);
 	params["interval"] = TParamEntry("%lf", &interval_);
 
-	parse_xmlnode_children_as_param(
-		*root, params, world_->user_defined_variables());
+	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 
 	// If a vehicle name is given, setting "is_floating=true" by the user is
 	// optional:
@@ -64,8 +62,7 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void GroundGrid::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
-		physical,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
@@ -89,8 +86,7 @@ void GroundGrid::internalGuiUpdate(
 		// Centered at a vehicle:
 		const World::VehicleList& vehs = world_->getListOfVehicles();
 		// Look for the vehicle by its name:
-		World::VehicleList::const_iterator it_veh =
-			vehs.find(float_center_at_vehicle_name_);
+		World::VehicleList::const_iterator it_veh = vehs.find(float_center_at_vehicle_name_);
 		// not found -> error:
 		if (!float_center_at_vehicle_name_.empty() && it_veh == vehs.end())
 			throw std::runtime_error(mrpt::format(
@@ -112,11 +108,9 @@ void GroundGrid::internalGuiUpdate(
 
 	// "Discretize" offset for a better visual impact:
 	ASSERT_(interval_ > .0);
-	center_offset.x = interval_ *
-					  ::floor(std::abs(center_offset.x) / interval_) *
+	center_offset.x = interval_ * ::floor(std::abs(center_offset.x) / interval_) *
 					  (center_offset.x < 0 ? -1. : 1.);
-	center_offset.y = interval_ *
-					  ::floor(std::abs(center_offset.y) / interval_) *
+	center_offset.y = interval_ * ::floor(std::abs(center_offset.y) / interval_) *
 					  (center_offset.y < 0 ? -1. : 1.);
 	gl_groundgrid_->setLocation(center_offset);
 }

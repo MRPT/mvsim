@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       Multiblock simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -44,16 +44,14 @@ class Block : public VisualObject, public Simulable
 
 	/** Register a new class of blocks from XML description of type
 	 * "<block:class name='name'>...</block:class>".  */
-	static void register_block_class(
-		const World& parent, const rapidxml::xml_node<char>* xml_node);
+	static void register_block_class(const World& parent, const rapidxml::xml_node<char>* xml_node);
 
 	// ------- Interface with "World" ------
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 	virtual void apply_force(
 		const mrpt::math::TVector2D& force,
-		const mrpt::math::TPoint2D& applyPoint =
-			mrpt::math::TPoint2D(0, 0)) override;
+		const mrpt::math::TPoint2D& applyPoint = mrpt::math::TPoint2D(0, 0)) override;
 
 	/** Create bodies, fixtures, etc. for the dynamical simulation. May be
 	 * overrided by derived classes */
@@ -126,8 +124,7 @@ class Block : public VisualObject, public Simulable
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	/** user-supplied index number: must be set/get'ed with setblockIndex()
 	 * getblockIndex() (default=0) */
@@ -227,10 +224,7 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 	/** Get the block mass */
 	virtual double getMass() const { return 0; }
 
-	void add_sensor(const SensorBase::Ptr& sensor)
-	{
-		sensors_.push_back(sensor);
-	}
+	void add_sensor(const SensorBase::Ptr& sensor) { sensors_.push_back(sensor); }
 
    protected:
 	void internalGuiUpdate(

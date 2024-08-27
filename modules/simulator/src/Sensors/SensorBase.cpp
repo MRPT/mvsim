@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -73,8 +73,7 @@ void SensorBase::RegisterSensorFOVViz(const mrpt::opengl::CSetOfObjects::Ptr& o)
 	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
 	gAllSensorsFOVViz->insert(o);
 }
-void SensorBase::RegisterSensorOriginViz(
-	const mrpt::opengl::CSetOfObjects::Ptr& o)
+void SensorBase::RegisterSensorOriginViz(const mrpt::opengl::CSetOfObjects::Ptr& o)
 {
 	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
 	gAllSensorsOriginViz->insert(o);
@@ -89,8 +88,7 @@ SensorBase::SensorBase(Simulable& vehicle)
 
 SensorBase::~SensorBase() = default;
 
-SensorBase::Ptr SensorBase::factory(
-	Simulable& parent, const rapidxml::xml_node<char>* root)
+SensorBase::Ptr SensorBase::factory(Simulable& parent, const rapidxml::xml_node<char>* root)
 {
 	register_all_sensors();
 
@@ -117,8 +115,8 @@ SensorBase::Ptr SensorBase::factory(
 	auto we = classFactory_sensors.create(sName, parent, root);
 
 	if (!we)
-		throw runtime_error(mrpt::format(
-			"[SensorBase::factory] Unknown sensor type '%s'", root->name()));
+		throw runtime_error(
+			mrpt::format("[SensorBase::factory] Unknown sensor type '%s'", root->name()));
 
 	// parse the optional visual model:
 	we->parseVisual(*root);
@@ -127,8 +125,7 @@ SensorBase::Ptr SensorBase::factory(
 }
 
 bool SensorBase::parseSensorPublish(
-	const rapidxml::xml_node<char>* node,
-	const std::map<std::string, std::string>& varValues)
+	const rapidxml::xml_node<char>* node, const std::map<std::string, std::string>& varValues)
 {
 	MRPT_START
 
@@ -158,8 +155,7 @@ bool SensorBase::parseSensorPublish(
 }
 
 void SensorBase::reportNewObservation(
-	const std::shared_ptr<mrpt::obs::CObservation>& obs,
-	const TSimulContext& context)
+	const std::shared_ptr<mrpt::obs::CObservation>& obs, const TSimulContext& context)
 {
 	if (!obs) return;
 
@@ -177,8 +173,7 @@ void SensorBase::reportNewObservation(
 		std::vector<uint8_t> serializedData;
 		mrpt::serialization::ObjectToOctetVector(obs.get(), serializedData);
 
-		msg.set_mrptserializedobservation(
-			serializedData.data(), serializedData.size());
+		msg.set_mrptserializedobservation(serializedData.data(), serializedData.size());
 
 		context.world->commsClient().publishTopic(publishTopic_, msg);
 	}
@@ -186,8 +181,7 @@ void SensorBase::reportNewObservation(
 }
 
 void SensorBase::reportNewObservation_lidar_2d(
-	const std::shared_ptr<mrpt::obs::CObservation2DRangeScan>& obs,
-	const TSimulContext& context)
+	const std::shared_ptr<mrpt::obs::CObservation2DRangeScan>& obs, const TSimulContext& context)
 {
 	using namespace std::string_literals;
 
@@ -228,8 +222,7 @@ void SensorBase::registerOnServer(mvsim::Client& c)
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	// Topic:
-	if (!publishTopic_.empty())
-		c.advertiseTopic<mvsim_msgs::GenericObservation>(publishTopic_);
+	if (!publishTopic_.empty()) c.advertiseTopic<mvsim_msgs::GenericObservation>(publishTopic_);
 #endif
 }
 
@@ -259,11 +252,9 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 	if (!name_.empty()) return;
 
 	size_t nextIdx = 0;
-	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v)
-		nextIdx = v->getSensors().size() + 1;
+	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v) nextIdx = v->getSensors().size() + 1;
 
-	name_ = mrpt::format(
-		"%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
+	name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
 }
 
 bool SensorBase::should_simulate_sensor(const TSimulContext& context)
@@ -271,19 +262,15 @@ bool SensorBase::should_simulate_sensor(const TSimulContext& context)
 	// to fix edge cases with sensor period a multiple of simulation timestep:
 	const double timeEpsilon = 1e-6;
 
-	if (context.simul_time <
-		sensor_last_timestamp_ + sensor_period_ - timeEpsilon)
-		return false;
+	if (context.simul_time < sensor_last_timestamp_ + sensor_period_ - timeEpsilon) return false;
 
 	if ((context.simul_time - sensor_last_timestamp_) >= 2 * sensor_period_)
 	{
-		std::cout
-			<< "[mvsim::SensorBase] WARNING: "
-			   "At least one sensor sample has been lost due to too coarse "
-			   "discrete time steps. sensor_period="
-			<< sensor_period_ << " [s], (simul_time - sensor_last_timestamp)="
-			<< (context.simul_time - sensor_last_timestamp_) << " [s]."
-			<< std::endl;
+		std::cout << "[mvsim::SensorBase] WARNING: "
+					 "At least one sensor sample has been lost due to too coarse "
+					 "discrete time steps. sensor_period="
+				  << sensor_period_ << " [s], (simul_time - sensor_last_timestamp)="
+				  << (context.simul_time - sensor_last_timestamp_) << " [s]." << std::endl;
 	}
 
 	sensor_last_timestamp_ = context.simul_time;

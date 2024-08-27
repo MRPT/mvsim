@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -28,8 +28,7 @@ class WorldElementBase : public VisualObject, public Simulable
 	 * class_name. Otherwise, class_name is ignored.
 	 */
 	static Ptr factory(
-		World* parent, const rapidxml::xml_node<char>* xml_node,
-		const char* class_name = nullptr);
+		World* parent, const rapidxml::xml_node<char>* xml_node, const char* class_name = nullptr);
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) = 0;
 
@@ -43,11 +42,9 @@ using TClassFactory_worldElements =
 extern TClassFactory_worldElements classFactory_worldElements;
 
 #define DECLARES_REGISTER_WORLD_ELEMENT(CLASS_NAME) \
-	DECLARES_REGISTER_CLASS2(                       \
-		CLASS_NAME, WorldElementBase, World*, const rapidxml::xml_node<char>*)
+	DECLARES_REGISTER_CLASS2(CLASS_NAME, WorldElementBase, World*, const rapidxml::xml_node<char>*)
 
-#define REGISTER_WORLD_ELEMENT(TEXTUAL_NAME, CLASS_NAME)                       \
-	REGISTER_CLASS2(                                                           \
-		TClassFactory_worldElements, classFactory_worldElements, TEXTUAL_NAME, \
-		CLASS_NAME)
+#define REGISTER_WORLD_ELEMENT(TEXTUAL_NAME, CLASS_NAME) \
+	REGISTER_CLASS2(                                     \
+		TClassFactory_worldElements, classFactory_worldElements, TEXTUAL_NAME, CLASS_NAME)
 }  // namespace mvsim

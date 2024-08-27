@@ -16,14 +16,12 @@ void myPoseCallback(const mvsim_msgs::TimeStampedPose& p)
 void mySensorCallback(const mvsim_msgs::GenericObservation& o)
 {
 	const std::vector<uint8_t> data(
-		o.mrptserializedobservation().begin(),
-		o.mrptserializedobservation().end());
+		o.mrptserializedobservation().begin(), o.mrptserializedobservation().end());
 
 	mrpt::serialization::CSerializable::Ptr obj;
 	mrpt::serialization::OctetVectorToObject(data, obj);
 
-	mrpt::obs::CObservation::Ptr obs =
-		std::dynamic_pointer_cast<mrpt::obs::CObservation>(obj);
+	mrpt::obs::CObservation::Ptr obs = std::dynamic_pointer_cast<mrpt::obs::CObservation>(obj);
 	ASSERT_(obs);
 
 	std::cout << "sensor callback: " << obs->asString() << "\n";
@@ -38,11 +36,9 @@ int main(int argc, char** argv)
 
 		client.connect();
 
-		client.subscribeTopic<mvsim_msgs::TimeStampedPose>(
-			"/r1/pose", myPoseCallback);
+		client.subscribeTopic<mvsim_msgs::TimeStampedPose>("/r1/pose", myPoseCallback);
 
-		client.subscribeTopic<mvsim_msgs::GenericObservation>(
-			"/r1/laser1", mySensorCallback);
+		client.subscribeTopic<mvsim_msgs::GenericObservation>("/r1/laser1", mySensorCallback);
 
 		std::this_thread::sleep_for(std::chrono::seconds(5));
 

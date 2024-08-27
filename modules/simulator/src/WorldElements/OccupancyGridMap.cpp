@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -25,8 +25,7 @@ using namespace rapidxml;
 using namespace mvsim;
 using namespace std;
 
-OccupancyGridMap::OccupancyGridMap(
-	World* parent, const rapidxml::xml_node<char>* root)
+OccupancyGridMap::OccupancyGridMap(World* parent, const rapidxml::xml_node<char>* root)
 	: WorldElementBase(parent),
 	  gui_uptodate_(false),
 	  show_grid_collision_points_(true),
@@ -45,21 +44,17 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 	// <file>FILENAME.{png,gridmap}</file>
 	xml_node<>* xml_file = root->first_node("file");
 	if (!xml_file || !xml_file->value())
-		throw std::runtime_error(
-			"Error: <file></file> XML entry not found inside gridmap node!");
+		throw std::runtime_error("Error: <file></file> XML entry not found inside gridmap node!");
 
 	const string sFile = world_->local_to_abs_path(xml_file->value());
-	const string sFileExt =
-		mrpt::system::extractFileExtension(sFile, true /*ignore gz*/);
+	const string sFileExt = mrpt::system::extractFileExtension(sFile, true /*ignore gz*/);
 
 	// ROS YAML map files:
 	if (sFileExt == "yaml")
 	{
 #if MRPT_VERSION >= 0x250
 		bool ok = grid_.loadFromROSMapServerYAML(sFile);
-		ASSERTMSG_(
-			ok,
-			mrpt::format("Error loading ROS map file: '%s'", sFile.c_str()));
+		ASSERTMSG_(ok, mrpt::format("Error loading ROS map file: '%s'", sFile.c_str()));
 #else
 		THROW_EXCEPTION("Loading ROS YAML map files requires MRPT>=2.5.0");
 #endif
@@ -81,26 +76,21 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 		other_params["centerpixel_x"] = TParamEntry("%lf", &xcenterpixel);
 		other_params["centerpixel_y"] = TParamEntry("%lf", &ycenterpixel);
 
-		parse_xmlnode_children_as_param(
-			*root, other_params, world_->user_defined_variables());
+		parse_xmlnode_children_as_param(*root, other_params, world_->user_defined_variables());
 
-		if (!grid_.loadFromBitmapFile(
-				sFile, resolution, {xcenterpixel, ycenterpixel}))
-			throw std::runtime_error(mrpt::format(
-				"[OccupancyGridMap] ERROR: File not found '%s'",
-				sFile.c_str()));
+		if (!grid_.loadFromBitmapFile(sFile, resolution, {xcenterpixel, ycenterpixel}))
+			throw std::runtime_error(
+				mrpt::format("[OccupancyGridMap] ERROR: File not found '%s'", sFile.c_str()));
 	}
 
 	{
 		// Other general params:
 		TParameterDefinitions ps;
-		ps["show_collisions"] =
-			TParamEntry("%bool", &show_grid_collision_points_);
+		ps["show_collisions"] = TParamEntry("%bool", &show_grid_collision_points_);
 		ps["restitution"] = TParamEntry("%lf", &restitution_);
 		ps["lateral_friction"] = TParamEntry("%lf", &lateral_friction_);
 
-		parse_xmlnode_children_as_param(
-			*root, ps, world_->user_defined_variables());
+		parse_xmlnode_children_as_param(*root, ps, world_->user_defined_variables());
 	}
 }
 
@@ -146,8 +136,8 @@ void OccupancyGridMap::internalGuiUpdate(
 			{
 				gl_objs = mrpt::opengl::CSetOfObjects::Create();
 				gl_objs->setName(
-					"OccupancyGridMap"s + this->getName() + ".obstacles["s +
-					std::to_string(i) + "]"s);
+					"OccupancyGridMap"s + this->getName() + ".obstacles["s + std::to_string(i) +
+					"]"s);
 				viz->get().insert(gl_objs);
 			}
 
@@ -155,8 +145,7 @@ void OccupancyGridMap::internalGuiUpdate(
 			// adquired from the caller)
 			// proceed to replace the old with the new point cloud:
 			gl_objs->clear();
-			if (gl_obs_clouds_buffer_.size() > i)
-				gl_objs->insert(gl_obs_clouds_buffer_[i]);
+			if (gl_obs_clouds_buffer_.size() > i) gl_objs->insert(gl_obs_clouds_buffer_[i]);
 		}
 
 		gl_obs_clouds_buffer_.clear();
@@ -164,8 +153,7 @@ void OccupancyGridMap::internalGuiUpdate(
 	}
 }
 
-void OccupancyGridMap::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
+void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& context)
 {
 	// Make a list of objects subject to collide with the occupancy grid:
 	// - Vehicles
@@ -177,12 +165,11 @@ void OccupancyGridMap::simul_pre_timestep(
 
 		obstacles_for_each_obj_.resize(nObjs);
 		size_t obj_idx = 0;
-		for (World::VehicleList::const_iterator itVeh = lstVehs.begin();
-			 itVeh != lstVehs.end(); ++itVeh, ++obj_idx)
+		for (World::VehicleList::const_iterator itVeh = lstVehs.begin(); itVeh != lstVehs.end();
+			 ++itVeh, ++obj_idx)
 		{
 			TInfoPerCollidableobj& ipv = obstacles_for_each_obj_[obj_idx];
-			ipv.max_obstacles_ranges =
-				itVeh->second->getMaxVehicleRadius() * 1.50f;
+			ipv.max_obstacles_ranges = itVeh->second->getMaxVehicleRadius() * 1.50f;
 			const mrpt::math::TPose3D& pose = itVeh->second->getPose();
 			ipv.pose = mrpt::poses::CPose2D(
 				pose.x, pose.y,
@@ -191,8 +178,7 @@ void OccupancyGridMap::simul_pre_timestep(
 		for (const auto& block : lstBlocks)
 		{
 			TInfoPerCollidableobj& ipv = obstacles_for_each_obj_[obj_idx];
-			ipv.max_obstacles_ranges =
-				block.second->getMaxBlockRadius() * 1.50f;
+			ipv.max_obstacles_ranges = block.second->getMaxBlockRadius() * 1.50f;
 			const mrpt::math::TPose3D& pose = block.second->getPose();
 			/* angle=0, no need to rotate everything to later rotate back again!
 			 */
@@ -225,8 +211,7 @@ void OccupancyGridMap::simul_pre_timestep(
 			scan->aperture = 2.0 * M_PI;  // 360 field of view
 			scan->maxRange = veh_max_obstacles_ranges;
 
-			grid_.laserScanSimulator(
-				*scan, ipv.pose, occup_threshold, nRays, 0.0f /*noise*/);
+			grid_.laserScanSimulator(*scan, ipv.pose, occup_threshold, nRays, 0.0f /*noise*/);
 
 			// Since we'll dilate obstacle points, let's give a bit more space
 			// as compensation:
@@ -247,13 +232,11 @@ void OccupancyGridMap::simul_pre_timestep(
 			}
 			// Force move the body to the vehicle origins (to use obstacles in
 			// local coords):
-			ipv.collide_body->SetTransform(
-				b2Vec2(ipv.pose.x(), ipv.pose.y()), .0f);
+			ipv.collide_body->SetTransform(b2Vec2(ipv.pose.x(), ipv.pose.y()), .0f);
 
 			// GL:
 			// 1st usage?
-			mrpt::opengl::CPointCloud::Ptr& gl_pts =
-				gl_obs_clouds_buffer_[obj_idx];
+			mrpt::opengl::CPointCloud::Ptr& gl_pts = gl_obs_clouds_buffer_[obj_idx];
 			if (show_grid_collision_points_)
 			{
 				gl_pts = mrpt::opengl::CPointCloud::Create();
@@ -278,14 +261,13 @@ void OccupancyGridMap::simul_pre_timestep(
 
 			// Create fixtures at their place (or disable it if no obstacle has
 			// been sensed):
-			const mrpt::obs::CSinCosLookUpTableFor2DScans::TSinCosValues&
-				sincos_tab = sincos_lut_.getSinCosForScan(*scan);
+			const mrpt::obs::CSinCosLookUpTableFor2DScans::TSinCosValues& sincos_tab =
+				sincos_lut_.getSinCosForScan(*scan);
 			ipv.collide_fixtures.resize(nRays);
 			for (size_t k = 0; k < nRays; k++)
 			{
 				if (!ipv.collide_fixtures[k].fixture)
-					ipv.collide_fixtures[k].fixture =
-						ipv.collide_body->CreateFixture(&fixtureDef);
+					ipv.collide_fixtures[k].fixture = ipv.collide_body->CreateFixture(&fixtureDef);
 
 				if (!scan->getScanRangeValidity(k))
 				{
@@ -299,14 +281,12 @@ void OccupancyGridMap::simul_pre_timestep(
 					ipv.collide_fixtures[k].fixture->SetSensor(false);
 					ipv.collide_fixtures[k].fixture->GetUserData().pointer = 0;
 
-					b2PolygonShape* poly = dynamic_cast<b2PolygonShape*>(
-						ipv.collide_fixtures[k].fixture->GetShape());
+					b2PolygonShape* poly =
+						dynamic_cast<b2PolygonShape*>(ipv.collide_fixtures[k].fixture->GetShape());
 					ASSERT_(poly != nullptr);
 
-					const float llx =
-						sincos_tab.ccos[k] * scan->getScanRange(k);
-					const float lly =
-						sincos_tab.csin[k] * scan->getScanRange(k);
+					const float llx = sincos_tab.ccos[k] * scan->getScanRange(k);
+					const float lly = sincos_tab.csin[k] * scan->getScanRange(k);
 
 					const float ggx = ipv.pose.x() + llx;
 					const float ggy = ipv.pose.y() + lly;
@@ -318,13 +298,11 @@ void OccupancyGridMap::simul_pre_timestep(
 					const float ly = gy - ipv.pose.y();
 
 					poly->SetAsBox(
-						occCellSemiWidth, occCellSemiWidth, b2Vec2(lx, ly),
-						.0f /*angle*/);
+						occCellSemiWidth, occCellSemiWidth, b2Vec2(lx, ly), .0f /*angle*/);
 
 					if (gl_pts && show_grid_collision_points_)
 					{
-						gl_pts->mrpt::opengl::CPointCloud::insertPoint(
-							lx, ly, .0);
+						gl_pts->mrpt::opengl::CPointCloud::insertPoint(lx, ly, .0);
 					}
 				}
 			}

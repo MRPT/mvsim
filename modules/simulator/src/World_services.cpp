@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -28,8 +28,7 @@ using namespace mvsim;
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 
-mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(
-	const mvsim_msgs::SrvSetPose& req)
+mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(const mvsim_msgs::SrvSetPose& req)
 {
 	mvsim_msgs::SrvSetPoseAnswer ans;
 	ans.set_objectisincollision(false);
@@ -43,9 +42,8 @@ mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(
 		{
 			auto p = mrpt::poses::CPose3D(itV->second->getPose());
 			p = p + mrpt::poses::CPose3D(
-						req.pose().x(), req.pose().y(), req.pose().z(),
-						req.pose().yaw(), req.pose().pitch(),
-						req.pose().roll());
+						req.pose().x(), req.pose().y(), req.pose().z(), req.pose().yaw(),
+						req.pose().pitch(), req.pose().roll());
 			itV->second->setPose(p.asTPose());
 
 			auto* absPose = ans.mutable_objectglobalpose();
@@ -59,8 +57,8 @@ mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(
 		else
 		{
 			itV->second->setPose(
-				{req.pose().x(), req.pose().y(), req.pose().z(),
-				 req.pose().yaw(), req.pose().pitch(), req.pose().roll()});
+				{req.pose().x(), req.pose().y(), req.pose().z(), req.pose().yaw(),
+				 req.pose().pitch(), req.pose().roll()});
 		}
 		ans.set_success(true);
 		ans.set_objectisincollision(itV->second->hadCollision());
@@ -73,8 +71,7 @@ mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(
 	return ans;
 }
 
-mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(
-	const mvsim_msgs::SrvGetPose& req)
+mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(const mvsim_msgs::SrvGetPose& req)
 {
 	auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
 
@@ -104,8 +101,7 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(
 		tw->set_wy(0);
 		tw->set_wz(t.omega);
 
-		ans.set_objectisincollision(
-			copy_of_objects_had_collision_.count(sId) != 0);
+		ans.set_objectisincollision(copy_of_objects_had_collision_.count(sId) != 0);
 	}
 	else
 	{
@@ -150,14 +146,12 @@ mvsim_msgs::SrvSetControllerTwistAnswer World::srv_set_controller_twist(
 	mvsim::ControllerBaseInterface* controller = veh->getControllerInterface();
 	if (!controller)
 	{
-		ans.set_errormessage(
-			"objectId vehicle seems not to have any controller");
+		ans.set_errormessage("objectId vehicle seems not to have any controller");
 		return ans;
 	}
 
 	const mrpt::math::TTwist2D t(
-		req.twistsetpoint().vx(), req.twistsetpoint().vy(),
-		req.twistsetpoint().wz());
+		req.twistsetpoint().vx(), req.twistsetpoint().vy(), req.twistsetpoint().wz());
 
 	const bool ctrlAcceptTwist = controller->setTwistCommand(t);
 	if (!ctrlAcceptTwist)
@@ -189,22 +183,17 @@ void World::internal_advertiseServices()
 {
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 	// global services:
-	client_
-		.advertiseService<mvsim_msgs::SrvSetPose, mvsim_msgs::SrvSetPoseAnswer>(
-			"set_pose", [this](const auto& req) { return srv_set_pose(req); });
+	client_.advertiseService<mvsim_msgs::SrvSetPose, mvsim_msgs::SrvSetPoseAnswer>(
+		"set_pose", [this](const auto& req) { return srv_set_pose(req); });
 
-	client_
-		.advertiseService<mvsim_msgs::SrvGetPose, mvsim_msgs::SrvGetPoseAnswer>(
-			"get_pose", [this](const auto& req) { return srv_get_pose(req); });
+	client_.advertiseService<mvsim_msgs::SrvGetPose, mvsim_msgs::SrvGetPoseAnswer>(
+		"get_pose", [this](const auto& req) { return srv_get_pose(req); });
 
 	client_.advertiseService<
-		mvsim_msgs::SrvSetControllerTwist,
-		mvsim_msgs::SrvSetControllerTwistAnswer>(
-		"set_controller_twist",
-		[this](const auto& req) { return srv_set_controller_twist(req); });
+		mvsim_msgs::SrvSetControllerTwist, mvsim_msgs::SrvSetControllerTwistAnswer>(
+		"set_controller_twist", [this](const auto& req) { return srv_set_controller_twist(req); });
 
-	client_.advertiseService<
-		mvsim_msgs::SrvShutdown, mvsim_msgs::SrvShutdownAnswer>(
+	client_.advertiseService<mvsim_msgs::SrvShutdown, mvsim_msgs::SrvShutdownAnswer>(
 		"shutdown", [this](const auto& req) { return srv_shutdown(req); });
 
 #endif

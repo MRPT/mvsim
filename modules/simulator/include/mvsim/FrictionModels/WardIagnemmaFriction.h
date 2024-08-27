@@ -26,8 +26,7 @@ class WardIagnemmaFriction : public FrictionBase
 {
 	DECLARES_REGISTER_FRICTION(WardIagnemmaFriction)
    public:
-	WardIagnemmaFriction(
-		VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
+	WardIagnemmaFriction(VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
 
 	// See docs in base class.
 	virtual mrpt::math::TVector2D evaluate_friction(

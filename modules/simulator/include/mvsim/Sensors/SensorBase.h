@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -33,8 +33,7 @@ class SensorBase : public VisualObject, public Simulable
 
 	/** Class factory: Creates a sensor from XML description of type "<sensor
 	 * class='CLASS_NAME'>...</sensor>".  */
-	static SensorBase::Ptr factory(
-		Simulable& parent, const rapidxml::xml_node<char>* xml_node);
+	static SensorBase::Ptr factory(Simulable& parent, const rapidxml::xml_node<char>* xml_node);
 
 	/** Loads the parameters common to all sensors. Should be overriden, and
 	 * they call to this base method. */
@@ -48,14 +47,11 @@ class SensorBase : public VisualObject, public Simulable
 	}
 
 	// Get all sensors visuals API:
-	static std::shared_ptr<mrpt::opengl::CSetOfObjects>
-		GetAllSensorsOriginViz();
+	static std::shared_ptr<mrpt::opengl::CSetOfObjects> GetAllSensorsOriginViz();
 
 	static std::shared_ptr<mrpt::opengl::CSetOfObjects> GetAllSensorsFOVViz();
-	static void RegisterSensorFOVViz(
-		const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
-	static void RegisterSensorOriginViz(
-		const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
+	static void RegisterSensorFOVViz(const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
+	static void RegisterSensorOriginViz(const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
 
 	double sensor_period() const { return sensor_period_; }
 
@@ -92,12 +88,10 @@ class SensorBase : public VisualObject, public Simulable
 	std::map<std::string, std::string> varValues_;
 
 	bool parseSensorPublish(
-		const rapidxml::xml_node<char>* node,
-		const std::map<std::string, std::string>& varValues);
+		const rapidxml::xml_node<char>* node, const std::map<std::string, std::string>& varValues);
 
 	void reportNewObservation(
-		const std::shared_ptr<mrpt::obs::CObservation>& obs,
-		const TSimulContext& context);
+		const std::shared_ptr<mrpt::obs::CObservation>& obs, const TSimulContext& context);
 
 	void reportNewObservation_lidar_2d(
 		const std::shared_ptr<mrpt::obs::CObservation2DRangeScan>& obs,
@@ -110,16 +104,13 @@ class SensorBase : public VisualObject, public Simulable
 using TListSensors = std::vector<SensorBase::Ptr>;
 
 // Class factory:
-using TClassFactory_sensors =
-	ClassFactory<SensorBase, Simulable&, const rapidxml::xml_node<char>*>;
+using TClassFactory_sensors = ClassFactory<SensorBase, Simulable&, const rapidxml::xml_node<char>*>;
 
 extern TClassFactory_sensors classFactory_sensors;
 
 #define DECLARES_REGISTER_SENSOR(CLASS_NAME) \
-	DECLARES_REGISTER_CLASS2(                \
-		CLASS_NAME, SensorBase, Simulable&, const rapidxml::xml_node<char>*)
+	DECLARES_REGISTER_CLASS2(CLASS_NAME, SensorBase, Simulable&, const rapidxml::xml_node<char>*)
 
 #define REGISTER_SENSOR(TEXTUAL_NAME, CLASS_NAME) \
-	REGISTER_CLASS2(                              \
-		TClassFactory_sensors, classFactory_sensors, TEXTUAL_NAME, CLASS_NAME)
+	REGISTER_CLASS2(TClassFactory_sensors, classFactory_sensors, TEXTUAL_NAME, CLASS_NAME)
 }  // namespace mvsim

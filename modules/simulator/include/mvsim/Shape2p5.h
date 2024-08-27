@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -33,8 +33,7 @@ class Shape2p5
 	Shape2p5() = default;
 
 	void buildInit(
-		const mrpt::math::TPoint2Df& bbMin, const mrpt::math::TPoint2Df& bbMax,
-		int numCells = 100);
+		const mrpt::math::TPoint2Df& bbMin, const mrpt::math::TPoint2Df& bbMax, int numCells = 100);
 	void buildAddPoint(const mrpt::math::TPoint3Df& pt);
 	void buildAddTriangle(const mrpt::opengl::TTriangle& t);
 
@@ -44,9 +43,7 @@ class Shape2p5
 
 	void mergeWith(const Shape2p5& s);
 
-	void setShapeManual(
-		const mrpt::math::TPolygon2D& contour, const float zMin,
-		const float zMax);
+	void setShapeManual(const mrpt::math::TPolygon2D& contour, const float zMin, const float zMax);
 
 	float zMin() const { return zMin_; }
 	float zMax() const { return zMax_; }
@@ -65,8 +62,7 @@ class Shape2p5
 	   public:
 		template <typename... Args>
 		SimpleOccGrid(Args&&... args)
-			: mrpt::containers::CDynamicGrid<uint8_t>(
-				  std::forward<Args>(args)...)
+			: mrpt::containers::CDynamicGrid<uint8_t>(std::forward<Args>(args)...)
 		{
 		}
 
@@ -82,8 +78,7 @@ class Shape2p5
 	void internalGridFilterSpurious() const;
 	void internalGridFloodFill() const;
 	mrpt::math::TPolygon2D internalGridContour() const;
-	mrpt::math::TPolygon2D internalPrunePolygon(
-		const mrpt::math::TPolygon2D& poly) const;
+	mrpt::math::TPolygon2D internalPrunePolygon(const mrpt::math::TPolygon2D& poly) const;
 
 	struct RemovalCandidate
 	{
@@ -95,8 +90,7 @@ class Shape2p5
 		size_t i, const mrpt::math::TPolygon2D& p, bool allowApproxEdges) const;
 
 	void debugSaveGridTo3DSceneFile(
-		const mrpt::math::TPolygon2D& rawGridContour,
-		const std::string& debugStr = {}) const;
+		const mrpt::math::TPolygon2D& rawGridContour, const std::string& debugStr = {}) const;
 };
 
 }  // namespace mvsim

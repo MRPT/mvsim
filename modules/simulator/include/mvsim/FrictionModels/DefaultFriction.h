@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -24,8 +24,7 @@ class DefaultFriction : public FrictionBase
 {
 	DECLARES_REGISTER_FRICTION(DefaultFriction)
    public:
-	DefaultFriction(
-		VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
+	DefaultFriction(VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
 
 	// See docs in base class.
 	virtual mrpt::math::TVector2D evaluate_friction(

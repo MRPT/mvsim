@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -52,11 +52,11 @@ void shape_test_merge()
 	const float radius = 0.5f, L = 2.0f;
 	auto glCyl = mrpt::opengl::CCylinder::Create(radius, radius, L);
 
-	const Shape2p5 s1 = csc.get(
-		*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(-0.15, 0, 0), 1.0f);
+	const Shape2p5 s1 =
+		csc.get(*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(-0.15, 0, 0), 1.0f);
 
-	const Shape2p5 s2 = csc.get(
-		*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(0.15, 0, 0), 1.0f);
+	const Shape2p5 s2 =
+		csc.get(*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(0.15, 0, 0), 1.0f);
 
 	Shape2p5 s = s1;
 	s.mergeWith(s2);
@@ -71,8 +71,7 @@ void shape_test_simplecamera()
 	auto& csc = CollisionShapeCache::Instance();
 
 	auto glModel = mrpt::opengl::CAssimpModel::Create();
-	glModel->loadScene(mrpt::system::pathJoin(
-		{MVSIM_TEST_DIR, "../models/simple_camera.dae"}));
+	glModel->loadScene(mrpt::system::pathJoin({MVSIM_TEST_DIR, "../models/simple_camera.dae"}));
 
 	const Shape2p5 shape = csc.get(*glModel, 0, 1.0, {}, 1.0f);
 

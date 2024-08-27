@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -42,13 +42,10 @@ class ClassFactory
 		auto it = classes_.find(class_name);
 		if (it == classes_.end())
 			throw std::runtime_error(
-				(std::string("ClassFactory: Unknown class ") + class_name)
-					.c_str());
+				(std::string("ClassFactory: Unknown class ") + class_name).c_str());
 		if (!it->second.ptr_factory1)
 			throw std::runtime_error(
-				(std::string(
-					 "ClassFactory: factory(1) pointer is nullptr for ") +
-				 class_name)
+				(std::string("ClassFactory: factory(1) pointer is nullptr for ") + class_name)
 					.c_str());
 		return Ptr((*it->second.ptr_factory1)(a1));
 	}
@@ -57,13 +54,10 @@ class ClassFactory
 		auto it = classes_.find(class_name);
 		if (it == classes_.end())
 			throw std::runtime_error(
-				(std::string("ClassFactory: Unknown class ") + class_name)
-					.c_str());
+				(std::string("ClassFactory: Unknown class ") + class_name).c_str());
 		if (!it->second.ptr_factory2)
 			throw std::runtime_error(
-				(std::string(
-					 "ClassFactory: factory(2) pointer is nullptr for ") +
-				 class_name)
+				(std::string("ClassFactory: factory(2) pointer is nullptr for ") + class_name)
 					.c_str());
 		return Ptr((*it->second.ptr_factory2)(a1, a2));
 	}
@@ -77,10 +71,7 @@ class ClassFactory
 	static BASE_CLASS* Create(ARG1 a1) { return new CLASS_NAME(a1); }
 #define DECLARES_REGISTER_CLASS2(CLASS_NAME, BASE_CLASS, ARG1, ARG2) \
    public:                                                           \
-	static BASE_CLASS* Create(ARG1 a1, ARG2 a2)                      \
-	{                                                                \
-		return new CLASS_NAME(a1, a2);                               \
-	}
+	static BASE_CLASS* Create(ARG1 a1, ARG2 a2) { return new CLASS_NAME(a1, a2); }
 
 #define REGISTER_CLASS1(FACTORY_TYPE, FACTORY_OBJ, TEXTUAL_NAME, CLASS_NAME) \
 	{                                                                        \

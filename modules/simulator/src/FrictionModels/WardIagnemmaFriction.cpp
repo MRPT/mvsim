@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -24,8 +24,7 @@ WardIagnemmaFriction::WardIagnemmaFriction(
 {
 	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
-		throw std::runtime_error(
-			"<friction>...</friction> XML node was expected!!");
+		throw std::runtime_error("<friction>...</friction> XML node was expected!!");
 
 	if (node)
 	{
@@ -38,8 +37,8 @@ WardIagnemmaFriction::WardIagnemmaFriction(
 		params["R2"] = TParamEntry("%lf", &R2_);
 		// Parse XML params:
 		parse_xmlnode_children_as_param(
-			*node, params, world_->user_defined_variables(),
-			"WardIagnemmaFriction", my_vehicle.parent() /*for logger*/);
+			*node, params, world_->user_defined_variables(), "WardIagnemmaFriction",
+			my_vehicle.parent() /*for logger*/);
 	}
 }
 
@@ -67,8 +66,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 		// Impulse required to step the lateral slippage:
 		wheel_lat_friction = -vel_w.y * partial_mass / input.context.dt;
 
-		wheel_lat_friction =
-			b2Clamp(wheel_lat_friction, -max_friction, max_friction);
+		wheel_lat_friction = b2Clamp(wheel_lat_friction, -max_friction, max_friction);
 	}
 
 	// 2) Longitudinal friction (decoupled sub-problem)
@@ -82,10 +80,8 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// required wheel \omega:case '4':
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 	const double lon_constraint_desired_wheel_w = vel_w.x / R;
-	const double desired_wheel_w_impulse =
-		(lon_constraint_desired_wheel_w - input.wheel.getW());
-	const double desired_wheel_alpha =
-		desired_wheel_w_impulse / input.context.dt;
+	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w - input.wheel.getW());
+	const double desired_wheel_alpha = desired_wheel_w_impulse / input.context.dt;
 
 	// (eq. 3)==> Find out F_r
 	// Iyy_w * \Delta\omega_w = dt*\tau-  R*dt*Fri    -C_damp * \omega_w * dt
@@ -97,9 +93,8 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 
 	// Actually, Ward-Iagnemma rolling resistance is here (longitudal one):
 
-	const double F_rr =
-		-sign(vel_w.x) * partial_mass * gravity *
-		(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
+	const double F_rr = -sign(vel_w.x) * partial_mass * gravity *
+						(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
 
 	if (!logger_.expired())
 	{
@@ -108,29 +103,25 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 
 	const double I_yy = input.wheel.Iyy;
 	//                                  There are torques this is force   v
-	double F_friction_lon = (input.motorTorque - I_yy * desired_wheel_alpha -
-							 C_damping * input.wheel.getW()) /
-								R +
-							F_rr;
+	double F_friction_lon =
+		(input.motorTorque - I_yy * desired_wheel_alpha - C_damping * input.wheel.getW()) / R +
+		F_rr;
 
 	// Slippage: The friction with the ground is not infinite:
 	F_friction_lon = b2Clamp(F_friction_lon, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
-	const double actual_wheel_alpha = (input.motorTorque - R * F_friction_lon -
-									   C_damping * input.wheel.getW()) /
-									  I_yy;
+	const double actual_wheel_alpha =
+		(input.motorTorque - R * F_friction_lon - C_damping * input.wheel.getW()) / I_yy;
 
 	// Apply impulse to wheel's spinning:
-	input.wheel.setW(
-		input.wheel.getW() + actual_wheel_alpha * input.context.dt);
+	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
 
 	wheel_long_friction = F_friction_lon;
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
-	const mrpt::math::TPoint2D result_force_wrt_wheel(
-		wheel_long_friction, wheel_lat_friction);
+	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
 
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;

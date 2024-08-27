@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -30,8 +30,7 @@ static std::atomic_int32_t g_uniqueCustomVisualId = 0;
 double VisualObject::GeometryEpsilon = 1e-3;
 
 VisualObject::VisualObject(
-	World* parent, bool insertCustomVizIntoViz,
-	bool insertCustomVizIntoPhysical)
+	World* parent, bool insertCustomVizIntoViz, bool insertCustomVizIntoPhysical)
 	: world_(parent),
 	  insertCustomVizIntoViz_(insertCustomVizIntoViz),
 	  insertCustomVizIntoPhysical_(insertCustomVizIntoPhysical)
@@ -54,8 +53,7 @@ void VisualObject::guiUpdate(
 	// If "viz" does not have a value, it's because we are already inside a
 	// setPose() change event, so my caller already holds the mutex and we don't
 	// need/can't acquire it again:
-	const auto objectPose =
-		viz.has_value() ? meSim->getPose() : meSim->getPoseNoLock();
+	const auto objectPose = viz.has_value() ? meSim->getPose() : meSim->getPoseNoLock();
 
 	if (glCustomVisual_ && viz.has_value() && physical.has_value())
 	{
@@ -71,8 +69,7 @@ void VisualObject::guiUpdate(
 			// Add to the 3D scene:
 			if (insertCustomVizIntoViz_) viz->get().insert(glCustomVisual_);
 
-			if (insertCustomVizIntoPhysical_)
-				physical->get().insert(glCustomVisual_);
+			if (insertCustomVizIntoPhysical_) physical->get().insert(glCustomVisual_);
 		}
 
 		// Update pose:
@@ -158,8 +155,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
 	MRPT_TRY_START
 
 	bool any = false;
-	for (auto n = rootNode.first_node("visual"); n;
-		 n = n->next_sibling("visual"))
+	for (auto n = rootNode.first_node("visual"); n; n = n->next_sibling("visual"))
 	{
 		bool hasViz = implParseVisual(*n);
 		any = any || hasViz;
@@ -235,8 +231,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 	// Add the 3D model as custom viz:
 	addCustomVisualization(
-		glModel, mrpt::poses::CPose3D(modelPose), modelScale, objectName,
-		modelURI);
+		glModel, mrpt::poses::CPose3D(modelPose), modelScale, objectName, modelURI);
 
 	return true;  // yes, we have a custom viz model
 
@@ -262,10 +257,9 @@ bool VisualObject::customVisualVisible() const
 }
 
 void VisualObject::addCustomVisualization(
-	const mrpt::opengl::CRenderizable::Ptr& glModel,
-	const mrpt::poses::CPose3D& modelPose, const float modelScale,
-	const std::string& modelName, const std::optional<std::string>& modelURI,
-	const bool initialShowBoundingBox)
+	const mrpt::opengl::CRenderizable::Ptr& glModel, const mrpt::poses::CPose3D& modelPose,
+	const float modelScale, const std::string& modelName,
+	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox)
 {
 	ASSERT_(glModel);
 
@@ -288,8 +282,7 @@ void VisualObject::addCustomVisualization(
 #endif
 
 	// Calculate its convex hull:
-	const auto shape =
-		chc.get(*glModel, zMin, zMax, modelPose, modelScale, modelURI);
+	const auto shape = chc.get(*glModel, zMin, zMax, modelPose, modelScale, modelURI);
 
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 

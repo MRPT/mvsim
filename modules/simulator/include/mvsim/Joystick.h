@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -113,8 +113,7 @@ class Joystick
 	 *
 	 * \sa getJoystickPosition
 	 */
-	void setLimits(
-		const std::vector<int>& minPerAxis, const std::vector<int>& maxPerAxis);
+	void setLimits(const std::vector<int>& minPerAxis, const std::vector<int>& maxPerAxis);
 
 };	// End of class def.
 

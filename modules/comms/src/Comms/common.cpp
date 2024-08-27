@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -17,8 +17,7 @@
 
 using namespace mvsim;
 
-void mvsim::sendMessage(
-	const google::protobuf::MessageLite& m, zmq::socket_t& socket)
+void mvsim::sendMessage(const google::protobuf::MessageLite& m, zmq::socket_t& socket)
 {
 	mrpt::io::CMemoryStream buf;
 	auto arch = mrpt::serialization::archiveFrom(buf);
@@ -34,8 +33,7 @@ void mvsim::sendMessage(
 #endif
 }
 
-std::tuple<std::string, std::string> mvsim::internal::parseMessageToParts(
-	const zmq::message_t& msg)
+std::tuple<std::string, std::string> mvsim::internal::parseMessageToParts(const zmq::message_t& msg)
 {
 	mrpt::io::CMemoryStream buf;
 	buf.assignMemoryNotOwn(msg.data(), msg.size());
@@ -47,8 +45,7 @@ std::tuple<std::string, std::string> mvsim::internal::parseMessageToParts(
 	return {typeName, serializedData};
 }
 
-void mvsim::parseMessage(
-	const zmq::message_t& msg, google::protobuf::MessageLite& out)
+void mvsim::parseMessage(const zmq::message_t& msg, google::protobuf::MessageLite& out)
 {
 	const auto [typeName, serializedData] = internal::parseMessageToParts(msg);
 

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -29,9 +29,8 @@ struct WallProperties
 };
 
 static Block::Ptr create_wall_segment(
-	World* parent, const mrpt::math::TPoint3D& rawEnd1,
-	const mrpt::math::TPoint3D& rawEnd2, const WallProperties& wp,
-	mrpt::maps::CSimplePointsMap& allPts)
+	World* parent, const mrpt::math::TPoint3D& rawEnd1, const mrpt::math::TPoint3D& rawEnd2,
+	const WallProperties& wp, mrpt::maps::CSimplePointsMap& allPts)
 {
 	Block::Ptr b = std::make_shared<Block>(parent);
 
@@ -40,8 +39,7 @@ static Block::Ptr create_wall_segment(
 		b->setName(mrpt::format("wall_%04i", ++cnt));
 	}
 
-	float pt1Dist = std::numeric_limits<float>::max(),
-		  pt2Dist = std::numeric_limits<float>::max();
+	float pt1Dist = std::numeric_limits<float>::max(), pt2Dist = std::numeric_limits<float>::max();
 
 	if (!allPts.empty())
 	{
@@ -168,12 +166,9 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 		// Load wall segments from "<shape>" tag.
 		mrpt::math::TPolygon2D segments;
 
-		mvsim::parse_xmlnode_shape(
-			*xml_shape, segments, "[World::process_load_walls]");
+		mvsim::parse_xmlnode_shape(*xml_shape, segments, "[World::process_load_walls]");
 
-		MRPT_LOG_DEBUG_STREAM(
-			"Walls loaded from <shape> tag, " << segments.size()
-											  << " segments.");
+		MRPT_LOG_DEBUG_STREAM("Walls loaded from <shape> tag, " << segments.size() << " segments.");
 
 		// Transform them:
 		tfPts.reserve(segments.size());
@@ -184,19 +179,16 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 	{
 		// Load wall segments from external file.
 		ASSERT_(!wallModelFileName.empty());
-		const std::string localFileName =
-			xmlPathToActualPath(wallModelFileName);
+		const std::string localFileName = xmlPathToActualPath(wallModelFileName);
 		ASSERT_FILE_EXISTS_(localFileName);
 
-		MRPT_LOG_DEBUG_STREAM(
-			"Loading walls definition model from: " << localFileName);
+		MRPT_LOG_DEBUG_STREAM("Loading walls definition model from: " << localFileName);
 
 		auto glModel = mrpt::opengl::CAssimpModel::Create();
 		glModel->loadScene(localFileName);
 
 		const auto& points = glModel->shaderWireframeVertexPointBuffer();
-		MRPT_LOG_DEBUG_STREAM(
-			"Walls loaded from model file, " << points.size() << " segments.");
+		MRPT_LOG_DEBUG_STREAM("Walls loaded from model file, " << points.size() << " segments.");
 
 		// Transform them:
 		tfPts.reserve(points.size());

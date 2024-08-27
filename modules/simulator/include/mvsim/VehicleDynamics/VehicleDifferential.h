@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -42,8 +42,7 @@ class DynamicsDifferential : public VehicleBase
 	struct ConfigPerWheel
 	{
 		ConfigPerWheel() = default;
-		ConfigPerWheel(
-			const std::string& _name, const mrpt::math::TPoint2D& _pos)
+		ConfigPerWheel(const std::string& _name, const mrpt::math::TPoint2D& _pos)
 			: name(_name), pos(_pos)
 		{
 		}
@@ -61,8 +60,7 @@ class DynamicsDifferential : public VehicleBase
 	{
 	}
 
-	DynamicsDifferential(
-		World* parent, const std::vector<ConfigPerWheel>& cfgPerWheel);
+	DynamicsDifferential(World* parent, const std::vector<ConfigPerWheel>& cfgPerWheel);
 
 	/** @name Controllers
 		@{ */
@@ -99,8 +97,7 @@ class DynamicsDifferential : public VehicleBase
 		virtual void control_step(
 			const DynamicsDifferential::TControllerInput& ci,
 			DynamicsDifferential::TControllerOutput& co) override;
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 	};
 
 	/** PID controller that controls the vehicle twist: linear & angular
@@ -116,8 +113,7 @@ class DynamicsDifferential : public VehicleBase
 			DynamicsDifferential::TControllerOutput& co) override;
 
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		/// PID controller parameters
 		double KP = 10, KI = 0, KD = 0;
@@ -167,8 +163,7 @@ class DynamicsDifferential : public VehicleBase
 			DynamicsDifferential::TControllerOutput& co) override;
 		void on_post_step(const TSimulContext& context) override;
 
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		// See base docs.
 		bool setTwistCommand(const mrpt::math::TTwist2D& t) override
@@ -199,10 +194,7 @@ class DynamicsDifferential : public VehicleBase
 
 	const ControllerBase::Ptr& getController() const { return controller_; }
 	ControllerBase::Ptr& getController() { return controller_; }
-	virtual ControllerBaseInterface* getControllerInterface() override
-	{
-		return controller_.get();
-	}
+	virtual ControllerBaseInterface* getControllerInterface() override { return controller_.get(); }
 
 	/** @} */  // end controllers
 
@@ -210,13 +202,10 @@ class DynamicsDifferential : public VehicleBase
 
    protected:
 	// See base class docs
-	virtual void dynamics_load_params_from_xml(
-		const rapidxml::xml_node<char>* xml_node) override;
+	virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node) override;
 	// See base class docs
-	virtual std::vector<double> invoke_motor_controllers(
-		const TSimulContext& context) override;
-	virtual void invoke_motor_controllers_post_step(
-		const TSimulContext& context) override;
+	virtual std::vector<double> invoke_motor_controllers(const TSimulContext& context) override;
+	virtual void invoke_motor_controllers_post_step(const TSimulContext& context) override;
 
 	/// Defined at ctor time:
 	const std::vector<ConfigPerWheel> configPerWheel_;

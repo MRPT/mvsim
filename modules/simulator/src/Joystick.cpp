@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -88,9 +88,7 @@ int Joystick::getJoysticksCount()
 
 	do
 	{
-		if (-1 !=
-			(joy_fd = open(
-				 mrpt::format("/dev/input/js%i", nJoys).c_str(), O_RDONLY)))
+		if (-1 != (joy_fd = open(mrpt::format("/dev/input/js%i", nJoys).c_str(), O_RDONLY)))
 		{
 			nJoys++;
 			close(joy_fd);
@@ -161,8 +159,7 @@ bool Joystick::getJoystickPosition(int nJoy, State& output)
 		if (m_joy_fd != -1) close(m_joy_fd);
 
 		// Go, try open joystick:
-		if ((m_joy_fd = open(
-				 mrpt::format("/dev/input/js%i", nJoy).c_str(), O_RDONLY)) < 0)
+		if ((m_joy_fd = open(mrpt::format("/dev/input/js%i", nJoy).c_str(), O_RDONLY)) < 0)
 			return false;
 
 		// Perfect!
@@ -174,8 +171,7 @@ bool Joystick::getJoystickPosition(int nJoy, State& output)
 
 	struct js_event js;
 
-	while (read(m_joy_fd, &js, sizeof(struct js_event)) ==
-		   sizeof(struct js_event))
+	while (read(m_joy_fd, &js, sizeof(struct js_event)) == sizeof(struct js_event))
 	{
 		// js.number: Button number
 		const size_t jsNum = static_cast<size_t>(js.number);
@@ -183,8 +179,7 @@ bool Joystick::getJoystickPosition(int nJoy, State& output)
 		// Button?
 		if (js.type & JS_EVENT_BUTTON)
 		{
-			if (m_joystate_btns.size() < jsNum + 1)
-				m_joystate_btns.resize(jsNum + 1);
+			if (m_joystate_btns.size() < jsNum + 1) m_joystate_btns.resize(jsNum + 1);
 
 			m_joystate_btns[jsNum] = (js.value != 0);
 		}
@@ -192,8 +187,7 @@ bool Joystick::getJoystickPosition(int nJoy, State& output)
 		// Axes?
 		if (js.type & JS_EVENT_AXIS)
 		{
-			if (m_joystate_axes.size() < jsNum + 1)
-				m_joystate_axes.resize(jsNum + 1);
+			if (m_joystate_axes.size() < jsNum + 1) m_joystate_axes.resize(jsNum + 1);
 
 			m_joystate_axes[jsNum] = static_cast<int>(js.value);
 		}
@@ -218,8 +212,7 @@ bool Joystick::getJoystickPosition(int nJoy, State& output)
 	{
 		output.axes_raw[i] = m_joystate_axes[i];
 
-		const int calib_min =
-			m_minPerAxis.size() > i ? m_minPerAxis[i] : -32767;
+		const int calib_min = m_minPerAxis.size() > i ? m_minPerAxis[i] : -32767;
 		const int calib_max = m_maxPerAxis.size() > i ? m_maxPerAxis[i] : 32767;
 
 		output.axes[i] = -1.0f + 2.0f * (m_joystate_axes[i] - calib_min) /
@@ -234,8 +227,7 @@ bool Joystick::getJoystickPosition(int nJoy, State& output)
 	MRPT_END
 }
 
-void Joystick::setLimits(
-	const std::vector<int>& minPerAxis, const std::vector<int>& maxPerAxis)
+void Joystick::setLimits(const std::vector<int>& minPerAxis, const std::vector<int>& maxPerAxis)
 {
 	m_minPerAxis = minPerAxis;
 	m_maxPerAxis = maxPerAxis;

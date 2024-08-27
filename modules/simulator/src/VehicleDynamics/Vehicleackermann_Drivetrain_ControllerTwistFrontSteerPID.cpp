@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -14,8 +14,8 @@
 using namespace mvsim;
 using namespace std;
 
-DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
-	ControllerTwistFrontSteerPID(DynamicsAckermannDrivetrain& veh)
+DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::ControllerTwistFrontSteerPID(
+	DynamicsAckermannDrivetrain& veh)
 	: ControllerBase(veh),
 	  setpoint_lin_speed(0),
 	  setpoint_ang_speed(0),
@@ -25,8 +25,7 @@ DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
 	  max_torque(400.0)
 {
 	// Get distance between wheels:
-	dist_fWheels_ =
-		veh_.wheels_info_[WHEEL_FL].y - veh_.wheels_info_[WHEEL_FR].y;
+	dist_fWheels_ = veh_.wheels_info_[WHEEL_FL].y - veh_.wheels_info_[WHEEL_FR].y;
 	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
 
 	ASSERT_(dist_fWheels_ > 0.0);
@@ -77,8 +76,8 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(
 	parse_xmlnode_children_as_param(node, params);
 }
 
-void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::
-	teleop_interface(const TeleopInput& in, TeleopOutput& out)
+void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::teleop_interface(
+	const TeleopInput& in, TeleopOutput& out)
 {
 	ControllerBase::teleop_interface(in, out);
 

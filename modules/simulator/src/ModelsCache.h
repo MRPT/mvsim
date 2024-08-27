@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -24,8 +24,7 @@ class ModelsCache
 		std::string modelCull = "NONE";
 	};
 
-	mrpt::opengl::CAssimpModel::Ptr get(
-		const std::string& url, const Options& options);
+	mrpt::opengl::CAssimpModel::Ptr get(const std::string& url, const Options& options);
 
 	void clear() { cache.clear(); }
 

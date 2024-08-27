@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -11,8 +11,7 @@
 
 using namespace mvsim;
 
-DynamicsDifferential::ControllerTwistIdeal::ControllerTwistIdeal(
-	DynamicsDifferential& veh)
+DynamicsDifferential::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsDifferential& veh)
 	: ControllerBase(veh)
 {
 	// Get distance between wheels:
@@ -113,6 +112,5 @@ void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
 	}
 
 	out.append_gui_lines += mrpt::format(
-		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx,
-		180.0 / M_PI * setpoint_.omega);
+		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx, 180.0 / M_PI * setpoint_.omega);
 }

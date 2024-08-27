@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -32,8 +32,7 @@ int commandTopic()
 {
 	const auto& lstCmds = cli->argCmd.getValue();
 	if (cli->argHelp.isSet()) return printCommandsTopic(false);
-	if (lstCmds.size() != 2 && lstCmds.size() != 3)
-		return printCommandsTopic(true);
+	if (lstCmds.size() != 2 && lstCmds.size() != 3) return printCommandsTopic(true);
 
 	// Take second unlabeled argument:
 	const std::string subcommand = lstCmds.at(1);
@@ -51,9 +50,8 @@ int topicList()
 {
 	mvsim::Client client;
 
-	client.setMinLoggingLevel(
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			cli->argVerbosity.getValue()));
+	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+		cli->argVerbosity.getValue()));
 
 	std::cout << "# Connecting to server...\n";
 	client.connect();
@@ -76,8 +74,7 @@ int topicList()
 			for (size_t i = 0; i < n.endpoints.size(); i++)
 			{
 				std::cout << "    - endpoint: \"" << n.endpoints[i] << "\"\n"
-						  << "    - publisherNode: \"" << n.publishers[i]
-						  << "\"\n";
+						  << "    - publisherNode: \"" << n.publishers[i] << "\"\n";
 			}
 		}
 		else
@@ -115,8 +112,7 @@ static void echo_ObservationLidar2D(const std::string& data)
 
 static void callbackSubscribeTopicGeneric(const zmq::message_t& msg)
 {
-	const auto [typeName, serializedData] =
-		mvsim::internal::parseMessageToParts(msg);
+	const auto [typeName, serializedData] = mvsim::internal::parseMessageToParts(msg);
 	std::cout << "[" << mrpt::system::dateTimeLocalToString(mrpt::Clock::now())
 			  << "] Received data : \n";
 	std::cout << " - typeName: " << typeName << "\n";
@@ -134,9 +130,8 @@ int topicEcho()
 {
 	mvsim::Client client;
 
-	client.setMinLoggingLevel(
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			cli->argVerbosity.getValue()));
+	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+		cli->argVerbosity.getValue()));
 
 	const auto& lstCmds = cli->argCmd.getValue();
 	if (lstCmds.size() != 3) return printCommandsTopic(true);
@@ -147,8 +142,7 @@ int topicEcho()
 	client.connect();
 	std::cout << "# Connected.\n";
 
-	std::cout << "# Subscribing to topic '" << topicName
-			  << "'. Press CTRL+C to stop.\n";
+	std::cout << "# Subscribing to topic '" << topicName << "'. Press CTRL+C to stop.\n";
 	client.subscribe_topic_raw(topicName, &callbackSubscribeTopicGeneric);
 
 	// loop until user does a CTRL+C
@@ -163,9 +157,8 @@ int topicHz()
 {
 	mvsim::Client client;
 
-	client.setMinLoggingLevel(
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			cli->argVerbosity.getValue()));
+	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+		cli->argVerbosity.getValue()));
 
 	const auto& lstCmds = cli->argCmd.getValue();
 	if (lstCmds.size() != 3) return printCommandsTopic(true);
@@ -178,23 +171,26 @@ int topicHz()
 
 	const double WAIT_SECONDS = 5.0;
 
-	std::cout << "# Subscribing to topic '" << topicName
-			  << "'. Will listen for " << WAIT_SECONDS << " seconds...\n";
+	std::cout << "# Subscribing to topic '" << topicName << "'. Will listen for " << WAIT_SECONDS
+			  << " seconds...\n";
 
 	int numMsgs = 0;
 	std::optional<double> lastMsgTim;
 	std::vector<double> measuredPeriods;
 
-	client.subscribe_topic_raw(topicName, [&](const zmq::message_t&) {
-		numMsgs++;
-		const double t = mrpt::Clock::nowDouble();
-		if (lastMsgTim)
+	client.subscribe_topic_raw(
+		topicName,
+		[&](const zmq::message_t&)
 		{
-			const double dt = t - lastMsgTim.value();
-			measuredPeriods.push_back(dt);
-		}
-		lastMsgTim = t;
-	});
+			numMsgs++;
+			const double t = mrpt::Clock::nowDouble();
+			if (lastMsgTim)
+			{
+				const double dt = t - lastMsgTim.value();
+				measuredPeriods.push_back(dt);
+			}
+			lastMsgTim = t;
+		});
 
 	std::this_thread::sleep_for(
 		std::chrono::milliseconds(static_cast<size_t>(WAIT_SECONDS * 1000)));
@@ -210,9 +206,8 @@ int topicHz()
 		double periodMean = 0, periodStd = 0;
 		mrpt::math::meanAndStd(measuredPeriods, periodMean, periodStd);
 
-		std::cout << "- MeanPeriod: " << periodMean
-				  << " # [sec] 1/T = " << 1.0 / periodMean << " Hz"
-				  << std::endl;
+		std::cout << "- MeanPeriod: " << periodMean << " # [sec] 1/T = " << 1.0 / periodMean
+				  << " Hz" << std::endl;
 
 		std::cout << "- PeriodStdDev: " << periodStd << " # [sec]" << std::endl;
 
@@ -226,8 +221,7 @@ int topicHz()
 		double tMean, tLow, tHigh;
 
 		mrpt::math::CVectorDouble x;
-		for (size_t i = 0; i < measuredPeriods.size(); i++)
-			x.push_back(measuredPeriods[i]);
+		for (size_t i = 0; i < measuredPeriods.size(); i++) x.push_back(measuredPeriods[i]);
 
 		mrpt::math::confidenceIntervals(x, tMean, tLow, tHigh, conf, 100);
 

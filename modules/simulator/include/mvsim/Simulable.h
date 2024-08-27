@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -136,15 +136,13 @@ class Simulable
 	 */
 	b2Body* b2dBody_ = nullptr;
 
-	bool parseSimulable(
-		const JointXMLnode<>& node, const ParseSimulableParams& p = {});
+	bool parseSimulable(const JointXMLnode<>& node, const ParseSimulableParams& p = {});
 
 	void internalHandlePublish(const TSimulContext& context);
 
 	/** Will be called after the global pose of the object has changed due to a
 	 * direct call to setPose() */
-	virtual void notifySimulableSetPose(
-		[[maybe_unused]] const mrpt::math::TPose3D& newPose)
+	virtual void notifySimulableSetPose([[maybe_unused]] const mrpt::math::TPose3D& newPose)
 	{
 		// Default: do nothing
 	}

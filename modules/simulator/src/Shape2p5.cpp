@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -42,8 +42,7 @@ constexpr uint8_t CELL_VISITED = 0x40;
 
 double Shape2p5::volume() const
 {
-	return std::abs(mrpt::math::signedArea(getContour())) *
-		   std::abs(zMin_ - zMax_);
+	return std::abs(mrpt::math::signedArea(getContour())) * std::abs(zMin_ - zMax_);
 }
 
 void Shape2p5::mergeWith(const Shape2p5& s)
@@ -105,8 +104,7 @@ static auto glDebugTriangles = mrpt::opengl::CSetOfTriangles::Create();
 #endif
 
 void Shape2p5::buildInit(
-	const mrpt::math::TPoint2Df& bbMin, const mrpt::math::TPoint2Df& bbMax,
-	int numCells)
+	const mrpt::math::TPoint2Df& bbMin, const mrpt::math::TPoint2Df& bbMax, int numCells)
 {
 	contour_.reset();  // start from scratch
 
@@ -211,8 +209,7 @@ void Shape2p5::computeShape() const
 		static int cnt = 0;
 		mrpt::opengl::COpenGLScene scene;
 		scene.insert(glDebugTriangles);
-		scene.saveToFile(
-			mrpt::format("debug_shape2p5_triangles_%04i.3Dscene", cnt++));
+		scene.saveToFile(mrpt::format("debug_shape2p5_triangles_%04i.3Dscene", cnt++));
 	}
 #endif
 }
@@ -241,15 +238,14 @@ void Shape2p5::internalGridFilterSpurious() const
 			if (*thisCell != CELL_OCCUPIED) continue;
 			// it's occupied:
 			// reset to unknown if no other neighbors is occupied:
-			bool anyNN =
-				(*grid_->cellByIndex(cx - 1, cy - 1) == CELL_OCCUPIED) ||
-				(*grid_->cellByIndex(cx - 1, cy + 0) == CELL_OCCUPIED) ||
-				(*grid_->cellByIndex(cx - 1, cy + 1) == CELL_OCCUPIED) ||
-				(*grid_->cellByIndex(cx + 0, cy - 1) == CELL_OCCUPIED) ||
-				(*grid_->cellByIndex(cx + 0, cy + 1) == CELL_OCCUPIED) ||
-				(*grid_->cellByIndex(cx + 1, cy - 1) == CELL_OCCUPIED) ||
-				(*grid_->cellByIndex(cx + 1, cy + 0) == CELL_OCCUPIED) ||
-				(*grid_->cellByIndex(cx + 1, cy + 1) == CELL_OCCUPIED);
+			bool anyNN = (*grid_->cellByIndex(cx - 1, cy - 1) == CELL_OCCUPIED) ||
+						 (*grid_->cellByIndex(cx - 1, cy + 0) == CELL_OCCUPIED) ||
+						 (*grid_->cellByIndex(cx - 1, cy + 1) == CELL_OCCUPIED) ||
+						 (*grid_->cellByIndex(cx + 0, cy - 1) == CELL_OCCUPIED) ||
+						 (*grid_->cellByIndex(cx + 0, cy + 1) == CELL_OCCUPIED) ||
+						 (*grid_->cellByIndex(cx + 1, cy - 1) == CELL_OCCUPIED) ||
+						 (*grid_->cellByIndex(cx + 1, cy + 0) == CELL_OCCUPIED) ||
+						 (*grid_->cellByIndex(cx + 1, cy + 1) == CELL_OCCUPIED);
 
 			if (!anyNN) *thisCell = CELL_UNDEFINED;
 		}
@@ -397,14 +393,10 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 		if (*c != CELL_OCCUPIED) return false;
 
 		// check 4 neighbors:
-		if (auto* cS = grid_->cellByIndex(cx, cy - 1); cS && *cS == CELL_FREE)
-			return true;
-		if (auto* cN = grid_->cellByIndex(cx, cy + 1); cN && *cN == CELL_FREE)
-			return true;
-		if (auto* cE = grid_->cellByIndex(cx + 1, cy); cE && *cE == CELL_FREE)
-			return true;
-		if (auto* cW = grid_->cellByIndex(cx - 1, cy); cW && *cW == CELL_FREE)
-			return true;
+		if (auto* cS = grid_->cellByIndex(cx, cy - 1); cS && *cS == CELL_FREE) return true;
+		if (auto* cN = grid_->cellByIndex(cx, cy + 1); cN && *cN == CELL_FREE) return true;
+		if (auto* cE = grid_->cellByIndex(cx + 1, cy); cE && *cE == CELL_FREE) return true;
+		if (auto* cW = grid_->cellByIndex(cx - 1, cy); cW && *cW == CELL_FREE) return true;
 
 		return false;
 	};
@@ -441,14 +433,10 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 		}
 
 		// check 4 neighbors:
-		if (auto* cS = grid_->cellByIndex(cx, cy - 1); cS && *cS == CELL_FREE)
-			return true;
-		if (auto* cN = grid_->cellByIndex(cx, cy + 1); cN && *cN == CELL_FREE)
-			return true;
-		if (auto* cE = grid_->cellByIndex(cx + 1, cy); cE && *cE == CELL_FREE)
-			return true;
-		if (auto* cW = grid_->cellByIndex(cx - 1, cy); cW && *cW == CELL_FREE)
-			return true;
+		if (auto* cS = grid_->cellByIndex(cx, cy - 1); cS && *cS == CELL_FREE) return true;
+		if (auto* cN = grid_->cellByIndex(cx, cy + 1); cN && *cN == CELL_FREE) return true;
+		if (auto* cE = grid_->cellByIndex(cx + 1, cy); cE && *cE == CELL_FREE) return true;
+		if (auto* cW = grid_->cellByIndex(cx - 1, cy); cW && *cW == CELL_FREE) return true;
 
 		return false;
 	};
@@ -486,8 +474,7 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 			for (const auto& dir : dirs)
 			{
 				const int ix = dir.first, iy = dir.second;
-				const bool isBorder =
-					lambdaCellIsBorder(cx + ix, cy + iy, pass == 1);
+				const bool isBorder = lambdaCellIsBorder(cx + ix, cy + iy, pass == 1);
 
 				if (isBorder)
 				{
@@ -509,14 +496,12 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 }
 
 void Shape2p5::debugSaveGridTo3DSceneFile(
-	const mrpt::math::TPolygon2D& rawGridContour,
-	const std::string& debugStr) const
+	const mrpt::math::TPolygon2D& rawGridContour, const std::string& debugStr) const
 {
 	mrpt::opengl::COpenGLScene scene;
 
 	auto glGrid = mrpt::opengl::CTexturedPlane::Create();
-	glGrid->setPlaneCorners(
-		grid_->getXMin(), grid_->getXMax(), grid_->getYMin(), grid_->getYMax());
+	glGrid->setPlaneCorners(grid_->getXMin(), grid_->getXMax(), grid_->getYMin(), grid_->getYMax());
 
 	mrpt::math::CMatrixDouble mat;
 	grid_->getAsMatrix(mat);
@@ -529,9 +514,8 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 	scene.insert(mrpt::opengl::stock_objects::CornerXYZSimple());
 	scene.insert(glGrid);
 
-	auto lambdaRenderPoly = [&scene](
-								const mrpt::math::TPolygon2D& p,
-								const mrpt::img::TColor& color, double z)
+	auto lambdaRenderPoly =
+		[&scene](const mrpt::math::TPolygon2D& p, const mrpt::img::TColor& color, double z)
 	{
 		auto glPts = mrpt::opengl::CPointCloud::Create();
 		auto glPoly = mrpt::opengl::CSetOfLines::Create();
@@ -544,8 +528,7 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 			const size_t j1 = (j + 1) % N;
 			const auto& p0 = p.at(j);
 			const auto& p1 = p.at(j1);
-			glPoly->appendLine(
-				p0.x, p0.y, z + 1e-4 * j, p1.x, p1.y, z + 1e-4 * (j + 1));
+			glPoly->appendLine(p0.x, p0.y, z + 1e-4 * j, p1.x, p1.y, z + 1e-4 * (j + 1));
 			glPts->insertPoint(p0.x, p0.y, z + 1e-4 * j);
 		}
 		scene.insert(glPoly);
@@ -573,8 +556,7 @@ std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
 	const auto& pt_im1 = p[im1];
 	const auto& pt_ip1 = p[ip1];
 	const auto delta = pt_ip1 - pt_im1;
-	const size_t nSteps =
-		static_cast<size_t>(ceil(delta.norm() / grid_->getResolution()));
+	const size_t nSteps = static_cast<size_t>(ceil(delta.norm() / grid_->getResolution()));
 	const auto d = delta * (1.0 / nSteps);
 	for (size_t k = 0; k < nSteps; k++)
 	{
@@ -604,8 +586,7 @@ std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
 	return rc;
 }
 
-mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(
-	const mrpt::math::TPolygon2D& poly) const
+mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(const mrpt::math::TPolygon2D& poly) const
 {
 	using namespace std::string_literals;
 
@@ -624,8 +605,7 @@ mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(
 
 			for (size_t i = 0; i < p.size(); i++)
 			{
-				std::optional<RemovalCandidate> rc =
-					lossOfRemovingVertex(i, p, pass == 1);
+				std::optional<RemovalCandidate> rc = lossOfRemovingVertex(i, p, pass == 1);
 				if (rc && (!best || rc->loss < best->loss)) best = *rc;
 			}
 
@@ -634,8 +614,7 @@ mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(
 			p = best->next;
 
 #ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-			debugSaveGridTo3DSceneFile(
-				p, mrpt::format("pass #%i loss=%f", pass, best->loss));
+			debugSaveGridTo3DSceneFile(p, mrpt::format("pass #%i loss=%f", pass, best->loss));
 #endif
 		}
 	}

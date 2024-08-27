@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -84,8 +84,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 			const DynamicsAckermannDrivetrain::TControllerInput& ci,
 			DynamicsAckermannDrivetrain::TControllerOutput& co) override;
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 	};
 
 	/** PID controller that controls the vehicle with front traction & steering
@@ -103,8 +102,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 			const DynamicsAckermannDrivetrain::TControllerInput& ci,
 			DynamicsAckermannDrivetrain::TControllerOutput& co) override;
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		double KP, KI, KD;	//!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
@@ -139,8 +137,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 			const DynamicsAckermannDrivetrain::TControllerInput& ci,
 			DynamicsAckermannDrivetrain::TControllerOutput& co) override;
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		double KP, KI, KD;	//!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
@@ -151,10 +148,7 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 
 	const ControllerBase::Ptr& getController() const { return controller_; }
 	ControllerBase::Ptr& getController() { return controller_; }
-	virtual ControllerBaseInterface* getControllerInterface() override
-	{
-		return controller_.get();
-	}
+	virtual ControllerBaseInterface* getControllerInterface() override { return controller_.get(); }
 
 	/** @} */  // end controllers
 
@@ -166,22 +160,19 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	 * in the object.
 	 */
 	void computeFrontWheelAngles(
-		const double desired_equiv_steer_ang, double& out_fl_ang,
-		double& out_fr_ang) const;
+		const double desired_equiv_steer_ang, double& out_fl_ang, double& out_fr_ang) const;
 
 	/** Computes differential split for Torsen-like limited slip differentials.
 	 */
 	void computeDiffTorqueSplit(
-		const double w1, const double w2, const double diffBias,
-		const double defaultSplitRatio, double& t1, double& t2);
+		const double w1, const double w2, const double diffBias, const double defaultSplitRatio,
+		double& t1, double& t2);
 
    protected:
 	// See base class docs
-	virtual void dynamics_load_params_from_xml(
-		const rapidxml::xml_node<char>* xml_node) override;
+	virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node) override;
 	// See base class doc
-	virtual std::vector<double> invoke_motor_controllers(
-		const TSimulContext& context) override;
+	virtual std::vector<double> invoke_motor_controllers(const TSimulContext& context) override;
 
    private:
 	ControllerBase::Ptr controller_;  //!< The installed controller

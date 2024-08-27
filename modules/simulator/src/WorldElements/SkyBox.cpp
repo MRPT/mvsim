@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -25,8 +25,7 @@ using namespace rapidxml;
 using namespace mvsim;
 using namespace std;
 
-SkyBox::SkyBox(World* parent, const rapidxml::xml_node<char>* root)
-	: WorldElementBase(parent)
+SkyBox::SkyBox(World* parent, const rapidxml::xml_node<char>* root) : WorldElementBase(parent)
 {
 	// Create opengl object: in this class, we'll store most state data directly
 	// in the mrpt::opengl object.
@@ -44,12 +43,10 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	TParameterDefinitions params;
 	params["textures"] = TParamEntry("%s", &texturesPattern);
 
-	parse_xmlnode_children_as_param(
-		*root, params, world_->user_defined_variables());
+	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 
 	ASSERTMSG_(
-		!texturesPattern.empty(),
-		"Textures must be defined in a <textures>...</textures> tag.");
+		!texturesPattern.empty(), "Textures must be defined in a <textures>...</textures> tag.");
 
 	ASSERTMSG_(
 		texturesPattern.find("%s") != std::string::npos,
@@ -60,12 +57,9 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	using mrpt::opengl::CUBE_TEXTURE_FACE;
 
 	const std::vector<std::pair<CUBE_TEXTURE_FACE, const char*>> faceImages = {
-		{CUBE_TEXTURE_FACE::FRONT, "Front"},
-		{CUBE_TEXTURE_FACE::BACK, "Back"},
-		{CUBE_TEXTURE_FACE::BOTTOM, "Down"},
-		{CUBE_TEXTURE_FACE::TOP, "Up"},
-		{CUBE_TEXTURE_FACE::LEFT, "Left"},
-		{CUBE_TEXTURE_FACE::RIGHT, "Right"},
+		{CUBE_TEXTURE_FACE::FRONT, "Front"}, {CUBE_TEXTURE_FACE::BACK, "Back"},
+		{CUBE_TEXTURE_FACE::BOTTOM, "Down"}, {CUBE_TEXTURE_FACE::TOP, "Up"},
+		{CUBE_TEXTURE_FACE::LEFT, "Left"},	 {CUBE_TEXTURE_FACE::RIGHT, "Right"},
 	};
 
 	auto sb = mrpt::opengl::CSkyBox::Create();
@@ -82,9 +76,7 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	glSkyBoxPrepared_ = sb;
 #else
-	std::cerr
-		<< "[mvsim::SkyBox] Ignoring SkyBox since MRPT>=2.7.0 is not available."
-		<< std::endl;
+	std::cerr << "[mvsim::SkyBox] Ignoring SkyBox since MRPT>=2.7.0 is not available." << std::endl;
 #endif
 }
 

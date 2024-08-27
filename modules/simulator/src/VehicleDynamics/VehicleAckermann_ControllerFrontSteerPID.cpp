@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -14,8 +14,7 @@
 using namespace mvsim;
 using namespace std;
 
-DynamicsAckermann::ControllerFrontSteerPID::ControllerFrontSteerPID(
-	DynamicsAckermann& veh)
+DynamicsAckermann::ControllerFrontSteerPID::ControllerFrontSteerPID(DynamicsAckermann& veh)
 	: ControllerBase(veh),
 	  setpoint_lin_speed(0),
 	  setpoint_steer_ang(0),
@@ -32,8 +31,7 @@ DynamicsAckermann::ControllerFrontSteerPID::ControllerFrontSteerPID(
 
 // See base class docs
 void DynamicsAckermann::ControllerFrontSteerPID::control_step(
-	const DynamicsAckermann::TControllerInput& ci,
-	DynamicsAckermann::TControllerOutput& co)
+	const DynamicsAckermann::TControllerInput& ci, DynamicsAckermann::TControllerOutput& co)
 {
 	// Equivalent v/w velocities:
 	const double v = setpoint_lin_speed;
@@ -63,8 +61,7 @@ void DynamicsAckermann::ControllerFrontSteerPID::control_step(
 	co.steer_ang = setpoint_steer_ang;	// Mainly for the case of v=0
 }
 
-void DynamicsAckermann::ControllerFrontSteerPID::load_config(
-	const rapidxml::xml_node<char>& node)
+void DynamicsAckermann::ControllerFrontSteerPID::load_config(const rapidxml::xml_node<char>& node)
 {
 	TParameterDefinitions params;
 	params["KP"] = TParamEntry("%lf", &KP);

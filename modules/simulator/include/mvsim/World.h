@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -91,8 +91,7 @@ class World : public mrpt::system::COutputLogger
 	 * error message
 	 */
 	void load_from_XML(
-		const std::string& xml_text,
-		const std::string& fileNameForPath = std::string("."));
+		const std::string& xml_text, const std::string& fileNameForPath = std::string("."));
 	/** @} */
 
 	/** \name Simulation execution
@@ -121,8 +120,7 @@ class World : public mrpt::system::COutputLogger
 	{
 		auto lck = mrpt::lockHelper(simul_time_mtx_);
 		ASSERT_(simul_start_wallclock_time_.has_value());
-		return mrpt::Clock::fromDouble(
-			simulTime_ + simul_start_wallclock_time_.value());
+		return mrpt::Clock::fromDouble(simulTime_ + simul_start_wallclock_time_.value());
 	}
 
 	/// Simulation fixed-time interval for numerical integration
@@ -177,23 +175,16 @@ class World : public mrpt::system::COutputLogger
 	 */
 	void update_GUI(TUpdateGUIParams* params = nullptr);
 
-	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const
-	{
-		return gui_.gui_win;
-	}
+	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const { return gui_.gui_win; }
 
-	const mrpt::math::TPoint3D& gui_mouse_point() const
-	{
-		return gui_.clickedPt;
-	}
+	const mrpt::math::TPoint3D& gui_mouse_point() const { return gui_.clickedPt; }
 
 	/** If !=null, a set of objects to be rendered merged with the default
 	 * visualization. Lock the mutex gui_user_objects_mtx_ while writing.
 	 * There are two sets of objects: "viz" for visualization only, "physical"
 	 * for objects which should be detected by sensors.
 	 */
-	mrpt::opengl::CSetOfObjects::Ptr guiUserObjectsPhysical_,
-		guiUserObjectsViz_;
+	mrpt::opengl::CSetOfObjects::Ptr guiUserObjectsPhysical_, guiUserObjectsViz_;
 	std::mutex guiUserObjectsMtx_;
 
 	/// Update 3D vehicles, sensors, run render-based sensors, etc:
@@ -201,8 +192,7 @@ class World : public mrpt::system::COutputLogger
 	/// mode.
 	void internalGraphicsLoopTasksForSimulation();
 
-	void internalRunSensorsOn3DScene(
-		mrpt::opengl::COpenGLScene& physicalObjects);
+	void internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObjects);
 
 	void internalUpdate3DSceneObjects(
 		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
@@ -297,26 +287,17 @@ class World : public mrpt::system::COutputLogger
 	/** \name Access inner working objects
 	  @{*/
 	std::unique_ptr<b2World>& getBox2DWorld() { return box2d_world_; }
-	const std::unique_ptr<b2World>& getBox2DWorld() const
-	{
-		return box2d_world_;
-	}
+	const std::unique_ptr<b2World>& getBox2DWorld() const { return box2d_world_; }
 	b2Body* getBox2DGroundBody() { return b2_ground_body_; }
 	const VehicleList& getListOfVehicles() const { return vehicles_; }
 	VehicleList& getListOfVehicles() { return vehicles_; }
 	const BlockList& getListOfBlocks() const { return blocks_; }
 	BlockList& getListOfBlocks() { return blocks_; }
-	const WorldElementList& getListOfWorldElements() const
-	{
-		return worldElements_;
-	}
+	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
 
 	/// Always lock/unlock getListOfSimulableObjectsMtx() before using this:
 	SimulableList& getListOfSimulableObjects() { return simulableObjects_; }
-	const SimulableList& getListOfSimulableObjects() const
-	{
-		return simulableObjects_;
-	}
+	const SimulableList& getListOfSimulableObjects() const { return simulableObjects_; }
 	auto& getListOfSimulableObjectsMtx() { return simulableObjectsMtx_; }
 
 	mrpt::system::CTimeLogger& getTimeLogger() { return timlogger_; }
@@ -357,8 +338,8 @@ class World : public mrpt::system::COutputLogger
 	/** \name Optional user hooks
 	  @{*/
 
-	using on_observation_callback_t = std::function<void(
-		const Simulable& /*veh*/, const mrpt::obs::CObservation::Ptr& /*obs*/)>;
+	using on_observation_callback_t =
+		std::function<void(const Simulable& /*veh*/, const mrpt::obs::CObservation::Ptr& /*obs*/)>;
 
 	void registerCallbackOnObservation(const on_observation_callback_t& f)
 	{
@@ -366,8 +347,7 @@ class World : public mrpt::system::COutputLogger
 	}
 
 	/** Calls all registered callbacks: */
-	void dispatchOnObservation(
-		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
+	void dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
 	/** @} */
 
@@ -400,7 +380,7 @@ class World : public mrpt::system::COutputLogger
 
 	bool evaluate_tag_if(const rapidxml::xml_node<char>& node) const;
 
-	float collisionThreshold() const {return collisionThreshold_;}
+	float collisionThreshold() const { return collisionThreshold_; }
 
    private:
 	friend class VehicleBase;
@@ -426,7 +406,7 @@ class World : public mrpt::system::COutputLogger
 
 	/** Velocity and position iteration count (refer to libbox2d docs) */
 	int b2dVelIters_ = 8, b2dPosIters_ = 3;
-	
+
 	/** Distance between two body edges to be considered a collision. */
 	float collisionThreshold_ = 0.03f;
 
@@ -453,8 +433,7 @@ class World : public mrpt::system::COutputLogger
 		{"joystick_enabled", {"%bool", &joystickEnabled_}},
 		{"save_to_rawlog", {"%s", &save_to_rawlog_}},
 		{"rawlog_odometry_rate", {"%lf", &rawlog_odometry_rate_}},
-		{"save_ground_truth_trajectory",
-		 {"%s", &save_ground_truth_trajectory_}},
+		{"save_ground_truth_trajectory", {"%s", &save_ground_truth_trajectory_}},
 		{"ground_truth_rate", {"%lf", &ground_truth_rate_}},
 	};
 
@@ -473,10 +452,8 @@ class World : public mrpt::system::COutputLogger
 
 	/// This private container will be filled with objects in the public
 	/// gui_user_objects_
-	mrpt::opengl::CSetOfObjects::Ptr glUserObjsPhysical_ =
-		mrpt::opengl::CSetOfObjects::Create();
-	mrpt::opengl::CSetOfObjects::Ptr glUserObjsViz_ =
-		mrpt::opengl::CSetOfObjects::Create();
+	mrpt::opengl::CSetOfObjects::Ptr glUserObjsPhysical_ = mrpt::opengl::CSetOfObjects::Create();
+	mrpt::opengl::CSetOfObjects::Ptr glUserObjsViz_ = mrpt::opengl::CSetOfObjects::Create();
 
 	// ------- GUI options -----
 	struct TGUI_Options
@@ -519,8 +496,7 @@ class World : public mrpt::system::COutputLogger
 		};
 
 		TGUI_Options() = default;
-		void parse_from(
-			const rapidxml::xml_node<char>& node, COutputLogger& logger);
+		void parse_from(const rapidxml::xml_node<char>& node, COutputLogger& logger);
 	};
 
 	/** Some of these options are only used the first time the GUI window is
@@ -531,8 +507,7 @@ class World : public mrpt::system::COutputLogger
 	{
 		LightOptions() = default;
 
-		void parse_from(
-			const rapidxml::xml_node<char>& node, COutputLogger& logger);
+		void parse_from(const rapidxml::xml_node<char>& node, COutputLogger& logger);
 
 		bool enable_shadows = true;
 		int shadow_map_size = 2048;
@@ -565,10 +540,8 @@ class World : public mrpt::system::COutputLogger
 			{"shadow_bias_cam2frag", {"%f", &shadow_bias_cam2frag}},
 			{"shadow_bias_normal", {"%f", &shadow_bias_normal}},
 			{"light_ambient", {"%f", &light_ambient}},
-			{"eye_distance_to_shadow_map_extension",
-			 {"%f", &eye_distance_to_shadow_map_extension}},
-			{"minimum_shadow_map_extension_ratio",
-			 {"%f", &minimum_shadow_map_extension_ratio}},
+			{"eye_distance_to_shadow_map_extension", {"%f", &eye_distance_to_shadow_map_extension}},
+			{"minimum_shadow_map_extension_ratio", {"%f", &minimum_shadow_map_extension_ratio}},
 		};
 	};
 
@@ -640,8 +613,7 @@ class World : public mrpt::system::COutputLogger
 	/** 3D scene with all visual objects (vehicles, obstacles, markers, etc.)
 	 *  \sa worldPhysical_
 	 */
-	mrpt::opengl::COpenGLScene::Ptr worldVisual_ =
-		mrpt::opengl::COpenGLScene::Create();
+	mrpt::opengl::COpenGLScene::Ptr worldVisual_ = mrpt::opengl::COpenGLScene::Create();
 
 	/** 3D scene with all physically observable objects: we will use this
 	 * scene as input to simulated sensors like cameras, where we don't wont
@@ -660,14 +632,11 @@ class World : public mrpt::system::COutputLogger
 	std::set<std::string> reset_collision_flags_;
 	std::mutex reset_collision_flags_mtx_;
 
-	void internal_gui_on_observation(
-		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
+	void internal_gui_on_observation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 	void internal_gui_on_observation_3Dscan(
-		const Simulable& veh,
-		const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs);
+		const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs);
 	void internal_gui_on_observation_image(
-		const Simulable& veh,
-		const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
+		const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
 
 	mrpt::math::TPoint2D internal_gui_on_image(
 		const std::string& label, const mrpt::img::CImage& im, int winPosX);
@@ -676,8 +645,7 @@ class World : public mrpt::system::COutputLogger
 
 	/** Changes the light source direction from azimuth and elevation angles (in
 	 * radians) */
-	void setLightDirectionFromAzimuthElevation(
-		const float azimuth, const float elevation);
+	void setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation);
 
 	/** @} */  // end GUI stuff
 
@@ -689,8 +657,7 @@ class World : public mrpt::system::COutputLogger
 
 	struct XmlParserContext
 	{
-		XmlParserContext(
-			const rapidxml::xml_node<char>* n, const std::string& basePath)
+		XmlParserContext(const rapidxml::xml_node<char>* n, const std::string& basePath)
 			: node(n), currentBasePath(basePath)
 		{
 		}
@@ -702,25 +669,21 @@ class World : public mrpt::system::COutputLogger
 	/// This will parse a main XML file, or its included
 	void internal_recursive_parse_XML(const XmlParserContext& ctx);
 
-	using xml_tag_parser_function_t =
-		std::function<void(const XmlParserContext&)>;
+	using xml_tag_parser_function_t = std::function<void(const XmlParserContext&)>;
 
 	std::map<std::string, xml_tag_parser_function_t> xmlParsers_;
 
 	void register_standard_xml_tag_parsers();
 
-	void register_tag_parser(
-		const std::string& xmlTagName, const xml_tag_parser_function_t& f)
+	void register_tag_parser(const std::string& xmlTagName, const xml_tag_parser_function_t& f)
 	{
 		xmlParsers_.emplace(xmlTagName, f);
 	}
 	void register_tag_parser(
-		const std::string& xmlTagName,
-		void (World::*f)(const XmlParserContext& ctx))
+		const std::string& xmlTagName, void (World::*f)(const XmlParserContext& ctx))
 	{
 		xmlParsers_.emplace(
-			xmlTagName,
-			[this, f](const XmlParserContext& ctx) { (this->*f)(ctx); });
+			xmlTagName, [this, f](const XmlParserContext& ctx) { (this->*f)(ctx); });
 	}
 
 	// ======== XML parser tags ========
@@ -743,15 +706,13 @@ class World : public mrpt::system::COutputLogger
 
 	mutable RemoteResourcesManager remoteResources_;
 
-	void internalOnObservation(
-		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
+	void internalOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
 	void internalPostSimulStepForRawlog();
 	void internalPostSimulStepForTrajectory();
 
 	std::mutex rawlog_io_mtx_;
-	std::map<std::string, std::shared_ptr<mrpt::io::CFileGZOutputStream>>
-		rawlog_io_per_veh_;
+	std::map<std::string, std::shared_ptr<mrpt::io::CFileGZOutputStream>> rawlog_io_per_veh_;
 	std::optional<double> rawlog_last_odom_time_;
 
 	std::mutex gt_io_mtx_;
@@ -763,14 +724,11 @@ class World : public mrpt::system::COutputLogger
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 
-	mvsim_msgs::SrvSetPoseAnswer srv_set_pose(
-		const mvsim_msgs::SrvSetPose& req);
-	mvsim_msgs::SrvGetPoseAnswer srv_get_pose(
-		const mvsim_msgs::SrvGetPose& req);
+	mvsim_msgs::SrvSetPoseAnswer srv_set_pose(const mvsim_msgs::SrvSetPose& req);
+	mvsim_msgs::SrvGetPoseAnswer srv_get_pose(const mvsim_msgs::SrvGetPose& req);
 	mvsim_msgs::SrvSetControllerTwistAnswer srv_set_controller_twist(
 		const mvsim_msgs::SrvSetControllerTwist& req);
-	mvsim_msgs::SrvShutdownAnswer srv_shutdown(
-		const mvsim_msgs::SrvShutdown& req);
+	mvsim_msgs::SrvShutdownAnswer srv_shutdown(const mvsim_msgs::SrvShutdown& req);
 #endif
 };
 }  // namespace mvsim

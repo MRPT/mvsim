@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -39,8 +39,7 @@ using namespace rapidxml;
 
 // TODO(jlbc): Also store obs as CObservationRotatingScan??
 
-Lidar3D::Lidar3D(Simulable& parent, const rapidxml::xml_node<char>* root)
-	: SensorBase(parent)
+Lidar3D::Lidar3D(Simulable& parent, const rapidxml::xml_node<char>* root) : SensorBase(parent)
 {
 	Lidar3D::loadConfigFrom(root);
 }
@@ -65,15 +64,12 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["ignore_parent_body"] = TParamEntry("%bool", &ignore_parent_body_);
 
 	params["vert_fov_degrees"] = TParamEntry("%lf", &vertical_fov_);
-	params["vertical_ray_angles"] =
-		TParamEntry("%s", &vertical_ray_angles_str_);
+	params["vertical_ray_angles"] = TParamEntry("%s", &vertical_ray_angles_str_);
 
 	params["vert_nrays"] = TParamEntry("%i", &vertNumRays_);
 	params["horz_nrays"] = TParamEntry("%i", &horzNumRays_);
-	params["horz_resolution_factor"] =
-		TParamEntry("%lf", &horzResolutionFactor_);
-	params["vert_resolution_factor"] =
-		TParamEntry("%lf", &vertResolutionFactor_);
+	params["horz_resolution_factor"] = TParamEntry("%lf", &horzResolutionFactor_);
+	params["vert_resolution_factor"] = TParamEntry("%lf", &vertResolutionFactor_);
 
 	params["max_vert_relative_depth_to_interpolatate"] =
 		TParamEntry("%f", &maxDepthInterpolationStepVert_);
@@ -86,8 +82,7 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void Lidar3D::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
-		physical,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
@@ -113,8 +108,7 @@ void Lidar3D::internalGuiUpdate(
 #if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
 #endif
-		gl_sensor_origin_corner_ =
-			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
@@ -157,9 +151,7 @@ void Lidar3D::internalGuiUpdate(
 	if (glCustomVisual_) glCustomVisual_->setPose(p);
 }
 
-void Lidar3D::simul_pre_timestep([[maybe_unused]] const TSimulContext& context)
-{
-}
+void Lidar3D::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
 
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void Lidar3D::simul_post_timestep(const TSimulContext& context)
@@ -209,15 +201,12 @@ void Lidar3D::freeOpenGLResources()
 // since only a few depth points are actually used:
 // (older mrpt versions already returned the linearized depth)
 constexpr int DEPTH_LOG2LIN_BITS = 20;
-using depth_log2lin_t =
-	mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
+using depth_log2lin_t = mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
 #endif
 
 static float safeInterpolateRangeImage(
-	const mrpt::math::CMatrixFloat& depthImage,
-	const float maxDepthInterpolationStepVert,
-	const float maxDepthInterpolationStepHorz, const int NCOLS, const int NROWS,
-	float v, float u
+	const mrpt::math::CMatrixFloat& depthImage, const float maxDepthInterpolationStepVert,
+	const float maxDepthInterpolationStepHorz, const int NCOLS, const int NROWS, float v, float u
 #if MRPT_VERSION >= 0x270
 	,
 	const depth_log2lin_t::lut_t& depth_log2lin_lut
@@ -243,14 +232,10 @@ static float safeInterpolateRangeImage(
 	// since only a few depth points are actually used:
 
 	// map d in [-1.0f,+1.0f] ==> real depth values:
-	const float d00 = depth_log2lin_lut
-		[(raw_d00 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-	const float d01 = depth_log2lin_lut
-		[(raw_d01 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-	const float d10 = depth_log2lin_lut
-		[(raw_d10 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-	const float d11 = depth_log2lin_lut
-		[(raw_d11 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+	const float d00 = depth_log2lin_lut[(raw_d00 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+	const float d01 = depth_log2lin_lut[(raw_d01 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+	const float d10 = depth_log2lin_lut[(raw_d10 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+	const float d11 = depth_log2lin_lut[(raw_d11 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
 #else
 	// "d" is already linear depth
 	const float d00 = raw_d00;
@@ -309,11 +294,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		if (!has_to_render_.has_value()) return;
 	}
 
-	auto tleWhole = mrpt::system::CTimeLoggerEntry(
-		world_->getTimeLogger(), "sensor.3Dlidar");
+	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar");
 
-	auto tle1 = mrpt::system::CTimeLoggerEntry(
-		world_->getTimeLogger(), "sensor.3Dlidar.acqGuiMtx");
+	auto tle1 = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.acqGuiMtx");
 
 	tle1.stop();
 
@@ -340,8 +323,8 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// This FBO is for camModel_hFOV only:
 	// Minimum horz resolution=360deg /120 deg
-	const int FBO_NCOLS = mrpt::round(
-		horzResolutionFactor_ * horzNumRays_ / (2 * M_PI / camModel_hFOV));
+	const int FBO_NCOLS =
+		mrpt::round(horzResolutionFactor_ * horzNumRays_ / (2 * M_PI / camModel_hFOV));
 
 	mrpt::img::TCamera camModel;
 	camModel.ncols = FBO_NCOLS;
@@ -358,18 +341,15 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			vertical_ray_angles_.resize(vertNumRays_);
 			for (int i = 0; i < vertNumRays_; i++)
 			{
-				vertical_ray_angles_[i] =
-					vertical_fov_ * (-0.5 + i * 1.0 / (vertNumRays_ - 1));
+				vertical_ray_angles_[i] = vertical_fov_ * (-0.5 + i * 1.0 / (vertNumRays_ - 1));
 			}
 		}
 		else
 		{
 			// custom distribution:
 			std::vector<std::string> vertAnglesStrs;
-			mrpt::system::tokenize(
-				vertical_ray_angles_str_, " \t\r\n", vertAnglesStrs);
-			ASSERT_EQUAL_(
-				vertAnglesStrs.size(), static_cast<size_t>(vertNumRays_));
+			mrpt::system::tokenize(vertical_ray_angles_str_, " \t\r\n", vertAnglesStrs);
+			ASSERT_EQUAL_(vertAnglesStrs.size(), static_cast<size_t>(vertNumRays_));
 			std::set<double> angs;
 			for (const auto& s : vertAnglesStrs) angs.insert(std::stod(s));
 			ASSERT_EQUAL_(angs.size(), static_cast<size_t>(vertNumRays_));
@@ -386,12 +366,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const double vertFOVMax = vertical_ray_angles_.back();
 	const double vertFOVMin = std::abs(vertical_ray_angles_.front());
 
-	const int FBO_NROWS_UP =
-		vertResolutionFactor_ * tan(vertFOVMax) *
-		sqrt(square(camModel.fx()) + square(camModel.cx()));
-	const int FBO_NROWS_DOWN =
-		vertResolutionFactor_ * tan(vertFOVMin) *
-		sqrt(square(camModel.fx()) + square(camModel.cx()));
+	const int FBO_NROWS_UP = vertResolutionFactor_ * tan(vertFOVMax) *
+							 sqrt(square(camModel.fx()) + square(camModel.cx()));
+	const int FBO_NROWS_DOWN = vertResolutionFactor_ * tan(vertFOVMin) *
+							   sqrt(square(camModel.fx()) + square(camModel.cx()));
 
 	const int FBO_NROWS = FBO_NROWS_DOWN + FBO_NROWS_UP + 1;
 	camModel.nrows = FBO_NROWS;
@@ -447,10 +425,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	const double firstAngle = -aperture * 0.5;
 
-	const unsigned int numRenders =
-		std::ceil((aperture / camModel_hFOV) - 1e-3);
-	const auto numHorzRaysPerRender = mrpt::round(
-		horzNumRays_ * std::min<double>(1.0, (camModel_hFOV / aperture)));
+	const unsigned int numRenders = std::ceil((aperture / camModel_hFOV) - 1e-3);
+	const auto numHorzRaysPerRender =
+		mrpt::round(horzNumRays_ * std::min<double>(1.0, (camModel_hFOV / aperture)));
 
 	ASSERT_(numHorzRaysPerRender > 0);
 
@@ -473,14 +450,12 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 			const double horzAng =
 				(scanIsCW ? -1 : 1) *
-				(camModel_hFOV * 0.5 -
-				 i * camModel_hFOV / (numHorzRaysPerRender - 1));
+				(camModel_hFOV * 0.5 - i * camModel_hFOV / (numHorzRaysPerRender - 1));
 
 			const double cosHorzAng = std::cos(horzAng);
 
 			const auto pixel_u = mrpt::saturate_val<float>(
-				camModel.cx() - camModel.fx() * std::tan(horzAng), 0,
-				camModel.ncols - 1);
+				camModel.cx() - camModel.fx() * std::tan(horzAng), 0, camModel.ncols - 1);
 
 			for (size_t j = 0; j < nRows; j++)
 			{
@@ -489,13 +464,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				const double vertAng = vertical_ray_angles_.at(j);
 				const double cosVertAng = std::cos(vertAng);
 
-				const auto pixel_v = camModel.cy() - camModel.fy() *
-														 std::tan(vertAng) /
-														 cosHorzAng;
+				const auto pixel_v = camModel.cy() - camModel.fy() * std::tan(vertAng) / cosHorzAng;
 
 				// out of the simulated camera (should not happen?)
-				if (pixel_v < 0 || pixel_v >= static_cast<int>(camModel.nrows))
-					continue;
+				if (pixel_v < 0 || pixel_v >= static_cast<int>(camModel.nrows)) continue;
 
 				entry.u = pixel_u;
 				entry.v = pixel_v;
@@ -537,23 +509,19 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	// Do the log->linear conversion ourselves for this sensor,
 	// since only a few depth points are actually used:
 	auto& depth_log2lin = depth_log2lin_t::Instance();
-	const auto& depth_log2lin_lut =
-		depth_log2lin.lut_from_zn_zf(minRange_, maxRange_);
+	const auto& depth_log2lin_lut = depth_log2lin.lut_from_zn_zf(minRange_, maxRange_);
 #endif
 
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
 		const double thisRenderMidAngle =
-			firstAngle + (camModel_hFOV / 2.0 + camModel_hFOV * renderIdx) *
-							 (scanIsCW ? 1 : -1);
+			firstAngle + (camModel_hFOV / 2.0 + camModel_hFOV * renderIdx) * (scanIsCW ? 1 : -1);
 
 		const auto thisDepthSensorPoseWrtSensor =
-			mrpt::poses::CPose3D::FromYawPitchRoll(
-				thisRenderMidAngle, 0.0, 0.0) +
+			mrpt::poses::CPose3D::FromYawPitchRoll(thisRenderMidAngle, 0.0, 0.0) +
 			fixedAxisConventionRot;
 
-		const auto thisDepthSensorPoseOnVeh =
-			curObs->sensorPose + thisDepthSensorPoseWrtSensor;
+		const auto thisDepthSensorPoseOnVeh = curObs->sensorPose + thisDepthSensorPoseWrtSensor;
 
 		const auto thisDepthSensorPose = vehiclePose + thisDepthSensorPoseOnVeh;
 
@@ -562,8 +530,8 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		// to make the camera to look forward:
 		cam.setPose(thisDepthSensorPose);
 
-		auto tleRender = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.3Dlidar.renderSubScan");
+		auto tleRender =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.renderSubScan");
 
 		fbo_renderer_depth_->render_depth(world3DScene, depthImage);
 
@@ -585,15 +553,14 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			}
 		}
 
-		auto tleStore = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.3Dlidar.storeObs");
+		auto tleStore =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.storeObs");
 
 		// Convert depth into range and store into polar range images:
 		for (int i = 0; i < numHorzRaysPerRender; i++)
 		{
 			const int iAbs = i + numHorzRaysPerRender * renderIdx;
-			if (iAbs >= rangeImage.cols())
-				continue;  // we don't need this image part
+			if (iAbs >= rangeImage.cols()) continue;  // we don't need this image part
 
 			for (unsigned int j = 0; j < nRows; j++)
 			{
@@ -607,8 +574,8 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 				// Depth:
 				float d = safeInterpolateRangeImage(
-					depthImage, maxDepthInterpolationStepVert_,
-					maxDepthInterpolationStepHorz_, FBO_NCOLS, FBO_NROWS, v, u
+					depthImage, maxDepthInterpolationStepVert_, maxDepthInterpolationStepHorz_,
+					FBO_NCOLS, FBO_NROWS, v, u
 #if MRPT_VERSION >= 0x270
 					,
 					depth_log2lin_lut
@@ -640,8 +607,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				const mrpt::math::TPoint3D pt_wrt_cam = {
 					d * (u - camModel.cx()) / camModel.fx(),
 					d * (v - camModel.cy()) / camModel.fy(), d};
-				curPts.insertPoint(
-					thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
+				curPts.insertPoint(thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
 
 				// Add "ring" field:
 #if defined(HAVE_POINTS_XYZIRT)
@@ -664,8 +630,8 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// Store generated obs:
 	{
-		auto tle3 = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.3Dlidar.acqObsMtx");
+		auto tle3 =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.acqObsMtx");
 
 		std::lock_guard<std::mutex> csl(last_scan_cs_);
 		last_scan_ = std::move(curObs);
@@ -675,8 +641,8 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	{
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
 
-		auto tlePub = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.3Dlidar.report");
+		auto tlePub =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.report");
 
 		SensorBase::reportNewObservation(last_scan_, *has_to_render_);
 

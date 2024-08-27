@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -103,8 +103,7 @@ void mvsim_install_signal_handler()
 
 // returns log strings
 std::string mvsim_launch_handle_teleop(
-	const mvsim::World::TGUIKeyEvent keyevent,
-	const std::optional<mvsim::TJoyStickEvent>& js)
+	const mvsim::World::TGUIKeyEvent keyevent, const std::optional<mvsim::TJoyStickEvent>& js)
 {
 	using namespace mvsim;
 
@@ -112,8 +111,7 @@ std::string mvsim_launch_handle_teleop(
 
 	const World::VehicleList& vehs = app->world.getListOfVehicles();
 	txt2gui_tmp += mrpt::format(
-		"Selected vehicle: %u/%u\n",
-		static_cast<unsigned>(app->teleopIdxVeh + 1),
+		"Selected vehicle: %u/%u\n", static_cast<unsigned>(app->teleopIdxVeh + 1),
 		static_cast<unsigned>(vehs.size()));
 	if (vehs.size() > app->teleopIdxVeh)
 	{
@@ -123,26 +121,23 @@ std::string mvsim_launch_handle_teleop(
 
 		// Get speed: ground truth
 		{
-			const mrpt::math::TTwist2D& vel =
-				it_veh->second->getVelocityLocal();
+			const mrpt::math::TTwist2D& vel = it_veh->second->getVelocityLocal();
 			txt2gui_tmp += mrpt::format(
-				"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx,
-				vel.vy, mrpt::RAD2DEG(vel.omega));
+				"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx, vel.vy,
+				mrpt::RAD2DEG(vel.omega));
 		}
 		// Get speed: ground truth
 		{
-			const mrpt::math::TTwist2D& vel =
-				it_veh->second->getVelocityLocalOdoEstimate();
+			const mrpt::math::TTwist2D& vel = it_veh->second->getVelocityLocalOdoEstimate();
 			txt2gui_tmp += mrpt::format(
-				"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx,
-				vel.vy, mrpt::RAD2DEG(vel.omega));
+				"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx, vel.vy,
+				mrpt::RAD2DEG(vel.omega));
 		}
 
 		// Generic teleoperation interface for any controller that
 		// supports it:
 		{
-			ControllerBaseInterface* controller =
-				it_veh->second->getControllerInterface();
+			ControllerBaseInterface* controller = it_veh->second->getControllerInterface();
 			ControllerBaseInterface::TeleopInput teleop_in;
 			ControllerBaseInterface::TeleopOutput teleop_out;
 			teleop_in.keycode = keyevent.keycode;
@@ -182,22 +177,19 @@ Available options:
 	// Handle CTRL+C:
 	mvsim_install_signal_handler();
 
-	const auto verbosityLevel =
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			cli->argVerbosity.getValue());
+	const auto verbosityLevel = mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+		cli->argVerbosity.getValue());
 
 	if (verbosityLevel <= mrpt::system::LVL_INFO)
 	{
-		mrpt::system::consoleColorAndStyle(
-			mrpt::system::ConsoleForegroundColor::BRIGHT_YELLOW);
+		mrpt::system::consoleColorAndStyle(mrpt::system::ConsoleForegroundColor::BRIGHT_YELLOW);
 		std::cout  //
 			<< "\n"
 			<< "====================================================\n"
 			<< " MVSIM simulator running. Press CTRL+C to end.      \n"
 			<< "====================================================\n"
 			<< "\n";
-		mrpt::system::consoleColorAndStyle(
-			mrpt::system::ConsoleForegroundColor::DEFAULT);
+		mrpt::system::consoleColorAndStyle(mrpt::system::ConsoleForegroundColor::DEFAULT);
 	}
 
 	const auto sXMLfilename = unlabeledArgs.at(1);
@@ -207,8 +199,7 @@ Available options:
 	app->world.setMinLoggingLevel(verbosityLevel);
 
 	// CLI flags:
-	if (cli->argFullProfiler.isSet())
-		app->world.getTimeLogger().enableKeepWholeHistory();
+	if (cli->argFullProfiler.isSet()) app->world.getTimeLogger().enableKeepWholeHistory();
 
 	if (cli->argHeadless.isSet()) app->world.headless(true);
 
@@ -237,14 +228,12 @@ Available options:
 	if (!cli->argHeadless.isSet())
 	{
 		// regular GUI:
-		app->thGUI = std::thread(
-			&mvsim_server_thread_update_GUI, std::ref(app->thread_params));
+		app->thGUI = std::thread(&mvsim_server_thread_update_GUI, std::ref(app->thread_params));
 	}
 	else
 	{
 		// headless thread for off-screen rendering sensors:
-		app->thGUI = std::thread(
-			&mvsim_server_thread_headless, std::ref(app->thread_params));
+		app->thGUI = std::thread(&mvsim_server_thread_headless, std::ref(app->thread_params));
 	}
 
 	// Run simulation:
@@ -261,16 +250,14 @@ Available options:
 		// ============================================================
 		// Compute how much time has passed to simulate in real-time:
 		double tNew = mrpt::Clock::nowDouble();
-		double incrTime =
-			rtFactor * (tNew - tAbsInit) - app->world.get_simul_time();
-		int incrTimeSteps = static_cast<int>(
-			std::floor(incrTime / app->world.get_simul_timestep()));
+		double incrTime = rtFactor * (tNew - tAbsInit) - app->world.get_simul_time();
+		int incrTimeSteps =
+			static_cast<int>(std::floor(incrTime / app->world.get_simul_timestep()));
 
 		// Simulate:
 		if (incrTimeSteps > 0)
 		{
-			app->world.run_simulation(
-				incrTimeSteps * app->world.get_simul_timestep());
+			app->world.run_simulation(incrTimeSteps * app->world.get_simul_timestep());
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -345,8 +332,7 @@ void mvsim_server_thread_update_GUI(TThreadParams& thread_params)
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << "[mvsim_server_thread_update_GUI] Exception: " << e.what()
-				  << std::endl;
+		std::cerr << "[mvsim_server_thread_update_GUI] Exception: " << e.what() << std::endl;
 	}
 }
 
@@ -355,13 +341,12 @@ void mvsim_server_thread_headless(TThreadParams& thread_params)
 	try
 	{
 		ASSERT_(thread_params.world);
-		while (!thread_params.isClosing() &&
-			   !thread_params.world->simulator_must_close())
+		while (!thread_params.isClosing() && !thread_params.world->simulator_must_close())
 		{
 			thread_params.world->internalGraphicsLoopTasksForSimulation();
 
-			std::this_thread::sleep_for(std::chrono::microseconds(mrpt::round(
-				thread_params.world->get_simul_timestep() * 1000000)));
+			std::this_thread::sleep_for(std::chrono::microseconds(
+				mrpt::round(thread_params.world->get_simul_timestep() * 1000000)));
 		}
 
 		// in case we are here due to simulator_must_close()
@@ -369,7 +354,6 @@ void mvsim_server_thread_headless(TThreadParams& thread_params)
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << "[mvsim_server_thread_update_GUI] Exception: " << e.what()
-				  << std::endl;
+		std::cerr << "[mvsim_server_thread_update_GUI] Exception: " << e.what() << std::endl;
 	}
 }

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -81,13 +81,11 @@ class Client : public mrpt::system::COutputLogger
 	template <typename T>
 	void advertiseTopic(const std::string& topicName);
 
-	void publishTopic(
-		const std::string& topicName, const google::protobuf::Message& msg);
+	void publishTopic(const std::string& topicName, const google::protobuf::Message& msg);
 
 	template <typename MSG_T>
 	void subscribeTopic(
-		const std::string& topicName,
-		const std::function<void(const MSG_T&)>& callback);
+		const std::string& topicName, const std::function<void(const MSG_T&)>& callback);
 
 	template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
 	void advertiseService(
@@ -96,19 +94,17 @@ class Client : public mrpt::system::COutputLogger
 
 	template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
 	void callService(
-		const std::string& serviceName, const INPUT_MSG_T& input,
-		OUTPUT_MSG_T& output);
+		const std::string& serviceName, const INPUT_MSG_T& input, OUTPUT_MSG_T& output);
 
 	/// Overload for python wrapper
-	std::string callService(
-		const std::string& serviceName, const std::string& inputSerializedMsg);
+	std::string callService(const std::string& serviceName, const std::string& inputSerializedMsg);
 
 	/// Overload for python wrapper (callback accepts bytes-string)
 	void subscribeTopic(
 		const std::string& topicName,
-		const std::function<void(
-			const std::string& /*msgType*/,
-			const std::vector<uint8_t>& /*serializedMsg*/)>& callback);
+		const std::function<
+			void(const std::string& /*msgType*/, const std::vector<uint8_t>& /*serializedMsg*/)>&
+			callback);
 
 	struct InfoPerNode
 	{
@@ -126,8 +122,7 @@ class Client : public mrpt::system::COutputLogger
 
 	using topic_callback_t = std::function<void(const zmq::message_t& /*m*/)>;
 
-	void subscribe_topic_raw(
-		const std::string& topicName, const topic_callback_t& callback);
+	void subscribe_topic_raw(const std::string& topicName, const topic_callback_t& callback);
 
 	/** @} */
 
@@ -156,22 +151,17 @@ class Client : public mrpt::system::COutputLogger
 	void internalTopicUpdatesThread();
 	void internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt);
 
-	using service_callback_t =
-		std::function<std::shared_ptr<google::protobuf::Message>(
-			const std::string& /*inAsString*/)>;
+	using service_callback_t = std::function<std::shared_ptr<google::protobuf::Message>(
+		const std::string& /*inAsString*/)>;
 
 	void doAdvertiseTopic(
-		const std::string& topicName,
-		const google::protobuf::Descriptor* descriptor);
+		const std::string& topicName, const google::protobuf::Descriptor* descriptor);
 	void doAdvertiseService(
-		const std::string& serviceName,
-		const google::protobuf::Descriptor* descIn,
-		const google::protobuf::Descriptor* descOut,
-		service_callback_t callback);
+		const std::string& serviceName, const google::protobuf::Descriptor* descIn,
+		const google::protobuf::Descriptor* descOut, service_callback_t callback);
 
 	void doSubscribeTopic(
-		const std::string& topicName,
-		const google::protobuf::Descriptor* descriptor,
+		const std::string& topicName, const google::protobuf::Descriptor* descriptor,
 		const topic_callback_t& callback);
 	void doCallService(
 		const std::string& serviceName, const std::string& inputSerializedMsg,
@@ -191,8 +181,7 @@ void Client::advertiseTopic(const std::string& topicName)
 
 template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
 void Client::advertiseService(
-	const std::string& serviceName,
-	const std::function<OUTPUT_MSG_T(const INPUT_MSG_T&)>& callback)
+	const std::string& serviceName, const std::function<OUTPUT_MSG_T(const INPUT_MSG_T&)>& callback)
 {
 	doAdvertiseService(
 		serviceName, INPUT_MSG_T::descriptor(), OUTPUT_MSG_T::descriptor(),
@@ -207,8 +196,7 @@ void Client::advertiseService(
 
 template <typename MSG_T>
 void Client::subscribeTopic(
-	const std::string& topicName,
-	const std::function<void(const MSG_T&)>& callback)
+	const std::string& topicName, const std::function<void(const MSG_T&)>& callback)
 {
 	doSubscribeTopic(
 		topicName, MSG_T::descriptor(),
@@ -223,8 +211,7 @@ void Client::subscribeTopic(
 
 template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
 void Client::callService(
-	const std::string& serviceName, const INPUT_MSG_T& input,
-	OUTPUT_MSG_T& output)
+	const std::string& serviceName, const INPUT_MSG_T& input, OUTPUT_MSG_T& output)
 {
 	doCallService(serviceName, input.SerializeAsString(), output);
 }

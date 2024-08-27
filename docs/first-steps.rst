@@ -58,8 +58,16 @@ published sensor topics.
 Move it
 ------------
 
-If you are running MVSim as a ROS node, you can launch any standard teleoperation node 
+If you are running MVSim as a ROS node, you can launch any standard teleoperation node
 and send motion commands to ``/cmd_vel`` as with any other robot or simulator.
+
+If you want to use the teleop panel in rviz2, please install `visualization_tutorials <https://github.com/ros-visualization/visualization_tutorials/tree/ros2>`_.
+
+.. code-block:: bash
+
+    cd ros2_ws/src
+    git clone -b ros2 https://github.com/ros-visualization/visualization_tutorials
+    colcon build --symlink-install
 
 Additionally, MVSim allows you to **move the robot directly using the keyboard or a joystick**.
 Make sure of giving the focus to the MVSim window first,
@@ -68,7 +76,7 @@ then use these keys:
 - ``w/s`` to increase/decrease the PI controller setpoint linear speed, and
 - ``a/d`` to change the corresponding angular speed, that is, rotate to the left and right.
 - Use the spacebar as a brake.
-- In worlds with more than one robot, select the active robot by pressing the numeric 
+- In worlds with more than one robot, select the active robot by pressing the numeric
   keys ``1``, ``2``, etc.
 
 All the details on **keyboard and joystick-based control** are listed `here <teleoperation.html>`_.

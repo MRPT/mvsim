@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 	try
 	{
 		// Create a "Node" object.
-		std::shared_ptr<MVSimNode> node = std::make_shared<MVSimNode>(n);
+		mvsim_node::shared_ptr<MVSimNode> node = mvsim_node::make_shared<MVSimNode>(n);
 
 		// Declare variables that can be modified by launch file or command
 		// line.
@@ -68,9 +68,8 @@ int main(int argc, char** argv)
 		// Do this before parameter server, else some of the parameter server
 		// values can be overwritten.
 		dynamic_reconfigure::Server<mvsim::mvsimNodeConfig> dr_srv;
-		dynamic_reconfigure::Server<mvsim::mvsimNodeConfig>::CallbackType cb;
-		cb = boost::bind(&MVSimNode::configCallback, node.get(), _1, _2);
-		dr_srv.setCallback(cb);
+		dr_srv.setCallback([&node](mvsim::mvsimNodeConfig& config, uint32_t level)
+						   { return node->configCallback(config, level); });
 #endif
 
 		// Tell ROS how fast to run this node->
@@ -85,22 +84,20 @@ int main(int argc, char** argv)
 			r.sleep();
 		}
 #else
-		auto ros_clock = rclcpp::Clock::make_shared();
-		auto timer_ = rclcpp::create_timer(
+		const auto ros_clock = rclcpp::Clock::make_shared();
+		const auto timer_ = rclcpp::create_timer(
 			n, ros_clock, std::chrono::microseconds(periodMs),
-			[&]()
+			[&node]()
 			{
 				if (rclcpp::ok()) node->spin();
 			});
 
 		rclcpp::on_shutdown(
-			[&]()
+			[&node]()
 			{
-				std::cout << "[rclcpp::on_shutdown] Destroying MVSIM node..."
-						  << std::endl;
+				std::cout << "[rclcpp::on_shutdown] Destroying MVSIM node..." << std::endl;
 				node->terminateSimulation();
-				std::cout << "[rclcpp::on_shutdown] MVSIM node destroyed."
-						  << std::endl;
+				std::cout << "[rclcpp::on_shutdown] MVSIM node destroyed." << std::endl;
 			});
 
 		rclcpp::spin(n);
@@ -114,9 +111,7 @@ int main(int argc, char** argv)
 #if PACKAGE_ROS_VERSION == 1
 		std::cerr << e.what() << std::endl;
 #else
-		RCLCPP_ERROR_STREAM(
-			n->get_logger(), "Exception in main node body:\n"
-								 << e.what());
+		RCLCPP_ERROR_STREAM(n->get_logger(), "Exception in main node body:\n" << e.what());
 #endif
 		return 1;
 	}

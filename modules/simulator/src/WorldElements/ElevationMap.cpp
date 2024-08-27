@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -58,11 +58,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_extension_x"] = TParamEntry("%f", &textureExtensionX_);
 	params["texture_extension_y"] = TParamEntry("%f", &textureExtensionY_);
 
-	params["debug_show_contact_points"] =
-		TParamEntry("%bool", &debugShowContactPoints_);
+	params["debug_show_contact_points"] = TParamEntry("%bool", &debugShowContactPoints_);
 
-	parse_xmlnode_children_as_param(
-		*root, params, world_->user_defined_variables());
+	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 
 	// Load elevation data:
 	mrpt::math::CMatrixFloat elevation_data;
@@ -71,8 +69,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		sElevationImgFile = world_->local_to_abs_path(sElevationImgFile);
 
 		mrpt::img::CImage imgElev;
-		if (!imgElev.loadFromFile(
-				sElevationImgFile, 0 /*force load grayscale*/))
+		if (!imgElev.loadFromFile(sElevationImgFile, 0 /*force load grayscale*/))
 			throw std::runtime_error(mrpt::format(
 				"[ElevationMap] ERROR: Cannot read elevation image '%s'",
 				sElevationImgFile.c_str()));
@@ -87,8 +84,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		mrpt::math::CMatrixFloat f = elevation_data;
 		f -= vmin;
 		f *= (img_max_z - img_min_z) / (vmax - vmin);
-		mrpt::math::CMatrixFloat m(
-			elevation_data.rows(), elevation_data.cols());
+		mrpt::math::CMatrixFloat m(elevation_data.rows(), elevation_data.cols());
 		m.setConstant(img_min_z);
 		f += m;
 		elevation_data = std::move(f);
@@ -107,8 +103,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 		if (!mesh_image.loadFromFile(sTextureImgFile))
 			throw std::runtime_error(mrpt::format(
-				"[ElevationMap] ERROR: Cannot read texture image '%s'",
-				sTextureImgFile.c_str()));
+				"[ElevationMap] ERROR: Cannot read texture image '%s'", sTextureImgFile.c_str()));
 		has_mesh_image = true;
 	}
 
@@ -122,8 +117,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		gl_mesh_->assignImageAndZ(mesh_image, elevation_data);
 
 #if MRPT_VERSION >= 0x270
-		gl_mesh_->setMeshTextureExtension(
-			textureExtensionX_, textureExtensionY_);
+		gl_mesh_->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
 #endif
 	}
 	else
@@ -139,17 +133,14 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	const double LX = (elevation_data.rows() - 1) * resolution_;
 	const double LY = (elevation_data.cols() - 1) * resolution_;
 
-	if (corner_min_x == std::numeric_limits<double>::max())
-		corner_min_x = -0.5 * LX;
+	if (corner_min_x == std::numeric_limits<double>::max()) corner_min_x = -0.5 * LX;
 
-	if (corner_min_y == std::numeric_limits<double>::max())
-		corner_min_y = -0.5 * LY;
+	if (corner_min_y == std::numeric_limits<double>::max()) corner_min_y = -0.5 * LY;
 
 	// Important: the yMin/yMax in the next line are swapped to handle
 	// the "+y" different direction in image and map coordinates, it is not
 	// a bug:
-	gl_mesh_->setGridLimits(
-		corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
+	gl_mesh_->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
 
 	gl_debugWheelsContactPoints_ = mrpt::opengl::CPointCloud::Create();
 	gl_debugWheelsContactPoints_->enableVariablePointSize(false);
@@ -179,8 +170,7 @@ void ElevationMap::internalGuiUpdate(
 	}
 }
 
-void ElevationMap::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
+void ElevationMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& context)
 {
 	// For each vehicle:
 	// 1) Compute its 3D pose according to the mesh tilt angle.
@@ -234,8 +224,7 @@ void ElevationMap::simul_pre_timestep(
 				corr.other_z = 0;
 #endif
 				// Global frame
-				const mrpt::math::TPoint3D gPt =
-					cur_cpose.composePoint({wheel.x, wheel.y, 0.0});
+				const mrpt::math::TPoint3D gPt = cur_cpose.composePoint({wheel.x, wheel.y, 0.0});
 				float z;
 				if (!getElevationAt(gPt.x /*in*/, gPt.y /*in*/, z /*out*/))
 				{
@@ -261,8 +250,7 @@ void ElevationMap::simul_pre_timestep(
 			double transf_scale;
 			mrpt::poses::CPose3DQuat tmpl;
 
-			mrpt::tfest::se3_l2(
-				corrs_, tmpl, transf_scale, true /*force scale unity*/);
+			mrpt::tfest::se3_l2(corrs_, tmpl, transf_scale, true /*force scale unity*/);
 
 			optimalTf_ = mrpt::poses::CPose3D(tmpl);
 
@@ -279,16 +267,14 @@ void ElevationMap::simul_pre_timestep(
 		if (debugShowContactPoints_)
 		{
 			gl_debugWheelsContactPoints_->clear();
-			for (const auto& c : corrs_)
-				gl_debugWheelsContactPoints_->insertPoint(c.global);
+			for (const auto& c : corrs_) gl_debugWheelsContactPoints_->insertPoint(c.global);
 		}
 
 		// compute "down" direction:
 		{
 			mrpt::poses::CPose3D rot_only;
 			rot_only.setRotationMatrix(optimalTf_.getRotationMatrix());
-			rot_only.inverseComposePoint(
-				.0, .0, -1.0, dir_down.x, dir_down.y, dir_down.z);
+			rot_only.inverseComposePoint(.0, .0, -1.0, dir_down.x, dir_down.y, dir_down.z);
 		}
 
 		// 2) Apply gravity force
@@ -296,11 +282,9 @@ void ElevationMap::simul_pre_timestep(
 		{
 			// To chassis:
 			const double chassis_weight = veh->getChassisMass() * gravity;
-			const mrpt::math::TPoint2D chassis_com =
-				veh->getChassisCenterOfMass();
+			const mrpt::math::TPoint2D chassis_com = veh->getChassisCenterOfMass();
 			veh->apply_force(
-				{dir_down.x * chassis_weight, dir_down.y * chassis_weight},
-				chassis_com);
+				{dir_down.x * chassis_weight, dir_down.y * chassis_weight}, chassis_com);
 
 			// To wheels:
 			for (size_t iW = 0; iW < nWheels; iW++)
@@ -308,8 +292,7 @@ void ElevationMap::simul_pre_timestep(
 				const Wheel& wheel = veh->getWheelInfo(iW);
 				const double wheel_weight = wheel.mass * gravity;
 				veh->apply_force(
-					{dir_down.x * wheel_weight, dir_down.y * wheel_weight},
-					{wheel.x, wheel.y});
+					{dir_down.x * wheel_weight, dir_down.y * wheel_weight}, {wheel.x, wheel.y});
 			}
 		}
 
@@ -334,10 +317,8 @@ static float calcz(
 					  (p3.y - p2.y) * (p1.x - p3.x);
 	ASSERT_(det != 0.0f);
 
-	const float l1 =
-		((p2.x - p3.x) * (y - p3.y) + (p3.y - p2.y) * (x - p3.x)) / det;
-	const float l2 =
-		((p3.x - p1.x) * (y - p3.y) + (p1.y - p3.y) * (x - p3.x)) / det;
+	const float l1 = ((p2.x - p3.x) * (y - p3.y) + (p3.y - p2.y) * (x - p3.x)) / det;
+	const float l2 = ((p3.x - p1.x) * (y - p3.y) + (p1.y - p3.y) * (x - p3.x)) / det;
 	const float l3 = 1.0f - l1 - l2;
 
 	return l1 * p1.z + l2 * p2.z + l3 * p3.z;
@@ -362,9 +343,7 @@ bool ElevationMap::getElevationAt(double x, double y, float& z) const
 	const int cx00 = ::floor((x - x0) / sCellX);
 	const int cy00 = ::floor((y - y0) / sCellY);
 
-	if (cx00 < 1 || cx00 >= int(nCellsX - 1) || cy00 < 1 ||
-		cy00 >= int(nCellsY - 1))
-		return false;
+	if (cx00 < 1 || cx00 >= int(nCellsX - 1) || cy00 < 1 || cy00 >= int(nCellsY - 1)) return false;
 
 	// Linear interpolation:
 	const float z00 = meshCacheZ_(cx00, cy00);

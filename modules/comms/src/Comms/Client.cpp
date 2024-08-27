@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -117,8 +117,7 @@ struct Client::ZMQImpl
 };
 
 Client::Client()
-	: mrpt::system::COutputLogger("mvsim::Client"),
-	  zmq_(std::make_unique<Client::ZMQImpl>())
+	: mrpt::system::COutputLogger("mvsim::Client"), zmq_(std::make_unique<Client::ZMQImpl>())
 {
 }
 Client::Client(const std::string& nodeName) : Client() { setName(nodeName); }
@@ -139,9 +138,7 @@ bool Client::connected() const
 void Client::connect()
 {
 	using namespace std::string_literals;
-	ASSERTMSG_(
-		!zmq_->mainReqSocket || !zmq_->mainReqSocket,
-		"Client is already running.");
+	ASSERTMSG_(!zmq_->mainReqSocket || !zmq_->mainReqSocket, "Client is already running.");
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
@@ -155,8 +152,7 @@ void Client::connect()
 	zmq_->mainReqSocketMonitor.monitor(zmq_->mainReqSocket.value());
 
 	zmq_->mainReqSocket->connect(
-		"tcp://"s + serverHostAddress_ + ":"s +
-		std::to_string(MVSIM_PORTNO_MAIN_REP));
+		"tcp://"s + serverHostAddress_ + ":"s + std::to_string(MVSIM_PORTNO_MAIN_REP));
 
 	// Let the server know about this new node:
 	doRegisterClient();
@@ -165,15 +161,11 @@ void Client::connect()
 	zmq_->srvListenSocket.emplace(zmq_->context, ZMQ_REP);
 	zmq_->srvListenSocket->bind("tcp://0.0.0.0:*"s);
 
-	if (!zmq_->srvListenSocket)
-		THROW_EXCEPTION("Error binding service listening socket.");
+	if (!zmq_->srvListenSocket) THROW_EXCEPTION("Error binding service listening socket.");
 
-	ASSERTMSG_(
-		!serviceInvokerThread_.joinable(),
-		"Client service thread is already running!");
+	ASSERTMSG_(!serviceInvokerThread_.joinable(), "Client service thread is already running!");
 
-	serviceInvokerThread_ =
-		std::thread(&Client::internalServiceServingThread, this);
+	serviceInvokerThread_ = std::thread(&Client::internalServiceServingThread, this);
 #if MRPT_VERSION >= 0x204
 	mrpt::system::thread_name("services_"s + nodeName_, serviceInvokerThread_);
 #endif
@@ -185,18 +177,13 @@ void Client::connect()
 	if (!zmq_->topicNotificationsSocket)
 		THROW_EXCEPTION("Error binding topic updates listening socket.");
 
-	zmq_->topicNotificationsEndPoint =
-		get_zmq_endpoint(*zmq_->topicNotificationsSocket);
+	zmq_->topicNotificationsEndPoint = get_zmq_endpoint(*zmq_->topicNotificationsSocket);
 
-	ASSERTMSG_(
-		!topicUpdatesThread_.joinable(),
-		"Client topic updates thread is already running!");
+	ASSERTMSG_(!topicUpdatesThread_.joinable(), "Client topic updates thread is already running!");
 
-	topicUpdatesThread_ =
-		std::thread(&Client::internalTopicUpdatesThread, this);
+	topicUpdatesThread_ = std::thread(&Client::internalTopicUpdatesThread, this);
 #if MRPT_VERSION >= 0x204
-	mrpt::system::thread_name(
-		"topicUpdates_"s + nodeName_, topicUpdatesThread_);
+	mrpt::system::thread_name("topicUpdates_"s + nodeName_, topicUpdatesThread_);
 #endif
 
 #else
@@ -221,8 +208,7 @@ void Client::shutdown() noexcept
 	}
 	catch (const std::exception& e)
 	{
-		MRPT_LOG_ERROR_STREAM(
-			"shutdown: Exception: " << mrpt::exception_to_str(e));
+		MRPT_LOG_ERROR_STREAM("shutdown: Exception: " << mrpt::exception_to_str(e));
 	}
 
 #if CPPZMQ_VERSIONZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 4, 0)
@@ -260,8 +246,7 @@ void Client::doRegisterClient()
 	if (!rna.success())
 	{
 		THROW_EXCEPTION_FMT(
-			"Server did not allow registering node: %s",
-			rna.errormessage().c_str());
+			"Server did not allow registering node: %s", rna.errormessage().c_str());
 	}
 	MRPT_LOG_DEBUG("Successfully registered in the server.");
 #else
@@ -290,8 +275,7 @@ void Client::doUnregisterClient()
 	if (!rna.success())
 	{
 		THROW_EXCEPTION_FMT(
-			"Server answered an error unregistering node: %s",
-			rna.errormessage().c_str());
+			"Server answered an error unregistering node: %s", rna.errormessage().c_str());
 	}
 	MRPT_LOG_DEBUG("Successfully unregistered in the server.");
 #else
@@ -373,8 +357,7 @@ std::vector<Client::InfoPerTopic> Client::requestListOfTopics()
 }
 
 void Client::doAdvertiseTopic(
-	const std::string& topicName,
-	const google::protobuf::Descriptor* descriptor)
+	const std::string& topicName, const google::protobuf::Descriptor* descriptor)
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "doAdvertiseTopic");
@@ -391,8 +374,7 @@ void Client::doAdvertiseTopic(
 	// the ctor of InfoPerAdvertisedTopic automatically creates a ZMQ_PUB
 	// socket in pubSocket
 	internal::InfoPerAdvertisedTopic& ipat =
-		advTopics.emplace_hint(advTopics.begin(), topicName, zmq_->context)
-			->second;
+		advTopics.emplace_hint(advTopics.begin(), topicName, zmq_->context)->second;
 
 	lck.unlock();
 
@@ -457,8 +439,7 @@ void Client::doAdvertiseService(
 
 	if (services.find(serviceName) != services.end())
 		THROW_EXCEPTION_FMT(
-			"Service `%s` already registered in this same client!",
-			serviceName.c_str());
+			"Service `%s` already registered in this same client!", serviceName.c_str());
 
 	internal::InfoPerService& ips = services[serviceName];
 
@@ -473,9 +454,8 @@ void Client::doAdvertiseService(
 	ips.descOutput = descOut;
 
 	MRPT_LOG_DEBUG_FMT(
-		"Advertising service `%s` [%s->%s] on endpoint `%s`",
-		serviceName.c_str(), descIn->full_name().c_str(),
-		descOut->full_name().c_str(), assignedPort.c_str());
+		"Advertising service `%s` [%s->%s] on endpoint `%s`", serviceName.c_str(),
+		descIn->full_name().c_str(), descOut->full_name().c_str(), assignedPort.c_str());
 
 	mvsim_msgs::AdvertiseServiceRequest req;
 	req.set_servicename(ips.serviceName);
@@ -495,22 +475,20 @@ void Client::doAdvertiseService(
 
 	if (!ans.success())
 		THROW_EXCEPTION_FMT(
-			"Error registering service `%s` in server: `%s`",
-			serviceName.c_str(), ans.errormessage().c_str());
+			"Error registering service `%s` in server: `%s`", serviceName.c_str(),
+			ans.errormessage().c_str());
 
 #else
 	THROW_EXCEPTION("MVSIM built without ZMQ & PROTOBUF");
 #endif
 }
 
-void Client::publishTopic(
-	const std::string& topicName, const google::protobuf::Message& msg)
+void Client::publishTopic(const std::string& topicName, const google::protobuf::Message& msg)
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	ASSERTMSG_(
-		zmq_ && zmq_->mainReqSocket && zmq_->mainReqSocket,
-		"Client not connected to Server");
+		zmq_ && zmq_->mainReqSocket && zmq_->mainReqSocket, "Client not connected to Server");
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "publishTopic");
 
 	std::shared_lock<std::shared_mutex> lck(zmq_->advertisedTopics_mtx);
@@ -556,8 +534,7 @@ void Client::internalServiceServingThread()
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	try
 	{
-		MRPT_LOG_INFO_STREAM(
-			"[" << nodeName_ << "] Client service thread started.");
+		MRPT_LOG_INFO_STREAM("[" << nodeName_ << "] Client service thread started.");
 
 		zmq::socket_t& s = *zmq_->srvListenSocket;
 
@@ -579,8 +556,8 @@ void Client::internalServiceServingThread()
 				// Error: unknown service:
 				mvsim_msgs::GenericAnswer ans;
 				ans.set_success(false);
-				ans.set_errormessage(mrpt::format(
-					"Requested unknown service `%s`", srvName.c_str()));
+				ans.set_errormessage(
+					mrpt::format("Requested unknown service `%s`", srvName.c_str()));
 				MRPT_LOG_ERROR_STREAM(ans.errormessage());
 
 				mvsim::sendMessage(ans, s);
@@ -609,15 +586,13 @@ void Client::internalServiceServingThread()
 		}
 		else
 		{
-			MRPT_LOG_ERROR_STREAM(
-				"internalServiceServingThread: ZMQ error: " << e.what());
+			MRPT_LOG_ERROR_STREAM("internalServiceServingThread: ZMQ error: " << e.what());
 		}
 	}
 	catch (const std::exception& e)
 	{
 		MRPT_LOG_ERROR_STREAM(
-			"internalServiceServingThread: Exception: "
-			<< mrpt::exception_to_str(e));
+			"internalServiceServingThread: Exception: " << mrpt::exception_to_str(e));
 	}
 	MRPT_LOG_DEBUG_STREAM("internalServiceServingThread quitted.");
 
@@ -631,8 +606,7 @@ void Client::internalTopicUpdatesThread()
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	try
 	{
-		MRPT_LOG_DEBUG_STREAM(
-			"[" << nodeName_ << "] Client topic updates thread started.");
+		MRPT_LOG_DEBUG_STREAM("[" << nodeName_ << "] Client topic updates thread started.");
 
 		zmq::socket_t& s = *zmq_->topicNotificationsSocket;
 
@@ -664,16 +638,13 @@ void Client::internalTopicUpdatesThread()
 			{
 				// This shouldn't happen (?).
 				MRPT_LOG_WARN_STREAM(
-					"Received a topic `"
-					<< topicName
-					<< "` update message from server, but this node is not "
-					   "subscribed to it (!).");
+					"Received a topic `" << topicName
+										 << "` update message from server, but this node is not "
+											"subscribed to it (!).");
 				continue;
 			}
 
-			MRPT_LOG_DEBUG_STREAM(
-				"[internalTopicUpdatesThread] Received: "
-				<< tiMsg.DebugString());
+			MRPT_LOG_DEBUG_STREAM("[internalTopicUpdatesThread] Received: " << tiMsg.DebugString());
 
 			internal::InfoPerSubscribedTopic& ipt = itTopic->second;
 
@@ -697,18 +668,15 @@ void Client::internalTopicUpdatesThread()
 		}
 		else
 		{
-			MRPT_LOG_ERROR_STREAM(
-				"internalTopicUpdatesThread: ZMQ error: " << e.what());
+			MRPT_LOG_ERROR_STREAM("internalTopicUpdatesThread: ZMQ error: " << e.what());
 		}
 	}
 	catch (const std::exception& e)
 	{
 		MRPT_LOG_ERROR_STREAM(
-			"internalTopicUpdatesThread: Exception: "
-			<< mrpt::exception_to_str(e));
+			"internalTopicUpdatesThread: Exception: " << mrpt::exception_to_str(e));
 	}
-	MRPT_LOG_DEBUG_STREAM(
-		"[" << nodeName_ << "] Client topic updates thread quitted.");
+	MRPT_LOG_DEBUG_STREAM("[" << nodeName_ << "] Client topic updates thread quitted.");
 
 #endif
 }
@@ -722,8 +690,7 @@ std::string Client::callService(
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "callService");
 
 	std::string outMsgData, outMsgType;
-	doCallService(
-		serviceName, inputSerializedMsg, std::nullopt, outMsgData, outMsgType);
+	doCallService(serviceName, inputSerializedMsg, std::nullopt, outMsgData, outMsgType);
 	return outMsgData;
 #endif
 	MRPT_END
@@ -732,8 +699,7 @@ std::string Client::callService(
 void Client::subscribeTopic(
 	const std::string& topicName,
 	const std::function<void(
-		const std::string& /*msgType*/,
-		const std::vector<uint8_t>& /*serializedMsg*/)>& callback)
+		const std::string& /*msgType*/, const std::vector<uint8_t>& /*serializedMsg*/)>& callback)
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -765,8 +731,7 @@ void Client::doCallService(
 	std::string srvEndpoint;
 
 	auto lckCache = mrpt::lockHelper(serviceToEndPointCacheMtx_);
-	if (auto it = serviceToEndPointCache_.find(serviceName);
-		it != serviceToEndPointCache_.end())
+	if (auto it = serviceToEndPointCache_.find(serviceName); it != serviceToEndPointCache_.end())
 	{
 		srvEndpoint = it->second;
 	}
@@ -787,8 +752,8 @@ void Client::doCallService(
 
 		if (!gsia.success())
 			THROW_EXCEPTION_FMT(
-				"Error requesting information about service `%s`: %s",
-				serviceName.c_str(), gsia.errormessage().c_str());
+				"Error requesting information about service `%s`: %s", serviceName.c_str(),
+				gsia.errormessage().c_str());
 
 		srvEndpoint = gsia.serviceendpoint();
 
@@ -813,8 +778,7 @@ void Client::doCallService(
 	}
 	if (outputSerializedMsg)
 	{
-		const auto [typeName, serializedData] =
-			internal::parseMessageToParts(m);
+		const auto [typeName, serializedData] = internal::parseMessageToParts(m);
 
 		outputSerializedMsg.value().get() = serializedData;
 		if (outputMsgTypeName) outputMsgTypeName.value().get() = typeName;
@@ -823,15 +787,13 @@ void Client::doCallService(
 	MRPT_END
 }
 
-void Client::subscribe_topic_raw(
-	const std::string& topicName, const topic_callback_t& callback)
+void Client::subscribe_topic_raw(const std::string& topicName, const topic_callback_t& callback)
 {
 	doSubscribeTopic(topicName, nullptr, callback);
 }
 
 void Client::doSubscribeTopic(
-	const std::string& topicName,
-	[[maybe_unused]] const google::protobuf::Descriptor* descriptor,
+	const std::string& topicName, [[maybe_unused]] const google::protobuf::Descriptor* descriptor,
 	const topic_callback_t& callback)
 {
 	MRPT_START
@@ -859,8 +821,7 @@ void Client::doSubscribeTopic(
 
 	lck.unlock();
 
-	ipt.topicThread =
-		std::thread([&]() { this->internalTopicSubscribeThread(ipt); });
+	ipt.topicThread = std::thread([&]() { this->internalTopicSubscribeThread(ipt); });
 
 	// Let the server know about our interest in the topic:
 	mvsim_msgs::SubscribeRequest subReq;
@@ -893,8 +854,8 @@ void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
 	try
 	{
 		MRPT_LOG_DEBUG_STREAM(
-			"[" << nodeName_ << "] Client topic subscribe thread for `"
-				<< ipt.topicName << "` started.");
+			"[" << nodeName_ << "] Client topic subscribe thread for `" << ipt.topicName
+				<< "` started.");
 
 		zmq::socket_t& s = ipt.subSocket;
 
@@ -912,8 +873,7 @@ void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
 			{
 				MRPT_LOG_ERROR_STREAM(
 					"Exception in topic `"
-					<< ipt.topicName
-					<< "` subscription callback:" << mrpt::exception_to_str(e));
+					<< ipt.topicName << "` subscription callback:" << mrpt::exception_to_str(e));
 			}
 		}
 	}
@@ -930,18 +890,15 @@ void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
 		}
 		else
 		{
-			MRPT_LOG_ERROR_STREAM(
-				"internalTopicSubscribeThread: ZMQ error: " << e.what());
+			MRPT_LOG_ERROR_STREAM("internalTopicSubscribeThread: ZMQ error: " << e.what());
 		}
 	}
 	catch (const std::exception& e)
 	{
 		MRPT_LOG_ERROR_STREAM(
-			"internalTopicSubscribeThread: Exception: "
-			<< mrpt::exception_to_str(e));
+			"internalTopicSubscribeThread: Exception: " << mrpt::exception_to_str(e));
 	}
-	MRPT_LOG_DEBUG_STREAM(
-		"[" << nodeName_ << "] Client topic subscribe thread quitted.");
+	MRPT_LOG_DEBUG_STREAM("[" << nodeName_ << "] Client topic subscribe thread quitted.");
 
 #endif
 }

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -40,15 +40,11 @@ class CameraSensor : public SensorBase
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
-	mrpt::math::TPose3D getRelativePose() const override
-	{
-		return sensor_params_.sensorPose();
-	}
+	mrpt::math::TPose3D getRelativePose() const override { return sensor_params_.sensorPose(); }
 	void setRelativePose(const mrpt::math::TPose3D& p) override
 	{
 		sensor_params_.setSensorPose(mrpt::poses::CPose3D(p));
@@ -74,8 +70,7 @@ class CameraSensor : public SensorBase
 
 	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
 
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
-		gl_sensor_origin_corner_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
 };
 }  // namespace mvsim

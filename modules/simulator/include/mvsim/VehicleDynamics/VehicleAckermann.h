@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -47,12 +47,7 @@ class DynamicsAckermann : public VehicleBase
 	{
 		double fl_torque, fr_torque, rl_torque, rr_torque;
 		double steer_ang;  //!< Equivalent Ackermann steering angle
-		TControllerOutput()
-			: fl_torque(0),
-			  fr_torque(0),
-			  rl_torque(0),
-			  rr_torque(0),
-			  steer_ang(0)
+		TControllerOutput() : fl_torque(0), fr_torque(0), rl_torque(0), rr_torque(0), steer_ang(0)
 		{
 		}
 	};
@@ -67,14 +62,12 @@ class DynamicsAckermann : public VehicleBase
 		static const char* class_name() { return "raw"; }
 		//!< Directly set these values to tell the controller the desired
 		//! setpoints
-		double setpoint_wheel_torque_l, setpoint_wheel_torque_r,
-			setpoint_steer_ang;
+		double setpoint_wheel_torque_l, setpoint_wheel_torque_r, setpoint_steer_ang;
 		virtual void control_step(
 			const DynamicsAckermann::TControllerInput& ci,
 			DynamicsAckermann::TControllerOutput& co) override;
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 	};
 
 	/** PID controller that controls the vehicle with front traction & steering
@@ -92,8 +85,7 @@ class DynamicsAckermann : public VehicleBase
 			const DynamicsAckermann::TControllerInput& ci,
 			DynamicsAckermann::TControllerOutput& co) override;
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		double KP, KI, KD;	//!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
@@ -130,8 +122,7 @@ class DynamicsAckermann : public VehicleBase
 			const DynamicsAckermann::TControllerInput& ci,
 			DynamicsAckermann::TControllerOutput& co) override;
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
-		virtual void teleop_interface(
-			const TeleopInput& in, TeleopOutput& out) override;
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		double KP, KI, KD;	//!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
@@ -145,10 +136,7 @@ class DynamicsAckermann : public VehicleBase
 
 	const ControllerBase::Ptr& getController() const { return controller_; }
 	ControllerBase::Ptr& getController() { return controller_; }
-	virtual ControllerBaseInterface* getControllerInterface() override
-	{
-		return controller_.get();
-	}
+	virtual ControllerBaseInterface* getControllerInterface() override { return controller_.get(); }
 
 	/** @} */  // end controllers
 
@@ -160,16 +148,13 @@ class DynamicsAckermann : public VehicleBase
 	 * in the object.
 	 */
 	void computeFrontWheelAngles(
-		const double desired_equiv_steer_ang, double& out_fl_ang,
-		double& out_fr_ang) const;
+		const double desired_equiv_steer_ang, double& out_fl_ang, double& out_fr_ang) const;
 
    protected:
 	// See base class docs
-	virtual void dynamics_load_params_from_xml(
-		const rapidxml::xml_node<char>* xml_node) override;
+	virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node) override;
 	// See base class doc
-	virtual std::vector<double> invoke_motor_controllers(
-		const TSimulContext& context) override;
+	virtual std::vector<double> invoke_motor_controllers(const TSimulContext& context) override;
 
    private:
 	ControllerBase::Ptr controller_;  //!< The installed controller

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -25,8 +25,7 @@ DynamicsAckermann::ControllerTwistFrontSteerPID::ControllerTwistFrontSteerPID(
 	  max_torque(100.0)
 {
 	// Get distance between wheels:
-	dist_fWheels_ =
-		veh_.wheels_info_[WHEEL_FL].y - veh_.wheels_info_[WHEEL_FR].y;
+	dist_fWheels_ = veh_.wheels_info_[WHEEL_FL].y - veh_.wheels_info_[WHEEL_FR].y;
 	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
 	ASSERT_(dist_fWheels_ > 0.0);
 	ASSERT_(r2f_L_ > 0.0);
@@ -34,8 +33,7 @@ DynamicsAckermann::ControllerTwistFrontSteerPID::ControllerTwistFrontSteerPID(
 
 // See base class docs
 void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
-	const DynamicsAckermann::TControllerInput& ci,
-	DynamicsAckermann::TControllerOutput& co)
+	const DynamicsAckermann::TControllerInput& ci, DynamicsAckermann::TControllerOutput& co)
 {
 	// For each wheel:
 	// 1) Compute desired velocity set-point (in m/s)
@@ -55,9 +53,8 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 
 	// Desired velocities for each wheel
 	// In local vehicle frame:
-	const std::vector<mrpt::math::TVector2D> desired_wheel_vels =
-		veh_.getWheelsVelocityLocal(
-			mrpt::math::TTwist2D(setpoint_lin_speed, 0.0, setpoint_ang_speed));
+	const std::vector<mrpt::math::TVector2D> desired_wheel_vels = veh_.getWheelsVelocityLocal(
+		mrpt::math::TTwist2D(setpoint_lin_speed, 0.0, setpoint_ang_speed));
 
 	ASSERT_(desired_wheel_vels.size() == 4);
 
@@ -65,20 +62,17 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	// FL:
 	double vel_fl, vel_fr;
 	double desired_fl_steer_ang, desired_fr_steer_ang;
-	veh_.computeFrontWheelAngles(
-		co.steer_ang, desired_fl_steer_ang, desired_fr_steer_ang);
+	veh_.computeFrontWheelAngles(co.steer_ang, desired_fl_steer_ang, desired_fr_steer_ang);
 	{
 		const mrpt::poses::CPose2D wRotInv(0, 0, -desired_fl_steer_ang);
 		mrpt::math::TPoint2D vel_w;
-		wRotInv.composePoint(
-			desired_wheel_vels[DynamicsAckermann::WHEEL_FL], vel_w);
+		wRotInv.composePoint(desired_wheel_vels[DynamicsAckermann::WHEEL_FL], vel_w);
 		vel_fl = vel_w.x;
 	}
 	{
 		const mrpt::poses::CPose2D wRotInv(0, 0, -desired_fr_steer_ang);
 		mrpt::math::TPoint2D vel_w;
-		wRotInv.composePoint(
-			desired_wheel_vels[DynamicsAckermann::WHEEL_FR], vel_w);
+		wRotInv.composePoint(desired_wheel_vels[DynamicsAckermann::WHEEL_FR], vel_w);
 		vel_fr = vel_w.x;
 	}
 
@@ -91,23 +85,19 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 			veh_.getWheelsVelocityLocal(veh_.getVelocityLocalOdoEstimate());
 		ASSERT_(odo_wheel_vels.size() == 4);
 
-		const double actual_fl_steer_ang =
-			veh_.getWheelInfo(DynamicsAckermann::WHEEL_FL).yaw;
-		const double actual_fr_steer_ang =
-			veh_.getWheelInfo(DynamicsAckermann::WHEEL_FR).yaw;
+		const double actual_fl_steer_ang = veh_.getWheelInfo(DynamicsAckermann::WHEEL_FL).yaw;
+		const double actual_fr_steer_ang = veh_.getWheelInfo(DynamicsAckermann::WHEEL_FR).yaw;
 
 		{
 			const mrpt::poses::CPose2D wRotInv(0, 0, -actual_fl_steer_ang);
 			mrpt::math::TPoint2D vel_w;
-			wRotInv.composePoint(
-				odo_wheel_vels[DynamicsAckermann::WHEEL_FL], vel_w);
+			wRotInv.composePoint(odo_wheel_vels[DynamicsAckermann::WHEEL_FL], vel_w);
 			act_vel_fl = vel_w.x;
 		}
 		{
 			const mrpt::poses::CPose2D wRotInv(0, 0, -actual_fr_steer_ang);
 			mrpt::math::TPoint2D vel_w;
-			wRotInv.composePoint(
-				odo_wheel_vels[DynamicsAckermann::WHEEL_FR], vel_w);
+			wRotInv.composePoint(odo_wheel_vels[DynamicsAckermann::WHEEL_FR], vel_w);
 			act_vel_fr = vel_w.x;
 		}
 	}

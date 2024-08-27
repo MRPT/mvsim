@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -49,8 +49,7 @@ FrictionBase::Ptr FrictionBase::factory(
 	using namespace rapidxml;
 
 	if (!xml_node || 0 != strcmp(xml_node->name(), "friction"))
-		throw runtime_error(
-			"[FrictionBase::factory] Expected XML node <friction>");
+		throw runtime_error("[FrictionBase::factory] Expected XML node <friction>");
 
 	// Parse:
 	const xml_attribute<>* frict_class = xml_node->first_attribute("class");
@@ -62,7 +61,4 @@ FrictionBase::Ptr FrictionBase::factory(
 	return classFactory_friction.create(frict_class->value(), parent, xml_node);
 }
 
-void FrictionBase::setLogger(const std::weak_ptr<CSVLogger>& logger)
-{
-	logger_ = logger;
-}
+void FrictionBase::setLogger(const std::weak_ptr<CSVLogger>& logger) { logger_ = logger; }

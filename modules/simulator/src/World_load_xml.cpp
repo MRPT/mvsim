@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -32,8 +32,7 @@ void World::load_from_XML_file(const std::string& xmlFileNamePath)
 	load_from_XML(fil_xml.data(), xmlFileNamePath.c_str());
 }
 
-void World::load_from_XML(
-	const std::string& xml_text, const std::string& fileNameForPath)
+void World::load_from_XML(const std::string& xml_text, const std::string& fileNameForPath)
 {
 	using namespace std;
 	using namespace rapidxml;
@@ -54,8 +53,7 @@ void World::load_from_XML(
 	this->clear_all();
 
 	// Create anchor object for standalone (environment-attached) sensors:
-	DummyInvisibleBlock::Ptr standaloneSensorHost =
-		std::make_shared<DummyInvisibleBlock>(this);
+	DummyInvisibleBlock::Ptr standaloneSensorHost = std::make_shared<DummyInvisibleBlock>(this);
 
 	simulableObjectsMtx_.lock();
 	simulableObjects_.emplace("__standaloneSensorHost", standaloneSensorHost);
@@ -66,16 +64,15 @@ void World::load_from_XML(
 	(void)xml;	// unused
 
 	if (0 != strcmp(root->name(), "mvsim_world"))
-		throw runtime_error(mrpt::format(
-			"XML root element is '%s' ('mvsim_world' expected)", root->name()));
+		throw runtime_error(
+			mrpt::format("XML root element is '%s' ('mvsim_world' expected)", root->name()));
 
 	// Optional: format version attrib:
 	const xml_attribute<>* attrb_version = root->first_attribute("version");
 	int version_major = 1, version_min = 0;
 	if (attrb_version)
 	{
-		int ret = sscanf(
-			attrb_version->value(), "%i.%i", &version_major, &version_min);
+		int ret = sscanf(attrb_version->value(), "%i.%i", &version_major, &version_min);
 		if (ret != 2)
 			throw runtime_error(mrpt::format(
 				"Error parsing version attribute: '%s' ('%%i.%%i' "
@@ -137,8 +134,7 @@ void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
 	userDefinedVariables_["MVSIM_CURRENT_FILE_DIRECTORY"] = basePath_;
 
 	// Known tag parser?
-	if (auto itParser = xmlParsers_.find(node->name());
-		itParser != xmlParsers_.end())
+	if (auto itParser = xmlParsers_.find(node->name()); itParser != xmlParsers_.end())
 	{
 		itParser->second(ctx);
 	}
@@ -167,8 +163,7 @@ void World::parse_tag_element(const XmlParserContext& ctx)
 	worldElements_.emplace_back(e);
 
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-	simulableObjects_.emplace(
-		e->getName(), std::dynamic_pointer_cast<Simulable>(e));
+	simulableObjects_.emplace(e->getName(), std::dynamic_pointer_cast<Simulable>(e));
 }
 
 void World::parse_tag_vehicle(const XmlParserContext& ctx)
@@ -185,8 +180,7 @@ void World::parse_tag_vehicle(const XmlParserContext& ctx)
 	vehicles_.insert(VehicleList::value_type(veh->getName(), veh));
 
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-	simulableObjects_.emplace(
-		veh->getName(), std::dynamic_pointer_cast<Simulable>(veh));
+	simulableObjects_.emplace(veh->getName(), std::dynamic_pointer_cast<Simulable>(veh));
 }
 
 void World::parse_tag_vehicle_class(const XmlParserContext& ctx)
@@ -200,13 +194,11 @@ void World::parse_tag_sensor(const XmlParserContext& ctx)
 	// top-level <sensor> entries:
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 
-	DummyInvisibleBlock::Ptr standaloneSensorHost =
-		std::dynamic_pointer_cast<DummyInvisibleBlock>(
-			simulableObjects_.find("__standaloneSensorHost")->second);
+	DummyInvisibleBlock::Ptr standaloneSensorHost = std::dynamic_pointer_cast<DummyInvisibleBlock>(
+		simulableObjects_.find("__standaloneSensorHost")->second);
 	ASSERT_(standaloneSensorHost);
 
-	SensorBase::Ptr sensor =
-		SensorBase::factory(*standaloneSensorHost, ctx.node);
+	SensorBase::Ptr sensor = SensorBase::factory(*standaloneSensorHost, ctx.node);
 	standaloneSensorHost->add_sensor(sensor);
 }
 
@@ -235,20 +227,14 @@ void World::parse_tag_lights(const XmlParserContext& ctx)
 	lightOptions_.parse_from(*ctx.node, *this);
 }
 
-void World::parse_tag_walls(const XmlParserContext& ctx)
-{
-	process_load_walls(*ctx.node);
-}
+void World::parse_tag_walls(const XmlParserContext& ctx) { process_load_walls(*ctx.node); }
 
 void World::parse_tag_include(const XmlParserContext& ctx)
 {
 	auto fileAttrb = ctx.node->first_attribute("file");
-	ASSERTMSG_(
-		fileAttrb,
-		"XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
+	ASSERTMSG_(fileAttrb, "XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
 
-	const std::string relFile =
-		mvsim::parse(fileAttrb->value(), user_defined_variables());
+	const std::string relFile = mvsim::parse(fileAttrb->value(), user_defined_variables());
 
 	const auto absFile = this->local_to_abs_path(relFile);
 	MRPT_LOG_DEBUG_STREAM("XML parser: including file: '" << absFile << "'");
@@ -257,8 +243,7 @@ void World::parse_tag_include(const XmlParserContext& ctx)
 	// Inherit the user-defined variables from parent scope
 	vars = user_defined_variables();
 	// Plus new variables as XML attributes, local only:
-	for (auto attr = ctx.node->first_attribute(); attr;
-		 attr = attr->next_attribute())
+	for (auto attr = ctx.node->first_attribute(); attr; attr = attr->next_attribute())
 	{
 		if (strcmp(attr->name(), "file") == 0) continue;
 		vars[attr->name()] = attr->value();
@@ -275,21 +260,15 @@ void World::parse_tag_include(const XmlParserContext& ctx)
 void World::parse_tag_variable(const XmlParserContext& ctx)
 {
 	auto nameAttr = ctx.node->first_attribute("name");
-	ASSERTMSG_(
-		nameAttr,
-		"XML tag '<variable />' must have a 'name=\"xxx\"' attribute)");
+	ASSERTMSG_(nameAttr, "XML tag '<variable />' must have a 'name=\"xxx\"' attribute)");
 	const auto name = nameAttr->value();
 
 	auto valueAttr = ctx.node->first_attribute("value");
-	ASSERTMSG_(
-		valueAttr,
-		"XML tag '<variable />' must have a 'value=\"xxx\"' attribute)");
+	ASSERTMSG_(valueAttr, "XML tag '<variable />' must have a 'value=\"xxx\"' attribute)");
 
-	const std::string finalValue =
-		mvsim::parse(valueAttr->value(), userDefinedVariables_);
+	const std::string finalValue = mvsim::parse(valueAttr->value(), userDefinedVariables_);
 
-	thread_local const bool MVSIM_VERBOSE_PARSE =
-		mrpt::get_env<bool>("MVSIM_VERBOSE_PARSE", false);
+	thread_local const bool MVSIM_VERBOSE_PARSE = mrpt::get_env<bool>("MVSIM_VERBOSE_PARSE", false);
 
 	if (MVSIM_VERBOSE_PARSE)
 	{
@@ -305,13 +284,11 @@ void World::parse_tag_variable(const XmlParserContext& ctx)
 void World::parse_tag_for(const XmlParserContext& ctx)
 {
 	auto varAttr = ctx.node->first_attribute("var");
-	ASSERTMSG_(
-		varAttr, "XML tag '<for />' must have a 'var=\"xxx\"' attribute)");
+	ASSERTMSG_(varAttr, "XML tag '<for />' must have a 'var=\"xxx\"' attribute)");
 	const auto varName = varAttr->value();
 
 	auto varFrom = ctx.node->first_attribute("from");
-	ASSERTMSG_(
-		varFrom, "XML tag '<for />' must have a 'from=\"xxx\"' attribute)");
+	ASSERTMSG_(varFrom, "XML tag '<for />' must have a 'from=\"xxx\"' attribute)");
 	const auto fromStr = mvsim::parse(varFrom->value(), userDefinedVariables_);
 
 	auto varTo = ctx.node->first_attribute("to");
@@ -320,12 +297,10 @@ void World::parse_tag_for(const XmlParserContext& ctx)
 
 	bool forBodyEmpty = true;
 
-	for (auto childNode = ctx.node->first_node(); childNode;
-		 childNode = childNode->next_sibling())
+	for (auto childNode = ctx.node->first_node(); childNode; childNode = childNode->next_sibling())
 	{
 		forBodyEmpty = false;
-		for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr);
-			 curVal++)
+		for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr); curVal++)
 		{
 			userDefinedVariables_[varName] = std::to_string(curVal);
 			internal_recursive_parse_XML({childNode, basePath_});
@@ -346,8 +321,7 @@ void World::parse_tag_if(const XmlParserContext& ctx)
 	bool isTrue = evaluate_tag_if(*ctx.node);
 	if (!isTrue) return;
 
-	for (auto childNode = ctx.node->first_node(); childNode;
-		 childNode = childNode->next_sibling())
+	for (auto childNode = ctx.node->first_node(); childNode; childNode = childNode->next_sibling())
 	{
 		internal_recursive_parse_XML({childNode, basePath_});
 	}
@@ -356,8 +330,7 @@ void World::parse_tag_if(const XmlParserContext& ctx)
 bool World::evaluate_tag_if(const rapidxml::xml_node<char>& node) const
 {
 	auto varCond = node.first_attribute("condition");
-	ASSERTMSG_(
-		varCond, "XML tag '<if />' must have a 'condition=\"xxx\"' attribute)");
+	ASSERTMSG_(varCond, "XML tag '<if />' must have a 'condition=\"xxx\"' attribute)");
 	const auto str = mvsim::parse(varCond->value(), userDefinedVariables_);
 
 	// is it "true"?
@@ -366,10 +339,9 @@ bool World::evaluate_tag_if(const rapidxml::xml_node<char>& node) const
 	const long long ret = std::strtoll(str.c_str(), &retStr, 0 /*auto base*/);
 	if (retStr != 0 && retStr != str.c_str()) intVal = ret;
 
-	bool isTrue = str == "y" || str == "Y" || str == "yes" || str == "Yes" ||
-				  str == "YES" || str == "true" || str == "True" ||
-				  str == "TRUE" || str == "on" || str == "ON" || str == "On" ||
-				  (intVal.has_value() && intVal.value() != 0);
+	bool isTrue = str == "y" || str == "Y" || str == "yes" || str == "Yes" || str == "YES" ||
+				  str == "true" || str == "True" || str == "TRUE" || str == "on" || str == "ON" ||
+				  str == "On" || (intVal.has_value() && intVal.value() != 0);
 
 	return isTrue;
 }

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -23,8 +23,7 @@
 #include <iostream>
 #include <sstream>
 
-thread_local const bool MVSIM_VERBOSE_PARSE =
-	mrpt::get_env<bool>("MVSIM_VERBOSE_PARSE", false);
+thread_local const bool MVSIM_VERBOSE_PARSE = mrpt::get_env<bool>("MVSIM_VERBOSE_PARSE", false);
 
 using namespace mvsim;
 
@@ -54,8 +53,7 @@ static std::string parseEnvVars(const std::string& text)
 	else
 	{
 		THROW_EXCEPTION_FMT(
-			"parseEnvVars(): Undefined environment variable found: $env{%s}",
-			varname.c_str());
+			"parseEnvVars(): Undefined environment variable found: $env{%s}", varname.c_str());
 	}
 
 	return parseEnvVars(pre + varvalue + post.substr(post_end + 1));
@@ -63,8 +61,7 @@ static std::string parseEnvVars(const std::string& text)
 }
 
 static std::string parseVars(
-	const std::string& text,
-	const std::map<std::string, std::string>& variableNamesValues)
+	const std::string& text, const std::map<std::string, std::string>& variableNamesValues)
 {
 	MRPT_TRY_START
 
@@ -84,8 +81,7 @@ static std::string parseVars(
 
 	const auto varname = post.substr(0, post_end);
 	std::string varvalue;
-	if (const auto it = variableNamesValues.find(varname);
-		it != variableNamesValues.end())
+	if (const auto it = variableNamesValues.find(varname); it != variableNamesValues.end())
 	{
 		varvalue = it->second;
 	}
@@ -99,12 +95,11 @@ static std::string parseVars(
 		}
 
 		THROW_EXCEPTION_FMT(
-			"parseVars(): Undefined variable found: ${%s}. Known ones are: %s",
-			varname.c_str(), allKnown.c_str());
+			"parseVars(): Undefined variable found: ${%s}. Known ones are: %s", varname.c_str(),
+			allKnown.c_str());
 	}
 
-	return parseVars(
-		pre + varvalue + post.substr(post_end + 1), variableNamesValues);
+	return parseVars(pre + varvalue + post.substr(post_end + 1), variableNamesValues);
 	MRPT_TRY_END
 }
 
@@ -134,9 +129,7 @@ static std::string parseCmdRuns(const std::string& text)
 	int ret = mrpt::system::executeCommand(cmd, &cmdOut);
 	if (ret != 0)
 	{
-		THROW_EXCEPTION_FMT(
-			"Error (retval=%i) executing external command: `%s`", ret,
-			cmd.c_str());
+		THROW_EXCEPTION_FMT("Error (retval=%i) executing external command: `%s`", ret, cmd.c_str());
 	}
 	// Clear whitespaces:
 	cmdOut = mrpt::system::trim(cmdOut);
@@ -167,8 +160,7 @@ static double randn()
 
 // Examples: "$f{180/5}",   "$f{ ${MAX_SPEED} * sin(deg2rad(45)) }"
 static std::string parseMathExpr(
-	const std::string& text,
-	const std::map<std::string, std::string>& variableNamesValues)
+	const std::string& text, const std::map<std::string, std::string>& variableNamesValues)
 {
 	MRPT_TRY_START
 
@@ -211,22 +203,19 @@ static std::string parseMathExpr(
 	expr.compile(sExpr, numericVars);
 	const double val = expr.eval();
 
-	return parseCmdRuns(
-		pre + mrpt::format("%g", val) + post.substr(post_end + 1));
+	return parseCmdRuns(pre + mrpt::format("%g", val) + post.substr(post_end + 1));
 
 	MRPT_TRY_END
 }
 
 std::string mvsim::parse(
-	const std::string& input,
-	const std::map<std::string, std::string>& variableNamesValues)
+	const std::string& input, const std::map<std::string, std::string>& variableNamesValues)
 {
 	if (MVSIM_VERBOSE_PARSE)
 	{
 		std::cout << "[mvsim::parse] Input : '" << input << "' "
 				  << "with these variables: ";
-		for (const auto& kv : variableNamesValues)
-			std::cout << kv.first << ", ";
+		for (const auto& kv : variableNamesValues) std::cout << kv.first << ", ";
 		std::cout << "\n";
 	}
 

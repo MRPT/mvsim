@@ -2,6 +2,23 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.0 (2024-08-28)
+-------------------
+* Depend on new mrpt_lib packages (deprecate mrpt2)
+* Merge pull request `#52 <https://github.com/MRPT/mvsim/issues/52>`_ from finani/fix-fake-amcl
+  Fix fake amcl topic (QoS Durability)
+* Update outdated copyright years in source files
+* Merge pull request `#51 <https://github.com/MRPT/mvsim/issues/51>`_ from finani/nav2-compatible
+  Nav2 compatible
+* Update codebase to new clang-format style
+* Merge pull request `#48 <https://github.com/MRPT/mvsim/issues/48>`_ from finani/refactoring-node
+  Refactoring node
+* Merge pull request `#45 <https://github.com/MRPT/mvsim/issues/45>`_ from finani/develop
+  Add tf pub for each robot (support namespace)
+* Merge pull request `#43 <https://github.com/MRPT/mvsim/issues/43>`_ from kr-jschoi/fix-bug
+  Fix namespace switching bug between mvsim.chassis_shape and mvsim.chassis_shape.wheel3 in /chassis_markers
+* Contributors: Inhwan Wee, Jose Luis Blanco-Claraco, finani, kr-jschoi
+
 0.9.4 (2024-05-08)
 ------------------
 * Better detection of "in collision" flag.
