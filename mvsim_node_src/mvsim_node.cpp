@@ -1136,44 +1136,54 @@ Msg_CameraInfo camInfoToRos(const mrpt::img::TCamera& c)
 	ci.height = c.nrows;
 	ci.width = c.ncols;
 
+#if PACKAGE_ROS_VERSION == 1
+	auto& dist = ci.D;
+	auto& K = ci.K;
+	auto& P = ci.P;
+#else
+	auto& dist = ci.d;
+	auto& K = ci.k;
+	auto& P = ci.p;
+#endif
+
 	switch (c.distortion)
 	{
 		case mrpt::img::DistortionModel::kannala_brandt:
 			ci.distortion_model = "kannala_brandt";
-			ci.d.resize(4);
-			ci.d[0] = c.k1();
-			ci.d[1] = c.k2();
-			ci.d[2] = c.k3();
-			ci.d[3] = c.k4();
+			dist.resize(4);
+			dist[0] = c.k1();
+			dist[1] = c.k2();
+			dist[2] = c.k3();
+			dist[3] = c.k4();
 			break;
 
 		case mrpt::img::DistortionModel::plumb_bob:
 			ci.distortion_model = "plumb_bob";
-			ci.d.resize(5);
-			for (size_t i = 0; i < ci.d.size(); i++) ci.d[i] = c.dist[i];
+			dist.resize(5);
+			for (size_t i = 0; i < dist.size(); i++) dist[i] = c.dist[i];
 			break;
 
 		case mrpt::img::DistortionModel::none:
 			ci.distortion_model = "plumb_bob";
-			ci.d.resize(5);
-			for (size_t i = 0; i < ci.d.size(); i++) ci.d[i] = 0;
+			dist.resize(5);
+			for (size_t i = 0; i < dist.size(); i++) dist[i] = 0;
 			break;
 
 		default:
 			THROW_EXCEPTION("Unexpected distortion model!");
 	}
 
-	ci.k.fill(0);
-	ci.k[0] = c.fx();
-	ci.k[4] = c.fy();
-	ci.k[2] = c.cx();
-	ci.k[5] = c.cy();
-	ci.k[8] = 1.0;
+	K.fill(0);
+	K[0] = c.fx();
+	K[4] = c.fy();
+	K[2] = c.cx();
+	K[5] = c.cy();
+	K[8] = 1.0;
 
-	ci.p.fill(0);
-	ci.p[0] = 1;
-	ci.p[5] = 1;
-	ci.p[10] = 1;
+	P.fill(0);
+	P[0] = 1;
+	P[5] = 1;
+	P[10] = 1;
 
 	return ci;
 }
