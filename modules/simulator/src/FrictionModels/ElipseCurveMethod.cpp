@@ -13,13 +13,12 @@
 #include <mvsim/World.h>
 
 #include <cmath>
-
 #include <rapidxml.hpp>
-
 #include "xml_utils.h"
 
 using namespace mvsim;
 
+// adapto los codigos ya existentes para crear el nuevo
 ElipseCurveMethod::ElipseCurveMethod(
 	VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
 	: FrictionBase(my_vehicle), CA_(8), Caf_(8.5), Cs_(7.5), 
@@ -47,12 +46,8 @@ mrpt::math::TVector2D ElipseCurveMethod::evaluate_friction(
 	const mrpt::math::TVector2D vel_w =
 		wRot.inverseComposePoint(input.wheelCogLocalVel);
 
-	// Action/Reaction, slippage, etc:
-	// --------------------------------------
-	const double mu = mu_;
-	const double gravity = myVehicle_.parent()->get_gravity();
-	const double partial_mass = input.weight / gravity + input.wheel.mass;
-	const double max_friction = mu * partial_mass * gravity;
+
+    // aqui ya cambia el codigo
 
     // Heaviside function
 	double miH(double x, double x0) {
@@ -66,14 +61,7 @@ mrpt::math::TVector2D ElipseCurveMethod::evaluate_friction(
     return x * miH(x0, std::abs(x)) + x0 * miH(std::abs(x), x0);
     }
 
-void fcn(double delta1, double delta2, 
-double vx, double vy, double r, double &vxdot, double &vydot, double &rdot, double &w1dot, 
-double &w2dot, double &w3dot, double &w4dot, double &Fx1, double &Fx2, 
-double &Fx3, double &Fx4, double &Fy1, double &Fy2, double &Fy3, 
-double &Fy4) { 
-
     const double m = chassiss_mass_; // masa del conjunto
-
     const double Caf = Caf_; 
     const double Cs = Cs_; 
     const double afs = 5.0 * M_PI / 180.0; 
@@ -81,23 +69,17 @@ double &Fy4) {
     const double Cafs = Cafs_; 
     const double Csaf = Csaf_; 
     const double CA = CA_; 
-    const double gravity = myVehicle_.parent()->get_gravity(); 
-    
-    
-    
-    double h = 0.9;  
-    const double R = 0.35; // radio rueda
-    
-    double Iz = 2000.0, I = 30.0; // inercias 
+    const double gravity = myVehicle_.parent()->get_gravity();  
+    const double R = 0.5 * input.wheel.diameter;  // Wheel radius
+    const double w = veh_vel_local.omega; 
+
     double T1 = 0.0, T2 = 0.0; 
-    double delta3 = 0.0, delta4 = 0.0; 
+    double delta3 = 0.0, delta4 = 0.0; // ver de donde sacar estos valores del codigo general
 
     
-
-     // 1) Vertical forces (decoupled sub-problem)
-	// --------------------------------------------
     // obtener posiciones y distancias de ejes
-    mrpt::math::TVector2D Center_of_mass = getChassisCenterOfMass();
+    mrpt::math::TVector3D Center_of_mass = getChassisCenterOfMass(); // ¿esta bien este codigo?
+    const double h = Center_of_mass.z; 
  	const size_t nW = this->getNumWheels();    //esta linea ya existe en VehicleBase.ccp linea 568
 	mrpt::math::TVector2D> pos_(nW);
 
@@ -107,18 +89,18 @@ double &Fy4) {
     double pos_[i].y = Wheels_info_[i].y - Center_of_mass.y;  
     }
 
-
-   // const double a1 = std::abs(pos_[0].x), a2 = std::abs(pos_[3].x); // distancia centro de gravedad a ejes
-    const double l = std::abs(pos_[0].x) + std::abs(pos_[3].x); // distancia entre ejes
+    const double a1 = std::abs(pos_[0].x), a2 = std::abs(pos_[3].x); // distancia centro de gravedad a ejes
+    const double l = a1 + a2; // distancia entre ejes
     const double Axf = std::abs(pos_[0].y)+std::abs(pos_[1].y), Axr = std::abs(pos_[2].y)+std::abs(pos_[3].y); // longitud ejes
-    const double w = veh_vel_local.omega;
+     
 
-
+     // 1) Vertical forces (decoupled sub-problem)
+	// --------------------------------------------
     //// crear un if para cada rueda
-    double Fz1 = (m / (l * Axf * gravity)) * (a2 * gravity - h * (vxdot - w * veh_vel_local.vy)) * (b2f * gravity - h * (vydot + w * veh_vel_local.vx)); 
-    double Fz2 = (m / (l * Axf * gravity)) * (a2 * gravity - h * (vxdot - w * veh_vel_local.vy)) * (b1f * gravity + h * (vydot + w * veh_vel_local.vx)); 
-    double Fz3 = (m / (l * Axr * gravity)) * (a1 * gravity + h * (vxdot - w * veh_vel_local.vy)) * (b2r * gravity - h * (vydot + w * veh_vel_local.vx)); 
-    double Fz4 = (m / (l * Axr * gravity)) * (a1 * gravity + h * (vxdot - w * veh_vel_local.vy)) * (b1r * gravity + h * (vydot + w * veh_vel_local.vx)); 
+    double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * veh_vel_local.vy)) * (std::abs(pos_[1].y) * gravity - h * (linAccLocal.y + w * veh_vel_local.vx)); 
+    double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * veh_vel_local.vy)) * (std::abs(pos_[0].y) * gravity + h * (linAccLocal.y + w * veh_vel_local.vx)); 
+    double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * veh_vel_local.vy)) * (std::abs(pos_[3].y) * gravity - h * (linAccLocal.y + w * veh_vel_local.vx)); 
+    double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * veh_vel_local.vy)) * (std::abs(pos_[2].y) * gravity + h * (linAccLocal.y + w * veh_vel_local.vx)); 
     double max_friction = Fz;
  
 	// 2) Wheels velocity at Tire SR (decoupled sub-problem)
@@ -138,7 +120,7 @@ double &Fy4) {
 	// 4) Sideslip angle (decoupled sub-problem)
 	// -------------------------------------------------
 
-    double af = atan2((veh_vel_local.vy + pos_x * r), (veh_vel_local.vx - pos_y * r)) - delta1; 
+    double af = atan2((veh_vel_local.vy + pos_[i].x * w), (veh_vel_local.vx - pos_[i].y * w)) - delta1; 
 
 	// 5) Longitudinal friction (decoupled sub-problem)
 	// -------------------------------------------------
@@ -184,9 +166,6 @@ double &Fy4) {
 	wRot.composePoint(result_force_wrt_wheel, res);
 	return res;
 
-
-
-} 
 }
 
 
