@@ -12,6 +12,12 @@ Vehicles and obstacles blocks share common C++ ``mvsim::Simulable`` and
    definitions or in a particular instantiation block, depending on whether you
    want parameters to be common to all instances or not, respectively.
 
+.. dropdown:: Repository of reusable 3D models
+
+   A list of 3D models, readily usable within MVSim, is maintained in `this Git repository <https://github.com/MRPT/mvsim-models>`_,
+   which is accessible via HTTPS through `this index <https://mrpt.github.io/mvsim-models/>`_. Refer to example worlds
+   for case of use of these objects and vehicles.
+
 
 Related to visual aspect
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
