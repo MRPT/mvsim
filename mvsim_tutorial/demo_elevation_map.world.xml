@@ -102,6 +102,26 @@
 		</visual>
 	</block:class>
 
+	<block:class name="oak_tree_01">
+		<static>true</static> <!-- Does not move -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<zmin>0.0</zmin> <zmax>0.5</zmax>  <!-- Only count collisions in this height range -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/OakTree.zip/OakTree/Oak_tree_2.dae</model_uri>
+		</visual>
+	</block:class>
+
+	<block:class name="palm_tree_01">
+		<static>true</static> <!-- Does not move -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<zmin>0.0</zmin> <zmax>0.5</zmax>  <!-- Only count collisions in this height range -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/TropicPalmTree.zip/TropicPalmTree/free_palm.dae</model_uri>
+			<model_roll>90</model_roll>
+		</visual>
+	</block:class>
+	
+
 
 	<!-- ========================
 		Obstacle blocks
@@ -109,11 +129,22 @@
 	<variable name="ROCKS_SPREAD_X" value="35.0"></variable>
 	<variable name="ROCKS_SPREAD_Y" value="35.0"></variable>
 	<variable name="ROCKS_SPREAD_Z" value="0.5"></variable>
+
+	<variable name="TREES_SPREAD_X" value="20.0"></variable>
+	<variable name="TREES_SPREAD_Y" value="20.0"></variable>
+	<variable name="TREES_SPREAD_Z" value="0.5"></variable>
 	     
 	<for var="i" from="1" to="12">
 		<block class="rock_01">
 			<!-- In global coords: x,y,z, yaw(deg),pitch(deg),roll(deg) -->
 			<init_pose3d>$f{(-0.5+rand())*ROCKS_SPREAD_X} $f{(-0.5+rand())*ROCKS_SPREAD_Y} $f{(-0.5+rand())*ROCKS_SPREAD_Z} $f{-180+rand()*360} 0 0</init_pose3d>
+		</block>
+	</for>
+
+	<for var="i" from="1" to="3">
+		<block class="oak_tree_01">
+			<!-- In global coords: x,y,z, yaw(deg),pitch(deg),roll(deg) -->
+			<init_pose3d>$f{(-0.5+rand())*TREES_SPREAD_X} $f{(-0.5+rand())*TREES_SPREAD_Y} $f{(-0.5+rand())*TREES_SPREAD_Z} $f{-180+rand()*360} 0 0</init_pose3d>
 		</block>
 	</for>
 
