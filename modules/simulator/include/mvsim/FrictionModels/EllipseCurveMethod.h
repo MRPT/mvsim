@@ -15,11 +15,11 @@
 
 #include <vector>
 {
-    class ElipseCurveMethod : public FrictionBase
+    class EllipseCurveMethod : public FrictionBase
     {
-      DECLARES_REGISTER_FRICTION(ElipseCurveMethod)
+      DECLARES_REGISTER_FRICTION(EllipseCurveMethod)
       public:
-      	ElipseCurveMethod(
+      	EllipseCurveMethod(
 		    VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
 
 	  // See docs in base class.
