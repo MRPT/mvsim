@@ -108,6 +108,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 
 	// Build mesh:
+	MRPT_TODO("Support model_split_size option here too");
 	gl_mesh_ = mrpt::opengl::CMesh::Create();
 
 	gl_mesh_->enableTransparency(false);
@@ -141,6 +142,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// the "+y" different direction in image and map coordinates, it is not
 	// a bug:
 	gl_mesh_->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
+
+	// hint for rendering z-order:
+	gl_mesh_->setLocalRepresentativePoint(
+		mrpt::math::TPoint3Df(corner_min_x + 0.5 * LX, corner_min_y + 0.5 * LY, .0f));
 
 	gl_debugWheelsContactPoints_ = mrpt::opengl::CPointCloud::Create();
 	gl_debugWheelsContactPoints_->enableVariablePointSize(false);
@@ -309,7 +314,9 @@ void ElevationMap::simul_post_timestep(const TSimulContext& context)
 	// movements * cos(angle)
 }
 
-static float calcz(
+namespace
+{
+float calcz(
 	const mrpt::math::TPoint3Df& p1, const mrpt::math::TPoint3Df& p2,
 	const mrpt::math::TPoint3Df& p3, float x, float y)
 {
@@ -323,6 +330,7 @@ static float calcz(
 
 	return l1 * p1.z + l2 * p2.z + l3 * p3.z;
 }
+}  // namespace
 
 bool ElevationMap::getElevationAt(double x, double y, float& z) const
 {
