@@ -28,6 +28,12 @@ If you want to cite MVSim in your work, please use:
       author = {José-Luis Blanco-Claraco and Borys Tymchenko and Francisco José Mañas-Alvarez and Fernando Cañadas-Aránega and Ángel López-Gázquez and José Carlos Moreno}
     }
 
+ROSCon talk
+------------------
+
+[Slides](https://docs.google.com/presentation/d/1jX8t1r82vp8MIQP5u1t9bVTtG0XgmjDTtLI7z3Yamzc/edit?usp=sharing)
+
+
 
 Installation
 --------------------
