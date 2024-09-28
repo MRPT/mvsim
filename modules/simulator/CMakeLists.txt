@@ -18,9 +18,11 @@ add_library(${PROJECT_NAME}
 	src/Shape2p5.cpp
 	src/Simulable.cpp
 	src/VehicleBase.cpp
+	src/World.cpp
 	src/World_gui.cpp
 	src/World_load_xml.cpp
 	src/World_services.cpp
+	src/World_simul.cpp
 	src/World_walls.cpp
 	src/XMLClassesRegistry.cpp
 	src/XMLClassesRegistry.h
@@ -28,7 +30,6 @@ add_library(${PROJECT_NAME}
 	src/xml_utils.h
 	src/VisualObject.cpp
 	src/Wheel.cpp
-	src/World.cpp
 	include/mvsim/basic_types.h
 	include/mvsim/Block.h
 	include/mvsim/ClassFactory.h
