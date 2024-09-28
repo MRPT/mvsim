@@ -551,3 +551,21 @@ void World::internalPostSimulStepForTrajectory()
 			p.quat().z(), p.quat().w());
 	}
 }
+
+std::vector<float> World::getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const
+{
+	// Assumption: getListOfSimulableObjectsMtx() is already adquired by all possible call paths?
+
+	std::vector<float> ret;
+
+	for (const auto& [name, obj] : simulableObjects_)
+	{
+		if (!obj) continue;
+
+		const auto optZ = obj->getElevationAt(worldXY);
+		if (optZ) ret.push_back(*optZ);
+	}
+	if (ret.empty()) ret.push_back(.0);
+
+	return ret;
+}

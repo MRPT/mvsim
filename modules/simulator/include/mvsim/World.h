@@ -382,6 +382,13 @@ class World : public mrpt::system::COutputLogger
 
 	float collisionThreshold() const { return collisionThreshold_; }
 
+	/** Returns the list of "z" coordinate or "elevations" for all simulable objects at a given
+	 *  world-frame 2D coordinates (x,y). If no object reports any height, the value "0.0" will be
+	 * always reported by default. In multistorey worlds, for example, this will return the height
+	 * of each floor for the queried point.
+	 */
+	std::vector<float> getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const;
+
    private:
 	friend class VehicleBase;
 	friend class Block;

@@ -29,7 +29,7 @@ class ElevationMap : public WorldElementBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	bool getElevationAt(double x, double y, float& z) const;  //!< return false if out of bounds
+	std::optional<float> getElevationAt(const mrpt::math::TPoint2Df& pt) const override;
 
    protected:
 	virtual void internalGuiUpdate(
@@ -48,6 +48,7 @@ class ElevationMap : public WorldElementBase
 
 	/** A copy of elevation data in gl_mesh_. Coordinate order is (x,y) */
 	mrpt::math::CMatrixFloat meshCacheZ_;
+	float meshMinX_ = 0, meshMaxX_ = 0, meshMinY_ = 0, meshMaxY_ = 0;
 
 	bool debugShowContactPoints_ = false;
 

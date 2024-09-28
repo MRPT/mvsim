@@ -116,19 +116,13 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (has_mesh_image)
 	{
 		gl_mesh_->assignImageAndZ(mesh_image, elevation_data);
-
-#if MRPT_VERSION >= 0x270
 		gl_mesh_->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
-#endif
 	}
 	else
 	{
 		gl_mesh_->setZ(elevation_data);
 		gl_mesh_->setColor_u8(mesh_color);
 	}
-
-	// Save copy for calcs:
-	meshCacheZ_ = elevation_data;
 
 	// Extension: X,Y
 	const double LX = (elevation_data.rows() - 1) * resolution_;
@@ -142,6 +136,13 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// the "+y" different direction in image and map coordinates, it is not
 	// a bug:
 	gl_mesh_->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
+
+	// Save copy for calcs:
+	meshCacheZ_ = elevation_data;
+	meshMinX_ = corner_min_x;
+	meshMinY_ = corner_min_y;
+	meshMaxX_ = corner_min_x + LX;
+	meshMaxY_ = corner_min_y + LY;
 
 	// hint for rendering z-order:
 	gl_mesh_->setLocalRepresentativePoint(
@@ -219,33 +220,20 @@ void ElevationMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& cont
 				// Local frame
 				mrpt::tfest::TMatchingPair corr;
 
-#if MRPT_VERSION >= 0x240
 				corr.localIdx = iW;
 				corr.local = mrpt::math::TPoint3D(wheel.x, wheel.y, 0);
-#else
-				corr.other_idx = iW;
-				corr.other_x = wheel.x;
-				corr.other_y = wheel.y;
-				corr.other_z = 0;
-#endif
+
 				// Global frame
 				const mrpt::math::TPoint3D gPt = cur_cpose.composePoint({wheel.x, wheel.y, 0.0});
-				float z;
-				if (!getElevationAt(gPt.x /*in*/, gPt.y /*in*/, z /*out*/))
+				auto z = this->getElevationAt(mrpt::math::TPoint2Df(gPt.x, gPt.y));
+				if (!z.has_value())
 				{
 					out_of_area = true;
 					continue;  // vehicle is out of bounds!
 				}
 
-#if MRPT_VERSION >= 0x240
 				corr.globalIdx = iW;
-				corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, z);
-#else
-				corr.this_idx = iW;
-				corr.this_x = gPt.x;
-				corr.this_y = gPt.y;
-				corr.this_z = z;
-#endif
+				corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, *z);
 
 				corrs_.push_back(corr);
 			}
@@ -332,14 +320,13 @@ float calcz(
 }
 }  // namespace
 
-bool ElevationMap::getElevationAt(double x, double y, float& z) const
+std::optional<float> ElevationMap::getElevationAt(const mrpt::math::TPoint2Df& pt) const
 {
-	const mrpt::opengl::CMesh* mesh = gl_mesh_.get();
-
-	const float x0 = mesh->getxMin();
-	const float y0 = mesh->getyMin();
-	const float x1 = mesh->getxMax();
-	const float y1 = mesh->getyMax();
+	// mesh->getxMin();
+	const float x0 = meshMinX_;
+	const float y0 = meshMinY_;
+	const float x1 = meshMaxX_;
+	const float y1 = meshMaxY_;
 
 	const size_t nCellsX = meshCacheZ_.rows();
 	const size_t nCellsY = meshCacheZ_.cols();
@@ -348,10 +335,11 @@ bool ElevationMap::getElevationAt(double x, double y, float& z) const
 	const float sCellY = (y1 - y0) / (nCellsY - 1);
 
 	// Discretize:
-	const int cx00 = ::floor((x - x0) / sCellX);
-	const int cy00 = ::floor((y - y0) / sCellY);
+	const int cx00 = ::floor((pt.x - x0) / sCellX);
+	const int cy00 = ::floor((pt.y - y0) / sCellY);
 
-	if (cx00 < 1 || cx00 >= int(nCellsX - 1) || cy00 < 1 || cy00 >= int(nCellsY - 1)) return false;
+	if (cx00 < 1 || cx00 >= int(nCellsX - 1) || cy00 < 1 || cy00 >= int(nCellsY - 1))  //
+		return {};	// out of bounds!
 
 	// Linear interpolation:
 	const float z00 = meshCacheZ_(cx00, cy00);
@@ -369,13 +357,11 @@ bool ElevationMap::getElevationAt(double x, double y, float& z) const
 	const mrpt::math::TPoint3Df p10(sCellX, .0f, z10);
 	const mrpt::math::TPoint3Df p11(sCellX, sCellY, z11);
 
-	const float lx = x - (x0 + cx00 * sCellX);
-	const float ly = y - (y0 + cy00 * sCellY);
+	const float lx = pt.x - (x0 + cx00 * sCellX);
+	const float ly = pt.y - (y0 + cy00 * sCellY);
 
 	if (ly >= lx)
-		z = calcz(p00, p01, p11, lx, ly);
+		return calcz(p00, p01, p11, lx, ly);
 	else
-		z = calcz(p00, p10, p11, lx, ly);
-
-	return true;
+		return calcz(p00, p10, p11, lx, ly);
 }
