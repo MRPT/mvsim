@@ -91,7 +91,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 	else
 	{
-		MRPT_TODO("Imgs or txt matrix")
+		// TODO: Support reading from txt file?
 	}
 
 	// Load texture (optional):
@@ -182,8 +182,6 @@ void ElevationMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& cont
 	// 1) Compute its 3D pose according to the mesh tilt angle.
 	// 2) Apply gravity force
 	const double gravity = parent()->get_gravity();
-
-	ASSERT_(gl_mesh_);
 
 	const World::VehicleList& lstVehs = this->world_->getListOfVehicles();
 	for (auto& nameVeh : lstVehs)
