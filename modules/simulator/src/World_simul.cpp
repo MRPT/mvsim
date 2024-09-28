@@ -339,8 +339,10 @@ void World::internal_simul_pre_step_terrain_elevation()
 			mrpt::math::TPose3D new_pose = cur_pose;
 			corrs.clear();
 
-			bool out_of_area = false;
-			for (size_t iW = 0; !out_of_area && iW < nWheels; iW++)
+			bool all_equal = true;
+			std::optional<float> equal_zs;
+
+			for (size_t iW = 0; iW < nWheels; iW++)
 			{
 				const Wheel& wheel = veh->getWheelInfo(iW);
 
@@ -357,32 +359,39 @@ void World::internal_simul_pre_step_terrain_elevation()
 					gPt + mrpt::math::TPoint3D(.0, .0, .5 * wheel.diameter);
 
 				// Get "the ground" under my wheel axis:
-				const auto z = this->getHighestElevationUnder(gPtWheelsAxis);
-				if (!z.has_value())
-				{
-					out_of_area = true;
-					continue;  // vehicle is out of bounds!
-				}
+				const float z = this->getHighestElevationUnder(gPtWheelsAxis);
+
+				if (!equal_zs) equal_zs = z;
+				if (std::abs(*equal_zs - z) > 1e-4) all_equal = false;
 
 				corr.globalIdx = iW;
-				corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, *z);
+				corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, z);
 
 				corrs.push_back(corr);
+			}  // end for each Wheel
+
+			if (all_equal && equal_zs.has_value())
+			{
+				// Optimization: just use the constant elevation without optimizing:
+				new_pose.z = optimalTf.z();
+				new_pose.pitch = 0;
+				new_pose.roll = 0;
 			}
-			if (out_of_area) continue;
+			else if (corrs.size() >= 3)
+			{
+				// Register:
+				double transf_scale;
+				mrpt::poses::CPose3DQuat tmpl;
 
-			// Register:
-			double transf_scale;
-			mrpt::poses::CPose3DQuat tmpl;
+				mrpt::tfest::se3_l2(corrs, tmpl, transf_scale, true /*force scale unity*/);
 
-			mrpt::tfest::se3_l2(corrs, tmpl, transf_scale, true /*force scale unity*/);
+				optimalTf = mrpt::poses::CPose3D(tmpl);
 
-			optimalTf = mrpt::poses::CPose3D(tmpl);
-
-			new_pose.z = optimalTf.z();
-			new_pose.yaw = optimalTf.yaw();
-			new_pose.pitch = optimalTf.pitch();
-			new_pose.roll = optimalTf.roll();
+				new_pose.z = optimalTf.z();
+				new_pose.yaw = optimalTf.yaw();
+				new_pose.pitch = optimalTf.pitch();
+				new_pose.roll = optimalTf.roll();
+			}
 
 			veh->setPose(new_pose);
 

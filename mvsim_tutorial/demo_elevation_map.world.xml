@@ -131,11 +131,11 @@
 	     ======================== -->
 	<variable name="ROCKS_SPREAD_X" value="35.0"></variable>
 	<variable name="ROCKS_SPREAD_Y" value="35.0"></variable>
-	<variable name="ROCKS_SPREAD_Z" value="1.5"></variable>
+	<variable name="ROCKS_SPREAD_Z" value="1.0"></variable>
 
 	<variable name="TREES_SPREAD_X" value="20.0"></variable>
 	<variable name="TREES_SPREAD_Y" value="20.0"></variable>
-	<variable name="TREES_SPREAD_Z" value="1.5"></variable>
+	<variable name="TREES_SPREAD_Z" value="0"></variable>
 	     
 	<for var="i" from="1" to="12">
 		<block class="rock_01">

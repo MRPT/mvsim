@@ -289,7 +289,7 @@ std::set<float> World::getElevationsAt(const mrpt::math::TPoint2Df& worldXY) con
 	return ret;
 }
 
-std::optional<float> World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
+float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
 {
 	const auto zs = getElevationsAt({pt.x, pt.y});
 
@@ -297,5 +297,6 @@ std::optional<float> World::getHighestElevationUnder(const mrpt::math::TPoint3Df
 	if (it == zs.begin()) return 0.0f;	// No element <= threshold
 
 	--it;
+
 	return *it;
 }

@@ -29,6 +29,7 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <atomic>
 
 #include "CsvLogger.h"
 
@@ -213,6 +214,7 @@ class VehicleBase : public VisualObject, public Simulable
 	std::vector<mrpt::opengl::CSetOfObjects::Ptr> glWheelsViz_, glWheelsPhysical_;
 	mrpt::opengl::CSetOfLines::Ptr glForces_;
 	mrpt::opengl::CSetOfLines::Ptr glMotorTorques_;
+	std::atomic_bool glInit_ = false;
 
 	std::vector<mrpt::math::TSegment3D> forceSegmentsForRendering_;
 	std::vector<mrpt::math::TSegment3D> torqueSegmentsForRendering_;

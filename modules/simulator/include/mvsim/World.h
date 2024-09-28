@@ -390,8 +390,9 @@ class World : public mrpt::system::COutputLogger
 	 */
 	std::set<float> getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const;
 
-	/// with query points the center of a wheel, this returns the highest "ground" under it.
-	std::optional<float> getHighestElevationUnder(const mrpt::math::TPoint3Df& queryPt) const;
+	/// with query points the center of a wheel, this returns the highest "ground" under it, or .0
+	/// if nothing found.
+	float getHighestElevationUnder(const mrpt::math::TPoint3Df& queryPt) const;
 
 	void internal_simul_pre_step_terrain_elevation();
 

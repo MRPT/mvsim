@@ -692,6 +692,8 @@ void VehicleBase::internalGuiUpdate(
 
 		viz->get().insert(glChassisViz_);
 		physical->get().insert(glChassisPhysical_);
+
+		glInit_ = true;
 	}
 
 	// Update them:
@@ -701,10 +703,8 @@ void VehicleBase::internalGuiUpdate(
 	// need/can't acquire it again:
 	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-	if (glChassisViz_)
+	if (glInit_)
 	{
-		ASSERT_(glChassisPhysical_);
-
 		glChassisViz_->setPose(objectPose);
 		glChassisPhysical_->setPose(objectPose);
 		for (size_t i = 0; i < nWs; i++)
