@@ -26,10 +26,10 @@
 #include <mvsim/Wheel.h>
 #include <mvsim/basic_types.h>
 
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <string>
-#include <atomic>
 
 #include "CsvLogger.h"
 

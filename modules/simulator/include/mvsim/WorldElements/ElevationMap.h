@@ -49,6 +49,5 @@ class ElevationMap : public WorldElementBase
 	float meshMinX_ = 0, meshMaxX_ = 0, meshMinY_ = 0, meshMaxY_ = 0;
 
 	bool debugShowContactPoints_ = false;
-
 };
 }  // namespace mvsim
