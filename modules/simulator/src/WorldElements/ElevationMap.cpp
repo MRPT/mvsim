@@ -9,7 +9,6 @@
 
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/CPointCloud.h>
-#include <mrpt/tfest.h>	 // least-squares methods
 #include <mrpt/version.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -178,117 +177,9 @@ void ElevationMap::internalGuiUpdate(
 
 void ElevationMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& context)
 {
-	// For each vehicle:
-	// 1) Compute its 3D pose according to the mesh tilt angle.
-	// 2) Apply gravity force
-	const double gravity = parent()->get_gravity();
-
-	const World::VehicleList& lstVehs = this->world_->getListOfVehicles();
-	for (auto& nameVeh : lstVehs)
-	{
-		world_->getTimeLogger().enter("elevationmap.handle_vehicle");
-
-		auto& veh = nameVeh.second;
-
-		const size_t nWheels = veh->getNumWheels();
-
-		// 1) Compute its 3D pose according to the mesh tilt angle.
-		// Idea: run a least-squares method to find the best
-		// SE(3) transformation that map the wheels contact point,
-		// as seen in local & global coordinates.
-		// (For large tilt angles, may have to run it iteratively...)
-		// -------------------------------------------------------------
-		// the final downwards direction (unit vector (0,0,-1)) as seen in
-		// vehicle local frame.
-		mrpt::math::TPoint3D dir_down;
-		for (int iter = 0; iter < 2; iter++)
-		{
-			const mrpt::math::TPose3D& cur_pose = veh->getPose();
-			// This object is faster for repeated point projections
-			const mrpt::poses::CPose3D cur_cpose(cur_pose);
-
-			mrpt::math::TPose3D new_pose = cur_pose;
-			corrs_.clear();
-
-			bool out_of_area = false;
-			for (size_t iW = 0; !out_of_area && iW < nWheels; iW++)
-			{
-				const Wheel& wheel = veh->getWheelInfo(iW);
-
-				// Local frame
-				mrpt::tfest::TMatchingPair corr;
-
-				corr.localIdx = iW;
-				corr.local = mrpt::math::TPoint3D(wheel.x, wheel.y, 0);
-
-				// Global frame
-				const mrpt::math::TPoint3D gPt = cur_cpose.composePoint({wheel.x, wheel.y, 0.0});
-				auto z = this->getElevationAt(mrpt::math::TPoint2Df(gPt.x, gPt.y));
-				if (!z.has_value())
-				{
-					out_of_area = true;
-					continue;  // vehicle is out of bounds!
-				}
-
-				corr.globalIdx = iW;
-				corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, *z);
-
-				corrs_.push_back(corr);
-			}
-			if (out_of_area) continue;
-
-			// Register:
-			double transf_scale;
-			mrpt::poses::CPose3DQuat tmpl;
-
-			mrpt::tfest::se3_l2(corrs_, tmpl, transf_scale, true /*force scale unity*/);
-
-			optimalTf_ = mrpt::poses::CPose3D(tmpl);
-
-			new_pose.z = optimalTf_.z();
-			new_pose.yaw = optimalTf_.yaw();
-			new_pose.pitch = optimalTf_.pitch();
-			new_pose.roll = optimalTf_.roll();
-
-			veh->setPose(new_pose);
-
-		}  // end iters
-
-		// debug contact points:
-		if (debugShowContactPoints_)
-		{
-			gl_debugWheelsContactPoints_->clear();
-			for (const auto& c : corrs_) gl_debugWheelsContactPoints_->insertPoint(c.global);
-		}
-
-		// compute "down" direction:
-		{
-			mrpt::poses::CPose3D rot_only;
-			rot_only.setRotationMatrix(optimalTf_.getRotationMatrix());
-			rot_only.inverseComposePoint(.0, .0, -1.0, dir_down.x, dir_down.y, dir_down.z);
-		}
-
-		// 2) Apply gravity force
-		// -------------------------------------------------------------
-		{
-			// To chassis:
-			const double chassis_weight = veh->getChassisMass() * gravity;
-			const mrpt::math::TPoint2D chassis_com = veh->getChassisCenterOfMass();
-			veh->apply_force(
-				{dir_down.x * chassis_weight, dir_down.y * chassis_weight}, chassis_com);
-
-			// To wheels:
-			for (size_t iW = 0; iW < nWheels; iW++)
-			{
-				const Wheel& wheel = veh->getWheelInfo(iW);
-				const double wheel_weight = wheel.mass * gravity;
-				veh->apply_force(
-					{dir_down.x * wheel_weight, dir_down.y * wheel_weight}, {wheel.x, wheel.y});
-			}
-		}
-
-		world_->getTimeLogger().leave("elevationmap.handle_vehicle");
-	}
+	// Nothing special to do.
+	// Since Sep-2024, this functionality has moved to
+	// World::internal_simul_pre_step_terrain_elevation()
 }
 
 void ElevationMap::simul_post_timestep(const TSimulContext& context)

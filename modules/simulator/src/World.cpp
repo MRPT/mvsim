@@ -272,20 +272,30 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 	arch << *obs;
 }
 
-std::vector<float> World::getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const
+std::set<float> World::getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const
 {
 	// Assumption: getListOfSimulableObjectsMtx() is already adquired by all possible call paths?
-
-	std::vector<float> ret;
+	std::set<float> ret;
 
 	for (const auto& [name, obj] : simulableObjects_)
 	{
 		if (!obj) continue;
 
 		const auto optZ = obj->getElevationAt(worldXY);
-		if (optZ) ret.push_back(*optZ);
+		if (optZ) ret.insert(*optZ);
 	}
-	if (ret.empty()) ret.push_back(.0);
+	if (ret.empty()) ret.insert(.0f);
 
 	return ret;
+}
+
+std::optional<float> World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
+{
+	const auto zs = getElevationsAt({pt.x, pt.y});
+
+	auto it = zs.upper_bound(pt.z);
+	if (it == zs.begin()) return 0.0f;	// No element <= threshold
+
+	--it;
+	return *it;
 }

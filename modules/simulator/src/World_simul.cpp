@@ -9,8 +9,11 @@
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/obs/CObservationOdometry.h>
+#include <mrpt/poses/CPose3D.h>
 #include <mrpt/poses/CPose3DQuat.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/tfest.h>	 // least-squares methods
+#include <mrpt/tfest/TMatchingPair.h>
 #include <mrpt/version.h>
 #include <mvsim/World.h>
 
@@ -77,15 +80,19 @@ void World::internal_one_timestep(double dt)
 
 	// 1) Pre-step
 	{
-		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.0.prestep");
-
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.1.prestep");
 		for (auto& e : simulableObjects_)
 			if (e.second) e.second->simul_pre_timestep(context);
 	}
-
-	// 2) Run dynamics
+	// 2) vehicles terrain elevation
 	{
-		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.1.dynamics_integrator");
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.2.terrain_elevation");
+		internal_simul_pre_step_terrain_elevation();
+	}
+
+	// 3) Run dynamics
+	{
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.3.dynamics_integrator");
 
 		box2d_world_->Step(dt, b2dVelIters_, b2dPosIters_);
 
@@ -94,12 +101,12 @@ void World::internal_one_timestep(double dt)
 		simulTime_ += dt;
 	}
 
-	// 3) Save dynamical state and post-step processing:
+	// 4) Save dynamical state and post-step processing:
 	// This also makes a copy of all objects dynamical state, so service calls
 	// can be answered straight away without waiting for the main simulation
 	// mutex:
 	{
-		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.3.save_dynstate");
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.4.save_dynstate");
 
 		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 		const auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
@@ -128,8 +135,8 @@ void World::internal_one_timestep(double dt)
 	}
 	lckListObjs.unlock();  // for simulableObjects_
 
-	// 4) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
-	mrpt::system::CTimeLoggerEntry tle4(timlogger_, "timestep.4.wait_3D_sensors");
+	// 5) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
+	mrpt::system::CTimeLoggerEntry tle4(timlogger_, "timestep.5.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
 		// Use a huge timeout here to avoid timing out in build farms / cloud
@@ -147,8 +154,8 @@ void World::internal_one_timestep(double dt)
 	}
 	tle4.stop();
 
-	// 5) If we have .rawlog generation enabled, process odometry, etc.
-	mrpt::system::CTimeLoggerEntry tle5(timlogger_, "timestep.5.post_rawlog");
+	// 6) If we have .rawlog generation enabled, process odometry, etc.
+	mrpt::system::CTimeLoggerEntry tle5(timlogger_, "timestep.6.post_rawlog");
 
 	internalPostSimulStepForRawlog();
 	internalPostSimulStepForTrajectory();
@@ -294,5 +301,128 @@ void World::internalPostSimulStepForTrajectory()
 		gt_io_per_veh_.at(vehName) << mrpt::format(
 			"%f %f %f %f %f %f %f %f\n", t, p.x(), p.y(), p.z(), p.quat().x(), p.quat().y(),
 			p.quat().z(), p.quat().w());
+	}
+}
+
+void World::internal_simul_pre_step_terrain_elevation()
+{
+	// For each vehicle:
+	// 1) Compute its 3D pose according to the mesh tilt angle.
+	// 2) Apply gravity force
+	const double gravity = get_gravity();
+
+	mrpt::tfest::TMatchingPairList corrs;
+	mrpt::poses::CPose3D optimalTf;
+
+	const World::VehicleList& lstVehs = getListOfVehicles();
+	for (auto& [name, veh] : lstVehs)
+	{
+		getTimeLogger().enter("elevationmap.handle_vehicle");
+
+		const size_t nWheels = veh->getNumWheels();
+
+		// 1) Compute its 3D pose according to the mesh tilt angle.
+		// Idea: run a least-squares method to find the best
+		// SE(3) transformation that map the wheels contact point,
+		// as seen in local & global coordinates.
+		// (For large tilt angles, may have to run it iteratively...)
+		// -------------------------------------------------------------
+		// the final downwards direction (unit vector (0,0,-1)) as seen in
+		// vehicle local frame.
+		mrpt::math::TPoint3D dir_down;
+		for (int iter = 0; iter < 2; iter++)
+		{
+			const mrpt::math::TPose3D& cur_pose = veh->getPose();
+			// This object is faster for repeated point projections
+			const mrpt::poses::CPose3D cur_cpose(cur_pose);
+
+			mrpt::math::TPose3D new_pose = cur_pose;
+			corrs.clear();
+
+			bool out_of_area = false;
+			for (size_t iW = 0; !out_of_area && iW < nWheels; iW++)
+			{
+				const Wheel& wheel = veh->getWheelInfo(iW);
+
+				// Local frame
+				mrpt::tfest::TMatchingPair corr;
+
+				corr.localIdx = iW;
+				corr.local = mrpt::math::TPoint3D(wheel.x, wheel.y, 0);
+
+				// Global frame
+				const mrpt::math::TPoint3D gPt = cur_cpose.composePoint({wheel.x, wheel.y, 0.0});
+
+				const mrpt::math::TPoint3D gPtWheelsAxis =
+					gPt + mrpt::math::TPoint3D(.0, .0, .5 * wheel.diameter);
+
+				// Get "the ground" under my wheel axis:
+				const auto z = this->getHighestElevationUnder(gPtWheelsAxis);
+				if (!z.has_value())
+				{
+					out_of_area = true;
+					continue;  // vehicle is out of bounds!
+				}
+
+				corr.globalIdx = iW;
+				corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, *z);
+
+				corrs.push_back(corr);
+			}
+			if (out_of_area) continue;
+
+			// Register:
+			double transf_scale;
+			mrpt::poses::CPose3DQuat tmpl;
+
+			mrpt::tfest::se3_l2(corrs, tmpl, transf_scale, true /*force scale unity*/);
+
+			optimalTf = mrpt::poses::CPose3D(tmpl);
+
+			new_pose.z = optimalTf.z();
+			new_pose.yaw = optimalTf.yaw();
+			new_pose.pitch = optimalTf.pitch();
+			new_pose.roll = optimalTf.roll();
+
+			veh->setPose(new_pose);
+
+		}  // end iters
+
+#if 0
+		// debug contact points:
+		if (debugShowContactPoints_)
+		{
+			gl_debugWheelsContactPoints_->clear();
+			for (const auto& c : corrs_) gl_debugWheelsContactPoints_->insertPoint(c.global);
+		}
+#endif
+
+		// compute "down" direction:
+		{
+			mrpt::poses::CPose3D rot_only;
+			rot_only.setRotationMatrix(optimalTf.getRotationMatrix());
+			rot_only.inverseComposePoint(.0, .0, -1.0, dir_down.x, dir_down.y, dir_down.z);
+		}
+
+		// 2) Apply gravity force
+		// -------------------------------------------------------------
+		{
+			// To chassis:
+			const double chassis_weight = veh->getChassisMass() * gravity;
+			const mrpt::math::TPoint2D chassis_com = veh->getChassisCenterOfMass();
+			veh->apply_force(
+				{dir_down.x * chassis_weight, dir_down.y * chassis_weight}, chassis_com);
+
+			// To wheels:
+			for (size_t iW = 0; iW < nWheels; iW++)
+			{
+				const Wheel& wheel = veh->getWheelInfo(iW);
+				const double wheel_weight = wheel.mass * gravity;
+				veh->apply_force(
+					{dir_down.x * wheel_weight, dir_down.y * wheel_weight}, {wheel.x, wheel.y});
+			}
+		}
+
+		getTimeLogger().leave("elevationmap.handle_vehicle");
 	}
 }

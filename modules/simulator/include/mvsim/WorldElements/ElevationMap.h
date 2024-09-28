@@ -11,8 +11,6 @@
 
 #include <mrpt/img/CImage.h>
 #include <mrpt/opengl/CMesh.h>
-#include <mrpt/poses/CPose3D.h>
-#include <mrpt/tfest/TMatchingPair.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 namespace mvsim
@@ -52,9 +50,5 @@ class ElevationMap : public WorldElementBase
 
 	bool debugShowContactPoints_ = false;
 
-   private:
-	// temp vars (declared here to avoid reallocs):
-	mrpt::tfest::TMatchingPairList corrs_;
-	mrpt::poses::CPose3D optimalTf_;
 };
 }  // namespace mvsim

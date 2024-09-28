@@ -855,7 +855,7 @@ void World::GUI::handle_mouse_operations()
 	{
 		// Find out the "z": get first elevation if many exist.
 		const auto zs = parent_.getElevationsAt(mrpt::math::TPoint2Df(clickedPt.x, clickedPt.y));
-		if (!zs.empty()) clickedPt.z = zs[0];
+		if (!zs.empty()) clickedPt.z = *zs.begin();
 	}
 
 	const auto screen = gui_win->screen();
