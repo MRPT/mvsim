@@ -1,6 +1,9 @@
 <mvsim_world version="1.0">
 	<!-- General simulation options -->
-	<simul_timestep>5e-3</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
+	<!-- With ramps and elevation maps, it's better to manually set a small time step
+	     to improve the physics simulation and achieve more realistic frictions/sliding
+		 when on ramps -->
+	<simul_timestep>2e-3</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
 	
 	<!-- GUI options -->
 	<gui>
@@ -32,10 +35,10 @@
 		<elevation_image_max_z>2.0</elevation_image_max_z>
 		
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
-		<texture_extension_x>2.0</texture_extension_x>
-		<texture_extension_y>2.0</texture_extension_y>
+		<texture_extension_x>1.25</texture_extension_x>
+		<texture_extension_y>1.25</texture_extension_y>
 		
-		<model_split_size>1.50</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+		<model_split_size>0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 
 		<mesh_color>#a0e0a0</mesh_color> <!-- Used only if mesh_image is not provided -->
 	</element>
@@ -90,6 +93,7 @@
 	<block:class name="rock_01">
 		<static>true</static> <!-- Does not move -->
 		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<zmin>0.0</zmin> <zmax>2.5</zmax>  <!-- Only count collisions in this height range -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/rock01.zip/rock01/FallingRock01.dae</model_uri>
 		</visual>
@@ -98,6 +102,7 @@
 	<block:class name="rock_02">
 		<static>true</static> <!-- Does not move -->
 		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<zmin>0.0</zmin> <zmax>2.5</zmax>  <!-- Only count collisions in this height range -->
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/rock02.zip/rock02/FallingRock02.dae</model_uri>
 		</visual>

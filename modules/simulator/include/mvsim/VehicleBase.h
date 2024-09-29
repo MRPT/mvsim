@@ -135,6 +135,9 @@ class VehicleBase : public VisualObject, public Simulable
 	}
 	void chassisAndWheelsVisible(bool visible);
 
+	double chassisZMin() const { return chassis_z_min_; }
+	double chassisZMax() const { return chassis_z_max_; }
+
    protected:
 	std::map<std::string, std::shared_ptr<CSVLogger>> loggers_;
 	std::string log_path_;

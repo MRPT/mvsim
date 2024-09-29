@@ -56,7 +56,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_extension_x"] = TParamEntry("%f", &textureExtensionX_);
 	params["texture_extension_y"] = TParamEntry("%f", &textureExtensionY_);
 
-	params["debug_show_contact_points"] = TParamEntry("%bool", &debugShowContactPoints_);
+	params["model_split_size"] = TParamEntry("%f", &model_split_size_);
 
 	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 
@@ -105,35 +105,12 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		has_mesh_image = true;
 	}
 
-	// Build mesh:
-	MRPT_TODO("Support model_split_size option here too");
-	gl_mesh_ = mrpt::opengl::CMesh::Create();
-
-	gl_mesh_->enableTransparency(false);
-
-	if (has_mesh_image)
-	{
-		gl_mesh_->assignImageAndZ(mesh_image, elevation_data);
-		gl_mesh_->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
-	}
-	else
-	{
-		gl_mesh_->setZ(elevation_data);
-		gl_mesh_->setColor_u8(mesh_color);
-	}
-
 	// Extension: X,Y
 	const double LX = (elevation_data.rows() - 1) * resolution_;
 	const double LY = (elevation_data.cols() - 1) * resolution_;
 
 	if (corner_min_x == std::numeric_limits<double>::max()) corner_min_x = -0.5 * LX;
-
 	if (corner_min_y == std::numeric_limits<double>::max()) corner_min_y = -0.5 * LY;
-
-	// Important: the yMin/yMax in the next line are swapped to handle
-	// the "+y" different direction in image and map coordinates, it is not
-	// a bug:
-	gl_mesh_->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
 
 	// Save copy for calcs:
 	meshCacheZ_ = elevation_data;
@@ -142,9 +119,41 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	meshMaxX_ = corner_min_x + LX;
 	meshMaxY_ = corner_min_y + LY;
 
-	// hint for rendering z-order:
-	gl_mesh_->setLocalRepresentativePoint(
-		mrpt::math::TPoint3Df(corner_min_x + 0.5 * LX, corner_min_y + 0.5 * LY, .0f));
+	// Build mesh:
+	ASSERT_GE_(model_split_size_, .0f);
+	if (model_split_size_ == 0)
+	{
+		// One single mesh:
+		auto gl_mesh = mrpt::opengl::CMesh::Create();
+		gl_meshes_.push_back(gl_mesh);
+
+		gl_mesh->enableTransparency(false);
+
+		if (has_mesh_image)
+		{
+			gl_mesh->assignImageAndZ(mesh_image, elevation_data);
+			gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+		}
+		else
+		{
+			gl_mesh->setZ(elevation_data);
+			gl_mesh->setColor_u8(mesh_color);
+		}
+
+		// Important: the yMin/yMax in the next line are swapped to handle
+		// the "+y" different direction in image and map coordinates, it is not
+		// a bug:
+		gl_mesh->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
+
+		// hint for rendering z-order:
+		gl_mesh->setLocalRepresentativePoint(
+			mrpt::math::TPoint3Df(corner_min_x + 0.5 * LX, corner_min_y + 0.5 * LY, .0f));
+	}
+	else
+	{
+		// Split in smaller meshes:
+		THROW_EXCEPTION("TODO");
+	}
 }
 
 void ElevationMap::internalGuiUpdate(
@@ -152,10 +161,8 @@ void ElevationMap::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	using namespace mrpt::math;
-
 	ASSERTMSG_(
-		gl_mesh_,
+		!gl_meshes_.empty(),
 		"ERROR: Can't render Mesh before loading it! Have you called "
 		"loadConfigFrom() first?");
 
@@ -163,8 +170,11 @@ void ElevationMap::internalGuiUpdate(
 	if (firstSceneRendering_ && viz && physical)
 	{
 		firstSceneRendering_ = false;
-		viz->get().insert(gl_mesh_);
-		physical->get().insert(gl_mesh_);
+		for (const auto& glMesh : gl_meshes_)
+		{
+			viz->get().insert(glMesh);
+			physical->get().insert(glMesh);
+		}
 	}
 }
 

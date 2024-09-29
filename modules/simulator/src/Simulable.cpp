@@ -9,6 +9,7 @@
 
 #include <box2d/b2_contact.h>
 #include <box2d/b2_distance.h>
+#include <mvsim/Block.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
@@ -224,8 +225,20 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 
 		// Query: the highest object point:
 		auto queryPt = initPose->translation();
-		// TODO: Automatic determination:
-		queryPt.z += 1.5;  // [m]
+
+		// Automatic determine the height of the query point:
+		if (auto meBlock = dynamic_cast<mvsim::Block*>(this); meBlock)
+		{
+			queryPt.z += meBlock->block_z_max();
+		}
+		else if (auto meVeh = dynamic_cast<mvsim::VehicleBase*>(this); meVeh)
+		{
+			queryPt.z += meVeh->chassisZMax();
+		}
+		else
+		{
+			queryPt.z += 1.5;  // default [m]
+		}
 
 		if (std::optional<float> elev = simulable_parent_->getHighestElevationUnder(queryPt); elev)
 		{

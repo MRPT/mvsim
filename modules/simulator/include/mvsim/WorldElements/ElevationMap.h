@@ -13,6 +13,8 @@
 #include <mrpt/opengl/CMesh.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
+#include <vector>
+
 namespace mvsim
 {
 class ElevationMap : public WorldElementBase
@@ -36,7 +38,7 @@ class ElevationMap : public WorldElementBase
 
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */
-	mrpt::opengl::CMesh::Ptr gl_mesh_;
+	std::vector<mrpt::opengl::CMesh::Ptr> gl_meshes_;
 	bool firstSceneRendering_ = true;
 	float resolution_ = 1.0f;
 
@@ -47,6 +49,8 @@ class ElevationMap : public WorldElementBase
 	mrpt::math::CMatrixFloat meshCacheZ_;
 	float meshMinX_ = 0, meshMaxX_ = 0, meshMinY_ = 0, meshMaxY_ = 0;
 
-	bool debugShowContactPoints_ = false;
+	/// If enabled (>0), the mesh will be split into NxM smaller meshes with a max size of this
+	/// value, to help correctly render semitransparent objects (e.g. trees).
+	float model_split_size_ = .0f;
 };
 }  // namespace mvsim
