@@ -21,17 +21,38 @@
 	     ======================== -->
 	<!-- ground -->
 	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-15</x_min> <y_min>-13</y_min>
+		<x_max> 20</x_max> <y_max> 13</y_max>
+		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>5</x_min> <y_min>-10</y_min>
+		<x_max>10</x_max> <y_max> 10</y_max>
+		<z>3.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- elevator platform -->
+	<element class="horizontal_plane">
 		<!--<cull_face>BACK</cull_face>-->
 		<x_min>0</x_min><y_min>0</y_min><x_max>2</x_max><y_max>2</y_max> <z>0.0</z>
 		<init_pose>3 -1 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<animation type="keyframes">
-			<time_pose3d>0.0   0 0 0 0 0 0</time_pose3d>  <!-- time  x y z yaw pitch roll -->
-			<time_pose3d>2.0   0 0 0 0 0 0</time_pose3d>
-			<time_pose3d>10.0  0 0 3 0 0 0</time_pose3d>
-			<time_pose3d>15.0  0 0 3 0 0 0</time_pose3d>
-			<time_pose3d>18.0  0 0 0 0 0 0</time_pose3d>
+			<time_pose3d>0.0   0 0 0.02 0 0 0</time_pose3d>  <!-- time  x y z yaw pitch roll -->
+			<time_pose3d>2.0   0 0 0.02 0 0 0</time_pose3d>
+			<time_pose3d>10.0  0 0 2.98 0 0 0</time_pose3d>
+			<time_pose3d>15.0  0 0 2.98 0 0 0</time_pose3d>
+			<time_pose3d>18.0  0 0 0.02 0 0 0</time_pose3d>
 		</animation>
 	</element>
+
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->

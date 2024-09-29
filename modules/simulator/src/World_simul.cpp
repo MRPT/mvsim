@@ -9,6 +9,7 @@
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/obs/CObservationOdometry.h>
+#include <mrpt/obs/CSinCosLookUpTableFor2DScans.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mrpt/poses/CPose3DQuat.h>
 #include <mrpt/system/filesystem.h>
@@ -307,8 +308,8 @@ void World::internalPostSimulStepForTrajectory()
 void World::internal_simul_pre_step_terrain_elevation()
 {
 	// For each vehicle:
-	// 1) Compute its 3D pose according to the mesh tilt angle.
-	// 2) Apply gravity force
+	// (1/2) Compute its 3D pose according to the mesh tilt angle.
+	//       and apply gravity force.
 	const double gravity = get_gravity();
 
 	mrpt::tfest::TMatchingPairList corrs;
@@ -421,5 +422,178 @@ void World::internal_simul_pre_step_terrain_elevation()
 					{dir_down.x * wheel_weight, dir_down.y * wheel_weight}, {wheel.x, wheel.y});
 			}
 		}
+	}  // end for each vehicle
+
+	// (2/2) Collisions due to steep slopes
+	return;
+	thread_local size_t cnt = 0;
+	const size_t DECIM = 50;
+	if (++cnt < DECIM) return;
+	cnt = 0;
+
+	// Make a list of objects subject to collide with the occupancy grid:
+	// - Vehicles
+	// - Blocks
+	const World::BlockList& lstBlocks = getListOfBlocks();
+	const size_t nObjs = lstVehs.size() + lstBlocks.size();
+	obstacles_for_each_obj_.resize(nObjs);
+	size_t objIdx = 0;
+	for (auto& [name, veh] : lstVehs)
+	{
+		auto& e = obstacles_for_each_obj_.at(objIdx);
+		if (!e.has_value()) e.emplace();
+
+		TInfoPerCollidableobj& ipv = e.value();
+		ipv.max_obstacles_ranges = veh->getMaxVehicleRadius() * 1.50f;
+		ipv.pose = veh->getCPose3D();
+		ipv.representativeHeight = 0.5 * (veh->chassisZMax() + veh->chassisZMin());
+
+		objIdx++;
 	}
+
+	for (const auto& [name, block] : lstBlocks)
+	{
+		auto& e = obstacles_for_each_obj_.at(objIdx);
+		objIdx++;
+
+		// only for moving blocks:
+		if (block->isStatic()) continue;
+		const auto tw = block->getTwist();
+		if (std::abs(tw.vx) < 1e-4 && std::abs(tw.vy) < 1e-4 && std::abs(tw.omega) < 1e-4) continue;
+
+		if (!e.has_value()) e.emplace();
+
+		TInfoPerCollidableobj& ipv = e.value();
+		ipv.max_obstacles_ranges = block->getMaxBlockRadius() * 1.50f;
+		ipv.pose = block->getCPose3D();
+		ipv.representativeHeight = 0.5 * (block->block_z_min() + block->block_z_max());
+	}
+
+	constexpr size_t nRays = 10;
+	constexpr size_t nSteps = 5;
+	thread_local const mrpt::obs::T2DScanProperties scanProps{nRays, 2.0 * M_PI, true};
+	thread_local mrpt::obs::CSinCosLookUpTableFor2DScans sinCosLUTs;
+	const thread_local auto sinCos = sinCosLUTs.getSinCosForScan(scanProps);
+
+	// For each object, create a ground body with fixtures at each potential collision point
+	// around the vehicle, so it can collide with the environment:
+	for (auto& e : obstacles_for_each_obj_)
+	{
+		if (!e.has_value()) continue;
+
+		TInfoPerCollidableobj& ipv = e.value();
+
+		ipv.collide_distances.assign(nRays, 0);	 // 0: no collision
+
+		const float rangeStep = ipv.max_obstacles_ranges / (nSteps - 1);
+
+		// 1) get obstacles around the vehicle:
+		for (size_t k = 0; k < nRays; k++)
+		{
+			float prevZ = 0;
+			for (size_t s = 0; s < nSteps; s++)
+			{
+				const float r = s * rangeStep;
+				const auto ptLocal = mrpt::math::TPoint3D(
+					r * sinCos.ccos[k], r * sinCos.csin[k], ipv.representativeHeight);
+				const auto ptGlobal = ipv.pose.composePoint(ptLocal);
+				const float z = getHighestElevationUnder(ptGlobal);
+				if (s > 0)
+				{
+					const float deltaZ = z - prevZ;
+					const float slope = deltaZ / rangeStep;
+					const bool collide =
+						slope > max_slope_to_collide_ || slope < min_slope_to_collide_;
+					if (collide)
+					{
+						ipv.collide_distances[k] = r - 0.5f * rangeStep;
+						break;
+					}
+				}
+				prevZ = z;
+			}
+		}
+		// 2) Create a Box2D "ground body" with square "fixtures" so the
+		// vehicle can collide with the occ. grid:
+
+		// Create Box2D objects upon first usage:
+		if (!ipv.collide_body)
+		{
+			b2BodyDef bdef;
+			ipv.collide_body = getBox2DWorld()->CreateBody(&bdef);
+			ASSERT_(ipv.collide_body);
+		}
+		// Force move the body to the vehicle origins (to use obstacles in
+		// local coords):
+		// ipv.collide_body->SetTransform(b2Vec2(ipv.pose.x(), ipv.pose.y()), .0f);
+
+#if 0
+		// GL:
+		// 1st usage?
+		mrpt::opengl::CPointCloud::Ptr& gl_pts = gl_obs_clouds_buffer_[obj_idx];
+		if (show_grid_collision_points_)
+		{
+			gl_pts = mrpt::opengl::CPointCloud::Create();
+			gl_pts->setPointSize(4.0f);
+			gl_pts->setColor(0, 0, 1);
+
+			gl_pts->setVisibility(show_grid_collision_points_);
+			gl_pts->setPose(mrpt::poses::CPose2D(ipv.pose));
+			gl_pts->clear();
+		}
+#endif
+
+		// Physical properties of each "obstacle":
+		const float occCellSemiWidth = 0.05f;
+		b2PolygonShape sqrPoly;
+		sqrPoly.SetAsBox(occCellSemiWidth, occCellSemiWidth);
+		sqrPoly.m_radius = 1e-3;  // The "skin" depth of the body
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &sqrPoly;
+		fixtureDef.restitution = 0.1f;	// restitution_;
+		fixtureDef.density = 0;	 // Fixed (inf. mass)
+		fixtureDef.friction = 0.5f;	 // lateral_friction_;  // 0.5f;
+
+		// Create fixtures at their place (or disable it if no obstacle has
+		// been sensed):
+		ipv.collide_fixtures.resize(nRays);
+		for (size_t k = 0; k < nRays; k++)
+		{
+			if (!ipv.collide_fixtures[k].fixture)
+				ipv.collide_fixtures[k].fixture = ipv.collide_body->CreateFixture(&fixtureDef);
+
+			if (ipv.collide_distances.at(k) == 0)
+			{
+				// Box2D's way of saying: don't collide with this!
+				ipv.collide_fixtures[k].fixture->SetSensor(true);
+				ipv.collide_fixtures[k].fixture->GetUserData().pointer =
+					INVISIBLE_FIXTURE_USER_DATA;
+			}
+			else
+			{
+				ipv.collide_fixtures[k].fixture->SetSensor(false);
+				ipv.collide_fixtures[k].fixture->GetUserData().pointer = 0;
+
+				b2PolygonShape* poly =
+					dynamic_cast<b2PolygonShape*>(ipv.collide_fixtures[k].fixture->GetShape());
+				ASSERT_(poly != nullptr);
+
+				const float r = ipv.collide_distances.at(k);
+				const auto ptLocal = mrpt::math::TPoint3D(
+					r * sinCos.ccos[k], r * sinCos.csin[k], ipv.representativeHeight);
+				const auto ptGlobal = ipv.pose.composePoint(ptLocal);
+
+				poly->SetAsBox(
+					occCellSemiWidth, occCellSemiWidth, b2Vec2(ptGlobal.x, ptGlobal.y),
+					.0f /*angle*/);
+
+#if 0
+				if (gl_pts && show_grid_collision_points_)
+				{
+					gl_pts->mrpt::opengl::CPointCloud::insertPoint(lx, ly, .0);
+				}
+#endif
+			}
+		}
+	}  // end for obj_idx
 }

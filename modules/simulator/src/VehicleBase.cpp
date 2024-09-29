@@ -224,10 +224,6 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		}
 	}
 
-	// Common setup for simulable objects:
-	// -----------------------------------------------------------
-	veh->parseSimulable(nodes);
-
 	// Custom visualization 3D model:
 	// -----------------------------------------------------------
 	veh->parseVisual(nodes);
@@ -273,6 +269,10 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	}
 
 	veh->updateMaxRadiusFromPoly();
+
+	// Common setup for simulable objects:
+	// -----------------------------------------------------------
+	veh->parseSimulable(nodes);
 
 	// <Optional> Log path. If not specified, app folder will be used
 	// -----------------------------------------------------------

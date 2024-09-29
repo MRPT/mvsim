@@ -437,6 +437,9 @@ class World : public mrpt::system::COutputLogger
 
 	double ground_truth_rate_ = 50.0;  //!< In Hz.
 
+	double max_slope_to_collide_ = 0.30;
+	double min_slope_to_collide_ = -0.50;
+
 	const TParameterDefinitions otherWorldParams_ = {
 		{"server_address", {"%s", &serverAddress_}},
 		{"gravity", {"%lf", &gravity_}},
@@ -449,6 +452,8 @@ class World : public mrpt::system::COutputLogger
 		{"rawlog_odometry_rate", {"%lf", &rawlog_odometry_rate_}},
 		{"save_ground_truth_trajectory", {"%s", &save_ground_truth_trajectory_}},
 		{"ground_truth_rate", {"%lf", &ground_truth_rate_}},
+		{"max_slope_to_collide", {"%lf", &max_slope_to_collide_}},
+		{"min_slope_to_collide", {"%lf", &min_slope_to_collide_}},
 	};
 
 	/** User-defined variables as defined via `<variable name='' value='' />`
@@ -732,6 +737,26 @@ class World : public mrpt::system::COutputLogger
 	std::mutex gt_io_mtx_;
 	std::map<std::string, std::fstream> gt_io_per_veh_;
 	std::optional<double> gt_last_time_;
+
+	// ============ Elevation Field Collision artifacts ==============
+	struct TFixturePtr
+	{
+		TFixturePtr() = default;
+		b2Fixture* fixture = nullptr;
+	};
+	struct TInfoPerCollidableobj
+	{
+		TInfoPerCollidableobj() = default;
+
+		mrpt::poses::CPose3D pose;
+		b2Body* collide_body = nullptr;
+		std::vector<float> collide_distances;
+		std::vector<TFixturePtr> collide_fixtures;
+		float max_obstacles_ranges = 0;
+		double representativeHeight = 0.01;
+	};
+	std::vector<std::optional<TInfoPerCollidableobj>> obstacles_for_each_obj_;
+	// ============ end of elevation field collision =================
 
 	// Services:
 	void internal_advertiseServices();	// called from connectToServer()

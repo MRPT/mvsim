@@ -111,10 +111,6 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		}
 	}
 
-	// Common setup for simulable objects:
-	// -----------------------------------------------------------
-	block->parseSimulable(nodes);
-
 	// Params:
 	// -----------------------------------------------------------
 	parse_xmlnode_children_as_param(
@@ -175,6 +171,10 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	}
 
 	block->updateMaxRadiusFromPoly();
+
+	// Common setup for simulable objects:
+	// -----------------------------------------------------------
+	block->parseSimulable(nodes);
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------

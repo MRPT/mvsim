@@ -293,10 +293,11 @@ float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
 {
 	const auto zs = getElevationsAt({pt.x, pt.y});
 
-	auto it = zs.upper_bound(pt.z);
-	if (it == zs.begin()) return 0.0f;	// No element <= threshold
-
-	--it;
-
-	return *it;
+	float prevZ = .0f;
+	for (float z : zs)
+	{
+		if (z > pt.z) break;
+		prevZ = z;
+	}
+	return prevZ;
 }

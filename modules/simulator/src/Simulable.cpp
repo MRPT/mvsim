@@ -229,16 +229,17 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 		// Automatic determine the height of the query point:
 		if (auto meBlock = dynamic_cast<mvsim::Block*>(this); meBlock)
 		{
-			queryPt.z += meBlock->block_z_max();
+			queryPt.z += 0.5 * meBlock->block_z_max();
 		}
 		else if (auto meVeh = dynamic_cast<mvsim::VehicleBase*>(this); meVeh)
 		{
-			queryPt.z += meVeh->chassisZMax();
+			queryPt.z += 0.5 * meVeh->chassisZMax();
 		}
 		else
 		{
 			queryPt.z += 1.5;  // default [m]
 		}
+		ASSERT_EQUAL_(queryPt.z, queryPt.z);  // != NaN
 
 		if (std::optional<float> elev = simulable_parent_->getHighestElevationUnder(queryPt); elev)
 		{
