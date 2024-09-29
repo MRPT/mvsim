@@ -53,7 +53,7 @@
       <include file="lidar2d.sensor.xml"
         sensor_x="-0.15" sensor_z="0.25" sensor_yaw="180"
         sensor_period_sec="0.10"
-        raytrace_3d="false"
+        raytrace_3d="${lidar2d_raytrace|false}"
         sensor_name="scanner1"
       />
 
