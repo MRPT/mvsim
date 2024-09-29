@@ -333,6 +333,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 		for (int iter = 0; iter < 2; iter++)
 		{
 			const mrpt::math::TPose3D& cur_pose = veh->getPose();
+
 			// This object is faster for repeated point projections
 			const mrpt::poses::CPose3D cur_cpose(cur_pose);
 
@@ -356,7 +357,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 				const mrpt::math::TPoint3D gPt = cur_cpose.composePoint({wheel.x, wheel.y, 0.0});
 
 				const mrpt::math::TPoint3D gPtWheelsAxis =
-					gPt + mrpt::math::TPoint3D(.0, .0, .5 * wheel.diameter);
+					gPt + mrpt::math::TPoint3D(.0, .0, 0.5 * wheel.diameter);
 
 				// Get "the ground" under my wheel axis:
 				const float z = this->getHighestElevationUnder(gPtWheelsAxis);
@@ -373,7 +374,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 			if (all_equal && equal_zs.has_value())
 			{
 				// Optimization: just use the constant elevation without optimizing:
-				new_pose.z = optimalTf.z();
+				new_pose.z = *equal_zs;
 				new_pose.pitch = 0;
 				new_pose.roll = 0;
 			}
