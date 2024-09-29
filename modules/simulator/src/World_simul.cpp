@@ -317,8 +317,6 @@ void World::internal_simul_pre_step_terrain_elevation()
 	const World::VehicleList& lstVehs = getListOfVehicles();
 	for (auto& [name, veh] : lstVehs)
 	{
-		getTimeLogger().enter("elevationmap.handle_vehicle");
-
 		const size_t nWheels = veh->getNumWheels();
 
 		// 1) Compute its 3D pose according to the mesh tilt angle.
@@ -398,15 +396,6 @@ void World::internal_simul_pre_step_terrain_elevation()
 
 		}  // end iters
 
-#if 0
-		// debug contact points:
-		if (debugShowContactPoints_)
-		{
-			gl_debugWheelsContactPoints_->clear();
-			for (const auto& c : corrs_) gl_debugWheelsContactPoints_->insertPoint(c.global);
-		}
-#endif
-
 		// compute "down" direction:
 		{
 			mrpt::poses::CPose3D rot_only;
@@ -432,7 +421,5 @@ void World::internal_simul_pre_step_terrain_elevation()
 					{dir_down.x * wheel_weight, dir_down.y * wheel_weight}, {wheel.x, wheel.y});
 			}
 		}
-
-		getTimeLogger().leave("elevationmap.handle_vehicle");
 	}
 }

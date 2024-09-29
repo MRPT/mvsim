@@ -37,7 +37,6 @@ class ElevationMap : public WorldElementBase
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */
 	mrpt::opengl::CMesh::Ptr gl_mesh_;
-	std::shared_ptr<mrpt::opengl::CPointCloud> gl_debugWheelsContactPoints_;
 	bool firstSceneRendering_ = true;
 	float resolution_ = 1.0f;
 

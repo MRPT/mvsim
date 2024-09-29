@@ -8,7 +8,6 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/CPointCloud.h>
 #include <mrpt/version.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -146,10 +145,6 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// hint for rendering z-order:
 	gl_mesh_->setLocalRepresentativePoint(
 		mrpt::math::TPoint3Df(corner_min_x + 0.5 * LX, corner_min_y + 0.5 * LY, .0f));
-
-	gl_debugWheelsContactPoints_ = mrpt::opengl::CPointCloud::Create();
-	gl_debugWheelsContactPoints_->enableVariablePointSize(false);
-	gl_debugWheelsContactPoints_->setPointSize(7.0f);
 }
 
 void ElevationMap::internalGuiUpdate(
@@ -170,8 +165,6 @@ void ElevationMap::internalGuiUpdate(
 		firstSceneRendering_ = false;
 		viz->get().insert(gl_mesh_);
 		physical->get().insert(gl_mesh_);
-
-		viz->get().insert(gl_debugWheelsContactPoints_);
 	}
 }
 
