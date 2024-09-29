@@ -152,7 +152,61 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	else
 	{
 		// Split in smaller meshes:
-		THROW_EXCEPTION("TODO");
+		const int M = static_cast<int>(std::ceil(model_split_size_ / resolution_));
+		const double subSize = M * resolution_;
+		const size_t NX = static_cast<size_t>(std::ceil(LX / subSize));
+		const size_t NY = static_cast<size_t>(std::ceil(LY / subSize));
+		for (size_t iX = 0; iX < NX; iX++)
+		{
+			// (recall: rows=X, cols=Y)
+			// M+1: we need to duplicate the elevation data from border cells to neighboring
+			// blocks to ensure continuity.
+
+			const size_t startIx = iX * M;
+			const size_t lenIx_p = std::min<size_t>(M, elevation_data.rows() - startIx);
+			const size_t lenIx = std::min<size_t>(M + 1, elevation_data.rows() - startIx);
+
+			for (size_t iY = 0; iY < NY; iY++)
+			{
+				const size_t startIy = iY * M;
+				const size_t lenIy_p = std::min<size_t>(M, elevation_data.cols() - startIy);
+				const size_t lenIy = std::min<size_t>(M + 1, elevation_data.cols() - startIy);
+
+				// Extract sub-matrix for elevation data:
+				const auto subEle = elevation_data.extractMatrix(lenIx, lenIy, startIx, startIy);
+
+				// One sub-mesh:
+				auto gl_mesh = mrpt::opengl::CMesh::Create();
+				gl_meshes_.push_back(gl_mesh);
+
+				gl_mesh->enableTransparency(false);
+
+				if (has_mesh_image)
+				{
+					gl_mesh->assignImageAndZ(mesh_image, subEle);
+					gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+				}
+				else
+				{
+					gl_mesh->setZ(subEle);
+					gl_mesh->setColor_u8(mesh_color);
+				}
+
+				// Important: the yMin/yMax in the next line are swapped to handle
+				// the "+y" different direction in image and map coordinates, it is not
+				// a bug:
+				gl_mesh->setGridLimits(
+					corner_min_x + iX * subSize,
+					corner_min_x + iX * subSize + lenIx_p * resolution_,
+					corner_min_y + iY * subSize,
+					corner_min_y + iY * subSize + lenIy_p * resolution_);
+
+				// hint for rendering z-order:
+				gl_mesh->setLocalRepresentativePoint(mrpt::math::TPoint3Df(
+					corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
+					subEle(0, 0)));
+			}
+		}
 	}
 }
 

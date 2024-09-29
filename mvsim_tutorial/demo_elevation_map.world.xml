@@ -35,10 +35,10 @@
 		<elevation_image_max_z>2.0</elevation_image_max_z>
 		
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
-		<texture_extension_x>1.25</texture_extension_x>
-		<texture_extension_y>1.25</texture_extension_y>
-		
-		<model_split_size>0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+
+		<texture_extension_x>1.5</texture_extension_x>
+		<texture_extension_y>1.5</texture_extension_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 
 		<mesh_color>#a0e0a0</mesh_color> <!-- Used only if mesh_image is not provided -->
 	</element>
