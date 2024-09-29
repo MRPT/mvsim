@@ -573,8 +573,7 @@ std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2Df& w
 	// Is the point within the block?
 	const auto& myPose = getCPose3D();
 
-	const auto localPt =
-		getCPose3D().inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
+	const auto localPt = myPose.inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
 
 	if (!blockShape().contains({localPt.x, localPt.y})) return {};
 

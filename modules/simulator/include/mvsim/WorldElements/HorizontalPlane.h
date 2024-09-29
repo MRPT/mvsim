@@ -29,6 +29,8 @@ class HorizontalPlane : public WorldElementBase
 	void simul_pre_timestep(const TSimulContext& context) override;
 	void simul_post_timestep(const TSimulContext& context) override;
 
+	std::optional<float> getElevationAt(const mrpt::math::TPoint2Df& worldXY) const override;
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,

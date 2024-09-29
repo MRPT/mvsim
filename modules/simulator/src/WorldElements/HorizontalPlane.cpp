@@ -169,3 +169,20 @@ void HorizontalPlane::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
 }
+
+std::optional<float> HorizontalPlane::getElevationAt(const mrpt::math::TPoint2Df& worldXY) const
+{
+	const auto& myPose = getCPose3D();
+
+	const auto localPt =
+		getCPose3D().inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
+
+	if (localPt.x < x_min_ || localPt.x > x_max_ || localPt.y < y_min_ || localPt.y > y_max_)
+	{
+		// Out of the plane:
+		return {};
+	}
+
+	auto p = myPose + mrpt::poses::CPose3D::FromTranslation(0, 0, z_);
+	return p.z();
+}
