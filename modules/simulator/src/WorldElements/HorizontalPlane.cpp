@@ -83,16 +83,10 @@ void HorizontalPlane::internalGuiUpdate(
 		gl_plane_->setLocation(0, 0, z_);
 		gl_plane_->setName("HorizontalPlane_"s + getName());
 
-#if MRPT_VERSION >= 0x270
 		gl_plane_->enableLighting(enableShadows_);
-#endif
-
 		gl_plane_->setColor_u8(color_);
-
-#if MRPT_VERSION >= 0x240
 		gl_plane_->cullFaces(
 			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
-#endif
 		glGroup_->insert(gl_plane_);
 		viz->get().insert(glGroup_);
 		physical->get().insert(glGroup_);
