@@ -69,9 +69,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
     const double gravity = myVehicle_.parent()->get_gravity();  
     const double R = 0.5 * input.wheel.diameter;  // Wheel radius
     const double w = veh_vel_local.omega; 
-
-    double delta3 = 0.0, delta4 = 0.0; // ver de donde sacar estos valores del codigo general
-
+    const double delta = setpoint_steer_ang; // ¿Está bien?
     
     // obtener posiciones y distancias de ejes
     mrpt::math::TVector3D Center_of_mass = getChassisCenterOfMass(); // ¿esta bien este codigo?
@@ -111,7 +109,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// 2) Wheels velocity at Tire SR (decoupled sub-problem)
 	// -------------------------------------------------
     //duda de cambiar el codigo o no) VehicleBase.cpp line 575 calcula esto pero distinto    
-    double vxT = (veh_vel_local.vx - w * pos.y) * cos(delta1) + (veh_vel_local.vy + w * pos.x) * sin(delta1); 
+    double vxT = (veh_vel_local.vx - w * pos.y) * cos(delta) + (veh_vel_local.vy + w * pos.x) * sin(delta); 
     
  	// 3) Longitudinal slip (decoupled sub-problem)
 	// -------------------------------------------------
@@ -125,7 +123,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// 4) Sideslip angle (decoupled sub-problem)
 	// -------------------------------------------------
 
-    double af = atan2((veh_vel_local.vy + pos.x * w), (veh_vel_local.vx - pos.y * w)) - delta1; 
+    double af = atan2((veh_vel_local.vy + pos.x * w), (veh_vel_local.vx - pos.y * w)) - delta; 
 
 	// 5) Longitudinal friction (decoupled sub-problem)
 	// -------------------------------------------------
@@ -143,7 +141,6 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
     input.wheel.setW(
 		input.wheel.getW() + actual_wheel_alpha * input.context.dt);
-
 
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
