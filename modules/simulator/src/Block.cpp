@@ -575,6 +575,10 @@ std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2Df& w
 
 	const auto localPt = myPose.inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
 
+	// Quick discard? (saves much time):
+	if (std::abs(localPt.x) > maxRadius_ && std::abs(localPt.y) > maxRadius_) return {};
+
+	// If we are close, then check the exact polygon:
 	if (!blockShape().contains({localPt.x, localPt.y})) return {};
 
 	// Yes, the query point is within my 2D shape. We need to evaluate the block height at that

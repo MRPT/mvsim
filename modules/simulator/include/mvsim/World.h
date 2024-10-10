@@ -750,10 +750,12 @@ class World : public mrpt::system::COutputLogger
 
 		mrpt::poses::CPose3D pose;
 		b2Body* collide_body = nullptr;
-		std::vector<float> collide_distances;
-		std::vector<TFixturePtr> collide_fixtures;
-		float max_obstacles_ranges = 0;
 		double representativeHeight = 0.01;
+		double maxWorkableStepHeight = 0.10;
+		mrpt::math::TPolygon2D contour;
+		const std::vector<float>* wheel_heights = nullptr;
+		std::vector<float> contour_heights;
+		std::vector<TFixturePtr> collide_fixtures;
 	};
 	std::vector<std::optional<TInfoPerCollidableobj>> obstacles_for_each_obj_;
 	// ============ end of elevation field collision =================
