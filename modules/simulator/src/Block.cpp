@@ -440,6 +440,8 @@ void DummyInvisibleBlock::internalGuiUpdate(
 
 void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node)
 {
+	using namespace mrpt::literals;	 // _deg
+
 	auto& _ = geomParams_;
 
 	parse_xmlnode_attribs(
@@ -495,6 +497,28 @@ void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node
 			glBox->setBoxCorners({0, 0, 0}, {_.lx, _.ly, _.lz});
 			glBox->setColor_u8(block_color_);
 			addCustomVisualization(glBox);
+		}
+		break;
+
+		case mvsim::GeometryType::SemiCylinderBump:
+		{
+			ASSERTMSG_(_.lx > 0, "Missing 'lx' attribute for semi_cylinder_bump geometry");
+			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for semi_cylinder_bump geometry");
+			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for semi_cylinder_bump geometry");
+
+			if (_.vertex_count == 0) _.vertex_count = 10;  // default
+
+			auto glCyl = mrpt::opengl::CCylinder::Create();
+			glCyl->setHeight(_.lx);
+			glCyl->setRadius(_.ly * 0.5);
+			glCyl->setScale(2 * _.lz / _.ly, 1.0, 1.0);
+
+			glCyl->setSlicesCount(_.vertex_count);
+			glCyl->setColor_u8(block_color_);
+
+			addCustomVisualization(
+				glCyl, mrpt::poses::CPose3D::FromXYZYawPitchRoll(
+						   -0.5 * _.lx, .0, .0, .0_deg, 90.0_deg, .0_deg));
 		}
 		break;
 
@@ -595,5 +619,12 @@ std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2Df& w
 
 		case GeometryType::Ramp:
 			return myPose.z() + _.lz * localPt.x / _.lx;
+
+		case GeometryType::SemiCylinderBump:
+		{
+			const auto f =
+				std::sqrt(std::max<double>(.0, 1.0 - mrpt::square(2.0 * localPt.y / _.ly)));
+			return myPose.z() + _.lz * f;
+		}
 	};
 }

@@ -191,8 +191,18 @@
 		<intangible>true</intangible> <!-- Does not generate collisions -->
 		<color>#707070</color>
 		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
-		<geometry type="ramp" lx="2.0" ly="1.0" lz="0.25" /> -->
+		<geometry type="ramp" lx="2.0" ly="1.0" lz="0.25" />
 	</block:class>
+	
+	<block:class name="my_bump">
+		<static>true</static> <!-- Does not move -->
+		<intangible>true</intangible> <!-- Does not generate collisions -->
+		<color>#707070</color>
+		<zmin>0</zmin> <zmax>0.02</zmax>
+		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
+		<geometry type="semi_cylinder_bump" lx="1.0" ly="0.20" lz="0.02" />
+	</block:class>
+	
 
 	<!-- ======================================
 	      Object instances
@@ -218,8 +228,10 @@
 	<block class="pallet_jack"> <init_pose>-11 12 80</init_pose> </block>
 
 
-	<block class="my_ramp"> <init_pose>2 2 0</init_pose> </block>
-	<block class="my_ramp"> <init_pose>6 2 180</init_pose> </block>
+<!--	<block class="my_ramp"> <init_pose>2 2 0</init_pose> </block>
+	<block class="my_ramp"> <init_pose>6 2 180</init_pose> </block> -->
+	
+<!--	<block class="my_bump"> <init_pose>4 0 90</init_pose> </block> -->
 
 	<block class="pallet_jack"> 
 		<init_pose>0 0 0</init_pose>

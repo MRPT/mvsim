@@ -83,6 +83,7 @@ void VisualObject::guiUpdate(
 			const auto& cs = collisionShape_.value();
 
 			const double height = cs.zMax() - cs.zMin();
+			ASSERT_(height == height);
 			ASSERT_(height > 0);
 
 			const auto c = cs.getContour();
