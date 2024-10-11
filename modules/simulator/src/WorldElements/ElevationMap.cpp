@@ -38,6 +38,11 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["elevation_image"] = TParamEntry("%s", &sElevationImgFile);
 	std::string sTextureImgFile;
 	params["texture_image"] = TParamEntry("%s", &sTextureImgFile);
+	int texture_rotate = 0;
+	params["texture_image_rotate"] = TParamEntry("%i", &texture_rotate);
+
+	std::string sElevationMatrixData;
+	params["elevation_data_matrix"] = TParamEntry("%s", &sElevationMatrixData);
 
 	double img_min_z = 0.0, img_max_z = 5.0;
 	params["elevation_image_min_z"] = TParamEntry("%lf", &img_min_z);
@@ -89,7 +94,17 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 	else
 	{
-		// TODO: Support reading from txt file?
+		ASSERTMSG_(
+			!sElevationMatrixData.empty(),
+			"Either <elevation_image> or <elevation_data_matrix> must be provided");
+
+		sElevationMatrixData = mrpt::system::trim(sElevationMatrixData);
+
+		std::stringstream sErrors;
+		if (!elevation_data.fromMatlabStringFormat(sElevationMatrixData, sErrors))
+		{
+			THROW_EXCEPTION_FMT("Error parsing <elevation_data_matrix>: %s", sErrors.str().c_str());
+		}
 	}
 
 	// Load texture (optional):
@@ -103,6 +118,27 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			throw std::runtime_error(mrpt::format(
 				"[ElevationMap] ERROR: Cannot read texture image '%s'", sTextureImgFile.c_str()));
 		has_mesh_image = true;
+
+		// Apply rotation:
+		switch (texture_rotate)
+		{
+			case 0:
+				break;
+			case 90:
+			case -90:
+			case 180:
+			case -180:
+			{
+				mrpt::img::CImage im;
+				mesh_image.rotateImage(
+					im, mrpt::DEG2RAD(texture_rotate), mesh_image.getWidth() / 2,
+					mesh_image.getHeight() / 2);
+				mesh_image = std::move(im);
+			}
+			break;
+			default:
+				THROW_EXCEPTION("texture_image_rotate can only be: 0, 90, -90, 180");
+		}
 	}
 
 	// Extension: X,Y
@@ -284,7 +320,7 @@ std::optional<float> ElevationMap::getElevationAt(const mrpt::math::TPoint2Df& p
 	const int cx00 = ::floor((pt.x - x0) / sCellX);
 	const int cy00 = ::floor((pt.y - y0) / sCellY);
 
-	if (cx00 < 1 || cx00 >= int(nCellsX - 1) || cy00 < 1 || cy00 >= int(nCellsY - 1))  //
+	if (cx00 < 0 || cx00 >= int(nCellsX - 1) || cy00 < 0 || cy00 >= int(nCellsY - 1))  //
 		return {};	// out of bounds!
 
 	// Linear interpolation:
