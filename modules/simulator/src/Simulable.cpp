@@ -243,7 +243,7 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 
 		if (std::optional<float> elev = simulable_parent_->getHighestElevationUnder(queryPt); elev)
 		{
-			initPose->z += elev.value();
+			initPose->z = elev.value();
 		}
 	}
 

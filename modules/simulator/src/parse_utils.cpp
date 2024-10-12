@@ -157,6 +157,12 @@ double randn()
 	auto& rng = mrpt::random::getRandomGenerator();
 	return rng.drawGaussian1D_normalized();
 }
+double randomize(double seed)
+{
+	auto& rng = mrpt::random::getRandomGenerator();
+	rng.randomize(seed);
+	return 0;
+}
 
 // Examples: "$f{180/5}",   "$f{ ${MAX_SPEED} * sin(deg2rad(45)) }"
 std::string parseMathExpr(
@@ -185,6 +191,7 @@ std::string parseMathExpr(
 	expr.register_function("rand", &my_rand);
 	expr.register_function("unifrnd", &my_unifrnd);
 	expr.register_function("randn", &randn);
+	expr.register_function("randomize", &randomize);
 
 	std::map<std::string, double> numericVars;
 	for (const auto& kv : variableNamesValues)
