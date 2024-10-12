@@ -16,6 +16,96 @@ MVSim.
    :backlinks: none
 
 
+demo_warehouse
+---------------------
+
+Example of a 3D Lidar Jackal robot in a warehouse. The XML illustrates how to animate an object to make it to follow a given trajectory
+in a loop.
+
+.. tab-set::
+    .. tab-item:: ROS 1
+
+        .. code-block:: bash
+
+            roslaunch mvsim demo_warehouse.launch
+
+    .. tab-item:: ROS 2
+        :selected:
+
+        .. code-block:: bash
+
+            ros2 launch mvsim demo_warehouse.launch.py
+
+    .. tab-item:: Standalone MVSim build
+
+        Assuming you compiled MVSim in the directory ``MVSIM_ROOT``,
+        with cmake build directory ``build-Release``, run:
+
+        .. code-block:: bash
+
+            cd MVSIM_ROOT
+            build-Release/bin/mvsim launch mvsim_tutorial/demo_warehouse.world.xml
+
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_warehouse.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_warehouse.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_warehouse.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_warehouse.world.xml
+      :language: xml
+
+demo_road_circuit1
+---------------------
+
+Example of two Jackal robots with cameras and 3D LiDARs in a 2.5 world, including ramps, road bumps, and a bridge.
+For ROS, note that having multiple robots uses namespaces even for ``/tf``, hence the ``remappings`` (see the launch file)
+needed for RViz to show the sensors and send ``/cmd_vel`` commands.
+
+.. tab-set::
+    .. tab-item:: ROS 2
+        :selected:
+
+        .. code-block:: bash
+
+            ros2 launch mvsim demo_road_circuit1.launch.py
+
+    .. tab-item:: Standalone MVSim build
+
+        Assuming you compiled MVSim in the directory ``MVSIM_ROOT``,
+        with cmake build directory ``build-Release``, run:
+
+        .. code-block:: bash
+
+            cd MVSIM_ROOT
+            build-Release/bin/mvsim launch mvsim_tutorial/demo_road_circuit1.world.xml
+
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim-demo-road-circuit1_world.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_road_circuit1.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_road_circuit1.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_road_circuit1.world.xml
+      :language: xml
+
+
 demo_1robot
 ------------------
 
@@ -348,54 +438,6 @@ external ``.dae`` or ``.stl`` files.
    File: `mvsim_tutorial/demo_turtlebot_world.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_turtlebot_world.world.xml>`_
 
    .. literalinclude:: ../mvsim_tutorial/demo_turtlebot_world.world.xml
-      :language: xml
-
-
-demo_warehouse
----------------------
-
-Example of a 3D Lidar Jackal robot in a warehouse. The XML illustrates how to animate an object to make it to follow a given trajectory
-in a loop.
-
-.. tab-set::
-    .. tab-item:: ROS 1
-
-        .. code-block:: bash
-
-            roslaunch mvsim demo_warehouse.launch
-
-    .. tab-item:: ROS 2
-        :selected:
-
-        .. code-block:: bash
-
-            ros2 launch mvsim demo_warehouse.launch.py
-
-    .. tab-item:: Standalone MVSim build
-
-        Assuming you compiled MVSim in the directory ``MVSIM_ROOT``,
-        with cmake build directory ``build-Release``, run:
-
-        .. code-block:: bash
-
-            cd MVSIM_ROOT
-            build-Release/bin/mvsim launch mvsim_tutorial/demo_warehouse.world.xml
-
-
-.. raw:: html
-
-   <div style="width: 100%; overflow: hidden;">
-     <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_warehouse.mp4" type="video/mp4">
-     </video>
-   </div>
-
-
-.. dropdown:: World XML code
-
-   File: `mvsim_tutorial/demo_warehouse.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_warehouse.world.xml>`_
-
-   .. literalinclude:: ../mvsim_tutorial/demo_warehouse.world.xml
       :language: xml
 
 
