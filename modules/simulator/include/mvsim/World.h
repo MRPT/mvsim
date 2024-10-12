@@ -752,6 +752,7 @@ class World : public mrpt::system::COutputLogger
 		b2Body* collide_body = nullptr;
 		double representativeHeight = 0.01;
 		double maxWorkableStepHeight = 0.10;
+		double speed = .0;
 		mrpt::math::TPolygon2D contour;
 		const std::vector<float>* wheel_heights = nullptr;
 		std::vector<float> contour_heights;

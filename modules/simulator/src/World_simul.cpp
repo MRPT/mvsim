@@ -434,17 +434,6 @@ void World::internal_simul_pre_step_terrain_elevation()
 
 	// (2/2) Collisions due to steep slopes
 
-	// Physical properties of each "obstacle":
-	const float obsW = 0.01f;
-	b2PolygonShape sqrPoly;
-	sqrPoly.SetAsBox(obsW, obsW);
-	sqrPoly.m_radius = 1e-3;  // The "skin" depth of the body
-	b2FixtureDef fixtureDef;
-	fixtureDef.shape = &sqrPoly;
-	fixtureDef.restitution = 0.1f;	// restitution_;
-	fixtureDef.density = 0;	 // Fixed (inf. mass)
-	fixtureDef.friction = 0.5f;	 // lateral_friction_;  // 0.5f;
-
 	// Make a list of objects subject to collide with the occupancy grid:
 	// - Vehicles
 	// - Blocks
@@ -462,6 +451,9 @@ void World::internal_simul_pre_step_terrain_elevation()
 		ipv.representativeHeight = 1.05 * veh->chassisZMax();
 		ipv.contour = veh->getChassisShape();
 		ipv.maxWorkableStepHeight = 0.55 * veh->getWheelInfo(0).diameter;
+
+		const auto& tw = veh->getTwist();
+		ipv.speed = mrpt::math::TVector2D(tw.vx, tw.vy).norm();
 
 		if (auto it = wheel_heights_per_vehicle.find(veh.get());
 			it != wheel_heights_per_vehicle.end())
@@ -535,8 +527,23 @@ void World::internal_simul_pre_step_terrain_elevation()
 		ipv.collide_fixtures.resize(ipv.contour.size());
 		for (size_t k = 0; k < ipv.contour.size(); k++)
 		{
+			const double obsW = 0.01 + ipv.speed * 0.07;
+
 			if (!ipv.collide_fixtures[k].fixture)
+			{
+				// Physical properties of each "obstacle":
+				// make the size proportional to speed to avoid "going thru" walls:
+				b2PolygonShape sqrPoly;
+				sqrPoly.SetAsBox(obsW, obsW);
+				sqrPoly.m_radius = 1e-3;  // The "skin" depth of the body
+				b2FixtureDef fixtureDef;
+				fixtureDef.shape = &sqrPoly;
+				fixtureDef.restitution = 0.1f;	// restitution_;
+				fixtureDef.density = 0;	 // Fixed (inf. mass)
+				fixtureDef.friction = 0.5f;	 // lateral_friction_;  // 0.5f;
+
 				ipv.collide_fixtures[k].fixture = ipv.collide_body->CreateFixture(&fixtureDef);
+			}
 
 			const bool is_collision =
 				(ipv.contour_heights[k] - avrg_wheels_z) > ipv.maxWorkableStepHeight;
