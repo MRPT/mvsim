@@ -2,6 +2,38 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.0 (2024-10-12)
+-------------------
+* docs: add new demo world
+* Add ros2 launch for new demo world
+* Colission fixed for elevation meshes at high speed
+* New world demo: road circuit
+* ElevationMap: Add option for rotating texture images
+* Implement cylinder ground bumps
+* demo_1robot: add launch arguments headless and use_rviz
+* HorizontalPlane: also supports elevation API now
+* Implement moving vehicles over ramps and blocks in general
+* Remove #if for older mrpt versions
+* FIXBUG: 2D LaserScanner sensor wouldn't render custom visuals correctly if robot moves in 3D
+* Jackal robot model: Add new param "lidar2d_raytrace"
+* Finish texture partition of split meshes
+* Fix correct query point for determining elevation offset for blocks and vehicles
+* Automatically correct elevation of objects initialized on elevation maps
+* Move vehicle tilt calculation from ElevationMesh outside to World so it works with many other object types
+* source files: split simulation-related stuff into a new World_simul.cpp
+* CMake: prefer explicit file lists instead of file(GLOB ...)
+* Add getElevationAt() virtual interface for all Simulable objects
+* Update README.md
+* Fix headless ros param name in demo params YAML file
+* Use new assimp feature to improve rendering of transparent meshes
+* elevation map demo: add trees
+* docs: add link to 3D objects repository
+* fix build for ROS 1
+* ROS: publish camera_info too for each camera sensor
+  **Backwards-incompatible change**: Camera topics now are named as: `veh/camera_name/image_raw`
+  instead of `veh/camera_name`, so the corresponding `camera_info` exists within its same namespace: `veh/camera_name/camera_info`.
+* Contributors: Jose Luis Blanco-Claraco
+
 0.10.0 (2024-08-28)
 -------------------
 * Depend on new mrpt_lib packages (deprecate mrpt2)

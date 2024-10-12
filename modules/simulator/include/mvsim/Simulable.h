@@ -125,6 +125,16 @@ class Simulable
 
 	virtual void freeOpenGLResources() {}
 
+	/** If the given world-frame 2D coordinates are within the limits of this entity,
+	 *  this method returns the ground height or elevation or "z" coordinate of the object
+	 *  for the queried (x,y). If the coordinates do not affect this object, it will return nullopt.
+	 */
+	virtual std::optional<float> getElevationAt(
+		[[maybe_unused]] const mrpt::math::TPoint2Df& worldXY) const
+	{
+		return std::nullopt;
+	}
+
    protected:
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
 	std::string name_;

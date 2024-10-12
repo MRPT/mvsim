@@ -38,6 +38,7 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <rosgraph_msgs/Clock.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <std_msgs/Bool.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -56,6 +57,7 @@ using Msg_MapMetaData = nav_msgs::MapMetaData;
 using Msg_Bool = std_msgs::Bool;
 using Msg_TFMessage = tf2_msgs::TFMessage;
 using Msg_MarkerArray = visualization_msgs::MarkerArray;
+using Msg_CameraInfo = sensor_msgs::CameraInfo;
 #else
 #include <geometry_msgs/msg/polygon.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
@@ -67,6 +69,7 @@ using Msg_MarkerArray = visualization_msgs::MarkerArray;
 #include <rclcpp/clock.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/time_source.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
@@ -87,6 +90,7 @@ using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
 using Msg_Bool = std_msgs::msg::Bool;
 using Msg_TFMessage = tf2_msgs::msg::TFMessage;
 using Msg_MarkerArray = visualization_msgs::msg::MarkerArray;
+using Msg_CameraInfo = sensor_msgs::msg::CameraInfo;
 #endif
 
 namespace mvsim_node

@@ -83,6 +83,7 @@ void VisualObject::guiUpdate(
 			const auto& cs = collisionShape_.value();
 
 			const double height = cs.zMax() - cs.zMin();
+			ASSERT_(height == height);
 			ASSERT_(height > 0);
 
 			const auto c = cs.getContour();
@@ -216,6 +217,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
 	params["model_cull_faces"] = TParamEntry("%s", &opts.modelCull);
 	params["model_color"] = TParamEntry("%color", &opts.modelColor);
+	params["model_split_size"] = TParamEntry("%f", &opts.splitSize);
 	params["name"] = TParamEntry("%s", &objectName);
 
 	// Parse XML params:

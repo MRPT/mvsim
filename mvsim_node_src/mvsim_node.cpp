@@ -1125,23 +1125,95 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	}
 }
 
+namespace
+{
+/** Fills all CameraInfo fields from an MRPT calibration struct.
+ *  Header must be filled in by caller.
+ */
+Msg_CameraInfo camInfoToRos(const mrpt::img::TCamera& c)
+{
+	Msg_CameraInfo ci;
+	ci.height = c.nrows;
+	ci.width = c.ncols;
+
+#if PACKAGE_ROS_VERSION == 1
+	auto& dist = ci.D;
+	auto& K = ci.K;
+	auto& P = ci.P;
+#else
+	auto& dist = ci.d;
+	auto& K = ci.k;
+	auto& P = ci.p;
+#endif
+
+	switch (c.distortion)
+	{
+		case mrpt::img::DistortionModel::kannala_brandt:
+			ci.distortion_model = "kannala_brandt";
+			dist.resize(4);
+			dist[0] = c.k1();
+			dist[1] = c.k2();
+			dist[2] = c.k3();
+			dist[3] = c.k4();
+			break;
+
+		case mrpt::img::DistortionModel::plumb_bob:
+			ci.distortion_model = "plumb_bob";
+			dist.resize(5);
+			for (size_t i = 0; i < dist.size(); i++) dist[i] = c.dist[i];
+			break;
+
+		case mrpt::img::DistortionModel::none:
+			ci.distortion_model = "plumb_bob";
+			dist.resize(5);
+			for (size_t i = 0; i < dist.size(); i++) dist[i] = 0;
+			break;
+
+		default:
+			THROW_EXCEPTION("Unexpected distortion model!");
+	}
+
+	K.fill(0);
+	K[0] = c.fx();
+	K[4] = c.fy();
+	K[2] = c.cx();
+	K[5] = c.cy();
+	K[8] = 1.0;
+
+	P.fill(0);
+	P[0] = 1;
+	P[5] = 1;
+	P[10] = 1;
+
+	return ci;
+}
+}  // namespace
+
 void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationImage& obs)
 {
+	using namespace std::string_literals;
+
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
+	const std::string img_topic = obs.sensorLabel + "/image_raw"s;
+	const std::string camInfo_topic = obs.sensorLabel + "/camera_info"s;
+
 	// Create the publisher the first time an observation arrives:
-	const bool is_1st_pub = pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
-	auto& pub = pubs.pub_sensors[obs.sensorLabel];
+	const bool is_1st_pub = pubs.pub_sensors.find(img_topic) == pubs.pub_sensors.end();
+	auto& pubImg = pubs.pub_sensors[img_topic];
+	auto& pubCamInfo = pubs.pub_sensors[camInfo_topic];
 
 	if (is_1st_pub)
 	{
 #if PACKAGE_ROS_VERSION == 1
-		pub = mvsim_node::make_shared<ros::Publisher>(
-			n_.advertise<Msg_Image>(vehVarName(obs.sensorLabel, veh), publisher_history_len_));
+		pubImg = mvsim_node::make_shared<ros::Publisher>(
+			n_.advertise<Msg_Image>(vehVarName(img_topic, veh), publisher_history_len_));
 #else
-		pub = mvsim_node::make_shared<PublisherWrapper<Msg_Image>>(
-			n_, vehVarName(obs.sensorLabel, veh), publisher_history_len_);
+		pubImg = mvsim_node::make_shared<PublisherWrapper<Msg_Image>>(
+			n_, vehVarName(img_topic, veh), publisher_history_len_);
+		pubCamInfo = mvsim_node::make_shared<PublisherWrapper<Msg_CameraInfo>>(
+			n_, vehVarName(camInfo_topic, veh), publisher_history_len_);
 #endif
 	}
 	lck.unlock();
@@ -1162,14 +1234,21 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	pubs.pub_tf->publish(tfMsg);
 
 	// Send observation:
+	Msg_Header msg_header;
+	msg_header.stamp = myNow();
+	msg_header.frame_id = obs.sensorLabel;
+
 	{
 		// Convert observation MRPT -> ROS
 		Msg_Image msg_img;
-		Msg_Header msg_header;
-		msg_header.stamp = myNow();
-		msg_header.frame_id = obs.sensorLabel;
 		msg_img = mrpt2ros::toROS(obs.image, msg_header);
-		pub->publish(mvsim_node::make_shared<Msg_Image>(msg_img));
+		pubImg->publish(mvsim_node::make_shared<Msg_Image>(msg_img));
+	}
+	// Send CameraInfo
+	{
+		Msg_CameraInfo camInfo = camInfoToRos(obs.cameraParams);
+		camInfo.header = msg_header;
+		pubCamInfo->publish(mvsim_node::make_shared<Msg_CameraInfo>(camInfo));
 	}
 }
 

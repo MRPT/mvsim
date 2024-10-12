@@ -35,6 +35,7 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <set>
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 // forward declarations:
@@ -382,6 +383,19 @@ class World : public mrpt::system::COutputLogger
 
 	float collisionThreshold() const { return collisionThreshold_; }
 
+	/** Returns the list of "z" coordinate or "elevations" for all simulable objects at a given
+	 *  world-frame 2D coordinates (x,y). If no object reports any height, the value "0.0" will be
+	 * always reported by default. In multistorey worlds, for example, this will return the height
+	 * of each floor for the queried point.
+	 */
+	std::set<float> getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const;
+
+	/// with query points the center of a wheel, this returns the highest "ground" under it, or .0
+	/// if nothing found.
+	float getHighestElevationUnder(const mrpt::math::TPoint3Df& queryPt) const;
+
+	void internal_simul_pre_step_terrain_elevation();
+
    private:
 	friend class VehicleBase;
 	friend class Block;
@@ -423,6 +437,9 @@ class World : public mrpt::system::COutputLogger
 
 	double ground_truth_rate_ = 50.0;  //!< In Hz.
 
+	double max_slope_to_collide_ = 0.30;
+	double min_slope_to_collide_ = -0.50;
+
 	const TParameterDefinitions otherWorldParams_ = {
 		{"server_address", {"%s", &serverAddress_}},
 		{"gravity", {"%lf", &gravity_}},
@@ -435,6 +452,8 @@ class World : public mrpt::system::COutputLogger
 		{"rawlog_odometry_rate", {"%lf", &rawlog_odometry_rate_}},
 		{"save_ground_truth_trajectory", {"%s", &save_ground_truth_trajectory_}},
 		{"ground_truth_rate", {"%lf", &ground_truth_rate_}},
+		{"max_slope_to_collide", {"%lf", &max_slope_to_collide_}},
+		{"min_slope_to_collide", {"%lf", &min_slope_to_collide_}},
 	};
 
 	/** User-defined variables as defined via `<variable name='' value='' />`
@@ -718,6 +737,29 @@ class World : public mrpt::system::COutputLogger
 	std::mutex gt_io_mtx_;
 	std::map<std::string, std::fstream> gt_io_per_veh_;
 	std::optional<double> gt_last_time_;
+
+	// ============ Elevation Field Collision artifacts ==============
+	struct TFixturePtr
+	{
+		TFixturePtr() = default;
+		b2Fixture* fixture = nullptr;
+	};
+	struct TInfoPerCollidableobj
+	{
+		TInfoPerCollidableobj() = default;
+
+		mrpt::poses::CPose3D pose;
+		b2Body* collide_body = nullptr;
+		double representativeHeight = 0.01;
+		double maxWorkableStepHeight = 0.10;
+		double speed = .0;
+		mrpt::math::TPolygon2D contour;
+		const std::vector<float>* wheel_heights = nullptr;
+		std::vector<float> contour_heights;
+		std::vector<TFixturePtr> collide_fixtures;
+	};
+	std::vector<std::optional<TInfoPerCollidableobj>> obstacles_for_each_obj_;
+	// ============ end of elevation field collision =================
 
 	// Services:
 	void internal_advertiseServices();	// called from connectToServer()

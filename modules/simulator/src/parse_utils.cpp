@@ -27,7 +27,9 @@ thread_local const bool MVSIM_VERBOSE_PARSE = mrpt::get_env<bool>("MVSIM_VERBOSE
 
 using namespace mvsim;
 
-static std::string parseEnvVars(const std::string& text)
+namespace
+{
+std::string parseEnvVars(const std::string& text)
 {
 	MRPT_TRY_START
 
@@ -60,7 +62,7 @@ static std::string parseEnvVars(const std::string& text)
 	MRPT_TRY_END
 }
 
-static std::string parseVars(
+std::string parseVars(
 	const std::string& text, const std::map<std::string, std::string>& variableNamesValues)
 {
 	MRPT_TRY_START
@@ -103,7 +105,7 @@ static std::string parseVars(
 	MRPT_TRY_END
 }
 
-static std::string parseCmdRuns(const std::string& text)
+std::string parseCmdRuns(const std::string& text)
 {
 	MRPT_TRY_START
 
@@ -140,26 +142,30 @@ static std::string parseCmdRuns(const std::string& text)
 	MRPT_TRY_END
 }
 
-#if MRPT_VERSION >= 0x258
-static double my_rand()
+double my_rand()
 {
 	auto& rng = mrpt::random::getRandomGenerator();
 	return rng.drawUniform(0.0, 1.0);
 }
-static double my_unifrnd(double xMin, double xMax)
+double my_unifrnd(double xMin, double xMax)
 {
 	auto& rng = mrpt::random::getRandomGenerator();
 	return rng.drawUniform(xMin, xMax);
 }
-static double randn()
+double randn()
 {
 	auto& rng = mrpt::random::getRandomGenerator();
 	return rng.drawGaussian1D_normalized();
 }
-#endif
+double randomize(double seed)
+{
+	auto& rng = mrpt::random::getRandomGenerator();
+	rng.randomize(seed);
+	return 0;
+}
 
 // Examples: "$f{180/5}",   "$f{ ${MAX_SPEED} * sin(deg2rad(45)) }"
-static std::string parseMathExpr(
+std::string parseMathExpr(
 	const std::string& text, const std::map<std::string, std::string>& variableNamesValues)
 {
 	MRPT_TRY_START
@@ -182,11 +188,10 @@ static std::string parseMathExpr(
 
 	mrpt::expr::CRuntimeCompiledExpression expr;
 
-#if MRPT_VERSION >= 0x258
 	expr.register_function("rand", &my_rand);
 	expr.register_function("unifrnd", &my_unifrnd);
 	expr.register_function("randn", &randn);
-#endif
+	expr.register_function("randomize", &randomize);
 
 	std::map<std::string, double> numericVars;
 	for (const auto& kv : variableNamesValues)
@@ -207,6 +212,7 @@ static std::string parseMathExpr(
 
 	MRPT_TRY_END
 }
+}  // namespace
 
 std::string mvsim::parse(
 	const std::string& input, const std::map<std::string, std::string>& variableNamesValues)

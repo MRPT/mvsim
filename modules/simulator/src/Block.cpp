@@ -14,6 +14,7 @@
 #include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/CCylinder.h>
 #include <mrpt/opengl/CPolyhedron.h>
+#include <mrpt/opengl/CSetOfTriangles.h>
 #include <mrpt/opengl/CSphere.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/version.h>
@@ -110,10 +111,6 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		}
 	}
 
-	// Common setup for simulable objects:
-	// -----------------------------------------------------------
-	block->parseSimulable(nodes);
-
 	// Params:
 	// -----------------------------------------------------------
 	parse_xmlnode_children_as_param(
@@ -174,6 +171,10 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	}
 
 	block->updateMaxRadiusFromPoly();
+
+	// Common setup for simulable objects:
+	// -----------------------------------------------------------
+	block->parseSimulable(nodes);
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
@@ -439,74 +440,191 @@ void DummyInvisibleBlock::internalGuiUpdate(
 
 void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node)
 {
-	std::string type;  // cylinder, sphere, etc.
-	float radius = 0;
-	float length = 0, lx = 0, ly = 0, lz = 0;
-	int vertex_count = 0;
+	using namespace mrpt::literals;	 // _deg
 
-	const TParameterDefinitions params = {
-		{"type", {"%s", &type}},
-		{"radius", {"%f", &radius}},
-		{"length", {"%f", &length}},
-		{"lx", {"%f", &lx}},
-		{"ly", {"%f", &ly}},
-		{"lz", {"%f", &lz}},
-		{"vertex_count", {"%i", &vertex_count}},
-	};
+	auto& _ = geomParams_;
 
 	parse_xmlnode_attribs(
-		xml_geom_node, params, world_->user_defined_variables(), "[Block::internal_parseGeometry]");
+		xml_geom_node, _.params, world_->user_defined_variables(),
+		"[Block::internal_parseGeometry]");
 
-	if (type.empty())
+	if (_.typeStr.empty())
 	{
 		THROW_EXCEPTION(
 			"Geometry type attribute is missing, i.e. <geometry type='...' ... "
 			"/>");
 	}
+	// This will throw on error:
+	_.type = mrpt::typemeta::str2enum<GeometryType>(_.typeStr);
 
-	if (type == "cylinder")
+	switch (_.type)
 	{
-		ASSERTMSG_(radius > 0, "Missing 'radius' attribute for cylinder geometry");
-		ASSERTMSG_(length > 0, "Missing 'length' attribute for cylinder geometry");
+		case GeometryType::Cylinder:
+		{
+			ASSERTMSG_(_.radius > 0, "Missing 'radius' attribute for cylinder geometry");
+			ASSERTMSG_(_.length > 0, "Missing 'length' attribute for cylinder geometry");
 
-		if (vertex_count == 0) vertex_count = 10;  // default
+			if (_.vertex_count == 0) _.vertex_count = 10;  // default
 
-		auto glCyl = mrpt::opengl::CCylinder::Create();
-		glCyl->setHeight(length);
-		glCyl->setRadius(radius);
-		glCyl->setSlicesCount(vertex_count);
-		glCyl->setColor_u8(block_color_);
-		addCustomVisualization(glCyl);
-	}
-	else if (type == "sphere")
-	{
-		ASSERTMSG_(radius > 0, "Missing 'radius' attribute for cylinder geometry");
+			auto glCyl = mrpt::opengl::CCylinder::Create();
+			glCyl->setHeight(_.length);
+			glCyl->setRadius(_.radius);
+			glCyl->setSlicesCount(_.vertex_count);
+			glCyl->setColor_u8(block_color_);
+			addCustomVisualization(glCyl);
+		}
+		break;
 
-		if (vertex_count == 0) vertex_count = 10;  // default
+		case GeometryType::Sphere:
+		{
+			ASSERTMSG_(_.radius > 0, "Missing 'radius' attribute for cylinder geometry");
 
-		auto glSph = mrpt::opengl::CSphere::Create(radius, vertex_count);
-		glSph->setColor_u8(block_color_);
-		addCustomVisualization(glSph);
-	}
-	else if (type == "box")
-	{
-		ASSERTMSG_(lx > 0, "Missing 'lx' attribute for box geometry");
-		ASSERTMSG_(ly > 0, "Missing 'ly' attribute for box geometry");
-		ASSERTMSG_(lz > 0, "Missing 'lz' attribute for box geometry");
+			if (_.vertex_count == 0) _.vertex_count = 10;  // default
 
-		auto glBox = mrpt::opengl::CBox::Create();
-		glBox->setBoxCorners({0, 0, 0}, {lx, ly, lz});
-		glBox->setColor_u8(block_color_);
-		addCustomVisualization(glBox);
-	}
-	else
-	{
-		THROW_EXCEPTION_FMT("Unknown type in <geometry type='%s'...>", type.c_str());
-	}
+			auto glSph = mrpt::opengl::CSphere::Create(_.radius, _.vertex_count);
+			glSph->setColor_u8(block_color_);
+			addCustomVisualization(glSph);
+		}
+		break;
+
+		case GeometryType::Box:
+		{
+			ASSERTMSG_(_.lx > 0, "Missing 'lx' attribute for box geometry");
+			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for box geometry");
+			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for box geometry");
+
+			auto glBox = mrpt::opengl::CBox::Create();
+			glBox->setBoxCorners({0, 0, 0}, {_.lx, _.ly, _.lz});
+			glBox->setColor_u8(block_color_);
+			addCustomVisualization(glBox);
+		}
+		break;
+
+		case mvsim::GeometryType::SemiCylinderBump:
+		{
+			ASSERTMSG_(_.lx > 0, "Missing 'lx' attribute for semi_cylinder_bump geometry");
+			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for semi_cylinder_bump geometry");
+			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for semi_cylinder_bump geometry");
+
+			if (_.vertex_count == 0) _.vertex_count = 10;  // default
+
+			auto glCyl = mrpt::opengl::CCylinder::Create();
+			glCyl->setHeight(_.lx);
+			glCyl->setRadius(_.ly * 0.5);
+			glCyl->setScale(2 * _.lz / _.ly, 1.0, 1.0);
+
+			glCyl->setSlicesCount(_.vertex_count);
+			glCyl->setColor_u8(block_color_);
+
+			addCustomVisualization(
+				glCyl, mrpt::poses::CPose3D::FromXYZYawPitchRoll(
+						   -0.5 * _.lx, .0, .0, .0_deg, 90.0_deg, .0_deg));
+		}
+		break;
+
+		case mvsim::GeometryType::Ramp:
+		{
+			ASSERTMSG_(_.lx > 0, "Missing 'lx' attribute for ramp geometry");
+			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for ramp geometry");
+			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for ramp geometry");
+
+			auto glRamp = mrpt::opengl::CSetOfTriangles::Create();
+
+			const auto p0 = mrpt::math::TPoint3Df(0, -_.ly * 0.5, 0);
+			const auto p1 = mrpt::math::TPoint3Df(_.lx, -_.ly * 0.5, _.lz);
+			const auto p2 = mrpt::math::TPoint3Df(0, _.ly * 0.5, 0);
+			const auto p3 = mrpt::math::TPoint3Df(_.lx, _.ly * 0.5, _.lz);
+			const auto p4 = mrpt::math::TPoint3Df(_.lx, -_.ly * 0.5, 0);
+			const auto p5 = mrpt::math::TPoint3Df(_.lx, _.ly * 0.5, 0);
+
+			mrpt::opengl::TTriangle t;
+			t.setColor(block_color_);
+			// T0
+			t.vertex(0) = p0;
+			t.vertex(1) = p1;
+			t.vertex(2) = p2;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T1
+			t.vertex(0) = p2;
+			t.vertex(1) = p1;
+			t.vertex(2) = p3;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T2
+			t.vertex(0) = p0;
+			t.vertex(1) = p4;
+			t.vertex(2) = p1;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T3
+			t.vertex(0) = p5;
+			t.vertex(1) = p3;
+			t.vertex(2) = p2;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T4
+			t.vertex(0) = p4;
+			t.vertex(1) = p5;
+			t.vertex(2) = p1;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T5
+			t.vertex(0) = p3;
+			t.vertex(1) = p1;
+			t.vertex(2) = p5;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+
+			// done:
+			addCustomVisualization(glRamp);
+		}
+		break;
+
+		default:
+			THROW_EXCEPTION_FMT("Unknown type in <geometry type='%s'...>", _.typeStr.c_str());
+	};
 }
 
 bool Block::default_block_z_min_max() const
 {
 	// true if any of the limits is a nan:
 	return block_z_max_ != block_z_max_ || block_z_min_ != block_z_min_;
+}
+
+std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2Df& worldXY) const
+{
+	// Is the point within the block?
+	const auto& myPose = getCPose3D();
+
+	const auto localPt = myPose.inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
+
+	// Quick discard? (saves much time):
+	if (std::abs(localPt.x) > maxRadius_ && std::abs(localPt.y) > maxRadius_) return {};
+
+	// If we are close, then check the exact polygon:
+	if (!blockShape().contains({localPt.x, localPt.y})) return {};
+
+	// Yes, the query point is within my 2D shape. We need to evaluate the block height at that
+	// point:
+
+	const auto& _ = geomParams_;
+	switch (_.type)
+	{
+		case GeometryType::Cylinder:
+		case GeometryType::Box:
+		case GeometryType::Invalid:
+		default:
+			return myPose.z() + block_z_max_;
+
+		case GeometryType::Ramp:
+			return myPose.z() + _.lz * localPt.x / _.lx;
+
+		case GeometryType::SemiCylinderBump:
+		{
+			const auto f =
+				std::sqrt(std::max<double>(.0, 1.0 - mrpt::square(2.0 * localPt.y / _.ly)));
+			return myPose.z() + _.lz * f;
+		}
+	};
 }

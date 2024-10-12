@@ -853,11 +853,11 @@ void World::GUI::handle_mouse_operations()
 	// intersection:
 	if (inters.getPoint(clickedPt))
 	{
-		// Move object to the position picked by the user:
-		// vp->getByClass<CDisk>(0)->setLocation(clickedPt);
+		// Find out the "z": get first elevation if many exist.
+		const auto zs = parent_.getElevationsAt(mrpt::math::TPoint2Df(clickedPt.x, clickedPt.y));
+		if (!zs.empty()) clickedPt.z = *zs.begin();
 	}
 
-#if MRPT_VERSION >= 0x211
 	const auto screen = gui_win->screen();
 	const bool leftClick = screen->mouseState() == 0x01;
 
@@ -887,7 +887,6 @@ void World::GUI::handle_mouse_operations()
 			btnReplaceObject->setPushed(false);
 		}
 	}
-#endif
 
 	MRPT_END
 }

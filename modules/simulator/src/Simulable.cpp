@@ -9,6 +9,7 @@
 
 #include <box2d/b2_contact.h>
 #include <box2d/b2_distance.h>
+#include <mvsim/Block.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
@@ -182,6 +183,7 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 	// -------------------------------------
 	// (Mandatory) initial pose:
 	// -------------------------------------
+	std::optional<mrpt::math::TPose3D> initPose;
 	if (const xml_node<>* nPose = rootNode.first_node("init_pose"); nPose)
 	{
 		mrpt::math::TPose3D p;
@@ -193,8 +195,7 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 			THROW_EXCEPTION_FMT("Error parsing <init_pose>%s</init_pose>", nPose->value());
 		p.yaw *= M_PI / 180.0;	// deg->rad
 
-		this->setPose(p);
-		initial_q_ = p;	 // save it for later usage in some animations, etc.
+		initPose = p;
 	}
 	else if (const xml_node<>* nPose3 = rootNode.first_node("init_pose3d"); nPose3)
 	{
@@ -209,12 +210,47 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 		p.pitch *= M_PI / 180.0;  // deg->rad
 		p.roll *= M_PI / 180.0;	 // deg->rad
 
-		this->setPose(p);
-		initial_q_ = p;	 // save it for later usage in some animations, etc.
+		initPose = p;
 	}
 	else if (psp.init_pose_mandatory)
 	{
 		THROW_EXCEPTION("Missing required XML node <init_pose>x y phi</init_pose>");
+	}
+
+	if (const rapidxml::xml_node<char>* xml_skip_elevation_adjust =
+			rootNode.first_node("skip_elevation_adjust");
+		initPose && xml_skip_elevation_adjust == nullptr)
+	{
+		// "skip" tag is NOT present => Do adjustment:
+
+		// Query: the highest object point:
+		auto queryPt = initPose->translation();
+
+		// Automatic determine the height of the query point:
+		if (auto meBlock = dynamic_cast<mvsim::Block*>(this); meBlock)
+		{
+			queryPt.z += 0.5 * meBlock->block_z_max();
+		}
+		else if (auto meVeh = dynamic_cast<mvsim::VehicleBase*>(this); meVeh)
+		{
+			queryPt.z += 0.5 * meVeh->chassisZMax();
+		}
+		else
+		{
+			queryPt.z += 1.5;  // default [m]
+		}
+		ASSERT_EQUAL_(queryPt.z, queryPt.z);  // != NaN
+
+		if (std::optional<float> elev = simulable_parent_->getHighestElevationUnder(queryPt); elev)
+		{
+			initPose->z = elev.value();
+		}
+	}
+
+	if (initPose)
+	{
+		this->setPose(*initPose);
+		initial_q_ = *initPose;	 // save it for later usage in some animations, etc.
 	}
 
 	// -------------------------------------

@@ -51,5 +51,9 @@ mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
 
 	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(options.modelCull));
 
+#if MRPT_VERSION >= 0x20e01	 // Feature added in MRPT 2.14.1
+	m->split_triangles_rendering_bbox(options.splitSize);
+#endif
+
 	return m;
 }
