@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.11.0 (2024-10-12)
+-------------------
 * docs: add new demo world
 * Add ros2 launch for new demo world
 * Colission fixed for elevation meshes at high speed
