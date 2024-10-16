@@ -277,13 +277,28 @@ std::set<float> World::getElevationsAt(const mrpt::math::TPoint2Df& worldXY) con
 	// Assumption: getListOfSimulableObjectsMtx() is already adquired by all possible call paths?
 	std::set<float> ret;
 
-	for (const auto& [name, obj] : simulableObjects_)
+	// Optimized search for potential objects that influence this query:
+	// 1) world elements: assuming they are few, visit them all.
+	for (const auto& obj : worldElements_)
 	{
-		if (!obj) continue;
-
 		const auto optZ = obj->getElevationAt(worldXY);
 		if (optZ) ret.insert(*optZ);
 	}
+
+	// 2) blocks: by hashed 2D LUT.
+	const World::LUTCache& lut = getLUTCacheOfObjects();
+	const auto lutCoord = xy_to_lut_coords(worldXY);
+	if (auto it = lut.find(lutCoord); it != lut.end())
+	{
+		for (const auto& obj : it->second)
+		{
+			if (!obj) continue;
+			const auto optZ = obj->getElevationAt(worldXY);
+			if (optZ) ret.insert(*optZ);
+		}
+	}
+
+	// if none:
 	if (ret.empty()) ret.insert(.0f);
 
 	return ret;

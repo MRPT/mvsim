@@ -36,6 +36,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <unordered_map>
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 // forward declarations:
@@ -593,6 +594,51 @@ class World : public mrpt::system::COutputLogger
 	void internal_one_timestep(double dt);
 
 	std::mutex simulationStepRunningMtx_;
+
+	// A 2D-hash table of objects
+	struct lut_2d_coordinates_t
+	{
+		int32_t x, y;
+
+		bool operator==(const lut_2d_coordinates_t& o) const noexcept
+		{
+			return (x == o.x && y == o.y);
+		}
+	};
+
+	static lut_2d_coordinates_t xy_to_lut_coords(const mrpt::math::TPoint2Df& p);
+
+	struct LutIndexHash
+	{
+		std::size_t operator()(const lut_2d_coordinates_t& p) const noexcept
+		{
+			// These are the implicit assumptions of the reinterpret cast below:
+			static_assert(sizeof(int32_t) == sizeof(uint32_t));
+			static_assert(offsetof(lut_2d_coordinates_t, x) == 0 * sizeof(uint32_t));
+			static_assert(offsetof(lut_2d_coordinates_t, y) == 1 * sizeof(uint32_t));
+
+			const uint32_t* vec = reinterpret_cast<const uint32_t*>(&p);
+			return ((1 << 20) - 1) & (vec[0] * 73856093 ^ vec[1] * 19349663);
+		}
+		/// k1 < k2? for std::map containers
+		bool operator()(
+			const lut_2d_coordinates_t& k1, const lut_2d_coordinates_t& k2) const noexcept
+		{
+			if (k1.x != k2.x) return k1.x < k2.x;
+			return k1.y < k2.y;
+		}
+	};
+
+	using LUTCache =
+		std::unordered_map<lut_2d_coordinates_t, std::vector<Simulable::Ptr>, LutIndexHash>;
+
+	/// Ensure the cache is built and up-to-date, then return it:
+	const LUTCache& getLUTCacheOfObjects() const;
+
+	mutable LUTCache lut2d_objects_;
+	mutable bool lut2d_objects_is_up_to_date_ = false;
+
+	void internal_update_lut_cache() const;
 
 	/** GUI stuff  */
 	struct GUI
