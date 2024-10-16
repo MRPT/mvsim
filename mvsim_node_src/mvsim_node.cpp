@@ -77,6 +77,8 @@ using Msg_Marker = visualization_msgs::Marker;
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #endif
 
+#include <tf2_ros/qos.hpp>	// DynamicBroadcasterQoS(), etc.
+
 // usings:
 using rclcpp::ok;
 
@@ -606,12 +608,12 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		n_->create_publisher<Msg_Bool>(vehVarName("collision", *veh), publisher_history_len_);
 
 	// pub: <VEH>/tf, <VEH>/tf_static
-	rclcpp::QoS qosLatched10(rclcpp::KeepLast(10));
-	qosLatched10.durability(rmw_qos_durability_policy_t::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+	const auto qos = tf2_ros::DynamicBroadcasterQoS();
+	const auto qos_static = tf2_ros::StaticBroadcasterQoS();
 
-	pubsubs.pub_tf = n_->create_publisher<Msg_TFMessage>(vehVarName("tf", *veh), qosLatched10);
+	pubsubs.pub_tf = n_->create_publisher<Msg_TFMessage>(vehVarName("tf", *veh), qos);
 	pubsubs.pub_tf_static =
-		n_->create_publisher<Msg_TFMessage>(vehVarName("tf_static", *veh), qosLatched10);
+		n_->create_publisher<Msg_TFMessage>(vehVarName("tf_static", *veh), qos_static);
 #endif
 
 	// pub: <VEH>/chassis_markers
