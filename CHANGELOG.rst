@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.11.1 (2024-10-17)
+-------------------
 * Great performance improvement for worlds with many (>100) block objects.
   Terrain elevation query function has been refactored to use a 2D hash-map instead of naively visiting all objects.
 * ROS node: use correct QoS for gridmap publication, and ensure it is published only once.
