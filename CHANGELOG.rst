@@ -2,6 +2,18 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.1 (2024-10-17)
+-------------------
+* Great performance improvement for worlds with many (>100) block objects.
+  Terrain elevation query function has been refactored to use a 2D hash-map instead of naively visiting all objects.
+* ROS node: use correct QoS for gridmap publication, and ensure it is published only once.
+* ROS 2: turtlebot demo: Fix RViz wrong camera topic name
+* ROS 2 1robot demo: update rviz config
+* ROS 2: Use correct QoS for (possibly namespaced) /tf & /tf_static
+* FIX: demo_1robot ROS2 launch error (wrong order in listing ros launch arguments)
+* version.h
+* Contributors: Jose Luis Blanco-Claraco
+
 0.11.0 (2024-10-12)
 -------------------
 * docs: add new demo world

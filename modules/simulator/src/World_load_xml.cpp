@@ -207,6 +207,7 @@ void World::parse_tag_block(const XmlParserContext& ctx)
 	// <block> entries:
 	Block::Ptr block = Block::factory(this, ctx.node);
 	insertBlock(block);
+	lut2d_objects_is_up_to_date_ = false;
 }
 
 void World::parse_tag_block_class(const XmlParserContext& ctx)

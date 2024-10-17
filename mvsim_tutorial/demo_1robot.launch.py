@@ -54,8 +54,8 @@ def generate_launch_description():
     return LaunchDescription([
         world_file_launch_arg,
         do_fake_localization_arg,
+        headless_launch_arg,
         mvsim_node,
         use_rviz_arg,
         rviz2_node,
-        headless_launch_arg,
     ])

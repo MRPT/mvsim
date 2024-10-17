@@ -578,3 +578,38 @@ void World::internal_simul_pre_step_terrain_elevation()
 		}
 	}  // end for object
 }
+
+const World::LUTCache& World::getLUTCacheOfObjects() const
+{
+	if (!lut2d_objects_is_up_to_date_) internal_update_lut_cache();
+
+	return lut2d_objects_;
+}
+
+World::lut_2d_coordinates_t World::xy_to_lut_coords(const mrpt::math::TPoint2Df& p)
+{
+	constexpr float LUT_GRID_SIZE = 4.0;
+	World::lut_2d_coordinates_t c;
+	c.x = static_cast<int32_t>(p.x / LUT_GRID_SIZE);
+	c.y = static_cast<int32_t>(p.y / LUT_GRID_SIZE);
+	return c;
+}
+
+void World::internal_update_lut_cache() const
+{
+	lut2d_objects_is_up_to_date_ = true;
+
+	lut2d_objects_.clear();
+	for (const auto& [name, obj] : blocks_)
+	{
+		std::set<lut_2d_coordinates_t, LutIndexHash> affected_coords;
+		const auto p = obj->getCPose3D();
+		for (const auto& vertex : obj->blockShape())
+		{
+			const auto pt = p.composePoint({vertex.x, vertex.y, .0});
+			const auto c = xy_to_lut_coords(mrpt::math::TPoint2Df(pt.x, pt.y));
+			affected_coords.insert(c);
+		}
+		for (const auto& c : affected_coords) lut2d_objects_[c].push_back(obj);
+	}
+}

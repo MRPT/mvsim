@@ -19,8 +19,6 @@
 #include <mvsim/Comms/Server.h>
 #include <mvsim/World.h>
 #include <tf2/LinearMath/Transform.h>
-#include <tf2_ros/static_transform_broadcaster.h>
-#include <tf2_ros/transform_broadcaster.h>
 
 #include <atomic>
 #include <thread>
@@ -40,6 +38,7 @@
 #include <rosgraph_msgs/Clock.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <std_msgs/Bool.h>
+#include <tf2_msgs/TFMessage.h>
 #include <visualization_msgs/MarkerArray.h>
 
 // usings:
@@ -71,6 +70,7 @@ using Msg_CameraInfo = sensor_msgs::CameraInfo;
 #include <rclcpp/time_source.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <tf2_msgs/msg/tf_message.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include "wrapper/publisher_wrapper.h"
@@ -185,16 +185,27 @@ class MVSimNode
 	rclcpp::Clock::SharedPtr clock_;
 #endif
 
+	struct WorldPubs
+	{
+#if PACKAGE_ROS_VERSION == 1
+		/// used for simul_map publication
+		mvsim_node::shared_ptr<ros::Publisher> pub_map_ros;	 //!< Publisher of "simul_map" topic
+		mvsim_node::shared_ptr<ros::Publisher>
+			pub_map_metadata;  //!< Publisher of "simul_map_metadata" topic
+#else
+		/// used for simul_map publication
+		rclcpp::Publisher<Msg_OccupancyGrid>::SharedPtr pub_map_ros;
+		rclcpp::Publisher<Msg_MapMetaData>::SharedPtr pub_map_metadata;
+#endif
+	};
+
+	WorldPubs worldPubs_;
+
 	struct TPubSubPerVehicle
 	{
 #if PACKAGE_ROS_VERSION == 1
 		mvsim_node::shared_ptr<ros::Subscriber>
 			sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
-
-		/// used for simul_map publication
-		mvsim_node::shared_ptr<ros::Publisher> pub_map_ros;	 //!< Publisher of "simul_map" topic
-		mvsim_node::shared_ptr<ros::Publisher>
-			pub_map_metadata;  //!< Publisher of "simul_map_metadata" topic
 
 		mvsim_node::shared_ptr<ros::Publisher> pub_odom;  //!< Publisher of "odom" topic
 		mvsim_node::shared_ptr<ros::Publisher>
@@ -219,10 +230,6 @@ class MVSimNode
 #else
 		/// Subscribers vehicle's "cmd_vel" topic
 		rclcpp::Subscription<Msg_Twist>::SharedPtr sub_cmd_vel;
-
-		/// used for simul_map publication
-		rclcpp::Publisher<Msg_OccupancyGrid>::SharedPtr pub_map_ros;
-		rclcpp::Publisher<Msg_MapMetaData>::SharedPtr pub_map_metadata;
 
 		/// Publisher of "odom" topic
 		rclcpp::Publisher<Msg_Odometry>::SharedPtr pub_odom;
@@ -328,7 +335,7 @@ class MVSimNode
 
 	mrpt::system::CTimeLogger profiler_{true /*enabled*/, "mvsim_node"};
 
-	void publishWorldElements(mvsim::WorldElementBase& obj, TPubSubPerVehicle& pubsubs);
+	void publishWorldElements(mvsim::WorldElementBase& obj);
 	void publishVehicles(mvsim::VehicleBase& veh);
 
 	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservation2DRangeScan& obs);
