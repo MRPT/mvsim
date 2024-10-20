@@ -559,13 +559,6 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
-	// pub: <VEH>/simul_map, <VEH>/simul_map_metadata
-	pubsubs.pub_map_ros = mvsim_node::make_shared<ros::Publisher>(n_.advertise<Msg_OccupancyGrid>(
-		vehVarName("simul_map", *veh), 1 /*queue len*/, true /*latch*/));
-	pubsubs.pub_map_metadata =
-		mvsim_node::make_shared<ros::Publisher>(n_.advertise<Msg_MapMetaData>(
-			vehVarName("simul_map_metadata", *veh), 1 /*queue len*/, true /*latch*/));
-
 	// pub: <VEH>/odom
 	pubsubs.pub_odom = mvsim_node::make_shared<ros::Publisher>(
 		n_.advertise<Msg_Odometry>(vehVarName("odom", *veh), publisher_history_len_));

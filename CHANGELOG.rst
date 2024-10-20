@@ -2,6 +2,11 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.2 (2024-10-20)
+-------------------
+* Fix FTBFS in ROS 1
+* Contributors: Jose Luis Blanco-Claraco
+
 0.11.1 (2024-10-17)
 -------------------
 * Great performance improvement for worlds with many (>100) block objects.
