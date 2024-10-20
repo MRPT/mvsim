@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.11.2 (2024-10-20)
+-------------------
 * Fix FTBFS in ROS 1
 * Contributors: Jose Luis Blanco-Claraco
 
