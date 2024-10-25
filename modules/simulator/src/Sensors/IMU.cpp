@@ -72,7 +72,7 @@ void IMU::internalGuiUpdate(
 
 	const mrpt::poses::CPose2D& p = vehicle_.getCPose2D();
 
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
+	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p+ obs_model_.sensorPose);
 	if (glCustomVisual_) glCustomVisual_->setPose(p + obs_model_.sensorPose);
 }
 
@@ -97,7 +97,7 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 {
 	using mrpt::obs::CObservationIMU;
 
-	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "IMU");
+	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.IMU");
 
 	auto outObs = CObservationIMU::Create(obs_model_);
 
