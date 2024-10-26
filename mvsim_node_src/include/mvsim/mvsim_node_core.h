@@ -12,6 +12,7 @@
 #include <mrpt/core/WorkerThreadsPool.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
+#include <mrpt/obs/CObservationGPS.h>
 #include <mrpt/obs/CObservationIMU.h>
 #include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/system/CTicTac.h>
@@ -343,5 +344,6 @@ class MVSimNode
 	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservation3DRangeScan& obs);
 	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationPointCloud& obs);
 	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs);
+	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationGPS& obs);
 
 };	// end class
