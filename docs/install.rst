@@ -51,7 +51,7 @@ In Ubuntu, all requirements can be satisfied executing:
    build-essential cmake g++ \
    libbox2d-dev \
    libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev libmrpt-tclap-dev \
-   libmrpt-gui-dev libmrpt-tfest-dev \
+   libmrpt-gui-dev libmrpt-tfest-dev libmrpt-topography-dev \
    protobuf-compiler \
    libzmq3-dev \
    pybind11-dev \
