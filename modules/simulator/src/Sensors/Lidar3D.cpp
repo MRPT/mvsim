@@ -609,9 +609,13 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 					d * (v - camModel.cy()) / camModel.fy(), d};
 				curPts.insertPoint(thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
 
-				// Add "ring" field:
 #if defined(HAVE_POINTS_XYZIRT)
+				// Add "ring" field:
 				curPtsPtr->getPointsBufferRef_ring()->push_back(j);
+
+				// Add "timestamp" field: all to zero since we are simulating an ideal "flash"
+				// lidar:
+				curPtsPtr->getPointsBufferRef_timestamp()->push_back(.0);
 #endif
 			}
 		}
