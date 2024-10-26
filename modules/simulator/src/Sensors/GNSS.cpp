@@ -78,10 +78,10 @@ void GNSS::internalGuiUpdate(
 		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
 	}
 
-	const mrpt::poses::CPose2D& p = vehicle_.getCPose2D();
+	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + obs_model_.sensorPose;
 
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p + obs_model_.sensorPose);
-	if (glCustomVisual_) glCustomVisual_->setPose(p + obs_model_.sensorPose);
+	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
+	if (glCustomVisual_) glCustomVisual_->setPose(p);
 }
 
 void GNSS::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -95,6 +95,7 @@ void GNSS::simul_post_timestep(const TSimulContext& context)
 	{
 		internal_simulate_gnss(context);
 	}
+
 	// Keep sensor global pose up-to-date:
 	const auto& p = vehicle_.getPose();
 	const auto globalSensorPose = p + obs_model_.sensorPose.asTPose();

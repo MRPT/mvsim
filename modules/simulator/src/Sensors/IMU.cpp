@@ -70,10 +70,10 @@ void IMU::internalGuiUpdate(
 		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
 	}
 
-	const mrpt::poses::CPose2D& p = vehicle_.getCPose2D();
+	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + obs_model_.sensorPose;
 
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p + obs_model_.sensorPose);
-	if (glCustomVisual_) glCustomVisual_->setPose(p + obs_model_.sensorPose);
+	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
+	if (glCustomVisual_) glCustomVisual_->setPose(p);
 }
 
 void IMU::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
