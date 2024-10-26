@@ -72,7 +72,7 @@ void IMU::internalGuiUpdate(
 
 	const mrpt::poses::CPose2D& p = vehicle_.getCPose2D();
 
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p+ obs_model_.sensorPose);
+	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p + obs_model_.sensorPose);
 	if (glCustomVisual_) glCustomVisual_->setPose(p + obs_model_.sensorPose);
 }
 

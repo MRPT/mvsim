@@ -580,7 +580,7 @@ class World : public mrpt::system::COutputLogger
 		/// Latitude/longitude/height of the world (0,0,0) frame.
 		mrpt::topography::TGeodeticCoords georefCoord;
 
-		/** Optional world rotation (in radians, in degrees in the XML file) 
+		/** Optional world rotation (in radians, in degrees in the XML file)
 		 *  wrt ENU frame: 0 (default) means +X points East.
 		 */
 		double world_to_enu_rotation = .0;
