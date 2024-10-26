@@ -122,6 +122,7 @@ source_group(WorldElements FILES ${WorldElements_SRCS})
 set(PACKAGE_DEPENDENCIES
   mrpt-maps
   mrpt-gui
+  mrpt-topography
   mvsim-comms
   box2d
   )
