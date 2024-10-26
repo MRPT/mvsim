@@ -24,6 +24,7 @@
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
+#include <mrpt/topography/data_types.h>
 #include <mvsim/Block.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Joystick.h>
@@ -568,6 +569,36 @@ class World : public mrpt::system::COutputLogger
 	/** Options for lights */
 	LightOptions lightOptions_;
 
+   public:
+	// Options for simulating GNSS (GPS) sensors.
+	struct GeoreferenceOptions
+	{
+		GeoreferenceOptions() = default;
+
+		void parse_from(const rapidxml::xml_node<char>& node, COutputLogger& logger);
+
+		/// Latitude/longitude/height of the world (0,0,0) frame.
+		mrpt::topography::TGeodeticCoords georefCoord;
+
+		/** Optional world rotation (in radians, in degrees in the XML file) 
+		 *  wrt ENU frame: 0 (default) means +X points East.
+		 */
+		double world_to_enu_rotation = .0;
+
+		const TParameterDefinitions params = {
+			{"latitude", {"%lf", &georefCoord.lat.decimal_value}},
+			{"longitude", {"%lf", &georefCoord.lon.decimal_value}},
+			{"height", {"%lf", &georefCoord.height}},
+			{"world_to_enu_rotation_deg", {"%lf_deg", &world_to_enu_rotation}},
+		};
+	};
+
+	const GeoreferenceOptions& georeferenceOptions() const { return georeferenceOptions_; }
+
+   private:
+	/** Options for lights */
+	GeoreferenceOptions georeferenceOptions_;
+
 	// -------- World contents ----------
 	/** Mutex protecting simulation objects from multi-thread access */
 	std::recursive_mutex world_cs_;
@@ -761,6 +792,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_block_class(const XmlParserContext& ctx);
 	void parse_tag_gui(const XmlParserContext& ctx);
 	void parse_tag_lights(const XmlParserContext& ctx);
+	void parse_tag_georeference(const XmlParserContext& ctx);
 	void parse_tag_walls(const XmlParserContext& ctx);
 	void parse_tag_include(const XmlParserContext& ctx);
 	void parse_tag_variable(const XmlParserContext& ctx);

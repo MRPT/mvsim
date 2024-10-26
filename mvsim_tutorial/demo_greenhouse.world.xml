@@ -4,6 +4,16 @@
 
 	<joystick_enabled>true</joystick_enabled>
 
+	<!-- <save_to_rawlog>my_dataset.rawlog</save_to_rawlog> --> <!-- If present, all sensor observations are saved to a rawlog file -->
+
+	<!-- Define georeferenced coordinates to the world so GNSS/GPS sensors can be properly simulated -->
+	<georeference>
+		<latitude>36.863636</latitude>
+		<longitude>-2.283397</longitude>
+		<height>100.0</height>
+		<world_to_enu_rotation_deg>45.0</world_to_enu_rotation_deg>
+	</georeference>
+
 	<!-- GUI options -->
 	<gui>
 		<ortho>false</ortho>
@@ -13,7 +23,6 @@
 		<refresh_fps>15</refresh_fps>
 		<cam_point_to>1.5 13</cam_point_to>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
-
 	</gui>
 
 	<!-- Light parameters -->
@@ -144,7 +153,15 @@
 		  sensor_x="0.9"  sensor_y="0" sensor_z="0.75"
 		  sensor_period_sec="0.20"
 		  sensor_name="cam1"
-		  />		
+		  />
+
+		<include file="../definitions/gnss.sensor.xml"
+		  sensor_x="0.9"  sensor_y="0.2" sensor_z="0.75"
+		  sensor_period_sec="1.0"
+		  sensor_name="gps1"
+		  sensor_horizontal_std_noise="1.5"
+		  sensor_vertical_std_noise="2.5"
+		  />
 
 	</vehicle>
 

@@ -111,6 +111,7 @@ void World::register_standard_xml_tag_parsers()
 	register_tag_parser("element", &World::parse_tag_element);
 	register_tag_parser("sensor", &World::parse_tag_sensor);
 	register_tag_parser("gui", &World::parse_tag_gui);
+	register_tag_parser("georeference", &World::parse_tag_georeference);
 	register_tag_parser("lights", &World::parse_tag_lights);
 	register_tag_parser("walls", &World::parse_tag_walls);
 	register_tag_parser("include", &World::parse_tag_include);
@@ -144,9 +145,8 @@ void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
 		{
 			// Unknown element!!
 			MRPT_LOG_WARN_STREAM(
-				"[World::load_from_XML] *Warning* Ignoring unknown XML node "
-				"type '"
-				<< node->name() << "'");
+				"[World::load_from_XML] *Warning* Ignoring unknown XML node type '" << node->name()
+																					<< "'");
 		}
 	}
 
@@ -224,8 +224,12 @@ void World::parse_tag_gui(const XmlParserContext& ctx)
 
 void World::parse_tag_lights(const XmlParserContext& ctx)
 {
-	//
 	lightOptions_.parse_from(*ctx.node, *this);
+}
+
+void World::parse_tag_georeference(const XmlParserContext& ctx)
+{
+	georeferenceOptions_.parse_from(*ctx.node, *this);
 }
 
 void World::parse_tag_walls(const XmlParserContext& ctx) { process_load_walls(*ctx.node); }
@@ -345,4 +349,10 @@ bool World::evaluate_tag_if(const rapidxml::xml_node<char>& node) const
 				  str == "On" || (intVal.has_value() && intVal.value() != 0);
 
 	return isTrue;
+}
+
+void World::GeoreferenceOptions::parse_from(
+	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
+{
+	parse_xmlnode_children_as_param(node, params, {}, "[World::GeoreferenceOptions]", &logger);
 }
