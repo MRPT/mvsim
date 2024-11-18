@@ -165,9 +165,6 @@ class MVSimNode
 
 	int publisher_history_len_ = 50;
 
-	//!< (Default=0.1) Time tolerance for published TFs
-	double transform_tolerance_ = 0.1;
-
    protected:
 	mvsim_node::shared_ptr<mvsim::Server> mvsim_server_;
 
@@ -304,6 +301,9 @@ class MVSimNode
 	double period_ms_publish_tf_ = 20;
 
 	mrpt::system::CTicTac tim_publish_tf_;
+
+	/// If true, vehicle namespaces will be used even if there is only one vehicle:
+	bool force_publish_vehicle_namespace_ = false;
 
 	/// Minimum period between update of live info & read of teleop key
 	/// strokes in GUI (In ms)

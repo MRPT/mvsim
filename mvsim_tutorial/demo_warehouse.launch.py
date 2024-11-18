@@ -24,6 +24,10 @@ def generate_launch_description():
     do_fake_localization_arg = DeclareLaunchArgument(
         "do_fake_localization", default_value='True', description='publish tf odom -> base_link')
 
+    force_publish_vehicle_namespace_arg = DeclareLaunchArgument(
+        "force_publish_vehicle_namespace", default_value='False',
+        description='Use vehicle name namespace even if there is only one vehicle')
+
     mvsim_node = Node(
         package='mvsim',
         executable='mvsim_node',
@@ -36,6 +40,7 @@ def generate_launch_description():
                 "world_file": LaunchConfiguration('world_file'),
                 "headless": LaunchConfiguration('headless'),
                 "do_fake_localization": LaunchConfiguration('do_fake_localization'),
+                "force_publish_vehicle_namespace": LaunchConfiguration('force_publish_vehicle_namespace'),
             }]
     )
 
@@ -51,6 +56,7 @@ def generate_launch_description():
         world_file_launch_arg,
         headless_launch_arg,
         do_fake_localization_arg,
+        force_publish_vehicle_namespace_arg,
         mvsim_node,
         rviz2_node
     ])

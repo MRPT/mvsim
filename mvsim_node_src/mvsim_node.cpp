@@ -141,6 +141,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	localn_.param("headless", headless_, headless_);
 	localn_.param("period_ms_publish_tf", period_ms_publish_tf_, period_ms_publish_tf_);
 	localn_.param("do_fake_localization", do_fake_localization_, do_fake_localization_);
+	localn_.param(
+		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_,
+		force_publish_vehicle_namespace_);
 
 	// JLBC: At present, mvsim does not use sim_time for neither ROS 1 nor
 	// ROS 2.
@@ -178,6 +181,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	publisher_history_len_ =
 		n_->declare_parameter<int>("publisher_history_len", publisher_history_len_);
+
+	force_publish_vehicle_namespace_ = n_->declare_parameter<bool>(
+		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_);
 
 	// n_->declare_parameter("use_sim_time"); // already declared error?
 	if (true == n_->get_parameter_or("use_sim_time", false))
@@ -998,7 +1004,7 @@ void MVSimNode::onNewObservation(
  * vehicle in the World, or "/<VAR_NAME>" otherwise. */
 std::string MVSimNode::vehVarName(const std::string& sVarName, const mvsim::VehicleBase& veh) const
 {
-	if (mvsim_world_->getListOfVehicles().size() == 1)
+	if (mvsim_world_->getListOfVehicles().size() == 1 && !force_publish_vehicle_namespace_)
 	{
 		return sVarName;
 	}
