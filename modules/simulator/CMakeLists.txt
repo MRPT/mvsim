@@ -57,7 +57,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/FrictionModels/DefaultFriction.h
 	include/mvsim/FrictionModels/FrictionBase.h
 	include/mvsim/FrictionModels/WardIagnemmaFriction.h
-    include/mvsim/FrictionModels/EllipseCurveMethod.h
+	include/mvsim/FrictionModels/EllipseCurveMethod.h
 
 	# Sensors:
 	src/Sensors/CameraSensor.cpp
