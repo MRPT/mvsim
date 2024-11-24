@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -24,18 +24,15 @@
 std::unique_ptr<cli_flags> cli;
 
 const std::map<std::string, cmd_t> cliCommands = {
-	{"help", cmd_t(&printListCommands)},
-	{"server", cmd_t(&launchStandAloneServer)},
-	{"launch", cmd_t(&launchSimulation)},
-	{"node", cmd_t(&commandNode)},
+	{"help", cmd_t(&printListCommands)},  {"server", cmd_t(&launchStandAloneServer)},
+	{"launch", cmd_t(&launchSimulation)}, {"node", cmd_t(&commandNode)},
 	{"topic", cmd_t(&commandTopic)},
 };
 
 void setConsoleErrorColor()
 {
 #if MRPT_VERSION >= 0x233
-	mrpt::system::consoleColorAndStyle(
-		mrpt::system::ConsoleForegroundColor::RED);
+	mrpt::system::consoleColorAndStyle(mrpt::system::ConsoleForegroundColor::RED);
 #else
 	mrpt::system::setConsoleColor(mrpt::system::CONCOL_RED);
 #endif
@@ -44,8 +41,7 @@ void setConsoleErrorColor()
 void setConsoleNormalColor()
 {
 #if MRPT_VERSION >= 0x233
-	mrpt::system::consoleColorAndStyle(
-		mrpt::system::ConsoleForegroundColor::DEFAULT);
+	mrpt::system::consoleColorAndStyle(mrpt::system::ConsoleForegroundColor::DEFAULT);
 #else
 	mrpt::system::setConsoleColor(mrpt::system::CONCOL_NORMAL);
 #endif
@@ -71,8 +67,7 @@ int main(int argc, char** argv)
 
 		// Take first unlabeled argument:
 		std::string command;
-		if (const auto& lst = cli->argCmd.getValue(); !lst.empty())
-			command = lst.at(0);
+		if (const auto& lst = cli->argCmd.getValue(); !lst.empty()) command = lst.at(0);
 
 		// Look up command in table:
 		auto itCmd = cliCommands.find(command);

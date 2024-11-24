@@ -1,0 +1,17 @@
+<sensor class="gnss" name="${sensor_name|gps1}">
+    <pose_3d> ${sensor_x|0}  ${sensor_y|0.0}  ${sensor_z|0}  ${sensor_yaw|0.0} ${sensor_pitch|0.0} ${sensor_roll|0.0}</pose_3d>
+    <sensor_period>${sensor_period_sec|1.0}</sensor_period>
+
+    <!-- Sensor 1-sigma noise [meters] -->
+    <horizontal_std_noise>${sensor_horizontal_std_noise|2.0}</horizontal_std_noise>
+    <vertical_std_noise>${sensor_vertical_std_noise|4.0}</vertical_std_noise>
+
+    <visual enabled="${sensor_custom_visual|true}">
+        <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_imu.dae</model_uri>
+    </visual>
+
+    <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
+    <publish enabled="${sensor_publish|false}">
+        <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
+    </publish>
+</sensor>

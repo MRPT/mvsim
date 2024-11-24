@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -30,8 +30,7 @@ class VisualObject
 {
    public:
 	VisualObject(
-		World* parent, bool insertCustomVizIntoViz = true,
-		bool insertCustomVizIntoPhysical = true);
+		World* parent, bool insertCustomVizIntoViz = true, bool insertCustomVizIntoPhysical = true);
 
 	virtual ~VisualObject();
 
@@ -51,10 +50,7 @@ class VisualObject
 
 	/** Returns the collision shape, if defined (should be for regular entities
 	 * after correct initialization). */
-	const std::optional<Shape2p5>& collisionShape() const
-	{
-		return collisionShape_;
-	}
+	const std::optional<Shape2p5>& collisionShape() const { return collisionShape_; }
 
 	void showCollisionShape(bool show);
 
@@ -85,8 +81,7 @@ class VisualObject
 		bool childrenOnly = false) = 0;
 
 	void addCustomVisualization(
-		const mrpt::opengl::CRenderizable::Ptr& glModel,
-		const mrpt::poses::CPose3D& modelPose = {},
+		const mrpt::opengl::CRenderizable::Ptr& glModel, const mrpt::poses::CPose3D& modelPose = {},
 		const float modelScale = 1.0f, const std::string& modelName = "group",
 		const std::optional<std::string>& modelURI = std::nullopt,
 		const bool initialShowBoundingBox = false);

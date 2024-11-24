@@ -2,6 +2,114 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.2 (2024-10-20)
+-------------------
+* Fix FTBFS in ROS 1
+* Contributors: Jose Luis Blanco-Claraco
+
+0.11.1 (2024-10-17)
+-------------------
+* Great performance improvement for worlds with many (>100) block objects.
+  Terrain elevation query function has been refactored to use a 2D hash-map instead of naively visiting all objects.
+* ROS node: use correct QoS for gridmap publication, and ensure it is published only once.
+* ROS 2: turtlebot demo: Fix RViz wrong camera topic name
+* ROS 2 1robot demo: update rviz config
+* ROS 2: Use correct QoS for (possibly namespaced) /tf & /tf_static
+* FIX: demo_1robot ROS2 launch error (wrong order in listing ros launch arguments)
+* version.h
+* Contributors: Jose Luis Blanco-Claraco
+
+0.11.0 (2024-10-12)
+-------------------
+* docs: add new demo world
+* Add ros2 launch for new demo world
+* Colission fixed for elevation meshes at high speed
+* New world demo: road circuit
+* ElevationMap: Add option for rotating texture images
+* Implement cylinder ground bumps
+* demo_1robot: add launch arguments headless and use_rviz
+* HorizontalPlane: also supports elevation API now
+* Implement moving vehicles over ramps and blocks in general
+* Remove #if for older mrpt versions
+* FIXBUG: 2D LaserScanner sensor wouldn't render custom visuals correctly if robot moves in 3D
+* Jackal robot model: Add new param "lidar2d_raytrace"
+* Finish texture partition of split meshes
+* Fix correct query point for determining elevation offset for blocks and vehicles
+* Automatically correct elevation of objects initialized on elevation maps
+* Move vehicle tilt calculation from ElevationMesh outside to World so it works with many other object types
+* source files: split simulation-related stuff into a new World_simul.cpp
+* CMake: prefer explicit file lists instead of file(GLOB ...)
+* Add getElevationAt() virtual interface for all Simulable objects
+* Update README.md
+* Fix headless ros param name in demo params YAML file
+* Use new assimp feature to improve rendering of transparent meshes
+* elevation map demo: add trees
+* docs: add link to 3D objects repository
+* fix build for ROS 1
+* ROS: publish camera_info too for each camera sensor
+  **Backwards-incompatible change**: Camera topics now are named as: `veh/camera_name/image_raw`
+  instead of `veh/camera_name`, so the corresponding `camera_info` exists within its same namespace: `veh/camera_name/camera_info`.
+* Contributors: Jose Luis Blanco-Claraco
+
+0.10.0 (2024-08-28)
+-------------------
+* Depend on new mrpt_lib packages (deprecate mrpt2)
+* Merge pull request `#52 <https://github.com/MRPT/mvsim/issues/52>`_ from finani/fix-fake-amcl
+  Fix fake amcl topic (QoS Durability)
+* Update outdated copyright years in source files
+* Merge pull request `#51 <https://github.com/MRPT/mvsim/issues/51>`_ from finani/nav2-compatible
+  Nav2 compatible
+* Update codebase to new clang-format style
+* Merge pull request `#48 <https://github.com/MRPT/mvsim/issues/48>`_ from finani/refactoring-node
+  Refactoring node
+* Merge pull request `#45 <https://github.com/MRPT/mvsim/issues/45>`_ from finani/develop
+  Add tf pub for each robot (support namespace)
+* Merge pull request `#43 <https://github.com/MRPT/mvsim/issues/43>`_ from kr-jschoi/fix-bug
+  Fix namespace switching bug between mvsim.chassis_shape and mvsim.chassis_shape.wheel3 in /chassis_markers
+* Contributors: Inhwan Wee, Jose Luis Blanco-Claraco, finani, kr-jschoi
+
+0.9.4 (2024-05-08)
+------------------
+* Better detection of "in collision" flag.
+* Update to clang-format-14
+* Upgrade Joystick API so it works correctly with an arbitrary number of axes
+* ROS nodes: add collision state publishers for each vehicle
+* remove dead code
+* Contributors: Jose Luis Blanco-Claraco
+
+0.9.3 (2024-04-24)
+------------------
+* Fix usage of (new explicit) TPoint3D constructors
+* Contributors: Jose Luis Blanco-Claraco
+
+0.9.2 (2024-03-21)
+------------------
+* BUG FIX: 3D lidars should not 'see' XYZ corners of wheels
+* BUG FIX: gridmaps were published at a too high rate in the ROS 2 node
+* remove dead code
+* update header version
+* Contributors: Jose Luis Blanco-Claraco
+
+0.9.1 (2024-03-05)
+------------------
+* Fix use of mrpt bridge to publish XYZIRT point clouds too for ROS 1
+* Contributors: Jose Luis Blanco-Claraco
+
+0.9.0 (2024-03-02)
+------------------
+* Do not publish tf world->map
+* Expose do_fake_localization as ROS 2 launch file argument
+* fix build with older mrpt
+* 3D Lidar: also generate "ring" ID per point
+* Contributors: Jose Luis Blanco-Claraco
+
+0.8.3 (2023-12-05)
+------------------
+* Generate ground truth trajectory files in the TUM format
+* ROS nodes: add a timeout for cmd_vel commands, so the robots stop if input messages stop
+* Add rviz_plugin_tutorials dependency for ROS1
+* Contributors: Jose Luis Blanco-Claraco, Michael Grupp
+
 0.8.2 (2023-10-06)
 ------------------
 * 3D LIDARs: Bilinear interpolation (when it makes sense) to obtain much smoother point cloud simulations

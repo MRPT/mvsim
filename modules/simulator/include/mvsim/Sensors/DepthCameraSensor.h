@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -51,8 +51,7 @@ class DepthCameraSensor : public SensorBase
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
@@ -75,8 +74,7 @@ class DepthCameraSensor : public SensorBase
 	mrpt::obs::CObservation3DRangeScan::Ptr last_obs2gui_;
 
 	// Note: we need 2 to support different resolutions for RGB vs Depth.
-	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_rgb_,
-		fbo_renderer_depth_;
+	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_rgb_, fbo_renderer_depth_;
 
 	/** Whether gl_scan_ has to be updated upon next call of
 	 * internalGuiUpdate() from last_scan2gui_ */
@@ -96,8 +94,7 @@ class DepthCameraSensor : public SensorBase
 	float depth_noise_sigma_ = 1e-3;
 	bool show_3d_pointcloud_ = false;
 
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
-		gl_sensor_origin_corner_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
 
 	mrpt::math::CMatrixFloat depthImage_;  // to avoid memory allocs

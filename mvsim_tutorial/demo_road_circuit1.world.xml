@@ -1,0 +1,454 @@
+<mvsim_world version="1.0">
+	<!-- General simulation options -->
+	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
+	
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>50</cam_distance>
+		<cam_azimuth>150</cam_azimuth>
+		<cam_elevation>75</cam_elevation>
+		<fov_deg>80</fov_deg>
+		<!-- <follow_vehicle>r1</follow_vehicle> -->
+	</gui>
+
+	<!-- Light parameters -->
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>-25.0</light_azimuth_deg>
+		<light_elevation_deg>40.0</light_elevation_deg>
+	</lights>
+
+	
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+		 <!-- ForestFloor01_1K_BaseColor
+			  ForestGround01_1K_BaseColor
+			  Grass01_1K_BaseColor
+			  Pebbles02_512_BaseColor
+
+			  https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png
+			  https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png
+		 -->
+
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>-90</texture_image_rotate>
+		<texture_extension_x>8.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>-24</corner_min_x>
+		<corner_min_y>-2</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<texture_image_rotate>-90</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>24</corner_min_x>
+		<corner_min_y>-2</corner_min_y>
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2 2e-2 1e-2 1e-2 1e-2 4e-2 4e-2 1e-2; 1e-2 3e-2 2e-2 1e-2 4e-2 1e-2 1e-2 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>8.0</texture_extension_y>
+		<corner_min_x>24</corner_min_x>
+		<corner_min_y>2</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>24</corner_min_x>
+		<corner_min_y>34</corner_min_y>
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>-90</texture_image_rotate>
+		<texture_extension_x>8.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>-24</corner_min_x>
+		<corner_min_y>34</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2 2e-2 1e-2 1e-2 1e-2 4e-2 4e-2 1e-2; 1e-2 3e-2 2e-2 1e-2 4e-2 1e-2 1e-2 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>8.0</texture_extension_y>
+		<corner_min_x>-28</corner_min_x>
+		<corner_min_y>2</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<texture_image_rotate>180</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>-28</corner_min_x>
+		<corner_min_y>-2</corner_min_y>
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<texture_image_rotate>90</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>-28</corner_min_x>
+		<corner_min_y>34</corner_min_y>
+	</element>
+
+
+	<element class="horizontal_plane">
+		<x_min>2</x_min> <y_min>26</y_min>
+		<x_max>6</x_max> <y_max>46</y_max>
+		<z>4.02</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/PavingStone11_1K_BaseColor.png</texture>
+		<texture_size_x>1.0</texture_size_x>
+		<texture_size_y>1.0</texture_size_y>
+	</element>
+
+<!-- Disabled: TODO: fix collisions at different heights
+	<block>
+	 	<static>true</static>
+		<color>#e0e0e0</color>
+		<zmin>0.10</zmin> <zmax>1.0</zmax>
+		<shape_from_visual/>
+		<geometry type="box" lx="0.07" ly="20.0" lz="0.75"/>
+		<init_pose3d>2.0 26.0 3.9 0 0 0</init_pose3d>
+		<skip_elevation_adjust>true</skip_elevation_adjust>
+	</block>
+	<block>
+		<static>true</static>
+		<color>#e0e0e0</color>
+		<zmin>0.10</zmin> <zmax>1.0</zmax>
+		<shape_from_visual/>
+		<geometry type="box" lx="0.07" ly="20.0" lz="0.75"/>
+		<init_pose3d>6.0 26.0 3.9 0 0 0</init_pose3d>
+		<skip_elevation_adjust>true</skip_elevation_adjust>
+	</block>
+-->
+
+
+	<element class='elevation_map'>
+		<resolution>8.0</resolution>
+		<elevation_data_matrix>
+			[0  0.05   0    0.05   0;
+			 0.05  0.8 1.5  2   0.05;
+			 0  0.7 2.5  3   0;
+			 0  1   3    4   0;
+			 0  0.7 2.9  4   0;
+			 0.05  1.5 0.5  2   0.05;
+			 0  0.02  0    0.05   0
+			]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>3.0</texture_extension_x>
+		<texture_extension_y>3.0</texture_extension_y>
+		<corner_min_x>-24</corner_min_x>
+		<corner_min_y>2</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>
+			[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 2 2.5 3.2 3.9 3 3.2 3.5 3.8 2.8 3.1 2.3 3.7 4.5 3.4 2.8 3.7 2.9 4.0 0  0;
+			 3 4.3 4.7 5 3.4 4.8 4.9 5.5 4.2 4.4 3.8 5.8 5.4 4.5 3.9 4.3 4.1 5.2 0  1
+			]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>3.0</texture_extension_x>
+		<texture_extension_y>3.0</texture_extension_y>
+		<corner_min_x>-44</corner_min_x>
+		<corner_min_y>-36</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+
+
+	<element class='elevation_map'>
+		<resolution>8.0</resolution>
+		<elevation_data_matrix>
+			[0  1   4     30;
+			 0  3   3     25;
+			 0  3   3     25;
+			 0  3   3     25;
+			 0  3   3     25;
+			 0  4   2.5   28;
+			 0  4   3     30;
+			 0  4   2.9   29;
+			 0  1   0     27;
+			 0  1   0     27;
+			 0  1   0     27;
+			 0  1  5.4   27;
+			 1  1  5.8   25
+			]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>3.0</texture_extension_x>
+		<texture_extension_y>3.0</texture_extension_y>
+		<corner_min_x>-44</corner_min_x>
+		<corner_min_y>38</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+
+	<block:class name="support_column">
+		<static>true</static> <!-- Does not move -->
+		<color>#606060</color>
+		<zmin>0</zmin> <zmax>4.0</zmax>
+		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
+		<geometry type="cylinder" radius="0.10" length="4.0" vertex_count="16"/>
+		<skip_elevation_adjust>true</skip_elevation_adjust>
+	</block:class>
+
+	<block class="support_column"> <init_pose>2.1 41 0</init_pose> </block>
+	<block class="support_column"> <init_pose>2.1 32 0</init_pose> </block>
+	<block class="support_column"> <init_pose>5.9 41 0</init_pose> </block>
+	<block class="support_column"> <init_pose>5.9 32 0</init_pose> </block>
+
+
+	<!-- A SkyBox decoration -->
+	<element class='skybox'>
+		<!-- Provide the URI printf-like "pattern" to the six texture files, 
+		     such that replacing "%s" with the following strings gives the path
+		     to the files: "Up", "Right", "Left", "Front", "Down", "Back".
+		 -->
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/TropicalSunnyDay.zip/TropicalSunnyDay/TropicalSunnyDay%s.jpg</textures>
+	</element>
+
+	<!-- =============================
+		   Vehicle classes definition
+	     ============================= -->
+	<include file="../definitions/jackal.vehicle.xml"
+		default_sensors="false"
+	/>
+
+	<!-- ========================
+		   Vehicle(s) definition
+	     ======================== -->
+	<vehicle name="r1" class="jackal">
+		<init_pose>0 -1 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/mast.dae</model_uri>
+			<model_offset_x>0</model_offset_z>
+			<model_offset_y>0</model_offset_y>
+			<model_offset_z>0.10</model_offset_z>
+			<model_yaw>180.0</model_yaw>
+			<model_pitch>0.0</model_pitch>
+			<model_roll>90.0</model_roll>
+		</visual>
+
+		<!-- Sensors -->
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+		  sensor_x="-0.08" sensor_y="0" sensor_z="0.97" sensor_yaw="0"
+		  sensor_std_noise="0.005"
+		  sensor_publish="false"
+		  sensor_name="lidar1"
+		  sensor_rpm="600"
+		  horz_resolution_factor="2.0"
+		  vert_resolution_factor="2.0"
+		/>		
+		<include file="../definitions/camera.sensor.xml"
+		  sensor_x="0.03" sensor_z="0.83"
+		  ncols="800" nrows="600"
+		  cx="400" cy="300"
+		  sensor_period_sec="0.10"
+		/>
+	</vehicle>
+	
+	<vehicle name="r2" class="jackal">
+		<init_pose>10 37 -180</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/mast.dae</model_uri>
+			<model_offset_x>0</model_offset_z>
+			<model_offset_y>0</model_offset_y>
+			<model_offset_z>0.10</model_offset_z>
+			<model_yaw>180.0</model_yaw>
+			<model_pitch>0.0</model_pitch>
+			<model_roll>90.0</model_roll>
+		</visual>
+
+		<!-- Sensors -->
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+		  sensor_x="-0.08" sensor_y="0" sensor_z="0.97" sensor_yaw="0"
+		  sensor_std_noise="0.005"
+		  sensor_publish="false"
+		  sensor_name="lidar1"
+		  sensor_rpm="600"
+		  horz_resolution_factor="2.0"
+		  vert_resolution_factor="2.0"
+		/>		
+		<include file="../definitions/camera.sensor.xml"
+		  sensor_x="0.03" sensor_z="0.83"
+		  ncols="800" nrows="600"
+		  cx="400" cy="300"
+		  sensor_period_sec="0.10"
+		/>
+	</vehicle>
+	
+
+	<!-- ======================================
+	      Obstacle blocks classes definition
+	     ====================================== -->
+	<block:class name="rock_01">
+		<static>true</static> <!-- Does not move -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<zmin>0.0</zmin> <zmax>2.5</zmax>  <!-- Only count collisions in this height range -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/rock01.zip/rock01/FallingRock01.dae</model_uri>
+			<model_scale>3.0</model_scale>
+		</visual>
+	</block:class>
+
+	<block:class name="rock_02">
+		<static>true</static> <!-- Does not move -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<zmin>0.0</zmin> <zmax>2.5</zmax>  <!-- Only count collisions in this height range -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/rock02.zip/rock02/FallingRock02.dae</model_uri>
+			<model_scale>2.6</model_scale>
+		</visual>
+	</block:class>
+
+	<block:class name="palm_tree_01">
+		<static>true</static> <!-- Does not move -->
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<zmin>0.0</zmin> <zmax>0.5</zmax>  <!-- Only count collisions in this height range -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/TropicPalmTree.zip/TropicPalmTree/free_palm.dae</model_uri>
+			<model_roll>90</model_roll>
+			<model_split_size>1.50</model_split_size> <!-- See docs. Required for transparent leaves -->
+		</visual>
+	</block:class>
+	
+	<block:class name="construction_cone">
+		<static>false</static>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<zmin>0.0</zmin> <zmax>0.5</zmax>  <!-- Only count collisions in this height range -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/ConstructionCone.zip/ConstructionCone/construction_cone.dae</model_uri>
+			<model_roll>90</model_roll>
+			<model_scale>5</model_scale>
+		</visual>
+	</block:class>
+
+	<block:class name="police_station">
+		<static>true</static>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/PoliceStation.zip/PoliceStation/police_station.dae</model_uri>
+			<model_roll>90</model_roll>
+		</visual>
+	</block:class>
+
+	<block:class name="radio_tower">
+		<static>true</static>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/RadioTower.zip/RadioTower/radio_tower.dae</model_uri>
+			<model_roll>90</model_roll>
+			<model_scale>0.8</model_scale>
+		</visual>
+		<skip_elevation_adjust>true</skip_elevation_adjust>
+	</block:class>	
+
+	<block:class name="my_bump">
+		<static>true</static> <!-- Does not move -->
+		<intangible>true</intangible> <!-- Does not generate collisions -->
+		<color>#707070</color>
+		<zmin>0</zmin> <zmax>0.02</zmax>
+		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
+		<geometry type="semi_cylinder_bump" lx="2.0" ly="0.20" lz="0.02" />
+	</block:class>
+
+
+	<!-- ========================
+		Obstacle blocks
+	     ======================== -->
+
+	<block class="construction_cone"> <init_pose3d>6 -2.5 0 0 0 0</init_pose3d> </block>
+	<block class="construction_cone"> <init_pose3d>28 -3 0 0 0 0</init_pose3d> </block>
+
+	<block class="my_bump"> <init_pose3d>8 -1 0.01 90 0 0</init_pose3d> </block>
+
+	<block class="police_station"> <init_pose3d>30 -18 0.01 0 0 0</init_pose3d> </block>
+
+	<block class="radio_tower"> <init_pose3d>40 15 0.01 0 0 0</init_pose3d> </block>
+
+	<block class="palm_tree_01"> <init_pose3d>-5 -10 20 30 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>39 -2 20 10 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>37 3 20 30 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>38 -6 20 -50 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>41 40 20 -30 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>44 43 20 -30 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>-1 50 20 20 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>4 51 20 90 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>-33 35 20 80 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>-38 31 20 50 0 0</init_pose3d> </block>
+	<block class="palm_tree_01"> <init_pose3d>-31 27 20 10 0 0</init_pose3d> </block>
+
+	<variable name="ROCKS_SPREAD_X" value="2.0"></variable>
+	<variable name="ROCKS_SPREAD_Y" value="35.0"></variable>
+	<variable name="ROCKS_SPREAD_Z" value="1.0"></variable>
+
+	<!-- ensure reproducible randomized numbers from the same seed -->
+	<variable name="dummy" value="$f{randomize(2)}"></variable>
+
+	<for var="i" from="1" to="20">
+		<block class="rock_01"> <init_pose3d>$f{(-0.5+rand())*ROCKS_SPREAD_X+49.3} $f{-35+i*4.2+rand()*1.3} 6 $f{-180+rand()*360} 0 0</init_pose3d> </block>
+	</for>
+
+	<for var="i" from="1" to="10">
+		<block class="rock_01"> <init_pose3d>$f{rand()*60-40} $f{rand()*25-30} 16 $f{-180+rand()*360} 0 0</init_pose3d> </block>
+	</for>
+	<for var="i" from="1" to="8">
+		<block class="rock_02"> <init_pose3d>$f{rand()*40-20} $f{rand()*15+7} 16 $f{-180+rand()*360} 0 0</init_pose3d> </block>
+	</for>
+
+</mvsim_world>

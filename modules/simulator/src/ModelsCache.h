@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -22,10 +22,15 @@ class ModelsCache
 	{
 		mrpt::img::TColor modelColor = mrpt::img::TColor::white();
 		std::string modelCull = "NONE";
+
+		/** See mrpt::opengl::CAssimpModel::split_triangles_rendering_bbox().
+		 *  Default (0)=disabled. Any other value, split the model into voxels of this size
+		 *  to help sorting triangles by depth so semitransparent meshes are rendered correctly.
+		 */
+		float splitSize = .0f;
 	};
 
-	mrpt::opengl::CAssimpModel::Ptr get(
-		const std::string& url, const Options& options);
+	mrpt::opengl::CAssimpModel::Ptr get(const std::string& url, const Options& options);
 
 	void clear() { cache.clear(); }
 

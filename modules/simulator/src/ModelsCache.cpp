@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -28,8 +28,7 @@ mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
 	const std::string& localFileName, const Options& options)
 {
 	// already cached?
-	if (auto it = cache.find(localFileName); it != cache.end())
-		return it->second;
+	if (auto it = cache.find(localFileName); it != cache.end()) return it->second;
 
 	// No, it's a new model path, create its placeholder:
 	auto m = cache[localFileName] = mrpt::opengl::CAssimpModel::Create();
@@ -50,8 +49,11 @@ mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
 
 	m->loadScene(localFileName, loadFlags);
 
-	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
-		options.modelCull));
+	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(options.modelCull));
+
+#if MRPT_VERSION >= 0x20e01	 // Feature added in MRPT 2.14.1
+	m->split_triangles_rendering_bbox(options.splitSize);
+#endif
 
 	return m;
 }

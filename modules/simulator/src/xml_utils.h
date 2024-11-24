@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -39,13 +39,11 @@ struct XML_Doc_Data
 	std::shared_ptr<rapidxml::xml_document<>> doc;
 };
 
-std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
-	readXmlTextAndGetRoot(
-		const std::string& xmlData, const std::string& pathToFile);
+std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*> readXmlTextAndGetRoot(
+	const std::string& xmlData, const std::string& pathToFile);
 
 std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> readXmlAndGetRoot(
-	const std::string& pathToFile,
-	const std::map<std::string, std::string>& variables,
+	const std::string& pathToFile, const std::map<std::string, std::string>& variables,
 	const std::set<std::string>& varsRetain = {});
 
 /**
@@ -60,8 +58,7 @@ std::string parse_variables(
 	const std::set<std::string>& varsRetain);
 
 void parse_xmlnode_attribs(
-	const rapidxml::xml_node<char>& xml_node,
-	const TParameterDefinitions& params,
+	const rapidxml::xml_node<char>& xml_node, const TParameterDefinitions& params,
 	const std::map<std::string, std::string>& variableNamesValues = {},
 	const char* functionNameContext = "");
 
@@ -70,24 +67,20 @@ void parse_xmlnode_attribs(
  * \sa parse_xmlnode_children_as_param
  */
 bool parse_xmlnode_as_param(
-	const rapidxml::xml_node<char>& xml_node,
-	const TParameterDefinitions& params,
+	const rapidxml::xml_node<char>& xml_node, const TParameterDefinitions& params,
 	const std::map<std::string, std::string>& variableNamesValues = {},
 	const char* functionNameContext = "");
 
 /** Call \a parse_xmlnode_as_param() for all children nodes of the given node.
  */
 void parse_xmlnode_children_as_param(
-	const rapidxml::xml_node<char>& xml_node,
-	const TParameterDefinitions& params,
+	const rapidxml::xml_node<char>& xml_node, const TParameterDefinitions& params,
 	const std::map<std::string, std::string>& variableNamesValues = {},
-	const char* functionNameContext = "",
-	mrpt::system::COutputLogger* logger = nullptr);
+	const char* functionNameContext = "", mrpt::system::COutputLogger* logger = nullptr);
 
 template <class NODE_LIST>
 void parse_xmlnodelist_children_as_param(
-	NODE_LIST& lst_nodes, const TParameterDefinitions& params,
-	const char* functionNameContext = "")
+	NODE_LIST& lst_nodes, const TParameterDefinitions& params, const char* functionNameContext = "")
 {
 	for (auto& node : lst_nodes)
 		parse_xmlnode_children_as_param(*node, params, functionNameContext);
@@ -108,8 +101,7 @@ std::string xml_to_str_solving_includes(
  * exception upon malformed string.
  */
 mrpt::math::TPose2D parseXYPHI(
-	const std::string& s, bool allow_missing_angle = false,
-	double default_angle_radians = 0.0,
+	const std::string& s, bool allow_missing_angle = false, double default_angle_radians = 0.0,
 	const std::map<std::string, std::string>& variableNamesValues = {});
 
 /** Parses a <shape><pt>X Y</pt>...</shape> XML node into a

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -24,7 +24,7 @@ using namespace std;
 
 Wheel::Wheel(World* world) : VisualObject(world) { recalcInertia(); }
 
-void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
+void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj, bool isPhysicalScene)
 {
 	obj.clear();
 
@@ -34,25 +34,26 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj)
 	}
 	else
 	{
-		auto gl_wheel = mrpt::opengl::CCylinder::Create(
-			0.5 * diameter, 0.5 * diameter, this->width, 15);
+		auto gl_wheel =
+			mrpt::opengl::CCylinder::Create(0.5 * diameter, 0.5 * diameter, this->width, 15);
 		gl_wheel->setColor_u8(color);
-		gl_wheel->setPose(
-			mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
+		gl_wheel->setPose(mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
 
-		auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
-		gl_wheel_frame->setName("gl_wheel_frame");
-		gl_wheel_frame->insert(gl_wheel);
+		if (!isPhysicalScene)
 		{
-			mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
-				mrpt::opengl::stock_objects::CornerXYZSimple(
-					0.9 * diameter, 2.0);
+			auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
+			gl_wheel_frame->setName("gl_wheel_frame");
+			gl_wheel_frame->insert(gl_wheel);
+			{
+				mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
+					mrpt::opengl::stock_objects::CornerXYZSimple(0.9 * diameter, 2.0);
 #if MRPT_VERSION >= 0x270
-			gl_xyz->castShadows(false);
+				gl_xyz->castShadows(false);
 #endif
-			gl_wheel_frame->insert(gl_xyz);
+				gl_wheel_frame->insert(gl_xyz);
+			}
+			obj.insert(gl_wheel_frame);
 		}
-		obj.insert(gl_wheel_frame);
 	}
 
 	obj.setPose(mrpt::math::TPose3D(x, y, 0.5 * diameter, yaw, 0.0, 0.0));
@@ -65,8 +66,7 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 	// <l_wheel pos="0.0 -0.5 [OPTIONAL_ANG]" mass="2.0" width="0.10"
 	// diameter="0.30" />
 	// pos:
-	if (const auto attr = xml_node->first_attribute("pos");
-		attr && attr->value())
+	if (const auto attr = xml_node->first_attribute("pos"); attr && attr->value())
 	{
 		const std::string sAttr = attr->value();
 		mrpt::math::TPose2D v = parseXYPHI(sAttr, true);
@@ -97,8 +97,7 @@ void Wheel::recalcInertia()
 
 void Wheel::internalGuiUpdate(
 	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
-		physical,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	// nothing to do, already done in getAs3DObject()

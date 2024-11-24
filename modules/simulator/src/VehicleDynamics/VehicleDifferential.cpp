@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -21,8 +21,7 @@ using namespace std;
 // Ctor:
 DynamicsDifferential::DynamicsDifferential(
 	World* parent, const std::vector<ConfigPerWheel>& cfgPerWheel)
-	: VehicleBase(parent, cfgPerWheel.size() /*num wheels*/),
-	  configPerWheel_(cfgPerWheel)
+	: VehicleBase(parent, cfgPerWheel.size() /*num wheels*/), configPerWheel_(cfgPerWheel)
 {
 	using namespace mrpt::math;
 
@@ -46,14 +45,12 @@ DynamicsDifferential::DynamicsDifferential(
 }
 
 /** The derived-class part of load_params_from_xml() */
-void DynamicsDifferential::dynamics_load_params_from_xml(
-	const rapidxml::xml_node<char>* xml_node)
+void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node)
 {
 	const std::map<std::string, std::string> varValues = {{"NAME", name_}};
 
 	// <chassis ...> </chassis>
-	const rapidxml::xml_node<char>* xml_chassis =
-		xml_node->first_node("chassis");
+	const rapidxml::xml_node<char>* xml_chassis = xml_node->first_node("chassis");
 	if (xml_chassis)
 	{
 		// Attribs:
@@ -68,12 +65,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 			"[DynamicsDifferential::dynamics_load_params_from_xml]");
 
 		// Shape node (optional, fallback to default shape if none found)
-		const rapidxml::xml_node<char>* xml_shape =
-			xml_chassis->first_node("shape");
+		const rapidxml::xml_node<char>* xml_shape = xml_chassis->first_node("shape");
 		if (xml_shape)
 			mvsim::parse_xmlnode_shape(
-				*xml_shape, chassis_poly_,
-				"[DynamicsDifferential::dynamics_load_params_from_xml]");
+				*xml_shape, chassis_poly_, "[DynamicsDifferential::dynamics_load_params_from_xml]");
 	}
 
 	// <l_wheel ...>, <r_wheel ...>
@@ -86,8 +81,7 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	{
 		const auto& cpw = configPerWheel_.at(i);
 
-		const rapidxml::xml_node<char>* xml_wheel =
-			xml_node->first_node(cpw.name.c_str());
+		const rapidxml::xml_node<char>* xml_wheel = xml_node->first_node(cpw.name.c_str());
 		if (xml_wheel)
 			wheels_info_[i].loadFromXML(xml_wheel);
 		else
@@ -100,12 +94,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	// Vehicle controller:
 	// -------------------------------------------------
 	{
-		const rapidxml::xml_node<char>* xml_control =
-			xml_node->first_node("controller");
+		const rapidxml::xml_node<char>* xml_control = xml_node->first_node("controller");
 		if (xml_control)
 		{
-			rapidxml::xml_attribute<char>* control_class =
-				xml_control->first_attribute("class");
+			rapidxml::xml_attribute<char>* control_class = xml_control->first_attribute("class");
 			if (!control_class || !control_class->value())
 				throw runtime_error(
 					"[DynamicsDifferential] Missing 'class' attribute in "
@@ -129,13 +121,11 @@ void DynamicsDifferential::dynamics_load_params_from_xml(
 	}
 
 	// Default controller:
-	if (!controller_)
-		controller_ = std::make_shared<ControllerRawForces>(*this);
+	if (!controller_) controller_ = std::make_shared<ControllerRawForces>(*this);
 }
 
 // See docs in base class:
-std::vector<double> DynamicsDifferential::invoke_motor_controllers(
-	const TSimulContext& context)
+std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulContext& context)
 {
 	// Longitudinal forces at each wheel:
 	std::vector<double> otpw;
@@ -174,8 +164,7 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(
 	return otpw;
 }
 
-void DynamicsDifferential::invoke_motor_controllers_post_step(
-	const TSimulContext& context)
+void DynamicsDifferential::invoke_motor_controllers_post_step(const TSimulContext& context)
 {
 	if (controller_) controller_->on_post_step(context);
 }

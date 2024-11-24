@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -51,8 +51,7 @@ class JointXMLnode
 		// ++it
 		iterator& operator++()
 		{
-			if (!current)
-				throw std::runtime_error("++ called on end() iterator!?");
+			if (!current) throw std::runtime_error("++ called on end() iterator!?");
 			current = current->next_sibling();
 			JointXMLnode<Ch>::TListNodes& lst = parent.getListOfNodes();
 			while (!current && lst_idx < lst.size())
@@ -68,30 +67,26 @@ class JointXMLnode
 
 		rapidxml::xml_node<Ch>* operator->() const
 		{
-			if (!current)
-				throw std::runtime_error("-> called on end() iterator!?");
+			if (!current) throw std::runtime_error("-> called on end() iterator!?");
 			return current;
 		}
 
 		rapidxml::xml_node<Ch>* operator*() const
 		{
-			if (!current)
-				throw std::runtime_error("* called on end() iterator!?");
+			if (!current) throw std::runtime_error("* called on end() iterator!?");
 			return current;
 		}
 
 		bool operator==(const iterator& it) const
 		{
-			return (this->current == it.current) &&
-				   (this->lst_idx == it.lst_idx) &&
+			return (this->current == it.current) && (this->lst_idx == it.lst_idx) &&
 				   (&this->parent == &it.parent);
 		}
 		bool operator!=(const iterator& it) const { return !(*this == it); }
 
 	   private:
 		// begin():
-		iterator(JointXMLnode<Ch>& pa)
-			: parent(pa), lst_idx(0), current(nullptr)
+		iterator(JointXMLnode<Ch>& pa) : parent(pa), lst_idx(0), current(nullptr)
 		{
 			JointXMLnode<Ch>::TListNodes& lst = parent.getListOfNodes();
 			while (!current && lst_idx < lst.size())
@@ -101,10 +96,7 @@ class JointXMLnode
 			}
 		}
 		// end()
-		iterator(JointXMLnode<Ch>& pa, size_t idx)
-			: parent(pa), lst_idx(idx), current(nullptr)
-		{
-		}
+		iterator(JointXMLnode<Ch>& pa, size_t idx) : parent(pa), lst_idx(idx), current(nullptr) {}
 
 		JointXMLnode<Ch>& parent;
 		size_t lst_idx;	 // => lst.size() means this is "end()"

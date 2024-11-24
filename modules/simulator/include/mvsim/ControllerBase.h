@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -35,8 +35,7 @@ class ControllerBaseInterface
 	};
 
 	virtual void teleop_interface(
-		[[maybe_unused]] const TeleopInput& in,
-		[[maybe_unused]] TeleopOutput& out)
+		[[maybe_unused]] const TeleopInput& in, [[maybe_unused]] TeleopOutput& out)
 	{
 		/*default: do nothing*/
 	}
@@ -64,8 +63,7 @@ class ControllerBaseTempl : public ControllerBaseInterface
 	ControllerBaseTempl(VEH_DYNAMICS& veh) : veh_(veh) {}
 	virtual ~ControllerBaseTempl() {}
 	/** This is to handle basic need of all the controllers.*/
-	virtual void teleop_interface(
-		const TeleopInput& in, TeleopOutput& out) override
+	virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override
 	{
 		/*default: handle logging events*/
 		static bool isRecording = false;
@@ -96,12 +94,11 @@ class ControllerBaseTempl : public ControllerBaseInterface
 				break;
 		}
 
-		out.append_gui_lines +=
-			std::string(
-				"Toggle logging [L]. Clear logs[C]. New log session [N]. "
-				"Now ") +
-			std::string(isRecording ? "logging" : "not logging") +
-			std::string("\n");
+		out.append_gui_lines += std::string(
+									"Toggle logging [L]. Clear logs[C]. New log session [N]. "
+									"Now ") +
+								std::string(isRecording ? "logging" : "not logging") +
+								std::string("\n");
 	}
 
 	/** The core of the controller: will be called at each timestep before the
@@ -118,10 +115,7 @@ class ControllerBaseTempl : public ControllerBaseInterface
 	{ /*default: do nothing*/
 	}
 
-	virtual void setLogRecording(bool recording)
-	{
-		veh_.setRecording(recording);
-	}
+	virtual void setLogRecording(bool recording) { veh_.setRecording(recording); }
 	virtual void clearLogs() { veh_.clearLogs(); }
 	virtual void newLogSession() { veh_.newLogSession(); }
 

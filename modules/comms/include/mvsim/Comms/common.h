@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -43,24 +43,19 @@ zmq::message_t receiveMessage(zmq::socket_t& s);
  *
  * \exception std::runtime_error If the message type does not match with out.
  */
-void parseMessage(
-	const zmq::message_t& msg, google::protobuf::MessageLite& out);
+void parseMessage(const zmq::message_t& msg, google::protobuf::MessageLite& out);
 
 class UnexpectedMessageException : public std::runtime_error
 {
    public:
-	UnexpectedMessageException(const char* reason) : std::runtime_error(reason)
-	{
-	}
+	UnexpectedMessageException(const char* reason) : std::runtime_error(reason) {}
 };
 namespace internal
 {
-std::tuple<std::string, std::string> parseMessageToParts(
-	const zmq::message_t& msg);
+std::tuple<std::string, std::string> parseMessageToParts(const zmq::message_t& msg);
 
 template <typename variant_t, size_t IDX = 0>
-variant_t recursiveParse(
-	const std::string& typeName, const std::string& serializedData)
+variant_t recursiveParse(const std::string& typeName, const std::string& serializedData)
 {
 	if constexpr (IDX < std::variant_size_v<variant_t>)
 	{
@@ -81,9 +76,7 @@ variant_t recursiveParse(
 			return recursiveParse<variant_t, IDX + 1>(typeName, serializedData);
 	}
 	throw UnexpectedMessageException(
-		mrpt::format(
-			"Type '%s' not found in expected list of variant arguments.",
-			typeName.c_str())
+		mrpt::format("Type '%s' not found in expected list of variant arguments.", typeName.c_str())
 			.c_str());
 }
 }  // namespace internal

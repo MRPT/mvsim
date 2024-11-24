@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -40,17 +40,17 @@ class IMU : public SensorBase
    protected:
 	void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
-			physical,
+		[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 		[[maybe_unused]] bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
-	mrpt::math::TPose3D getRelativePose() const override { return {}; }
-	void setRelativePose(const mrpt::math::TPose3D&) override
+	mrpt::math::TPose3D getRelativePose() const override { return obs_model_.sensorPose.asTPose(); }
+	void setRelativePose(const mrpt::math::TPose3D& p) override
 	{
-		// sensor_params_.setSensorPose(mrpt::poses::CPose3D(p));
+		obs_model_.sensorPose = mrpt::poses::CPose3D(p);
 	}
+
 	void internal_simulate_imu(const TSimulContext& context);
 
 	double angularVelocityStdNoise_ = 2e-4;	 //!< [rad/s]
@@ -65,8 +65,7 @@ class IMU : public SensorBase
 	/** Last simulated obs */
 	mrpt::obs::CObservationIMU::Ptr last_obs_;
 
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_,
-		gl_sensor_origin_corner_;
+	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 
 	mrpt::random::CRandomGenerator rng_;
 };

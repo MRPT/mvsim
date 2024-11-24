@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -57,8 +57,8 @@ std::string RemoteResourcesManager::cache_directory()
 	return local_directory;
 }
 
-std::tuple<bool, std::string, std::string>
-	RemoteResourcesManager::zip_uri_split(const std::string& uri)
+std::tuple<bool, std::string, std::string> RemoteResourcesManager::zip_uri_split(
+	const std::string& uri)
 {
 	auto pos = uri.find(".zip/");
 
@@ -94,15 +94,13 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 	{
 		// get usage stats:
 		if (0 == mrpt::system::executeCommand(
-					 mrpt::format("du -sh0 \"%s\"", localDir.c_str()),
-					 &cacheUsageStats))
+					 mrpt::format("du -sh0 \"%s\"", localDir.c_str()), &cacheUsageStats))
 		{
 			// usage stats are valid.
 		}
 	}
 	MRPT_LOG_ONCE_INFO(
-		"Using local storage directory: '"s + localDir + "' (Usage: "s +
-		cacheUsageStats + ")"s);
+		"Using local storage directory: '"s + localDir + "' (Usage: "s + cacheUsageStats + ")"s);
 
 	const auto [isZipPkg, zipOrFileURI, internalURI] = zip_uri_split(uri);
 
@@ -117,11 +115,10 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 	// Download if it does not exist already from a past download:
 	if (!mrpt::system::fileExists(localFil))
 	{
-		const auto cmd = mrpt::format(
-			"wget -q -O \"%s\" %s", localFil.c_str(), zipOrFileURI.c_str());
+		const auto cmd =
+			mrpt::format("wget -q -O \"%s\" %s", localFil.c_str(), zipOrFileURI.c_str());
 
-		MRPT_LOG_INFO_STREAM(
-			"Downloading remote resources from: '" << uri << "'");
+		MRPT_LOG_INFO_STREAM("Downloading remote resources from: '" << uri << "'");
 
 		if (int ret = ::system(cmd.c_str()); ret != 0)
 		{
@@ -156,16 +153,14 @@ std::string RemoteResourcesManager::handle_local_zip_package(
 	ASSERT_EQUAL_(filExtension, "zip");
 
 	// already decompressed?
-	const auto zipOutDir =
-		mrpt::system::fileNameChangeExtension(localZipFil, "out");
+	const auto zipOutDir = mrpt::system::fileNameChangeExtension(localZipFil, "out");
 
 	if (!mrpt::system::directoryExists(zipOutDir))
 	{
 		mrpt::system::createDirectory(zipOutDir);
 		ASSERT_DIRECTORY_EXISTS_(zipOutDir);
 
-		const std::string cmd =
-			"unzip -q \""s + localZipFil + "\" -d \""s + zipOutDir + "\""s;
+		const std::string cmd = "unzip -q \""s + localZipFil + "\" -d \""s + zipOutDir + "\""s;
 
 		if (int ret = ::system(cmd.c_str()); ret != 0)
 		{

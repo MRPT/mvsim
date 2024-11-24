@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -28,8 +28,7 @@ using namespace rapidxml;
 
 int z_order_cnt = 0;
 
-LaserScanner::LaserScanner(
-	Simulable& parent, const rapidxml::xml_node<char>* root)
+LaserScanner::LaserScanner(Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent), z_order_(++z_order_cnt)
 {
 	LaserScanner::loadConfigFrom(root);
@@ -85,8 +84,7 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void LaserScanner::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
-		physical,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace std::string_literals;
@@ -111,14 +109,12 @@ void LaserScanner::internalGuiUpdate(
 
 		gl_scan_->enableSurface(viz_visiblePlane_);
 		const mrpt::img::TColorf planeCol(viz_planeColor_);
-		gl_scan_->setSurfaceColor(
-			planeCol.R, planeCol.G, planeCol.B, planeCol.A);
+		gl_scan_->setSurfaceColor(planeCol.R, planeCol.G, planeCol.B, planeCol.A);
 
 		gl_scan_->enableLine(viz_visibleLines_);
 
 		gl_scan_->setLocalRepresentativePoint({0, 0, 0.10f});
-		gl_scan_->setName(
-			"glScan veh:"s + vehicle_.getName() + " sensor:"s + this->name_);
+		gl_scan_->setName("glScan veh:"s + vehicle_.getName() + " sensor:"s + this->name_);
 
 		glVizSensors->insert(gl_scan_);
 	}
@@ -128,8 +124,7 @@ void LaserScanner::internalGuiUpdate(
 #if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
 #endif
-		gl_sensor_origin_corner_ =
-			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
@@ -179,25 +174,24 @@ void LaserScanner::internalGuiUpdate(
 		gui_uptodate_ = true;
 	}
 
-	const mrpt::poses::CPose2D& p = vehicle_.getCPose2D();
+	const mrpt::poses::CPose3D p = vehicle_.getCPose3D();
+
 	const double z_incrs = 1e-3;  // for z_order_
 	const double z_offset = 1e-3;
 
 	if (gl_scan_)
-		gl_scan_->setPose(mrpt::poses::CPose3D(
-			p.x(), p.y(), z_offset + z_incrs * z_order_, p.phi(), 0.0, 0.0));
+	{
+		auto p2 = p;
+		p2.z_incr(z_offset + z_incrs * z_order_);
+		gl_scan_->setPose(p2);
+	}
 
 	if (gl_sensor_fov_) gl_sensor_fov_->setPose(p);
-
 	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
-
 	if (glCustomVisual_) glCustomVisual_->setPose(p + scan_model_.sensorPose);
 }
 
-void LaserScanner::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
-{
-}
+void LaserScanner::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
 
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
 void LaserScanner::simul_post_timestep(const TSimulContext& context)
@@ -249,8 +243,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 	using mrpt::maps::COccupancyGridMap2D;
 	using mrpt::obs::CObservation2DRangeScan;
 
-	auto tle =
-		mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "LaserScanner");
+	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "LaserScanner");
 
 	// Create an array of scans, each reflecting ranges to one kind of world
 	// objects.
@@ -272,8 +265,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 	for (const auto& element : elements)
 	{
 		// If not a grid map, ignore:
-		const OccupancyGridMap* grid =
-			dynamic_cast<const OccupancyGridMap*>(element.get());
+		const OccupancyGridMap* grid = dynamic_cast<const OccupancyGridMap*>(element.get());
 		if (!grid) continue;
 		const COccupancyGridMap2D& occGrid = grid->getOccGrid();
 
@@ -283,8 +275,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 
 		// Ray tracing over the gridmap:
 		occGrid.laserScanSimulator(
-			scan, vehPose, 0.5f, scan_model_.getScanSize(), rangeStdNoise_, 1,
-			angleStdNoise_);
+			scan, vehPose, 0.5f, scan_model_.getScanSize(), rangeStdNoise_, 1, angleStdNoise_);
 	}
 	world_->getTimeLogger().leave("LaserScanner.scan.1.gridmap");
 
@@ -299,14 +290,15 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 		// Avoid the lidar seeing the vehicle owns shape:
 		std::map<b2Fixture*, uintptr_t> orgUserData;
 
-		auto makeFixtureInvisible = [&](b2Fixture* f) {
+		auto makeFixtureInvisible = [&](b2Fixture* f)
+		{
 			if (!f) return;
 			orgUserData[f] = f->GetUserData().pointer;
 			f->GetUserData().pointer = INVISIBLE_FIXTURE_USER_DATA;
 		};
-		auto undoInvisibleFixtures = [&]() {
-			for (auto& kv : orgUserData)
-				kv.first->GetUserData().pointer = kv.second;
+		auto undoInvisibleFixtures = [&]()
+		{
+			for (auto& kv : orgUserData) kv.first->GetUserData().pointer = kv.second;
 		};
 
 		if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v)
@@ -327,8 +319,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 				b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal,
 				float fraction) override
 			{
-				if (!see_fixtures_ || fixture->GetUserData().pointer ==
-										  INVISIBLE_FIXTURE_USER_DATA)
+				if (!see_fixtures_ || fixture->GetUserData().pointer == INVISIBLE_FIXTURE_USER_DATA)
 				{
 					// By returning -1, we instruct the calling code to ignore
 					// this fixture and
@@ -354,8 +345,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 			b2Vec2 normal_{0, 0};
 		};
 
-		const mrpt::poses::CPose2D sensorPose =
-			vehPose + mrpt::poses::CPose2D(scan.sensorPose);
+		const mrpt::poses::CPose2D sensorPose = vehPose + mrpt::poses::CPose2D(scan.sensorPose);
 		const b2Vec2 sensorPt = b2Vec2(sensorPose.x(), sensorPose.y());
 
 		RayCastClosestCallback callback;
@@ -364,18 +354,16 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 		// Scan size:
 		ASSERT_(nRays >= 2);
 		scan.resizeScanAndAssign(nRays, maxRange, false);
-		double A =
-			sensorPose.phi() + (scan.rightToLeft ? -0.5 : +0.5) * scan.aperture;
-		const double AA =
-			(scan.rightToLeft ? 1.0 : -1.0) * (scan.aperture / (nRays - 1));
+		double A = sensorPose.phi() + (scan.rightToLeft ? -0.5 : +0.5) * scan.aperture;
+		const double AA = (scan.rightToLeft ? 1.0 : -1.0) * (scan.aperture / (nRays - 1));
 
 		// Each thread must create its own rng:
 		thread_local mrpt::random::CRandomGenerator rnd;
 
 		for (size_t i = 0; i < nRays; i++, A += AA)
 		{
-			const b2Vec2 endPt = b2Vec2(
-				sensorPt.x + cos(A) * maxRange, sensorPt.y + sin(A) * maxRange);
+			const b2Vec2 endPt =
+				b2Vec2(sensorPt.x + cos(A) * maxRange, sensorPt.y + sin(A) * maxRange);
 
 			callback.hit_ = false;
 			world_->getBox2DWorld()->RayCast(&callback, sensorPt, endPt);
@@ -420,8 +408,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 			if (scan.getScanRangeValidity(i))
 			{
 				lastScan->setScanRange(
-					i,
-					std::min(lastScan->getScanRange(i), scan.getScanRange(i)));
+					i, std::min(lastScan->getScanRange(i), scan.getScanRange(i)));
 				lastScan->setScanRangeValidity(i, true);
 			}
 		}
@@ -458,11 +445,9 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		if (!has_to_render_.has_value()) return;
 	}
 
-	auto tleWhole = mrpt::system::CTimeLoggerEntry(
-		world_->getTimeLogger(), "sensor.2Dlidar");
+	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar");
 
-	auto tle1 = mrpt::system::CTimeLoggerEntry(
-		world_->getTimeLogger(), "sensor.2Dlidar.acqGuiMtx");
+	auto tle1 = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar.acqGuiMtx");
 
 	tle1.stop();
 
@@ -519,10 +504,9 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const bool scanIsCW = (lastAngle > firstAngle);
 	ASSERT_NEAR_(std::abs(lastAngle - firstAngle), curObs->aperture, 1e-3);
 
-	const unsigned int numRenders =
-		std::ceil((curObs->aperture / camModel_FOV) - 1e-3);
-	const auto numRaysPerRender = mrpt::round(
-		nRays * std::min<double>(1.0, (camModel_FOV / curObs->aperture)));
+	const unsigned int numRenders = std::ceil((curObs->aperture / camModel_FOV) - 1e-3);
+	const auto numRaysPerRender =
+		mrpt::round(nRays * std::min<double>(1.0, (camModel_FOV / curObs->aperture)));
 
 	ASSERT_(numRaysPerRender > 0);
 
@@ -539,12 +523,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		for (int i = 0; i < numRaysPerRender; i++)
 		{
 			const auto ang = (scanIsCW ? -1 : 1) *
-							 (camModel_FOV * 0.5 -
-							  i * camModel_FOV / (numRaysPerRender - 1));
+							 (camModel_FOV * 0.5 - i * camModel_FOV / (numRaysPerRender - 1));
 
 			const auto pixelIdx = mrpt::saturate_val<int>(
-				mrpt::round(camModel.cx() - camModel.fx() * std::tan(ang)), 0,
-				camModel.ncols - 1);
+				mrpt::round(camModel.cx() - camModel.fx() * std::tan(ang)), 0, camModel.ncols - 1);
 
 			angleIdx2pixelIdx_.at(i) = pixelIdx;
 			angleIdx2secant_.at(i) = 1.0f / std::cos(ang);
@@ -589,21 +571,20 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
 		const double thisRenderMidAngle =
-			firstAngle + (camModel_FOV / 2.0 + camModel_FOV * renderIdx) *
-							 (scanIsCW ? 1 : -1);
+			firstAngle + (camModel_FOV / 2.0 + camModel_FOV * renderIdx) * (scanIsCW ? 1 : -1);
 
-		const auto depthSensorPose = vehiclePose + curObs->sensorPose +
-									 mrpt::poses::CPose3D::FromYawPitchRoll(
-										 thisRenderMidAngle, 0.0, 0.0) +
-									 fixedAxisConventionRot;
+		const auto depthSensorPose =
+			vehiclePose + curObs->sensorPose +
+			mrpt::poses::CPose3D::FromYawPitchRoll(thisRenderMidAngle, 0.0, 0.0) +
+			fixedAxisConventionRot;
 
 		// Camera pose: vehicle + relativePoseOnVehicle:
 		// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
 		// the camera to look forward:
 		cam.setPose(depthSensorPose);
 
-		auto tleRender = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.2Dlidar.renderSubScan");
+		auto tleRender =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar.renderSubScan");
 
 		fbo_renderer_depth_->render_depth(world3DScene, depthImage);
 
@@ -612,8 +593,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		// Add random noise:
 		if (rangeStdNoise_ > 0)
 		{
-			auto tleStore = mrpt::system::CTimeLoggerEntry(
-				world_->getTimeLogger(), "sensor.2Dlidar.noise");
+			auto tleStore =
+				mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar.noise");
 
 			// Each thread must create its own rng:
 			thread_local mrpt::random::CRandomGenerator rng;
@@ -624,8 +605,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			{
 				if (d[i] == 0) continue;  // it was an invalid ray return.
 
-				const float dNoisy =
-					d[i] + rng.drawGaussian1D(0, rangeStdNoise_);
+				const float dNoisy = d[i] + rng.drawGaussian1D(0, rangeStdNoise_);
 
 				if (dNoisy < 0 || dNoisy > curObs->maxRange) continue;
 
@@ -633,8 +613,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			}
 		}
 
-		auto tleStore = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.2Dlidar.storeObs");
+		auto tleStore =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar.storeObs");
 
 		// Convert depth into range and store into scan observation:
 		for (int i = 0; i < numRaysPerRender; i++)
@@ -668,8 +648,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	// Store generated obs:
 	{
-		auto tle3 = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.2Dlidar.acqObsMtx");
+		auto tle3 =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar.acqObsMtx");
 
 		std::lock_guard<std::mutex> csl(last_scan_cs_);
 		last_scan_ = std::move(curObs);
@@ -679,8 +659,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	{
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
 
-		auto tlePub = mrpt::system::CTimeLoggerEntry(
-			world_->getTimeLogger(), "sensor.2Dlidar.report");
+		auto tlePub =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar.report");
 
 		// publish as generic Protobuf (mrpt serialized) object:
 		SensorBase::reportNewObservation(last_scan_, *has_to_render_);
@@ -707,7 +687,6 @@ void LaserScanner::registerOnServer(mvsim::Client& c)
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	// Topic:
 	if (!publishTopic_.empty())
-		c.advertiseTopic<mvsim_msgs::ObservationLidar2D>(
-			publishTopic_ + "_scan"s);
+		c.advertiseTopic<mvsim_msgs::ObservationLidar2D>(publishTopic_ + "_scan"s);
 #endif
 }

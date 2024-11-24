@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -11,7 +11,7 @@
 
 // clang-format off
 #define MVSIM_MAJOR_VERSION 0
-#define MVSIM_MINOR_VERSION 8
+#define MVSIM_MINOR_VERSION 11
 #define MVSIM_PATCH_VERSION 2
 
 #define MVSIM_STR_EXP(__A) #__A

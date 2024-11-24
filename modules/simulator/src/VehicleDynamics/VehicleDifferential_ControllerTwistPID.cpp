@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -14,8 +14,7 @@
 using namespace mvsim;
 using namespace std;
 
-DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(
-	DynamicsDifferential& veh)
+DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(DynamicsDifferential& veh)
 	: ControllerBase(veh)
 {
 	// Get distance between wheels:
@@ -27,8 +26,7 @@ DynamicsDifferential::ControllerTwistPID::ControllerTwistPID(
 
 // See base class docs
 void DynamicsDifferential::ControllerTwistPID::control_step(
-	const DynamicsDifferential::TControllerInput& ci,
-	DynamicsDifferential::TControllerOutput& co)
+	const DynamicsDifferential::TControllerInput& ci, DynamicsDifferential::TControllerOutput& co)
 {
 	const auto sp = setpoint();
 
@@ -75,8 +73,7 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	}
 }
 
-void DynamicsDifferential::ControllerTwistPID::load_config(
-	const rapidxml::xml_node<char>& node)
+void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_node<char>& node)
 {
 	TParameterDefinitions params;
 	params["KP"] = TParamEntry("%lf", &KP);
@@ -133,8 +130,11 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 	if (in.js)
 	{
 		const auto& js = in.js.value();
-		setpoint_.vx = -js.y * joyMaxLinSpeed;
-		setpoint_.omega = -js.x * joyMaxAngSpeed;
+		const float js_x = js.axes[0];
+		const float js_y = js.axes[1];
+
+		setpoint_.vx = -js_y * joyMaxLinSpeed;
+		setpoint_.omega = -js_x * joyMaxAngSpeed;
 
 		if (js.buttons.size() >= 7)
 		{
@@ -167,6 +167,5 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 	}
 
 	out.append_gui_lines += mrpt::format(
-		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx,
-		180.0 / M_PI * setpoint_.omega);
+		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx, 180.0 / M_PI * setpoint_.omega);
 }

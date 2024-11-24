@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -17,14 +17,13 @@
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-#include <mvsim/mvsim-msgs/ObservationLidar2D.pb.h>
+// #include <mvsim/mvsim-msgs/ObservationXXX.pb.h>
 #endif
 
 using namespace mvsim;
 using namespace rapidxml;
 
-IMU::IMU(Simulable& parent, const rapidxml::xml_node<char>* root)
-	: SensorBase(parent)
+IMU::IMU(Simulable& parent, const rapidxml::xml_node<char>* root) : SensorBase(parent)
 {
 	IMU::loadConfigFrom(root);
 }
@@ -40,10 +39,8 @@ void IMU::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["pose"] = TParamEntry("%pose2d_ptr3d", &obs_model_.sensorPose);
 	params["pose_3d"] = TParamEntry("%pose3d", &obs_model_.sensorPose);
 	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
-	params["angular_velocity_std_noise"] =
-		TParamEntry("%lf", &angularVelocityStdNoise_);
-	params["linear_acceleration_std_noise"] =
-		TParamEntry("%lf", &linearAccelerationStdNoise_);
+	params["angular_velocity_std_noise"] = TParamEntry("%lf", &angularVelocityStdNoise_);
+	params["linear_acceleration_std_noise"] = TParamEntry("%lf", &linearAccelerationStdNoise_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
@@ -54,8 +51,7 @@ void IMU::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void IMU::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&
-		physical,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	// 1st time?
@@ -65,8 +61,7 @@ void IMU::internalGuiUpdate(
 #if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
 #endif
-		gl_sensor_origin_corner_ =
-			mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
@@ -75,10 +70,10 @@ void IMU::internalGuiUpdate(
 		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
 	}
 
-	const mrpt::poses::CPose2D& p = vehicle_.getCPose2D();
+	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + obs_model_.sensorPose;
 
 	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
-	if (glCustomVisual_) glCustomVisual_->setPose(p + obs_model_.sensorPose);
+	if (glCustomVisual_) glCustomVisual_->setPose(p);
 }
 
 void IMU::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -102,7 +97,7 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 {
 	using mrpt::obs::CObservationIMU;
 
-	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "IMU");
+	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.IMU");
 
 	auto outObs = CObservationIMU::Create(obs_model_);
 
@@ -124,9 +119,7 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 	rng_.drawGaussian1DVector(linAccNoise, 0.0, linearAccelerationStdNoise_);
 
 	const mrpt::math::TVector3D linAccLocal =
-		vehicle_.getPose().inverseComposePoint(
-			vehicle_.getLinearAcceleration() + g) +
-		linAccNoise;
+		vehicle_.getPose().inverseComposePoint(vehicle_.getLinearAcceleration() + g) + linAccNoise;
 
 	outObs->set(mrpt::obs::IMU_X_ACC, linAccLocal.x);
 	outObs->set(mrpt::obs::IMU_Y_ACC, linAccLocal.y);

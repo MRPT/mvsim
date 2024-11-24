@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -73,8 +73,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 	const rapidxml::xml_node<char>* xml_node)
 {
 	// <chassis ...> </chassis>
-	const rapidxml::xml_node<char>* xml_chassis =
-		xml_node->first_node("chassis");
+	const rapidxml::xml_node<char>* xml_chassis = xml_node->first_node("chassis");
 	if (xml_chassis)
 	{
 		// Attribs:
@@ -89,8 +88,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 			"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
 
 		// Shape node (optional, fallback to default shape if none found)
-		const rapidxml::xml_node<char>* xml_shape =
-			xml_chassis->first_node("shape");
+		const rapidxml::xml_node<char>* xml_shape = xml_chassis->first_node("shape");
 		if (xml_shape)
 			mvsim::parse_xmlnode_shape(
 				*xml_shape, chassis_poly_,
@@ -117,8 +115,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		else
 		{
 			world_->logFmt(
-				mrpt::system::LVL_WARN,
-				"No XML entry '%s' found: using defaults for wheel #%u",
+				mrpt::system::LVL_WARN, "No XML entry '%s' found: using defaults for wheel #%u",
 				w_names[i], static_cast<unsigned int>(i));
 		}
 	}
@@ -137,8 +134,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &max_steer_ang_);
 
 		parse_xmlnode_children_as_param(
-			*xml_node, ack_ps, {},
-			"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
+			*xml_node, ack_ps, {}, "[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
 
 		// Front-left:
 		wheels_info_[WHEEL_FL].x = front_x;
@@ -153,8 +149,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 	const char* drive_names[6] = {"open_front",	  "open_rear",	 "open_4wd",
 								  "torsen_front", "torsen_rear", "torsen_4wd"};
 
-	const rapidxml::xml_node<char>* xml_drive =
-		xml_node->first_node("drivetrain");
+	const rapidxml::xml_node<char>* xml_drive = xml_node->first_node("drivetrain");
 	if (xml_drive)
 	{
 		TParameterDefinitions attribs;
@@ -177,12 +172,9 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		TParameterDefinitions drive_params;
 		drive_params["front_rear_split"] = TParamEntry("%lf", &FrontRearSplit_);
 		drive_params["front_rear_bias"] = TParamEntry("%lf", &FrontRearBias_);
-		drive_params["front_left_right_split"] =
-			TParamEntry("%lf", &FrontLRSplit_);
-		drive_params["front_left_right_bias"] =
-			TParamEntry("%lf", &FrontLRBias_);
-		drive_params["rear_left_right_split"] =
-			TParamEntry("%lf", &RearLRSplit_);
+		drive_params["front_left_right_split"] = TParamEntry("%lf", &FrontLRSplit_);
+		drive_params["front_left_right_bias"] = TParamEntry("%lf", &FrontLRBias_);
+		drive_params["rear_left_right_split"] = TParamEntry("%lf", &RearLRSplit_);
 		drive_params["rear_left_right_bias"] = TParamEntry("%lf", &RearLRBias_);
 
 		parse_xmlnode_children_as_param(
@@ -193,12 +185,10 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 	// Vehicle controller:
 	// -------------------------------------------------
 	{
-		const rapidxml::xml_node<char>* xml_control =
-			xml_node->first_node("controller");
+		const rapidxml::xml_node<char>* xml_control = xml_node->first_node("controller");
 		if (xml_control)
 		{
-			rapidxml::xml_attribute<char>* control_class =
-				xml_control->first_attribute("class");
+			rapidxml::xml_attribute<char>* control_class = xml_control->first_attribute("class");
 			if (!control_class || !control_class->value())
 				throw runtime_error(
 					"[DynamicsAckermannDrivetrain] Missing 'class' attribute "
@@ -208,8 +198,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 			if (sCtrlClass == ControllerRawForces::class_name())
 				controller_ = std::make_shared<ControllerRawForces>(*this);
 			else if (sCtrlClass == ControllerTwistFrontSteerPID::class_name())
-				controller_ =
-					std::make_shared<ControllerTwistFrontSteerPID>(*this);
+				controller_ = std::make_shared<ControllerTwistFrontSteerPID>(*this);
 			else if (sCtrlClass == ControllerFrontSteerPID::class_name())
 				controller_ = std::make_shared<ControllerFrontSteerPID>(*this);
 			else
@@ -223,8 +212,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 	}
 
 	// Default controller:
-	if (!controller_)
-		controller_ = std::make_shared<ControllerRawForces>(*this);
+	if (!controller_) controller_ = std::make_shared<ControllerRawForces>(*this);
 }
 
 // See docs in base class:
@@ -281,9 +269,8 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 				torque_split_per_wheel[WHEEL_RR] = 0.0;
 
 				computeDiffTorqueSplit(
-					wheels_info_[WHEEL_FL].getW(),
-					wheels_info_[WHEEL_FR].getW(), FrontLRBias_, FrontLRSplit_,
-					torque_split_per_wheel[WHEEL_FL],
+					wheels_info_[WHEEL_FL].getW(), wheels_info_[WHEEL_FR].getW(), FrontLRBias_,
+					FrontLRSplit_, torque_split_per_wheel[WHEEL_FL],
 					torque_split_per_wheel[WHEEL_FR]);
 			}
 			break;
@@ -294,9 +281,8 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 				torque_split_per_wheel[WHEEL_FR] = 0.0;
 
 				computeDiffTorqueSplit(
-					wheels_info_[WHEEL_RL].getW(),
-					wheels_info_[WHEEL_RR].getW(), RearLRBias_, RearLRSplit_,
-					torque_split_per_wheel[WHEEL_RL],
+					wheels_info_[WHEEL_RL].getW(), wheels_info_[WHEEL_RR].getW(), RearLRBias_,
+					RearLRSplit_, torque_split_per_wheel[WHEEL_RL],
 					torque_split_per_wheel[WHEEL_RR]);
 			}
 			break;
@@ -313,20 +299,17 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 				double t_F = 0.0;
 				double t_R = 0.0;
 				// front-rear
-				computeDiffTorqueSplit(
-					w_F, w_R, FrontRearBias_, FrontRearSplit_, t_F, t_R);
+				computeDiffTorqueSplit(w_F, w_R, FrontRearBias_, FrontRearSplit_, t_F, t_R);
 
 				double t_FL = 0.0;
 				double t_FR = 0.0;
 				// front left-right
-				computeDiffTorqueSplit(
-					w_FL, w_FR, FrontLRBias_, FrontLRSplit_, t_FL, t_FR);
+				computeDiffTorqueSplit(w_FL, w_FR, FrontLRBias_, FrontLRSplit_, t_FL, t_FR);
 
 				double t_RL = 0.0;
 				double t_RR = 0.0;
 				// rear left-right
-				computeDiffTorqueSplit(
-					w_RL, w_RR, RearLRBias_, RearLRSplit_, t_RL, t_RR);
+				computeDiffTorqueSplit(w_RL, w_RR, RearLRBias_, RearLRSplit_, t_RL, t_RR);
 
 				torque_split_per_wheel[WHEEL_FL] = t_F * t_FL;
 				torque_split_per_wheel[WHEEL_FR] = t_F * t_FR;
@@ -348,23 +331,20 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 		ASSERT_(out_torque_per_wheel.size() == 4);
 		for (int i = 0; i < 4; i++)
 		{
-			out_torque_per_wheel[i] =
-				co.drive_torque * torque_split_per_wheel[i];
+			out_torque_per_wheel[i] = co.drive_torque * torque_split_per_wheel[i];
 		}
 
 		// Kinematically-driven steering wheels:
 		// Ackermann formulas for inner&outer weels turning angles wrt the
 		// equivalent (central) one:
 		computeFrontWheelAngles(
-			co.steer_ang, wheels_info_[WHEEL_FL].yaw,
-			wheels_info_[WHEEL_FR].yaw);
+			co.steer_ang, wheels_info_[WHEEL_FL].yaw, wheels_info_[WHEEL_FR].yaw);
 	}
 	return out_torque_per_wheel;
 }
 
 void DynamicsAckermannDrivetrain::computeFrontWheelAngles(
-	const double desired_equiv_steer_ang, double& out_fl_ang,
-	double& out_fr_ang) const
+	const double desired_equiv_steer_ang, double& out_fl_ang, double& out_fr_ang) const
 {
 	// EQ1: cot(d)+0.5*w/l = cot(do)
 	// EQ2: cot(di)=cot(do)-w/l
@@ -372,8 +352,7 @@ void DynamicsAckermannDrivetrain::computeFrontWheelAngles(
 	const double l = wheels_info_[WHEEL_FL].x - wheels_info_[WHEEL_RL].x;
 	ASSERT_(l > 0);
 	const double w_l = w / l;
-	const double delta =
-		b2Clamp(std::abs(desired_equiv_steer_ang), 0.0, max_steer_ang_);
+	const double delta = b2Clamp(std::abs(desired_equiv_steer_ang), 0.0, max_steer_ang_);
 
 	const bool delta_neg = (desired_equiv_steer_ang < 0);
 	ASSERT_LT_(delta, 0.5 * M_PI - 0.01);
@@ -381,15 +360,13 @@ void DynamicsAckermannDrivetrain::computeFrontWheelAngles(
 	const double cot_di = cot_do - w_l;
 	// delta>0: do->right, di->left wheel
 	// delta<0: do->left , di->right wheel
-	(delta_neg ? out_fr_ang : out_fl_ang) =
-		atan(1.0 / cot_di) * (delta_neg ? -1.0 : 1.0);
-	(delta_neg ? out_fl_ang : out_fr_ang) =
-		atan(1.0 / cot_do) * (delta_neg ? -1.0 : 1.0);
+	(delta_neg ? out_fr_ang : out_fl_ang) = atan(1.0 / cot_di) * (delta_neg ? -1.0 : 1.0);
+	(delta_neg ? out_fl_ang : out_fr_ang) = atan(1.0 / cot_do) * (delta_neg ? -1.0 : 1.0);
 }
 
 void DynamicsAckermannDrivetrain::computeDiffTorqueSplit(
-	const double w1, const double w2, const double diffBias,
-	const double splitRatio, double& t1, double& t2)
+	const double w1, const double w2, const double diffBias, const double splitRatio, double& t1,
+	double& t2)
 {
 	if (mrpt::signWithZero(w1) == 0.0 || mrpt::signWithZero(w2) == 0.0)
 	{
@@ -406,11 +383,10 @@ void DynamicsAckermannDrivetrain::computeDiffTorqueSplit(
 	const double delta = omegaMax - diffBias * omegaMin;
 
 	const double deltaTorque = (delta > 0) ? delta / omegaMax : 0.0f;
-	const double f1 = (w1Abs - w2Abs > 0) ? splitRatio * (1.0f - deltaTorque)
-										  : splitRatio * (1.0f + deltaTorque);
-	const double f2 = (w1Abs - w2Abs > 0)
-						  ? (1.0f - splitRatio) * (1.0f + deltaTorque)
-						  : (1.0f - splitRatio) * (1.0f - deltaTorque);
+	const double f1 =
+		(w1Abs - w2Abs > 0) ? splitRatio * (1.0f - deltaTorque) : splitRatio * (1.0f + deltaTorque);
+	const double f2 = (w1Abs - w2Abs > 0) ? (1.0f - splitRatio) * (1.0f + deltaTorque)
+										  : (1.0f - splitRatio) * (1.0f - deltaTorque);
 	const double denom = 1.0f / (f1 + f2);
 
 	t1 = f1 * denom;
@@ -418,8 +394,7 @@ void DynamicsAckermannDrivetrain::computeDiffTorqueSplit(
 }
 
 // See docs in base class:
-mrpt::math::TTwist2D DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate()
-	const
+mrpt::math::TTwist2D DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate() const
 {
 	mrpt::math::TTwist2D odo_vel;
 	// Equations:

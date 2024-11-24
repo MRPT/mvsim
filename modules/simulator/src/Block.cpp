@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -14,6 +14,7 @@
 #include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/CCylinder.h>
 #include <mrpt/opengl/CPolyhedron.h>
+#include <mrpt/opengl/CSetOfTriangles.h>
 #include <mrpt/opengl/CSphere.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/version.h>
@@ -46,13 +47,10 @@ Block::Block(World* parent) : VisualObject(parent), Simulable(parent)
 
 /** Register a new class of vehicles from XML description of type
  * "<vehicle:class name='name'>...</vehicle:class>".  */
-void Block::register_block_class(
-	const World& parent, const rapidxml::xml_node<char>* xml_node)
+void Block::register_block_class(const World& parent, const rapidxml::xml_node<char>* xml_node)
 {
 	// Sanity checks:
-	if (!xml_node)
-		throw runtime_error(
-			"[Block::register_vehicle_class] XML node is nullptr");
+	if (!xml_node) throw runtime_error("[Block::register_vehicle_class] XML node is nullptr");
 	if (0 != strcmp(xml_node->name(), "block:class"))
 		throw runtime_error(mrpt::format(
 			"[Block::register_block_class] XML element is '%s' "
@@ -71,8 +69,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	if (!root) throw runtime_error("[Block::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "block"))
 		throw runtime_error(mrpt::format(
-			"[Block::factory] XML root element is '%s' ('block' expected)",
-			root->name()));
+			"[Block::factory] XML root element is '%s' ('block' expected)", root->name()));
 
 	// "class": When there is a 'class="XXX"' attribute, look for each parameter
 	//  in the set of "root" + "class_root" XML nodes:
@@ -82,15 +79,12 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	{
 		// Always search in root. Also in the class root, if any:
 		nodes.add(root);
-		if (const xml_attribute<>* block_class = root->first_attribute("class");
-			block_class)
+		if (const xml_attribute<>* block_class = root->first_attribute("class"); block_class)
 		{
 			const string sClassName = block_class->value();
-			if (class_root = block_classes_registry.get(sClassName);
-				!class_root)
+			if (class_root = block_classes_registry.get(sClassName); !class_root)
 				THROW_EXCEPTION_FMT(
-					"[Block::factory] Block class '%s' undefined",
-					sClassName.c_str());
+					"[Block::factory] Block class '%s' undefined", sClassName.c_str());
 
 			nodes.add(class_root);
 		}
@@ -117,19 +111,13 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		}
 	}
 
-	// Common setup for simulable objects:
-	// -----------------------------------------------------------
-	block->parseSimulable(nodes);
-
 	// Params:
 	// -----------------------------------------------------------
 	parse_xmlnode_children_as_param(
-		*root, block->params_, parent->user_defined_variables(),
-		"[Block::factory]");
+		*root, block->params_, parent->user_defined_variables(), "[Block::factory]");
 	if (class_root)
 		parse_xmlnode_children_as_param(
-			*class_root, block->params_, parent->user_defined_variables(),
-			"[Block::factory]");
+			*class_root, block->params_, parent->user_defined_variables(), "[Block::factory]");
 
 	// Custom visualization 3D model:
 	// -----------------------------------------------------------
@@ -138,8 +126,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	// Shape node (optional, fallback to default shape if none found)
 	if (const auto* xml_shape = nodes.first_node("shape"); xml_shape)
 	{
-		mvsim::parse_xmlnode_shape(
-			*xml_shape, block->block_poly_, "[Block::factory]");
+		mvsim::parse_xmlnode_shape(*xml_shape, block->block_poly_, "[Block::factory]");
 		block->updateMaxRadiusFromPoly();
 	}
 	else if (const auto* xml_geom = nodes.first_node("geometry"); xml_geom)
@@ -148,8 +135,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	}
 
 	// Auto shape node from visual?
-	if (const rapidxml::xml_node<char>* xml_shape_viz =
-			nodes.first_node("shape_from_visual");
+	if (const rapidxml::xml_node<char>* xml_shape_viz = nodes.first_node("shape_from_visual");
 		xml_shape_viz)
 	{
 		const auto& bbVis = block->collisionShape();
@@ -186,6 +172,10 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 	block->updateMaxRadiusFromPoly();
 
+	// Common setup for simulable objects:
+	// -----------------------------------------------------------
+	block->parseSimulable(nodes);
+
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
 	block->create_multibody_system(*parent->getBox2DWorld());
@@ -219,11 +209,10 @@ Block::Ptr Block::factory(World* parent, const std::string& xml_text)
 	}
 	catch (rapidxml::parse_error& e)
 	{
-		unsigned int line =
-			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
+		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
 		throw std::runtime_error(mrpt::format(
-			"[Block::factory] XML parse error (Line %u): %s",
-			static_cast<unsigned>(line), e.what()));
+			"[Block::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line),
+			e.what()));
 	}
 	return Block::factory(parent, xml.first_node());
 }
@@ -242,8 +231,7 @@ void Block::simul_post_timestep(const TSimulContext& context)
 
 void Block::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	bool childrenOnly)
+	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly)
 {
 	// 1st time call?? -> Create objects
 	// ----------------------------------
@@ -349,8 +337,7 @@ void Block::create_multibody_system(b2World& world)
 		ASSERT_(nPts >= 3);
 		ASSERT_LE_(nPts, (size_t)b2_maxPolygonVertices);
 		std::vector<b2Vec2> pts(nPts);
-		for (size_t i = 0; i < nPts; i++)
-			pts[i] = b2Vec2(block_poly_[i].x, block_poly_[i].y);
+		for (size_t i = 0; i < nPts; i++) pts[i] = b2Vec2(block_poly_[i].x, block_poly_[i].y);
 
 		b2PolygonShape blockPoly;
 		blockPoly.Set(&pts[0], nPts);
@@ -387,15 +374,13 @@ void Block::create_multibody_system(b2World& world)
 	// Create "archor points" to simulate friction with the ground:
 	// -----------------------------------------------------------------
 	const size_t nContactPoints = 2;
-	const double weight_per_contact_point =
-		mass_ * parent()->get_gravity() / nContactPoints;
+	const double weight_per_contact_point = mass_ * parent()->get_gravity() / nContactPoints;
 	const double mu = groundFriction_;
 	const double max_friction = mu * weight_per_contact_point;
 
 	// Location (local coords) of each contact-point:
 	const mrpt::math::TPoint2D pt_loc[nContactPoints] = {
-		mrpt::math::TPoint2D(maxRadius_, 0),
-		mrpt::math::TPoint2D(-maxRadius_, 0)};
+		mrpt::math::TPoint2D(maxRadius_, 0), mrpt::math::TPoint2D(-maxRadius_, 0)};
 
 	b2FrictionJointDef fjd;
 
@@ -411,20 +396,18 @@ void Block::create_multibody_system(b2World& world)
 		fjd.maxForce = max_friction;
 		fjd.maxTorque = 0;
 
-		b2FrictionJoint* b2_friction = dynamic_cast<b2FrictionJoint*>(
-			world_->getBox2DWorld()->CreateJoint(&fjd));
+		b2FrictionJoint* b2_friction =
+			dynamic_cast<b2FrictionJoint*>(world_->getBox2DWorld()->CreateJoint(&fjd));
 		friction_joints_.push_back(b2_friction);
 	}
 }
 
-void Block::apply_force(
-	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
+void Block::apply_force(const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
 	if (intangible_) return;
 	ASSERT_(b2dBody_);
 	// Application point -> world coords
-	const b2Vec2 wPt =
-		b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
+	const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
 	b2dBody_->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }
 
@@ -443,10 +426,7 @@ void Block::setIsStatic(bool b)
 }
 
 // Protected ctor:
-DummyInvisibleBlock::DummyInvisibleBlock(World* parent)
-	: VisualObject(parent), Simulable(parent)
-{
-}
+DummyInvisibleBlock::DummyInvisibleBlock(World* parent) : VisualObject(parent), Simulable(parent) {}
 
 void DummyInvisibleBlock::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
@@ -458,82 +438,193 @@ void DummyInvisibleBlock::internalGuiUpdate(
 	for (auto& s : sensors_) s->guiUpdate(viz, physical);
 }
 
-void Block::internal_parseGeometry(
-	const rapidxml::xml_node<char>& xml_geom_node)
+void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node)
 {
-	std::string type;  // cylinder, sphere, etc.
-	float radius = 0;
-	float length = 0, lx = 0, ly = 0, lz = 0;
-	int vertex_count = 0;
+	using namespace mrpt::literals;	 // _deg
 
-	const TParameterDefinitions params = {
-		{"type", {"%s", &type}},
-		{"radius", {"%f", &radius}},
-		{"length", {"%f", &length}},
-		{"lx", {"%f", &lx}},
-		{"ly", {"%f", &ly}},
-		{"lz", {"%f", &lz}},
-		{"vertex_count", {"%i", &vertex_count}},
-	};
+	auto& _ = geomParams_;
 
 	parse_xmlnode_attribs(
-		xml_geom_node, params, world_->user_defined_variables(),
+		xml_geom_node, _.params, world_->user_defined_variables(),
 		"[Block::internal_parseGeometry]");
 
-	if (type.empty())
+	if (_.typeStr.empty())
 	{
 		THROW_EXCEPTION(
 			"Geometry type attribute is missing, i.e. <geometry type='...' ... "
 			"/>");
 	}
+	// This will throw on error:
+	_.type = mrpt::typemeta::str2enum<GeometryType>(_.typeStr);
 
-	if (type == "cylinder")
+	switch (_.type)
 	{
-		ASSERTMSG_(
-			radius > 0, "Missing 'radius' attribute for cylinder geometry");
-		ASSERTMSG_(
-			length > 0, "Missing 'length' attribute for cylinder geometry");
+		case GeometryType::Cylinder:
+		{
+			ASSERTMSG_(_.radius > 0, "Missing 'radius' attribute for cylinder geometry");
+			ASSERTMSG_(_.length > 0, "Missing 'length' attribute for cylinder geometry");
 
-		if (vertex_count == 0) vertex_count = 10;  // default
+			if (_.vertex_count == 0) _.vertex_count = 10;  // default
 
-		auto glCyl = mrpt::opengl::CCylinder::Create();
-		glCyl->setHeight(length);
-		glCyl->setRadius(radius);
-		glCyl->setSlicesCount(vertex_count);
-		glCyl->setColor_u8(block_color_);
-		addCustomVisualization(glCyl);
-	}
-	else if (type == "sphere")
-	{
-		ASSERTMSG_(
-			radius > 0, "Missing 'radius' attribute for cylinder geometry");
+			auto glCyl = mrpt::opengl::CCylinder::Create();
+			glCyl->setHeight(_.length);
+			glCyl->setRadius(_.radius);
+			glCyl->setSlicesCount(_.vertex_count);
+			glCyl->setColor_u8(block_color_);
+			addCustomVisualization(glCyl);
+		}
+		break;
 
-		if (vertex_count == 0) vertex_count = 10;  // default
+		case GeometryType::Sphere:
+		{
+			ASSERTMSG_(_.radius > 0, "Missing 'radius' attribute for cylinder geometry");
 
-		auto glSph = mrpt::opengl::CSphere::Create(radius, vertex_count);
-		glSph->setColor_u8(block_color_);
-		addCustomVisualization(glSph);
-	}
-	else if (type == "box")
-	{
-		ASSERTMSG_(lx > 0, "Missing 'lx' attribute for box geometry");
-		ASSERTMSG_(ly > 0, "Missing 'ly' attribute for box geometry");
-		ASSERTMSG_(lz > 0, "Missing 'lz' attribute for box geometry");
+			if (_.vertex_count == 0) _.vertex_count = 10;  // default
 
-		auto glBox = mrpt::opengl::CBox::Create();
-		glBox->setBoxCorners({0, 0, 0}, {lx, ly, lz});
-		glBox->setColor_u8(block_color_);
-		addCustomVisualization(glBox);
-	}
-	else
-	{
-		THROW_EXCEPTION_FMT(
-			"Unknown type in <geometry type='%s'...>", type.c_str());
-	}
+			auto glSph = mrpt::opengl::CSphere::Create(_.radius, _.vertex_count);
+			glSph->setColor_u8(block_color_);
+			addCustomVisualization(glSph);
+		}
+		break;
+
+		case GeometryType::Box:
+		{
+			ASSERTMSG_(_.lx > 0, "Missing 'lx' attribute for box geometry");
+			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for box geometry");
+			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for box geometry");
+
+			auto glBox = mrpt::opengl::CBox::Create();
+			glBox->setBoxCorners({0, 0, 0}, {_.lx, _.ly, _.lz});
+			glBox->setColor_u8(block_color_);
+			addCustomVisualization(glBox);
+		}
+		break;
+
+		case mvsim::GeometryType::SemiCylinderBump:
+		{
+			ASSERTMSG_(_.lx > 0, "Missing 'lx' attribute for semi_cylinder_bump geometry");
+			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for semi_cylinder_bump geometry");
+			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for semi_cylinder_bump geometry");
+
+			if (_.vertex_count == 0) _.vertex_count = 10;  // default
+
+			auto glCyl = mrpt::opengl::CCylinder::Create();
+			glCyl->setHeight(_.lx);
+			glCyl->setRadius(_.ly * 0.5);
+			glCyl->setScale(2 * _.lz / _.ly, 1.0, 1.0);
+
+			glCyl->setSlicesCount(_.vertex_count);
+			glCyl->setColor_u8(block_color_);
+
+			addCustomVisualization(
+				glCyl, mrpt::poses::CPose3D::FromXYZYawPitchRoll(
+						   -0.5 * _.lx, .0, .0, .0_deg, 90.0_deg, .0_deg));
+		}
+		break;
+
+		case mvsim::GeometryType::Ramp:
+		{
+			ASSERTMSG_(_.lx > 0, "Missing 'lx' attribute for ramp geometry");
+			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for ramp geometry");
+			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for ramp geometry");
+
+			auto glRamp = mrpt::opengl::CSetOfTriangles::Create();
+
+			const auto p0 = mrpt::math::TPoint3Df(0, -_.ly * 0.5, 0);
+			const auto p1 = mrpt::math::TPoint3Df(_.lx, -_.ly * 0.5, _.lz);
+			const auto p2 = mrpt::math::TPoint3Df(0, _.ly * 0.5, 0);
+			const auto p3 = mrpt::math::TPoint3Df(_.lx, _.ly * 0.5, _.lz);
+			const auto p4 = mrpt::math::TPoint3Df(_.lx, -_.ly * 0.5, 0);
+			const auto p5 = mrpt::math::TPoint3Df(_.lx, _.ly * 0.5, 0);
+
+			mrpt::opengl::TTriangle t;
+			t.setColor(block_color_);
+			// T0
+			t.vertex(0) = p0;
+			t.vertex(1) = p1;
+			t.vertex(2) = p2;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T1
+			t.vertex(0) = p2;
+			t.vertex(1) = p1;
+			t.vertex(2) = p3;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T2
+			t.vertex(0) = p0;
+			t.vertex(1) = p4;
+			t.vertex(2) = p1;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T3
+			t.vertex(0) = p5;
+			t.vertex(1) = p3;
+			t.vertex(2) = p2;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T4
+			t.vertex(0) = p4;
+			t.vertex(1) = p5;
+			t.vertex(2) = p1;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+			// T5
+			t.vertex(0) = p3;
+			t.vertex(1) = p1;
+			t.vertex(2) = p5;
+			t.computeNormals();
+			glRamp->insertTriangle(t);
+
+			// done:
+			addCustomVisualization(glRamp);
+		}
+		break;
+
+		default:
+			THROW_EXCEPTION_FMT("Unknown type in <geometry type='%s'...>", _.typeStr.c_str());
+	};
 }
 
 bool Block::default_block_z_min_max() const
 {
 	// true if any of the limits is a nan:
 	return block_z_max_ != block_z_max_ || block_z_min_ != block_z_min_;
+}
+
+std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2Df& worldXY) const
+{
+	// Is the point within the block?
+	const auto& myPose = getCPose3D();
+
+	const auto localPt = myPose.inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
+
+	// Quick discard? (saves much time):
+	if (std::abs(localPt.x) > maxRadius_ && std::abs(localPt.y) > maxRadius_) return {};
+
+	// If we are close, then check the exact polygon:
+	if (!blockShape().contains({localPt.x, localPt.y})) return {};
+
+	// Yes, the query point is within my 2D shape. We need to evaluate the block height at that
+	// point:
+
+	const auto& _ = geomParams_;
+	switch (_.type)
+	{
+		case GeometryType::Cylinder:
+		case GeometryType::Box:
+		case GeometryType::Invalid:
+		default:
+			return myPose.z() + block_z_max_;
+
+		case GeometryType::Ramp:
+			return myPose.z() + _.lz * localPt.x / _.lx;
+
+		case GeometryType::SemiCylinderBump:
+		{
+			const auto f =
+				std::sqrt(std::max<double>(.0, 1.0 - mrpt::square(2.0 * localPt.y / _.ly)));
+			return myPose.z() + _.lz * f;
+		}
+	};
 }

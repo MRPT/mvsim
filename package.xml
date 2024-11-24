@@ -5,7 +5,7 @@
   <description>A lightweight multivehicle simulation framework.</description>
 
   <!-- All version numbers in CMake scripts are taken from this line: -->
-  <version>0.8.2</version>
+  <version>0.11.2</version>
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
   <license>BSD</license>
@@ -21,26 +21,32 @@
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake_gmock</buildtool_depend>
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
-  <!-- COMMON DEPS -->
-  <depend>mrpt2</depend>
-  <depend>sensor_msgs</depend>
-  <depend>visualization_msgs</depend>
-  <depend>nav_msgs</depend>
-  <depend>tf2</depend>
-  <depend>tf2_geometry_msgs</depend>
-  <depend>libzmq3-dev</depend>
+  <!-- COMMON DEPS for all ROS versions -->
   <depend>boost</depend>
-  <depend>pybind11-dev</depend>
+  <depend>libzmq3-dev</depend>
+  <depend>mrpt_libgui</depend>
+  <depend>mrpt_libmaps</depend>
+  <depend>mrpt_libposes</depend>  <!-- for mrpt::tfest -->
+  <depend>mrpt_libros_bridge</depend>
+  <depend>mrpt_libtclap</depend>
+  <depend>nav_msgs</depend>
   <depend>protobuf-dev</depend>
+  <depend>pybind11-dev</depend>
   <depend>python3-pip</depend>
   <depend>python3-protobuf</depend>
   <depend>python3-venv</depend>
-  <depend>wget</depend>
+  <depend>sensor_msgs</depend>
+  <depend>stereo_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
   <depend>unzip</depend>
-
+  <depend>visualization_msgs</depend>
+  <depend>wget</depend>
+  
   <!-- ROS1 -->
   <depend           condition="$ROS_VERSION == 1">roscpp</depend>
   <depend           condition="$ROS_VERSION == 1">dynamic_reconfigure</depend>
+  <depend           condition="$ROS_VERSION == 1">rviz_plugin_tutorials</depend>
   <test_depend      condition="$ROS_VERSION == 1">gtest</test_depend>
   
   <!-- ROS2 -->

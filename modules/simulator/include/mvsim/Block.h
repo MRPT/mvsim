@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       Multiblock simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -18,6 +18,7 @@
 #include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/typemeta/TEnumType.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Sensors/SensorBase.h>
 #include <mvsim/Simulable.h>
@@ -29,6 +30,18 @@
 
 namespace mvsim
 {
+/** Geometry types for usage within the optional <geometry> XML tag of blocks \sa Block */
+enum class GeometryType : int32_t
+{
+	Invalid = -1,
+	// ----------------
+	Cylinder = 0,
+	Sphere,
+	Box,
+	Ramp,
+	SemiCylinderBump,
+};
+
 /** A non-vehicle "actor" for the simulation, typically obstacle blocks.
  */
 class Block : public VisualObject, public Simulable
@@ -44,16 +57,14 @@ class Block : public VisualObject, public Simulable
 
 	/** Register a new class of blocks from XML description of type
 	 * "<block:class name='name'>...</block:class>".  */
-	static void register_block_class(
-		const World& parent, const rapidxml::xml_node<char>* xml_node);
+	static void register_block_class(const World& parent, const rapidxml::xml_node<char>* xml_node);
 
 	// ------- Interface with "World" ------
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 	virtual void apply_force(
 		const mrpt::math::TVector2D& force,
-		const mrpt::math::TPoint2D& applyPoint =
-			mrpt::math::TPoint2D(0, 0)) override;
+		const mrpt::math::TPoint2D& applyPoint = mrpt::math::TPoint2D(0, 0)) override;
 
 	/** Create bodies, fixtures, etc. for the dynamical simulation. May be
 	 * overrided by derived classes */
@@ -123,11 +134,12 @@ class Block : public VisualObject, public Simulable
 
 	VisualObject* meAsVisualObject() override { return this; }
 
+	std::optional<float> getElevationAt(const mrpt::math::TPoint2Df& worldXY) const override;
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
 	/** user-supplied index number: must be set/get'ed with setblockIndex()
 	 * getblockIndex() (default=0) */
@@ -181,6 +193,31 @@ class Block : public VisualObject, public Simulable
 
 	void internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node);
 
+	/// Params for the <geometry> XML tag:
+	struct GeometryParams
+	{
+		GeometryParams() = default;
+
+		std::string typeStr;  // cylinder, sphere, etc.
+		GeometryType type = GeometryType::Invalid;
+
+		float radius = 0;
+		float length = 0, lx = 0, ly = 0, lz = 0;
+		int vertex_count = 0;
+
+		const TParameterDefinitions params = {
+			{"type", {"%s", &typeStr}},
+			{"radius", {"%f", &radius}},
+			{"length", {"%f", &length}},
+			{"lx", {"%f", &lx}},
+			{"ly", {"%f", &ly}},
+			{"lz", {"%f", &lz}},
+			{"vertex_count", {"%i", &vertex_count}},
+		};
+	};
+
+	GeometryParams geomParams_;
+
 	mrpt::opengl::CSetOfObjects::Ptr gl_block_;
 	mrpt::opengl::CSetOfLines::Ptr gl_forces_;
 	std::mutex force_segments_for_rendering_cs_;
@@ -227,10 +264,7 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 	/** Get the block mass */
 	virtual double getMass() const { return 0; }
 
-	void add_sensor(const SensorBase::Ptr& sensor)
-	{
-		sensors_.push_back(sensor);
-	}
+	void add_sensor(const SensorBase::Ptr& sensor) { sensors_.push_back(sensor); }
 
    protected:
 	void internalGuiUpdate(
@@ -251,3 +285,12 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 };	// end Block
 
 }  // namespace mvsim
+
+// TTypeEnum macros:
+MRPT_ENUM_TYPE_BEGIN_NAMESPACE(mvsim, mvsim::GeometryType)
+MRPT_FILL_ENUM_CUSTOM_NAME(GeometryType::Cylinder, "cylinder");
+MRPT_FILL_ENUM_CUSTOM_NAME(GeometryType::Sphere, "sphere");
+MRPT_FILL_ENUM_CUSTOM_NAME(GeometryType::Box, "box");
+MRPT_FILL_ENUM_CUSTOM_NAME(GeometryType::Ramp, "ramp");
+MRPT_FILL_ENUM_CUSTOM_NAME(GeometryType::SemiCylinderBump, "semi_cylinder_bump");
+MRPT_ENUM_TYPE_END()

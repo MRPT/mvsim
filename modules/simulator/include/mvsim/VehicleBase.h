@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -26,6 +26,7 @@
 #include <mvsim/Wheel.h>
 #include <mvsim/basic_types.h>
 
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <string>
@@ -59,8 +60,7 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 	virtual void apply_force(
 		const mrpt::math::TVector2D& force,
-		const mrpt::math::TPoint2D& applyPoint =
-			mrpt::math::TPoint2D(0, 0)) override;
+		const mrpt::math::TPoint2D& applyPoint = mrpt::math::TPoint2D(0, 0)) override;
 
 	/** Create bodies, fixtures, etc. for the dynamical simulation. May be
 	 * overrided by derived classes */
@@ -78,10 +78,7 @@ class VehicleBase : public VisualObject, public Simulable
 	}  //!< In local coordinates (this excludes the mass of wheels)
 
 	size_t getNumWheels() const { return wheels_info_.size(); }
-	const Wheel& getWheelInfo(const size_t idx) const
-	{
-		return wheels_info_[idx];
-	}
+	const Wheel& getWheelInfo(const size_t idx) const { return wheels_info_[idx]; }
 	Wheel& getWheelInfo(const size_t idx) { return wheels_info_[idx]; }
 
 	/** Current velocity of each wheel's center point (in local coords). Call
@@ -104,10 +101,7 @@ class VehicleBase : public VisualObject, public Simulable
 
 	/** Get the 2D shape of the vehicle chassis, as set from the config file
 	 * (only used for collision detection) */
-	const mrpt::math::TPolygon2D& getChassisShape() const
-	{
-		return chassis_poly_;
-	}
+	const mrpt::math::TPolygon2D& getChassisShape() const { return chassis_poly_; }
 
 	/** Set the vehicle index in the World */
 	void setVehicleIndex(size_t idx) { vehicle_index_ = idx; }
@@ -133,16 +127,16 @@ class VehicleBase : public VisualObject, public Simulable
 	b2Fixture* get_fixture_chassis() { return fixture_chassis_; }
 	std::vector<b2Fixture*>& get_fixture_wheels() { return fixture_wheels_; }
 	const b2Fixture* get_fixture_chassis() const { return fixture_chassis_; }
-	const std::vector<b2Fixture*>& get_fixture_wheels() const
-	{
-		return fixture_wheels_;
-	}
+	const std::vector<b2Fixture*>& get_fixture_wheels() const { return fixture_wheels_; }
 
 	void freeOpenGLResources() override
 	{
 		for (auto& sensor : sensors_) sensor->freeOpenGLResources();
 	}
 	void chassisAndWheelsVisible(bool visible);
+
+	double chassisZMin() const { return chassis_z_min_; }
+	double chassisZMax() const { return chassis_z_max_; }
 
    protected:
 	std::map<std::string, std::shared_ptr<CSVLogger>> loggers_;
@@ -152,8 +146,7 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void writeLogStrings();
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
    protected:
 	// Protected ctor for class factory
@@ -162,14 +155,11 @@ class VehicleBase : public VisualObject, public Simulable
 	/** Parse node <dynamics>: The derived-class part of load_params_from_xml(),
 	 * also called in factory(). Includes parsing the <controller></controller>
 	 * block. */
-	virtual void dynamics_load_params_from_xml(
-		const rapidxml::xml_node<char>* xml_node) = 0;
+	virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node) = 0;
 
-	virtual std::vector<double> invoke_motor_controllers(
-		const TSimulContext& context) = 0;
+	virtual std::vector<double> invoke_motor_controllers(const TSimulContext& context) = 0;
 
-	virtual void invoke_motor_controllers_post_step(
-		[[maybe_unused]] const TSimulContext& context)
+	virtual void invoke_motor_controllers_post_step([[maybe_unused]] const TSimulContext& context)
 	{
 	}
 
@@ -223,10 +213,11 @@ class VehicleBase : public VisualObject, public Simulable
 	// Called from internalGuiUpdate()
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
 
-	mrpt::opengl::CSetOfObjects::Ptr glChassis_;
-	std::vector<mrpt::opengl::CSetOfObjects::Ptr> glWheels_;
+	mrpt::opengl::CSetOfObjects::Ptr glChassisViz_, glChassisPhysical_;
+	std::vector<mrpt::opengl::CSetOfObjects::Ptr> glWheelsViz_, glWheelsPhysical_;
 	mrpt::opengl::CSetOfLines::Ptr glForces_;
 	mrpt::opengl::CSetOfLines::Ptr glMotorTorques_;
+	std::atomic_bool glInit_ = false;
 
 	std::vector<mrpt::math::TSegment3D> forceSegmentsForRendering_;
 	std::vector<mrpt::math::TSegment3D> torqueSegmentsForRendering_;
@@ -262,8 +253,7 @@ extern TClassFactory_vehicleDynamics classFactory_vehicleDynamics;
 #define DECLARES_REGISTER_VEHICLE_DYNAMICS(CLASS_NAME) \
 	DECLARES_REGISTER_CLASS1(CLASS_NAME, VehicleBase, World*)
 
-#define REGISTER_VEHICLE_DYNAMICS(TEXTUAL_NAME, CLASS_NAME)          \
-	REGISTER_CLASS1(                                                 \
-		TClassFactory_vehicleDynamics, classFactory_vehicleDynamics, \
-		TEXTUAL_NAME, CLASS_NAME)
+#define REGISTER_VEHICLE_DYNAMICS(TEXTUAL_NAME, CLASS_NAME) \
+	REGISTER_CLASS1(                                        \
+		TClassFactory_vehicleDynamics, classFactory_vehicleDynamics, TEXTUAL_NAME, CLASS_NAME)
 }  // namespace mvsim

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -66,7 +66,7 @@ constexpr uintptr_t INVISIBLE_FIXTURE_USER_DATA = 1;
 
 struct TJoyStickEvent
 {
-	float x = .0f, y = .0f, z = .0f;
+	std::vector<float> axes;
 	std::vector<bool> buttons;
 
 	TJoyStickEvent() = default;

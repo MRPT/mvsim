@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -24,6 +24,7 @@
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
+#include <mrpt/topography/data_types.h>
 #include <mvsim/Block.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Joystick.h>
@@ -35,6 +36,8 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <set>
+#include <unordered_map>
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 // forward declarations:
@@ -91,8 +94,7 @@ class World : public mrpt::system::COutputLogger
 	 * error message
 	 */
 	void load_from_XML(
-		const std::string& xml_text,
-		const std::string& fileNameForPath = std::string("."));
+		const std::string& xml_text, const std::string& fileNameForPath = std::string("."));
 	/** @} */
 
 	/** \name Simulation execution
@@ -121,8 +123,7 @@ class World : public mrpt::system::COutputLogger
 	{
 		auto lck = mrpt::lockHelper(simul_time_mtx_);
 		ASSERT_(simul_start_wallclock_time_.has_value());
-		return mrpt::Clock::fromDouble(
-			simulTime_ + simul_start_wallclock_time_.value());
+		return mrpt::Clock::fromDouble(simulTime_ + simul_start_wallclock_time_.value());
 	}
 
 	/// Simulation fixed-time interval for numerical integration
@@ -177,23 +178,16 @@ class World : public mrpt::system::COutputLogger
 	 */
 	void update_GUI(TUpdateGUIParams* params = nullptr);
 
-	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const
-	{
-		return gui_.gui_win;
-	}
+	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const { return gui_.gui_win; }
 
-	const mrpt::math::TPoint3D& gui_mouse_point() const
-	{
-		return gui_.clickedPt;
-	}
+	const mrpt::math::TPoint3D& gui_mouse_point() const { return gui_.clickedPt; }
 
 	/** If !=null, a set of objects to be rendered merged with the default
 	 * visualization. Lock the mutex gui_user_objects_mtx_ while writing.
 	 * There are two sets of objects: "viz" for visualization only, "physical"
 	 * for objects which should be detected by sensors.
 	 */
-	mrpt::opengl::CSetOfObjects::Ptr guiUserObjectsPhysical_,
-		guiUserObjectsViz_;
+	mrpt::opengl::CSetOfObjects::Ptr guiUserObjectsPhysical_, guiUserObjectsViz_;
 	std::mutex guiUserObjectsMtx_;
 
 	/// Update 3D vehicles, sensors, run render-based sensors, etc:
@@ -201,8 +195,7 @@ class World : public mrpt::system::COutputLogger
 	/// mode.
 	void internalGraphicsLoopTasksForSimulation();
 
-	void internalRunSensorsOn3DScene(
-		mrpt::opengl::COpenGLScene& physicalObjects);
+	void internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObjects);
 
 	void internalUpdate3DSceneObjects(
 		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
@@ -297,26 +290,17 @@ class World : public mrpt::system::COutputLogger
 	/** \name Access inner working objects
 	  @{*/
 	std::unique_ptr<b2World>& getBox2DWorld() { return box2d_world_; }
-	const std::unique_ptr<b2World>& getBox2DWorld() const
-	{
-		return box2d_world_;
-	}
+	const std::unique_ptr<b2World>& getBox2DWorld() const { return box2d_world_; }
 	b2Body* getBox2DGroundBody() { return b2_ground_body_; }
 	const VehicleList& getListOfVehicles() const { return vehicles_; }
 	VehicleList& getListOfVehicles() { return vehicles_; }
 	const BlockList& getListOfBlocks() const { return blocks_; }
 	BlockList& getListOfBlocks() { return blocks_; }
-	const WorldElementList& getListOfWorldElements() const
-	{
-		return worldElements_;
-	}
+	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
 
 	/// Always lock/unlock getListOfSimulableObjectsMtx() before using this:
 	SimulableList& getListOfSimulableObjects() { return simulableObjects_; }
-	const SimulableList& getListOfSimulableObjects() const
-	{
-		return simulableObjects_;
-	}
+	const SimulableList& getListOfSimulableObjects() const { return simulableObjects_; }
 	auto& getListOfSimulableObjectsMtx() { return simulableObjectsMtx_; }
 
 	mrpt::system::CTimeLogger& getTimeLogger() { return timlogger_; }
@@ -357,8 +341,8 @@ class World : public mrpt::system::COutputLogger
 	/** \name Optional user hooks
 	  @{*/
 
-	using on_observation_callback_t = std::function<void(
-		const Simulable& /*veh*/, const mrpt::obs::CObservation::Ptr& /*obs*/)>;
+	using on_observation_callback_t =
+		std::function<void(const Simulable& /*veh*/, const mrpt::obs::CObservation::Ptr& /*obs*/)>;
 
 	void registerCallbackOnObservation(const on_observation_callback_t& f)
 	{
@@ -366,8 +350,7 @@ class World : public mrpt::system::COutputLogger
 	}
 
 	/** Calls all registered callbacks: */
-	void dispatchOnObservation(
-		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
+	void dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
 	/** @} */
 
@@ -400,6 +383,21 @@ class World : public mrpt::system::COutputLogger
 
 	bool evaluate_tag_if(const rapidxml::xml_node<char>& node) const;
 
+	float collisionThreshold() const { return collisionThreshold_; }
+
+	/** Returns the list of "z" coordinate or "elevations" for all simulable objects at a given
+	 *  world-frame 2D coordinates (x,y). If no object reports any height, the value "0.0" will be
+	 * always reported by default. In multistorey worlds, for example, this will return the height
+	 * of each floor for the queried point.
+	 */
+	std::set<float> getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const;
+
+	/// with query points the center of a wheel, this returns the highest "ground" under it, or .0
+	/// if nothing found.
+	float getHighestElevationUnder(const mrpt::math::TPoint3Df& queryPt) const;
+
+	void internal_simul_pre_step_terrain_elevation();
+
    private:
 	friend class VehicleBase;
 	friend class Block;
@@ -425,6 +423,9 @@ class World : public mrpt::system::COutputLogger
 	/** Velocity and position iteration count (refer to libbox2d docs) */
 	int b2dVelIters_ = 8, b2dPosIters_ = 3;
 
+	/** Distance between two body edges to be considered a collision. */
+	float collisionThreshold_ = 0.03f;
+
 	std::string serverAddress_ = "localhost";
 
 	/** If non-empty, all observations will be saved to a .rawlog */
@@ -432,15 +433,29 @@ class World : public mrpt::system::COutputLogger
 
 	double rawlog_odometry_rate_ = 10.0;  //!< In Hz.
 
+	/** If non-empty, the ground truth trajectory of all vehicles will be saved
+	 * to a text file in the TUM trajectory format */
+	std::string save_ground_truth_trajectory_;
+
+	double ground_truth_rate_ = 50.0;  //!< In Hz.
+
+	double max_slope_to_collide_ = 0.30;
+	double min_slope_to_collide_ = -0.50;
+
 	const TParameterDefinitions otherWorldParams_ = {
 		{"server_address", {"%s", &serverAddress_}},
 		{"gravity", {"%lf", &gravity_}},
 		{"simul_timestep", {"%lf", &simulTimestep_}},
 		{"b2d_vel_iters", {"%i", &b2dVelIters_}},
 		{"b2d_pos_iters", {"%i", &b2dPosIters_}},
+		{"collision_threshold", {"%f", &collisionThreshold_}},
 		{"joystick_enabled", {"%bool", &joystickEnabled_}},
 		{"save_to_rawlog", {"%s", &save_to_rawlog_}},
 		{"rawlog_odometry_rate", {"%lf", &rawlog_odometry_rate_}},
+		{"save_ground_truth_trajectory", {"%s", &save_ground_truth_trajectory_}},
+		{"ground_truth_rate", {"%lf", &ground_truth_rate_}},
+		{"max_slope_to_collide", {"%lf", &max_slope_to_collide_}},
+		{"min_slope_to_collide", {"%lf", &min_slope_to_collide_}},
 	};
 
 	/** User-defined variables as defined via `<variable name='' value='' />`
@@ -458,10 +473,8 @@ class World : public mrpt::system::COutputLogger
 
 	/// This private container will be filled with objects in the public
 	/// gui_user_objects_
-	mrpt::opengl::CSetOfObjects::Ptr glUserObjsPhysical_ =
-		mrpt::opengl::CSetOfObjects::Create();
-	mrpt::opengl::CSetOfObjects::Ptr glUserObjsViz_ =
-		mrpt::opengl::CSetOfObjects::Create();
+	mrpt::opengl::CSetOfObjects::Ptr glUserObjsPhysical_ = mrpt::opengl::CSetOfObjects::Create();
+	mrpt::opengl::CSetOfObjects::Ptr glUserObjsViz_ = mrpt::opengl::CSetOfObjects::Create();
 
 	// ------- GUI options -----
 	struct TGUI_Options
@@ -504,8 +517,7 @@ class World : public mrpt::system::COutputLogger
 		};
 
 		TGUI_Options() = default;
-		void parse_from(
-			const rapidxml::xml_node<char>& node, COutputLogger& logger);
+		void parse_from(const rapidxml::xml_node<char>& node, COutputLogger& logger);
 	};
 
 	/** Some of these options are only used the first time the GUI window is
@@ -516,8 +528,7 @@ class World : public mrpt::system::COutputLogger
 	{
 		LightOptions() = default;
 
-		void parse_from(
-			const rapidxml::xml_node<char>& node, COutputLogger& logger);
+		void parse_from(const rapidxml::xml_node<char>& node, COutputLogger& logger);
 
 		bool enable_shadows = true;
 		int shadow_map_size = 2048;
@@ -550,15 +561,43 @@ class World : public mrpt::system::COutputLogger
 			{"shadow_bias_cam2frag", {"%f", &shadow_bias_cam2frag}},
 			{"shadow_bias_normal", {"%f", &shadow_bias_normal}},
 			{"light_ambient", {"%f", &light_ambient}},
-			{"eye_distance_to_shadow_map_extension",
-			 {"%f", &eye_distance_to_shadow_map_extension}},
-			{"minimum_shadow_map_extension_ratio",
-			 {"%f", &minimum_shadow_map_extension_ratio}},
+			{"eye_distance_to_shadow_map_extension", {"%f", &eye_distance_to_shadow_map_extension}},
+			{"minimum_shadow_map_extension_ratio", {"%f", &minimum_shadow_map_extension_ratio}},
 		};
 	};
 
 	/** Options for lights */
 	LightOptions lightOptions_;
+
+   public:
+	// Options for simulating GNSS (GPS) sensors.
+	struct GeoreferenceOptions
+	{
+		GeoreferenceOptions() = default;
+
+		void parse_from(const rapidxml::xml_node<char>& node, COutputLogger& logger);
+
+		/// Latitude/longitude/height of the world (0,0,0) frame.
+		mrpt::topography::TGeodeticCoords georefCoord;
+
+		/** Optional world rotation (in radians, in degrees in the XML file)
+		 *  wrt ENU frame: 0 (default) means +X points East.
+		 */
+		double world_to_enu_rotation = .0;
+
+		const TParameterDefinitions params = {
+			{"latitude", {"%lf", &georefCoord.lat.decimal_value}},
+			{"longitude", {"%lf", &georefCoord.lon.decimal_value}},
+			{"height", {"%lf", &georefCoord.height}},
+			{"world_to_enu_rotation_deg", {"%lf_deg", &world_to_enu_rotation}},
+		};
+	};
+
+	const GeoreferenceOptions& georeferenceOptions() const { return georeferenceOptions_; }
+
+   private:
+	/** Options for lights */
+	GeoreferenceOptions georeferenceOptions_;
 
 	// -------- World contents ----------
 	/** Mutex protecting simulation objects from multi-thread access */
@@ -586,6 +625,51 @@ class World : public mrpt::system::COutputLogger
 	void internal_one_timestep(double dt);
 
 	std::mutex simulationStepRunningMtx_;
+
+	// A 2D-hash table of objects
+	struct lut_2d_coordinates_t
+	{
+		int32_t x, y;
+
+		bool operator==(const lut_2d_coordinates_t& o) const noexcept
+		{
+			return (x == o.x && y == o.y);
+		}
+	};
+
+	static lut_2d_coordinates_t xy_to_lut_coords(const mrpt::math::TPoint2Df& p);
+
+	struct LutIndexHash
+	{
+		std::size_t operator()(const lut_2d_coordinates_t& p) const noexcept
+		{
+			// These are the implicit assumptions of the reinterpret cast below:
+			static_assert(sizeof(int32_t) == sizeof(uint32_t));
+			static_assert(offsetof(lut_2d_coordinates_t, x) == 0 * sizeof(uint32_t));
+			static_assert(offsetof(lut_2d_coordinates_t, y) == 1 * sizeof(uint32_t));
+
+			const uint32_t* vec = reinterpret_cast<const uint32_t*>(&p);
+			return ((1 << 20) - 1) & (vec[0] * 73856093 ^ vec[1] * 19349663);
+		}
+		/// k1 < k2? for std::map containers
+		bool operator()(
+			const lut_2d_coordinates_t& k1, const lut_2d_coordinates_t& k2) const noexcept
+		{
+			if (k1.x != k2.x) return k1.x < k2.x;
+			return k1.y < k2.y;
+		}
+	};
+
+	using LUTCache =
+		std::unordered_map<lut_2d_coordinates_t, std::vector<Simulable::Ptr>, LutIndexHash>;
+
+	/// Ensure the cache is built and up-to-date, then return it:
+	const LUTCache& getLUTCacheOfObjects() const;
+
+	mutable LUTCache lut2d_objects_;
+	mutable bool lut2d_objects_is_up_to_date_ = false;
+
+	void internal_update_lut_cache() const;
 
 	/** GUI stuff  */
 	struct GUI
@@ -625,8 +709,7 @@ class World : public mrpt::system::COutputLogger
 	/** 3D scene with all visual objects (vehicles, obstacles, markers, etc.)
 	 *  \sa worldPhysical_
 	 */
-	mrpt::opengl::COpenGLScene::Ptr worldVisual_ =
-		mrpt::opengl::COpenGLScene::Create();
+	mrpt::opengl::COpenGLScene::Ptr worldVisual_ = mrpt::opengl::COpenGLScene::Create();
 
 	/** 3D scene with all physically observable objects: we will use this
 	 * scene as input to simulated sensors like cameras, where we don't wont
@@ -645,14 +728,11 @@ class World : public mrpt::system::COutputLogger
 	std::set<std::string> reset_collision_flags_;
 	std::mutex reset_collision_flags_mtx_;
 
-	void internal_gui_on_observation(
-		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
+	void internal_gui_on_observation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 	void internal_gui_on_observation_3Dscan(
-		const Simulable& veh,
-		const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs);
+		const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs);
 	void internal_gui_on_observation_image(
-		const Simulable& veh,
-		const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
+		const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
 
 	mrpt::math::TPoint2D internal_gui_on_image(
 		const std::string& label, const mrpt::img::CImage& im, int winPosX);
@@ -661,8 +741,7 @@ class World : public mrpt::system::COutputLogger
 
 	/** Changes the light source direction from azimuth and elevation angles (in
 	 * radians) */
-	void setLightDirectionFromAzimuthElevation(
-		const float azimuth, const float elevation);
+	void setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation);
 
 	/** @} */  // end GUI stuff
 
@@ -674,8 +753,7 @@ class World : public mrpt::system::COutputLogger
 
 	struct XmlParserContext
 	{
-		XmlParserContext(
-			const rapidxml::xml_node<char>* n, const std::string& basePath)
+		XmlParserContext(const rapidxml::xml_node<char>* n, const std::string& basePath)
 			: node(n), currentBasePath(basePath)
 		{
 		}
@@ -687,25 +765,21 @@ class World : public mrpt::system::COutputLogger
 	/// This will parse a main XML file, or its included
 	void internal_recursive_parse_XML(const XmlParserContext& ctx);
 
-	using xml_tag_parser_function_t =
-		std::function<void(const XmlParserContext&)>;
+	using xml_tag_parser_function_t = std::function<void(const XmlParserContext&)>;
 
 	std::map<std::string, xml_tag_parser_function_t> xmlParsers_;
 
 	void register_standard_xml_tag_parsers();
 
-	void register_tag_parser(
-		const std::string& xmlTagName, const xml_tag_parser_function_t& f)
+	void register_tag_parser(const std::string& xmlTagName, const xml_tag_parser_function_t& f)
 	{
 		xmlParsers_.emplace(xmlTagName, f);
 	}
 	void register_tag_parser(
-		const std::string& xmlTagName,
-		void (World::*f)(const XmlParserContext& ctx))
+		const std::string& xmlTagName, void (World::*f)(const XmlParserContext& ctx))
 	{
-		xmlParsers_.emplace(xmlTagName, [this, f](const XmlParserContext& ctx) {
-			(this->*f)(ctx);
-		});
+		xmlParsers_.emplace(
+			xmlTagName, [this, f](const XmlParserContext& ctx) { (this->*f)(ctx); });
 	}
 
 	// ======== XML parser tags ========
@@ -718,6 +792,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_block_class(const XmlParserContext& ctx);
 	void parse_tag_gui(const XmlParserContext& ctx);
 	void parse_tag_lights(const XmlParserContext& ctx);
+	void parse_tag_georeference(const XmlParserContext& ctx);
 	void parse_tag_walls(const XmlParserContext& ctx);
 	void parse_tag_include(const XmlParserContext& ctx);
 	void parse_tag_variable(const XmlParserContext& ctx);
@@ -728,29 +803,52 @@ class World : public mrpt::system::COutputLogger
 
 	mutable RemoteResourcesManager remoteResources_;
 
-	void internalOnObservation(
-		const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
+	void internalOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
 	void internalPostSimulStepForRawlog();
+	void internalPostSimulStepForTrajectory();
 
 	std::mutex rawlog_io_mtx_;
-	std::map<std::string, std::shared_ptr<mrpt::io::CFileGZOutputStream>>
-		rawlog_io_per_veh_;
+	std::map<std::string, std::shared_ptr<mrpt::io::CFileGZOutputStream>> rawlog_io_per_veh_;
 	std::optional<double> rawlog_last_odom_time_;
+
+	std::mutex gt_io_mtx_;
+	std::map<std::string, std::fstream> gt_io_per_veh_;
+	std::optional<double> gt_last_time_;
+
+	// ============ Elevation Field Collision artifacts ==============
+	struct TFixturePtr
+	{
+		TFixturePtr() = default;
+		b2Fixture* fixture = nullptr;
+	};
+	struct TInfoPerCollidableobj
+	{
+		TInfoPerCollidableobj() = default;
+
+		mrpt::poses::CPose3D pose;
+		b2Body* collide_body = nullptr;
+		double representativeHeight = 0.01;
+		double maxWorkableStepHeight = 0.10;
+		double speed = .0;
+		mrpt::math::TPolygon2D contour;
+		const std::vector<float>* wheel_heights = nullptr;
+		std::vector<float> contour_heights;
+		std::vector<TFixturePtr> collide_fixtures;
+	};
+	std::vector<std::optional<TInfoPerCollidableobj>> obstacles_for_each_obj_;
+	// ============ end of elevation field collision =================
 
 	// Services:
 	void internal_advertiseServices();	// called from connectToServer()
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 
-	mvsim_msgs::SrvSetPoseAnswer srv_set_pose(
-		const mvsim_msgs::SrvSetPose& req);
-	mvsim_msgs::SrvGetPoseAnswer srv_get_pose(
-		const mvsim_msgs::SrvGetPose& req);
+	mvsim_msgs::SrvSetPoseAnswer srv_set_pose(const mvsim_msgs::SrvSetPose& req);
+	mvsim_msgs::SrvGetPoseAnswer srv_get_pose(const mvsim_msgs::SrvGetPose& req);
 	mvsim_msgs::SrvSetControllerTwistAnswer srv_set_controller_twist(
 		const mvsim_msgs::SrvSetControllerTwist& req);
-	mvsim_msgs::SrvShutdownAnswer srv_shutdown(
-		const mvsim_msgs::SrvShutdown& req);
+	mvsim_msgs::SrvShutdownAnswer srv_shutdown(const mvsim_msgs::SrvShutdown& req);
 #endif
 };
 }  // namespace mvsim

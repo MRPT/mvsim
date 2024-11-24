@@ -5,7 +5,7 @@
     <linear_acceleration_std_noise>${sensor_linear_acceleration_std_noise|0.017}</linear_acceleration_std_noise>
     
     <visual enabled="${sensor_custom_visual|true}">
-        <!-- <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/hokuyo_utm30.dae</model_uri> -->
+        <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_imu.dae</model_uri>
     </visual>
 
     <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->

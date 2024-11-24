@@ -18,6 +18,8 @@ def generate_launch_description():
     world_file_launch_arg = DeclareLaunchArgument(
         "world_file", default_value=TextSubstitution(
             text=os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_2robots.world.xml')))
+    do_fake_localization_arg = DeclareLaunchArgument(
+        "do_fake_localization", default_value='True', description='publish tf odom -> base_link')
 
     mvsim_node = Node(
         package='mvsim',
@@ -28,19 +30,46 @@ def generate_launch_description():
             os.path.join(mvsimDir, 'mvsim_tutorial', 'mvsim_ros2_params.yaml'),
             {
                 "world_file": LaunchConfiguration('world_file'),
+                "do_fake_localization": LaunchConfiguration('do_fake_localization'),
             }]
     )
 
-    rviz2_node = Node(
+    rviz2_r1_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
+        namespace='r1',
         arguments=[
-                '-d', [os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_2robots_ros2.rviz')]]
+                '-d', [os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_2robots_r1_ros2.rviz')]],
+        output='screen',
+        remappings=[('/map', 'map'),
+                    ('/tf', 'tf'),
+                    ('/tf_static', 'tf_static'),
+                    ('/goal_pose', 'goal_pose'),
+                    ('/clicked_point', 'clicked_point'),
+                    ('/initialpose', 'initialpose')]
+    )
+
+    rviz2_r2_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        namespace='r2',
+        arguments=[
+                '-d', [os.path.join(mvsimDir, 'mvsim_tutorial', 'demo_2robots_r2_ros2.rviz')]],
+        output='screen',
+        remappings=[('/map', 'map'),
+                    ('/tf', 'tf'),
+                    ('/tf_static', 'tf_static'),
+                    ('/goal_pose', 'goal_pose'),
+                    ('/clicked_point', 'clicked_point'),
+                    ('/initialpose', 'initialpose')]
     )
 
     return LaunchDescription([
         world_file_launch_arg,
+        do_fake_localization_arg,
         mvsim_node,
-        rviz2_node
+        rviz2_r1_node,
+        rviz2_r2_node
     ])

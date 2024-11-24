@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -105,15 +105,15 @@ class Simulable
 	void setName(const std::string& s) { name_ = s; }
 
 	/** Whether is is in collision right now. \sa  */
-	bool isInCollision() const { return isInCollision_; }
+	bool isInCollision() const;
 
 	/** Whether a collision occurred since the last time this flag was manually
 	 * reset.
 	 * \sa isInCollision(), resetCollisionFlag()  */
-	bool hadCollision() const { return hadCollisionFlag_; }
+	bool hadCollision() const;
 
 	/** Resets the condition reported by hadCollision() to false */
-	void resetCollisionFlag() { hadCollisionFlag_ = false; }
+	void resetCollisionFlag();
 
 	virtual void registerOnServer(mvsim::Client& c);
 
@@ -124,6 +124,16 @@ class Simulable
 	const World* getSimulableWorldObject() const { return simulable_parent_; }
 
 	virtual void freeOpenGLResources() {}
+
+	/** If the given world-frame 2D coordinates are within the limits of this entity,
+	 *  this method returns the ground height or elevation or "z" coordinate of the object
+	 *  for the queried (x,y). If the coordinates do not affect this object, it will return nullopt.
+	 */
+	virtual std::optional<float> getElevationAt(
+		[[maybe_unused]] const mrpt::math::TPoint2Df& worldXY) const
+	{
+		return std::nullopt;
+	}
 
    protected:
 	/** User-supplied name of the vehicle (e.g. "r1", "veh1") */
@@ -136,15 +146,13 @@ class Simulable
 	 */
 	b2Body* b2dBody_ = nullptr;
 
-	bool parseSimulable(
-		const JointXMLnode<>& node, const ParseSimulableParams& p = {});
+	bool parseSimulable(const JointXMLnode<>& node, const ParseSimulableParams& p = {});
 
 	void internalHandlePublish(const TSimulContext& context);
 
 	/** Will be called after the global pose of the object has changed due to a
 	 * direct call to setPose() */
-	virtual void notifySimulableSetPose(
-		[[maybe_unused]] const mrpt::math::TPose3D& newPose)
+	virtual void notifySimulableSetPose([[maybe_unused]] const mrpt::math::TPose3D& newPose)
 	{
 		// Default: do nothing
 	}
@@ -178,7 +186,9 @@ class Simulable
 	bool isInCollision_ = false;
 
 	/** Whether a collision occurred since the last time this flag was manually
-	 * reset  */
+	 * reset.
+	 * Multithreading: protected by q_mtx_
+	 */
 	bool hadCollisionFlag_ = false;
 
 	/** If not empty, publish the pose on this topic */

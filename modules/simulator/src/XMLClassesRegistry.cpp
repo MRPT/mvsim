@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -17,8 +17,7 @@
 using namespace mvsim;
 using namespace std;
 
-const rapidxml::xml_node<char>* XmlClassesRegistry::get(
-	const std::string& xml_node_class) const
+const rapidxml::xml_node<char>* XmlClassesRegistry::get(const std::string& xml_node_class) const
 {
 	map<string, TXMLData>::const_iterator it = classes_.find(xml_node_class);
 	if (it == classes_.end())
@@ -40,15 +39,12 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_class)
 
 		// sanity checks:
 		// e.g. "vehicle:class"
-		const rapidxml::xml_node<>* root_node =
-			xml->first_node(tagname_.c_str());
+		const rapidxml::xml_node<>* root_node = xml->first_node(tagname_.c_str());
 		if (!root_node)
-			throw runtime_error(mrpt::format(
-				"[XmlClassesRegistry] Missing XML node <%s>",
-				tagname_.c_str()));
+			throw runtime_error(
+				mrpt::format("[XmlClassesRegistry] Missing XML node <%s>", tagname_.c_str()));
 
-		const rapidxml::xml_attribute<>* att_name =
-			root_node->first_attribute("name");
+		const rapidxml::xml_attribute<>* att_name = root_node->first_attribute("name");
 		if (!att_name || !att_name->value())
 			throw runtime_error(mrpt::format(
 				"[XmlClassesRegistry] Missing mandatory attribute "
@@ -64,12 +60,11 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_class)
 	}
 	catch (const rapidxml::parse_error& e)
 	{
-		unsigned int line =
-			static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
+		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
 		delete xml;
 		throw std::runtime_error(mrpt::format(
-			"[XmlClassesRegistry] XML parse error (Line %u): %s",
-			static_cast<unsigned>(line), e.what()));
+			"[XmlClassesRegistry] XML parse error (Line %u): %s", static_cast<unsigned>(line),
+			e.what()));
 	}
 	catch (const std::exception&)
 	{

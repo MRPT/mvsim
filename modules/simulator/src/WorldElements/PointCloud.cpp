@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -56,8 +56,7 @@ void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 		TParameterDefinitions ps;
 		ps["points_size"] = TParamEntry("%lf", &render_points_size_);
 		ps["pose_3d"] = TParamEntry("%pose3d", &pointcloud_pose_);
-		parse_xmlnode_children_as_param(
-			*root, ps, world_->user_defined_variables());
+		parse_xmlnode_children_as_param(*root, ps, world_->user_defined_variables());
 	}
 
 	points_->renderOptions.point_size = render_points_size_;
@@ -90,7 +89,4 @@ void PointCloud::internalGuiUpdate(
 	}
 }
 
-void PointCloud::simul_pre_timestep(
-	[[maybe_unused]] const TSimulContext& context)
-{
-}
+void PointCloud::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}

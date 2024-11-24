@@ -29,9 +29,6 @@ Panels:
     SyncSource: LaserScan
   - Class: rviz_plugin_tutorials/Teleop
     Name: Teleop
-    Topic: /r1/cmd_vel
-  - Class: rviz_plugin_tutorials/Teleop
-    Name: Teleop
     Topic: /r2/cmd_vel
 Visualization Manager:
   Class: ""
@@ -54,59 +51,35 @@ Visualization Manager:
       Plane Cell Count: 80
       Reference Frame: <Fixed Frame>
       Value: true
-    - Alpha: 0.7
-      Class: rviz/Map
-      Color Scheme: map
-      Draw Behind: false
-      Enabled: true
-      Name: Map
-      Topic: /simul_map
-      Value: true
     - Class: rviz/TF
       Enabled: true
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        base_link:
+          Value: true
+        camera1:
+          Value: true
+        laser1:
+          Value: true
         map:
           Value: true
-        r1/base_footprint:
-          Value: false
-        r1/base_link:
+        odom:
           Value: true
-        r1/laser1:
-          Value: true
-        r1/odom:
-          Value: true
-        r2/base_footprint:
-          Value: false
-        r2/base_link:
-          Value: true
-        r2/laser1:
-          Value: true
-        r2/odom:
-          Value: true
-        world:
-          Value: true
+      Marker Alpha: 1
       Marker Scale: 4
       Name: TF
       Show Arrows: false
       Show Axes: true
       Show Names: true
       Tree:
-        world:
-          map:
-            r1/odom:
-              r1/base_link:
-                r1/base_footprint:
-                  {}
-                r1/laser1:
-                  {}
-            r2/odom:
-              r2/base_link:
-                r2/base_footprint:
-                  {}
-                r2/laser1:
-                  {}
+        map:
+          odom:
+            base_link:
+              camera1:
+                {}
+              laser1:
+                {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -134,48 +107,9 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.1
       Style: Flat Squares
-      Topic: /r1/laser1
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: z
-      Class: rviz/LaserScan
-      Color: 255; 255; 255
-      Color Transformer: Intensity
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 0; 136; 255
-      Max Intensity: 0
-      Min Color: 0; 136; 255
-      Min Intensity: 0
-      Name: LaserScan
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.1
-      Style: Flat Squares
       Topic: /r2/laser1
       Use Fixed Frame: true
-      Use rainbow: false
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /r1/chassis_markers
-      Name: MarkerArray
-      Namespaces:
-        mvsim.chassis_shape: true
-        mvsim.chassis_shape.wheel0: true
-        mvsim.chassis_shape.wheel1: true
-      Queue Size: 100
+      Use rainbow: true
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
@@ -185,8 +119,6 @@ Visualization Manager:
         mvsim.chassis_shape: true
         mvsim.chassis_shape.wheel0: true
         mvsim.chassis_shape.wheel1: true
-        mvsim.chassis_shape.wheel2: true
-        mvsim.chassis_shape.wheel3: true
       Queue Size: 100
       Value: true
   Enabled: true

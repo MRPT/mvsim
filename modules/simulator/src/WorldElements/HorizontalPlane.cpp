@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -22,8 +22,7 @@ using namespace rapidxml;
 using namespace mvsim;
 using namespace std;
 
-HorizontalPlane::HorizontalPlane(
-	World* parent, const rapidxml::xml_node<char>* root)
+HorizontalPlane::HorizontalPlane(World* parent, const rapidxml::xml_node<char>* root)
 	: WorldElementBase(parent)
 {
 	// Create opengl object: in this class, we'll store most state data directly
@@ -63,8 +62,7 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_size_x"] = TParamEntry("%lf", &textureSizeX_);
 	params["texture_size_y"] = TParamEntry("%lf", &textureSizeY_);
 
-	parse_xmlnode_children_as_param(
-		*root, params, world_->user_defined_variables());
+	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 }
 
 void HorizontalPlane::internalGuiUpdate(
@@ -85,17 +83,10 @@ void HorizontalPlane::internalGuiUpdate(
 		gl_plane_->setLocation(0, 0, z_);
 		gl_plane_->setName("HorizontalPlane_"s + getName());
 
-#if MRPT_VERSION >= 0x270
 		gl_plane_->enableLighting(enableShadows_);
-#endif
-
 		gl_plane_->setColor_u8(color_);
-
-#if MRPT_VERSION >= 0x240
 		gl_plane_->cullFaces(
-			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
-				cull_faces_));
-#endif
+			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
 		glGroup_->insert(gl_plane_);
 		viz->get().insert(glGroup_);
 		physical->get().insert(glGroup_);
@@ -103,8 +94,7 @@ void HorizontalPlane::internalGuiUpdate(
 	// 1st call? (with texture)
 	if (!gl_plane_text_ && !textureFileName_.empty() && viz && physical)
 	{
-		const std::string localFileName =
-			world_->xmlPathToActualPath(textureFileName_);
+		const std::string localFileName = world_->xmlPathToActualPath(textureFileName_);
 		ASSERT_FILE_EXISTS_(localFileName);
 
 		mrpt::img::CImage texture;
@@ -153,8 +143,7 @@ void HorizontalPlane::internalGuiUpdate(
 
 #if MRPT_VERSION >= 0x240
 		gl_plane_text_->cullFaces(
-			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(
-				cull_faces_));
+			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
 #endif
 
 		glGroup_->insert(gl_plane_text_);
@@ -179,4 +168,21 @@ void HorizontalPlane::simul_pre_timestep(const TSimulContext& context)
 void HorizontalPlane::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
+}
+
+std::optional<float> HorizontalPlane::getElevationAt(const mrpt::math::TPoint2Df& worldXY) const
+{
+	const auto& myPose = getCPose3D();
+
+	const auto localPt =
+		getCPose3D().inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
+
+	if (localPt.x < x_min_ || localPt.x > x_max_ || localPt.y < y_min_ || localPt.y > y_max_)
+	{
+		// Out of the plane:
+		return {};
+	}
+
+	auto p = myPose + mrpt::poses::CPose3D::FromTranslation(0, 0, z_);
+	return p.z();
 }

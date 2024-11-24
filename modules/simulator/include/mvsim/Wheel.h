@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2023  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -73,22 +73,15 @@ class Wheel : public VisualObject
 
 	// methods ----
 
-	void getAs3DObject(mrpt::opengl::CSetOfObjects& obj);
+	void getAs3DObject(mrpt::opengl::CSetOfObjects& obj, bool isPhysicalScene);
 	void loadFromXML(const rapidxml::xml_node<char>* xml_node);
 
 	void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
 
-	double getPhi() const
-	{
-		return phi;
-	}  //!< Orientation (rad) wrt vehicle local frame
-	void setPhi(double val)
-	{
-		phi = val;
-	}  //!< Orientation (rad) wrt vehicle local frame
+	double getPhi() const { return phi; }  //!< Orientation (rad) wrt vehicle local frame
+	void setPhi(double val) { phi = val; }	//!< Orientation (rad) wrt vehicle local frame
 	double getW() const { return w; }  //!< Spinning velocity (rad/s) wrt shaft
 	void setW(double val) { w = val; }	//!< Spinning velocity (rad/s) wrt shaft
 	void recalcInertia();  //!< Recompute Iyy from mass, diameter and height.

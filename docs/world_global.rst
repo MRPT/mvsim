@@ -25,6 +25,10 @@ Available parameters (all are optional):
 - ``<b2d_vel_iters>8</b2d_vel_iters>`` and ``<b2d_pos_iters>3</b2d_pos_iters>``. 
   Velocity and position iteration count (refer to libbox2d docs).
 
+- ``<collision_threshold>0.03</collision_threshold>``: If the distance between the closest points of 
+  a contact manifold (see box2d docs) for two bodies is below this distance, it is marked as "in collision",
+  and reported as such by the collision API.
+
 - ``<save_to_rawlog>my_dataset.rawlog</save_to_rawlog>``: If present, all sensor observations
   will be saved into an MRPT dataset in ``.rawlog`` format. One file will be created per vehicle,
   by adding the vehicle name to the provided file name.
@@ -32,6 +36,13 @@ Available parameters (all are optional):
 - ``<rawlog_odometry_rate>10.0</rawlog_odometry_rate>``: If ``save_to_rawlog`` is enabled,
   this parameter defines the rate (in Hz) to generate (wheels) odometry observations (Default is 10 Hz).
 
+- ``<save_ground_truth_trajectory>gt.txt</save_ground_truth_trajectory>``: If non-empty, the
+  ground truth trajectory of all vehicles will be saved to a text file in the 
+  `TUM trajectory format <https://github.com/MichaelGrupp/evo/wiki/Formats#tum---tum-rgb-d-dataset-trajectory-format>`_.
+  One file will be created per vehicle,  by adding the vehicle name to the provided file name.
+
+- ``<ground_truth_rate>50.0</ground_truth_rate>``: If ``save_ground_truth_trajectory`` is enabled,
+  this parameter defines the rate (in Hz) to generate entries in the trajectory file (Default is 50 Hz).
 
 .. code-block:: xml
    :caption: Top-level and global settings example
