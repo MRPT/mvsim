@@ -12,9 +12,11 @@
 #include <box2d/b2_friction_joint.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/TParameterDefinitions.h>
-
+#include <mvsim/Wheel.h>
 #include <vector>
+namespace mvsim
 {
+  /**Friction model TFG */
     class EllipseCurveMethod : public FrictionBase
     {
       DECLARES_REGISTER_FRICTION(EllipseCurveMethod)
@@ -35,11 +37,11 @@
 
    public:
 	 const TParameterDefinitions params_ = {
-		{"CA", {"%lf", & CA_}}, {"Cs", {"%lf", &Cs_}}
-    {"ss", {"%lf", & ss_}}, {"Caf", {"%lf", &Caf_}}
+		{"CA", {"%lf", & CA_}}, {"Cs", {"%lf", &Cs_}},
+    {"ss", {"%lf", & ss_}}, {"Caf", {"%lf", &Caf_}},
     {"Casf", {"%lf", & Cafs_}}, {"Csaf", {"%lf", &Csaf_}}};
     }; 
-}
+} // namespace mvsim
 
 
 
