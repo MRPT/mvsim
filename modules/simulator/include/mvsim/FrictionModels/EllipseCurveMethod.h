@@ -13,37 +13,29 @@
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/Wheel.h>
+
 #include <vector>
 namespace mvsim
 {
-  /**Friction model TFG */
-    class EllipseCurveMethod : public FrictionBase
-    {
-      DECLARES_REGISTER_FRICTION(EllipseCurveMethod)
-      public:
-      	EllipseCurveMethod(
-		    VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
+/**Friction model TFG */
+class EllipseCurveMethod : public FrictionBase
+{
+	DECLARES_REGISTER_FRICTION(EllipseCurveMethod)
+   public:
+	EllipseCurveMethod(VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node);
 
-	  // See docs in base class.
-	  virtual mrpt::math::TVector2D evaluate_friction(
+	// See docs in base class.
+	virtual mrpt::math::TVector2D evaluate_friction(
 		const FrictionBase::TFrictionInput& input) const override;
 
    private:
-	 double CA_ = 8;	 //!< aerodynamic force coefficient (non-dimensional)
-	 double Caf_ = 8.5, Cs_ = 7.5, ss_ = 0.1, Cafs_ = 0.5, Csaf_ = 0.5;   
-   //!< Elipse curve constants  
-  
-
+	double CA_ = 8;	 //!< aerodynamic force coefficient (non-dimensional)
+	double Caf_ = 8.5, Cs_ = 7.5, ss_ = 0.1, Cafs_ = 0.5, Csaf_ = 0.5;
+	//!< Elipse curve constants
 
    public:
-	 const TParameterDefinitions params_ = {
-		{"CA", {"%lf", & CA_}}, {"Cs", {"%lf", &Cs_}},
-    {"ss", {"%lf", & ss_}}, {"Caf", {"%lf", &Caf_}},
-    {"Casf", {"%lf", & Cafs_}}, {"Csaf", {"%lf", &Csaf_}}};
-    }; 
-} // namespace mvsim
-
-
-
-
-
+	const TParameterDefinitions params_ = {{"CA", {"%lf", &CA_}},	  {"Cs", {"%lf", &Cs_}},
+										   {"ss", {"%lf", &ss_}},	  {"Caf", {"%lf", &Caf_}},
+										   {"Casf", {"%lf", &Cafs_}}, {"Csaf", {"%lf", &Csaf_}}};
+};
+}  // namespace mvsim
