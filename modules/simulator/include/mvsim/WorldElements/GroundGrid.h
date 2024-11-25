@@ -18,7 +18,7 @@ namespace mvsim
 /** A 2D grid without any physical implications, just visualization purposes
  *  \ingroup world_elements_module
  */
-\ingroup world_elements_module class GroundGrid : public WorldElementBase
+class GroundGrid : public WorldElementBase
 {
 	DECLARES_REGISTER_WORLD_ELEMENT(GroundGrid)
    public:
