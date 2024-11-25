@@ -19,14 +19,14 @@
 
 namespace mvsim
 {
-/**
- * @brief A 2D lidar scanner, with FOV up to 360 degrees.
+/** A 2D lidar scanner, with FOV up to 360 degrees.
  *
  * There are two working modes:
  * - `raytrace_3d=false`: Very fast simulation, applicable to 2D worlds.
  * - `raytrace_3d=true`: Accurate version using detailed 3D meshes for all
  *   available objects in the scene.
  *
+ * \ingroup sensors_module
  */
 class LaserScanner : public SensorBase
 {

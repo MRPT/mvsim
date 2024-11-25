@@ -24,8 +24,14 @@ namespace mvsim
 {
 class World;
 
+/** @addtogroup virtual_interfaces_module  Virtual interfaces
+ * \ingroup mvsim_simulator_module
+ */
+
 /** Virtual base class for any entity that can be shown in the 3D viewer (or
- * sent out to RViz) */
+ * sent out to RViz)
+ *  \ingroup virtual_interfaces_module
+ */
 class VisualObject
 {
    public:

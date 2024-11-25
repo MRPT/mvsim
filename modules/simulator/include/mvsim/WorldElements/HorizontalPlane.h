@@ -17,6 +17,9 @@
 
 namespace mvsim
 {
+/** A horizontal plane, can be used as ground floor, etc.
+ * \ingroup world_elements_module
+ */
 class HorizontalPlane : public WorldElementBase
 {
 	DECLARES_REGISTER_WORLD_ELEMENT(HorizontalPlane)

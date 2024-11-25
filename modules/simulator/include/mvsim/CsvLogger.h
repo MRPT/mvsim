@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 
+/** \ingroup mvsim_simulator_module */
 class CSVLogger
 {
 	typedef std::map<std::string, double> columns_type;

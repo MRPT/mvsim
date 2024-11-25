@@ -15,6 +15,15 @@
 
 namespace mvsim
 {
+/** @addtogroup world_elements_module  Simulated world elements
+ * \ingroup mvsim_simulator_module
+ */
+
+/** Virtual base class for all world simulated "entities" (not vehicles, not blocks)
+ *
+ * \ingroup world_elements_module
+ *
+ */
 class WorldElementBase : public VisualObject, public Simulable
 {
    public:

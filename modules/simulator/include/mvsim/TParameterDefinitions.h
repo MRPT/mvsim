@@ -33,7 +33,7 @@ namespace mvsim
  * mrpt::math::TPoint3D
  *  - "%bool" ==> bool*. Values: 'true'/'false' or '1'/'0'
  *
- * \todo Rewrite using std::variant?
+ *  \ingroup mvsim_simulator_module
  */
 struct TParamEntry
 {

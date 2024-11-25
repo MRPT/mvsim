@@ -17,6 +17,7 @@ namespace mvsim
 {
 /** Implementation of 4 wheels Ackermann-driven vehicles.
  * \sa class factory in VehicleBase::factory
+ *  \ingroup vehicle_dynamics_module
  */
 class DynamicsAckermann : public VehicleBase
 {

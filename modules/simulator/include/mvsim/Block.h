@@ -30,7 +30,9 @@
 
 namespace mvsim
 {
-/** Geometry types for usage within the optional <geometry> XML tag of blocks \sa Block */
+/** Geometry types for usage within the optional <geometry> XML tag of blocks \sa Block
+ * \ingroup mvsim_simulator_module
+ */
 enum class GeometryType : int32_t
 {
 	Invalid = -1,
@@ -43,6 +45,7 @@ enum class GeometryType : int32_t
 };
 
 /** A non-vehicle "actor" for the simulation, typically obstacle blocks.
+ * \ingroup mvsim_simulator_module
  */
 class Block : public VisualObject, public Simulable
 {
@@ -225,7 +228,10 @@ class Block : public VisualObject, public Simulable
 
 };	// end Block
 
-/** An invisible block which can be used as an auxiliary anchor object. */
+/** An invisible block which can be used as an auxiliary anchor object.
+ * \ingroup mvsim_simulator_module
+ *
+ */
 class DummyInvisibleBlock : public VisualObject, public Simulable
 {
    public:

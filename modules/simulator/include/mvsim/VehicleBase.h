@@ -38,6 +38,8 @@ namespace mvsim
 /** Virtual base class for each vehicle "actor" in the simulation.
  * Derived classes implements different dynamical models (Differential,
  * Ackermann,...)
+ *
+ *  \ingroup virtual_interfaces_module
  */
 class VehicleBase : public VisualObject, public Simulable
 {

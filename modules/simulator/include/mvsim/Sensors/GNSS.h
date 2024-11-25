@@ -18,9 +18,9 @@
 
 namespace mvsim
 {
-/**
- * @brief A Global Navigation Satellite System (GNSS) sensor (GPS).
+/** A Global Navigation Satellite System (GNSS) sensor (GPS).
  *
+ * \ingroup sensors_module
  */
 class GNSS : public SensorBase
 {

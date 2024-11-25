@@ -17,6 +17,7 @@ namespace mvsim
 {
 /** Interface of ControllerBaseTempl<> for teleoperation, etc.
  * Abstract interface common to any vehicle type & any controller.
+ * \ingroup mvsim_simulator_module
  */
 class ControllerBaseInterface
 {

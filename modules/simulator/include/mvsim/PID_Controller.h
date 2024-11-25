@@ -10,6 +10,7 @@
 
 namespace mvsim
 {
+/** \ingroup mvsim_simulator_module */
 struct PID_Controller
 {
 	PID_Controller() = default;

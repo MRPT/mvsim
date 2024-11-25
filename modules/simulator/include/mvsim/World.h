@@ -56,6 +56,17 @@ class SrvShutdownAnswer;
 
 namespace mvsim
 {
+/** \defgroup mvsim_simulator_module mvsim-simulator
+ *   The main module: vehicles, sensors, world objects, etc.
+ */
+
+/** \mainpage MVSim
+ * This is the Doxygen-based C++ API documentation.
+ * Use the links above to browse existing classes.
+ *
+ * Main documentation and tutorials live here: https://mvsimulator.readthedocs.io/
+ */
+
 /** Simulation happens inside a World object.
  * This is the central class for usage from user code, running the simulation,
  * loading XML models, managing GUI visualization, etc.
@@ -63,6 +74,7 @@ namespace mvsim
  *
  * See: https://mvsimulator.readthedocs.io/en/latest/world.html
  *
+ * \ingroup mvsim_simulator_module
  */
 class World : public mrpt::system::COutputLogger
 {

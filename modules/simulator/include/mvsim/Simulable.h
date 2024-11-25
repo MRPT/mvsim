@@ -24,6 +24,7 @@ class Client;
 class World;
 class VisualObject;
 
+/** \ingroup mvsim_simulator_module */
 struct ParseSimulableParams
 {
 	ParseSimulableParams() = default;
@@ -31,6 +32,10 @@ struct ParseSimulableParams
 	bool init_pose_mandatory = true;
 };
 
+/** The basic virtual base class for all objects that can run in the simulated mvsim::World
+ *
+ * \ingroup virtual_interfaces_module
+ */
 class Simulable
 {
    public:

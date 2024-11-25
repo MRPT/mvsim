@@ -21,6 +21,10 @@
 
 namespace mvsim
 {
+/** Simulates a 2D gridmap, including collisions with occupied voxels.
+ *
+ * \ingroup world_elements_module
+ */
 class OccupancyGridMap : public WorldElementBase
 {
 	DECLARES_REGISTER_WORLD_ELEMENT(OccupancyGridMap)

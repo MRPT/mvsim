@@ -19,10 +19,11 @@ import subprocess
 import os
 import datetime
 
-read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+# read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+# if read_the_docs_build:
 
-if read_the_docs_build:
-    subprocess.call('mkdir -p _build/html/doxygen/; doxygen', shell=True)
+# Build doxygen docs too:
+subprocess.call('mkdir -p _build/html/doxygen/; doxygen', shell=True)
 
 
 # -- Project information -----------------------------------------------------

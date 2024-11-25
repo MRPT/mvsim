@@ -16,6 +16,7 @@
 
 namespace mvsim
 {
+/** \ingroup mvsim_simulator_module */
 class CollisionShapeCache
 {
    public:

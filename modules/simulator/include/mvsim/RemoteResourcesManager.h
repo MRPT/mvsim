@@ -23,6 +23,7 @@ namespace mvsim
  *
  * See resolve_path() for the possible formats of URI addresses.
  *
+ * \ingroup mvsim_simulator_module
  */
 class RemoteResourcesManager : public mrpt::system::COutputLogger
 {

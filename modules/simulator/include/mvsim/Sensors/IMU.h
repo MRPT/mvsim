@@ -18,9 +18,8 @@
 
 namespace mvsim
 {
-/**
- * @brief An Inertial Measurement Unit (IMU) sensor.
- *
+/** An Inertial Measurement Unit (IMU) sensor.
+ * \ingroup sensors_module
  */
 class IMU : public SensorBase
 {

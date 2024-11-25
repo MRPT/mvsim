@@ -17,6 +17,13 @@
 
 namespace mvsim
 {
+/** Simulates a Digital Elevation Model (DEM) for a given terrain.
+ *
+ * Input data can be given from a fixed elevation matrix from the XML file,
+ * an external image, etc. Refer to examples under mvsim_tutorials.
+ *
+ * \ingroup world_elements_module
+ */
 class ElevationMap : public WorldElementBase
 {
 	DECLARES_REGISTER_WORLD_ELEMENT(ElevationMap)
