@@ -10,6 +10,8 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  apt_packages:
+    - doxygen
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -21,6 +23,3 @@ python:
   install:
   - requirements: docs/requirements.txt
 
-build:
-  apt_packages:
-    - doxygen
