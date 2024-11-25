@@ -21,3 +21,6 @@ python:
   install:
   - requirements: docs/requirements.txt
 
+build:
+  apt_packages:
+    - doxygen
