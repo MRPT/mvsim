@@ -421,16 +421,16 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 		// log
 		{
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				DL_TIMESTAMP, context.simul_time);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_TORQUE, fi.motorTorque);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_WEIGHT, fi.weight);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_VEL_X, fi.wheelCogLocalVel.x);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_VEL_Y, fi.wheelCogLocalVel.y);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_FRIC_X, F_r.x);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_FRIC_Y, F_r.y);
+			auto& l = loggers_[LOGGER_WHEEL + std::to_string(i + 1)];
+			ASSERT_(l);
+			auto& logger = *l;
+			logger.updateColumn(DL_TIMESTAMP, context.simul_time);
+			logger.updateColumn(WL_TORQUE, fi.motorTorque);
+			logger.updateColumn(WL_WEIGHT, fi.weight);
+			logger.updateColumn(WL_VEL_X, fi.wheelCogLocalVel.x);
+			logger.updateColumn(WL_VEL_Y, fi.wheelCogLocalVel.y);
+			logger.updateColumn(WL_FRIC_X, F_r.x);
+			logger.updateColumn(WL_FRIC_Y, F_r.y);
 		}
 
 		// save it for optional rendering:
@@ -493,16 +493,21 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	const auto q = getPose();
 	const auto dq = getTwist();
 
-	loggers_[LOGGER_POSE]->updateColumn(DL_TIMESTAMP, context.simul_time);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_X, q.x);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_Y, q.y);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_Z, q.z);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_YAW, q.yaw);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_PITCH, q.pitch);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_ROLL, q.roll);
-	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_X, dq.vx);
-	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_Y, dq.vy);
-	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_Z, dq.omega);
+	{
+		auto& l = loggers_[LOGGER_POSE];
+		ASSERT_(l);
+		auto& logger = *l;
+		logger.updateColumn(DL_TIMESTAMP, context.simul_time);
+		logger.updateColumn(PL_Q_X, q.x);
+		logger.updateColumn(PL_Q_Y, q.y);
+		logger.updateColumn(PL_Q_Z, q.z);
+		logger.updateColumn(PL_Q_YAW, q.yaw);
+		logger.updateColumn(PL_Q_PITCH, q.pitch);
+		logger.updateColumn(PL_Q_ROLL, q.roll);
+		logger.updateColumn(PL_DQ_X, dq.vx);
+		logger.updateColumn(PL_DQ_Y, dq.vy);
+		logger.updateColumn(PL_DQ_Z, dq.omega);
+	}
 
 	{
 		writeLogStrings();
@@ -559,6 +564,14 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 		glForces_->setVisibility(false);
 		glMotorTorques_->setVisibility(false);
 	}
+}
+
+bool mvsim::VehicleBase::isLogging() const
+{
+	if (loggers_.empty()) return false;
+	auto& l = loggers_.begin()->second;
+
+	return l && l->isOpen();
 }
 
 void VehicleBase::updateMaxRadiusFromPoly()
@@ -762,37 +775,13 @@ void VehicleBase::internalGuiUpdate(
 void VehicleBase::initLoggers()
 {
 	loggers_[LOGGER_POSE] = std::make_shared<CSVLogger>();
-	//  loggers_[LOGGER_POSE]->addColumn(DL_TIMESTAMP);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_X);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_Y);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_Z);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_YAW);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_PITCH);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_ROLL);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_X);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_Y);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_Z);
-	loggers_[LOGGER_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + LOGGER_POSE + ".log");
+	loggers_[LOGGER_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + "_" + LOGGER_POSE + ".log");
 
 	for (size_t i = 0; i < getNumWheels(); i++)
 	{
 		loggers_[LOGGER_WHEEL + std::to_string(i + 1)] = std::make_shared<CSVLogger>();
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(DL_TIMESTAMP);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_TORQUE);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_WEIGHT);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_VEL_X);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_VEL_Y);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_FRIC_X);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_FRIC_Y);
 		loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->setFilepath(
-			log_path_ + "mvsim_" + name_ + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
+			log_path_ + "mvsim_" + name_ + "_" + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
 	}
 }
 
