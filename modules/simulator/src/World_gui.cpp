@@ -981,8 +981,8 @@ void World::internalUpdate3DSceneObjects(
 	{
 		if (auto it = vehicles_.find(guiOptions_.follow_vehicle); it != vehicles_.end())
 		{
-			const mrpt::poses::CPose2D pose = it->second->getCPose2D();
-			gui_.gui_win->camera().setCameraPointing(pose.x(), pose.y(), 0.0f);
+			const auto pose = it->second->getCPose3D();
+			gui_.gui_win->camera().setCameraPointing(pose.x(), pose.y(), pose.z());
 		}
 		else
 		{

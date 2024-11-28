@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/version.h>
 #include <mvsim/VehicleBase.h>
@@ -44,6 +45,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	std::string sElevationMatrixData;
 	params["elevation_data_matrix"] = TParamEntry("%s", &sElevationMatrixData);
 
+	std::string sDemTextFile;
+	params["dem_xyzrgb_file"] = TParamEntry("%s", &sDemTextFile);
+
 	double img_min_z = 0.0, img_max_z = 5.0;
 	params["elevation_image_min_z"] = TParamEntry("%lf", &img_min_z);
 	params["elevation_image_max_z"] = TParamEntry("%lf", &img_max_z);
@@ -65,8 +69,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 
-	// Load elevation data:
+	// Load elevation data & (optional) image data:
 	mrpt::math::CMatrixFloat elevation_data;
+	std::optional<mrpt::img::CImage> mesh_image;
+
 	if (!sElevationImgFile.empty())
 	{
 		sElevationImgFile = world_->local_to_abs_path(sElevationImgFile);
@@ -92,12 +98,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		f += m;
 		elevation_data = std::move(f);
 	}
-	else
+	else if (!sElevationMatrixData.empty())
 	{
-		ASSERTMSG_(
-			!sElevationMatrixData.empty(),
-			"Either <elevation_image> or <elevation_data_matrix> must be provided");
-
 		sElevationMatrixData = mrpt::system::trim(sElevationMatrixData);
 
 		std::stringstream sErrors;
@@ -106,18 +108,78 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			THROW_EXCEPTION_FMT("Error parsing <elevation_data_matrix>: %s", sErrors.str().c_str());
 		}
 	}
+	else
+	{
+		ASSERTMSG_(
+			!sDemTextFile.empty(),
+			"Either <elevation_image>, <elevation_data_matrix> or <dem_xyzrgb_file> must be "
+			"provided");
 
-	// Load texture (optional):
-	mrpt::img::CImage mesh_image;
-	bool has_mesh_image = false;
-	if (!sTextureImgFile.empty())
+		sDemTextFile = world_->local_to_abs_path(sDemTextFile);
+
+		mrpt::math::CMatrixDouble data;
+		data.loadFromTextFile(sDemTextFile);
+		ASSERTMSG_(data.cols() == 6, "DEM txt file format error: expected 6 columns (x,y,z,r,g,b)");
+
+		// Points from DEM geographic sources are not sorted, not even uniformly sampled.
+		// Let's re-sample them:
+		const double minx = data.col(0).minCoeff();
+		const double maxx = data.col(0).maxCoeff();
+		const double miny = data.col(1).minCoeff();
+		const double maxy = data.col(1).maxCoeff();
+
+		corner_min_x = minx;
+		corner_min_y = miny;
+
+		const auto nx = static_cast<unsigned int>(std::ceil((maxx - minx) / resolution_));
+		const auto ny = static_cast<unsigned int>(std::ceil((maxy - miny) / resolution_));
+
+		parent()->logFmt(
+			mrpt::system::LVL_INFO,
+			"[ElevationMap] Loaded %u points, min_corner=(%lf,%lf), cells=(%u,%u)",
+			static_cast<unsigned>(data.rows()), minx, miny, nx, ny);
+
+		// Store points in a map for using it as a KD-tree:
+		// (this could be avoided writing a custom adaptor for nanoflann, but I don't
+		//  have time for it now)
+		mrpt::maps::CSimplePointsMap pts;
+		pts.reserve(data.rows());
+		// Insert points wrt the min. corner, to ensure accuracy with float's instead of double's:
+		for (int i = 0; i < data.rows(); i++)
+			pts.insertPoint(data(i, 0) - minx, data(i, 1) - miny, data(i, 2));
+
+		pts.kdTreeEnsureIndexBuilt2D();	 // 2D queries, not 3D!
+		elevation_data.resize(nx, ny);
+		mesh_image.emplace();
+		mesh_image->resize(nx, ny, mrpt::img::CH_RGB);
+		for (unsigned int cx = 0; cx < nx; cx++)
+		{
+			const float lx = (0.5f + cx) * resolution_;
+			for (unsigned int cy = 0; cy < ny; cy++)
+			{
+				const float ly = (0.5f + cy) * resolution_;
+				float closestSqrErr = 0;
+				const auto idxPt = pts.kdTreeClosestPoint2D(lx, ly, closestSqrErr);
+				// Store data in the cell:
+				elevation_data(cx, cy) = data(idxPt, 2 /*z*/);
+				const uint8_t R = data(idxPt, 3);
+				const uint8_t G = data(idxPt, 4);
+				const uint8_t B = data(idxPt, 5);
+				mesh_image->setPixel(cx, cy, mrpt::img::TColor(R, G, B));
+			}
+		}
+
+	}  // end resample DEM geographic data
+
+	// Load texture (if not defined already above):
+	if (!mesh_image && !sTextureImgFile.empty())
 	{
 		sTextureImgFile = world_->xmlPathToActualPath(sTextureImgFile);
+		mesh_image.emplace();
 
-		if (!mesh_image.loadFromFile(sTextureImgFile))
+		if (!mesh_image->loadFromFile(sTextureImgFile))
 			throw std::runtime_error(mrpt::format(
 				"[ElevationMap] ERROR: Cannot read texture image '%s'", sTextureImgFile.c_str()));
-		has_mesh_image = true;
 
 		// Apply rotation:
 		switch (texture_rotate)
@@ -130,9 +192,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			case -180:
 			{
 				mrpt::img::CImage im;
-				mesh_image.rotateImage(
-					im, mrpt::DEG2RAD(texture_rotate), mesh_image.getWidth() / 2,
-					mesh_image.getHeight() / 2);
+				mesh_image->rotateImage(
+					im, mrpt::DEG2RAD(texture_rotate), mesh_image->getWidth() / 2,
+					mesh_image->getHeight() / 2);
 				mesh_image = std::move(im);
 			}
 			break;
@@ -165,9 +227,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 		gl_mesh->enableTransparency(false);
 
-		if (has_mesh_image)
+		if (mesh_image)
 		{
-			gl_mesh->assignImageAndZ(mesh_image, elevation_data);
+			gl_mesh->assignImageAndZ(*mesh_image, elevation_data);
 			gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
 		}
 		else
@@ -217,9 +279,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 				gl_mesh->enableTransparency(false);
 
-				if (has_mesh_image)
+				if (mesh_image)
 				{
-					gl_mesh->assignImageAndZ(mesh_image, subEle);
+					gl_mesh->assignImageAndZ(*mesh_image, subEle);
 					gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
 				}
 				else
