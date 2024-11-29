@@ -148,7 +148,9 @@ void VerticalPlane::internalGuiUpdate(
 		p.yaw = std::atan2(v01.y, v01.x);
 		p.roll = mrpt::DEG2RAD(90.0);
 
-		gl_plane_->setPose(p);
+		const auto pp = parent()->applyWorldRenderOffset(p);
+
+		gl_plane_->setPose(pp);
 		gl_plane_->setName("VerticalPlane_"s + getName());
 
 #if MRPT_VERSION >= 0x270

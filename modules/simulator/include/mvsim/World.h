@@ -607,6 +607,33 @@ class World : public mrpt::system::COutputLogger
 
 	const GeoreferenceOptions& georeferenceOptions() const { return georeferenceOptions_; }
 
+	/// (See docs for worldRenderOffset_)
+	mrpt::math::TVector3D worldRenderOffset() const
+	{
+		return worldRenderOffset_ ? *worldRenderOffset_ : mrpt::math::TVector3D(0, 0, 0);
+	}
+	mrpt::math::TPose3D applyWorldRenderOffset(mrpt::math::TPose3D p) const
+	{
+		const auto t = worldRenderOffset();
+		p.x += t.x;
+		p.y += t.y;
+		p.z += t.z;
+		return p;
+	}
+	mrpt::poses::CPose3D applyWorldRenderOffset(mrpt::poses::CPose3D p) const
+	{
+		const auto t = worldRenderOffset();
+		p.x_incr(t.x);
+		p.y_incr(t.y);
+		p.z_incr(t.z);
+		return p;
+	}
+	/// (See docs for worldRenderOffset_)
+	void worldRenderOffsetPropose(const mrpt::math::TVector3D& v)
+	{
+		if (!worldRenderOffset_) worldRenderOffset_ = v;
+	}
+
    private:
 	/** Options for lights */
 	GeoreferenceOptions georeferenceOptions_;
@@ -730,6 +757,13 @@ class World : public mrpt::system::COutputLogger
 	 */
 	mrpt::opengl::COpenGLScene worldPhysical_;
 	std::recursive_mutex worldPhysicalMtx_;
+
+	/// World coordinates offset for rendering. Useful mainly to keep numerical accuracy
+	/// in the OpenGL pipeline (using "floats") when using UTM world coordinates.
+	/// All coordinates to be send to OpenGL must **add** this number.
+	/// It is automatically set via calling worldRenderOffsetPropose()
+	/// and must be retrieved via worldRenderOffset()
+	std::optional<mrpt::math::TVector3D> worldRenderOffset_;
 
 	/// Updated in internal_one_step()
 	std::map<std::string, mrpt::math::TPose3D> copy_of_objects_dynstate_pose_;

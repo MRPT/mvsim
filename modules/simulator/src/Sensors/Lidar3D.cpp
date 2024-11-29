@@ -144,11 +144,12 @@ void Lidar3D::internalGuiUpdate(
 	}
 
 	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + sensorPoseOnVeh_;
+	const auto pp = parent()->applyWorldRenderOffset(p);
 
-	if (glPoints_) glPoints_->setPose(p);
-	if (gl_sensor_fov_) gl_sensor_fov_->setPose(p);
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
-	if (glCustomVisual_) glCustomVisual_->setPose(p);
+	if (glPoints_) glPoints_->setPose(pp);
+	if (gl_sensor_fov_) gl_sensor_fov_->setPose(pp);
+	if (gl_sensor_origin_) gl_sensor_origin_->setPose(pp);
+	if (glCustomVisual_) glCustomVisual_->setPose(pp);
 }
 
 void Lidar3D::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -528,7 +529,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		// Camera pose: vehicle + relativePoseOnVehicle:
 		// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg)
 		// to make the camera to look forward:
-		cam.setPose(thisDepthSensorPose);
+		cam.setPose(world()->applyWorldRenderOffset(thisDepthSensorPose));
 
 		auto tleRender =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.renderSubScan");

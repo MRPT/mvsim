@@ -141,12 +141,12 @@ void CameraSensor::internalGuiUpdate(
 
 	// Move with vehicle:
 	const auto& p = vehicle_.getPose();
+	const auto pp = parent()->applyWorldRenderOffset(p);
 
-	gl_sensor_fov_->setPose(p);
-	gl_sensor_origin_->setPose(p);
+	gl_sensor_fov_->setPose(pp);
+	gl_sensor_origin_->setPose(pp);
 
-	const auto globalSensorPose = p + sensor_params_.cameraPose.asTPose();
-
+	const auto globalSensorPose = pp + sensor_params_.cameraPose.asTPose();
 	if (glCustomVisual_) glCustomVisual_->setPose(globalSensorPose);
 }
 
@@ -204,7 +204,7 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
 	const auto rgbSensorPose = vehiclePose + curObs->cameraPose;
 
-	cam.setPose(rgbSensorPose);
+	cam.setPose(world()->applyWorldRenderOffset(rgbSensorPose));
 
 	ASSERT_(fbo_renderer_rgb_);
 

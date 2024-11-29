@@ -265,7 +265,7 @@ void Block::internalGuiUpdate(
 		// mutex and we don't need/can't acquire it again:
 		const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-		if (gl_block_) gl_block_->setPose(objectPose);
+		if (gl_block_) gl_block_->setPose(parent()->applyWorldRenderOffset(objectPose));
 	}
 
 	if (!gl_forces_ && viz)
@@ -274,6 +274,8 @@ void Block::internalGuiUpdate(
 		gl_forces_ = mrpt::opengl::CSetOfLines::Create();
 		gl_forces_->setLineWidth(3.0);
 		gl_forces_->setColor_u8(0xff, 0xff, 0xff);
+
+		gl_forces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
 		viz->get().insert(gl_forces_);	// forces are in global coords
 	}

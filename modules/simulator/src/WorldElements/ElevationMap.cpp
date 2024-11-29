@@ -210,6 +210,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (corner_min_x == std::numeric_limits<double>::max()) corner_min_x = -0.5 * LX;
 	if (corner_min_y == std::numeric_limits<double>::max()) corner_min_y = -0.5 * LY;
 
+	// Propose to the "world" to use this coordinates as reference
+	// for opengl to work with very large coordinates (e.g. UTM)
+	parent()->worldRenderOffsetPropose({-corner_min_x, -corner_min_y, .0});
+
 	// Save copy for calcs:
 	meshCacheZ_ = elevation_data;
 	meshMinX_ = corner_min_x;
@@ -324,6 +328,8 @@ void ElevationMap::internalGuiUpdate(
 		firstSceneRendering_ = false;
 		for (const auto& glMesh : gl_meshes_)
 		{
+			glMesh->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
+
 			viz->get().insert(glMesh);
 			physical->get().insert(glMesh);
 		}
