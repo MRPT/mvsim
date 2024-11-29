@@ -61,11 +61,11 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	mrpt::img::TColor mesh_color(0xa0, 0xe0, 0xa0);
 	params["mesh_color"] = TParamEntry("%color", &mesh_color);
 
-	params["resolution"] = TParamEntry("%f", &resolution_);
-	params["texture_extension_x"] = TParamEntry("%f", &textureExtensionX_);
-	params["texture_extension_y"] = TParamEntry("%f", &textureExtensionY_);
+	params["resolution"] = TParamEntry("%lf", &resolution_);
+	params["texture_extension_x"] = TParamEntry("%lf", &textureExtensionX_);
+	params["texture_extension_y"] = TParamEntry("%lf", &textureExtensionY_);
 
-	params["model_split_size"] = TParamEntry("%f", &model_split_size_);
+	params["model_split_size"] = TParamEntry("%lf", &model_split_size_);
 
 	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 
@@ -210,6 +210,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (corner_min_x == std::numeric_limits<double>::max()) corner_min_x = -0.5 * LX;
 	if (corner_min_y == std::numeric_limits<double>::max()) corner_min_y = -0.5 * LY;
 
+	// Propose to the "world" to use this coordinates as reference
+	// for opengl to work with very large coordinates (e.g. UTM)
+	parent()->worldRenderOffsetPropose({-corner_min_x, -corner_min_y, .0});
+
 	// Save copy for calcs:
 	meshCacheZ_ = elevation_data;
 	meshMinX_ = corner_min_x;
@@ -324,6 +328,8 @@ void ElevationMap::internalGuiUpdate(
 		firstSceneRendering_ = false;
 		for (const auto& glMesh : gl_meshes_)
 		{
+			glMesh->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
+
 			viz->get().insert(glMesh);
 			physical->get().insert(glMesh);
 		}
@@ -348,35 +354,35 @@ void ElevationMap::simul_post_timestep(const TSimulContext& context)
 
 namespace
 {
-float calcz(
-	const mrpt::math::TPoint3Df& p1, const mrpt::math::TPoint3Df& p2,
-	const mrpt::math::TPoint3Df& p3, float x, float y)
+double calcz(
+	const mrpt::math::TPoint3D& p1, const mrpt::math::TPoint3D& p2, const mrpt::math::TPoint3D& p3,
+	double x, double y)
 {
-	const float det = (p2.x - p3.x) * (p1.y - p3.y) +  //
-					  (p3.y - p2.y) * (p1.x - p3.x);
-	ASSERT_(det != 0.0f);
+	const double det = (p2.x - p3.x) * (p1.y - p3.y) +	//
+					   (p3.y - p2.y) * (p1.x - p3.x);
+	ASSERT_(det != 0.0);
 
-	const float l1 = ((p2.x - p3.x) * (y - p3.y) + (p3.y - p2.y) * (x - p3.x)) / det;
-	const float l2 = ((p3.x - p1.x) * (y - p3.y) + (p1.y - p3.y) * (x - p3.x)) / det;
-	const float l3 = 1.0f - l1 - l2;
+	const double l1 = ((p2.x - p3.x) * (y - p3.y) + (p3.y - p2.y) * (x - p3.x)) / det;
+	const double l2 = ((p3.x - p1.x) * (y - p3.y) + (p1.y - p3.y) * (x - p3.x)) / det;
+	const double l3 = 1.0 - l1 - l2;
 
 	return l1 * p1.z + l2 * p2.z + l3 * p3.z;
 }
 }  // namespace
 
-std::optional<float> ElevationMap::getElevationAt(const mrpt::math::TPoint2Df& pt) const
+std::optional<float> ElevationMap::getElevationAt(const mrpt::math::TPoint2D& pt) const
 {
 	// mesh->getxMin();
-	const float x0 = meshMinX_;
-	const float y0 = meshMinY_;
-	const float x1 = meshMaxX_;
-	const float y1 = meshMaxY_;
+	const double x0 = meshMinX_;
+	const double y0 = meshMinY_;
+	const double x1 = meshMaxX_;
+	const double y1 = meshMaxY_;
 
 	const size_t nCellsX = meshCacheZ_.rows();
 	const size_t nCellsY = meshCacheZ_.cols();
 
-	const float sCellX = (x1 - x0) / (nCellsX - 1);
-	const float sCellY = (y1 - y0) / (nCellsY - 1);
+	const double sCellX = (x1 - x0) / (nCellsX - 1);
+	const double sCellY = (y1 - y0) / (nCellsY - 1);
 
 	// Discretize:
 	const int cx00 = ::floor((pt.x - x0) / sCellX);
@@ -386,23 +392,23 @@ std::optional<float> ElevationMap::getElevationAt(const mrpt::math::TPoint2Df& p
 		return {};	// out of bounds!
 
 	// Linear interpolation:
-	const float z00 = meshCacheZ_(cx00, cy00);
-	const float z01 = meshCacheZ_(cx00, cy00 + 1);
-	const float z10 = meshCacheZ_(cx00 + 1, cy00);
-	const float z11 = meshCacheZ_(cx00 + 1, cy00 + 1);
+	const double z00 = meshCacheZ_(cx00, cy00);
+	const double z01 = meshCacheZ_(cx00, cy00 + 1);
+	const double z10 = meshCacheZ_(cx00 + 1, cy00);
+	const double z11 = meshCacheZ_(cx00 + 1, cy00 + 1);
 
 	//
 	//   p01 ---- p11
 	//    |        |
 	//   p00 ---- p10
 	//
-	const mrpt::math::TPoint3Df p00(.0f, .0f, z00);
-	const mrpt::math::TPoint3Df p01(.0f, sCellY, z01);
-	const mrpt::math::TPoint3Df p10(sCellX, .0f, z10);
-	const mrpt::math::TPoint3Df p11(sCellX, sCellY, z11);
+	const mrpt::math::TPoint3D p00(.0, .0, z00);
+	const mrpt::math::TPoint3D p01(.0, sCellY, z01);
+	const mrpt::math::TPoint3D p10(sCellX, .0, z10);
+	const mrpt::math::TPoint3D p11(sCellX, sCellY, z11);
 
-	const float lx = pt.x - (x0 + cx00 * sCellX);
-	const float ly = pt.y - (y0 + cy00 * sCellY);
+	const double lx = pt.x - (x0 + cx00 * sCellX);
+	const double ly = pt.y - (y0 + cy00 * sCellY);
 
 	if (ly >= lx)
 		return calcz(p00, p01, p11, lx, ly);

@@ -76,7 +76,8 @@ void PointCloud::internalGuiUpdate(
 	{
 		gl_points_ = mrpt::opengl::CSetOfObjects::Create();
 		gl_points_->setName("PointCloud");
-		gl_points_->setPose(pointcloud_pose_);
+
+		gl_points_->setPose(parent()->applyWorldRenderOffset(pointcloud_pose_));
 		viz->get().insert(gl_points_);
 		physical->get().insert(gl_points_);
 	}

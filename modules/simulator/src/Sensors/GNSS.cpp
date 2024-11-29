@@ -79,9 +79,10 @@ void GNSS::internalGuiUpdate(
 	}
 
 	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + obs_model_.sensorPose;
+	const auto pp = parent()->applyWorldRenderOffset(p);
 
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
-	if (glCustomVisual_) glCustomVisual_->setPose(p);
+	if (gl_sensor_origin_) gl_sensor_origin_->setPose(pp);
+	if (glCustomVisual_) glCustomVisual_->setPose(pp);
 }
 
 void GNSS::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}

@@ -715,11 +715,12 @@ void VehicleBase::internalGuiUpdate(
 	// setPose() change event, so my caller already holds the mutex and we don't
 	// need/can't acquire it again:
 	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
+	const auto pp = parent()->applyWorldRenderOffset(objectPose);
 
 	if (glInit_)
 	{
-		glChassisViz_->setPose(objectPose);
-		glChassisPhysical_->setPose(objectPose);
+		glChassisViz_->setPose(pp);
+		glChassisPhysical_->setPose(pp);
 		for (size_t i = 0; i < nWs; i++)
 		{
 			const Wheel& w = getWheelInfo(i);
@@ -753,6 +754,8 @@ void VehicleBase::internalGuiUpdate(
 		glForces_ = mrpt::opengl::CSetOfLines::Create();
 		glForces_->setLineWidth(3.0);
 		glForces_->setColor_u8(0xff, 0xff, 0xff);
+		glForces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
+
 		viz->get().insert(glForces_);  // forces are in global coords
 	}
 	if (!glMotorTorques_ && viz)
@@ -761,6 +764,8 @@ void VehicleBase::internalGuiUpdate(
 		glMotorTorques_ = mrpt::opengl::CSetOfLines::Create();
 		glMotorTorques_->setLineWidth(3.0);
 		glMotorTorques_->setColor_u8(0xff, 0x00, 0x00);
+		glMotorTorques_->setPose(
+			parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 		viz->get().insert(glMotorTorques_);	 // torques are in global coords
 	}
 

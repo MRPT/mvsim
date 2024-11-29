@@ -137,7 +137,7 @@ class Block : public VisualObject, public Simulable
 
 	VisualObject* meAsVisualObject() override { return this; }
 
-	std::optional<float> getElevationAt(const mrpt::math::TPoint2Df& worldXY) const override;
+	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
    protected:
 	virtual void internalGuiUpdate(

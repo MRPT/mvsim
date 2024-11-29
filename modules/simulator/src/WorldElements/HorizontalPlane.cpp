@@ -155,7 +155,8 @@ void HorizontalPlane::internalGuiUpdate(
 	// If "viz" does not have a value, it's because we are already inside a
 	// setPose() change event, so my caller already holds the mutex and we
 	// don't need/can't acquire it again:
-	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
+	const auto objectPoseOrg = viz.has_value() ? getPose() : getPoseNoLock();
+	const auto objectPose = parent()->applyWorldRenderOffset(objectPoseOrg);
 
 	glGroup_->setPose(objectPose);
 }
@@ -170,7 +171,7 @@ void HorizontalPlane::simul_post_timestep(const TSimulContext& context)
 	Simulable::simul_post_timestep(context);
 }
 
-std::optional<float> HorizontalPlane::getElevationAt(const mrpt::math::TPoint2Df& worldXY) const
+std::optional<float> HorizontalPlane::getElevationAt(const mrpt::math::TPoint2D& worldXY) const
 {
 	const auto& myPose = getCPose3D();
 
