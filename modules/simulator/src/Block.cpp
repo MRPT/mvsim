@@ -183,7 +183,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	if (block->b2dBody_)
 	{
 		// Init pos:
-		const auto q = block->getPose();
+		const auto q = parent->applyWorldRenderOffset(block->getPose());
 		const auto dq = block->getTwist();
 
 		block->b2dBody_->SetTransform(b2Vec2(q.x, q.y), q.yaw);

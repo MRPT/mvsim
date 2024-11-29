@@ -294,7 +294,7 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	if (veh->b2dBody_)
 	{
 		// Init pos:
-		const auto q = veh->getPose();
+		const auto q = parent->applyWorldRenderOffset(veh->getPose());
 		const auto dq = veh->getTwist();
 
 		veh->b2dBody_->SetTransform(b2Vec2(q.x, q.y), q.yaw);
@@ -803,8 +803,8 @@ void VehicleBase::apply_force(
 	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
 	ASSERT_(b2dBody_);
-	const b2Vec2 wPt = b2dBody_->GetWorldPoint(
-		b2Vec2(applyPoint.x, applyPoint.y));  // Application point -> world coords
+	// Application point -> world coords
+	const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
 	b2dBody_->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }
 
