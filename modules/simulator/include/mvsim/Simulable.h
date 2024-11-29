@@ -135,7 +135,7 @@ class Simulable
 	 *  for the queried (x,y). If the coordinates do not affect this object, it will return nullopt.
 	 */
 	virtual std::optional<float> getElevationAt(
-		[[maybe_unused]] const mrpt::math::TPoint2Df& worldXY) const
+		[[maybe_unused]] const mrpt::math::TPoint2D& worldXY) const
 	{
 		return std::nullopt;
 	}

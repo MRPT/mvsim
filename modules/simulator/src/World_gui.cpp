@@ -853,10 +853,12 @@ void World::GUI::handle_mouse_operations()
 	if (inters.getPoint(clickedPt))
 	{
 		// Apply world offset:
+		// P_GL = P_REAL + Off
+		// P_REAL = P_GL - Off
 		const auto dp = parent_.worldRenderOffset();
-		clickedPt.x += dp.x;
-		clickedPt.y += dp.y;
-		clickedPt.z += dp.z;
+		clickedPt.x -= dp.x;
+		clickedPt.y -= dp.y;
+		clickedPt.z -= dp.z;
 
 		// Find out the "z": get first elevation if many exist.
 		const auto zs = parent_.getElevationsAt(mrpt::math::TPoint2Df(clickedPt.x, clickedPt.y));

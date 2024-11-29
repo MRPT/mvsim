@@ -402,7 +402,7 @@ class World : public mrpt::system::COutputLogger
 	 * always reported by default. In multistorey worlds, for example, this will return the height
 	 * of each floor for the queried point.
 	 */
-	std::set<float> getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const;
+	std::set<float> getElevationsAt(const mrpt::math::TPoint2D& worldXY) const;
 
 	/// with query points the center of a wheel, this returns the highest "ground" under it, or .0
 	/// if nothing found.

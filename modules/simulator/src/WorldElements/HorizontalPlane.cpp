@@ -171,7 +171,7 @@ void HorizontalPlane::simul_post_timestep(const TSimulContext& context)
 	Simulable::simul_post_timestep(context);
 }
 
-std::optional<float> HorizontalPlane::getElevationAt(const mrpt::math::TPoint2Df& worldXY) const
+std::optional<float> HorizontalPlane::getElevationAt(const mrpt::math::TPoint2D& worldXY) const
 {
 	const auto& myPose = getCPose3D();
 

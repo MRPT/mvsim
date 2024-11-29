@@ -594,7 +594,7 @@ bool Block::default_block_z_min_max() const
 	return block_z_max_ != block_z_max_ || block_z_min_ != block_z_min_;
 }
 
-std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2Df& worldXY) const
+std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2D& worldXY) const
 {
 	// Is the point within the block?
 	const auto& myPose = getCPose3D();
