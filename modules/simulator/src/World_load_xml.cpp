@@ -379,7 +379,7 @@ void World::parse_tag_marker(const XmlParserContext& ctx)
 
 		mrpt::maps::CSimplePointsMap pts;
 		std::string parseError;
-		std::stringstream ss(mrpt::system::trim(xmlPts->value()));
+		std::stringstream ss(mvsim::trim(xmlPts->value()));
 		bool parsedOk = pts.load3D_from_text_stream(ss, parseError);
 		ASSERTMSG_(
 			parsedOk, "Error parsing XYZ data within <marker type='line_strip'>: "s + parseError);
