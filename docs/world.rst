@@ -39,6 +39,7 @@ First, we have global definitions on the simulation itself, the GUI, and the lig
 
    world_global
    world_gui
+   world_georeference
    world_lighting
 
 World contents
