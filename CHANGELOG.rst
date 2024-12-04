@@ -2,6 +2,17 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.12.1 (2024-12-04)
+-------------------
+* Merge pull request `#58 <https://github.com/MRPT/mvsim/issues/58>`_ from MichaelGrupp/fix-navsatfix-ros1
+  Fix ROS1 build
+* Merge pull request `#59 <https://github.com/MRPT/mvsim/issues/59>`_ from MichaelGrupp/fix-segfault
+  Fix segfault caused by uninitialized publisher
+* Fix segfault caused by uninitialized publisher
+  Crash occurs for example when running the demo_warehouse.launch with
+  ROS 1. Debug build + gdb revealed that the issue was this publisher.
+* Contributors: Jose Luis Blanco-Claraco, Michael Grupp
+
 0.12.0 (2024-12-04)
 -------------------
 * DEM: add optional kernel filtering
