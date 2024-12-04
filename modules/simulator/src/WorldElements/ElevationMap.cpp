@@ -136,8 +136,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 		parent()->logFmt(
 			mrpt::system::LVL_INFO,
-			"[ElevationMap] Loaded %u points, min_corner=(%lf,%lf), cells=(%u,%u)",
-			static_cast<unsigned>(data.rows()), minx, miny, nx, ny);
+			"[ElevationMap] Loaded %u points, min_corner=(%lf,%lf), max_corner=(%lf,%lf), "
+			"cells=(%u,%u)",
+			static_cast<unsigned>(data.rows()), minx, miny, maxx, maxy, nx, ny);
 
 		// Store points in a map for using it as a KD-tree:
 		// (this could be avoided writing a custom adaptor for nanoflann, but I don't
@@ -150,8 +151,12 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 		pts.kdTreeEnsureIndexBuilt2D();	 // 2D queries, not 3D!
 		elevation_data.resize(nx, ny);
+
+		// Image data: rows=>+X in the world; cols=>+Y in the world
+		// So we access image like: mesh_image(col,row)=>(cy,cx)
 		mesh_image.emplace();
-		mesh_image->resize(nx, ny, mrpt::img::CH_RGB);
+		mesh_image->resize(ny, nx, mrpt::img::CH_RGB);
+
 		for (unsigned int cx = 0; cx < nx; cx++)
 		{
 			const float lx = (0.5f + cx) * resolution_;
@@ -165,7 +170,12 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 				const uint8_t R = data(idxPt, 3);
 				const uint8_t G = data(idxPt, 4);
 				const uint8_t B = data(idxPt, 5);
-				mesh_image->setPixel(cx, cy, mrpt::img::TColor(R, G, B));
+				// mesh_image->setPixel(cy, cx, mrpt::img::TColor(R, G, B));
+				auto* dest = &mesh_image->ptrLine<uint8_t>(cx)[3 * cy];
+				// Copy the color:
+				*dest++ = B;
+				*dest++ = G;
+				*dest++ = R;
 			}
 		}
 
@@ -242,9 +252,6 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			gl_mesh->setColor_u8(mesh_color);
 		}
 
-		// Important: the yMin/yMax in the next line are swapped to handle
-		// the "+y" different direction in image and map coordinates, it is not
-		// a bug:
 		gl_mesh->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
 
 		// hint for rendering z-order:
@@ -294,9 +301,6 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 					gl_mesh->setColor_u8(mesh_color);
 				}
 
-				// Important: the yMin/yMax in the next line are swapped to handle
-				// the "+y" different direction in image and map coordinates, it is not
-				// a bug:
 				gl_mesh->setGridLimits(
 					corner_min_x + iX * subSize,
 					corner_min_x + iX * subSize + lenIx_p * resolution_,
