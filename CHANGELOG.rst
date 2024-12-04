@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.12.0 (2024-12-04)
+-------------------
 * DEM: add optional kernel filtering
 * document GPS sensors
 * Add new <marker> tag
