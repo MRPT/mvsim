@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.12.1 (2024-12-04)
+-------------------
 * Merge pull request `#58 <https://github.com/MRPT/mvsim/issues/58>`_ from MichaelGrupp/fix-navsatfix-ros1
   Fix ROS1 build
 * Merge pull request `#59 <https://github.com/MRPT/mvsim/issues/59>`_ from MichaelGrupp/fix-segfault
