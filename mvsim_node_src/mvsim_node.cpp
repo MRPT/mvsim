@@ -1167,8 +1167,12 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 		if (auto& c = obs.covariance_enu; c.has_value())
 		{
+#if PACKAGE_ROS_VERSION == 1
+			msg->position_covariance_type = sensor_msgs::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
+#else
 			msg->position_covariance_type =
 				sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
+#endif
 
 			msg->position_covariance.fill(0.0);
 			msg->position_covariance[0] = (*c)(0, 0);
