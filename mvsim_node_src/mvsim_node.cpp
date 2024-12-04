@@ -1264,6 +1264,8 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 #if PACKAGE_ROS_VERSION == 1
 		pubImg = mvsim_node::make_shared<ros::Publisher>(
 			n_.advertise<Msg_Image>(vehVarName(img_topic, veh), publisher_history_len_));
+		pubCamInfo = mvsim_node::make_shared<ros::Publisher>(
+			n_.advertise<Msg_CameraInfo>(vehVarName(camInfo_topic, veh), publisher_history_len_));
 #else
 		pubImg = mvsim_node::make_shared<PublisherWrapper<Msg_Image>>(
 			n_, vehVarName(img_topic, veh), publisher_history_len_);
