@@ -17,6 +17,13 @@
 
 namespace mvsim
 {
+/** Simulates a Digital Elevation Model (DEM) for a given terrain.
+ *
+ * Input data can be given from a fixed elevation matrix from the XML file,
+ * an external image, etc. Refer to examples under mvsim_tutorials.
+ *
+ * \ingroup world_elements_module
+ */
 class ElevationMap : public WorldElementBase
 {
 	DECLARES_REGISTER_WORLD_ELEMENT(ElevationMap)
@@ -29,7 +36,7 @@ class ElevationMap : public WorldElementBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	std::optional<float> getElevationAt(const mrpt::math::TPoint2Df& pt) const override;
+	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& pt) const override;
 
    protected:
 	virtual void internalGuiUpdate(
@@ -40,17 +47,17 @@ class ElevationMap : public WorldElementBase
 	 */
 	std::vector<mrpt::opengl::CMesh::Ptr> gl_meshes_;
 	bool firstSceneRendering_ = true;
-	float resolution_ = 1.0f;
+	double resolution_ = 1.0f;
 
-	float textureExtensionX_ = 0;  //!< 0=auto
-	float textureExtensionY_ = 0;  //!< 0=auto
+	double textureExtensionX_ = 0;	//!< 0=auto
+	double textureExtensionY_ = 0;	//!< 0=auto
 
 	/** A copy of elevation data in gl_mesh_. Coordinate order is (x,y) */
-	mrpt::math::CMatrixFloat meshCacheZ_;
-	float meshMinX_ = 0, meshMaxX_ = 0, meshMinY_ = 0, meshMaxY_ = 0;
+	mrpt::math::CMatrixDouble meshCacheZ_;
+	double meshMinX_ = 0, meshMaxX_ = 0, meshMinY_ = 0, meshMaxY_ = 0;
 
 	/// If enabled (>0), the mesh will be split into NxM smaller meshes with a max size of this
 	/// value, to help correctly render semitransparent objects (e.g. trees).
-	float model_split_size_ = .0f;
+	double model_split_size_ = .0f;
 };
 }  // namespace mvsim

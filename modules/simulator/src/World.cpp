@@ -272,7 +272,7 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 	arch << *obs;
 }
 
-std::set<float> World::getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const
+std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) const
 {
 	// Assumption: getListOfSimulableObjectsMtx() is already adquired by all possible call paths?
 	std::set<float> ret;

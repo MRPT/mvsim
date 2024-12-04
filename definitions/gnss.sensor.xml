@@ -1,9 +1,11 @@
-<sensor class="imu" name="${sensor_name|imu1}">
+<sensor class="gnss" name="${sensor_name|gps1}">
     <pose_3d> ${sensor_x|0}  ${sensor_y|0.0}  ${sensor_z|0}  ${sensor_yaw|0.0} ${sensor_pitch|0.0} ${sensor_roll|0.0}</pose_3d>
-    <sensor_period>${sensor_period_sec|0.05}</sensor_period>
-    <angular_velocity_std_noise>${sensor_angular_velocity_std_noise|2e-4}</angular_velocity_std_noise>
-    <linear_acceleration_std_noise>${sensor_linear_acceleration_std_noise|0.017}</linear_acceleration_std_noise>
-    
+    <sensor_period>${sensor_period_sec|1.0}</sensor_period>
+
+    <!-- Sensor 1-sigma noise [meters] -->
+    <horizontal_std_noise>${sensor_horizontal_std_noise|2.0}</horizontal_std_noise>
+    <vertical_std_noise>${sensor_vertical_std_noise|4.0}</vertical_std_noise>
+
     <visual enabled="${sensor_custom_visual|true}">
         <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_imu.dae</model_uri>
     </visual>

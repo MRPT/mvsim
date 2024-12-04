@@ -19,7 +19,7 @@ namespace mvsim
 {
 /** A vertical plane, visible from one or both sides (see "cull_faces"),
  *  conveniently defined by starting and end points (x0,y0)-(x1,y1).
- *
+ * \ingroup world_elements_module
  */
 class VerticalPlane : public WorldElementBase
 {

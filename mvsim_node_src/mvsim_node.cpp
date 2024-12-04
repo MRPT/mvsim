@@ -37,6 +37,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -48,6 +49,7 @@ using Msg_Header = std_msgs::Header;
 using Msg_Pose = geometry_msgs::Pose;
 using Msg_TransformStamped = geometry_msgs::TransformStamped;
 
+using Msg_GPS = sensor_msgs::NavSatFix;
 using Msg_Image = sensor_msgs::Image;
 using Msg_Imu = sensor_msgs::Imu;
 using Msg_LaserScan = sensor_msgs::LaserScan;
@@ -68,6 +70,7 @@ using Msg_Marker = visualization_msgs::Marker;
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
 // see: https://github.com/ros2/geometry2/pull/416
@@ -87,6 +90,7 @@ using Msg_Header = std_msgs::msg::Header;
 using Msg_Pose = geometry_msgs::msg::Pose;
 using Msg_TransformStamped = geometry_msgs::msg::TransformStamped;
 
+using Msg_GPS = sensor_msgs::msg::NavSatFix;
 using Msg_Image = sensor_msgs::msg::Image;
 using Msg_Imu = sensor_msgs::msg::Imu;
 using Msg_LaserScan = sensor_msgs::msg::LaserScan;
@@ -137,6 +141,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	localn_.param("headless", headless_, headless_);
 	localn_.param("period_ms_publish_tf", period_ms_publish_tf_, period_ms_publish_tf_);
 	localn_.param("do_fake_localization", do_fake_localization_, do_fake_localization_);
+	localn_.param(
+		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_,
+		force_publish_vehicle_namespace_);
 
 	// JLBC: At present, mvsim does not use sim_time for neither ROS 1 nor
 	// ROS 2.
@@ -174,6 +181,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	publisher_history_len_ =
 		n_->declare_parameter<int>("publisher_history_len", publisher_history_len_);
+
+	force_publish_vehicle_namespace_ = n_->declare_parameter<bool>(
+		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_);
 
 	// n_->declare_parameter("use_sim_time"); // already declared error?
 	if (true == n_->get_parameter_or("use_sim_time", false))
@@ -976,6 +986,10 @@ void MVSimNode::onNewObservation(
 	{
 		internalOn(veh, *oIMU);
 	}
+	else if (const auto* oGPS = dynamic_cast<const mrpt::obs::CObservationGPS*>(obs.get()); oGPS)
+	{
+		internalOn(veh, *oGPS);
+	}
 	else
 	{
 		// Don't know how to emit this observation to ROS!
@@ -990,7 +1004,7 @@ void MVSimNode::onNewObservation(
  * vehicle in the World, or "/<VAR_NAME>" otherwise. */
 std::string MVSimNode::vehVarName(const std::string& sVarName, const mvsim::VehicleBase& veh) const
 {
-	if (mvsim_world_->getListOfVehicles().size() == 1)
+	if (mvsim_world_->getListOfVehicles().size() == 1 && !force_publish_vehicle_namespace_)
 	{
 		return sVarName;
 	}
@@ -1088,13 +1102,81 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	{
 		// Convert observation MRPT -> ROS
 		Msg_Imu msg_imu;
-		Msg_Pose msg_pose_imu;
 		Msg_Header msg_header;
 		// Force usage of simulation time:
 		msg_header.stamp = myNow();
 		msg_header.frame_id = obs.sensorLabel;
 		mrpt2ros::toROS(obs, msg_header, msg_imu);
 		pub->publish(mvsim_node::make_shared<Msg_Imu>(msg_imu));
+	}
+}
+
+void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationGPS& obs)
+{
+	if (!obs.has_GGA_datum())
+	{
+		ROS12_WARN_THROTTLE(5.0, "Ignoring GPS observation without GGA field (!)");
+		return;
+	}
+
+	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+
+	// Create the publisher the first time an observation arrives:
+	const bool is_1st_pub = pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
+	auto& pub = pubs.pub_sensors[obs.sensorLabel];
+
+	if (is_1st_pub)
+	{
+#if PACKAGE_ROS_VERSION == 1
+		pub = mvsim_node::make_shared<ros::Publisher>(
+			n_.advertise<Msg_GPS>(vehVarName(obs.sensorLabel, veh), publisher_history_len_));
+#else
+		pub = mvsim_node::make_shared<PublisherWrapper<Msg_GPS>>(
+			n_, vehVarName(obs.sensorLabel, veh), publisher_history_len_);
+#endif
+	}
+	lck.unlock();
+
+	// Send TF:
+	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
+	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
+
+	Msg_TransformStamped tfStmp;
+	tfStmp.transform = tf2::toMsg(transform);
+	tfStmp.header.frame_id = "base_link";
+	tfStmp.child_frame_id = obs.sensorLabel;
+	tfStmp.header.stamp = myNow();
+
+	Msg_TFMessage tfMsg;
+	tfMsg.transforms.push_back(tfStmp);
+	pubs.pub_tf->publish(tfMsg);
+
+	// Send observation:
+	{
+		// Convert observation MRPT -> ROS
+		auto msg = mvsim_node::make_shared<Msg_GPS>();
+		msg->header.stamp = myNow();
+		msg->header.frame_id = obs.sensorLabel;
+
+		const auto& o = obs.getMsgByClass<mrpt::obs::gnss::Message_NMEA_GGA>();
+
+		msg->latitude = o.fields.latitude_degrees;
+		msg->longitude = o.fields.longitude_degrees;
+		msg->altitude = o.fields.altitude_meters;
+
+		if (auto& c = obs.covariance_enu; c.has_value())
+		{
+			msg->position_covariance_type =
+				sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
+
+			msg->position_covariance.fill(0.0);
+			msg->position_covariance[0] = (*c)(0, 0);
+			msg->position_covariance[4] = (*c)(1, 1);
+			msg->position_covariance[8] = (*c)(2, 2);
+		}
+
+		pub->publish(msg);
 	}
 }
 

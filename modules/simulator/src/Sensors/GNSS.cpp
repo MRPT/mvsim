@@ -9,8 +9,9 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/opengl/stock_objects.h>
+#include <mrpt/topography/conversions.h>
 #include <mrpt/version.h>
-#include <mvsim/Sensors/IMU.h>
+#include <mvsim/Sensors/GNSS.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
@@ -23,14 +24,14 @@
 using namespace mvsim;
 using namespace rapidxml;
 
-IMU::IMU(Simulable& parent, const rapidxml::xml_node<char>* root) : SensorBase(parent)
+GNSS::GNSS(Simulable& parent, const rapidxml::xml_node<char>* root) : SensorBase(parent)
 {
-	IMU::loadConfigFrom(root);
+	GNSS::loadConfigFrom(root);
 }
 
-IMU::~IMU() {}
+GNSS::~GNSS() {}
 
-void IMU::loadConfigFrom(const rapidxml::xml_node<char>* root)
+void GNSS::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	SensorBase::loadConfigFrom(root);
 	SensorBase::make_sure_we_have_a_name("imu");
@@ -39,17 +40,24 @@ void IMU::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["pose"] = TParamEntry("%pose2d_ptr3d", &obs_model_.sensorPose);
 	params["pose_3d"] = TParamEntry("%pose3d", &obs_model_.sensorPose);
 	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
-	params["angular_velocity_std_noise"] = TParamEntry("%lf", &angularVelocityStdNoise_);
-	params["linear_acceleration_std_noise"] = TParamEntry("%lf", &linearAccelerationStdNoise_);
+	params["horizontal_std_noise"] = TParamEntry("%lf", &horizontal_std_noise_);
+	params["vertical_std_noise"] = TParamEntry("%lf", &vertical_std_noise_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
 
 	// Pass params to the template obj:
 	obs_model_.sensorLabel = name_;
+
+	// Init ENU covariance:
+	auto& C = obs_model_.covariance_enu.emplace();
+	const double var_xy = mrpt::square(horizontal_std_noise_);
+	const double var_z = mrpt::square(vertical_std_noise_);
+
+	C.setDiagonal(std::vector<double>{var_xy, var_xy, var_z});
 }
 
-void IMU::internalGuiUpdate(
+void GNSS::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
@@ -77,54 +85,97 @@ void IMU::internalGuiUpdate(
 	if (glCustomVisual_) glCustomVisual_->setPose(pp);
 }
 
-void IMU::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
+void GNSS::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
 
 // Simulate sensor AFTER timestep, with the updated vehicle dynamical state:
-void IMU::simul_post_timestep(const TSimulContext& context)
+void GNSS::simul_post_timestep(const TSimulContext& context)
 {
 	Simulable::simul_post_timestep(context);
 
 	if (SensorBase::should_simulate_sensor(context))
 	{
-		internal_simulate_imu(context);
+		internal_simulate_gnss(context);
 	}
+
 	// Keep sensor global pose up-to-date:
 	const auto& p = vehicle_.getPose();
 	const auto globalSensorPose = p + obs_model_.sensorPose.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
 
-void IMU::internal_simulate_imu(const TSimulContext& context)
+void GNSS::internal_simulate_gnss(const TSimulContext& context)
 {
-	using mrpt::obs::CObservationIMU;
+	using mrpt::obs::CObservationGPS;
 
-	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.IMU");
+	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.GNSS");
 
-	auto outObs = CObservationIMU::Create(obs_model_);
+	auto outObs = CObservationGPS::Create(obs_model_);
 
 	outObs->timestamp = world_->get_simul_timestamp();
 	outObs->sensorLabel = name_;
 
-	// angular velocity:
-	mrpt::math::TVector3D w(0.0, 0.0, vehicle_.getTwist().omega);
-	rng_.drawGaussian1DVector(w, 0.0, angularVelocityStdNoise_);
+	// noise:
+	const mrpt::math::TPoint3D noise = {
+		rng_.drawGaussian1D(0.0, horizontal_std_noise_),
+		rng_.drawGaussian1D(0.0, horizontal_std_noise_),
+		rng_.drawGaussian1D(0.0, vertical_std_noise_)};
 
-	outObs->set(mrpt::obs::IMU_WX, w.x);
-	outObs->set(mrpt::obs::IMU_WY, w.y);
-	outObs->set(mrpt::obs::IMU_WZ, w.z);
+	// Where the GPS sensor is in the world frame:
+	const auto& georef = world()->georeferenceOptions();
 
-	// linear acceleration:
-	const auto g = mrpt::math::TVector3D(.0, .0, -world_->get_gravity());
+	const auto worldRotation =
+		mrpt::poses::CPose3D::FromYawPitchRoll(georef.world_to_enu_rotation, .0, .0);
 
-	mrpt::math::TVector3D linAccNoise(0, 0, 0);
-	rng_.drawGaussian1DVector(linAccNoise, 0.0, linearAccelerationStdNoise_);
+	const mrpt::math::TPoint3D sensorPt =
+		(worldRotation + (vehicle().getCPose3D() + outObs->sensorPose)).translation() + noise;
 
-	const mrpt::math::TVector3D linAccLocal =
-		vehicle_.getPose().inverseComposePoint(vehicle_.getLinearAcceleration() + g) + linAccNoise;
+	// convert from ENU (world coordinates) to geodetic:
+	const thread_local auto WGS84 = mrpt::topography::TEllipsoid::Ellipsoid_WGS84();
 
-	outObs->set(mrpt::obs::IMU_X_ACC, linAccLocal.x);
-	outObs->set(mrpt::obs::IMU_Y_ACC, linAccLocal.y);
-	outObs->set(mrpt::obs::IMU_Z_ACC, linAccLocal.z);
+	const mrpt::topography::TGeodeticCoords& georefCoord = georef.georefCoord;
+
+	// Warn the user if settings not set:
+	if (georefCoord.lat.decimal_value == 0 && georefCoord.lon.decimal_value == 0)
+	{
+		thread_local bool once = false;
+		if (!once)
+		{
+			once = true;
+			world()->logStr(
+				mrpt::system::LVL_WARN,
+				"It seems world <georeference> parameters are not set, and they are required for "
+				"properly define GNSS sensor simulation");
+		}
+	}
+
+	mrpt::topography::TGeocentricCoords gcPt;
+	mrpt::topography::ENUToGeocentric(sensorPt, georefCoord, gcPt, WGS84);
+
+	mrpt::topography::TGeodeticCoords ptCoords;
+	mrpt::topography::geocentricToGeodetic(gcPt, ptCoords, WGS84);
+
+	// Fill in observation:
+	mrpt::obs::gnss::Message_NMEA_GGA msgGGA;
+	auto& f = msgGGA.fields;
+	f.thereis_HDOP = true;
+	f.HDOP = horizontal_std_noise_ / 5.0;  // approximation
+
+	mrpt::system::TTimeParts tp;
+	mrpt::system::timestampToParts(outObs->timestamp, tp);
+	f.UTCTime.hour = tp.hour;
+	f.UTCTime.minute = tp.minute;
+	f.UTCTime.sec = tp.second;
+	f.fix_quality = 2;	// DGPS fix
+
+	f.latitude_degrees = ptCoords.lat.decimal_value;
+	f.longitude_degrees = ptCoords.lon.decimal_value;
+
+	f.altitude_meters = ptCoords.height;
+	f.orthometric_altitude = ptCoords.height;
+	f.corrected_orthometric_altitude = ptCoords.height;
+	f.satellitesUsed = 7;  // How to simulate this? :-)
+
+	outObs->setMsg(msgGGA);
 
 	// Save:
 	{
@@ -136,7 +187,7 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 	SensorBase::reportNewObservation(last_obs_, context);
 }
 
-void IMU::notifySimulableSetPose(const mrpt::math::TPose3D&)
+void GNSS::notifySimulableSetPose(const mrpt::math::TPose3D&)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
@@ -144,7 +195,7 @@ void IMU::notifySimulableSetPose(const mrpt::math::TPose3D&)
 	// sensor_params_.sensorPose = mrpt::poses::CPose3D(newPose - p);
 }
 
-void IMU::registerOnServer(mvsim::Client& c)
+void GNSS::registerOnServer(mvsim::Client& c)
 {
 	using namespace std::string_literals;
 

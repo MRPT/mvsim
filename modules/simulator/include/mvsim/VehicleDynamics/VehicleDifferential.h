@@ -15,11 +15,17 @@
 
 namespace mvsim
 {
+/** @addtogroup vehicle_dynamics_module  Vehicle kinematic models
+ * \ingroup mvsim_simulator_module
+ */
+
 /** Implementation of differential-driven vehicles with only two wheels.
  * Simplified model for pure planar scenarios only, do not use with ramps.
  * For that, use Differential or Ackermann models with 3 or 4 wheels.
  *
  * \sa class factory in VehicleBase::factory
+ *
+ * \ingroup vehicle_dynamics_module
  */
 class DynamicsDifferential : public VehicleBase
 {
@@ -214,6 +220,9 @@ class DynamicsDifferential : public VehicleBase
 	ControllerBase::Ptr controller_;  //!< The installed controller
 };
 
+/**
+ * \ingroup vehicle_dynamics_module
+ */
 class DynamicsDifferential_3_wheels : public DynamicsDifferential
 {
 	DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential_3_wheels)
@@ -230,6 +239,9 @@ class DynamicsDifferential_3_wheels : public DynamicsDifferential
 	}
 };
 
+/**
+ * \ingroup vehicle_dynamics_module
+ */
 class DynamicsDifferential_4_wheels : public DynamicsDifferential
 {
 	DECLARES_REGISTER_VEHICLE_DYNAMICS(DynamicsDifferential_4_wheels)

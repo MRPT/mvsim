@@ -247,3 +247,10 @@ std::string mvsim::parse(
 
 	return s;
 }
+
+std::string mvsim::trim(const std::string& s)
+{
+	auto out = mrpt::system::trim(s);
+	while (!out.empty() && (out[0] == '\r' || out[0] == '\n')) out.erase(0, 1);
+	return out;
+}

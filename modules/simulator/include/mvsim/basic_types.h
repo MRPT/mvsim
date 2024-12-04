@@ -52,7 +52,9 @@ class VehicleBase;
 template <typename Ch = char>
 class JointXMLnode;
 
-/** Simulation context for simulable objects updates */
+/** Simulation context for simulable objects updates
+ * \ingroup mvsim_simulator_module
+ */
 struct TSimulContext
 {
 	b2World* b2_world = nullptr;
@@ -64,6 +66,7 @@ struct TSimulContext
 /// Used to signal a Box2D fixture as "invisible" to sensors.
 constexpr uintptr_t INVISIBLE_FIXTURE_USER_DATA = 1;
 
+/** \ingroup mvsim_simulator_module */
 struct TJoyStickEvent
 {
 	std::vector<float> axes;

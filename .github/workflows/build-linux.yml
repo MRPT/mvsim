@@ -74,6 +74,7 @@ jobs:
             cmake build-essential cmake \
             libbox2d-dev \
             libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev libmrpt-tclap-dev \
+            libmrpt-topography-dev \
             libmrpt-gui-dev libmrpt-tfest-dev \
             protobuf-compiler \
             libzmq3-dev \

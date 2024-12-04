@@ -17,6 +17,8 @@ namespace mvsim
 /** A skybox visual decoration.
  *
  * \note This element requires building against MRPT >=2.7.0
+ *
+ *  \ingroup world_elements_module
  */
 class SkyBox : public WorldElementBase
 {

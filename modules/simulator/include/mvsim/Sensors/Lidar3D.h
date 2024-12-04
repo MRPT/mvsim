@@ -20,11 +20,12 @@
 
 namespace mvsim
 {
-/**
- * @brief A 3D LiDAR sensor, with 360 degrees horizontal fielf-of-view, and a
+/** A 3D LiDAR sensor, with 360 degrees horizontal fielf-of-view, and a
  * configurable vertical FOV.
  * The number of rays in the vertical FOV and the number of samples in each
  * horizontal row are configurable.
+ *
+ * \ingroup sensors_module
  */
 class Lidar3D : public SensorBase
 {

@@ -25,7 +25,10 @@ class MessageLite;
 
 namespace mvsim
 {
-/** \addtogroup mvsim_comms_module
+/** \defgroup mvsim_comms_module mvsim-comms
+ *   This module implements Client/Server RPC and publish/subscribe mechanism using ZMQ.
+ *
+ * \ingroup mvsim_comms_module
  * @{ */
 
 /** Sends a ZMQ message comprising:

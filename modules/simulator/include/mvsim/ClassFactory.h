@@ -18,7 +18,9 @@
 namespace mvsim
 {
 /** Templatized-class factory for mvsim objects. Does not explicitly handle
- * multi-threading. */
+ * multi-threading.
+ * \ingroup mvsim_simulator_module
+ * */
 template <class CLASS, typename ARG1 = void, typename ARG2 = int>
 class ClassFactory
 {

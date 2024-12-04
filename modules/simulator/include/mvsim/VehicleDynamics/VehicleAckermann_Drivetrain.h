@@ -22,6 +22,8 @@ namespace mvsim
  * http://www.flashoffroad.com/features/Torsen/Torsen_white_paper.pdf
  *
  * \sa class factory in VehicleBase::factory
+ *
+ * \ingroup vehicle_dynamics_module
  */
 class DynamicsAckermannDrivetrain : public VehicleBase
 {

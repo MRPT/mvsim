@@ -23,4 +23,7 @@ namespace mvsim
 std::string parse(
 	const std::string& input, const std::map<std::string, std::string>& variableNamesValues = {});
 
+/** removes trailing and leading whitespaces and leading new lines */
+std::string trim(const std::string& s);
+
 }  // namespace mvsim

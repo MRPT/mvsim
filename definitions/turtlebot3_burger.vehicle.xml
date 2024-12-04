@@ -60,7 +60,7 @@
         />
 
         <include file="../definitions/imu.sensor.xml"
-            sensor_x="0.0" sensor_y="0.0" sensor_z="0.0"
+            sensor_x="0.0" sensor_y="0.05" sensor_z="0.145"
             sensor_period_sec="$f{1/200.0}"
         />    </if>
 </vehicle:class>

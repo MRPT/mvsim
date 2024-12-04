@@ -24,6 +24,7 @@
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
+#include <mrpt/topography/data_types.h>
 #include <mvsim/Block.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Joystick.h>
@@ -55,6 +56,17 @@ class SrvShutdownAnswer;
 
 namespace mvsim
 {
+/** \defgroup mvsim_simulator_module mvsim-simulator
+ *   The main module: vehicles, sensors, world objects, etc.
+ */
+
+/** \mainpage MVSim
+ * This is the Doxygen-based C++ API documentation.
+ * Use the links above to browse existing classes.
+ *
+ * Main documentation and tutorials live here: https://mvsimulator.readthedocs.io/
+ */
+
 /** Simulation happens inside a World object.
  * This is the central class for usage from user code, running the simulation,
  * loading XML models, managing GUI visualization, etc.
@@ -62,6 +74,7 @@ namespace mvsim
  *
  * See: https://mvsimulator.readthedocs.io/en/latest/world.html
  *
+ * \ingroup mvsim_simulator_module
  */
 class World : public mrpt::system::COutputLogger
 {
@@ -389,7 +402,7 @@ class World : public mrpt::system::COutputLogger
 	 * always reported by default. In multistorey worlds, for example, this will return the height
 	 * of each floor for the queried point.
 	 */
-	std::set<float> getElevationsAt(const mrpt::math::TPoint2Df& worldXY) const;
+	std::set<float> getElevationsAt(const mrpt::math::TPoint2D& worldXY) const;
 
 	/// with query points the center of a wheel, this returns the highest "ground" under it, or .0
 	/// if nothing found.
@@ -568,6 +581,63 @@ class World : public mrpt::system::COutputLogger
 	/** Options for lights */
 	LightOptions lightOptions_;
 
+   public:
+	// Options for simulating GNSS (GPS) sensors.
+	struct GeoreferenceOptions
+	{
+		GeoreferenceOptions() = default;
+
+		void parse_from(const rapidxml::xml_node<char>& node, COutputLogger& logger);
+
+		/// Latitude/longitude/height of the world (0,0,0) frame.
+		mrpt::topography::TGeodeticCoords georefCoord;
+
+		/** Optional world rotation (in radians, in degrees in the XML file)
+		 *  wrt ENU frame: 0 (default) means +X points East.
+		 */
+		double world_to_enu_rotation = .0;
+
+		const TParameterDefinitions params = {
+			{"latitude", {"%lf", &georefCoord.lat.decimal_value}},
+			{"longitude", {"%lf", &georefCoord.lon.decimal_value}},
+			{"height", {"%lf", &georefCoord.height}},
+			{"world_to_enu_rotation_deg", {"%lf_deg", &world_to_enu_rotation}},
+		};
+	};
+
+	const GeoreferenceOptions& georeferenceOptions() const { return georeferenceOptions_; }
+
+	/// (See docs for worldRenderOffset_)
+	mrpt::math::TVector3D worldRenderOffset() const
+	{
+		return worldRenderOffset_ ? *worldRenderOffset_ : mrpt::math::TVector3D(0, 0, 0);
+	}
+	mrpt::math::TPose3D applyWorldRenderOffset(mrpt::math::TPose3D p) const
+	{
+		const auto t = worldRenderOffset();
+		p.x += t.x;
+		p.y += t.y;
+		p.z += t.z;
+		return p;
+	}
+	mrpt::poses::CPose3D applyWorldRenderOffset(mrpt::poses::CPose3D p) const
+	{
+		const auto t = worldRenderOffset();
+		p.x_incr(t.x);
+		p.y_incr(t.y);
+		p.z_incr(t.z);
+		return p;
+	}
+	/// (See docs for worldRenderOffset_)
+	void worldRenderOffsetPropose(const mrpt::math::TVector3D& v)
+	{
+		if (!worldRenderOffset_) worldRenderOffset_ = v;
+	}
+
+   private:
+	/** Options for lights */
+	GeoreferenceOptions georeferenceOptions_;
+
 	// -------- World contents ----------
 	/** Mutex protecting simulation objects from multi-thread access */
 	std::recursive_mutex world_cs_;
@@ -688,6 +758,13 @@ class World : public mrpt::system::COutputLogger
 	mrpt::opengl::COpenGLScene worldPhysical_;
 	std::recursive_mutex worldPhysicalMtx_;
 
+	/// World coordinates offset for rendering. Useful mainly to keep numerical accuracy
+	/// in the OpenGL pipeline (using "floats") when using UTM world coordinates.
+	/// All coordinates to be send to OpenGL must **add** this number.
+	/// It is automatically set via calling worldRenderOffsetPropose()
+	/// and must be retrieved via worldRenderOffset()
+	std::optional<mrpt::math::TVector3D> worldRenderOffset_;
+
 	/// Updated in internal_one_step()
 	std::map<std::string, mrpt::math::TPose3D> copy_of_objects_dynstate_pose_;
 	std::map<std::string, mrpt::math::TTwist2D> copy_of_objects_dynstate_twist_;
@@ -761,11 +838,13 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_block_class(const XmlParserContext& ctx);
 	void parse_tag_gui(const XmlParserContext& ctx);
 	void parse_tag_lights(const XmlParserContext& ctx);
+	void parse_tag_georeference(const XmlParserContext& ctx);
 	void parse_tag_walls(const XmlParserContext& ctx);
 	void parse_tag_include(const XmlParserContext& ctx);
 	void parse_tag_variable(const XmlParserContext& ctx);
 	void parse_tag_for(const XmlParserContext& ctx);
 	void parse_tag_if(const XmlParserContext& ctx);
+	void parse_tag_marker(const XmlParserContext& ctx);
 
 	// ======== end of XML parser tags ========
 

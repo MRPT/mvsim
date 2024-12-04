@@ -183,7 +183,7 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	if (block->b2dBody_)
 	{
 		// Init pos:
-		const auto q = block->getPose();
+		const auto q = parent->applyWorldRenderOffset(block->getPose());
 		const auto dq = block->getTwist();
 
 		block->b2dBody_->SetTransform(b2Vec2(q.x, q.y), q.yaw);
@@ -265,7 +265,7 @@ void Block::internalGuiUpdate(
 		// mutex and we don't need/can't acquire it again:
 		const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-		if (gl_block_) gl_block_->setPose(objectPose);
+		if (gl_block_) gl_block_->setPose(parent()->applyWorldRenderOffset(objectPose));
 	}
 
 	if (!gl_forces_ && viz)
@@ -274,6 +274,8 @@ void Block::internalGuiUpdate(
 		gl_forces_ = mrpt::opengl::CSetOfLines::Create();
 		gl_forces_->setLineWidth(3.0);
 		gl_forces_->setColor_u8(0xff, 0xff, 0xff);
+
+		gl_forces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
 		viz->get().insert(gl_forces_);	// forces are in global coords
 	}
@@ -592,7 +594,7 @@ bool Block::default_block_z_min_max() const
 	return block_z_max_ != block_z_max_ || block_z_min_ != block_z_min_;
 }
 
-std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2Df& worldXY) const
+std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2D& worldXY) const
 {
 	// Is the point within the block?
 	const auto& myPose = getCPose3D();

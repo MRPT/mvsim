@@ -24,6 +24,7 @@ class Client;
 class World;
 class VisualObject;
 
+/** \ingroup mvsim_simulator_module */
 struct ParseSimulableParams
 {
 	ParseSimulableParams() = default;
@@ -31,6 +32,10 @@ struct ParseSimulableParams
 	bool init_pose_mandatory = true;
 };
 
+/** The basic virtual base class for all objects that can run in the simulated mvsim::World
+ *
+ * \ingroup virtual_interfaces_module
+ */
 class Simulable
 {
    public:
@@ -130,7 +135,7 @@ class Simulable
 	 *  for the queried (x,y). If the coordinates do not affect this object, it will return nullopt.
 	 */
 	virtual std::optional<float> getElevationAt(
-		[[maybe_unused]] const mrpt::math::TPoint2Df& worldXY) const
+		[[maybe_unused]] const mrpt::math::TPoint2D& worldXY) const
 	{
 		return std::nullopt;
 	}

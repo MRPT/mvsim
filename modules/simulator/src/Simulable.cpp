@@ -50,7 +50,8 @@ void Simulable::simul_pre_timestep(	 //
 	if (!b2dBody_) return;
 
 	// Pos:
-	b2dBody_->SetTransform(b2Vec2(q_.x, q_.y), q_.yaw);
+	const auto qq = simulable_parent_->applyWorldRenderOffset(q_);
+	b2dBody_->SetTransform(b2Vec2(qq.x, qq.y), q_.yaw);
 
 	// Vel:
 	b2dBody_->SetLinearVelocity(b2Vec2(dq_.vx, dq_.vy));
@@ -68,8 +69,9 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		// Pos:
 		const b2Vec2& pos = b2dBody_->GetPosition();
 		const float angle = b2dBody_->GetAngle();
-		q_.x = pos(0);
-		q_.y = pos(1);
+		const auto off = simulable_parent_->worldRenderOffset();
+		q_.x = pos(0) - off.x;
+		q_.y = pos(1) - off.y;
 		q_.yaw = angle;
 		// The rest (z,pitch,roll) will be always 0, unless other
 		// world-element modifies them! (e.g. elevation map)

@@ -17,7 +17,8 @@
 
 namespace mvsim
 {
-/** A "RGB" camera sensor on board a vehicle.
+/** An "RGB" camera sensor on board a vehicle.
+ * \ingroup sensors_module
  */
 class CameraSensor : public SensorBase
 {

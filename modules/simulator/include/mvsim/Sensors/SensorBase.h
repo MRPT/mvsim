@@ -22,6 +22,15 @@ namespace mvsim
 {
 class Simulable;
 
+/** @addtogroup sensors_module  Sensor simulation module
+ * \ingroup mvsim_simulator_module
+ */
+
+/**
+ * @brief Virtual base class for all sensors.
+ *
+ * \ingroup sensors_module
+ */
 class SensorBase : public VisualObject, public Simulable
 {
    public:

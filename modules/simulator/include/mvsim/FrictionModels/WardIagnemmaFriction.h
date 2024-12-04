@@ -21,6 +21,8 @@ namespace mvsim
  * A Dynamic-Model-Based Wheel Slip Detector for Mobile Robots on Outdoor
  * Terrain
  * Chris C. Ward and Karl Iagnemma
+ *
+ * \ingroup friction_module
  */
 class WardIagnemmaFriction : public FrictionBase
 {

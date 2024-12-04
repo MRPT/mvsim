@@ -26,6 +26,7 @@ namespace mvsim
  *  given all former calls to buildAddPoint() or buildAddTriangle() and a
  * ray-tracing algorithm.
  *
+ *  \ingroup mvsim_simulator_module
  */
 class Shape2p5
 {

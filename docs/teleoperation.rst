@@ -12,7 +12,7 @@ If no data is being published to ``/cmd_vel``, or if you run MVSim without ROS s
 three alternative methods can be used to move the robots:
 
 - Via ZMQ messages using the MVSim built-in messaging protocol (Write me!).
-  See a `Python code example <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/python/mvsim-teleop.py>`_.
+  See a `Python code example <https://github.com/MRPT/mvsim/blob/develop/examples_python/mvsim-teleop.py>`_.
 - Joystick, if present (see below).
 - Keyboard, from the MVSim GUI (see below).
 

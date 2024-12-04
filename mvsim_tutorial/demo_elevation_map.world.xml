@@ -4,7 +4,15 @@
 	     to improve the physics simulation and achieve more realistic frictions/sliding
 		 when on ramps -->
 	<simul_timestep>2e-3</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
-	
+
+	<!-- Define georeferenced coordinates to the world so GNSS/GPS sensors can be properly simulated -->
+	<georeference>
+		<latitude>36.894718</latitude>
+		<longitude>-2.316988</longitude>
+		<height>200.0</height>
+		<world_to_enu_rotation_deg>5.0</world_to_enu_rotation_deg>
+	</georeference>
+
 	<!-- GUI options -->
 	<gui>
 		<ortho>false</ortho>
@@ -76,12 +84,20 @@
 		  horz_resolution_factor="2.0"
 		  vert_resolution_factor="2.0"
 		/>
-		
+
 		<include file="../definitions/rgbd_camera.sensor.xml" 
 		  sensor_x="0.22" sensor_z="0.29"
 		  sensor_period_sec="0.10"
 		  show_3d_pointcloud="false"
 		/>
+
+		<include file="../definitions/gnss.sensor.xml"
+		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.25"
+		  sensor_period_sec="1.0"
+		  sensor_name="gps1"
+		  sensor_horizontal_std_noise="1.5"
+		  sensor_vertical_std_noise="2.5"
+		  />
 
 	</vehicle>
 	

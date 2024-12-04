@@ -214,7 +214,7 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		const xml_attribute<>* attrib_name = root->first_attribute("name");
 		if (attrib_name && attrib_name->value())
 		{
-			veh->name_ = attrib_name->value();
+			veh->name_ = mvsim::parse_variables(attrib_name->value(), {}, {});
 		}
 		else
 		{
@@ -294,7 +294,7 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	if (veh->b2dBody_)
 	{
 		// Init pos:
-		const auto q = veh->getPose();
+		const auto q = parent->applyWorldRenderOffset(veh->getPose());
 		const auto dq = veh->getTwist();
 
 		veh->b2dBody_->SetTransform(b2Vec2(q.x, q.y), q.yaw);
@@ -421,16 +421,16 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 		// log
 		{
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				DL_TIMESTAMP, context.simul_time);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_TORQUE, fi.motorTorque);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_WEIGHT, fi.weight);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_VEL_X, fi.wheelCogLocalVel.x);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(
-				WL_VEL_Y, fi.wheelCogLocalVel.y);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_FRIC_X, F_r.x);
-			loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->updateColumn(WL_FRIC_Y, F_r.y);
+			auto& l = loggers_[LOGGER_WHEEL + std::to_string(i + 1)];
+			ASSERT_(l);
+			auto& logger = *l;
+			logger.updateColumn(DL_TIMESTAMP, context.simul_time);
+			logger.updateColumn(WL_TORQUE, fi.motorTorque);
+			logger.updateColumn(WL_WEIGHT, fi.weight);
+			logger.updateColumn(WL_VEL_X, fi.wheelCogLocalVel.x);
+			logger.updateColumn(WL_VEL_Y, fi.wheelCogLocalVel.y);
+			logger.updateColumn(WL_FRIC_X, F_r.x);
+			logger.updateColumn(WL_FRIC_Y, F_r.y);
 		}
 
 		// save it for optional rendering:
@@ -493,16 +493,21 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	const auto q = getPose();
 	const auto dq = getTwist();
 
-	loggers_[LOGGER_POSE]->updateColumn(DL_TIMESTAMP, context.simul_time);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_X, q.x);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_Y, q.y);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_Z, q.z);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_YAW, q.yaw);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_PITCH, q.pitch);
-	loggers_[LOGGER_POSE]->updateColumn(PL_Q_ROLL, q.roll);
-	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_X, dq.vx);
-	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_Y, dq.vy);
-	loggers_[LOGGER_POSE]->updateColumn(PL_DQ_Z, dq.omega);
+	{
+		auto& l = loggers_[LOGGER_POSE];
+		ASSERT_(l);
+		auto& logger = *l;
+		logger.updateColumn(DL_TIMESTAMP, context.simul_time);
+		logger.updateColumn(PL_Q_X, q.x);
+		logger.updateColumn(PL_Q_Y, q.y);
+		logger.updateColumn(PL_Q_Z, q.z);
+		logger.updateColumn(PL_Q_YAW, q.yaw);
+		logger.updateColumn(PL_Q_PITCH, q.pitch);
+		logger.updateColumn(PL_Q_ROLL, q.roll);
+		logger.updateColumn(PL_DQ_X, dq.vx);
+		logger.updateColumn(PL_DQ_Y, dq.vy);
+		logger.updateColumn(PL_DQ_Z, dq.omega);
+	}
 
 	{
 		writeLogStrings();
@@ -559,6 +564,14 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 		glForces_->setVisibility(false);
 		glMotorTorques_->setVisibility(false);
 	}
+}
+
+bool mvsim::VehicleBase::isLogging() const
+{
+	if (loggers_.empty()) return false;
+	auto& l = loggers_.begin()->second;
+
+	return l && l->isOpen();
 }
 
 void VehicleBase::updateMaxRadiusFromPoly()
@@ -702,11 +715,12 @@ void VehicleBase::internalGuiUpdate(
 	// setPose() change event, so my caller already holds the mutex and we don't
 	// need/can't acquire it again:
 	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
+	const auto pp = parent()->applyWorldRenderOffset(objectPose);
 
 	if (glInit_)
 	{
-		glChassisViz_->setPose(objectPose);
-		glChassisPhysical_->setPose(objectPose);
+		glChassisViz_->setPose(pp);
+		glChassisPhysical_->setPose(pp);
 		for (size_t i = 0; i < nWs; i++)
 		{
 			const Wheel& w = getWheelInfo(i);
@@ -740,6 +754,8 @@ void VehicleBase::internalGuiUpdate(
 		glForces_ = mrpt::opengl::CSetOfLines::Create();
 		glForces_->setLineWidth(3.0);
 		glForces_->setColor_u8(0xff, 0xff, 0xff);
+		glForces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
+
 		viz->get().insert(glForces_);  // forces are in global coords
 	}
 	if (!glMotorTorques_ && viz)
@@ -748,6 +764,8 @@ void VehicleBase::internalGuiUpdate(
 		glMotorTorques_ = mrpt::opengl::CSetOfLines::Create();
 		glMotorTorques_->setLineWidth(3.0);
 		glMotorTorques_->setColor_u8(0xff, 0x00, 0x00);
+		glMotorTorques_->setPose(
+			parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 		viz->get().insert(glMotorTorques_);	 // torques are in global coords
 	}
 
@@ -762,37 +780,13 @@ void VehicleBase::internalGuiUpdate(
 void VehicleBase::initLoggers()
 {
 	loggers_[LOGGER_POSE] = std::make_shared<CSVLogger>();
-	//  loggers_[LOGGER_POSE]->addColumn(DL_TIMESTAMP);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_X);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_Y);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_Z);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_YAW);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_PITCH);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_Q_ROLL);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_X);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_Y);
-	//  loggers_[LOGGER_POSE]->addColumn(PL_DQ_Z);
-	loggers_[LOGGER_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + LOGGER_POSE + ".log");
+	loggers_[LOGGER_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + "_" + LOGGER_POSE + ".log");
 
 	for (size_t i = 0; i < getNumWheels(); i++)
 	{
 		loggers_[LOGGER_WHEEL + std::to_string(i + 1)] = std::make_shared<CSVLogger>();
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(DL_TIMESTAMP);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_TORQUE);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_WEIGHT);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_VEL_X);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_VEL_Y);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_FRIC_X);
-		//    loggers_[LOGGER_WHEEL + std::to_string(i +
-		//    1)]->addColumn(WL_FRIC_Y);
 		loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->setFilepath(
-			log_path_ + "mvsim_" + name_ + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
+			log_path_ + "mvsim_" + name_ + "_" + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
 	}
 }
 
@@ -809,8 +803,8 @@ void VehicleBase::apply_force(
 	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
 	ASSERT_(b2dBody_);
-	const b2Vec2 wPt = b2dBody_->GetWorldPoint(
-		b2Vec2(applyPoint.x, applyPoint.y));  // Application point -> world coords
+	// Application point -> world coords
+	const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
 	b2dBody_->ApplyForce(b2Vec2(force.x, force.y), wPt, true /*wake up*/);
 }
 

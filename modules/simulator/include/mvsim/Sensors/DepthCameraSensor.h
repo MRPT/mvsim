@@ -29,6 +29,7 @@ namespace mvsim
  * to optionally disable the simulation of either the RGB or Depth part of
  * the outcoming mrpt::obs::CObservation3DRangeScan observations.
  *
+ * \ingroup sensors_module
  */
 class DepthCameraSensor : public SensorBase
 {

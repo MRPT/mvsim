@@ -34,7 +34,7 @@ namespace mvsim
  * \note New in MRPT 2.13.0: the API changed to support an arbitrary number of
  *       input axes.
  *
- * \ingroup mrpt_hwdrivers_grp
+ * \ingroup mvsim_simulator_module
  */
 class Joystick
 {

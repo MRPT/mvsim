@@ -12,6 +12,7 @@
 #include <mrpt/core/WorkerThreadsPool.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
+#include <mrpt/obs/CObservationGPS.h>
 #include <mrpt/obs/CObservationIMU.h>
 #include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/system/CTicTac.h>
@@ -164,9 +165,6 @@ class MVSimNode
 
 	int publisher_history_len_ = 50;
 
-	//!< (Default=0.1) Time tolerance for published TFs
-	double transform_tolerance_ = 0.1;
-
    protected:
 	mvsim_node::shared_ptr<mvsim::Server> mvsim_server_;
 
@@ -304,6 +302,9 @@ class MVSimNode
 
 	mrpt::system::CTicTac tim_publish_tf_;
 
+	/// If true, vehicle namespaces will be used even if there is only one vehicle:
+	bool force_publish_vehicle_namespace_ = false;
+
 	/// Minimum period between update of live info & read of teleop key
 	/// strokes in GUI (In ms)
 	double period_ms_teleop_refresh_ = 100;
@@ -343,5 +344,6 @@ class MVSimNode
 	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservation3DRangeScan& obs);
 	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationPointCloud& obs);
 	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs);
+	void internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationGPS& obs);
 
 };	// end class

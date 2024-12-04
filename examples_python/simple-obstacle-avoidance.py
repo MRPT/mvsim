@@ -11,7 +11,7 @@
 # export PYTHONPATH=$HOME/code/mvsim/build/:$PYTHONPATH
 #
 # Demo with N robots:
-# for i in $(seq 1 25); do bash -c "mvsim_tutorial/python/simple-obstacle-avoidance.py --vehicle veh${i} &"; done
+# for i in $(seq 1 25); do bash -c "examples_python/simple-obstacle-avoidance.py --vehicle veh${i} &"; done
 #
 # ---------------------------------------------------------------------
 
@@ -81,7 +81,7 @@ def evalObstacleAvoidance(obs: ObservationLidar2D_pb2.ObservationLidar2D):
     # Force vectors
     resultantForce = [0, 0]
 
-    #obsWeight = 20.0 / len(obs.scanRanges)
+    # obsWeight = 20.0 / len(obs.scanRanges)
     obsWeight = 1
 
     for idx, r in enumerate(obs.scanRanges):
@@ -138,7 +138,7 @@ def onLidar2DMessage(msgType, msg):
     global prevLidarMsgTimestamp
     global prevGlobalGoalTimestamp, prevGlobalGoal
 
-    assert(msgType == "mvsim_msgs.ObservationLidar2D")
+    assert (msgType == "mvsim_msgs.ObservationLidar2D")
     p = ObservationLidar2D_pb2.ObservationLidar2D()
     p.ParseFromString(bytes(msg))
     # print("[lidar callback] received:\n ranges=\n" + str(p.scanRanges) + "\n validRanges=" + str(p.validRanges))

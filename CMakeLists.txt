@@ -199,6 +199,7 @@ find_package(mrpt-maps 2.5.6 REQUIRED)
 find_package(mrpt-tclap 2.5.6 REQUIRED)
 find_package(mrpt-gui 2.5.6 REQUIRED)
 find_package(mrpt-tfest 2.5.6 REQUIRED)
+find_package(mrpt-topography REQUIRED)
 
 # --------------------------
 # Dependency: Box2D

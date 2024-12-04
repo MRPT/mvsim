@@ -9,6 +9,7 @@
 #include <mrpt/core/format.h>
 #include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/system/filesystem.h>	 // extractFileDirectory()
 #include <mvsim/World.h>
 
@@ -111,12 +112,14 @@ void World::register_standard_xml_tag_parsers()
 	register_tag_parser("element", &World::parse_tag_element);
 	register_tag_parser("sensor", &World::parse_tag_sensor);
 	register_tag_parser("gui", &World::parse_tag_gui);
+	register_tag_parser("georeference", &World::parse_tag_georeference);
 	register_tag_parser("lights", &World::parse_tag_lights);
 	register_tag_parser("walls", &World::parse_tag_walls);
 	register_tag_parser("include", &World::parse_tag_include);
 	register_tag_parser("variable", &World::parse_tag_variable);
 	register_tag_parser("for", &World::parse_tag_for);
 	register_tag_parser("if", &World::parse_tag_if);
+	register_tag_parser("marker", &World::parse_tag_marker);
 }
 
 void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
@@ -144,9 +147,8 @@ void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
 		{
 			// Unknown element!!
 			MRPT_LOG_WARN_STREAM(
-				"[World::load_from_XML] *Warning* Ignoring unknown XML node "
-				"type '"
-				<< node->name() << "'");
+				"[World::load_from_XML] *Warning* Ignoring unknown XML node type '" << node->name()
+																					<< "'");
 		}
 	}
 
@@ -224,8 +226,12 @@ void World::parse_tag_gui(const XmlParserContext& ctx)
 
 void World::parse_tag_lights(const XmlParserContext& ctx)
 {
-	//
 	lightOptions_.parse_from(*ctx.node, *this);
+}
+
+void World::parse_tag_georeference(const XmlParserContext& ctx)
+{
+	georeferenceOptions_.parse_from(*ctx.node, *this);
 }
 
 void World::parse_tag_walls(const XmlParserContext& ctx) { process_load_walls(*ctx.node); }
@@ -345,4 +351,66 @@ bool World::evaluate_tag_if(const rapidxml::xml_node<char>& node) const
 				  str == "On" || (intVal.has_value() && intVal.value() != 0);
 
 	return isTrue;
+}
+
+void World::parse_tag_marker(const XmlParserContext& ctx)
+{
+	auto typeAttr = ctx.node->first_attribute("type");
+	ASSERTMSG_(typeAttr, "XML tag '<marker />' must have a 'type=\"xxx\"' attribute)");
+	const std::string type = typeAttr->value();
+
+	mrpt::img::TColor color{0xff, 0xff, 0xff, 0xff};
+
+	TParameterDefinitions params;
+	mrpt::math::TPoint3D translation = {0, 0, 0};
+	params["color"] = TParamEntry("%color", &color);
+	params["translation"] = TParamEntry("%point3d", &translation);
+
+	// Parse XML params:
+	parse_xmlnode_children_as_param(*ctx.node, params, user_defined_variables());
+
+	if (type == "line_strip")
+	{
+		// line_strip
+		// ---------------
+		// Walls shape can come from external model file, or from a "shape" entry:
+		const auto* xmlPts = ctx.node->first_node("points");
+		ASSERTMSG_(xmlPts, "<marker type='line_strip'> requires tag <points>x y z...</points>");
+
+		mrpt::maps::CSimplePointsMap pts;
+		std::string parseError;
+		std::stringstream ss(mvsim::trim(xmlPts->value()));
+		bool parsedOk = pts.load3D_from_text_stream(ss, parseError);
+		ASSERTMSG_(
+			parsedOk, "Error parsing XYZ data within <marker type='line_strip'>: "s + parseError);
+
+		auto glObj = mrpt::opengl::CSetOfLines::Create();
+		glObj->setColor_u8(color);
+		glObj->setLocation(translation);
+
+		for (size_t i = 0; i < pts.size(); i++)
+		{
+			mrpt::math::TPoint3D pt;
+			pts.getPoint(i, pt);
+			pt += worldRenderOffset();
+
+			if (i == 0)
+				glObj->appendLine(pt, pt);
+			else
+				glObj->appendLineStrip(pt);
+		}
+
+		auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+		worldVisual_->insert(glObj);
+	}
+	else
+	{
+		THROW_EXCEPTION_FMT("Unknown <marker> of type='%s'>", type.c_str());
+	}
+}
+
+void World::GeoreferenceOptions::parse_from(
+	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
+{
+	parse_xmlnode_children_as_param(node, params, {}, "[World::GeoreferenceOptions]", &logger);
 }

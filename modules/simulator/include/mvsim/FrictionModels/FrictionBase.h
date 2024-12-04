@@ -16,7 +16,13 @@
 
 namespace mvsim
 {
-/** Virtual base class for all friction models */
+/** @addtogroup friction_module  Friction simulation module
+ * \ingroup mvsim_simulator_module
+ */
+
+/** Virtual base class for all friction models
+ * \ingroup friction_module
+ */
 class FrictionBase
 {
    public:

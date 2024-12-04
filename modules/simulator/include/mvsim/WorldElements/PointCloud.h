@@ -18,6 +18,10 @@
 
 namespace mvsim
 {
+
+/** Allows simulating a world defined via a plain point cloud
+ *  \ingroup world_elements_module
+ */
 class PointCloud : public WorldElementBase
 {
 	DECLARES_REGISTER_WORLD_ELEMENT(PointCloud)

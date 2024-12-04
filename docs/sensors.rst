@@ -57,6 +57,9 @@ respectively.
 Each sensor ``class`` has its own additional parameters, listed in the next sections.
 
 
+3D LiDARs
+-----------------------------------------
+
 HELIOS 32 (26 deg FOV)
 ##########################
 
@@ -343,3 +346,31 @@ Depth (RGBD) camera
 
    .. literalinclude:: ../definitions/rgbd_camera.sensor.xml
       :language: xml
+
+
+GNSS sensor ("GPS")
+---------------------
+A "GPS sensor" can be attached to a robot with the code shown below. 
+For it to work, the ``world`` XML needs to have a :ref:`georeference tag <world-georeference>`.
+
+.. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
+   :open:
+
+   .. code-block:: xml
+
+		<include file="../definitions/gnss.sensor.xml"
+		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.50"
+		  sensor_period_sec="1.0"
+		  sensor_name="gps"
+		  sensor_horizontal_std_noise="1.5"
+		  sensor_vertical_std_noise="2.5"
+		  />
+
+.. dropdown:: All parameters available in gnss.sensor.xml
+
+   File: `mvsim_tutorial/definitions/gnss.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/gnss.sensor.xml>`_
+
+   .. literalinclude:: ../definitions/gnss.sensor.xml
+      :language: xml
+
+

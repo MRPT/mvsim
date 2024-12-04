@@ -30,9 +30,9 @@ If you want to cite MVSim in your work, please use:
 
 ROSCon talk
 ------------------
+Spanish talk with English slides and subtitles ([slides here](https://docs.google.com/presentation/d/1jX8t1r82vp8MIQP5u1t9bVTtG0XgmjDTtLI7z3Yamzc/edit?usp=sharing)):
 
-[Slides](https://docs.google.com/presentation/d/1jX8t1r82vp8MIQP5u1t9bVTtG0XgmjDTtLI7z3Yamzc/edit?usp=sharing)
-
+[![MvSim ROSCon talk](https://img.youtube.com/vi/WNBqH6SWlRQ/0.jpg)](https://www.youtube.com/watch?v=WNBqH6SWlRQ)
 
 
 Installation

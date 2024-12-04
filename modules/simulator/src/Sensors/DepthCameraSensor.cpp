@@ -192,11 +192,13 @@ void DepthCameraSensor::internalGuiUpdate(
 	// Move with vehicle:
 	const auto& p = vehicle_.getPose();
 
-	if (gl_obs_) gl_obs_->setPose(p);
-	if (gl_sensor_fov_) gl_sensor_fov_->setPose(p);
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(p);
+	const auto pp = parent()->applyWorldRenderOffset(p);
 
-	if (glCustomVisual_) glCustomVisual_->setPose(p + sensor_params_.sensorPose.asTPose());
+	if (gl_obs_) gl_obs_->setPose(pp);
+	if (gl_sensor_fov_) gl_sensor_fov_->setPose(pp);
+	if (gl_sensor_origin_) gl_sensor_origin_->setPose(pp);
+
+	if (glCustomVisual_) glCustomVisual_->setPose(pp + sensor_params_.sensorPose.asTPose());
 }
 
 void DepthCameraSensor::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -284,7 +286,7 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 
 		camRGB->set6DOFMode(true);
 		camRGB->setProjectiveFromPinhole(curObs.cameraParamsIntensity);
-		camRGB->setPose(rgbSensorPose);
+		camRGB->setPose(world()->applyWorldRenderOffset(rgbSensorPose));
 
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);
@@ -311,7 +313,7 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 		// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
 		// the camera to look forward:
 		camDepth->set6DOFMode(true);
-		camDepth->setPose(depthSensorPose);
+		camDepth->setPose(world()->applyWorldRenderOffset(depthSensorPose));
 
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(depth_clip_min_, depth_clip_max_);

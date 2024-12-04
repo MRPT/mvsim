@@ -10,6 +10,7 @@
 #include <mrpt/core/format.h>
 #include <mvsim/Sensors/CameraSensor.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
+#include <mvsim/Sensors/GNSS.h>
 #include <mvsim/Sensors/IMU.h>
 #include <mvsim/Sensors/LaserScanner.h>
 #include <mvsim/Sensors/Lidar3D.h>
@@ -50,6 +51,7 @@ void register_all_sensors()
 	REGISTER_SENSOR("camera", CameraSensor)
 	REGISTER_SENSOR("lidar3d", Lidar3D)
 	REGISTER_SENSOR("imu", IMU)
+	REGISTER_SENSOR("gnss", GNSS)
 }
 
 static auto gAllSensorsOriginViz = mrpt::opengl::CSetOfObjects::Create();

@@ -17,6 +17,9 @@
 
 namespace mvsim
 {
+/** A horizontal plane, can be used as ground floor, etc.
+ * \ingroup world_elements_module
+ */
 class HorizontalPlane : public WorldElementBase
 {
 	DECLARES_REGISTER_WORLD_ELEMENT(HorizontalPlane)
@@ -29,7 +32,7 @@ class HorizontalPlane : public WorldElementBase
 	void simul_pre_timestep(const TSimulContext& context) override;
 	void simul_post_timestep(const TSimulContext& context) override;
 
-	std::optional<float> getElevationAt(const mrpt::math::TPoint2Df& worldXY) const override;
+	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
    protected:
 	virtual void internalGuiUpdate(

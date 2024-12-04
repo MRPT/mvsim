@@ -34,7 +34,7 @@
 
 namespace mvsim
 {
-/** \addtogroup mvsim_comms_module
+/** \ingroup mvsim_comms_module
  * @{ */
 
 class World;

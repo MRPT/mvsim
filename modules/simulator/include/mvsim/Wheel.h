@@ -26,7 +26,9 @@ class DynamicsDifferential;
 class World;
 
 /** Common info for 2D wheels, for usage in derived classes.
- * Wheels are modeled as a mass with a rectangular shape.
+ * Wheels are modeled as a mass with a cylindrical shape.
+ *
+ *  \ingroup mvsim_simulator_module
  */
 class Wheel : public VisualObject
 {

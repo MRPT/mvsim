@@ -105,4 +105,4 @@ Command ``mvsim topic``
       mvsim topic hz <topicName>    Estimate topic publication rate (in Hz)
 
 Can be used to list or inspect the publication of MVSim (not ROS!) topics with sensor and pose data.
-These topics are accessible via the provided Python API, refer to examples: https://github.com/MRPT/mvsim/tree/develop/mvsim_tutorial/python
+These topics are accessible via the provided Python API, refer to examples: https://github.com/MRPT/mvsim/tree/develop/examples_python

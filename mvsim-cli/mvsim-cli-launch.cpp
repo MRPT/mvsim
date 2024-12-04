@@ -111,40 +111,48 @@ std::string mvsim_launch_handle_teleop(
 
 	const World::VehicleList& vehs = app->world.getListOfVehicles();
 	txt2gui_tmp += mrpt::format(
-		"Selected vehicle: %u/%u\n", static_cast<unsigned>(app->teleopIdxVeh + 1),
+		"Selected vehicle: %u/%u", static_cast<unsigned>(app->teleopIdxVeh + 1),
 		static_cast<unsigned>(vehs.size()));
-	if (vehs.size() > app->teleopIdxVeh)
+
+	if (app->teleopIdxVeh >= vehs.size()) return txt2gui_tmp;
+
+	// Get iterator to selected vehicle:
+	World::VehicleList::const_iterator it_veh = vehs.begin();
+	std::advance(it_veh, app->teleopIdxVeh);
+
+	auto& veh = *it_veh->second;
+
+	// is it logging?
+	if (veh.isLogging())
+		txt2gui_tmp += " (LOGGING)\n";
+	else
+		txt2gui_tmp += "\n";
+
+	// Get speed: ground truth
 	{
-		// Get iterator to selected vehicle:
-		World::VehicleList::const_iterator it_veh = vehs.begin();
-		std::advance(it_veh, app->teleopIdxVeh);
+		const mrpt::math::TTwist2D& vel = veh.getVelocityLocal();
+		txt2gui_tmp += mrpt::format(
+			"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx, vel.vy,
+			mrpt::RAD2DEG(vel.omega));
+	}
+	// Get speed: ground truth
+	{
+		const mrpt::math::TTwist2D& vel = veh.getVelocityLocalOdoEstimate();
+		txt2gui_tmp += mrpt::format(
+			"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx, vel.vy,
+			mrpt::RAD2DEG(vel.omega));
+	}
 
-		// Get speed: ground truth
-		{
-			const mrpt::math::TTwist2D& vel = it_veh->second->getVelocityLocal();
-			txt2gui_tmp += mrpt::format(
-				"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx, vel.vy,
-				mrpt::RAD2DEG(vel.omega));
-		}
-		// Get speed: ground truth
-		{
-			const mrpt::math::TTwist2D& vel = it_veh->second->getVelocityLocalOdoEstimate();
-			txt2gui_tmp += mrpt::format(
-				"odo vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx, vel.vy,
-				mrpt::RAD2DEG(vel.omega));
-		}
-
-		// Generic teleoperation interface for any controller that
-		// supports it:
-		{
-			ControllerBaseInterface* controller = it_veh->second->getControllerInterface();
-			ControllerBaseInterface::TeleopInput teleop_in;
-			ControllerBaseInterface::TeleopOutput teleop_out;
-			teleop_in.keycode = keyevent.keycode;
-			teleop_in.js = js;
-			controller->teleop_interface(teleop_in, teleop_out);
-			txt2gui_tmp += teleop_out.append_gui_lines;
-		}
+	// Generic teleoperation interface for any controller that
+	// supports it:
+	{
+		ControllerBaseInterface* controller = veh.getControllerInterface();
+		ControllerBaseInterface::TeleopInput teleop_in;
+		ControllerBaseInterface::TeleopOutput teleop_out;
+		teleop_in.keycode = keyevent.keycode;
+		teleop_in.js = js;
+		controller->teleop_interface(teleop_in, teleop_out);
+		txt2gui_tmp += teleop_out.append_gui_lines;
 	}
 
 	return txt2gui_tmp;

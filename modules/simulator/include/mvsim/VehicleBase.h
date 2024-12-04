@@ -38,6 +38,8 @@ namespace mvsim
 /** Virtual base class for each vehicle "actor" in the simulation.
  * Derived classes implements different dynamical models (Differential,
  * Ackermann,...)
+ *
+ *  \ingroup virtual_interfaces_module
  */
 class VehicleBase : public VisualObject, public Simulable
 {
@@ -224,19 +226,19 @@ class VehicleBase : public VisualObject, public Simulable
 	std::mutex forceSegmentsForRenderingMtx_;
 
    public:	// data logger header entries
-	static constexpr char DL_TIMESTAMP[] = "timestamp";
+	static constexpr char DL_TIMESTAMP[] = "Timestamp";
 	static constexpr char LOGGER_POSE[] = "logger_pose";
 	static constexpr char LOGGER_WHEEL[] = "logger_wheel";
 
-	static constexpr char PL_Q_X[] = "Qx";
-	static constexpr char PL_Q_Y[] = "Qy";
-	static constexpr char PL_Q_Z[] = "Qz";
-	static constexpr char PL_Q_YAW[] = "Qyaw";
-	static constexpr char PL_Q_PITCH[] = "Qpitch";
-	static constexpr char PL_Q_ROLL[] = "Qroll";
-	static constexpr char PL_DQ_X[] = "dQx";
-	static constexpr char PL_DQ_Y[] = "dQy";
-	static constexpr char PL_DQ_Z[] = "dQz";
+	static constexpr char PL_Q_X[] = "q0x";
+	static constexpr char PL_Q_Y[] = "q1y";
+	static constexpr char PL_Q_Z[] = "q2z";
+	static constexpr char PL_Q_YAW[] = "q3yaw";
+	static constexpr char PL_Q_PITCH[] = "q4pitch";
+	static constexpr char PL_Q_ROLL[] = "q5roll";
+	static constexpr char PL_DQ_X[] = "dqx";
+	static constexpr char PL_DQ_Y[] = "dqy";
+	static constexpr char PL_DQ_Z[] = "dqz";
 
 	static constexpr char WL_TORQUE[] = "torque";
 	static constexpr char WL_WEIGHT[] = "weight";
@@ -244,6 +246,8 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr char WL_VEL_Y[] = "velocity_y";
 	static constexpr char WL_FRIC_X[] = "friction_x";
 	static constexpr char WL_FRIC_Y[] = "friction_y";
+
+	bool isLogging() const;
 };	// end VehicleBase
 
 // Class factory:

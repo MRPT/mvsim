@@ -28,7 +28,7 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="twist_ideal" />
+        <controller class="twist_ideal" />  <!-- "twist_ideal" or "twist_pid" -->
 
     </dynamics>
 
