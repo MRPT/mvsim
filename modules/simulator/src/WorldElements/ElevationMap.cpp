@@ -23,6 +23,55 @@ using namespace rapidxml;
 using namespace mvsim;
 using namespace std;
 
+namespace
+{
+mrpt::math::CMatrixFloat applyConvolution(
+	const mrpt::math::CMatrixFloat& data, const mrpt::math::CMatrixDouble& kernel)
+{
+	// Dimensions of the data and kernel
+	const size_t rows = data.rows();
+	const size_t cols = data.cols();
+	const size_t kernelSize = kernel.rows();
+	const size_t kernelRadius = kernelSize / 2;
+
+	// Ensure kernel is square and normalized
+	ASSERT_EQUAL_(kernelSize, static_cast<size_t>(kernel.cols()));
+
+	ASSERTMSG_(std::abs(kernel.sum() - 1.0) < 5e-3, "Kernel must be normalized (sum to 1)");
+
+	// Output matrix
+	mrpt::math::CMatrixFloat result(rows, cols);
+
+	// Apply convolution
+	for (size_t i = 0; i < rows; ++i)
+	{
+		for (size_t j = 0; j < cols; ++j)
+		{
+			double sum = 0.0;
+
+			// Convolution loop over kernel
+			for (int ki = -kernelRadius; ki <= static_cast<int>(kernelRadius); ++ki)
+			{
+				for (int kj = -kernelRadius; kj <= static_cast<int>(kernelRadius); ++kj)
+				{
+					int ni = i + ki;
+					int nj = j + kj;
+
+					// Boundary check
+					if (ni >= 0 && ni < static_cast<int>(rows) && nj >= 0 &&
+						nj < static_cast<int>(cols))
+					{
+						sum += data(ni, nj) * kernel(ki + kernelRadius, kj + kernelRadius);
+					}
+				}
+			}
+			result(i, j) = sum;
+		}
+	}
+	return result;
+}
+}  // namespace
+
 ElevationMap::ElevationMap(World* parent, const rapidxml::xml_node<char>* root)
 	: WorldElementBase(parent)
 {
@@ -66,6 +115,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_extension_y"] = TParamEntry("%lf", &textureExtensionY_);
 
 	params["model_split_size"] = TParamEntry("%lf", &model_split_size_);
+
+	std::string convolution_kernel_str;
+	params["apply_kernel"] = TParamEntry("%s", &convolution_kernel_str);
 
 	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 
@@ -212,6 +264,32 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 				THROW_EXCEPTION("texture_image_rotate can only be: 0, 90, -90, 180");
 		}
 	}
+
+	// Optional height filtering:
+	if (!convolution_kernel_str.empty())
+	{
+		mrpt::math::CMatrixDouble kernel;
+		std::stringstream ss(convolution_kernel_str);
+		try
+		{
+			kernel.loadFromTextFile(ss);
+			ASSERT_(kernel.cols() == kernel.rows());
+			ASSERT_(kernel.cols() > 1);
+		}
+		catch (const std::exception& e)
+		{
+			THROW_EXCEPTION_FMT(
+				"Error parsing kernel as matrix: '%s'.\nError: %s", convolution_kernel_str.c_str(),
+				e.what());
+		}
+
+		parent()->logFmt(
+			mrpt::system::LVL_INFO, "[ElevationMap] Applying filtering convolution filter %ux%u",
+			static_cast<unsigned>(kernel.rows()), static_cast<unsigned>(kernel.cols()));
+
+		elevation_data = applyConvolution(elevation_data, kernel);
+
+	}  // end apply convolution kernel
 
 	// Extension: X,Y
 	const double LX = (elevation_data.rows() - 1) * resolution_;
