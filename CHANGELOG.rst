@@ -2,6 +2,35 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* DEM: add optional kernel filtering
+* document GPS sensors
+* Add new <marker> tag
+* Update README.md: Add link to ROSCon video
+* Fix loss of precision in box2d due to float in case of UTM coordinates
+* Merge pull request `#57 <https://github.com/MRPT/mvsim/issues/57>`_ from MRPT/wip/support_utm_coords
+  Support UTM coords
+* Elevation queries: port float->double
+* Support world-wise coordinates offset for rendering
+* Elevation map: new input mode from DEM XYZRGB files
+* Moved Python and C++ tutorials directory to root level
+* Logger: show active logging status in GUI; better reordering of csv columns
+* Fix doxygen docs generation on RTD
+* ROS node: new argument "force_publish_vehicle_namespace"
+* Allow vehicle names to be parameterizable via expressions, environment variables, etc.
+* FIX: Wrong sensor pose rendering
+* Elevation map demo world: add GNSS sensor
+* LiDAR3D sensor: generate per-point timestamp (constants)
+* FIX: cmake export dependency on mrpt-topography
+* ROS node: publish NavSatFix messages
+* Add missing build dependency
+* Fix clang-format
+* Add new sensor: GNSS (GPS) devices
+* IMU C++ class: fix interface to replace the sensor with the GUI
+* imu.sensor.xml: Add a simple 3D model to visualize the sensor
+* Contributors: Jose Luis Blanco-Claraco
+
 0.11.2 (2024-10-20)
 -------------------
 * Fix FTBFS in ROS 1
