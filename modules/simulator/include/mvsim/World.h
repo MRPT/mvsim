@@ -26,12 +26,15 @@
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/topography/data_types.h>
 #include <mvsim/Block.h>
-#include <mvsim/Comms/Client.h>
 #include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+#include <mvsim/Comms/Client.h>
+#endif
 
 #include <functional>
 #include <list>
@@ -370,8 +373,10 @@ class World : public mrpt::system::COutputLogger
 	 * description loaded from XML file. */
 	void connectToServer();
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client& commsClient() { return client_; }
 	const mvsim::Client& commsClient() const { return client_; }
+#endif
 
 	void free_opengl_resources();
 
@@ -414,7 +419,9 @@ class World : public mrpt::system::COutputLogger
 	friend class VehicleBase;
 	friend class Block;
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client_{"World"};
+#endif
 
 	std::vector<on_observation_callback_t> callbacksOnObservation_;
 

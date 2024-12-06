@@ -8,15 +8,21 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/exceptions.h>
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/Comms/Server.h>
 #include <mvsim/Comms/ports.h>	// MVSIM_PORTNO_MAIN_REP
+#endif
 
 #include "mvsim-cli.h"
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 std::shared_ptr<mvsim::Server> server;
+#endif
 
 void commonLaunchServer()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	ASSERT_(!server);
 
 	// Start network server:
@@ -28,10 +34,12 @@ void commonLaunchServer()
 		cli->argVerbosity.getValue()));
 
 	server->start();
+#endif
 }
 
 int launchStandAloneServer()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	if (cli->argHelp.isSet())
 	{
 		fprintf(
@@ -45,6 +53,7 @@ Available options:
 			mvsim::MVSIM_PORTNO_MAIN_REP, mvsim::MVSIM_PORTNO_MAIN_REP);
 		return 0;
 	}
+#endif
 
 	commonLaunchServer();
 	return 0;

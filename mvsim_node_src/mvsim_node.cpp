@@ -242,6 +242,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 void MVSimNode::launch_mvsim_server()
 {
 	ROS12_INFO("[MVSimNode] launch_mvsim_server()");
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 
 	ASSERT_(!mvsim_server_);
 
@@ -249,6 +250,7 @@ void MVSimNode::launch_mvsim_server()
 	mvsim_server_ = mvsim_node::make_shared<mvsim::Server>();
 
 	mvsim_server_->start();
+#endif
 }
 
 void MVSimNode::loadWorldModel(const std::string& world_xml_file)

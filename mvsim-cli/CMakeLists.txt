@@ -1,5 +1,13 @@
 project(mvsim)
 
+if (TARGET mvsim::comms)
+    set(DEP_MVSIM_COMMS_TRG mvsim::comms)
+endif()
+if (TARGET mvsim::msgs)
+    set(DEP_MVSIM_MSGS_TRG mvsim::msgs)
+endif()
+
+
 # === Define executable ===
 add_executable(${PROJECT_NAME} 
 	mvsim-cli-main.cpp
@@ -12,8 +20,8 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(
 	${PROJECT_NAME}
 	mvsim::simulator
-	mvsim::msgs
-	mvsim::comms
+	${DEP_MVSIM_MSGS_TRG}
+	${DEP_MVSIM_COMMS_TRG}
 	mrpt::tclap
 	${BOX2D_LIBRARIES}  # Box2D libs
 	${CMAKE_THREAD_LIBS_INIT}

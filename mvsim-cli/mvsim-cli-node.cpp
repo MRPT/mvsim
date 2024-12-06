@@ -7,7 +7,11 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/Comms/Client.h>
+#endif
+
+#include <map>
 
 #include "mvsim-cli.h"
 
@@ -36,6 +40,7 @@ int commandNode()
 
 int nodeList()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client;
 
 	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
@@ -53,6 +58,7 @@ int nodeList()
 	{
 		std::cout << "- name: \"" << n.name << "\"\n";
 	}
+#endif
 
 	return 0;
 }

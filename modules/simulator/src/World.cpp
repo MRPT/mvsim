@@ -10,14 +10,12 @@
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/poses/CPose3DQuat.h>
+#include <mrpt/serialization/CArchive.h>
 #include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mrpt/version.h>
 #include <mvsim/World.h>
 
-#include <algorithm>  // count()
-#include <iostream>
 #include <map>
-#include <stdexcept>
 
 using namespace mvsim;
 using namespace std;
@@ -144,6 +142,7 @@ void World::runVisitorOnBlocks(const block_visitor_t& v)
 
 void World::connectToServer()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	//
 	client_.setVerbosityLevel(this->getMinLoggingLevel());
 	client_.serverHostAddress(serverAddress_);
@@ -161,6 +160,7 @@ void World::connectToServer()
 
 	// global services:
 	internal_advertiseServices();
+#endif
 }
 
 void World::insertBlock(const Block::Ptr& block)

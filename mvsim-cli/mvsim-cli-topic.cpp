@@ -11,9 +11,12 @@
 #include <mrpt/math/distributions.h>
 #include <mrpt/math/ops_containers.h>
 #include <mrpt/system/datetime.h>
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/Comms/Client.h>
 #include <mvsim/mvsim-msgs/ObservationLidar2D.pb.h>
 #include <mvsim/mvsim-msgs/TimeStampedPose.pb.h>
+#endif
 
 #include "mvsim-cli.h"
 
@@ -48,6 +51,7 @@ int commandTopic()
 
 int topicList()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client;
 
 	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
@@ -86,9 +90,11 @@ int topicList()
 				std::cout << n.publishers.at(0) << "\n";
 		}
 	}
+#endif
 	return 0;
 }
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 static void echo_TimeStampedPose(const std::string& data)
 {
 	mvsim_msgs::TimeStampedPose out;
@@ -125,9 +131,11 @@ static void callbackSubscribeTopicGeneric(const zmq::message_t& msg)
 
 	std::cout << std::endl;
 }
+#endif
 
 int topicEcho()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client;
 
 	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
@@ -150,11 +158,13 @@ int topicEcho()
 	{
 	}
 
+#endif
 	return 0;
 }
 
 int topicHz()
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client;
 
 	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
@@ -229,6 +239,7 @@ int topicHz()
 		std::cout << "- Period_95percent: " << tHigh << " # [sec]" << std::endl;
 	}
 
+#endif
 	return 0;
 }
 

@@ -17,9 +17,12 @@
 #include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
-#include <mvsim/Comms/Server.h>
 #include <mvsim/World.h>
 #include <tf2/LinearMath/Transform.h>
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+#include <mvsim/Comms/Server.h>
+#endif
 
 #include <atomic>
 #include <thread>
@@ -166,7 +169,9 @@ class MVSimNode
 	int publisher_history_len_ = 50;
 
    protected:
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim_node::shared_ptr<mvsim::Server> mvsim_server_;
+#endif
 
 #if PACKAGE_ROS_VERSION == 1
 	ros::NodeHandle& n_;
