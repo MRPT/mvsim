@@ -187,7 +187,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		const auto ny = static_cast<unsigned int>(std::ceil((maxy - miny) / resolution_));
 
 		parent()->logFmt(
-			mrpt::system::LVL_INFO,
+			mrpt::system::LVL_DEBUG,
 			"[ElevationMap] Loaded %u points, min_corner=(%lf,%lf), max_corner=(%lf,%lf), "
 			"cells=(%u,%u)",
 			static_cast<unsigned>(data.rows()), minx, miny, maxx, maxy, nx, ny);
@@ -284,7 +284,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		}
 
 		parent()->logFmt(
-			mrpt::system::LVL_INFO, "[ElevationMap] Applying filtering convolution filter %ux%u",
+			mrpt::system::LVL_DEBUG, "[ElevationMap] Applying filtering convolution filter %ux%u",
 			static_cast<unsigned>(kernel.rows()), static_cast<unsigned>(kernel.cols()));
 
 		elevation_data = applyConvolution(elevation_data, kernel);

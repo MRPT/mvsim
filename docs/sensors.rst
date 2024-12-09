@@ -348,6 +348,8 @@ Depth (RGBD) camera
       :language: xml
 
 
+.. _sensors-gps:
+
 GNSS sensor ("GPS")
 ---------------------
 A "GPS sensor" can be attached to a robot with the code shown below. 
@@ -358,7 +360,7 @@ For it to work, the ``world`` XML needs to have a :ref:`georeference tag <world-
 
    .. code-block:: xml
 
-		<include file="../definitions/gnss.sensor.xml"
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/gnss.sensor.xml"
 		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.50"
 		  sensor_period_sec="1.0"
 		  sensor_name="gps"
