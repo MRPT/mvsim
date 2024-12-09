@@ -609,8 +609,8 @@ class World : public mrpt::system::COutputLogger
 
 		/** The UTM coords of georefCoord (calculated on start up) */
 		mrpt::topography::TUTMCoords utmRef;
-		int utm_zone = 0; // auto calculated
-		char utm_band = 'X'; // auto calculated
+		int utm_zone = 0;  // auto calculated
+		char utm_band = 'X';  // auto calculated
 
 		const TParameterDefinitions params = {
 			{"latitude", {"%lf", &georefCoord.lat.decimal_value}},
