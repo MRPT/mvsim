@@ -604,15 +604,20 @@ class World : public mrpt::system::COutputLogger
 		 */
 		double world_to_enu_rotation = .0;
 
-		/** UTM zone, positive/negative for Northern/Southern Hemisphere */
-		int utm_zone = 0;
+		/** Is world in UTM coordinates? */
+		bool world_is_utm = false;
+
+		/** The UTM coords of georefCoord (calculated on start up) */
+		mrpt::topography::TUTMCoords utmRef;
+		int utm_zone = 0; // auto calculated
+		char utm_band = 'X'; // auto calculated
 
 		const TParameterDefinitions params = {
 			{"latitude", {"%lf", &georefCoord.lat.decimal_value}},
 			{"longitude", {"%lf", &georefCoord.lon.decimal_value}},
 			{"height", {"%lf", &georefCoord.height}},
 			{"world_to_enu_rotation_deg", {"%lf_deg", &world_to_enu_rotation}},
-			{"utm_zone", {"%i", &utm_zone}},
+			{"world_is_utm", {"%bool", &world_is_utm}},
 		};
 	};
 

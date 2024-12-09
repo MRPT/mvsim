@@ -30,7 +30,11 @@ This can be specified with a ``<georeference>`` tag as documented below.
     ...
       <!-- Define georeferenced coordinates to the world so GNSS/GPS sensors can be properly simulated -->
       <georeference>
-        <utm_zone>30</utm_zone>
+        <world_is_utm>true</world_is_utm>
+        <!-- A reference point roughly within the area of the map to linearize coordinates -->
+        <latitude>36.894718</latitude>
+        <longitude>-2.316988</longitude>
+        <height>100.0</height>
       </georeference>
     ...
     </mvsim_world>
@@ -42,9 +46,9 @@ Parameters for worlds in local coordinates and GNSS geodetic reference:
 
 - ``<height>zz</height>``: The height over the WGS84 ellipsoid for the world (0,0,0).
 
-- ``<world_to_enu_rotation_deg>tt</world_to_enu_rotation_deg>``: An optional rotation (in degrees) if you want North not to be aligned with +Y as it is the default.
+- ``<world_to_enu_rotation_deg>tt</world_to_enu_rotation_deg>``: An optional rotation (in degrees) if you want North not to be aligned with +Y as it is the default. Does not apply when using UTM coordinates.
 
 
 Parameters for worlds with local coordinates as `UTM coordinates <https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system>`_:
 
-- ``<utm_zone>nn</utm_zone>``: Specify the UTM zone number (longitude), positive/negative for Northern/Southern Hemisphere.
+- ``<world_is_utm>true</world_is_utm>``: Indicates that world coordinates are UTM coordinates, defined in the zone of the reference (lat,lon) geodetic coordinates.

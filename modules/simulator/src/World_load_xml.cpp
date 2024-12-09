@@ -237,21 +237,20 @@ void World::parse_tag_georeference(const XmlParserContext& ctx)
 	// handle UTM:
 	auto& g = georeferenceOptions_;
 
-	if (g.utm_zone != 0)
+	if (g.world_is_utm)
 	{
 		ASSERTMSG_(
-			g.georefCoord.isClear(), "Cannot define both, <utm_zone> and geodetics coordinates");
+			g.world_to_enu_rotation == 0,
+			"Cannot define both, <world_to_enu_rotation> and <world_is_utm>");
 
-		// we will use the (lat,lon) of UTM origin as reference for this world:
-		const mrpt::topography::TUTMCoords utmCoords = {0, 0, 0};
+		ASSERTMSG_(
+			!g.georefCoord.isClear(),
+			"<world_is_utm> requires defining a valid reference geodetic coordinates too.");
 
-		mrpt::topography::UTMToGeodetic(
-			utmCoords, std::abs(g.utm_zone), g.utm_zone < 0 ? 'S' : 'N', g.georefCoord);
+		mrpt::topography::GeodeticToUTM(g.georefCoord, g.utmRef, g.utm_zone, g.utm_band);
 
-		MRPT_LOG_DEBUG_STREAM(
-			"Using UTM georeference: utm_zone="	 //
-			<< g.utm_zone << " geoRef: lat=" << g.georefCoord.lat.getDecimalValue()
-			<< " lon=" << g.georefCoord.lon.getDecimalValue());
+		MRPT_LOG_INFO_STREAM(
+			"Using UTM georeference: utm_zone=" << g.utm_zone << " geoRef: utmRef=" << g.utmRef);
 	}
 }
 

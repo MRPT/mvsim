@@ -126,8 +126,19 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 	const auto worldRotation =
 		mrpt::poses::CPose3D::FromYawPitchRoll(georef.world_to_enu_rotation, .0, .0);
 
+	mrpt::poses::CPose3D vehPoseInWorld = vehicle().getCPose3D();
+
+	if (georef.world_is_utm)
+	{
+		auto posLocal = vehPoseInWorld.translation() - georef.utmRef;
+
+		vehPoseInWorld.x(posLocal.x);
+		vehPoseInWorld.y(posLocal.y);
+		vehPoseInWorld.z(posLocal.z);
+	}
+
 	const mrpt::math::TPoint3D sensorPt =
-		(worldRotation + (vehicle().getCPose3D() + outObs->sensorPose)).translation() + noise;
+		(worldRotation + (vehPoseInWorld + outObs->sensorPose)).translation() + noise;
 
 	// convert from ENU (world coordinates) to geodetic:
 	const thread_local auto WGS84 = mrpt::topography::TEllipsoid::Ellipsoid_WGS84();
@@ -143,9 +154,10 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 			once = true;
 			world()->logStr(
 				mrpt::system::LVL_WARN,
-				"It seems world <georeference> parameters are not set, and they are required for "
+				"World <georeference> parameters are not set, and they are required for "
 				"properly define GNSS sensor simulation");
 		}
+		return;
 	}
 
 	mrpt::topography::TGeocentricCoords gcPt;
