@@ -269,7 +269,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (!convolution_kernel_str.empty())
 	{
 		mrpt::math::CMatrixDouble kernel;
-		std::stringstream ss(convolution_kernel_str);
+		std::stringstream ss(mvsim::trim(convolution_kernel_str));
 		try
 		{
 			kernel.loadFromTextFile(ss);
