@@ -77,7 +77,6 @@ Build matrix status
 Docs
 ----------
   * [Main documentation site](https://mvsimulator.readthedocs.io/en/latest/)
-  * https://wiki.ros.org/mvsim
 
 If you clone this repository, remember to checkout the git submodules too:
 
