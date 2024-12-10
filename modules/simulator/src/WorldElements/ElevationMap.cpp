@@ -17,6 +17,7 @@
 #include <limits>
 #include <rapidxml.hpp>
 
+#include "../parse_utils.h"
 #include "xml_utils.h"
 
 using namespace rapidxml;
