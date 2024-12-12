@@ -5,6 +5,7 @@ from launch.substitutions import TextSubstitution
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from ament_index_python import get_package_share_directory
 import os
 
@@ -28,6 +29,11 @@ def generate_launch_description():
         "force_publish_vehicle_namespace", default_value='False',
         description='Use vehicle name namespace even if there is only one vehicle')
 
+    use_rviz_arg = DeclareLaunchArgument(
+        'use_rviz', default_value='True',
+        description='Whether to launch RViz2'
+    )
+
     mvsim_node = Node(
         package='mvsim',
         executable='mvsim_node',
@@ -45,6 +51,7 @@ def generate_launch_description():
     )
 
     rviz2_node = Node(
+        condition=IfCondition(LaunchConfiguration('use_rviz')),
         package='rviz2',
         executable='rviz2',
         name='rviz2',
@@ -57,6 +64,7 @@ def generate_launch_description():
         headless_launch_arg,
         do_fake_localization_arg,
         force_publish_vehicle_namespace_arg,
+        use_rviz_arg,
         mvsim_node,
         rviz2_node
     ])
