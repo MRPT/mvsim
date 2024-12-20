@@ -141,6 +141,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	localn_.param("headless", headless_, headless_);
 	localn_.param("period_ms_publish_tf", period_ms_publish_tf_, period_ms_publish_tf_);
 	localn_.param("do_fake_localization", do_fake_localization_, do_fake_localization_);
+	localn_.param("publish_tf_odom2baselink", publish_tf_odom2baselink_, publish_tf_odom2baselink_);
 	localn_.param(
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_,
 		force_publish_vehicle_namespace_);
@@ -178,6 +179,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	do_fake_localization_ =
 		n_->declare_parameter<bool>("do_fake_localization", do_fake_localization_);
+
+	publish_tf_odom2baselink_ =
+		n_->declare_parameter<bool>("publish_tf_odom2baselink", publish_tf_odom2baselink_);
 
 	publisher_history_len_ =
 		n_->declare_parameter<int>("publisher_history_len", publisher_history_len_);
@@ -834,6 +838,7 @@ void MVSimNode::spinNotifyROS()
 				gtOdoMsg.child_frame_id = "base_link";
 
 				pubs.pub_ground_truth->publish(gtOdoMsg);
+
 				if (do_fake_localization_)
 				{
 					Msg_PoseWithCovarianceStamped currentPos;
@@ -901,6 +906,7 @@ void MVSimNode::spinNotifyROS()
 				const mrpt::math::TPose3D odo_pose = gh_veh_pose;
 
 				// TF(namespace <Ri>): /odom -> /base_link
+				if (publish_tf_odom2baselink_)
 				{
 					Msg_TransformStamped tx;
 					tx.header.frame_id = "odom";

@@ -166,6 +166,8 @@ class MVSimNode
 	/// vehicle without the need to launch additional nodes.
 	bool do_fake_localization_ = true;
 
+	bool publish_tf_odom2baselink_ = true;
+
 	int publisher_history_len_ = 50;
 
    protected:
