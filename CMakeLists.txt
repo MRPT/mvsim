@@ -399,6 +399,7 @@ if (BUILD_FOR_ROS)
 		definitions
 		mvsim_tutorial
 		models
+		launch
 		DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 	)
 
