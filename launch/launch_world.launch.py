@@ -1,7 +1,6 @@
 # Generic ROS2 launch file
 
 from launch import LaunchDescription
-from launch.substitutions import TextSubstitution
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
