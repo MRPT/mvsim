@@ -1,4 +1,5 @@
 # Generic ROS2 launch file
+# Read: https://mvsimulator.readthedocs.io/en/latest/mvsim_node.html
 
 from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration

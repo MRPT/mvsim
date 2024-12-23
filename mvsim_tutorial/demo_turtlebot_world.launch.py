@@ -1,57 +1,70 @@
-# ROS2 launch file
+# ROS2 launch file, invoking mvsim/launch/launch_world.launch.py
+# See: https://mvsimulator.readthedocs.io/en/latest/mvsim_node.html
 
-from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
 from launch.substitutions import TextSubstitution
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch.conditions import IfCondition
 from launch.actions import DeclareLaunchArgument
 from ament_index_python import get_package_share_directory
 import os
-
-mvsimDir = get_package_share_directory("mvsim")
-
-MVSIM_WORLD_FILE = os.path.join(mvsimDir, 'mvsim_tutorial',
-                                'demo_turtlebot_world.world.xml')
-MVSIM_ROS2_PARAMS_FILE = os.path.join(mvsimDir, 'mvsim_tutorial',
-                                      'mvsim_ros2_params.yaml')
-RVIZ2_FILE = os.path.join(mvsimDir, 'mvsim_tutorial',
-                          'demo_turtlebot_world_ros2.rviz')
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.substitutions import LaunchConfiguration
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    # args that can be set from the command line or a default will be used
-    world_file_launch_arg = DeclareLaunchArgument(
-        "world_file", default_value=TextSubstitution(
-            text=MVSIM_WORLD_FILE))
+    # mvsim directory:
+    mvsimDir = get_package_share_directory("mvsim")
 
-    do_fake_localization_arg = DeclareLaunchArgument(
-        "do_fake_localization", default_value='True', description='publish tf odom -> base_link')
+    # World to launch:
+    world_file = os.path.join(
+        mvsimDir, 'mvsim_tutorial', 'demo_turtlebot_world.world.xml')
+    rviz_config_file = os.path.join(
+        get_package_share_directory('mvsim'), 'mvsim_tutorial', 'demo_turtlebot_world_ros2.rviz')
 
-    mvsim_node = Node(
-        package='mvsim',
-        executable='mvsim_node',
-        name='mvsim',
-        output='screen',
-        parameters=[
-            MVSIM_ROS2_PARAMS_FILE,
-            {
-                "world_file": LaunchConfiguration('world_file'),
-                "headless": False,
-                "do_fake_localization": LaunchConfiguration('do_fake_localization'),
-            }]
-    )
+    # Configurable arguments
+    headless = LaunchConfiguration('headless', default='True')
+    do_fake_localization = LaunchConfiguration(
+        'do_fake_localization', default='False')
+    publish_tf_odom2baselink = LaunchConfiguration(
+        'publish_tf_odom2baselink', default='False')
+    force_publish_vehicle_namespace = LaunchConfiguration(
+        'force_publish_vehicle_namespace', default='True')
+    use_rviz = LaunchConfiguration('use_rviz', default='False')
 
-    rviz2_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=[
-                '-d', [RVIZ2_FILE]]
-    )
+    # Create LaunchDescription
+    ld = LaunchDescription()
 
-    return LaunchDescription([
-        world_file_launch_arg,
-        do_fake_localization_arg,
-        mvsim_node,
-        rviz2_node
-    ])
+    # Add arguments to LaunchDescription
+    ld.add_action(DeclareLaunchArgument('headless', default_value='False',
+                                        description='Run in headless mode'))
+    ld.add_action(DeclareLaunchArgument('do_fake_localization', default_value='True',
+                                        description='Publish fake identity tf "map" -> "odom"'))
+    ld.add_action(DeclareLaunchArgument('publish_tf_odom2baselink', default_value='True',
+                                        description='Publish tf "odom" -> "base_link"'))
+    ld.add_action(DeclareLaunchArgument('force_publish_vehicle_namespace', default_value='False',
+                                        description='Use vehicle name namespace even if there is only one vehicle'))
+    ld.add_action(DeclareLaunchArgument('use_rviz', default_value='True',
+                                        description='Whether to launch RViz2'))
+
+    # Include the original launch file
+    ld.add_action(IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('mvsim'),
+                         'launch', 'launch_world.launch.py')
+        ),
+        launch_arguments={
+            'world_file': world_file,
+            'headless': headless,
+            'do_fake_localization': do_fake_localization,
+            'publish_tf_odom2baselink': publish_tf_odom2baselink,
+            'force_publish_vehicle_namespace': force_publish_vehicle_namespace,
+            'use_rviz': use_rviz,
+            'rviz_config_file': rviz_config_file
+        }.items()
+    ))
+
+    return ld

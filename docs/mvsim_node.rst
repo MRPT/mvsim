@@ -25,7 +25,8 @@ Basic usage from the command line
         .. code-block:: bash
 
             roslaunch mvsim launch_world.launch \
-              XX
+              world_file:=/path/to/your/my.world.xml \
+              headless:=True
 
     .. tab-item:: ROS 2
         :selected:
@@ -33,54 +34,46 @@ Basic usage from the command line
         .. code-block:: bash
 
             ros2 launch mvsim launch_world.launch.py \
-              world_file:=/path/to/your/my.world.xml
+              world_file:=/path/to/your/my.world.xml \
+              headless:=True
 
 |
 
 All launch parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+All these parameters apply to both, ROS 1 and ROS 2 launch files above:
 
-.. tab-set::
-    .. tab-item:: ROS 1
+.. code-block:: bash
 
-        .. code-block:: bash
+   $ ros2 launch mvsim launch_world.launch.py --show-args
+   Arguments (pass arguments as '<name>:=<value>'):
 
-            xxx
+      'world_file':
+         Path to the *.world.xml file to load
 
-    .. tab-item:: ROS 2
-        :selected:
+      'headless':
+         no description given
+         (default: 'False')
 
-        .. code-block:: bash
+      'do_fake_localization':
+         publish fake identity tf "map" -> "odom"
+         (default: 'True')
 
-            $ ros2 launch mvsim launch_world.launch.py --show-args
-            Arguments (pass arguments as '<name>:=<value>'):
+      'publish_tf_odom2baselink':
+         publish tf "odom" -> "base_link"
+         (default: 'True')
 
-               'world_file':
-                  Path to the *.world.xml file to load
+      'force_publish_vehicle_namespace':
+         Use vehicle name namespace even if there is only one vehicle
+         (default: 'False')
 
-               'headless':
-                  no description given
-                  (default: 'False')
+      'use_rviz':
+         Whether to launch RViz2
+         (default: 'True')
 
-               'do_fake_localization':
-                  publish fake identity tf "map" -> "odom"
-                  (default: 'True')
-
-               'publish_tf_odom2baselink':
-                  publish tf "odom" -> "base_link"
-                  (default: 'True')
-
-               'force_publish_vehicle_namespace':
-                  Use vehicle name namespace even if there is only one vehicle
-                  (default: 'False')
-
-               'use_rviz':
-                  Whether to launch RViz2
-                  (default: 'True')
-
-               'rviz_config_file':
-                  If use_rviz:="True", the configuration file for rviz
-                  (default: '')
+      'rviz_config_file':
+         If use_rviz:="True", the configuration file for rviz
+         (default: '')
 
 |
 
@@ -92,9 +85,29 @@ You can use this code to bootstrap your own launch files:
 .. tab-set::
     .. tab-item:: ROS 1
 
-        .. code-block:: bash
+        .. code-block:: xml
 
-            xxx
+            <launch>
+               <!-- Arguments -->
+               <arg name="world_file" default="$(find my_package)/mvsim/demo.world.xml" />
+               <arg name="headless" default="False" />
+               <arg name="do_fake_localization" default="True" />
+               <arg name="publish_tf_odom2baselink" default="True" />
+               <arg name="force_publish_vehicle_namespace" default="False" />
+               <arg name="use_rviz" default="True" />
+               <arg name="rviz_config_file" default="$(find mvsim)/mvsim_tutorial/demo_depth_camera.rviz" />
+
+               <!-- Include the original launch file -->
+               <include file="$(find mvsim)/launch/launch_world.launch">
+                  <arg name="world_file" value="$(arg world_file)" />
+                  <arg name="headless" value="$(arg headless)" />
+                  <arg name="do_fake_localization" value="$(arg do_fake_localization)" />
+                  <arg name="publish_tf_odom2baselink" value="$(arg publish_tf_odom2baselink)" />
+                  <arg name="force_publish_vehicle_namespace" value="$(arg force_publish_vehicle_namespace)" />
+                  <arg name="use_rviz" value="$(arg use_rviz)" />
+                  <arg name="rviz_config_file" value="$(arg rviz_config_file)" />
+               </include>
+            </launch>
 
     .. tab-item:: ROS 2
         :selected:
