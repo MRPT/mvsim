@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.13.0 (2024-12-24)
+-------------------
 * Add ROS1 generic launcher
 * Port demos to the generic ros2 launch file so all rosargs are now exposed in all demos
 * create generic launch_world ros2 file
