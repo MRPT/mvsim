@@ -26,12 +26,15 @@
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/topography/data_types.h>
 #include <mvsim/Block.h>
-#include <mvsim/Comms/Client.h>
 #include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+#include <mvsim/Comms/Client.h>
+#endif
 
 #include <functional>
 #include <list>
@@ -370,8 +373,10 @@ class World : public mrpt::system::COutputLogger
 	 * description loaded from XML file. */
 	void connectToServer();
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client& commsClient() { return client_; }
 	const mvsim::Client& commsClient() const { return client_; }
+#endif
 
 	void free_opengl_resources();
 
@@ -414,7 +419,9 @@ class World : public mrpt::system::COutputLogger
 	friend class VehicleBase;
 	friend class Block;
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client_{"World"};
+#endif
 
 	std::vector<on_observation_callback_t> callbacksOnObservation_;
 
@@ -597,15 +604,20 @@ class World : public mrpt::system::COutputLogger
 		 */
 		double world_to_enu_rotation = .0;
 
-		/** UTM zone, positive/negative for Northern/Southern Hemisphere */
-		int utm_zone = 0;
+		/** Is world in UTM coordinates? */
+		bool world_is_utm = false;
+
+		/** The UTM coords of georefCoord (calculated on start up) */
+		mrpt::topography::TUTMCoords utmRef;
+		int utm_zone = 0;  // auto calculated
+		char utm_band = 'X';  // auto calculated
 
 		const TParameterDefinitions params = {
 			{"latitude", {"%lf", &georefCoord.lat.decimal_value}},
 			{"longitude", {"%lf", &georefCoord.lon.decimal_value}},
 			{"height", {"%lf", &georefCoord.height}},
 			{"world_to_enu_rotation_deg", {"%lf_deg", &world_to_enu_rotation}},
-			{"utm_zone", {"%i", &utm_zone}},
+			{"world_is_utm", {"%bool", &world_is_utm}},
 		};
 	};
 

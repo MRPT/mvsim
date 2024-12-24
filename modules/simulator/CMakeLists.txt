@@ -119,29 +119,34 @@ source_group(Friction FILES ${Friction_SRCS})
 source_group(VehicleDynamics FILES ${VehicleDynamics_SRCS})
 source_group(WorldElements FILES ${WorldElements_SRCS})
 
+if (TARGET mvsim::comms)
+    set(DEP_MVSIM_COMMS_PKG mvsim-comms)
+    set(DEP_MVSIM_COMMS_TRG mvsim::comms)
+endif()
+if (TARGET mvsim::msgs)
+    set(DEP_MVSIM_MSGS_TRG mvsim::msgs)
+endif()
+
 set(PACKAGE_DEPENDENCIES
   mrpt-maps
   mrpt-gui
   mrpt-topography
-  mvsim-comms
+  ${DEP_MVSIM_COMMS_PKG}
   box2d
   )
 mvsim_common_target_settings(${MODULE_NAME})
 
 
 target_link_libraries(${PROJECT_NAME}
- PRIVATE
-	mvsim::msgs
-#	${CMAKE_THREAD_LIBS_INIT}
-#	${Protobuf_LIBRARIES}
-#	${ZeroMQ_LIBRARY}
+PRIVATE
+	${DEP_MVSIM_MSGS_TRG}
 PUBLIC
 	mrpt::obs
 	mrpt::opengl
 	mrpt::maps
 	mrpt::gui
 	mrpt::topography
-	mvsim::comms
+	${DEP_MVSIM_COMMS_TRG}
 	${BOX2D_LIBRARIES}
 )
 
@@ -150,4 +155,3 @@ target_include_directories(${PROJECT_NAME}
 	SYSTEM PUBLIC
 		$<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
 )
-

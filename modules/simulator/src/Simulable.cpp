@@ -10,11 +10,14 @@
 #include <box2d/b2_contact.h>
 #include <box2d/b2_distance.h>
 #include <mvsim/Block.h>
-#include <mvsim/Comms/Client.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/World.h>
+
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+#include <mvsim/Comms/Client.h>
+#endif
 
 #include <cmath>  // fmod()
 
@@ -378,6 +381,7 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 
 void Simulable::internalHandlePublish(const TSimulContext& context)
 {
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	std::shared_lock lck(q_mtx_);
 
 	MRPT_START
@@ -448,6 +452,7 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 	}
 
 	MRPT_END
+#endif
 }
 
 void Simulable::registerOnServer(mvsim::Client& c)

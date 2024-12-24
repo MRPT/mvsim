@@ -346,13 +346,21 @@ if (BUILD_FOR_ROS)
 	PACKAGE_ROS_VERSION=${PACKAGE_ROS_VERSION}
 	)
 
+	if (TARGET mvsim::comms)
+		set(DEP_MVSIM_COMMS_TRG mvsim::comms)
+	endif()
+	if (TARGET mvsim::msgs)
+		set(DEP_MVSIM_MSGS_TRG mvsim::msgs)
+	endif()
+
+
 	# Specify libraries to link a library or executable target against
 	target_link_libraries(
 		mvsim_node
 		#PRIVATE  # ros ament already used the plain signature, we cannot use this here...
 		mvsim::simulator
-		mvsim::msgs
-		mvsim::comms
+		${DEP_MVSIM_MSGS_TRG}
+		${DEP_MVSIM_COMMS_TRG}
 		${BOX2D_LIBRARIES}  # Box2D libs
 		${catkin_LIBRARIES}
 		${CMAKE_THREAD_LIBS_INIT}
@@ -391,6 +399,7 @@ if (BUILD_FOR_ROS)
 		definitions
 		mvsim_tutorial
 		models
+		launch
 		DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 	)
 

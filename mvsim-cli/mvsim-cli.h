@@ -10,7 +10,9 @@
 #pragma once
 
 #include <mrpt/3rdparty/tclap/CmdLine.h>
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/Comms/ports.h>
+#endif
 
 #include <functional>
 #include <memory>
@@ -42,8 +44,10 @@ struct cli_flags
 
 	TCLAP::SwitchArg argHelp{"h", "help", "Shows more detailed help for command", cmd};
 
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	TCLAP::ValueArg<int> argPort{
 		"p", "port", "TCP port to listen at", false, mvsim::MVSIM_PORTNO_MAIN_REP, "TCP port", cmd};
+#endif
 
 	TCLAP::ValueArg<double> argRealTimeFactor{
 		"",

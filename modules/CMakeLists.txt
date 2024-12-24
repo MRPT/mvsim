@@ -201,12 +201,13 @@ endfunction()
 
 
 # ========================== Targets ====================================
-add_subdirectory(simulator)
-
 if (MVSIM_WITH_PROTOBUF)
   add_subdirectory(comms)
   add_subdirectory(msgs)
 endif()
+
+add_subdirectory(simulator)
+
 
 # From: https://github.com/ament/ament_cmake/blob/rolling/ament_cmake_python/ament_cmake_python-extras.cmake
 macro(mvsim_ament_cmake_python_get_python_install_dir)

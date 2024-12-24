@@ -62,7 +62,6 @@ Build matrix status
 | ---    | ---       | ---            | ---         |
 | ROS 1 Noetic (u20.04) | [![Build Status](https://build.ros.org/job/Ndev__mvsim__ubuntu_focal_amd64/badge/icon)](https://build.ros.org/job/Ndev__mvsim__ubuntu_focal_amd64/) |  amd64 [![Build Status](https://build.ros.org/job/Nbin_uF64__mvsim__ubuntu_focal_amd64__binary/badge/icon)](https://build.ros.org/job/Nbin_uF64__mvsim__ubuntu_focal_amd64__binary/) <br> arm64 [![Build Status](https://build.ros.org/job/Nbin_ufv8_uFv8__mvsim__ubuntu_focal_arm64__binary/badge/icon)](https://build.ros.org/job/Nbin_ufv8_uFv8__mvsim__ubuntu_focal_arm64__binary/) <br> armhf [![Build Status](https://build.ros.org/job/Nbin_ufhf_uFhf__mvsim__ubuntu_focal_armhf__binary/badge/icon)](https://build.ros.org/job/Nbin_ufhf_uFhf__mvsim__ubuntu_focal_armhf__binary/)  | [![Version](https://img.shields.io/ros/v/noetic/mvsim)](https://index.ros.org/search/?term=mvsim) |
 | ROS 2 Humble (u22.04) | [![Build Status](https://build.ros2.org/job/Hdev__mvsim__ubuntu_jammy_amd64/badge/icon)](https://build.ros2.org/job/Hdev__mvsim__ubuntu_jammy_amd64/) | amd64 [![Build Status](https://build.ros2.org/job/Hbin_uJ64__mvsim__ubuntu_jammy_amd64__binary/badge/icon)](https://build.ros2.org/job/Hbin_uJ64__mvsim__ubuntu_jammy_amd64__binary/) <br> arm64 [![Build Status](https://build.ros2.org/job/Hbin_ujv8_uJv8__mvsim__ubuntu_jammy_arm64__binary/badge/icon)](https://build.ros2.org/job/Hbin_ujv8_uJv8__mvsim__ubuntu_jammy_arm64__binary/) | [![Version](https://img.shields.io/ros/v/humble/mvsim)](https://index.ros.org/search/?term=mvsim) |
-| ROS 2 Iron (u22.04) | [![Build Status](https://build.ros2.org/job/Idev__mvsim__ubuntu_jammy_amd64/badge/icon)](https://build.ros2.org/job/Idev__mvsim__ubuntu_jammy_amd64/) | amd64 [![Build Status](https://build.ros2.org/job/Ibin_uJ64__mvsim__ubuntu_jammy_amd64__binary/badge/icon)](https://build.ros2.org/job/Ibin_uJ64__mvsim__ubuntu_jammy_amd64__binary/) <br> arm64 [![Build Status](https://build.ros2.org/job/Ibin_ujv8_uJv8__mvsim__ubuntu_jammy_arm64__binary/badge/icon)](https://build.ros2.org/job/Ibin_ujv8_uJv8__mvsim__ubuntu_jammy_arm64__binary/) | [![Version](https://img.shields.io/ros/v/iron/mvsim)](https://index.ros.org/search/?term=mvsim) |
 | ROS 2 Jazzy @ u24.04 | [![Build Status](https://build.ros2.org/job/Jdev__mvsim__ubuntu_noble_amd64/badge/icon)](https://build.ros2.org/job/Jdev__mvsim__ubuntu_noble_amd64/) | amd64 [![Build Status](https://build.ros2.org/job/Jbin_uN64__mvsim__ubuntu_noble_amd64__binary/badge/icon)](https://build.ros2.org/job/Jbin_uN64__mvsim__ubuntu_noble_amd64__binary/) <br> arm64 [![Build Status](https://build.ros2.org/job/Jbin_unv8_uNv8__mvsim__ubuntu_noble_arm64__binary/badge/icon)](https://build.ros2.org/job/Jbin_unv8_uNv8__mvsim__ubuntu_noble_arm64__binary/) | [![Version](https://img.shields.io/ros/v/jazzy/mvsim)](https://index.ros.org/search/?term=mvsim) | 
 | ROS 2 Rolling (u24.04) | [![Build Status](https://build.ros2.org/job/Rdev__mvsim__ubuntu_noble_amd64/badge/icon)](https://build.ros2.org/job/Rdev__mvsim__ubuntu_noble_amd64/) | amd64 [![Build Status](https://build.ros2.org/job/Rbin_uN64__mvsim__ubuntu_noble_amd64__binary/badge/icon)](https://build.ros2.org/job/Rbin_uN64__mvsim__ubuntu_noble_amd64__binary/) <br> arm64 [![Build Status](https://build.ros2.org/job/Rbin_unv8_uNv8__mvsim__ubuntu_noble_arm64__binary/badge/icon)](https://build.ros2.org/job/Rbin_unv8_uNv8__mvsim__ubuntu_noble_arm64__binary/) | [![Version](https://img.shields.io/ros/v/rolling/mvsim)](https://index.ros.org/search/?term=mvsim) |
 
@@ -71,13 +70,12 @@ Build matrix status
 | ---    | ---       |
 | ROS 1 Melodic (u18.04) | [![Version](https://img.shields.io/ros/v/melodic/mvsim)](https://index.ros.org/search/?term=mvsim) |
 | ROS 2 Foxy (u20.04) | [![Version](https://img.shields.io/ros/v/foxy/mvsim)](https://index.ros.org/search/?term=mvsim) |
-
+| ROS 2 Iron (u22.04) | [![Version](https://img.shields.io/ros/v/iron/mvsim)](https://index.ros.org/search/?term=mvsim) |
 
 
 Docs
 ----------
   * [Main documentation site](https://mvsimulator.readthedocs.io/en/latest/)
-  * https://wiki.ros.org/mvsim
 
 If you clone this repository, remember to checkout the git submodules too:
 
