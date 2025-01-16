@@ -4,6 +4,8 @@
 PYBIND11_VERSION=$(dpkg -s pybind11-dev | grep '^Version:' | cut -d " " -f2)
 SYSTEM_PYBIND11_MM_VERSION=$(echo $PYBIND11_VERSION | cut -d. -f1).$(echo $PYBIND11_VERSION | cut -d. -f2)
 
+PYTHON_INCLUDE_PATH=$(python3 -c "from sysconfig import get_paths; print(get_paths()['include'])")
+
 PYBIND11_MM_VERSION=${PYBIND11_MM_VERSION:-$SYSTEM_PYBIND11_MM_VERSION}
 
 echo "System PYBIND11_VERSION: $PYBIND11_VERSION (Used for wrapper: $PYBIND11_MM_VERSION)"
@@ -24,7 +26,9 @@ $BINDER \
 	-std=c++17 -DNDEBUG \
 	-DMVSIM_HAS_PROTOBUF=1 \
 	-DMVSIM_HAS_ZMQ=1 \
+	-DMVSIM_HAS_PYTHON=1 \
 	-I$1/include \
+	-I$PYTHON_INCLUDE_PATH \
 	-I$MRPT_PATH/build-Release/include/mrpt-configuration/ \
 	-I$MRPT_PATH/libs/system/include/ \
 	-I$MRPT_PATH/libs/core/include/ \

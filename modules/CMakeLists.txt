@@ -157,6 +157,10 @@ function(mvsim_common_target_settings MODULENAME_)
     target_compile_definitions(${TARGETNAME_} PUBLIC MVSIM_HAS_ZMQ)
   endif()
 
+	if (MVSIM_WITH_PYTHON)
+		target_compile_definitions(${TARGETNAME_} PUBLIC MVSIM_HAS_PYTHON)
+	endif()
+
   # ==== Install & export target ========
   install(TARGETS	${TARGETNAME_}
 		  EXPORT 	${TARGETNAME_}-targets

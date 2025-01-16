@@ -681,9 +681,9 @@ void Client::internalTopicUpdatesThread()
 #endif
 }
 
+#if defined(MVSIM_HAS_PYTHON)
 // Overload for python wrapper
-std::string Client::callService(
-	const std::string& serviceName, const std::string& inputSerializedMsg)
+py::bytes Client::callService(const std::string& serviceName, const std::string& inputSerializedMsg)
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -691,10 +691,14 @@ std::string Client::callService(
 
 	std::string outMsgData, outMsgType;
 	doCallService(serviceName, inputSerializedMsg, std::nullopt, outMsgData, outMsgType);
-	return outMsgData;
+	// Return as bytes to avoid Pybind11 assuming it is a str and attempting utf-8 encoding
+	// which may fail with certain structures.
+	return py::bytes(outMsgData);
 #endif
 	MRPT_END
 }
+#endif
+
 /// Overload for python wrapper
 void Client::subscribeTopic(
 	const std::string& topicName,

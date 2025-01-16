@@ -14,6 +14,12 @@
 #include <mvsim/Comms/common.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
+#if defined(MVSIM_HAS_PYTHON)
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
+#endif
+
 #include <atomic>
 #include <memory>
 #include <thread>
@@ -96,8 +102,10 @@ class Client : public mrpt::system::COutputLogger
 	void callService(
 		const std::string& serviceName, const INPUT_MSG_T& input, OUTPUT_MSG_T& output);
 
+	#if defined(MVSIM_HAS_PYTHON)
 	/// Overload for python wrapper
-	std::string callService(const std::string& serviceName, const std::string& inputSerializedMsg);
+	py::bytes callService(const std::string& serviceName, const std::string& inputSerializedMsg);
+	#endif
 
 	/// Overload for python wrapper (callback accepts bytes-string)
 	void subscribeTopic(
