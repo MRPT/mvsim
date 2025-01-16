@@ -10,7 +10,11 @@ echo "System PYBIND11_VERSION: $PYBIND11_VERSION (Used for wrapper: $PYBIND11_MM
 
 mkdir -p $1/python/generated-sources-pybind
 
-$HOME/code/binder/build/source/binder \
+BINDER=$(command -v binder || echo "$HOME/code/binder/build/source/binder")
+
+MRPT_PATH="${MRPT_PATH:-/home/jlblanco/code/mrpt}"
+
+$BINDER \
 	--root-module=pymvsim_$1 \
 	--prefix $1/python/generated-sources-pybind/ \
 	--bind pymvsim_$1 \
@@ -21,12 +25,12 @@ $HOME/code/binder/build/source/binder \
 	-DMVSIM_HAS_PROTOBUF=1 \
 	-DMVSIM_HAS_ZMQ=1 \
 	-I$1/include \
-	-I/home/jlblanco/code/mrpt/build-Release/include/mrpt-configuration/ \
-	-I/home/jlblanco/code/mrpt/libs/system/include/ \
-	-I/home/jlblanco/code/mrpt/libs/core/include/ \
-	-I/home/jlblanco/code/mrpt/libs/typemeta/include \
-	-I/home/jlblanco/code/mrpt/libs/io/include/ \
-	-I/home/jlblanco/code/mrpt/libs/serialization/include/ \
-	-I/home/jlblanco/code/mrpt/libs/rtti/include/ \
-	-I/home/jlblanco/code/mrpt/libs/serialization/include/ \
-	-I/home/jlblanco/code/mrpt/libs/containers/include/ \
+	-I$MRPT_PATH/build-Release/include/mrpt-configuration/ \
+	-I$MRPT_PATH/libs/system/include/ \
+	-I$MRPT_PATH/libs/core/include/ \
+	-I$MRPT_PATH/libs/typemeta/include \
+	-I$MRPT_PATH/libs/io/include/ \
+	-I$MRPT_PATH/libs/serialization/include/ \
+	-I$MRPT_PATH/libs/rtti/include/ \
+	-I$MRPT_PATH/libs/serialization/include/ \
+	-I$MRPT_PATH/libs/containers/include/ \
