@@ -10,8 +10,8 @@
 
 #ifndef BINDER_PYBIND11_TYPE_CASTER
 #define BINDER_PYBIND11_TYPE_CASTER
-PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>)
-PYBIND11_DECLARE_HOLDER_TYPE(T, T*)
+PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>, false)
+PYBIND11_DECLARE_HOLDER_TYPE(T, T*, false)
 PYBIND11_MAKE_OPAQUE(std::shared_ptr<void>)
 #endif
 
@@ -30,16 +30,10 @@ struct PyCallBack_std_runtime_error : public std::runtime_error
 			auto o = overload.operator()<pybind11::return_value_policy::reference>();
 			if (pybind11::detail::cast_is_temporary_value_reference<const char*>::value)
 			{
-// pybind11 <=2.4: overload_caster_t, otherwise: override_caster_t
-#if (PYBIND11_MAJOR_VERSION == 2 && PYBIND11_MINOR_VERSION <= 4)
-				static pybind11::detail::overload_caster_t<const char*> caster;
-#else
 				static pybind11::detail::override_caster_t<const char*> caster;
-#endif
 				return pybind11::detail::cast_ref<const char*>(std::move(o), caster);
 			}
-			else
-				return pybind11::detail::cast_safe<const char*>(std::move(o));
+			return pybind11::detail::cast_safe<const char*>(std::move(o));
 		}
 		return runtime_error::what();
 	}
@@ -64,8 +58,8 @@ void bind_std_stdexcept(std::function<pybind11::module&(std::string const& names
 			"assign",
 			(class std::runtime_error & (std::runtime_error::*)(const class std::runtime_error&)) &
 				std::runtime_error::operator=,
-			"C++: std::runtime_error::operator=(const class std::runtime_error "
-			"&) --> class std::runtime_error &",
+			"C++: std::runtime_error::operator=(const class std::runtime_error &) --> class "
+			"std::runtime_error &",
 			pybind11::return_value_policy::automatic, pybind11::arg(""));
 		cl.def(
 			"what", (const char* (std::runtime_error::*)() const) & std::runtime_error::what,
