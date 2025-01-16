@@ -32,6 +32,7 @@ target_link_libraries(${PROJECT_NAME}
 	mrpt::io
 	mrpt::serialization
 	mvsim::msgs
+	pybind11::module
 )
 
 # =========== Python wrapper ==================
