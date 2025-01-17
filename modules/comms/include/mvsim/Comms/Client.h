@@ -102,10 +102,10 @@ class Client : public mrpt::system::COutputLogger
 	void callService(
 		const std::string& serviceName, const INPUT_MSG_T& input, OUTPUT_MSG_T& output);
 
-	#if defined(MVSIM_HAS_PYTHON)
+#if defined(MVSIM_HAS_PYTHON)
 	/// Overload for python wrapper
 	py::bytes callService(const std::string& serviceName, const std::string& inputSerializedMsg);
-	#endif
+#endif
 
 	/// Overload for python wrapper (callback accepts bytes-string)
 	void subscribeTopic(

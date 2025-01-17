@@ -46,11 +46,11 @@ if (MVSIM_WITH_PYTHON)
     message(STATUS "PYBIND11_VERSION         : ${PYBIND11_MAJOR_VERSION}.${PYBIND11_MINOR_VERSION}.${PYBIND11_PATCH_VERSION}")
   endif()
 
-	target_link_libraries(${PROJECT_NAME}
-		PUBLIC
-		pybind11::module
-		Python3::Python
-	)
+  target_link_libraries(${PROJECT_NAME}
+   PUBLIC
+    pybind11::module
+    Python3::Python
+  )
 
   set(PY_SRCS_DIR ${CMAKE_CURRENT_LIST_DIR}/python/generated-sources-pybind)
 
