@@ -9,12 +9,12 @@
 
 #ifndef BINDER_PYBIND11_TYPE_CASTER
 #define BINDER_PYBIND11_TYPE_CASTER
-PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>)
-PYBIND11_DECLARE_HOLDER_TYPE(T, T*)
+PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>, false)
+PYBIND11_DECLARE_HOLDER_TYPE(T, T*, false)
 PYBIND11_MAKE_OPAQUE(std::shared_ptr<void>)
 #endif
 
-// mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:49
+// mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:51
 struct PyCallBack_mvsim_UnexpectedMessageException : public mvsim::UnexpectedMessageException
 {
 	using mvsim::UnexpectedMessageException::UnexpectedMessageException;
@@ -37,8 +37,7 @@ struct PyCallBack_mvsim_UnexpectedMessageException : public mvsim::UnexpectedMes
 #endif
 				return pybind11::detail::cast_ref<const char*>(std::move(o), caster);
 			}
-			else
-				return pybind11::detail::cast_safe<const char*>(std::move(o));
+			return pybind11::detail::cast_safe<const char*>(std::move(o));
 		}
 		return runtime_error::what();
 	}
@@ -46,7 +45,7 @@ struct PyCallBack_mvsim_UnexpectedMessageException : public mvsim::UnexpectedMes
 
 void bind_mvsim_Comms_common(std::function<pybind11::module&(std::string const& namespace_)>& M)
 {
-	{  // mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:49
+	{  // mvsim::UnexpectedMessageException file:mvsim/Comms/common.h line:51
 		pybind11::class_<
 			mvsim::UnexpectedMessageException, std::shared_ptr<mvsim::UnexpectedMessageException>,
 			PyCallBack_mvsim_UnexpectedMessageException, std::runtime_error>
@@ -64,8 +63,7 @@ void bind_mvsim_Comms_common(std::function<pybind11::module&(std::string const& 
 														UnexpectedMessageException&)) &
 				mvsim::UnexpectedMessageException::operator=,
 			"C++: mvsim::UnexpectedMessageException::operator=(const class "
-			"mvsim::UnexpectedMessageException &) --> class "
-			"mvsim::UnexpectedMessageException &",
+			"mvsim::UnexpectedMessageException &) --> class mvsim::UnexpectedMessageException &",
 			pybind11::return_value_policy::automatic, pybind11::arg(""));
 	}
 }
