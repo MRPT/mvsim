@@ -12,6 +12,7 @@
 #include <mrpt/core/Clock.h>
 #include <mrpt/system/COutputLogger.h>
 #include <mvsim/Comms/ports.h>
+#include <mvsim/Comms/visibility.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
 #include <atomic>
@@ -57,7 +58,7 @@ class World;
  *
  * See: https://mvsimulator.readthedocs.io/
  */
-class Server : public mrpt::system::COutputLogger
+class MVSIM_PUBLIC Server : public mrpt::system::COutputLogger
 {
    public:
 	Server();

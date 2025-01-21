@@ -12,6 +12,7 @@
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Comms/common.h>
+#include <mvsim/Comms/visibility.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
 #if defined(MVSIM_HAS_PYTHON)
@@ -51,7 +52,7 @@ namespace mvsim
  *
  * \ingroup mvsim_comms_module
  */
-class Client : public mrpt::system::COutputLogger
+class MVSIM_PUBLIC Client : public mrpt::system::COutputLogger
 {
    public:
 	Client();
