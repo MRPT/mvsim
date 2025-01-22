@@ -1,5 +1,6 @@
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Comms/Client.h>
+#include <pybind11/functional.h>  // This is added to the generated output
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -79,15 +80,15 @@ void bind_mvsim_Comms_Client(std::function<pybind11::module&(std::string const& 
 			"mvsim::Client::subscribeTopic(const std::string &, const class std::function<void "
 			"(const std::string &, const class std::vector<unsigned char> &)> &) --> void",
 			pybind11::arg("topicName"), pybind11::arg("callback"));
-		cl.def(
-			"subscribe_topic_raw",
-			(void(mvsim::Client::*)(
-				const std::string&,
-				const class std::function<void(const class zmq::message_t&)>&)) &
-				mvsim::Client::subscribe_topic_raw,
-			"C++: mvsim::Client::subscribe_topic_raw(const std::string &, const class "
-			"std::function<void (const class zmq::message_t &)> &) --> void",
-			pybind11::arg("topicName"), pybind11::arg("callback"));
+		// cl.def(
+		// 	"subscribe_topic_raw",
+		// 	(void(mvsim::Client::*)(
+		// 		const std::string&,
+		// 		const class std::function<void(const class zmq::message_t&)>&)) &
+		// 		mvsim::Client::subscribe_topic_raw,
+		// 	"C++: mvsim::Client::subscribe_topic_raw(const std::string &, const class "
+		// 	"std::function<void (const class zmq::message_t &)> &) --> void",
+		// 	pybind11::arg("topicName"), pybind11::arg("callback"));
 		cl.def(
 			"enable_profiler", (void(mvsim::Client::*)(bool)) & mvsim::Client::enable_profiler,
 			"C++: mvsim::Client::enable_profiler(bool) --> void", pybind11::arg("enable"));
