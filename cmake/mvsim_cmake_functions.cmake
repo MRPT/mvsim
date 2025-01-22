@@ -72,7 +72,7 @@ function(mvsim_add_test)
 
     # Run it:
     add_custom_target(run_${mvsim_add_test_TARGET} COMMAND $<TARGET_FILE:${mvsim_add_test_TARGET}>)
-    add_test(${mvsim_add_test_TARGET}_build "${CMAKE_COMMAND}" --build ${CMAKE_CURRENT_BINARY_DIR} --target ${mvsim_add_test_TARGET})
+    add_test(${mvsim_add_test_TARGET}_build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target ${mvsim_add_test_TARGET})
     add_test(run_${mvsim_add_test_TARGET} ${EXECUTABLE_OUTPUT_PATH}/${mvsim_add_test_TARGET})
     set_tests_properties(run_${mvsim_add_test_TARGET} PROPERTIES DEPENDS ${mvsim_add_test_TARGET}_build)
 
