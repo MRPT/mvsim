@@ -98,6 +98,11 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	std::string sDemTextFile;
 	params["dem_xyzrgb_file"] = TParamEntry("%s", &sDemTextFile);
 
+	mrpt::math::TPoint3Df dem_xyz_offset = {0, 0, 0};
+	params["dem_offset_x"] = TParamEntry("%f", &dem_xyz_offset.x);
+	params["dem_offset_y"] = TParamEntry("%f", &dem_xyz_offset.y);
+	params["dem_offset_z"] = TParamEntry("%f", &dem_xyz_offset.z);
+
 	double img_min_z = 0.0, img_max_z = 5.0;
 	params["elevation_image_min_z"] = TParamEntry("%lf", &img_min_z);
 	params["elevation_image_max_z"] = TParamEntry("%lf", &img_max_z);
@@ -173,6 +178,11 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		mrpt::math::CMatrixDouble data;
 		data.loadFromTextFile(sDemTextFile);
 		ASSERTMSG_(data.cols() == 6, "DEM txt file format error: expected 6 columns (x,y,z,r,g,b)");
+
+		// Apply optional offset:
+		data.col(0).array() += dem_xyz_offset.x;
+		data.col(1).array() += dem_xyz_offset.y;
+		data.col(2).array() += dem_xyz_offset.z;
 
 		// Points from DEM geographic sources are not sorted, not even uniformly sampled.
 		// Let's re-sample them:
