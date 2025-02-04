@@ -111,7 +111,7 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::teleop_interface
 
 	out.append_gui_lines += "[Controller=" + std::string(class_name()) + "]";
 
-	if (in.js)
+	if (in.js && in.js->axes.size() >= 2)
 	{
 		const auto& js = in.js.value();
 		const float js_x = js.axes[0];
