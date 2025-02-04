@@ -2,6 +2,18 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.13.1 (2025-02-04)
+-------------------
+* Merge pull request `#65 <https://github.com/MRPT/mvsim/issues/65>`_ from MRPT/fix/no-joystick-crash
+  BUGFIX: Crash due to access uninitialized memory when no joystick is …
+* BUGFIX: Crash due to access uninitialized memory when no joystick is found
+* Merge pull request `#64 <https://github.com/MRPT/mvsim/issues/64>`_ from MRPT/feature/new-dem-param
+  New offset parameters for DEM XYZRGB files
+* New offset parameters for DEM XYZRGB files
+* greenhouse demo world: add ROS 1 launch file too
+* version.h
+* Contributors: Jose Luis Blanco-Claraco
+
 0.13.0 (2024-12-24)
 -------------------
 * Add ROS1 generic launcher
