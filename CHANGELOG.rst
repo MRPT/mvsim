@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.13.1 (2025-02-04)
+-------------------
 * Merge pull request `#65 <https://github.com/MRPT/mvsim/issues/65>`_ from MRPT/fix/no-joystick-crash
   BUGFIX: Crash due to access uninitialized memory when no joystick is …
 * BUGFIX: Crash due to access uninitialized memory when no joystick is found
