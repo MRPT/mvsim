@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.13.2 (2025-02-05)
+-------------------
 * FIX: another missing if() protecting access to uninitialized js data
 * Contributors: Jose Luis Blanco Claraco, Jose Luis Blanco-Claraco
 
