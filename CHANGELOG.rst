@@ -2,6 +2,11 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.13.2 (2025-02-05)
+-------------------
+* FIX: another missing if() protecting access to uninitialized js data
+* Contributors: Jose Luis Blanco Claraco, Jose Luis Blanco-Claraco
+
 0.13.1 (2025-02-04)
 -------------------
 * Merge pull request `#65 <https://github.com/MRPT/mvsim/issues/65>`_ from MRPT/fix/no-joystick-crash
