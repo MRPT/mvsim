@@ -88,8 +88,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	const size_t nW =
 		myVehicle_.getNumWheels();	// esta linea ya existe en VehicleBase.ccp linea 568
-	//std::vector<mrpt::math::TVector2D> pos(nW);
-	mrpt::math::TVector2D pos(nW);
+	std::vector<mrpt::math::TVector2D> pos(nW);
+
 
 	for (size_t i = 0; i < nW;
 		 i++)  
