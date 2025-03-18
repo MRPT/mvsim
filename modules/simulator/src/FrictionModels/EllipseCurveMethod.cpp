@@ -80,7 +80,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double gravity = myVehicle_.parent()->get_gravity();
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 	const double w = vel.omega;
-	const double delta = input.wheel.getyaw();	// angulo de la rueda¿Está bien?
+	const double delta = input.wheel.yaw;	// angulo de la rueda¿Está bien?
 
 	// obtener posiciones y distancias de ejes
 	mrpt::math::TPoint2D Center_of_mass =
@@ -88,7 +88,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	const size_t nW =
 		myVehicle_.getNumWheels();	// esta linea ya existe en VehicleBase.ccp linea 568
-	std::vector<mrpt::math::TVector2D> pos(nW);
+	//std::vector<mrpt::math::TVector2D> pos(nW);
+	const mrpt::math::TVector2D pos(nW)
 
 	for (size_t i = 0; i < nW;
 		 i++)  
