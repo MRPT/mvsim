@@ -82,7 +82,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double w = vel.omega;
 	const double delta = input.wheel.yaw;	// angulo de la rueda¿Está bien?
 
-	const size_t wheel_index = input.wheel.index;
+	//const size_t wheel_index = input.wheel.index;
 
 
 	// obtener posiciones y distancias de ejes
@@ -130,6 +130,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
         break;
     }
 	}
+
 	const mrpt::math::TPoint2D& Wpos = myVehicle_.getWheelInfo(wheel_index);
 	double Fz = 0;  // Declaración antes del if
 
