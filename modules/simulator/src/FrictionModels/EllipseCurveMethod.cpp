@@ -120,16 +120,10 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 
 	// esto da error, mi intención es que detecte para que rueda es el calculo
-
-	size_t wheel_index = 0;
-	for (size_t i = 0; i < myVehicle_.getNumWheels(); i++)
-	{	
-    if (&input.wheel == &myVehicle_.getWheelInfo(i))
-    {
-        wheel_index = i;
-        break;
-    }
-	}
+	
+	static int wheel_index = 0;
+    wheel_index++;
+	if (wheel_index > 3) wheel_index = 0;
 
 
 	const Wheel& wheel = myVehicle_.getWheelInfo(wheel_index);
