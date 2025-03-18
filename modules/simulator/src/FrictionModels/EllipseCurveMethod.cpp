@@ -76,7 +76,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
 	const double m = myVehicle_.getChassisMass();  // masa del conjunto
 	const double afs = 5.0 * M_PI / 180.0;
-	const double CA = CA_;
+	//const double CA = CA_;
 	const double gravity = myVehicle_.parent()->get_gravity();
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 	const double w = vel.omega;
@@ -120,27 +120,37 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 
 	// esto da error, mi intención es que detecte para que rueda es el calculo
+
+	size_t wheel_index = 0;
+	for (size_t i = 0; i < myVehicle_.getNumWheels(); i++)
+	{	
+    if (&input.wheel == &myVehicle_.getWheelInfo(i))
+    {
+        wheel_index = i;
+        break;
+    }
+	}
 	const mrpt::math::TPoint2D& Wpos = myVehicle_.getWheelInfo(wheel_index);
 	double Fz = 0;  // Declaración antes del if
 
 	if (Wpos.x > 0 && Wpos.y > 0) //(wheel == 3) 
 	{
-		const double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+		double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
 	else if (Wpos.x < 0 && Wpos.y > 0) //(wheel == 2)
 	{
-		const double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+		double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
 	else if (Wpos.x > 0 && Wpos.y < 0) //(wheel == 1)
 	{
-		const double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+		double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
 	else if (Wpos.x < 0 && Wpos.y < 0) //(wheel == 0)
 	{
-		const double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+		double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
 	else
