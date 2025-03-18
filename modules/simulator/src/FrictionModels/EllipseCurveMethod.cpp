@@ -82,6 +82,9 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double w = vel.omega;
 	const double delta = input.wheel.yaw;	// angulo de la rueda¿Está bien?
 
+	const size_t wheel_index = input.wheel.index;
+
+
 	// obtener posiciones y distancias de ejes
 	mrpt::math::TPoint2D Center_of_mass =
 		myVehicle_.getChassisCenterOfMass();  // ¿esta bien este codigo?// ¿esta bien este codigo?
@@ -117,7 +120,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 
 	// esto da error, mi intención es que detecte para que rueda es el calculo
-	const mrpt::math::TPoint2D& Wpos = myVehicle_.getWheelInfo();
+	const mrpt::math::TPoint2D& Wpos = myVehicle_.getWheelInfo(wheel_index);
+	double Fz = 0;  // Declaración antes del if
 
 	if (Wpos.x > 0 && Wpos.y > 0) //(wheel == 3) 
 	{
@@ -156,7 +160,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// -------------------------------------------------
 
 	// w= velocidad angular
-	const double s = (R * input.wheel.getW() - vxT) /
+	double s = (R * input.wheel.getW() - vxT) /
 			   (R * input.wheel.getW() * miH(R * input.wheel.getW(), vxT) +
 				vxT * miH(vxT, R * input.wheel.getW()));
 
