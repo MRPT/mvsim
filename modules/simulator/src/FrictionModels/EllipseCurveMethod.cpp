@@ -80,7 +80,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double gravity = myVehicle_.parent()->get_gravity();
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 	const double w = vel.omega;
-	const double delta = input.wheel.getPhi();	// angulo de la rueda¿Está bien?
+	const double delta = input.wheel.getyaw();	// angulo de la rueda¿Está bien?
 
 	// obtener posiciones y distancias de ejes
 	mrpt::math::TPoint2D Center_of_mass =
@@ -115,23 +115,24 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 
 	// esto da error, mi intención es que detecte para que rueda es el calculo
+	
 
-	if (wheel == 3)
+	if (pos.x > 0 && pos.y > 0) //(wheel == 3) 
 	{
 		double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (wheel == 2)
+	else if (pos.x < 0 && pos.y > 0) //(wheel == 2)
 	{
 		double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (wheel == 1)
+	else if (pos.x > 0 && pos.y < 0) //(wheel == 1)
 	{
 		double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (wheel == 0)
+	else if (pos.x < 0 && pos.y < 0) //(wheel == 0)
 	{
 		double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx));
