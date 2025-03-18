@@ -89,7 +89,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const size_t nW =
 		myVehicle_.getNumWheels();	// esta linea ya existe en VehicleBase.ccp linea 568
 	//std::vector<mrpt::math::TVector2D> pos(nW);
-	const mrpt::math::TVector2D pos(nW)
+	const mrpt::math::TVector2D pos(nW);
 
 	for (size_t i = 0; i < nW;
 		 i++)  
