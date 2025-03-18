@@ -131,27 +131,30 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
     }
 	}
 
-	const mrpt::math::TPoint2D& Wpos = myVehicle_.getWheelInfo(wheel_index);
+
+	const Wheel& wheel = myVehicle_.getWheelInfo(wheel_index);
+	const mrpt::math::TPoint2D Wpos(wheel.x, wheel.y);  // 
+
 	double Fz = 0;  // Declaración antes del if
 
 	if (Wpos.x > 0 && Wpos.y > 0) //(wheel == 3) 
 	{
-		double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+		Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
 	else if (Wpos.x < 0 && Wpos.y > 0) //(wheel == 2)
 	{
-		double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+		Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
 	else if (Wpos.x > 0 && Wpos.y < 0) //(wheel == 1)
 	{
-		double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+		Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
 	else if (Wpos.x < 0 && Wpos.y < 0) //(wheel == 0)
 	{
-		double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+		Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
 	else
@@ -165,7 +168,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// 2) Wheels velocity at Tire SR (decoupled sub-problem)
 	// -------------------------------------------------
 	// duda de cambiar el codigo o no) VehicleBase.cpp line 575 calcula esto pero distinto
-	const double vxT = (vel.vx - w * pos.y) * cos(delta) + (vel.vy + w * pos.x) * sin(delta);
+	const double vxT = (vel.vx - w * pos[wheel_index].y) * cos(delta) + (vel.vy + w * pos[wheel_index].x) * sin(delta);
 
 	// 3) Longitudinal slip (decoupled sub-problem)
 	// -------------------------------------------------
@@ -180,7 +183,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// 4) Sideslip angle (decoupled sub-problem)
 	// -------------------------------------------------
 
-	double af = atan2((vel.vy + pos.x * w), (vel.vx - pos.y * w)) - delta;
+	double af = atan2((vel.vy + pos[wheel_index].x * w), (vel.vx - pos[wheel_index].y * w)) - delta;
 
 	// 5) Longitudinal friction (decoupled sub-problem)
 	// -------------------------------------------------
