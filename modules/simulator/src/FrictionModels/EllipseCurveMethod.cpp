@@ -88,8 +88,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	const size_t nW =
 		myVehicle_.getNumWheels();	// esta linea ya existe en VehicleBase.ccp linea 568
-	//std::vector<mrpt::math::TVector2D> pos(nW);
-	const mrpt::math::TVector2D pos(nW);
+	std::vector<mrpt::math::TVector2D> pos(nW);
 
 	for (size_t i = 0; i < nW;
 		 i++)  
@@ -107,6 +106,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	ASSERT_(Axf > 0);
 	ASSERT_(Axr > 0);
 
+
 	const mrpt::math::TPoint3D_<double> linAccLocal =
 		myVehicle_.getLinearAcceleration();	 // ¿Está bien?
 
@@ -116,26 +116,26 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 
 	// esto da error, mi intención es que detecte para que rueda es el calculo
-	
+	const mrpt::math::TPoint2D& Wpos = myVehicle_.getWheelInfo();
 
-	if (pos.x > 0 && pos.y > 0) //(wheel == 3) 
+	if (Wpos.x > 0 && Wpos.y > 0) //(wheel == 3) 
 	{
-		double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+		const double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (pos.x < 0 && pos.y > 0) //(wheel == 2)
+	else if (Wpos.x < 0 && Wpos.y > 0) //(wheel == 2)
 	{
-		double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+		const double Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (pos.x > 0 && pos.y < 0) //(wheel == 1)
+	else if (Wpos.x > 0 && Wpos.y < 0) //(wheel == 1)
 	{
-		double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+		const double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (pos.x < 0 && pos.y < 0) //(wheel == 0)
+	else if (Wpos.x < 0 && Wpos.y < 0) //(wheel == 0)
 	{
-		double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+		const double Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
 	else
@@ -144,18 +144,18 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 			"Invalid wheel index");	 // Revisar, esta linea me la ha generado copilot
 	}
 
-	double max_friction = Fz;
+	const double max_friction = Fz;
 
 	// 2) Wheels velocity at Tire SR (decoupled sub-problem)
 	// -------------------------------------------------
 	// duda de cambiar el codigo o no) VehicleBase.cpp line 575 calcula esto pero distinto
-	double vxT = (vel.vx - w * pos.y) * cos(delta) + (vel.vy + w * pos.x) * sin(delta);
+	const double vxT = (vel.vx - w * pos.y) * cos(delta) + (vel.vy + w * pos.x) * sin(delta);
 
 	// 3) Longitudinal slip (decoupled sub-problem)
 	// -------------------------------------------------
 
 	// w= velocidad angular
-	double s = (R * input.wheel.getW() - vxT) /
+	const double s = (R * input.wheel.getW() - vxT) /
 			   (R * input.wheel.getW() * miH(R * input.wheel.getW(), vxT) +
 				vxT * miH(vxT, R * input.wheel.getW()));
 
