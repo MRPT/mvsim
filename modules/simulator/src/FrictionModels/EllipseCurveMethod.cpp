@@ -121,32 +121,29 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	// esto da error, mi intención es que detecte para que rueda es el calculo
 	
-	static int wheel_index = 0;
-    wheel_index++;
-	if (wheel_index > 3) wheel_index = 0;
-
-
+	static int wheel_index = 0; // Variable global para saber que rueda se está calculando
+    
 	const Wheel& wheel = myVehicle_.getWheelInfo(wheel_index);
 	const mrpt::math::TPoint2D Wpos(wheel.x, wheel.y);  // 
 
 	double Fz = 0;  // Declaración antes del if
 
-	if (Wpos.x > 0 && Wpos.y > 0) //(wheel == 3) 
+	if (wheel_index == 3) //(Wpos.x > 0 && Wpos.y > 0) 
 	{
 		Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (Wpos.x < 0 && Wpos.y > 0) //(wheel == 2)
+	else if (wheel_index == 2) //(Wpos.x < 0 && Wpos.y > 0) 
 	{
 		Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (Wpos.x > 0 && Wpos.y < 0) //(wheel == 1)
+	else if (wheel_index == 1)  //(Wpos.x > 0 && Wpos.y < 0) 
 	{
 		Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (Wpos.x < 0 && Wpos.y < 0) //(wheel == 0)
+	else if  (wheel_index == 0) //(Wpos.x < 0 && Wpos.y < 0)
 	{
 		Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
 					(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx));
@@ -198,6 +195,10 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
 	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
+
+	wheel_index++;
+	if (wheel_index > 3) wheel_index = 0; // cuando la variable supera el numero de ruedas vuelve a empezar
+
 
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;
