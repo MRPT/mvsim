@@ -73,85 +73,76 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Velocity of the wheel cog in the frame of the wheel itself:
 	const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
 
+	// Valores que no sé si estoy tomando correctamente
+	const mrpt::math::TPoint3D_<double> linAccLocal =
+		myVehicle_.getLinearAcceleration();	 // ¿Está bien? no se si se corresponde con la
+											 // aceleración que quiero
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
+	const double w = vel.omega;
+	const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
+	const double h = 0.40;	// altura del centro de gravedad provisional
+
 	const double m = myVehicle_.getChassisMass();  // masa del conjunto
 	const double afs = 5.0 * M_PI / 180.0;
-	//const double CA = CA_;
+	// const double CA = CA_;
 	const double gravity = myVehicle_.parent()->get_gravity();
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
-	const double w = vel.omega;
-	const double delta = input.wheel.yaw;	// angulo de la rueda¿Está bien?
-
-	//const size_t wheel_index = input.wheel.index;
-
 
 	// obtener posiciones y distancias de ejes
-	mrpt::math::TPoint2D Center_of_mass =
-		myVehicle_.getChassisCenterOfMass();  // ¿esta bien este codigo?// ¿esta bien este codigo?
-	const double h = 0.40;	// altura del centro de gravedad provisional
-	const size_t nW =
-		myVehicle_.getNumWheels();	// esta linea ya existe en VehicleBase.ccp linea 568
+	mrpt::math::TPoint2D Center_of_mass = myVehicle_.getChassisCenterOfMass();
+	// estas lineas ya existen en VehicleBase.ccp linea 568
+	const size_t nW = myVehicle_.getNumWheels();
 	std::vector<mrpt::math::TVector2D> pos(nW);
 
-
-	for (size_t i = 0; i < nW;
-		 i++)  
+	// calculo las posiciones de las ruedas respecto del centro de masas
+	for (size_t i = 0; i < nW; i++)
 	{
 		const Wheel& wpos = myVehicle_.getWheelInfo(i);
 		pos[i].x = wpos.x - Center_of_mass.x;
 		pos[i].y = wpos.y - Center_of_mass.y;
 	}
 
-	const double a1 = std::abs(pos[3].x),
-				 a2 = std::abs(pos[0].x);  // distancia centro de gravedad a ejes
+	// distancia centro de gravedad a ejes
+	const double a1 = std::abs(pos[3].x), a2 = std::abs(pos[0].x);
 	const double l = a1 + a2;  // distancia entre ejes
+	// longitud ejes
 	const double Axf = std::abs(pos[2].y) + std::abs(pos[3].y),
-				 Axr = std::abs(pos[0].y) + std::abs(pos[1].y);	 // longitud ejes
-	ASSERT_(Axf > 0);
+				 Axr = std::abs(pos[0].y) + std::abs(pos[1].y);
+	ASSERT_(Axf > 0);  // comprobar si la distancia de los ejes son mayores a 0
 	ASSERT_(Axr > 0);
-
-
-	const mrpt::math::TPoint3D_<double> linAccLocal =
-		myVehicle_.getLinearAcceleration();	 // ¿Está bien?
 
 	// 1) Vertical forces (decoupled sub-problem)
 	// --------------------------------------------
 	//// crear un if para cada rueda
 	// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
 
-	// esto da error, mi intención es que detecte para que rueda es el calculo
-	
-	static int wheel_index = 0; // Variable global para saber que rueda se está calculando
-    
-	const Wheel& wheel = myVehicle_.getWheelInfo(wheel_index);
-	const mrpt::math::TPoint2D Wpos(wheel.x, wheel.y);  // 
+	static int wheel_index = 0;	 // Variable global para saber qué rueda se está calculando
 
-	double Fz = 0;  // Declaración antes del if
+	double Fz = 0;	// Declaración antes del if
 
-	if (wheel_index == 3) //(Wpos.x > 0 && Wpos.y > 0) 
+	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)
 	{
 		Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-					(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx));
+			 (std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (wheel_index == 2) //(Wpos.x < 0 && Wpos.y > 0) 
+	else if (wheel_index == 2)	//(Wpos.x < 0 && Wpos.y > 0)
 	{
 		Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-					(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx));
+			 (std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
-	else if (wheel_index == 1)  //(Wpos.x > 0 && Wpos.y < 0) 
+	else if (wheel_index == 1)	//(Wpos.x > 0 && Wpos.y < 0)
 	{
 		Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-					(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx));
+			 (std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx));
 	}
-	else if  (wheel_index == 0) //(Wpos.x < 0 && Wpos.y < 0)
+	else if (wheel_index == 0)	//(Wpos.x < 0 && Wpos.y < 0)
 	{
 		Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-					(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx));
+			 (std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx));
 	}
 	else
 	{
-		throw std::runtime_error(
-			"Invalid wheel index");	 // Revisar, esta linea me la ha generado copilot
+		throw std::runtime_error("Invalid wheel index");  // Sin es mas de 4 ruedas generar error
 	}
 
 	const double max_friction = Fz;
@@ -159,7 +150,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// 2) Wheels velocity at Tire SR (decoupled sub-problem)
 	// -------------------------------------------------
 	// duda de cambiar el codigo o no) VehicleBase.cpp line 575 calcula esto pero distinto
-	const double vxT = (vel.vx - w * pos[wheel_index].y) * cos(delta) + (vel.vy + w * pos[wheel_index].x) * sin(delta);
+	const double vxT = (vel.vx - w * pos[wheel_index].y) * cos(delta) +
+					   (vel.vy + w * pos[wheel_index].x) * sin(delta);
 
 	// 3) Longitudinal slip (decoupled sub-problem)
 	// -------------------------------------------------
@@ -169,7 +161,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 			   (R * input.wheel.getW() * miH(R * input.wheel.getW(), vxT) +
 				vxT * miH(vxT, R * input.wheel.getW()));
 
-	if (std::isnan(s)) s = 0;
+	if (std::isnan(s)) s = 0;  // si es NAN se iguala a 0
+	if (std::isinf(s)) s = 0;  // si es INF se iguala a 0
 
 	// 4) Sideslip angle (decoupled sub-problem)
 	// -------------------------------------------------
@@ -197,8 +190,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
 
 	wheel_index++;
-	if (wheel_index > 3) wheel_index = 0; // cuando la variable supera el numero de ruedas vuelve a empezar
-
+	if (wheel_index > 3)
+		wheel_index = 0;  // cuando la variable supera el numero de ruedas vuelve a empezar
 
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;
