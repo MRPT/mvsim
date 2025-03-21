@@ -183,7 +183,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double I_yy = input.wheel.Iyy;
 	//const double actual_wheel_alpha = (input.motorTorque - R * wheel_long_friction) / I_yy;
 	const double actual_wheel_alpha =
-		(input.motorTorque - R * F_friction_lon - C_damping * input.wheel.getW()) / I_yy;
+		(input.motorTorque - R * wheel_long_friction - C_damping * input.wheel.getW()) / I_yy;
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
