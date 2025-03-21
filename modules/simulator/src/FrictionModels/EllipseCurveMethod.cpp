@@ -70,17 +70,18 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Rotate wheel velocity vector from veh. frame => wheel frame
 	const mrpt::poses::CPose2D wRot(0, 0, input.wheel.yaw);
 
-	// Velocity of the wheel cog in the frame of the wheel itself:
+	// Velocity of the wheel cog in the frame of the wheel itself: == vxT
 	const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
 
+	//-------------------------------------------------------------------------
 	// Valores que no sé si estoy tomando correctamente
-	const mrpt::math::TPoint3D_<double> linAccLocal =
-		myVehicle_.getLinearAcceleration();	 // ¿Está bien? no se si se corresponde con la
-											 // aceleración que quiero
+	const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
+	// ¿Está bien? no se si se corresponde con la aceleración que quiero
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
 	const double w = vel.omega;
 	const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
 	const double h = 0.40;	// altura del centro de gravedad provisional
+	//--------------------------------------------------------------------------
 
 	const double m = myVehicle_.getChassisMass();  // masa del conjunto
 	const double afs = 5.0 * M_PI / 180.0;
@@ -93,7 +94,6 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// estas lineas ya existen en VehicleBase.ccp linea 568
 	const size_t nW = myVehicle_.getNumWheels();
 	std::vector<mrpt::math::TVector2D> pos(nW);
-
 	// calculo las posiciones de las ruedas respecto del centro de masas
 	for (size_t i = 0; i < nW; i++)
 	{
@@ -155,7 +155,6 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	// 3) Longitudinal slip (decoupled sub-problem)
 	// -------------------------------------------------
-
 	// w= velocidad angular
 	double s = (R * input.wheel.getW() - vxT) /
 			   (R * input.wheel.getW() * miH(R * input.wheel.getW(), vxT) +
@@ -180,9 +179,13 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 		-max_friction * Caf_ * miS(af, afs) * sqrt(1 - Cafs_ * pow((miS(s, ss_) / ss_), 2));
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
+	const double C_damping = 1.0;
 	const double I_yy = input.wheel.Iyy;
-	const double actual_wheel_alpha = (input.motorTorque / I_yy) - R * wheel_long_friction / I_yy;
+	//const double actual_wheel_alpha = (input.motorTorque - R * wheel_long_friction) / I_yy;
+	const double actual_wheel_alpha =
+		(input.motorTorque - R * F_friction_lon - C_damping * input.wheel.getW()) / I_yy;
 
+	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
