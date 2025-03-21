@@ -80,7 +80,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
 	const double w = vel.omega;
 	//const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
-	const double delta = input.wheel.getPhi()
+	const double delta = input.wheel.getPhi();
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	//--------------------------------------------------------------------------
 
