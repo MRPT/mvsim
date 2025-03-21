@@ -37,5 +37,12 @@ class EllipseCurveMethod : public FrictionBase
 	const TParameterDefinitions params_ = {{"CA", {"%lf", &CA_}},	  {"Cs", {"%lf", &Cs_}},
 										   {"ss", {"%lf", &ss_}},	  {"Caf", {"%lf", &Caf_}},
 										   {"Casf", {"%lf", &Cafs_}}, {"Csaf", {"%lf", &Csaf_}}};
+	
+
+	mrpt::math::TVector2D getAcc() const { return Acc; }  //!< Returns acceleration (x, y components)
+	void setAcc(const mrpt::math::TVector2D& val) { Acc = val; }  //!< Sets acceleration (x, y components)
+
+	protected:
+	mrpt::math::TVector2D Acc = {0.0, 0.0};  //!< Acceleration vector (x, y components)
 };
 }  // namespace mvsim

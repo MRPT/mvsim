@@ -75,7 +75,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	//-------------------------------------------------------------------------
 	// Valores que no sé si estoy tomando correctamente
-	const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
+	//const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
+	const mrpt::math::TVector2D linAccLocal = getAcc();
 	// ¿Está bien? no se si se corresponde con la aceleración que quiero
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
 	const double w = vel.omega;
@@ -196,6 +197,10 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
 	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
+
+
+	//recalcular aceleración
+	
 
 	wheel_index++;
 	if (wheel_index > 3)
