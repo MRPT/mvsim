@@ -79,7 +79,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// ¿Está bien? no se si se corresponde con la aceleración que quiero
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
 	const double w = vel.omega;
-	//const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
+	// const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
 	const double delta = input.wheel.getPhi();
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	//--------------------------------------------------------------------------
@@ -171,18 +171,22 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	// 5) Longitudinal friction (decoupled sub-problem)
 	// -------------------------------------------------
-	double wheel_long_friction =
+	double wheel_long_friction = 0.0;
+	wheel_long_friction =
 		max_friction * Cs_ * miS(s, ss_) * sqrt(1 - Csaf_ * pow((miS(af, afs) / afs), 2));
+	wheel_long_friction = b2Clamp(wheel_long_friction, -max_friction, max_friction);
 
 	// 6) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
-	double wheel_lat_friction =
+	double wheel_lat_friction = 0.0;
+	wheel_lat_friction =
 		-max_friction * Caf_ * miS(af, afs) * sqrt(1 - Cafs_ * pow((miS(s, ss_) / ss_), 2));
+	wheel_lat_friction = b2Clamp(wheel_lat_friction, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double C_damping = 1.0;
 	const double I_yy = input.wheel.Iyy;
-	//const double actual_wheel_alpha = (input.motorTorque - R * wheel_long_friction) / I_yy;
+	// const double actual_wheel_alpha = (input.motorTorque - R * wheel_long_friction) / I_yy;
 	const double actual_wheel_alpha =
 		(input.motorTorque - R * wheel_long_friction - C_damping * input.wheel.getW()) / I_yy;
 
