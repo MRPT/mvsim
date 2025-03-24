@@ -80,10 +80,10 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// ¿Está bien? no se si se corresponde con la aceleración que quiero
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
 	//const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate(); 
-	//const double w = vel.omega;
-	const double w = 0.0;
+	const double w = vel.omega;
 	// const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
-	const double delta = input.wheel.getPhi();
+	//const double delta = input.wheel.getPhi();
+	const double delta = 0.0;
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	//--------------------------------------------------------------------------
 
