@@ -96,9 +96,9 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
 	// const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();
 	const double w = vel.omega;
-	//const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
+	const double delta = input.wheel.yaw;  // angulo de la rueda
 	//const double delta = 0.0;
-	const double delta = input.wheel.getPhi();
+	//const double delta = input.wheel.getPhi();
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	//--------------------------------------------------------------------------
 
@@ -182,14 +182,14 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	double wheel_long_friction = 0.0;
 	wheel_long_friction =
 		max_friction * Cs_ * miS(s, ss_) * sqrt(1 - Csaf_ * pow((miS(af, afs) / afs), 2));
-	//wheel_long_friction = b2Clamp(wheel_long_friction, -max_friction, max_friction);
+	wheel_long_friction = b2Clamp(wheel_long_friction, -1.0, 1.0);
 
 	// 6) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
 	double wheel_lat_friction = 0.0;
 	wheel_lat_friction =
 		-max_friction * Caf_ * miS(af, afs) * sqrt(1 - Cafs_ * pow((miS(s, ss_) / ss_), 2));
-	//wheel_lat_friction = b2Clamp(wheel_lat_friction, -max_friction, max_friction);
+	wheel_lat_friction = b2Clamp(wheel_lat_friction, -1.0, 1.0);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double I_yy = input.wheel.Iyy;
