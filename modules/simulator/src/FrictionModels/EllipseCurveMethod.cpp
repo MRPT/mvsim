@@ -76,13 +76,13 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	//-------------------------------------------------------------------------
 	// Valores que no sé si estoy tomando correctamente
 	const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
-	//const mrpt::math::TVector2D linAccLocal = getAcc();
-	// ¿Está bien? no se si se corresponde con la aceleración que quiero
+	// const mrpt::math::TVector2D linAccLocal = getAcc();
+	//  ¿Está bien? no se si se corresponde con la aceleración que quiero
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
-	//const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate(); 
+	// const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();
 	const double w = vel.omega;
 	const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
-	//const double delta = input.wheel.getPhi();
+	// const double delta = input.wheel.getPhi();
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	//--------------------------------------------------------------------------
 
@@ -121,27 +121,31 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	static int wheel_index = 0;	 // Variable global para saber qué rueda se está calculando
 
-	double Fz = 0.0;	// Declaración antes del if
+	double Fz = 0.0;  // Declaración antes del if
 
 	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)
 	{
-		Fz = std::abs((m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-			 (std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
+		Fz = std::abs(
+			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
 	}
 	else if (wheel_index == 2)	//(Wpos.x < 0 && Wpos.y > 0)
 	{
-		Fz = std::abs((m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-			 (std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
+		Fz = std::abs(
+			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
 	}
 	else if (wheel_index == 1)	//(Wpos.x > 0 && Wpos.y < 0)
 	{
-		Fz = std::abs((m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-			 (std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
+		Fz = std::abs(
+			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
 	}
 	else if (wheel_index == 0)	//(Wpos.x < 0 && Wpos.y < 0)
 	{
-		Fz = std::abs((m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-			 (std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
+		Fz = std::abs(
+			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
 	}
 	else
 	{
@@ -176,20 +180,20 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	double wheel_long_friction = 0.0;
 	wheel_long_friction =
 		max_friction * Cs_ * miS(s, ss_) * sqrt(1 - Csaf_ * pow((miS(af, afs) / afs), 2));
-	wheel_long_friction = b2Clamp(wheel_long_friction, -1, 1);
+	wheel_long_friction = b2Clamp(wheel_long_friction, -max_friction, max_friction);
 
 	// 6) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
 	double wheel_lat_friction = 0.0;
 	wheel_lat_friction =
 		-max_friction * Caf_ * miS(af, afs) * sqrt(1 - Cafs_ * pow((miS(s, ss_) / ss_), 2));
-	wheel_lat_friction = b2Clamp(wheel_lat_friction, -1, 1);
+	wheel_lat_friction = b2Clamp(wheel_lat_friction, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
-	//const double C_damping = 1.0;
+	// const double C_damping = 1.0;
 	const double I_yy = input.wheel.Iyy;
 	const double actual_wheel_alpha = (input.motorTorque - R * wheel_long_friction) / I_yy;
-	
+
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
 
@@ -197,9 +201,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// -----------------------------------------------------------------------
 	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
 
-
-	//recalcular aceleración
-
+	// recalcular aceleración
 
 	wheel_index++;
 	if (wheel_index > 3)
