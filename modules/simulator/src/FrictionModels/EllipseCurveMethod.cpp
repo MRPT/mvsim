@@ -78,8 +78,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
 	//const mrpt::math::TVector2D linAccLocal = getAcc();
 	// ¿Está bien? no se si se corresponde con la aceleración que quiero
-	//const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
-	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();  // ¿Está bien?
+	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
+	//const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate(); 
 	const double w = vel.omega;
 	// const double delta = input.wheel.yaw;  // angulo de la rueda¿Está bien?
 	const double delta = input.wheel.getPhi();
