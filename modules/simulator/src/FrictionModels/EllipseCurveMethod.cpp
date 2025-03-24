@@ -122,7 +122,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	static int wheel_index = 0;	 // Variable global para saber qué rueda se está calculando
 
-	double Fz = 0;	// Declaración antes del if
+	double Fz = 0.0;	// Declaración antes del if
 
 	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)
 	{
@@ -189,12 +189,10 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double C_damping = 1.0;
 	const double I_yy = input.wheel.Iyy;
-	// const double actual_wheel_alpha = (input.motorTorque - R * wheel_long_friction) / I_yy;
-	const double actual_wheel_alpha =
-		(input.motorTorque - R * wheel_long_friction - C_damping * input.wheel.getW()) / I_yy;
-
+	const double actual_wheel_alpha = (input.motorTorque - R * wheel_long_friction) / I_yy;
+	
 	// Apply impulse to wheel's spinning:
-	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
+	input.wheel.setW(actual_wheel_alpha);
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
