@@ -126,23 +126,23 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)
 	{
-		Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-			 (std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx));
+		Fz = std::abs((m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+			 (std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
 	}
 	else if (wheel_index == 2)	//(Wpos.x < 0 && Wpos.y > 0)
 	{
-		Fz = (m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-			 (std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx));
+		Fz = std::abs((m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+			 (std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
 	}
 	else if (wheel_index == 1)	//(Wpos.x > 0 && Wpos.y < 0)
 	{
-		Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-			 (std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx));
+		Fz = std::abs((m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+			 (std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
 	}
 	else if (wheel_index == 0)	//(Wpos.x < 0 && Wpos.y < 0)
 	{
-		Fz = (m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-			 (std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx));
+		Fz = std::abs((m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+			 (std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
 	}
 	else
 	{
