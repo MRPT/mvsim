@@ -69,36 +69,39 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 {
 	static int wheel_index = 0;	 // Variable global para saber qué rueda se está calculando
 
-		// obtener posiciones y distancias de ejes
-		mrpt::math::TPoint2D Center_of_mass = myVehicle_.getChassisCenterOfMass();
-		// estas lineas ya existen en VehicleBase.ccp linea 568
-		const size_t nW = myVehicle_.getNumWheels();
-		std::vector<mrpt::math::TVector2D> pos(nW);
-		// calculo las posiciones de las ruedas respecto del centro de masas
-		for (size_t i = 0; i < nW; i++)
-		{
-			const Wheel& wpos = myVehicle_.getWheelInfo(i);
-			pos[i].x = wpos.x - Center_of_mass.x;
-			pos[i].y = wpos.y - Center_of_mass.y;
-		}
+	// obtener posiciones y distancias de ejes
+	mrpt::math::TPoint2D Center_of_mass = myVehicle_.getChassisCenterOfMass();
+	// estas lineas ya existen en VehicleBase.ccp linea 568
+	const size_t nW = myVehicle_.getNumWheels();
+	std::vector<mrpt::math::TVector2D> pos(nW);
+	// calculo las posiciones de las ruedas respecto del centro de masas
+	for (size_t i = 0; i < nW; i++)
+	{
+		const Wheel& wpos = myVehicle_.getWheelInfo(i);
+		pos[i].x = wpos.x - Center_of_mass.x;
+		pos[i].y = wpos.y - Center_of_mass.y;
+	}
 
 	// Rotate wheel velocity vector from veh. frame => wheel frame
 	const mrpt::poses::CPose2D wRot(pos[wheel_index].x, pos[wheel_index].y, input.wheel.yaw);
 
 	// Velocity of the wheel cog in the frame of the wheel itself: == vxT
-	//const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
+	// const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
 
 	//-------------------------------------------------------------------------
 	// Valores que no sé si estoy tomando correctamente
 	const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
 	// const mrpt::math::TVector2D linAccLocal = getAcc();
 	//  ¿Está bien? no se si se corresponde con la aceleración que quiero
-	//const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
+	// const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();
 	const double w = vel.omega;
-	const double delta = input.wheel.yaw;  // angulo de la rueda
-	//const double delta = 0.0;
-	//const double delta = input.wheel.getPhi();
+	if (wheel_index >= 2)
+		const double delta = input.wheel.yaw;  // angulo de la rueda
+	else
+		const double delta = 0.0;
+
+	// const double delta = input.wheel.getPhi();
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	//--------------------------------------------------------------------------
 
@@ -108,7 +111,6 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double gravity = myVehicle_.parent()->get_gravity();
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 
-
 	// distancia centro de gravedad a ejes
 	const double a1 = std::abs(pos[3].x), a2 = std::abs(pos[0].x);
 	const double l = a1 + a2;  // distancia entre ejes
@@ -117,7 +119,6 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 				 Axr = std::abs(pos[0].y) + std::abs(pos[1].y);
 	ASSERT_(Axf > 0);  // comprobar si la distancia de los ejes son mayores a 0
 	ASSERT_(Axr > 0);
-
 
 	// 1) Vertical forces (decoupled sub-problem)
 	// --------------------------------------------
