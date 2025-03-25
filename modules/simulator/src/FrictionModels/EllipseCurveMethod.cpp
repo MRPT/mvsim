@@ -82,27 +82,29 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 		pos[i].y = wpos.y - Center_of_mass.y;
 	}
 
-	// Rotate wheel velocity vector from veh. frame => wheel frame
-	const mrpt::poses::CPose2D wRot(pos[wheel_index].x, pos[wheel_index].y, input.wheel.yaw);
+	
+	
 
-	// Velocity of the wheel cog in the frame of the wheel itself: == vxT
-	// const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
 
 	//-------------------------------------------------------------------------
 	// Valores que no sé si estoy tomando correctamente
 	const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
 	// const mrpt::math::TVector2D linAccLocal = getAcc();
 	//  ¿Está bien? no se si se corresponde con la aceleración que quiero
-	// const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
-	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();
+	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
+	//const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();
 	const double w = vel.omega;
 
 	double delta = 0.0;
 	if (wheel_index >= 2)
 		delta = input.wheel.yaw;  // angulo de la rueda
-
-
 	// const double delta = input.wheel.getPhi();
+	// Rotate wheel velocity vector from veh. frame => wheel frame
+	const mrpt::poses::CPose2D wRot(pos[wheel_index].x, pos[wheel_index].y, delta);
+
+	// Velocity of the wheel cog in the frame of the wheel itself: == vxT
+	// const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
+	
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	//--------------------------------------------------------------------------
 
