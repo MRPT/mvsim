@@ -89,7 +89,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	//-------------------------------------------------------------------------
 	// Valores que no sé si estoy tomando correctamente
 	const mrpt::math::TVector3Df linAccGlobal = myVehicle_.getLinearAcceleration();
-	const mrpt::poses::CPose3D vehiclePose3D = myVehicle_.getPose();
+	const mrpt::poses::CPose3D vehiclePose3D(myVehicle_.getPose());
 	mrpt::math::TVector3Df linAccLocal = vehiclePose3D.inverseComposePoint(linAccGlobal);
 
 
