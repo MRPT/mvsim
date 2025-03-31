@@ -82,33 +82,31 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 		pos[i].y = wpos.y - Center_of_mass.y;
 	}
 
-	
-	
-
-
-	//-------------------------------------------------------------------------
 	// Valores que no sé si estoy tomando correctamente
-	const mrpt::math::TVector3Df linAccGlobal = myVehicle_.getLinearAcceleration();
-	const mrpt::poses::CPose3D vehiclePose3D(myVehicle_.getPose());
-	mrpt::math::TVector3Df linAccLocal = vehiclePose3D.inverseComposePoint(linAccGlobal);
+	//-------------------------------------------------------------------------
 
+	// pasar a local la velocidad
+	// const mrpt::math::TVector3Df linAccGlobal = myVehicle_.getLinearAcceleration();
+	// const mrpt::poses::CPose3D vehiclePose3D(myVehicle_.getPose());
+	// mrpt::math::TVector3Df linAccLocal = vehiclePose3D.inverseComposePoint(linAccGlobal);
+
+	const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
 
 	// const mrpt::math::TVector2D linAccLocal = getAcc();
 	//  ¿Está bien? no se si se corresponde con la aceleración que quiero
 	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
-	//const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();
+	// const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();
 	const double w = vel.omega;
 
 	double delta = 0.0;
-	if (wheel_index >= 2)
-		delta = input.wheel.yaw;  // angulo de la rueda
+	if (wheel_index >= 2) delta = input.wheel.yaw;	// angulo de la rueda
 	// const double delta = input.wheel.getPhi();
 	// Rotate wheel velocity vector from veh. frame => wheel frame
 	const mrpt::poses::CPose2D wRot(pos[wheel_index].x, pos[wheel_index].y, delta);
 
 	// Velocity of the wheel cog in the frame of the wheel itself: == vxT
 	// const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
-	
+
 	const double h = 0.40;	// altura del centro de gravedad provisional
 	//--------------------------------------------------------------------------
 
@@ -190,14 +188,14 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	double wheel_long_friction = 0.0;
 	wheel_long_friction =
 		max_friction * Cs_ * miS(s, ss_) * sqrt(1 - Csaf_ * pow((miS(af, afs) / afs), 2));
-	wheel_long_friction = b2Clamp(wheel_long_friction, -1.0, 1.0);
+	// wheel_long_friction = b2Clamp(wheel_long_friction, -1.0, 1.0);
 
 	// 6) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
 	double wheel_lat_friction = 0.0;
 	wheel_lat_friction =
 		-max_friction * Caf_ * miS(af, afs) * sqrt(1 - Cafs_ * pow((miS(s, ss_) / ss_), 2));
-	wheel_lat_friction = b2Clamp(wheel_lat_friction, -1.0, 1.0);
+	// wheel_lat_friction = b2Clamp(wheel_lat_friction, -1.0, 1.0);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double I_yy = input.wheel.Iyy;
@@ -211,6 +209,50 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
 
 	// recalcular aceleración
+
+	// mostrar en pantalla los resultados
+	const double Fx = wheel_long_friction;
+	const double Fy = wheel_lat_friction;
+	const double Vx = vel.vx;
+	const double Vy = vel.vy;
+	const double Acx = linAccLocal.x;
+	const double Acy = linAccLocal.y;
+
+	static int Show = 1;
+
+	if (Show < 2)
+	{
+		// Mostrar en pantalla las posiciones de las ruedas respecto al centro de masas
+		for (size_t i = 0; i < nW; i++)
+		{
+			const Wheel& wpos = myVehicle_.getWheelInfo(i);
+			printf("Wheel %zu position: (x: %.2f, y: %.2f)\n", i, wpos.x, wpos.y);
+			printf(
+				"Wheel %zu position relative to CoM: (x: %.2f, y: %.2f)\n", i, pos[i].x, pos[i].y);
+		}
+		printf(
+			"__________________________________________________________________________________"
+			"_________________________________________\n");
+	}
+
+	if (Show < 41)
+	{
+		printf(
+			"Wheel %u (Fz: %.2f, Fx: %.2f, Fy: %.2f, yaw: %.2f, Vx: %.2f, Vy: %.2f, Acx: %.2f, "
+			"Acy: %.2f)\n",
+			wheel_index, Fz, Fx, Fy, delta, Vx, Vy, Acx, Acy);
+
+		if (Show % 4 == 0)
+		{
+			int itera = Show / 4;
+			printf("Fin Iteración %u \n", itera);
+			printf(
+				"__________________________________________________________________________________"
+				"_________________________________________\n");
+		}
+	}
+
+	Show++;
 
 	wheel_index++;
 	if (wheel_index > 3)
