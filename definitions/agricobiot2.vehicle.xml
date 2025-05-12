@@ -99,7 +99,7 @@
     </visual>
     
     <!-- Friction force simulation -->
-    <friction class="wardiagnemma">
+    <friction class="ellipse">
         <mu>0.9</mu>
         <C_damping>0.05</C_damping>
     </friction>
