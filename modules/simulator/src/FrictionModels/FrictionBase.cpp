@@ -10,6 +10,7 @@
 #include <mvsim/FrictionModels/DefaultFriction.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/FrictionModels/WardIagnemmaFriction.h>
+#include <mvsim/FrictionModels/EllipseCurveMethod.h>
 #include <mvsim/VehicleBase.h>
 
 #include <rapidxml.hpp>
@@ -30,6 +31,7 @@ void register_all_friction()
 
 	REGISTER_FRICTION("default", DefaultFriction)
 	REGISTER_FRICTION("wardiagnemma", WardIagnemmaFriction)
+	REGISTER_FRICTION("ellipse", EllipseCurveMethod)
 }
 
 FrictionBase::FrictionBase(VehicleBase& my_vehicle)
