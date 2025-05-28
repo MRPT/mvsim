@@ -2,6 +2,14 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.13.3 (2025-05-28)
+-------------------
+* Readme: add new demo video and add Kilted badges
+* Format: space indentation in main cmake file
+* Fix build after deprecation of ament_target_dependencies()
+* Update broken link to ROS Index
+* Contributors: Jose Luis Blanco-Claraco
+
 0.13.2 (2025-02-05)
 -------------------
 * FIX: another missing if() protecting access to uninitialized js data
