@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.13.3 (2025-05-28)
+-------------------
 * Readme: add new demo video and add Kilted badges
 * Format: space indentation in main cmake file
 * Fix build after deprecation of ament_target_dependencies()
