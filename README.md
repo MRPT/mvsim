@@ -50,9 +50,7 @@ Then jump to [next steps](https://mvsimulator.readthedocs.io/en/latest/first-ste
 Demo videos
 --------------------
 
-<video controls autoplay loop muted>
-  <source src="https://mrpt.github.io/videos/mvsim_demo_warehouse.mp4" type="video/mp4">
-</video>
+https://github.com/user-attachments/assets/766db164-2d16-44f4-acbf-2f15b73c1ab3
 
 ![screenshot-demo](docs/imgs/mvsim-ros2-demo.gif)
 
