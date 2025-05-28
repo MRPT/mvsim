@@ -320,19 +320,15 @@ if (BUILD_FOR_ROS)
 			add_dependencies(mvsim_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 		endif()
 	elseif(DETECTED_ROS2)
-		ament_target_dependencies(mvsim_node
-			rclcpp
-			geometry_msgs
-			nav_msgs
-			sensor_msgs
-			visualization_msgs
-			tf2
-			tf2_geometry_msgs
-		)
-
-		target_link_libraries(mvsim_node
-			#PRIVATE  # ros ament already used the plain signature, we cannot use this here...
+		target_link_libraries(mvsim_node #PRIVATE
+			rclcpp::rclcpp
+			tf2::tf2
 			mrpt::ros2bridge
+			${geometry_msgs_TARGETS}
+			${nav_msgs_TARGETS}
+			${sensor_msgs_TARGETS}
+			${visualization_msgs_TARGETS}
+			${tf2_geometry_msgs_TARGETS}
 		)
 
 		# We need this to handle this backwards-incompatible change: https://github.com/ros2/geometry2/pull/416
