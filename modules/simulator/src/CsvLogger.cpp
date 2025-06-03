@@ -1,15 +1,18 @@
 #include "mvsim/CsvLogger.h"
 
-CSVLogger::CSVLogger() { file_ = std::make_shared<std::ofstream>(std::ofstream()); }
+CSVLogger::CSVLogger() { file_ = std::make_shared<std::ofstream>(); }
 
 CSVLogger::~CSVLogger() { close(); }
-void CSVLogger::addColumn(std::string name) { columns_[name] = 0.0; }
-void CSVLogger::updateColumn(std::string name, double value) { columns_[name] = value; }
+void CSVLogger::updateColumn(const std::string_view& name, double value) { columns_[name] = value; }
 
 bool CSVLogger::writeHeader()
 {
-	columns_type::iterator it;
-	for (it = columns_.begin(); it != columns_.end();)
+	if (!file_->is_open())
+	{
+		return false;
+	}
+
+	for (auto it = columns_.begin(); it != columns_.end();)
 	{
 		*file_ << it->first;
 
@@ -26,12 +29,11 @@ bool CSVLogger::writeHeader()
 
 bool CSVLogger::writeRow()
 {
-	if (!isRecording) return true;
+	if (!isRecording_) return true;
 
 	if (!isOpen()) clear();
 
-	columns_type::iterator it;
-	for (it = columns_.begin(); it != columns_.end();)
+	for (auto it = columns_.begin(); it != columns_.end();)
 	{
 		*file_ << it->second;
 
@@ -48,11 +50,11 @@ bool CSVLogger::writeRow()
 
 bool CSVLogger::open()
 {
+	using std::literals::string_literals::operator""s;
+
 	if (file_)
 	{
-		file_->open(
-			(std::string("session") + std::to_string(currentSession) + std::string("-") + filepath_)
-				.c_str());
+		file_->open("session_"s + std::to_string(::time(nullptr)) + "-"s + filepath_);
 		return isOpen();
 	}
 	return false;
@@ -81,8 +83,4 @@ bool CSVLogger::clear()
 	return false;
 }
 
-void CSVLogger::newSession()
-{
-	currentSession++;
-	close();
-}
+void CSVLogger::newSession() { close(); }

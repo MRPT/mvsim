@@ -18,8 +18,6 @@ using namespace mvsim;
 
 TClassFactory_friction mvsim::classFactory_friction;
 
-MRPT_TODO("When each wheel will have its own friction - remove logger_.")
-
 // Explicit registration calls seem to be one (the unique?) way to assure
 // registration takes place:
 void register_all_friction()

@@ -101,5 +101,18 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;
 	wRot.composePoint(result_force_wrt_wheel, res);
+
+	if (logger_ && !logger_->expired())
+	{
+		auto logger = logger_->lock();
+
+		logger->updateColumn("desired_wheel_alpha", desired_wheel_alpha);
+		logger->updateColumn("wheel_lat_friction", wheel_lat_friction);
+		logger->updateColumn("desired_wheel_w_impulse", desired_wheel_w_impulse);
+		logger->updateColumn("F_friction_lon", F_friction_lon);
+		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
+		logger->updateColumn("motorTorque", input.motorTorque);
+	}
+
 	return res;
 }

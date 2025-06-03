@@ -64,13 +64,14 @@ class FrictionBase
 	virtual mrpt::math::TVector2D evaluate_friction(
 		const FrictionBase::TFrictionInput& input) const = 0;
 
+	bool hasLogger() const { return logger_.has_value(); }
 	void setLogger(const std::weak_ptr<CSVLogger>& logger);
 
    protected:
 	World* world_;
 	VehicleBase& myVehicle_;
 
-	std::weak_ptr<CSVLogger> logger_;
+	std::optional<std::weak_ptr<CSVLogger>> logger_;
 };
 
 using FrictionBasePtr = std::shared_ptr<FrictionBase>;

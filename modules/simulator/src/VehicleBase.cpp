@@ -53,27 +53,6 @@ void register_all_veh_dynamics()
 	REGISTER_VEHICLE_DYNAMICS("ackermann_drivetrain", DynamicsAckermannDrivetrain)
 }
 
-constexpr char VehicleBase::DL_TIMESTAMP[];
-constexpr char VehicleBase::LOGGER_POSE[];
-constexpr char VehicleBase::LOGGER_WHEEL[];
-
-constexpr char VehicleBase::PL_Q_X[];
-constexpr char VehicleBase::PL_Q_Y[];
-constexpr char VehicleBase::PL_Q_Z[];
-constexpr char VehicleBase::PL_Q_YAW[];
-constexpr char VehicleBase::PL_Q_PITCH[];
-constexpr char VehicleBase::PL_Q_ROLL[];
-constexpr char VehicleBase::PL_DQ_X[];
-constexpr char VehicleBase::PL_DQ_Y[];
-constexpr char VehicleBase::PL_DQ_Z[];
-
-constexpr char VehicleBase::WL_TORQUE[];
-constexpr char VehicleBase::WL_WEIGHT[];
-constexpr char VehicleBase::WL_VEL_X[];
-constexpr char VehicleBase::WL_VEL_Y[];
-constexpr char VehicleBase::WL_FRIC_X[];
-constexpr char VehicleBase::WL_FRIC_Y[];
-
 // Protected ctor:
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	: VisualObject(parent), Simulable(parent), fixture_wheels_(nWheels, nullptr)
@@ -403,8 +382,6 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		fi.weight = weightPerWheel;
 		fi.wheelCogLocalVel = wheelLocalVels[i];
 
-		friction_->setLogger(getLoggerPtr(LOGGER_WHEEL + std::to_string(i + 1)));
-
 		// eval friction (in the frame of the vehicle):
 		const mrpt::math::TPoint2D F_r = friction_->evaluate_friction(fi);
 
@@ -420,10 +397,19 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
 
 		// log
+		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isRecording())
 		{
-			auto& l = loggers_[LOGGER_WHEEL + std::to_string(i + 1)];
-			ASSERT_(l);
 			auto& logger = *l;
+
+			if (!friction_->hasLogger())
+			{
+				friction_->setLogger(l);
+			}
+
+			logger.updateColumn(DL_TIMESTAMP, context.simul_time);
+			logger.updateColumn("wheel_pos_x", w.x);
+			logger.updateColumn("wheel_pos_y", w.y);
+
 			logger.updateColumn(DL_TIMESTAMP, context.simul_time);
 			logger.updateColumn(WL_TORQUE, fi.motorTorque);
 			logger.updateColumn(WL_WEIGHT, fi.weight);
@@ -493,9 +479,8 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	const auto q = getPose();
 	const auto dq = getTwist();
 
+	if (auto& l = loggers_[LOGGER_IDX_POSE]; l->isRecording())
 	{
-		auto& l = loggers_[LOGGER_POSE];
-		ASSERT_(l);
 		auto& logger = *l;
 		logger.updateColumn(DL_TIMESTAMP, context.simul_time);
 		logger.updateColumn(PL_Q_X, q.x);
@@ -509,9 +494,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		logger.updateColumn(PL_DQ_Z, dq.omega);
 	}
 
-	{
-		writeLogStrings();
-	}
+	writeLogStrings();
 }
 
 /** Last time-step velocity of each wheel's center point (in local coords) */
@@ -569,8 +552,7 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 bool mvsim::VehicleBase::isLogging() const
 {
 	if (loggers_.empty()) return false;
-	auto& l = loggers_.begin()->second;
-
+	auto& l = *loggers_.begin();
 	return l && l->isOpen();
 }
 
@@ -779,23 +761,32 @@ void VehicleBase::internalGuiUpdate(
 
 void VehicleBase::initLoggers()
 {
-	loggers_[LOGGER_POSE] = std::make_shared<CSVLogger>();
-	loggers_[LOGGER_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + "_" + LOGGER_POSE + ".log");
+	loggers_.clear();
+
+	//[0]: logger for vehicle pose:
+	loggers_.resize(1 + getNumWheels());
+
+	loggers_[LOGGER_IDX_POSE] = std::make_shared<CSVLogger>();
+	loggers_[LOGGER_IDX_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + "_pose.log");
 
 	for (size_t i = 0; i < getNumWheels(); i++)
 	{
-		loggers_[LOGGER_WHEEL + std::to_string(i + 1)] = std::make_shared<CSVLogger>();
-		loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->setFilepath(
-			log_path_ + "mvsim_" + name_ + "_" + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
+		loggers_[LOGGER_IDX_WHEELS + i] = std::make_shared<CSVLogger>();
+		loggers_[LOGGER_IDX_WHEELS + i]->setFilepath(
+			log_path_ + "mvsim_" + name_ + "_wheel_" + std::to_string(i + 1) + ".log");
 	}
 }
 
 void VehicleBase::writeLogStrings()
 {
-	std::map<std::string, std::shared_ptr<CSVLogger>>::iterator it;
-	for (it = loggers_.begin(); it != loggers_.end(); ++it)
+	for (auto& logger : loggers_)
 	{
-		it->second->writeRow();
+		if (!logger->isRecording())
+		{
+			continue;
+		}
+
+		logger->writeRow();
 	}
 }
 

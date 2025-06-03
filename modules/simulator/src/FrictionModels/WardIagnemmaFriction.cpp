@@ -96,11 +96,6 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	const double F_rr = -sign(vel_w.x) * partial_mass * gravity *
 						(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
 
-	if (!logger_.expired())
-	{
-		logger_.lock()->updateColumn("F_rr", F_rr);
-	}
-
 	const double I_yy = input.wheel.Iyy;
 	//                                  There are torques this is force   v
 	double F_friction_lon =
@@ -126,5 +121,17 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;
 	wRot.composePoint(result_force_wrt_wheel, res);
+
+	if (logger_ && !logger_->expired())
+	{
+		auto l = logger_->lock();
+
+		l->updateColumn("F_rr", F_rr);
+		l->updateColumn("desired_wheel_alpha", desired_wheel_alpha);
+		l->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
+		l->updateColumn("motorTorque", input.motorTorque);
+		l->updateColumn("wheel_long_friction", wheel_long_friction);
+	}
+
 	return res;
 }

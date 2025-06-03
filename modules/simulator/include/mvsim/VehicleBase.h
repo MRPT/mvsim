@@ -96,9 +96,9 @@ class VehicleBase : public VisualObject, public Simulable
 
 	const TListSensors& getSensors() const { return sensors_; }
 	TListSensors& getSensors() { return sensors_; }
-	std::shared_ptr<CSVLogger> getLoggerPtr(std::string logger_name)
+	CSVLogger::Ptr getLoggerPtr(const std::size_t logger_index)
 	{
-		return loggers_[logger_name];
+		return loggers_.at(logger_index);
 	}
 
 	/** Get the 2D shape of the vehicle chassis, as set from the config file
@@ -111,15 +111,24 @@ class VehicleBase : public VisualObject, public Simulable
 	size_t getVehicleIndex() const { return vehicle_index_; }
 	void setRecording(bool record)
 	{
-		for (auto& logger : loggers_) logger.second->setRecording(record);
+		for (auto& logger : loggers_)
+		{
+			logger->setRecording(record);
+		}
 	}
 	void clearLogs()
 	{
-		for (auto& logger : loggers_) logger.second->clear();
+		for (auto& logger : loggers_)
+		{
+			logger->clear();
+		}
 	}
 	void newLogSession()
 	{
-		for (auto& logger : loggers_) logger.second->newSession();
+		for (auto& logger : loggers_)
+		{
+			logger->newSession();
+		}
 	}
 
 	virtual ControllerBaseInterface* getControllerInterface() = 0;
@@ -141,7 +150,7 @@ class VehicleBase : public VisualObject, public Simulable
 	double chassisZMax() const { return chassis_z_max_; }
 
    protected:
-	std::map<std::string, std::shared_ptr<CSVLogger>> loggers_;
+	std::vector<CSVLogger::Ptr> loggers_;
 	std::string log_path_;
 
 	virtual void initLoggers();
@@ -225,27 +234,28 @@ class VehicleBase : public VisualObject, public Simulable
 	std::vector<mrpt::math::TSegment3D> torqueSegmentsForRendering_;
 	std::mutex forceSegmentsForRenderingMtx_;
 
-   public:	// data logger header entries
-	static constexpr char DL_TIMESTAMP[] = "Timestamp";
-	static constexpr char LOGGER_POSE[] = "logger_pose";
-	static constexpr char LOGGER_WHEEL[] = "logger_wheel";
+   public:
+	// data logger header entries
+	static constexpr std::string_view DL_TIMESTAMP = "Timestamp";
+	static constexpr std::size_t LOGGER_IDX_POSE = 0;
+	static constexpr std::size_t LOGGER_IDX_WHEELS = 1;
 
-	static constexpr char PL_Q_X[] = "q0x";
-	static constexpr char PL_Q_Y[] = "q1y";
-	static constexpr char PL_Q_Z[] = "q2z";
-	static constexpr char PL_Q_YAW[] = "q3yaw";
-	static constexpr char PL_Q_PITCH[] = "q4pitch";
-	static constexpr char PL_Q_ROLL[] = "q5roll";
-	static constexpr char PL_DQ_X[] = "dqx";
-	static constexpr char PL_DQ_Y[] = "dqy";
-	static constexpr char PL_DQ_Z[] = "dqz";
+	static constexpr std::string_view PL_Q_X = "q0x";
+	static constexpr std::string_view PL_Q_Y = "q1y";
+	static constexpr std::string_view PL_Q_Z = "q2z";
+	static constexpr std::string_view PL_Q_YAW = "q3yaw";
+	static constexpr std::string_view PL_Q_PITCH = "q4pitch";
+	static constexpr std::string_view PL_Q_ROLL = "q5roll";
+	static constexpr std::string_view PL_DQ_X = "dqx";
+	static constexpr std::string_view PL_DQ_Y = "dqy";
+	static constexpr std::string_view PL_DQ_Z = "dqz";
 
-	static constexpr char WL_TORQUE[] = "torque";
-	static constexpr char WL_WEIGHT[] = "weight";
-	static constexpr char WL_VEL_X[] = "velocity_x";
-	static constexpr char WL_VEL_Y[] = "velocity_y";
-	static constexpr char WL_FRIC_X[] = "friction_x";
-	static constexpr char WL_FRIC_Y[] = "friction_y";
+	static constexpr std::string_view WL_TORQUE = "torque";
+	static constexpr std::string_view WL_WEIGHT = "weight";
+	static constexpr std::string_view WL_VEL_X = "velocity_x";
+	static constexpr std::string_view WL_VEL_Y = "velocity_y";
+	static constexpr std::string_view WL_FRIC_X = "friction_x";
+	static constexpr std::string_view WL_FRIC_Y = "friction_y";
 
 	bool isLogging() const;
 };	// end VehicleBase
