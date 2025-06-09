@@ -24,41 +24,35 @@
 #include <mvsim/World.h>
 
 #include <cmath>
-#include <map>
 #include <rapidxml.hpp>
-#include <string>
 
-#include "JointXMLnode.h"
-#include "XMLClassesRegistry.h"
 #include "parse_utils.h"
 #include "xml_utils.h"
 
 using namespace mvsim;
 
-// adapto los codigos ya existentes para crear el nuevo
 EllipseCurveMethod::EllipseCurveMethod(
 	VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
 	: FrictionBase(my_vehicle), CA_(8), Caf_(8.5), Cs_(7.5), ss_(0.1), Cafs_(0.5), Csaf_(0.5)
 {
 	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
+	{
 		throw std::runtime_error("<friction>...</friction> XML node was expected!!");
+	}
 
 	// Parse XML params:
-	if (node) parse_xmlnode_children_as_param(*node, params_, world_->user_defined_variables());
+	if (node)
+	{
+		parse_xmlnode_children_as_param(*node, params_, world_->user_defined_variables());
+	}
 }
 
 // aqui ya cambia el codigo
 namespace
 {
 // Heaviside function
-double miH(double x, double x0)
-{
-	if (x > x0)
-		return 1.0;
-	else
-		return 0.0;
-}
+double miH(double x, double x0) { return (x > x0) ? 1.0 : 0.0; }
 // Saturation function
 double miS(double x, double x0) { return x * miH(x0, std::abs(x)) + x0 * miH(std::abs(x), x0); }
 }  // namespace
@@ -67,40 +61,27 @@ double miS(double x, double x0) { return x * miH(x0, std::abs(x)) + x0 * miH(std
 mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const FrictionBase::TFrictionInput& input) const
 {
-	static int wheel_index = 0;	 // Variable global para saber qué rueda se está calculando
+	// This function is called once for each wheel of the vehicle, for each simulation time step.
 
-	// obtener posiciones y distancias de ejes
-	mrpt::math::TPoint2D Center_of_mass = myVehicle_.getChassisCenterOfMass();
-	// estas lineas ya existen en VehicleBase.ccp linea 568
-	const size_t nW = myVehicle_.getNumWheels();
-	std::vector<mrpt::math::TVector2D> pos(nW);
-	// calculo las posiciones de las ruedas respecto del centro de masas
-	for (size_t i = 0; i < nW; i++)
-	{
-		const Wheel& wpos = myVehicle_.getWheelInfo(i);
-		pos[i].x = wpos.x - Center_of_mass.x;
-		pos[i].y = wpos.y - Center_of_mass.y;
-	}
-
-	// Valores que no sé si estoy tomando correctamente
-	//-------------------------------------------------------------------------
+	// vehicle center of mass, wrt local vehicle frame:
+	const auto com = myVehicle_.getChassisCenterOfMass();
+	const auto wheel_pos_wrt_com = mrpt::math::TPoint2D(input.wheel.pose().translation()) - com;
 
 	// pasar a local la velocidad
 	// const mrpt::math::TVector3Df linAccGlobal = myVehicle_.getLinearAcceleration();
 	// const mrpt::poses::CPose3D vehiclePose3D(myVehicle_.getPose());
 	// mrpt::math::TVector3Df linAccLocal = vehiclePose3D.inverseComposePoint(linAccGlobal);
 
-	const mrpt::math::TPoint3D_<double> linAccLocal = myVehicle_.getLinearAcceleration();
+	const auto linAccLocal = myVehicle_.getLinearAcceleration();
 
 	// const mrpt::math::TVector2D linAccLocal = getAcc();
 	//  ¿Está bien? no se si se corresponde con la aceleración que quiero
-	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();  // ¿Está bien?
-	// const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocalOdoEstimate();
+	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();
 	const double w = vel.omega;
 
-	double delta = 0.0;
-	if (wheel_index >= 2) delta = input.wheel.yaw;	// angulo de la rueda
-	// const double delta = input.wheel.getPhi();
+	// wheel angle around the vertical axis:
+	const double delta = input.wheel.yaw;
+
 	// Rotate wheel velocity vector from veh. frame => wheel frame
 	const mrpt::poses::CPose2D wRot(pos[wheel_index].x, pos[wheel_index].y, delta);
 
@@ -175,12 +156,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 			   (R * input.wheel.getW() * miH(R * input.wheel.getW(), vxT) +
 				vxT * miH(vxT, R * input.wheel.getW()));
 
-	if (std::isnan(s)) s = 0;  // si es NAN se iguala a 0
-	if (std::isinf(s)) s = 0;  // si es INF se iguala a 0
-
 	// 4) Sideslip angle (decoupled sub-problem)
 	// -------------------------------------------------
-
 	double af = atan2((vel.vy + pos[wheel_index].x * w), (vel.vx - pos[wheel_index].y * w)) - delta;
 
 	// 5) Longitudinal friction (decoupled sub-problem)
@@ -218,48 +195,20 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double Acx = linAccLocal.x;
 	const double Acy = linAccLocal.y;
 
-	static int Show = 1;
-
-	if (Show < 2)
-	{
-		// Mostrar en pantalla las posiciones de las ruedas respecto al centro de masas
-		for (size_t i = 0; i < nW; i++)
-		{
-			const Wheel& wpos = myVehicle_.getWheelInfo(i);
-			printf("Wheel %zu position: (x: %.2f, y: %.2f)\n", i, wpos.x, wpos.y);
-			printf(
-				"Wheel %zu position relative to CoM: (x: %.2f, y: %.2f)\n", i, pos[i].x, pos[i].y);
-		}
-		printf(
-			"__________________________________________________________________________________"
-			"_________________________________________\n");
-	}
-
-	if (Show < 41)
-	{
-		printf(
-			"Wheel %u (Fz: %.2f, Fx: %.2f, Fy: %.2f, yaw: %.2f, Vx: %.2f, Vy: %.2f, Acx: %.2f, "
-			"Acy: %.2f)\n",
-			wheel_index, Fz, Fx, Fy, delta, Vx, Vy, Acx, Acy);
-
-		if (Show % 4 == 0)
-		{
-			int itera = Show / 4;
-			printf("Fin Iteración %u \n", itera);
-			printf(
-				"__________________________________________________________________________________"
-				"_________________________________________\n");
-		}
-	}
-
-	Show++;
-
-	wheel_index++;
-	if (wheel_index > 3)
-		wheel_index = 0;  // cuando la variable supera el numero de ruedas vuelve a empezar
-
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;
 	wRot.composePoint(result_force_wrt_wheel, res);
+
+	// Logger:
+	if (logger_ && !logger_->expired())
+	{
+		auto logger = logger_->lock();
+
+		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
+		logger->updateColumn("motorTorque", input.motorTorque);
+		logger->updateColumn("wheel_long_friction", wheel_long_friction);
+		logger->updateColumn("wheel_lat_friction", wheel_lat_friction);
+	}
+
 	return res;
 }
