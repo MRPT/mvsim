@@ -17,14 +17,20 @@
 
 using namespace mvsim;
 
-static double sign(double x) { return (double)((x > 0) - (x < 0)); }
+namespace
+{
+double sign(double x) { return (double)((x > 0) - (x < 0)); }
+}  // namespace
+
 WardIagnemmaFriction::WardIagnemmaFriction(
 	VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
-	: FrictionBase(my_vehicle), mu_(0.8), C_damping_(1.0)
+	: FrictionBase(my_vehicle)
 {
 	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
+	{
 		throw std::runtime_error("<friction>...</friction> XML node was expected!!");
+	}
 
 	if (node)
 	{

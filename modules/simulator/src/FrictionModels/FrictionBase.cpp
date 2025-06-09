@@ -8,9 +8,9 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mvsim/FrictionModels/DefaultFriction.h>
+#include <mvsim/FrictionModels/EllipseCurveMethod.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/FrictionModels/WardIagnemmaFriction.h>
-#include <mvsim/FrictionModels/EllipseCurveMethod.h>
 #include <mvsim/VehicleBase.h>
 
 #include <rapidxml.hpp>
@@ -25,9 +25,11 @@ void register_all_friction()
 {
 	static bool done = false;
 	if (done)
+	{
 		return;
-	else
-		done = true;
+	}
+
+	done = true;
 
 	REGISTER_FRICTION("default", DefaultFriction)
 	REGISTER_FRICTION("wardiagnemma", WardIagnemmaFriction)
@@ -49,14 +51,18 @@ FrictionBase::Ptr FrictionBase::factory(
 	using namespace rapidxml;
 
 	if (!xml_node || 0 != strcmp(xml_node->name(), "friction"))
+	{
 		throw runtime_error("[FrictionBase::factory] Expected XML node <friction>");
+	}
 
 	// Parse:
 	const xml_attribute<>* frict_class = xml_node->first_attribute("class");
 	if (!frict_class || !frict_class->value())
+	{
 		throw runtime_error(
 			"[FrictionBase::factory] Missing mandatory attribute 'class' in "
 			"node <friction>");
+	}
 
 	return classFactory_friction.create(frict_class->value(), parent, xml_node);
 }
