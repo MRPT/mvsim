@@ -62,17 +62,17 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// --------------------------------------
 	const double mu = mu_;
 	const double gravity = myVehicle_.parent()->get_gravity();
-	const double partial_mass = input.weight / gravity + input.wheel.mass;
+	const double partial_mass = input.Fz / gravity + input.wheel.mass;
 	const double max_friction = mu * partial_mass * gravity;
 
 	// 1) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
-	double wheel_lat_friction = 0.0;  // direction: +y local wrt the wheel
+	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
 		// Impulse required to step the lateral slippage:
-		wheel_lat_friction = -vel_w.y * partial_mass / input.context.dt;
+		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt;
 
-		wheel_lat_friction = b2Clamp(wheel_lat_friction, -max_friction, max_friction);
+		wheel_lateral_friction = b2Clamp(wheel_lateral_friction, -max_friction, max_friction);
 	}
 
 	// 2) Longitudinal friction (decoupled sub-problem)
@@ -122,7 +122,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
-	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
+	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lateral_friction);
 
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;

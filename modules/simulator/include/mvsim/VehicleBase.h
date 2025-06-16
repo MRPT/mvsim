@@ -251,7 +251,7 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr std::string_view PL_DQ_Z = "dqz";
 
 	static constexpr std::string_view WL_TORQUE = "torque";
-	static constexpr std::string_view WL_WEIGHT = "weight";
+	static constexpr std::string_view WL_FORCE_Z = "force_z";
 	static constexpr std::string_view WL_VEL_X = "velocity_x";
 	static constexpr std::string_view WL_VEL_Y = "velocity_y";
 	static constexpr std::string_view WL_FRIC_X = "friction_x";

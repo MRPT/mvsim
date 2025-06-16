@@ -43,7 +43,7 @@ class FrictionBase
 		/** Weight on this wheel from the car chassis (Newtons), excluding the
 		 * weight of the wheel itself.
 		 */
-		double weight = 0;
+		double Fz = 0;
 
 		/** The force applied by the motor to the wheel (Nm). Negative means
 		 * backwards, which makes the vehicle go forwards. */

@@ -76,14 +76,14 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	// const mrpt::math::TVector2D linAccLocal = getAcc();
 	//  ¿Está bien? no se si se corresponde con la aceleración que quiero
-	const mrpt::math::TTwist2D& vel = myVehicle_.getVelocityLocal();
-	const double w = vel.omega;
+	const mrpt::math::TTwist2D& vehicle_vel = myVehicle_.getVelocityLocal();
+	const double w = vehicle_vel.omega;
 
 	// wheel angle around the vertical axis:
-	const double delta = input.wheel.yaw;
+	const double wheel_yaw = input.wheel.yaw;
 
 	// Rotate wheel velocity vector from veh. frame => wheel frame
-	const mrpt::poses::CPose2D wRot(pos[wheel_index].x, pos[wheel_index].y, delta);
+	const mrpt::poses::CPose2D wRot(pos[wheel_index].x, pos[wheel_index].y, wheel_yaw);
 
 	// Velocity of the wheel cog in the frame of the wheel itself: == vxT
 	// const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
@@ -94,8 +94,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double m = myVehicle_.getChassisMass();  // masa del conjunto
 	const double afs = 5.0 * M_PI / 180.0;
 	// const double CA = CA_;
-	const double gravity = myVehicle_.parent()->get_gravity();
-	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
+	const double wheel_radius = 0.5 * input.wheel.diameter;
 
 	// distancia centro de gravedad a ejes
 	const double a1 = std::abs(pos[3].x), a2 = std::abs(pos[0].x);
@@ -106,59 +105,28 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	ASSERT_(Axf > 0);  // comprobar si la distancia de los ejes son mayores a 0
 	ASSERT_(Axr > 0);
 
-	// 1) Vertical forces (decoupled sub-problem)
-	// --------------------------------------------
-	//// crear un if para cada rueda
-	// Wheels: [0]:rear-left, [1]:rear-right, [2]: front-left, [3]: front-right
-	double Fz = 0.0;  // Declaración antes del if
-
-	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)
-	{
-		Fz = std::abs(
-			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-			(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
-	}
-	else if (wheel_index == 2)	//(Wpos.x < 0 && Wpos.y > 0)
-	{
-		Fz = std::abs(
-			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-			(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
-	}
-	else if (wheel_index == 1)	//(Wpos.x > 0 && Wpos.y < 0)
-	{
-		Fz = std::abs(
-			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-			(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
-	}
-	else if (wheel_index == 0)	//(Wpos.x < 0 && Wpos.y < 0)
-	{
-		Fz = std::abs(
-			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-			(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
-	}
-	else
-	{
-		throw std::runtime_error("Invalid wheel index");  // Sin es mas de 4 ruedas generar error
-	}
+	// The vertical force on the wheel coming from the chassis:
+	const double Fz = input.Fz;
 
 	const double max_friction = Fz;
 
 	// 2) Wheels velocity at Tire SR (decoupled sub-problem)
 	// -------------------------------------------------
 	// duda de cambiar el codigo o no) VehicleBase.cpp line 575 calcula esto pero distinto
-	const double vxT = (vel.vx - w * pos[wheel_index].y) * cos(delta) +
-					   (vel.vy + w * pos[wheel_index].x) * sin(delta);
+	const double vxT = (vel.vx - w * pos[wheel_index].y) * cos(wheel_yaw) +
+					   (vel.vy + w * pos[wheel_index].x) * sin(wheel_yaw);
 
 	// 3) Longitudinal slip (decoupled sub-problem)
 	// -------------------------------------------------
 	// w= velocidad angular
-	double s = (R * input.wheel.getW() - vxT) /
-			   (R * input.wheel.getW() * miH(R * input.wheel.getW(), vxT) +
-				vxT * miH(vxT, R * input.wheel.getW()));
+	double s = (wheel_radius * input.wheel.getW() - vxT) /
+			   (wheel_radius * input.wheel.getW() * miH(wheel_radius * input.wheel.getW(), vxT) +
+				vxT * miH(vxT, wheel_radius * input.wheel.getW()));
 
 	// 4) Sideslip angle (decoupled sub-problem)
 	// -------------------------------------------------
-	double af = atan2((vel.vy + pos[wheel_index].x * w), (vel.vx - pos[wheel_index].y * w)) - delta;
+	double af =
+		atan2((vel.vy + pos[wheel_index].x * w), (vel.vx - pos[wheel_index].y * w)) - wheel_yaw;
 
 	// 5) Longitudinal friction (decoupled sub-problem)
 	// -------------------------------------------------
@@ -169,31 +137,26 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	// 6) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
-	double wheel_lat_friction = 0.0;
-	wheel_lat_friction =
+	double wheel_lateral_friction = 0.0;
+	wheel_lateral_friction =
 		-max_friction * Caf_ * miS(af, afs) * sqrt(1 - Cafs_ * pow((miS(s, ss_) / ss_), 2));
-	// wheel_lat_friction = b2Clamp(wheel_lat_friction, -1.0, 1.0);
+	// wheel_lateral_friction = b2Clamp(wheel_lateral_friction, -1.0, 1.0);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double I_yy = input.wheel.Iyy;
-	const double actual_wheel_alpha = (input.motorTorque - R * wheel_long_friction) / I_yy;
+	const double actual_wheel_alpha =
+		(input.motorTorque - wheel_radius * wheel_long_friction) / I_yy;
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
-	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
-
-	// recalcular aceleración
+	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lateral_friction);
 
 	// mostrar en pantalla los resultados
 	const double Fx = wheel_long_friction;
-	const double Fy = wheel_lat_friction;
-	const double Vx = vel.vx;
-	const double Vy = vel.vy;
-	const double Acx = linAccLocal.x;
-	const double Acy = linAccLocal.y;
+	const double Fy = wheel_lateral_friction;
 
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;
@@ -207,7 +170,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
 		logger->updateColumn("motorTorque", input.motorTorque);
 		logger->updateColumn("wheel_long_friction", wheel_long_friction);
-		logger->updateColumn("wheel_lat_friction", wheel_lat_friction);
+		logger->updateColumn("wheel_lateral_friction", wheel_lateral_friction);
 	}
 
 	return res;

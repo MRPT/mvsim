@@ -360,9 +360,36 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 	// Part of the vehicle weight on each wheel:
 	const double gravity = parent()->get_gravity();
+
 	MRPT_TODO("Use chassis cog point");
 	const double massPerWheel = getChassisMass() / nW;
 	const double weightPerWheel = massPerWheel * gravity;
+#if 0
+	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)
+	{
+		Fz = std::abs(
+			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
+	}
+	else if (wheel_index == 2)	//(Wpos.x < 0 && Wpos.y > 0)
+	{
+		Fz = std::abs(
+			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
+	}
+	else if (wheel_index == 1)	//(Wpos.x > 0 && Wpos.y < 0)
+	{
+		Fz = std::abs(
+			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
+	}
+	else if (wheel_index == 0)	//(Wpos.x < 0 && Wpos.y < 0)
+	{
+		Fz = std::abs(
+			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
+	}
+#endif
 
 	const std::vector<mrpt::math::TVector2D> wheelLocalVels =
 		getWheelsVelocityLocal(getVelocityLocal());
@@ -379,7 +406,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 		FrictionBase::TFrictionInput fi(context, w);
 		fi.motorTorque = -wheelTorque[i];  // "-" => Forwards is negative
-		fi.weight = weightPerWheel;
+		fi.Fz = weightPerWheel;
 		fi.wheelCogLocalVel = wheelLocalVels[i];
 
 		// eval friction (in the frame of the vehicle):
@@ -412,7 +439,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 			logger.updateColumn(DL_TIMESTAMP, context.simul_time);
 			logger.updateColumn(WL_TORQUE, fi.motorTorque);
-			logger.updateColumn(WL_WEIGHT, fi.weight);
+			logger.updateColumn(WL_FORCE_Z, fi.Fz);
 			logger.updateColumn(WL_VEL_X, fi.wheelCogLocalVel.x);
 			logger.updateColumn(WL_VEL_Y, fi.wheelCogLocalVel.y);
 			logger.updateColumn(WL_FRIC_X, F_r.x);
