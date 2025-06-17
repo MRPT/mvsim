@@ -49,7 +49,7 @@ class FrictionBase
 		 * backwards, which makes the vehicle go forwards. */
 		double motorTorque = 0;
 
-		/** Instantaneous velocity vector (in local coordinates) of the wheel
+		/** Instantaneous velocity vector (in vehicle local coordinates) of the wheel
 		 *  center of gravity (cog) point. */
 		mrpt::math::TVector2D wheelCogLocalVel{0, 0};
 

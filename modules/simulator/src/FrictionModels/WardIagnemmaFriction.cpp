@@ -97,7 +97,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// const mrpt::math::TPoint2D wheel_damping(- C_damping *
 	// input.wheel_speed.x, 0.0);
 
-	// Actually, Ward-Iagnemma rolling resistance is here (longitudal one):
+	// Actually, Ward-Iagnemma rolling resistance is here (longitudinal one):
 
 	const double F_rr = -sign(vel_w.x) * partial_mass * gravity *
 						(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));

@@ -29,20 +29,27 @@ class EllipseCurveMethod : public FrictionBase
 		const FrictionBase::TFrictionInput& input) const override;
 
    private:
-	double CA_ = 8;	 //!< aerodynamic force coefficient (non-dimensional)
-	double Caf_ = 8.5, Cs_ = 7.5, ss_ = 0.1, Cafs_ = 0.5, Csaf_ = 0.5;
-	//!< Elipse curve constants
+	// double CA_ = 8;	 //!< aerodynamic force coefficient (non-dimensional) Move to VehicleBase
+
+	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
+
+	double Caf_ = 8.5, Cs_ = 7.5, ss_ = 0.1, Cafs_ = 0.5, Csaf_ = 0.5;	//!< Elipse curve constants
 
    public:
 	const TParameterDefinitions params_ = {{"CA", {"%lf", &CA_}},	  {"Cs", {"%lf", &Cs_}},
 										   {"ss", {"%lf", &ss_}},	  {"Caf", {"%lf", &Caf_}},
 										   {"Casf", {"%lf", &Cafs_}}, {"Csaf", {"%lf", &Csaf_}}};
-	
 
-	mrpt::math::TVector2D getAcc() const { return Acc; }  //!< Returns acceleration (x, y components)
-	void setAcc(const mrpt::math::TVector2D& val) { Acc = val; }  //!< Sets acceleration (x, y components)
+	mrpt::math::TVector2D getAcc() const
+	{
+		return Acc;
+	}  //!< Returns acceleration (x, y components)
+	void setAcc(const mrpt::math::TVector2D& val)
+	{
+		Acc = val;
+	}  //!< Sets acceleration (x, y components)
 
-	protected:
-	mrpt::math::TVector2D Acc = {0.0, 0.0};  //!< Acceleration vector (x, y components)
+   protected:
+	mrpt::math::TVector2D Acc = {0.0, 0.0};	 //!< Acceleration vector (x, y components)
 };
 }  // namespace mvsim
