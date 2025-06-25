@@ -18,7 +18,6 @@
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/World.h>
-#include <tf2/LinearMath/Transform.h>
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/Comms/Server.h>
@@ -42,6 +41,7 @@
 #include <rosgraph_msgs/Clock.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <std_msgs/Bool.h>
+#include <tf2/LinearMath/Transform.h>
 #include <tf2_msgs/TFMessage.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -74,6 +74,7 @@ using Msg_CameraInfo = sensor_msgs::CameraInfo;
 #include <rclcpp/time_source.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <tf2/LinearMath/Transform.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
