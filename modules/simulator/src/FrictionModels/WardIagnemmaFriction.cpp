@@ -135,7 +135,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 		l->updateColumn("F_rr", F_rr);
 		l->updateColumn("desired_wheel_alpha", desired_wheel_alpha);
 		l->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
-		l->updateColumn("motorTorque", input.motorTorque);
+		l->updateColumn("motor_torque", input.motorTorque);
 		l->updateColumn("wheel_long_friction", wheel_long_friction);
 	}
 

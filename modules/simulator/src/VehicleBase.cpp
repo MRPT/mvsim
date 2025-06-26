@@ -578,7 +578,10 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 
 bool mvsim::VehicleBase::isLogging() const
 {
-	if (loggers_.empty()) return false;
+	if (loggers_.empty())
+	{
+		return false;
+	}
 	auto& l = *loggers_.begin();
 	return l && l->isOpen();
 }
@@ -794,13 +797,13 @@ void VehicleBase::initLoggers()
 	loggers_.resize(1 + getNumWheels());
 
 	loggers_[LOGGER_IDX_POSE] = std::make_shared<CSVLogger>();
-	loggers_[LOGGER_IDX_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + "_pose.log");
+	loggers_[LOGGER_IDX_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + "_pose.csv");
 
 	for (size_t i = 0; i < getNumWheels(); i++)
 	{
 		loggers_[LOGGER_IDX_WHEELS + i] = std::make_shared<CSVLogger>();
 		loggers_[LOGGER_IDX_WHEELS + i]->setFilepath(
-			log_path_ + "mvsim_" + name_ + "_wheel_" + std::to_string(i + 1) + ".log");
+			log_path_ + "mvsim_" + name_ + "_wheel_" + std::to_string(i + 1) + ".csv");
 	}
 }
 

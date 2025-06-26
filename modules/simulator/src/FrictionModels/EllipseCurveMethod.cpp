@@ -85,7 +85,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 
 	// Slip angle (α)
-	const double slip_angle = std::atan2(vel_v.y, vel_v.x) - wheel_delta;
+	const double slip_angle = mrpt::math::angDistance(std::atan2(vel_v.y, vel_v.x), wheel_delta);
 
 	const double wheel_ground_point_vel =
 		std::abs(input.wheel.getW()) > 1e-5 ? input.wheel.getW() * R : 1e-5;
@@ -160,12 +160,16 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 		auto logger = logger_->lock();
 
 		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
-		logger->updateColumn("motorTorque", input.motorTorque);
+		logger->updateColumn("motor_torque", input.motorTorque);
 		logger->updateColumn("wheel_long_friction", wheel_long_friction);
 		logger->updateColumn("wheel_lateral_friction", wheel_lateral_friction);
 
 		logger->updateColumn("slip_angle", slip_angle);
 		logger->updateColumn("slip_ratio", slip_ratio);
+
+		logger->updateColumn("wheel_ground_point_vel", wheel_ground_point_vel);
+		logger->updateColumn("vel_w_x", vel_w.x);
+		logger->updateColumn("vel_w_y", vel_w.y);
 	}
 
 	return res;
