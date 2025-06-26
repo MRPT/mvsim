@@ -43,10 +43,12 @@ class EllipseCurveMethod : public FrictionBase
 	// Ellipse curve parameters:
 	double C_alpha_ = 8.5;	//!< Coefficient for lateral slip angle (non-dimensional)
 	double C_s_ = 7.5;	//!< Coefficient for longitudinal slip (non-dimensional)
+
 	double slip_angle_saturation_ = 0.1;  //!< Saturation value for slip angle α_s (rad)
 	double slip_ratio_saturation_ = 0.1;  //!< Saturation value for slip ratio s_s (unitless)
-	double C_alpha_s_ = 0.5;  //!< Saturation value for lateral slip angle (non-dimensional)
-	double C_s_alpha_ = 0.5;  //!< Saturation value for longitudinal slip (non-dimensional)
+
+	double C_alpha_s_ = 0.5;  //!< Slip coefficient (non-dimensional)
+	double C_s_alpha_ = 0.5;  //!< Slip coefficient (non-dimensional)
 
    public:
 	const TParameterDefinitions params_ = {
