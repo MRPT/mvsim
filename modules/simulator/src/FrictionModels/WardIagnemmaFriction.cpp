@@ -72,7 +72,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 		// Impulse required to step the lateral slippage:
 		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt;
 
-		wheel_lateral_friction = b2Clamp(wheel_lateral_friction, -max_friction, max_friction);
+		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
 	}
 
 	// 2) Longitudinal friction (decoupled sub-problem)
@@ -82,7 +82,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// (eq. 1)==> desired impulse in wheel spinning speed.
 	// wheel_C_lon_vel = vel_w.x - input.wheel.w * 0.5*input.wheel.diameter
 
-	// It should be = 0 for no slippage (nonholonomic constraint): find out
+	// It should be = 0 for no slippage (non-holonomic constraint): find out
 	// required wheel \omega:case '4':
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 	const double lon_constraint_desired_wheel_w = vel_w.x / R;
@@ -109,7 +109,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 		F_rr;
 
 	// Slippage: The friction with the ground is not infinite:
-	F_friction_lon = b2Clamp(F_friction_lon, -max_friction, max_friction);
+	F_friction_lon = std::clamp(F_friction_lon, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double actual_wheel_alpha =

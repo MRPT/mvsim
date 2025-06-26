@@ -52,7 +52,7 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 		// Impulse required to step the lateral slippage:
 		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt;
 
-		wheel_lateral_friction = b2Clamp(wheel_lateral_friction, -max_friction, max_friction);
+		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
 	}
 
 	// 2) Longitudinal friction (decoupled sub-problem)
@@ -83,7 +83,7 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 		(input.motorTorque - I_yy * desired_wheel_alpha - C_damping * input.wheel.getW()) / R;
 
 	// Slippage: The friction with the ground is not infinite:
-	F_friction_lon = b2Clamp(F_friction_lon, -max_friction, max_friction);
+	F_friction_lon = std::clamp(F_friction_lon, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double actual_wheel_alpha =
