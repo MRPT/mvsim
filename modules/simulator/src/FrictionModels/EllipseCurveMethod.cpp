@@ -85,13 +85,22 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 
 	// Slip angle (α)
-	const double slip_angle = mrpt::math::angDistance(std::atan2(vel_v.y, vel_v.x), wheel_delta);
+	const double wheel_velocity_angle =
+		(std::abs(vel_w.y) > 1e-3 || std::abs(vel_w.x) > 1e-3) ? std::atan2(vel_w.y, vel_w.x) : .0;
+	double slip_angle = mrpt::math::angDistance(wheel_velocity_angle, wheel_delta);
+	if (std::abs(slip_angle) > M_PI_2)
+	{
+		// We could check for wheel vx sign, but that would not include some cases like sliding
+		// sideways on a slope, etc.
+		slip_angle = mrpt::math::angDistance(wheel_velocity_angle, wheel_delta + M_PI);
+	}
 
 	const double wheel_ground_point_vel =
 		std::abs(input.wheel.getW()) > 1e-5 ? input.wheel.getW() * R : 1e-5;
 
 	// Slip ratio (s):
-	const double slip_ratio = (wheel_ground_point_vel - vel_w.x) / wheel_ground_point_vel;
+	const double slip_ratio = std::clamp(
+		(wheel_ground_point_vel - vel_w.x) / std::abs(wheel_ground_point_vel), -1.0, 1.0);
 
 	// Maximum friction forces from the ellipse curve model:
 	// ------------------------------------------------------
