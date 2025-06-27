@@ -37,6 +37,7 @@ def main(file_path):
 
     # Create plots for the wheel files (non-blocking)
     plot_wheel_data(wheel_data)
+    plot_wheel_fx_fy(wheel_data)
 
     # Create plots for the main file (blocking)
     plot_main_data(main_data)
@@ -113,6 +114,26 @@ def plot_wheel_data(wheel_data):
         plt.title(f'{var.capitalize()} vs Time')
         plt.grid()
         plt.legend()
+
+    plt.tight_layout()
+    plt.show(block=False)
+
+
+def plot_wheel_fx_fy(wheel_data):
+    """Create fx vs fy plot for each wheel."""
+    plt.figure(figsize=(12, 12))
+
+    # Create one plot per variable group across all wheels
+    wheel_names = ['LR', 'RR', 'LF', 'RF']
+
+    for wheel, data in wheel_data.items():
+        plt.plot(data['wheel_lateral_friction'].to_numpy(),
+                 data['wheel_long_friction'].to_numpy(), 'o', label=f'{wheel_names[wheel-1]} wheel')
+
+    plt.xlabel('Lateral Friction (Fy) [N]')
+    plt.ylabel('Longitudinal Friction (Fx) [N]')
+    plt.grid()
+    plt.legend()
 
     plt.tight_layout()
     plt.show(block=False)
