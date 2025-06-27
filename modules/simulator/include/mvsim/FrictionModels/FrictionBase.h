@@ -43,13 +43,13 @@ class FrictionBase
 		/** Weight on this wheel from the car chassis (Newtons), excluding the
 		 * weight of the wheel itself.
 		 */
-		double weight = 0;
+		double Fz = 0;
 
 		/** The force applied by the motor to the wheel (Nm). Negative means
 		 * backwards, which makes the vehicle go forwards. */
 		double motorTorque = 0;
 
-		/** Instantaneous velocity vector (in local coordinates) of the wheel
+		/** Instantaneous velocity vector (in vehicle local coordinates) of the wheel
 		 *  center of gravity (cog) point. */
 		mrpt::math::TVector2D wheelCogLocalVel{0, 0};
 
@@ -73,8 +73,6 @@ class FrictionBase
 
 	std::optional<std::weak_ptr<CSVLogger>> logger_;
 };
-
-using FrictionBasePtr = std::shared_ptr<FrictionBase>;
 
 // Class factory:
 typedef ClassFactory<FrictionBase, VehicleBase&, const rapidxml::xml_node<char>*>

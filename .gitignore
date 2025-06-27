@@ -286,3 +286,4 @@ docs/myenv
 *.autosave
 docs/html
 .vscode
+*.csv

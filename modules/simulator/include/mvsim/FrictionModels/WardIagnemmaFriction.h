@@ -35,7 +35,7 @@ class WardIagnemmaFriction : public FrictionBase
 		const FrictionBase::TFrictionInput& input) const override;
 
    private:
-	double mu_;	 //!< friction coeficient (non-dimensional)
+	double mu_ = 0.8;  //!< friction coefficient (non-dimensional)
 	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
 	/**  Ward-Iagnemma rolling resistance coefficient */
 	double A_roll_ = 50.0, R1_ = 0.0075, R2_ = 0.02;

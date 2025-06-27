@@ -17,14 +17,20 @@
 
 using namespace mvsim;
 
-static double sign(double x) { return (double)((x > 0) - (x < 0)); }
+namespace
+{
+double sign(double x) { return (double)((x > 0) - (x < 0)); }
+}  // namespace
+
 WardIagnemmaFriction::WardIagnemmaFriction(
 	VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
-	: FrictionBase(my_vehicle), mu_(0.8), C_damping_(1.0)
+	: FrictionBase(my_vehicle)
 {
 	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
+	{
 		throw std::runtime_error("<friction>...</friction> XML node was expected!!");
+	}
 
 	if (node)
 	{
@@ -56,17 +62,17 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// --------------------------------------
 	const double mu = mu_;
 	const double gravity = myVehicle_.parent()->get_gravity();
-	const double partial_mass = input.weight / gravity + input.wheel.mass;
+	const double partial_mass = input.Fz / gravity + input.wheel.mass;
 	const double max_friction = mu * partial_mass * gravity;
 
 	// 1) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
-	double wheel_lat_friction = 0.0;  // direction: +y local wrt the wheel
+	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
 		// Impulse required to step the lateral slippage:
-		wheel_lat_friction = -vel_w.y * partial_mass / input.context.dt;
+		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt;
 
-		wheel_lat_friction = b2Clamp(wheel_lat_friction, -max_friction, max_friction);
+		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
 	}
 
 	// 2) Longitudinal friction (decoupled sub-problem)
@@ -76,7 +82,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// (eq. 1)==> desired impulse in wheel spinning speed.
 	// wheel_C_lon_vel = vel_w.x - input.wheel.w * 0.5*input.wheel.diameter
 
-	// It should be = 0 for no slippage (nonholonomic constraint): find out
+	// It should be = 0 for no slippage (non-holonomic constraint): find out
 	// required wheel \omega:case '4':
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 	const double lon_constraint_desired_wheel_w = vel_w.x / R;
@@ -91,7 +97,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// const mrpt::math::TPoint2D wheel_damping(- C_damping *
 	// input.wheel_speed.x, 0.0);
 
-	// Actually, Ward-Iagnemma rolling resistance is here (longitudal one):
+	// Actually, Ward-Iagnemma rolling resistance is here (longitudinal one):
 
 	const double F_rr = -sign(vel_w.x) * partial_mass * gravity *
 						(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
@@ -103,7 +109,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 		F_rr;
 
 	// Slippage: The friction with the ground is not infinite:
-	F_friction_lon = b2Clamp(F_friction_lon, -max_friction, max_friction);
+	F_friction_lon = std::clamp(F_friction_lon, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double actual_wheel_alpha =
@@ -116,7 +122,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
-	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
+	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lateral_friction);
 
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;
@@ -129,7 +135,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 		l->updateColumn("F_rr", F_rr);
 		l->updateColumn("desired_wheel_alpha", desired_wheel_alpha);
 		l->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
-		l->updateColumn("motorTorque", input.motorTorque);
+		l->updateColumn("motor_torque", input.motorTorque);
 		l->updateColumn("wheel_long_friction", wheel_long_friction);
 	}
 

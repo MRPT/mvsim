@@ -1,0 +1,94 @@
+<!--
+  Vehicle class definition file.
+  Intended to be included into world XML files.
+  Common sensors could be included here, but they are left to be included in 
+  class instantiations.
+  Refer to mvsim_tutorial example files.
+-->
+<vehicle:class name="jackal">
+
+    <!--  Dynamical model -->
+    <dynamics class="differential_4_wheels">
+        <!-- Params -->
+        <lf_wheel pos="0.13  0.16" mass="1.0" width="0.03" diameter="0.20">
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+        </lf_wheel>
+        <rf_wheel pos="0.13 -0.16" mass="1.0" width="0.03" diameter="0.20">
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+        </rf_wheel>
+        <lr_wheel pos="-0.13  0.16" mass="1.0" width="0.03" diameter="0.20">
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+        </lr_wheel>
+        <rr_wheel pos="-0.13 -0.16" mass="1.0" width="0.03" diameter="0.20">
+          <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal-wheel.dae</model_uri> </visual>
+        </rr_wheel>
+
+        <chassis mass="10.0" zmin="0.05" zmax="0.25">
+            <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+        </chassis>
+
+        <!--   Motor controller -->
+        <controller class="twist_ideal" />  <!-- "twist_ideal" or "twist_pid" -->
+
+    </dynamics>
+
+    <!-- Friction force simulation -->
+    <friction class="ellipse">
+        <!-- For wheels "internal friction" (N*m*s/rad) -->
+        <C_damping>0.05</C_damping>
+
+        <!-- ================ Parameters for Ellipse method =============== -->
+        <!-- Coefficient for lateral slip angle (non-dimensional) -->
+        <C_alpha>8.5</C_alpha>
+        <!-- Coefficient for longitudinal slip (non-dimensional) -->
+        <C_s>7.5</C_s>
+
+        <!-- Saturation value for slip angle α_s (rad) -->
+        <slip_angle_saturation>0.1</slip_angle_saturation>
+        <!-- Saturation value for slip ratio s_s (non-dimensional) -->
+        <slip_ratio_saturation>0.1</slip_ratio_saturation>
+
+        <!-- Slip coefficient (non-dimensional) -->
+        <C_alpha_s>0.5</C_alpha_s>
+        <!-- Slip coefficient (non-dimensional) -->
+        <C_s_alpha>0.5</C_s_alpha>
+
+    </friction>
+
+    <!--  Custom visualization model -->
+    <!-- 3D model filename to load (local or remote http://uri ) -->
+    <visual>
+        <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/jackal_description/jackal.dae</model_uri>
+        <model_yaw>0.0</model_yaw>
+        <model_pitch>0.0</model_pitch>
+        <model_roll>90.0</model_roll>
+    </visual>
+
+
+    <if condition="${default_sensors|true}">
+      <!-- Sensors -->
+      <include file="lidar2d.sensor.xml"
+        sensor_x="-0.15" sensor_z="0.25" sensor_yaw="180"
+        sensor_period_sec="0.10"
+        raytrace_3d="${lidar2d_raytrace|false}"
+        sensor_name="scanner1"
+      />
+
+      <include file="helios-32-FOV-31.sensor.xml"
+        sensor_x="0.15" sensor_z="$f{0.27 + 0.08}"
+        sensor_std_noise="0.0025"
+        sensor_publish="false"
+        sensor_name="lidar1"
+        sensor_rate="10.0"
+        horz_resolution_factor="1.5"
+        vert_resolution_factor="1.0"
+      />
+
+      <include file="camera.sensor.xml" 
+        sensor_x="0.2"  sensor_y="0" sensor_z="0.27"
+        sensor_period_sec="0.10"
+        sensor_name="cam1"
+        />
+    </if>
+
+</vehicle:class>
