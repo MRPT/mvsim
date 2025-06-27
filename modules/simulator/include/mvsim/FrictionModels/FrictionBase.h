@@ -74,8 +74,6 @@ class FrictionBase
 	std::optional<std::weak_ptr<CSVLogger>> logger_;
 };
 
-using FrictionBasePtr = std::shared_ptr<FrictionBase>;
-
 // Class factory:
 typedef ClassFactory<FrictionBase, VehicleBase&, const rapidxml::xml_node<char>*>
 	TClassFactory_friction;

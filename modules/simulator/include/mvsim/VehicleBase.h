@@ -180,8 +180,8 @@ class VehicleBase : public VisualObject, public Simulable
 	 * getVehicleIndex() (default=0) */
 	size_t vehicle_index_ = 0;
 
-	/** Instance of friction model for the vehicle-to-ground interaction. */
-	FrictionBasePtr friction_;
+	/** Instances of friction model for the vehicle-to-ground interaction, for each wheel */
+	std::vector<FrictionBase::Ptr> frictions_;
 
 	TListSensors sensors_;	//!< Sensors aboard
 
@@ -210,7 +210,7 @@ class VehicleBase : public VisualObject, public Simulable
 	std::deque<Wheel> wheels_info_;
 
 	// Box2D elements:
-	b2Fixture* fixture_chassis_;  //!< Created at
+	b2Fixture* fixture_chassis_ = nullptr;	//!< Created at
 
 	/** [0]:rear-left, etc. (depending on derived class). Size set at
 	 * constructor. */
