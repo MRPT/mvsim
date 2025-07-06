@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.14.0 (2025-07-06)
+-------------------
 * Merge pull request `#67 <https://github.com/MRPT/mvsim/issues/67>`_ from MRPT/wip/fpi
   Add Tire-Force Ellipse (Friction Ellipse) method (Student Project by Francisco Pérez Ibáñez)
   Co-authored-by: Francisco Pérez Ibáñez <fpi684@inlumine.ual.es>
