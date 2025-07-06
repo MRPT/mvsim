@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -43,13 +43,13 @@ class FrictionBase
 		/** Weight on this wheel from the car chassis (Newtons), excluding the
 		 * weight of the wheel itself.
 		 */
-		double weight = 0;
+		double Fz = 0;
 
 		/** The force applied by the motor to the wheel (Nm). Negative means
 		 * backwards, which makes the vehicle go forwards. */
 		double motorTorque = 0;
 
-		/** Instantaneous velocity vector (in local coordinates) of the wheel
+		/** Instantaneous velocity vector (in vehicle local coordinates) of the wheel
 		 *  center of gravity (cog) point. */
 		mrpt::math::TVector2D wheelCogLocalVel{0, 0};
 
@@ -64,16 +64,15 @@ class FrictionBase
 	virtual mrpt::math::TVector2D evaluate_friction(
 		const FrictionBase::TFrictionInput& input) const = 0;
 
+	bool hasLogger() const { return logger_.has_value(); }
 	void setLogger(const std::weak_ptr<CSVLogger>& logger);
 
    protected:
 	World* world_;
 	VehicleBase& myVehicle_;
 
-	std::weak_ptr<CSVLogger> logger_;
+	std::optional<std::weak_ptr<CSVLogger>> logger_;
 };
-
-using FrictionBasePtr = std::shared_ptr<FrictionBase>;
 
 // Class factory:
 typedef ClassFactory<FrictionBase, VehicleBase&, const rapidxml::xml_node<char>*>

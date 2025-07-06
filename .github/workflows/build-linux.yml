@@ -20,21 +20,21 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-20.04-clang-ppa-mrpt,
-          ubuntu-20.04-gcc-ppa-mrpt,
+          ubuntu-24.04-clang-ppa-mrpt,
+          ubuntu-24.04-gcc-ppa-mrpt,
           ubuntu-22.04-gcc-ppa-mrpt,
           ubuntu-22.04-clang-ppa-mrpt,
         ]
 
         build_type: [ Release ]
         include:
-          - name: ubuntu-20.04-clang-ppa-mrpt
-            os: ubuntu-20.04
+          - name: ubuntu-24.04-clang-ppa-mrpt
+            os: ubuntu-24.04
             compiler: clang
             install_mrpt_ppa: ON
 
-          - name: ubuntu-20.04-gcc-ppa-mrpt
-            os: ubuntu-20.04
+          - name: ubuntu-24.04-gcc-ppa-mrpt
+            os: ubuntu-24.04
             compiler: gcc
             install_mrpt_ppa: ON
 

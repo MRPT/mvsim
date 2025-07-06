@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -53,33 +53,15 @@ void register_all_veh_dynamics()
 	REGISTER_VEHICLE_DYNAMICS("ackermann_drivetrain", DynamicsAckermannDrivetrain)
 }
 
-constexpr char VehicleBase::DL_TIMESTAMP[];
-constexpr char VehicleBase::LOGGER_POSE[];
-constexpr char VehicleBase::LOGGER_WHEEL[];
-
-constexpr char VehicleBase::PL_Q_X[];
-constexpr char VehicleBase::PL_Q_Y[];
-constexpr char VehicleBase::PL_Q_Z[];
-constexpr char VehicleBase::PL_Q_YAW[];
-constexpr char VehicleBase::PL_Q_PITCH[];
-constexpr char VehicleBase::PL_Q_ROLL[];
-constexpr char VehicleBase::PL_DQ_X[];
-constexpr char VehicleBase::PL_DQ_Y[];
-constexpr char VehicleBase::PL_DQ_Z[];
-
-constexpr char VehicleBase::WL_TORQUE[];
-constexpr char VehicleBase::WL_WEIGHT[];
-constexpr char VehicleBase::WL_VEL_X[];
-constexpr char VehicleBase::WL_VEL_Y[];
-constexpr char VehicleBase::WL_FRIC_X[];
-constexpr char VehicleBase::WL_FRIC_Y[];
-
 // Protected ctor:
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	: VisualObject(parent), Simulable(parent), fixture_wheels_(nWheels, nullptr)
 {
 	// Create wheels:
-	for (size_t i = 0; i < nWheels; i++) wheels_info_.emplace_back(parent);
+	for (size_t i = 0; i < nWheels; i++)
+	{
+		wheels_info_.emplace_back(parent);
+	}
 
 	// Default shape:
 	chassis_poly_.emplace_back(-0.4, -0.5);
@@ -99,10 +81,12 @@ void VehicleBase::register_vehicle_class(
 	// Sanity checks:
 	if (!xml_node) throw runtime_error("[VehicleBase::register_vehicle_class] XML node is nullptr");
 	if (0 != strcmp(xml_node->name(), "vehicle:class"))
+	{
 		throw runtime_error(mrpt::format(
 			"[VehicleBase::register_vehicle_class] XML element is '%s' "
 			"('vehicle:class' expected)",
 			xml_node->name()));
+	}
 
 	// Delay the replacement of this variable (used in Sensors) until
 	// "veh" is constructed and we actually have a name:
@@ -122,12 +106,17 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[VehicleBase::factory] XML node is nullptr");
+	if (!root)
+	{
+		throw runtime_error("[VehicleBase::factory] XML node is nullptr");
+	}
 	if (0 != strcmp(root->name(), "vehicle"))
+	{
 		throw runtime_error(mrpt::format(
 			"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
 			"expected)",
 			root->name()));
+	}
 
 	// "class": When a vehicle has a 'class="XXX"' attribute, look for each
 	// parameter
@@ -140,7 +129,10 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	// Solve includes:
 	for (auto n = root->first_node(); n; n = n->next_sibling())
 	{
-		if (strcmp(n->name(), "include") != 0) continue;
+		if (strcmp(n->name(), "include") != 0)
+		{
+			continue;
+		}
 
 		auto fileAttrb = n->first_attribute("file");
 		ASSERTMSG_(fileAttrb, "XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
@@ -158,7 +150,10 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		// Plus new ones:
 		for (auto attr = n->first_attribute(); attr; attr = attr->next_attribute())
 		{
-			if (strcmp(attr->name(), "file") == 0) continue;
+			if (strcmp(attr->name(), "file") == 0)
+			{
+				continue;
+			}
 			vars[attr->name()] = attr->value();
 		}
 
@@ -184,8 +179,10 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		const string sClassName = veh_class->value();
 		const rapidxml::xml_node<char>* class_root = veh_classes_registry.get(sClassName);
 		if (!class_root)
+		{
 			throw runtime_error(mrpt::format(
 				"[VehicleBase::factory] Vehicle class '%s' undefined", sClassName.c_str()));
+		}
 
 		nodes.add(class_root);
 	}
@@ -194,18 +191,25 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	// -------------------------------------------------
 
 	const xml_node<>* dyn_node = nodes.first_node("dynamics");
-	if (!dyn_node) throw runtime_error("[VehicleBase::factory] Missing XML node <dynamics>");
+	if (!dyn_node)
+	{
+		throw runtime_error("[VehicleBase::factory] Missing XML node <dynamics>");
+	}
 
 	const xml_attribute<>* dyn_class = dyn_node->first_attribute("class");
 	if (!dyn_class || !dyn_class->value())
+	{
 		throw runtime_error(
 			"[VehicleBase::factory] Missing mandatory attribute 'class' in "
 			"node <dynamics>");
+	}
 
 	VehicleBase::Ptr veh = classFactory_vehicleDynamics.create(dyn_class->value(), parent);
 	if (!veh)
+	{
 		throw runtime_error(mrpt::format(
 			"[VehicleBase::factory] Unknown vehicle dynamics class '%s'", dyn_class->value()));
+	}
 
 	// Initialize here all common params shared by any polymorphic class:
 	// -------------------------------------------------
@@ -311,13 +315,22 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		if (!frict_node)
 		{
 			// Default:
-			veh->friction_ = std::make_shared<DefaultFriction>(*veh, nullptr /*default */);
+			for (size_t i = 0; i < veh->getNumWheels(); i++)
+			{
+				veh->frictions_.push_back(
+					std::make_shared<DefaultFriction>(*veh, nullptr /*default */));
+			}
 		}
 		else
 		{
-			// Parse:
-			veh->friction_ = std::shared_ptr<FrictionBase>(FrictionBase::factory(*veh, frict_node));
-			ASSERT_(veh->friction_);
+			// Parse user parameters:
+			for (size_t i = 0; i < veh->getNumWheels(); i++)
+			{
+				const auto friction =
+					std::shared_ptr<FrictionBase>(FrictionBase::factory(*veh, frict_node));
+				ASSERT_(friction);
+				veh->frictions_.push_back(friction);
+			}
 		}
 	}
 
@@ -360,7 +373,21 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const std::string& xml_text
 void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 {
 	Simulable::simul_pre_timestep(context);
-	for (auto& s : sensors_) s->simul_pre_timestep(context);
+	for (auto& s : sensors_)
+	{
+		s->simul_pre_timestep(context);
+	}
+
+	for (size_t i = 0; i < getNumWheels(); i++)
+	{
+		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isRecording())
+		{
+			if (!frictions_.at(i)->hasLogger())
+			{
+				frictions_.at(i)->setLogger(l);
+			}
+		}
+	}
 
 	// Update wheels position (they may turn, etc. as in an Ackermann
 	// configuration)
@@ -381,9 +408,36 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 	// Part of the vehicle weight on each wheel:
 	const double gravity = parent()->get_gravity();
+
 	MRPT_TODO("Use chassis cog point");
 	const double massPerWheel = getChassisMass() / nW;
 	const double weightPerWheel = massPerWheel * gravity;
+#if 0
+	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)
+	{
+		Fz = std::abs(
+			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
+	}
+	else if (wheel_index == 2)	//(Wpos.x < 0 && Wpos.y > 0)
+	{
+		Fz = std::abs(
+			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
+	}
+	else if (wheel_index == 1)	//(Wpos.x > 0 && Wpos.y < 0)
+	{
+		Fz = std::abs(
+			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
+	}
+	else if (wheel_index == 0)	//(Wpos.x < 0 && Wpos.y < 0)
+	{
+		Fz = std::abs(
+			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
+			(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
+	}
+#endif
 
 	const std::vector<mrpt::math::TVector2D> wheelLocalVels =
 		getWheelsVelocityLocal(getVelocityLocal());
@@ -400,13 +454,11 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 		FrictionBase::TFrictionInput fi(context, w);
 		fi.motorTorque = -wheelTorque[i];  // "-" => Forwards is negative
-		fi.weight = weightPerWheel;
+		fi.Fz = weightPerWheel;
 		fi.wheelCogLocalVel = wheelLocalVels[i];
 
-		friction_->setLogger(getLoggerPtr(LOGGER_WHEEL + std::to_string(i + 1)));
-
 		// eval friction (in the frame of the vehicle):
-		const mrpt::math::TPoint2D F_r = friction_->evaluate_friction(fi);
+		const mrpt::math::TPoint2D F_r = frictions_.at(i)->evaluate_friction(fi);
 
 		// Apply force:
 		// Force vector -> world coords
@@ -420,13 +472,17 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
 
 		// log
+		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isRecording())
 		{
-			auto& l = loggers_[LOGGER_WHEEL + std::to_string(i + 1)];
-			ASSERT_(l);
 			auto& logger = *l;
+
+			logger.updateColumn(DL_TIMESTAMP, context.simul_time);
+			logger.updateColumn("wheel_pos_x", w.x);
+			logger.updateColumn("wheel_pos_y", w.y);
+
 			logger.updateColumn(DL_TIMESTAMP, context.simul_time);
 			logger.updateColumn(WL_TORQUE, fi.motorTorque);
-			logger.updateColumn(WL_WEIGHT, fi.weight);
+			logger.updateColumn(WL_FORCE_Z, fi.Fz);
 			logger.updateColumn(WL_VEL_X, fi.wheelCogLocalVel.x);
 			logger.updateColumn(WL_VEL_Y, fi.wheelCogLocalVel.y);
 			logger.updateColumn(WL_FRIC_X, F_r.x);
@@ -487,15 +543,16 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		// lose 'double' accuracy):
 		const double cur_abs_phi = std::abs(w.getPhi());
 		if (cur_abs_phi > 1e4)
+		{
 			w.setPhi(::fmod(cur_abs_phi, 2 * M_PI) * (w.getPhi() < 0.0 ? -1.0 : 1.0));
+		}
 	}
 
 	const auto q = getPose();
 	const auto dq = getTwist();
 
+	if (auto& l = loggers_[LOGGER_IDX_POSE]; l->isRecording())
 	{
-		auto& l = loggers_[LOGGER_POSE];
-		ASSERT_(l);
 		auto& logger = *l;
 		logger.updateColumn(DL_TIMESTAMP, context.simul_time);
 		logger.updateColumn(PL_Q_X, q.x);
@@ -509,9 +566,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		logger.updateColumn(PL_DQ_Z, dq.omega);
 	}
 
-	{
-		writeLogStrings();
-	}
+	writeLogStrings();
 }
 
 /** Last time-step velocity of each wheel's center point (in local coords) */
@@ -568,9 +623,11 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 
 bool mvsim::VehicleBase::isLogging() const
 {
-	if (loggers_.empty()) return false;
-	auto& l = loggers_.begin()->second;
-
+	if (loggers_.empty())
+	{
+		return false;
+	}
+	auto& l = *loggers_.begin();
 	return l && l->isOpen();
 }
 
@@ -779,23 +836,32 @@ void VehicleBase::internalGuiUpdate(
 
 void VehicleBase::initLoggers()
 {
-	loggers_[LOGGER_POSE] = std::make_shared<CSVLogger>();
-	loggers_[LOGGER_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + "_" + LOGGER_POSE + ".log");
+	loggers_.clear();
+
+	//[0]: logger for vehicle pose:
+	loggers_.resize(1 + getNumWheels());
+
+	loggers_[LOGGER_IDX_POSE] = std::make_shared<CSVLogger>();
+	loggers_[LOGGER_IDX_POSE]->setFilepath(log_path_ + "mvsim_" + name_ + "_pose.csv");
 
 	for (size_t i = 0; i < getNumWheels(); i++)
 	{
-		loggers_[LOGGER_WHEEL + std::to_string(i + 1)] = std::make_shared<CSVLogger>();
-		loggers_[LOGGER_WHEEL + std::to_string(i + 1)]->setFilepath(
-			log_path_ + "mvsim_" + name_ + "_" + LOGGER_WHEEL + std::to_string(i + 1) + ".log");
+		loggers_[LOGGER_IDX_WHEELS + i] = std::make_shared<CSVLogger>();
+		loggers_[LOGGER_IDX_WHEELS + i]->setFilepath(
+			log_path_ + "mvsim_" + name_ + "_wheel_" + std::to_string(i + 1) + ".csv");
 	}
 }
 
 void VehicleBase::writeLogStrings()
 {
-	std::map<std::string, std::shared_ptr<CSVLogger>>::iterator it;
-	for (it = loggers_.begin(); it != loggers_.end(); ++it)
+	for (auto& logger : loggers_)
 	{
-		it->second->writeRow();
+		if (!logger->isRecording())
+		{
+			continue;
+		}
+
+		logger->writeRow();
 	}
 }
 
@@ -812,14 +878,23 @@ void VehicleBase::registerOnServer(mvsim::Client& c)
 {
 	// register myself, and my children objects:
 	Simulable::registerOnServer(c);
-	for (auto& sensor : sensors_) sensor->registerOnServer(c);
+	for (auto& sensor : sensors_)
+	{
+		sensor->registerOnServer(c);
+	}
 }
 
 void VehicleBase::chassisAndWheelsVisible(bool visible)
 {
-	if (glChassisViz_) glChassisViz_->setVisibility(visible);
+	if (glChassisViz_)
+	{
+		glChassisViz_->setVisibility(visible);
+	}
 	for (auto& glW : glWheelsViz_)
 	{
-		if (glW) glW->setVisibility(visible);
+		if (glW)
+		{
+			glW->setVisibility(visible);
+		}
 	}
 }

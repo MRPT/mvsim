@@ -1,7 +1,7 @@
 #!/bin/env python3
 
-# Usage:
-# plot-log-files.py session1-mvsim_r1_logger_pose.log
+# Example usage:
+# examples_python/plot-log-files-4-wheels.py session_xxxx-mvsim_r1_pose.csv
 
 # Requirements:
 # pip install pandas matplotlib
@@ -22,8 +22,8 @@ def main(file_path):
         return
 
     # Define the wheel files based on the main file name
-    base_name = file_path.replace("pose.log", "")
-    wheel_files = [f"{base_name}wheel{i}.log" for i in range(1, 5)]
+    base_name = file_path.replace("pose.csv", "")
+    wheel_files = [f"{base_name}wheel_{i}.csv" for i in range(1, 5)]
 
     # Load wheel data
     wheel_data = {}
@@ -37,6 +37,7 @@ def main(file_path):
 
     # Create plots for the wheel files (non-blocking)
     plot_wheel_data(wheel_data)
+    plot_wheel_fx_fy(wheel_data)
 
     # Create plots for the main file (blocking)
     plot_main_data(main_data)
@@ -51,9 +52,9 @@ def plot_main_data(data):
 
     # Plot 1: qx, qy, qz over time
     plt.subplot(3, 1, 1)
-    plt.plot(ts,  data['qx'].to_numpy(), label='qx')
-    plt.plot(ts,  data['qy'].to_numpy(), label='qy')
-    plt.plot(ts,  data['qz'].to_numpy(), label='qz')
+    plt.plot(ts,  data['q0x'].to_numpy(), label='qx')
+    plt.plot(ts,  data['q1y'].to_numpy(), label='qy')
+    plt.plot(ts,  data['q2z'].to_numpy(), label='qz')
     plt.xlabel('Timestamp')
     plt.ylabel('Position')
     plt.title('Position (qx, qy, qz) vs Time')
@@ -63,11 +64,11 @@ def plot_main_data(data):
     # Plot 2: Orientation angles (qpitch, qroll, qyaw) over time
     plt.subplot(3, 1, 2)
     plt.plot(ts,
-             data['qpitch'].to_numpy(), label='qpitch')
+             data['q4pitch'].to_numpy(), label='qpitch')
     plt.plot(ts,
-             data['qroll'].to_numpy(), label='qroll')
+             data['q5roll'].to_numpy(), label='qroll')
     plt.plot(ts,
-             data['qyaw'].to_numpy(), label='qyaw')
+             data['q3yaw'].to_numpy(), label='qyaw')
     plt.xlabel('Timestamp')
     plt.ylabel('Orientation')
     plt.title('Orientation Angles vs Time')
@@ -94,22 +95,45 @@ def plot_wheel_data(wheel_data):
     plt.figure(figsize=(12, 12))
 
     # Create one plot per variable group across all wheels
-    variables = ['friction_x', 'friction_y',
-                 'velocity_x', 'velocity_y',
-                 'torque', 'weight']
+    variables = ['actual_wheel_alpha', 'motor_torque',
+                 'wheel_long_friction', 'wheel_lateral_friction',
+                 'slip_angle', 'slip_ratio',
+                 'wheel_ground_point_vel',
+                 'vel_w_x', 'vel_w_y']
     wheel_names = ['LR', 'RR', 'LF', 'RF']
 
     for i, var in enumerate(variables, start=1):
-        plt.subplot(3, 2, i)
+        plt.subplot(3, 3, i)
         for wheel, data in wheel_data.items():
             ts = data['Timestamp'].to_numpy()
-            plt.plot(ts,
-                     data[var].to_numpy(), label=f'{wheel_names[wheel-1]} wheel')
+            if var in data.columns:
+                plt.plot(ts,
+                         data[var].to_numpy(), label=f'{wheel_names[wheel-1]} wheel')
         plt.xlabel('Timestamp')
         plt.ylabel(var)
         plt.title(f'{var.capitalize()} vs Time')
         plt.grid()
         plt.legend()
+
+    plt.tight_layout()
+    plt.show(block=False)
+
+
+def plot_wheel_fx_fy(wheel_data):
+    """Create fx vs fy plot for each wheel."""
+    plt.figure(figsize=(12, 12))
+
+    # Create one plot per variable group across all wheels
+    wheel_names = ['LR', 'RR', 'LF', 'RF']
+
+    for wheel, data in wheel_data.items():
+        plt.plot(data['wheel_lateral_friction'].to_numpy(),
+                 data['wheel_long_friction'].to_numpy(), 'o', label=f'{wheel_names[wheel-1]} wheel')
+
+    plt.xlabel('Lateral Friction (Fy) [N]')
+    plt.ylabel('Longitudinal Friction (Fx) [N]')
+    plt.grid()
+    plt.legend()
 
     plt.tight_layout()
     plt.show(block=False)

@@ -2,6 +2,20 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.14.0 (2025-07-06)
+-------------------
+* Merge pull request `#67 <https://github.com/MRPT/mvsim/issues/67>`_ from MRPT/wip/fpi
+  Add Tire-Force Ellipse (Friction Ellipse) method (Student Project by Francisco Pérez Ibáñez)
+  Co-authored-by: Francisco Pérez Ibáñez <fpi684@inlumine.ual.es>
+* scripts: better force plots
+* fix: build against later tf2
+* Update README.md: Mark Noetic as EOL
+* better integration with VSCode and colcon
+* Modernize the CsvLogger interface: more efficient, better log file names, does log more details on each wheel
+* Copyright notices: update year
+* Update CI to use u24.04, remove obsolete u20.04
+* Contributors: Jose Luis Blanco-Claraco, Francisco Pérez Ibáñez
+
 0.13.3 (2025-05-28)
 -------------------
 * Readme: add new demo video and add Kilted badges

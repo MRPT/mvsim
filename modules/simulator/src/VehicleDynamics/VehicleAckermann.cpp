@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -198,7 +198,7 @@ void DynamicsAckermann::computeFrontWheelAngles(
 	const double l = wheels_info_[WHEEL_FL].x - wheels_info_[WHEEL_RL].x;
 	ASSERT_(l > 0);
 	const double w_l = w / l;
-	const double delta = b2Clamp(std::abs(desired_equiv_steer_ang), 0.0, max_steer_ang_);
+	const double delta = std::clamp(std::abs(desired_equiv_steer_ang), 0.0, max_steer_ang_);
 
 	const bool delta_neg = (desired_equiv_steer_ang < 0);
 	ASSERT_LT_(delta, 0.5 * M_PI - 0.01);

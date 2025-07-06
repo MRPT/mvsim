@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -42,17 +42,17 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 	// --------------------------------------
 	const double mu = mu_;
 	const double gravity = myVehicle_.parent()->get_gravity();
-	const double partial_mass = input.weight / gravity + input.wheel.mass;
+	const double partial_mass = input.Fz / gravity + input.wheel.mass;
 	const double max_friction = mu * partial_mass * gravity;
 
 	// 1) Lateral friction (decoupled sub-problem)
 	// --------------------------------------------
-	double wheel_lat_friction = 0.0;  // direction: +y local wrt the wheel
+	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
 		// Impulse required to step the lateral slippage:
-		wheel_lat_friction = -vel_w.y * partial_mass / input.context.dt;
+		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt;
 
-		wheel_lat_friction = b2Clamp(wheel_lat_friction, -max_friction, max_friction);
+		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
 	}
 
 	// 2) Longitudinal friction (decoupled sub-problem)
@@ -83,7 +83,7 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 		(input.motorTorque - I_yy * desired_wheel_alpha - C_damping * input.wheel.getW()) / R;
 
 	// Slippage: The friction with the ground is not infinite:
-	F_friction_lon = b2Clamp(F_friction_lon, -max_friction, max_friction);
+	F_friction_lon = std::clamp(F_friction_lon, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double actual_wheel_alpha =
@@ -96,10 +96,23 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
-	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lat_friction);
+	const mrpt::math::TPoint2D result_force_wrt_wheel(wheel_long_friction, wheel_lateral_friction);
 
 	// Rotate to put: Wheel frame ==> vehicle local framework:
 	mrpt::math::TVector2D res;
 	wRot.composePoint(result_force_wrt_wheel, res);
+
+	if (logger_ && !logger_->expired())
+	{
+		auto logger = logger_->lock();
+
+		logger->updateColumn("desired_wheel_alpha", desired_wheel_alpha);
+		logger->updateColumn("wheel_lateral_friction", wheel_lateral_friction);
+		logger->updateColumn("desired_wheel_w_impulse", desired_wheel_w_impulse);
+		logger->updateColumn("F_friction_lon", F_friction_lon);
+		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
+		logger->updateColumn("motor_torque", input.motorTorque);
+	}
+
 	return res;
 }

@@ -3,7 +3,7 @@
 # |                                                                         |
 # |  https://github.com/ual-arm-ros-pkg/multivehicle-simulator              |
 # |                                                                         |
-# | Copyright (C) 2014-2024  Jose Luis Blanco Claraco                       |
+# | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
 # | Distributed under 3-clause BSD License                                  |
 # |   See COPYING                                                           |
 # +-------------------------------------------------------------------------+
@@ -41,7 +41,7 @@ string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${MVSIM_VERSION})
 set(MVSIM_MAJOR_VERSION ${CMAKE_MATCH_1})
 set(MVSIM_MINOR_VERSION ${CMAKE_MATCH_2})
 set(MVSIM_PATCH_VERSION ${CMAKE_MATCH_3})
-#TODO: Avoid overwritting source dir.
+#TODO: Avoid overwriting source dir.
 configure_file(
   cmake/mvsim_version.h.in
   ${CMAKE_CURRENT_SOURCE_DIR}/modules/simulator/include/mvsim/mvsim_version.h

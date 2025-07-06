@@ -2,6 +2,9 @@
 *~
 .swp$
 build*
+build
+install
+log
 bin/
 lib/
 msg_gen/
@@ -283,3 +286,4 @@ docs/myenv
 *.autosave
 docs/html
 .vscode
+*.csv
