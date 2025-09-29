@@ -66,6 +66,8 @@ class ControllerBaseTempl : public ControllerBaseInterface
 	/** This is to handle basic need of all the controllers.*/
 	virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override
 	{
+		using namespace std::string_literals;
+
 		/*default: handle logging events*/
 		static bool isRecording = false;
 		switch (in.keycode)
@@ -95,11 +97,8 @@ class ControllerBaseTempl : public ControllerBaseInterface
 				break;
 		}
 
-		out.append_gui_lines += std::string(
-									"Toggle logging [L]. Clear logs[C]. New log session [N]. "
-									"Now ") +
-								std::string(isRecording ? "logging" : "not logging") +
-								std::string("\n");
+		out.append_gui_lines += "\nToggle logging [L]. Clear logs[C]. New session [N].\n";
+		out.append_gui_lines += "Now logging: "s + (isRecording ? "YES\n"s : "NO\n"s);
 	}
 
 	/** The core of the controller: will be called at each timestep before the
