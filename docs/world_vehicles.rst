@@ -178,7 +178,7 @@ the internal variables of each vehicle and wheel, separately, for posterior anal
 It can be started or stopped by pressing the key 'L' after getting the focus to the MVSim GUI window,
 as can be seen in the control UI instructions: 
 
-.. figure:: imgs/mvsim_gui_controls.png
+.. figure:: imgs/mvsim_gui_controls.jpg
    :alt: UI controls
 
 
