@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/maps/CPointsMapXYZIRT.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
@@ -15,14 +16,6 @@
 #include <mvsim/mvsim_node_core.h>
 
 #include "rapidxml_utils.hpp"
-
-#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
-#define HAVE_POINTS_XYZIRT
-#endif
-
-#if defined(HAVE_POINTS_XYZIRT)
-#include <mrpt/maps/CPointsMapXYZIRT.h>
-#endif
 
 #if PACKAGE_ROS_VERSION == 1
 // ===========================================
@@ -451,8 +444,9 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 			{
 				obj->mvsim_world_->internalGraphicsLoopTasksForSimulation();
 
-				std::this_thread::sleep_for(std::chrono::microseconds(
-					static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
+				std::this_thread::sleep_for(
+					std::chrono::microseconds(
+						static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
 			}
 			else
 			{
@@ -793,15 +787,15 @@ void MVSimNode::spinNotifyROS()
 	// skip if the node is already shutting down:
 	if (!ok()) return;
 
-		// Get current simulation time (for messages) and publish "/clock"
-		// ----------------------------------------------------------------
+	// Get current simulation time (for messages) and publish "/clock"
+	// ----------------------------------------------------------------
 #if PACKAGE_ROS_VERSION == 1
-		// sim_time_.fromSec(mvsim_world_->get_simul_time());
-		// clockMsg_.clock = sim_time_;
-		// pub_clock_->publish(clockMsg_);
+	// sim_time_.fromSec(mvsim_world_->get_simul_time());
+	// clockMsg_.clock = sim_time_;
+	// pub_clock_->publish(clockMsg_);
 #else
-		// sim_time_ = myNow();
-		// MRPT_TODO("Publish /clock for ROS2 too?");
+	// sim_time_ = myNow();
+	// MRPT_TODO("Publish /clock for ROS2 too?");
 #endif
 
 	// Publish all TFs for each vehicle:
@@ -1477,16 +1471,13 @@ void MVSimNode::internalOn(
 		msg_header.stamp = now;
 		msg_header.frame_id = lbPoints;
 
-#if defined(HAVE_POINTS_XYZIRT)
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(obs.pointcloud.get());
 			xyzirt)
 		{
 			mrpt2ros::toROS(*xyzirt, msg_header, msg_pts);
 		}
-		else
-#endif
-			if (auto* xyzi = dynamic_cast<const mrpt::maps::CPointsMapXYZI*>(obs.pointcloud.get());
-				xyzi)
+		else if (auto* xyzi = dynamic_cast<const mrpt::maps::CPointsMapXYZI*>(obs.pointcloud.get());
+				 xyzi)
 		{
 			mrpt2ros::toROS(*xyzi, msg_header, msg_pts);
 		}

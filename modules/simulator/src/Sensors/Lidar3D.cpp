@@ -8,8 +8,10 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/maps/CPointsMapXYZIRT.h>
 #include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
 #include <mrpt/version.h>
@@ -17,20 +19,6 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
-
-//#include "rapidxml_print.hpp"
-
-#if MRPT_VERSION >= 0x270
-#include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
-#endif
-
-#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
-#define HAVE_POINTS_XYZIRT
-#endif
-
-#if defined(HAVE_POINTS_XYZIRT)
-#include <mrpt/maps/CPointsMapXYZIRT.h>
-#endif
 
 #include "xml_utils.h"
 
@@ -310,11 +298,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	curObs->timestamp = world_->get_simul_timestamp();
 	curObs->sensorLabel = name_;
 
-#if defined(HAVE_POINTS_XYZIRT)
 	auto curPtsPtr = mrpt::maps::CPointsMapXYZIRT::Create();
-#else
-	auto curPtsPtr = mrpt::maps::CSimplePointsMap::Create();
-#endif
 
 	auto& curPts = *curPtsPtr;
 	curObs->pointcloud = curPtsPtr;
@@ -610,14 +594,12 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 					d * (v - camModel.cy()) / camModel.fy(), d};
 				curPts.insertPoint(thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
 
-#if defined(HAVE_POINTS_XYZIRT)
 				// Add "ring" field:
 				curPtsPtr->getPointsBufferRef_ring()->push_back(j);
 
 				// Add "timestamp" field: all to zero since we are simulating an ideal "flash"
 				// lidar:
 				curPtsPtr->getPointsBufferRef_timestamp()->push_back(.0);
-#endif
 			}
 		}
 		tleStore.stop();
