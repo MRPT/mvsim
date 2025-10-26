@@ -619,7 +619,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 				// Add "timestamp" field: all to zero since we are simulating an ideal "flash"
 				// lidar:
-				curPts_Is->push_back(0.0f);
+				curPts_Ts->push_back(0.0f);
 				// intensity=1.0 for now
 				curPts_Is->push_back(1.0f);
 #else
