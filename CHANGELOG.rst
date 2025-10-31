@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.14.1 (2025-11-01)
+-------------------
 * Fix build against mrpt >2.15.0
 * Remove dead code used for very old MRPT versions
 * Clarify docs on session logging
