@@ -8,8 +8,10 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/maps/CPointsMapXYZIRT.h>
 #include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
 #include <mrpt/version.h>
@@ -17,20 +19,6 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
-
-//#include "rapidxml_print.hpp"
-
-#if MRPT_VERSION >= 0x270
-#include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
-#endif
-
-#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
-#define HAVE_POINTS_XYZIRT
-#endif
-
-#if defined(HAVE_POINTS_XYZIRT)
-#include <mrpt/maps/CPointsMapXYZIRT.h>
-#endif
 
 #include "xml_utils.h"
 
@@ -310,14 +298,20 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	curObs->timestamp = world_->get_simul_timestamp();
 	curObs->sensorLabel = name_;
 
-#if defined(HAVE_POINTS_XYZIRT)
 	auto curPtsPtr = mrpt::maps::CPointsMapXYZIRT::Create();
-#else
-	auto curPtsPtr = mrpt::maps::CSimplePointsMap::Create();
-#endif
 
 	auto& curPts = *curPtsPtr;
 	curObs->pointcloud = curPtsPtr;
+
+#if MRPT_VERSION >= 0x020f00  // 2.15.0
+	auto* curPts_Is =
+		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_INTENSITY);
+	auto* curPts_Ts =
+		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_TIMESTAMP);
+	auto* curPts_Rs =
+		curPts.getPointsBufferRef_uint_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_RING_ID);
+	ASSERT_(curPts_Is && curPts_Ts && curPts_Rs);
+#endif
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	constexpr double camModel_hFOV = 120.01_deg;
@@ -384,11 +378,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		p.height = FBO_NROWS;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
-#if MRPT_VERSION >= 0x270
 		// Do the log->linear conversion ourselves for this sensor, since only a
 		// few depth points are actually used.
 		p.raw_depth = true;
-#endif
 
 		fbo_renderer_depth_ = std::make_shared<mrpt::opengl::CFBORender>(p);
 	}
@@ -402,10 +394,8 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	auto viewport = world3DScene.getViewport();
 
 	// Disable rendering of shadows for this sensor:
-#if MRPT_VERSION >= 0x270
 	const bool wasShadowEnabled = viewport->isShadowCastingEnabled();
 	viewport->enableShadowCasting(false);
-#endif
 
 	auto& cam = fbo_renderer_depth_->getCamera(world3DScene);
 
@@ -468,7 +458,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				const auto pixel_v = camModel.cy() - camModel.fy() * std::tan(vertAng) / cosHorzAng;
 
 				// out of the simulated camera (should not happen?)
-				if (pixel_v < 0 || pixel_v >= static_cast<int>(camModel.nrows)) continue;
+				if (pixel_v < 0 || pixel_v >= static_cast<int>(camModel.nrows))
+				{
+					continue;
+				}
 
 				entry.u = pixel_u;
 				entry.v = pixel_v;
@@ -503,15 +496,16 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			formerVisVehState = visVeh->customVisualVisible();
 			visVeh->customVisualVisible(false);
 		}
-		if (veh) veh->chassisAndWheelsVisible(false);
+		if (veh)
+		{
+			veh->chassisAndWheelsVisible(false);
+		}
 	}
 
-#if MRPT_VERSION >= 0x270
 	// Do the log->linear conversion ourselves for this sensor,
 	// since only a few depth points are actually used:
 	auto& depth_log2lin = depth_log2lin_t::Instance();
 	const auto& depth_log2lin_lut = depth_log2lin.lut_from_zn_zf(minRange_, maxRange_);
-#endif
 
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
@@ -550,7 +544,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			{
 				noiseSeq.reserve(noiseLen);
 				for (size_t i = 0; i < noiseLen; i++)
+				{
 					noiseSeq.push_back(rng.drawGaussian1D(0.0, rangeStdNoise_));
+				}
 			}
 		}
 
@@ -561,7 +557,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		for (int i = 0; i < numHorzRaysPerRender; i++)
 		{
 			const int iAbs = i + numHorzRaysPerRender * renderIdx;
-			if (iAbs >= rangeImage.cols()) continue;  // we don't need this image part
+			if (iAbs >= rangeImage.cols())
+			{
+				continue;  // we don't need this image part
+			}
 
 			for (unsigned int j = 0; j < nRows; j++)
 			{
@@ -576,20 +575,21 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				// Depth:
 				float d = safeInterpolateRangeImage(
 					depthImage, maxDepthInterpolationStepVert_, maxDepthInterpolationStepHorz_,
-					FBO_NCOLS, FBO_NROWS, v, u
-#if MRPT_VERSION >= 0x270
-					,
-					depth_log2lin_lut
-#endif
-				);
+					FBO_NCOLS, FBO_NROWS, v, u, depth_log2lin_lut);
 
 				// Add noise:
 				if (d != 0)	 // invalid range
 				{
 					const float dNoisy = d + noiseSeq[noiseIdx++];
-					if (noiseIdx >= noiseLen) noiseIdx = 0;
+					if (noiseIdx >= noiseLen)
+					{
+						noiseIdx = 0;
+					}
 
-					if (dNoisy < 0 || dNoisy > maxRange_) continue;
+					if (dNoisy < 0 || dNoisy > maxRange_)
+					{
+						continue;
+					}
 
 					d = dNoisy;
 				}
@@ -597,7 +597,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				// un-project: depth -> range:
 				const float range = d * e.depth2range;
 
-				if (range <= 0 || range >= maxRange_) continue;	 // invalid
+				if (range <= 0 || range >= maxRange_)
+				{
+					continue;  // invalid
+				}
 
 				ASSERTDEB_LT_(j, rangeImage.rows());
 				ASSERTDEB_LT_(iAbs, rangeImage.cols());
@@ -610,7 +613,16 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 					d * (v - camModel.cy()) / camModel.fy(), d};
 				curPts.insertPoint(thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
 
-#if defined(HAVE_POINTS_XYZIRT)
+#if MRPT_VERSION >= 0x020f00  // 2.15.0
+				// Add "ring" field:
+				curPts_Rs->push_back(j);
+
+				// Add "timestamp" field: all to zero since we are simulating an ideal "flash"
+				// lidar:
+				curPts_Ts->push_back(0.0f);
+				// intensity=1.0 for now
+				curPts_Is->push_back(1.0f);
+#else
 				// Add "ring" field:
 				curPtsPtr->getPointsBufferRef_ring()->push_back(j);
 

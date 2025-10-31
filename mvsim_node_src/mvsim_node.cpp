@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/maps/CPointsMapXYZIRT.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
@@ -15,14 +16,6 @@
 #include <mvsim/mvsim_node_core.h>
 
 #include "rapidxml_utils.hpp"
-
-#if MRPT_VERSION >= 0x020b04  // >=2.11.4?
-#define HAVE_POINTS_XYZIRT
-#endif
-
-#if defined(HAVE_POINTS_XYZIRT)
-#include <mrpt/maps/CPointsMapXYZIRT.h>
-#endif
 
 #if PACKAGE_ROS_VERSION == 1
 // ===========================================
@@ -1477,16 +1470,13 @@ void MVSimNode::internalOn(
 		msg_header.stamp = now;
 		msg_header.frame_id = lbPoints;
 
-#if defined(HAVE_POINTS_XYZIRT)
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(obs.pointcloud.get());
 			xyzirt)
 		{
 			mrpt2ros::toROS(*xyzirt, msg_header, msg_pts);
 		}
-		else
-#endif
-			if (auto* xyzi = dynamic_cast<const mrpt::maps::CPointsMapXYZI*>(obs.pointcloud.get());
-				xyzi)
+		else if (auto* xyzi = dynamic_cast<const mrpt::maps::CPointsMapXYZI*>(obs.pointcloud.get());
+				 xyzi)
 		{
 			mrpt2ros::toROS(*xyzi, msg_header, msg_pts);
 		}

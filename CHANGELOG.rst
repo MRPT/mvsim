@@ -2,6 +2,13 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.14.1 (2025-11-01)
+-------------------
+* Fix build against mrpt >2.15.0
+* Remove dead code used for very old MRPT versions
+* Clarify docs on session logging
+* Contributors: Jose Luis Blanco-Claraco
+
 0.14.0 (2025-07-06)
 -------------------
 * Merge pull request `#67 <https://github.com/MRPT/mvsim/issues/67>`_ from MRPT/wip/fpi

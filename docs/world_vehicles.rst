@@ -172,29 +172,19 @@ Subtags are:
 Logging
 ---------
 
-Each vehicle is equipped with parameters logger(s). This logger is not
-configurable and can be rewritten programmaticaly.
+Each vehicle is equipped with a high-rate logger, capable of streaming to CSV files
+the internal variables of each vehicle and wheel, separately, for posterior analysis.
 
-Logger are implemented via **CsvLogger** class and make log files in CSV
-format which then can be opened via any editor or viewer.
+It can be started or stopped by pressing the key 'L' after getting the focus to the MVSim GUI window,
+as can be seen in the control UI instructions: 
 
-Loggers control is introduced via robot controllers, each controller
-controls only loggers of its robot.
+.. figure:: imgs/mvsim_gui_controls.jpg
+   :alt: UI controls
 
-Best results in visualizing offers QtiPlot [fig:qtiplot\_example1].
 
-At the moment, following characteristics are logged:
+Each "logging session" will be dumped into a separate CSV file for convenience of posterior analysis.
+The header of the CSV includes the variable names for each column: vehicle position and orientation, 
+wheel angular velocity and acceleration, lateral and longitudinal forces, etc.
 
--  Pose (:math:`x, y, z, \alpha, \beta, \gamma`)
-
--  Body velocity (:math:`\dot{x}, \dot{z}, \dot{z}`)
-
--  Wheel torque (:math:`\tau`)
-
--  Wheel weight (:math:`m_{wp}`)
-
--  Wheel velocity (:math:`v_x, v_y`)
-
-Loggers support runtime clear and creating new session. The new session
-mode finalizes current log files and starts to write to a new bunch of
-them.
+If you want to add new variables to this logger, look for ``logger->updateColumn(...)`` in the code
+for usage examples.
