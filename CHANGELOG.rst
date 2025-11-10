@@ -2,6 +2,11 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix cmake requested mrpt 2.5.6, made version-less for forward compatibility
+* Contributors: Jose Luis Blanco-Claraco
+
 0.14.1 (2025-11-01)
 -------------------
 * Fix build against mrpt >2.15.0
