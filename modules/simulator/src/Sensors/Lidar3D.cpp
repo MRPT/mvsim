@@ -108,11 +108,41 @@ void Lidar3D::internalGuiUpdate(
 	{
 		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
 
-		MRPT_TODO("render 3D lidar FOV");
-#if 0
-		auto fovScan = mrpt::opengl::CPlanarLaserScan::Create();
-		gl_sensor_fov_->insert(fovScan);
-#endif
+		// Create lines to represent the FOV, as a "360 deg" frustum:
+		auto fovLines = mrpt::opengl::CSetOfLines::Create();
+		const float fovRange = 1.0f;  // unit sphere
+		const size_t N_LINES = 32;
+		const double ang_vert_min = -0.5 * mrpt::DEG2RAD(vertical_fov_);
+		const double ang_vert_max = 0.5 * mrpt::DEG2RAD(vertical_fov_);
+
+		for (size_t i = 0; i < N_LINES; i++)
+		{
+			const double ang_horz = 2 * M_PI * static_cast<double>(i) / N_LINES;
+			// Lower line:
+			fovLines->appendLine(
+				0, 0, 0, fovRange * std::cos(ang_vert_min) * std::cos(ang_horz),
+				fovRange * std::cos(ang_vert_min) * std::sin(ang_horz),
+				fovRange * std::sin(ang_vert_min));
+			// Upper line:
+			fovLines->appendLine(
+				0, 0, 0, fovRange * std::cos(ang_vert_max) * std::cos(ang_horz),
+				fovRange * std::cos(ang_vert_max) * std::sin(ang_horz),
+				fovRange * std::sin(ang_vert_max));
+		}
+		// Vertical lines:
+		for (size_t i = 0; i < N_LINES; i++)
+		{
+			const double ang_horz = 2 * M_PI * static_cast<double>(i) / N_LINES;
+			fovLines->appendLine(
+				fovRange * std::cos(ang_vert_min) * std::cos(ang_horz),
+				fovRange * std::cos(ang_vert_min) * std::sin(ang_horz),
+				fovRange * std::sin(ang_vert_min),
+				fovRange * std::cos(ang_vert_max) * std::cos(ang_horz),
+				fovRange * std::cos(ang_vert_max) * std::sin(ang_horz),
+				fovRange * std::sin(ang_vert_max));
+		}
+		gl_sensor_fov_->insert(fovLines);
+
 		gl_sensor_fov_->setVisibility(false);
 		viz->get().insert(gl_sensor_fov_);
 		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
