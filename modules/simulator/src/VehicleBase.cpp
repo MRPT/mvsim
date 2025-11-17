@@ -11,6 +11,7 @@
 #include <mrpt/math/TPose2D.h>
 #include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/random.h>
 #include <mrpt/system/filesystem.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
 #include <mvsim/FrictionModels/FrictionBase.h>
@@ -42,9 +43,11 @@ void register_all_veh_dynamics()
 {
 	static bool done = false;
 	if (done)
+	{
 		return;
-	else
-		done = true;
+	}
+
+	done = true;
 
 	REGISTER_VEHICLE_DYNAMICS("differential", DynamicsDifferential)
 	REGISTER_VEHICLE_DYNAMICS("differential_3_wheels", DynamicsDifferential_3_wheels)
@@ -79,7 +82,10 @@ void VehicleBase::register_vehicle_class(
 	const World& parent, const rapidxml::xml_node<char>* xml_node)
 {
 	// Sanity checks:
-	if (!xml_node) throw runtime_error("[VehicleBase::register_vehicle_class] XML node is nullptr");
+	if (!xml_node)
+	{
+		throw runtime_error("[VehicleBase::register_vehicle_class] XML node is nullptr");
+	}
 	if (0 != strcmp(xml_node->name(), "vehicle:class"))
 	{
 		throw runtime_error(mrpt::format(
@@ -232,7 +238,45 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	// -----------------------------------------------------------
 	veh->parseVisual(nodes);
 
-	// Initialize class-specific params (mass, chassis shape, etc.)
+	// Initialize common params:
+	// ---------------------------------------------------------------
+	// <chassis ...> </chassis>
+	if (const rapidxml::xml_node<char>* xml_chassis = dyn_node->first_node("chassis"); xml_chassis)
+	{
+		const std::map<std::string, std::string> varValues = {{"NAME", veh->name_}};
+
+		// Attribs:
+		TParameterDefinitions attribs;
+		attribs["mass"] = TParamEntry("%lf", &veh->chassis_mass_);
+		attribs["zmin"] = TParamEntry("%lf", &veh->chassis_z_min_);
+		attribs["zmax"] = TParamEntry("%lf", &veh->chassis_z_max_);
+		attribs["color"] = TParamEntry("%color", &veh->chassis_color_);
+
+		parse_xmlnode_attribs(*xml_chassis, attribs, varValues, "[VehicleBase::factory]");
+
+		// Shape node (optional, fallback to default shape if none found)
+		const rapidxml::xml_node<char>* xml_shape = xml_chassis->first_node("shape");
+		if (xml_shape)
+		{
+			mvsim::parse_xmlnode_shape(*xml_shape, veh->chassis_poly_, "[VehicleBase::factory]");
+		}
+	}
+
+	// Initialize noisy odometry generation:
+	auto& odoParam = veh->odometry_noise_;
+
+	if (const xml_node<>* odom_node = nodes.first_node("odometry"); odom_node != nullptr)
+	{
+		TParameterDefinitions attribs;
+
+		attribs["x_multiplier"] = TParamEntry("%f", &odoParam.x_multiplier);
+		attribs["y_multiplier"] = TParamEntry("%f", &odoParam.y_multiplier);
+		attribs["yaw_multiplier"] = TParamEntry("%f", &odoParam.yaw_multiplier);
+
+		parse_xmlnode_attribs(*odom_node, attribs, {}, "[VehicleBase::factory]");
+	}
+
+	// Initialize class-specific params (chassis shape, etc.)
 	// ---------------------------------------------------------------
 	veh->dynamics_load_params_from_xml(dyn_node);
 
@@ -413,32 +457,6 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	// TODO-TODO: Use dynamic load transfer too!
 	const double massPerWheel = getChassisMass() / static_cast<double>(nW);
 	const double weightPerWheel = massPerWheel * gravity;
-#if 0
-	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)
-	{
-		Fz = std::abs(
-			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-			(std::abs(pos[1].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
-	}
-	else if (wheel_index == 2)	//(Wpos.x < 0 && Wpos.y > 0)
-	{
-		Fz = std::abs(
-			(m / (l * Axf * gravity)) * (a2 * gravity - h * (linAccLocal.x - w * vel.vy)) *
-			(std::abs(pos[0].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
-	}
-	else if (wheel_index == 1)	//(Wpos.x > 0 && Wpos.y < 0)
-	{
-		Fz = std::abs(
-			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-			(std::abs(pos[3].y) * gravity - h * (linAccLocal.y + w * vel.vx)));
-	}
-	else if (wheel_index == 0)	//(Wpos.x < 0 && Wpos.y < 0)
-	{
-		Fz = std::abs(
-			(m / (l * Axr * gravity)) * (a1 * gravity + h * (linAccLocal.x - w * vel.vy)) *
-			(std::abs(pos[2].y) * gravity + h * (linAccLocal.y + w * vel.vx)));
-	}
-#endif
 
 	const std::vector<mrpt::math::TVector2D> wheelLocalVels =
 		getWheelsVelocityLocal(getVelocityLocal());
@@ -526,7 +544,10 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 
 	// Common part (update q_, dq_)
 	Simulable::simul_post_timestep(context);
-	for (auto& s : sensors_) s->simul_post_timestep(context);
+	for (auto& s : sensors_)
+	{
+		s->simul_post_timestep(context);
+	}
 
 	// Integrate wheels' rotation:
 	const size_t nW = getNumWheels();
@@ -549,6 +570,17 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		}
 	}
 
+	// Estimate 2D pose increment as 2D-projected 3D pose increment, plus noise and bias:
+	{
+		const auto curPose = getCPose3D();
+		const auto odoIncr = odometry_pre_simul_pose_.has_value()
+								 ? (mrpt::poses::CPose2D(curPose - *odometry_pre_simul_pose_))
+								 : mrpt::poses::CPose2D();
+		odometry_pre_simul_pose_ = curPose;
+
+		odometry_ += odometry_noise_.actualDeltaToNoisyOdo(odoIncr);
+	}
+
 	const auto q = getPose();
 	const auto dq = getTwist();
 
@@ -565,6 +597,9 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		logger.updateColumn(PL_DQ_X, dq.vx);
 		logger.updateColumn(PL_DQ_Y, dq.vy);
 		logger.updateColumn(PL_DQ_Z, dq.omega);
+		logger.updateColumn(PL_ODO_X, odometry_.x());
+		logger.updateColumn(PL_ODO_Y, odometry_.y());
+		logger.updateColumn(PL_ODO_YAW, odometry_.phi());
 	}
 
 	writeLogStrings();
@@ -898,4 +933,12 @@ void VehicleBase::chassisAndWheelsVisible(bool visible)
 			glW->setVisibility(visible);
 		}
 	}
+}
+
+VehicleBase::OdometryNoise::OdometryNoise()
+{
+	auto& rng = mrpt::random::getRandomGenerator();
+	x_multiplier = rng.drawGaussian1D(1.0, 0.02);
+	y_multiplier = rng.drawGaussian1D(1.0, 0.02);
+	yaw_multiplier = rng.drawGaussian1D(1.0, 0.02);
 }

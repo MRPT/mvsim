@@ -27,7 +27,6 @@
 #include <mvsim/basic_types.h>
 
 #include <atomic>
-#include <map>
 #include <mutex>
 #include <string>
 
@@ -142,12 +141,25 @@ class VehicleBase : public VisualObject, public Simulable
 
 	void freeOpenGLResources() override
 	{
-		for (auto& sensor : sensors_) sensor->freeOpenGLResources();
+		for (auto& sensor : sensors_)
+		{
+			sensor->freeOpenGLResources();
+		}
 	}
 	void chassisAndWheelsVisible(bool visible);
 
 	double chassisZMin() const { return chassis_z_min_; }
 	double chassisZMax() const { return chassis_z_max_; }
+
+	/** Gets the noisy, biased, odometry estimation.
+	 */
+	mrpt::poses::CPose2D getOdometry() const { return odometry_; }
+
+	void resetOdometry()
+	{
+		odometry_ = mrpt::poses::CPose2D();
+		odometry_pre_simul_pose_.reset();
+	}
 
    protected:
 	std::vector<CSVLogger::Ptr> loggers_;
@@ -203,6 +215,25 @@ class VehicleBase : public VisualObject, public Simulable
 
 	void updateMaxRadiusFromPoly();
 
+	/** Noisy odometry parameters */
+	struct OdometryNoise
+	{
+		// Initializes the multipliers with random factors near 1.0
+		OdometryNoise();
+
+		[[nodiscard]] mrpt::poses::CPose2D actualDeltaToNoisyOdo(
+			const mrpt::poses::CPose2D& delta) const
+		{
+			return {
+				delta.x() * x_multiplier, delta.y() * y_multiplier, delta.phi() * yaw_multiplier};
+		}
+
+		double x_multiplier;
+		double y_multiplier;
+		double yaw_multiplier;
+	};
+	OdometryNoise odometry_noise_;
+
 	/** Wheels info.  The fixed size of this vector is set upon construction.
 	 *  Derived classes must define the order of the wheels, e.g. [0]=rear left,
 	 * etc.
@@ -234,6 +265,11 @@ class VehicleBase : public VisualObject, public Simulable
 	std::vector<mrpt::math::TSegment3D> torqueSegmentsForRendering_;
 	std::mutex forceSegmentsForRenderingMtx_;
 
+	///  Accumulated noisy odometry.
+	mrpt::poses::CPose2D odometry_;
+	/// Temporary variable to detect pose change.
+	std::optional<mrpt::poses::CPose3D> odometry_pre_simul_pose_;
+
    public:
 	// data logger header entries
 	static constexpr std::string_view DL_TIMESTAMP = "Timestamp";
@@ -249,6 +285,10 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr std::string_view PL_DQ_X = "dqx";
 	static constexpr std::string_view PL_DQ_Y = "dqy";
 	static constexpr std::string_view PL_DQ_Z = "dqz";
+
+	static constexpr std::string_view PL_ODO_X = "odo_x";
+	static constexpr std::string_view PL_ODO_Y = "odo_y";
+	static constexpr std::string_view PL_ODO_YAW = "odo_yaw";
 
 	static constexpr std::string_view WL_TORQUE = "torque";
 	static constexpr std::string_view WL_FORCE_Z = "force_z";

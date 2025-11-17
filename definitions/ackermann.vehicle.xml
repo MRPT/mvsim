@@ -56,6 +56,14 @@
         <C_damping>10</C_damping>
     </friction>
 
+
+    <!-- Noisy odometry parameters. These are multipliers to actual SE(2) increments -->
+    <odometry
+      x_multiplier="$f{1.0+0.02*randn()}"
+      y_multiplier="$f{1.0+0.01*randn()}"
+      yaw_multiplier="$f{1.0+0.03*randn()}"
+    />
+
     <!--<friction class="wardiagnemma">
         <mu>0.7</mu>
         <C_damping>10</C_damping>
