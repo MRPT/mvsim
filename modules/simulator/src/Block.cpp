@@ -52,10 +52,11 @@ void Block::register_block_class(const World& parent, const rapidxml::xml_node<c
 	// Sanity checks:
 	if (!xml_node) throw runtime_error("[Block::register_vehicle_class] XML node is nullptr");
 	if (0 != strcmp(xml_node->name(), "block:class"))
-		throw runtime_error(mrpt::format(
-			"[Block::register_block_class] XML element is '%s' "
-			"('block:class' expected)",
-			xml_node->name()));
+		throw runtime_error(
+			mrpt::format(
+				"[Block::register_block_class] XML element is '%s' "
+				"('block:class' expected)",
+				xml_node->name()));
 
 	// Parse XML to solve for includes:
 	block_classes_registry.add(xml_to_str_solving_includes(parent, xml_node));
@@ -68,8 +69,9 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 
 	if (!root) throw runtime_error("[Block::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "block"))
-		throw runtime_error(mrpt::format(
-			"[Block::factory] XML root element is '%s' ('block' expected)", root->name()));
+		throw runtime_error(
+			mrpt::format(
+				"[Block::factory] XML root element is '%s' ('block' expected)", root->name()));
 
 	// "class": When there is a 'class="XXX"' attribute, look for each parameter
 	//  in the set of "root" + "class_root" XML nodes:
@@ -210,9 +212,10 @@ Block::Ptr Block::factory(World* parent, const std::string& xml_text)
 	catch (rapidxml::parse_error& e)
 	{
 		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
-		throw std::runtime_error(mrpt::format(
-			"[Block::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line),
-			e.what()));
+		throw std::runtime_error(
+			mrpt::format(
+				"[Block::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line),
+				e.what()));
 	}
 	return Block::factory(parent, xml.first_node());
 }
@@ -315,8 +318,10 @@ void Block::updateMaxRadiusFromPoly()
 /** Create bodies, fixtures, etc. for the dynamical simulation */
 void Block::create_multibody_system(b2World& world)
 {
-	if (intangible_) return;
-
+	if (intangible_)
+	{
+		return;
+	}
 	// Update collision shape from shape loaded from XML or set manually:
 	{
 		Shape2p5 cs;
@@ -406,7 +411,10 @@ void Block::create_multibody_system(b2World& world)
 
 void Block::apply_force(const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
-	if (intangible_) return;
+	if (intangible_)
+	{
+		return;
+	}
 	ASSERT_(b2dBody_);
 	// Application point -> world coords
 	const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
@@ -422,7 +430,10 @@ bool Block::isStatic() const
 
 void Block::setIsStatic(bool b)
 {
-	if (intangible_) return;
+	if (intangible_)
+	{
+		return;
+	}
 	ASSERT_(b2dBody_);
 	b2dBody_->SetType(b ? b2_staticBody : b2_dynamicBody);
 }
@@ -435,8 +446,10 @@ void DummyInvisibleBlock::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	if (!viz || !physical) return;
-
+	if (!viz || !physical)
+	{
+		return;
+	}
 	for (auto& s : sensors_) s->guiUpdate(viz, physical);
 }
 

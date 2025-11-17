@@ -251,8 +251,10 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 	using namespace std::string_literals;
 
 	// Save to .rawlog, if enabled:
-	if (save_to_rawlog_.empty() || vehicles_.empty()) return;
-
+	if (save_to_rawlog_.empty() || vehicles_.empty())
+	{
+		return;
+	}
 	auto lck = mrpt::lockHelper(rawlog_io_mtx_);
 	if (rawlog_io_per_veh_.empty())
 	{

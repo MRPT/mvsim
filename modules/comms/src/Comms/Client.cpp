@@ -199,8 +199,10 @@ void Client::shutdown() noexcept
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "shutdown");
 
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
-	if (!zmq_->mainReqSocket) return;
-
+	if (!zmq_->mainReqSocket)
+	{
+		return;
+	}
 	try
 	{
 		MRPT_LOG_DEBUG_STREAM("Unregistering from server.");
@@ -260,7 +262,10 @@ void Client::doUnregisterClient()
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "doUnregisterClient");
 
 	auto lck = mrpt::lockHelper(zmq_->mainReqSocketMtx);
-	if (!zmq_->mainReqSocket) return;
+	if (!zmq_->mainReqSocket)
+	{
+		return;
+	}
 	auto& s = *zmq_->mainReqSocket;
 
 	mvsim_msgs::UnregisterNodeRequest rnq;

@@ -99,10 +99,11 @@ SensorBase::Ptr SensorBase::factory(Simulable& parent, const rapidxml::xml_node<
 
 	if (!root) throw runtime_error("[SensorBase::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "sensor"))
-		throw runtime_error(mrpt::format(
-			"[SensorBase::factory] XML root element is '%s' ('sensor' "
-			"expected)",
-			root->name()));
+		throw runtime_error(
+			mrpt::format(
+				"[SensorBase::factory] XML root element is '%s' ('sensor' "
+				"expected)",
+				root->name()));
 
 	// Get "class" attrib:
 	const xml_attribute<>* sensor_class = root->first_attribute("class");
@@ -159,8 +160,10 @@ bool SensorBase::parseSensorPublish(
 void SensorBase::reportNewObservation(
 	const std::shared_ptr<mrpt::obs::CObservation>& obs, const TSimulContext& context)
 {
-	if (!obs) return;
-
+	if (!obs)
+	{
+		return;
+	}
 	// Notify the world:
 	world_->dispatchOnObservation(vehicle_, obs);
 
@@ -188,8 +191,10 @@ void SensorBase::reportNewObservation_lidar_2d(
 	using namespace std::string_literals;
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	if (publishTopic_.empty()) return;
-
+	if (publishTopic_.empty())
+	{
+		return;
+	}
 	mvsim_msgs::ObservationLidar2D msg;
 	msg.set_unixtimestamp(mrpt::Clock::toDouble(obs->timestamp));
 	msg.set_sourceobjectid(vehicle_.getName());
@@ -251,8 +256,10 @@ void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 {
-	if (!name_.empty()) return;
-
+	if (!name_.empty())
+	{
+		return;
+	}
 	size_t nextIdx = 0;
 	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v) nextIdx = v->getSensors().size() + 1;
 

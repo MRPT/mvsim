@@ -136,8 +136,14 @@ void Lidar3D::internalGuiUpdate(
 
 	if (glPoints_) glPoints_->setPose(pp);
 	if (gl_sensor_fov_) gl_sensor_fov_->setPose(pp);
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(pp);
-	if (glCustomVisual_) glCustomVisual_->setPose(pp);
+	if (gl_sensor_origin_)
+	{
+		gl_sensor_origin_->setPose(pp);
+	}
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setPose(pp);
+	}
 }
 
 void Lidar3D::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -280,7 +286,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	{
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
-		if (!has_to_render_.has_value()) return;
+		if (!has_to_render_.has_value())
+		{
+			return;
+		}
 	}
 
 	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar");
@@ -290,7 +299,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	tle1.stop();
 
 	// The sensor body must be made of transparent material! :-)
-	if (glCustomVisual_) glCustomVisual_->setVisibility(false);
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setVisibility(false);
+	}
 
 	// Create empty observation:
 	auto curObs = mrpt::obs::CObservationPointCloud::Create();
@@ -665,7 +677,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 		tlePub.stop();
 
-		if (glCustomVisual_) glCustomVisual_->setVisibility(true);
+		if (glCustomVisual_)
+		{
+			glCustomVisual_->setVisibility(true);
+		}
 
 		gui_uptodate_ = false;
 

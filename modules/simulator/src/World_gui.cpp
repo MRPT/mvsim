@@ -379,8 +379,10 @@ void World::GUI::prepare_editor_window()
 					{
 						const std::string outFile = nanogui::file_dialog(
 							{{"3Dscene", "MRPT 3D scene file (*.3Dsceme)"}}, true /*save*/);
-						if (outFile.empty()) return;
-
+						if (outFile.empty())
+						{
+							return;
+						}
 						auto lck = mrpt::lockHelper(parent_.physical_objects_mtx());
 						parent_.worldPhysical_.saveToFile(outFile);
 
@@ -421,7 +423,10 @@ void World::GUI::prepare_editor_window()
 			[this]([[maybe_unused]] float v)
 			{
 				// Re-generate the other 6 sliders with this new scale:
-				if (!gui_selectedObject.simulable || !onEntitySelected) return;
+				if (!gui_selectedObject.simulable || !onEntitySelected)
+				{
+					return;
+				}
 				onEntitySelected(gui_selectedObject.simulable->getRelativePose());
 			});
 		slCoord->setFixedWidth(slidersWidth - 30);
@@ -457,7 +462,10 @@ void World::GUI::prepare_editor_window()
 		slCoord->setCallback(
 			[this, axis](float v)
 			{
-				if (!gui_selectedObject.simulable) return;
+				if (!gui_selectedObject.simulable)
+				{
+					return;
+				}
 				auto p = gui_selectedObject.simulable->getRelativePose();
 				p[axis] = v;
 				gui_selectedObject.simulable->setRelativePose(p);
@@ -514,8 +522,10 @@ void World::GUI::prepare_editor_window()
 		[this]()
 		{
 			//
-			if (!gui_selectedObject.simulable) return;
-
+			if (!gui_selectedObject.simulable)
+			{
+				return;
+			}
 			auto* formPose = new nanogui::Window(gui_win.get(), "Enter new pose");
 			formPose->setLayout(new nanogui::GridLayout(
 				nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill, 5));
@@ -560,18 +570,19 @@ void World::GUI::prepare_editor_window()
 			formPose->add<nanogui::Button>("Accept")->setCallback(
 				[formPose, this, lbs]()
 				{
-					const mrpt::math::TPose3D newPose = {// X:
-														 std::stod(lbs[0]->value()),
-														 // Y:
-														 std::stod(lbs[1]->value()),
-														 // Z:
-														 std::stod(lbs[2]->value()),
-														 // Yaw
-														 mrpt::DEG2RAD(std::stod(lbs[3]->value())),
-														 // Pitch
-														 mrpt::DEG2RAD(std::stod(lbs[4]->value())),
-														 // Roll:
-														 mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
+					const mrpt::math::TPose3D newPose = {
+						// X:
+						std::stod(lbs[0]->value()),
+						// Y:
+						std::stod(lbs[1]->value()),
+						// Z:
+						std::stod(lbs[2]->value()),
+						// Yaw
+						mrpt::DEG2RAD(std::stod(lbs[3]->value())),
+						// Pitch
+						mrpt::DEG2RAD(std::stod(lbs[4]->value())),
+						// Roll:
+						mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
 
 					gui_selectedObject.simulable->setRelativePose(newPose);
 					onEntitySelected(newPose);
@@ -587,7 +598,7 @@ void World::GUI::prepare_editor_window()
 	// Disable all edit-controls since no object is selected:
 	for (auto b : btns_selectedOps) b->setEnabled(false);
 
-		// Minimize subwindow:
+	// Minimize subwindow:
 #if MRPT_VERSION >= 0x231
 	gui_win->subwindowMinimize(subwinIdx);
 #else
@@ -827,12 +838,17 @@ void World::internal_GUI_thread()
 void World::GUI::handle_mouse_operations()
 {
 	MRPT_START
-	if (!gui_win) return;
-
+	if (!gui_win)
+	{
+		return;
+	}
 	mrpt::opengl::COpenGLViewport::Ptr vp;
 	{
 		auto lck = mrpt::lockHelper(gui_win->background_scene_mtx);
-		if (!gui_win->background_scene) return;
+		if (!gui_win->background_scene)
+		{
+			return;
+		}
 		vp = gui_win->background_scene->getViewport();
 	}
 	ASSERT_(vp);
@@ -959,9 +975,11 @@ void World::internalUpdate3DSceneObjects(
 		double cpu_usage_ratio = std::max(1e-10, timlogger_.getMeanTime("run_simulation.cpu_dt")) /
 								 std::max(1e-10, timlogger_.getMeanTime("run_simulation.dt"));
 
-		gui_.lbCpuUsage->setCaption(mrpt::format(
-			"Time: %s (CPU usage: %.03f%%)",
-			mrpt::system::formatTimeInterval(get_simul_time()).c_str(), cpu_usage_ratio * 100.0));
+		gui_.lbCpuUsage->setCaption(
+			mrpt::format(
+				"Time: %s (CPU usage: %.03f%%)",
+				mrpt::system::formatTimeInterval(get_simul_time()).c_str(),
+				cpu_usage_ratio * 100.0));
 
 		// User supplied-lines:
 		guiMsgLinesMtx_.lock();
@@ -1071,8 +1089,10 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 void World::internal_gui_on_observation(
 	const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
-	if (!obs) return;
-
+	if (!obs)
+	{
+		return;
+	}
 	if (auto obs3D = std::dynamic_pointer_cast<mrpt::obs::CObservation3DRangeScan>(obs); obs3D)
 	{
 		internal_gui_on_observation_3Dscan(veh, obs3D);
@@ -1088,8 +1108,10 @@ void World::internal_gui_on_observation_3Dscan(
 {
 	using namespace std::string_literals;
 
-	if (!gui_.gui_win || !obs) return;
-
+	if (!gui_.gui_win || !obs)
+	{
+		return;
+	}
 	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
 
 	if (obs->hasIntensityImage)
@@ -1116,8 +1138,10 @@ void World::internal_gui_on_observation_image(
 {
 	using namespace std::string_literals;
 
-	if (!gui_.gui_win || !obs || obs->image.isEmpty()) return;
-
+	if (!gui_.gui_win || !obs || obs->image.isEmpty())
+	{
+		return;
+	}
 	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
 
 	rgbImageWinSize =

@@ -215,8 +215,10 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	mvsim_world_->registerCallbackOnObservation(
 		[this](const mvsim::Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 		{
-			if (!obs) return;
-
+			if (!obs)
+			{
+				return;
+			}
 			mrpt::system::CTimeLoggerEntry tle(profiler_, "lambda_onNewObservation");
 
 			const mvsim::Simulable* vehPtr = &veh;
@@ -279,8 +281,10 @@ MVSimNode::~MVSimNode() { terminateSimulation(); }
 
 void MVSimNode::terminateSimulation()
 {
-	if (!mvsim_world_) return;
-
+	if (!mvsim_world_)
+	{
+		return;
+	}
 	mvsim_world_->simulator_must_close(true);
 
 	thread_params_.closing = true;
@@ -316,8 +320,10 @@ void MVSimNode::spin()
 	using namespace mvsim;
 	using namespace std::string_literals;
 
-	if (!mvsim_world_) return;
-
+	if (!mvsim_world_)
+	{
+		return;
+	}
 	// Do simulation itself:
 	// ========================================================================
 	// Handle 1st iter:
@@ -327,8 +333,10 @@ void MVSimNode::spin()
 	const double incr_time = realtime_factor_ * (t_new - t_old_);
 
 	// Just in case the computer is *really fast*...
-	if (incr_time < mvsim_world_->get_simul_timestep()) return;
-
+	if (incr_time < mvsim_world_->get_simul_timestep())
+	{
+		return;
+	}
 	// Simulate:
 	mvsim_world_->run_simulation(incr_time);
 
@@ -784,13 +792,17 @@ void MVSimNode::onROSMsgCmdVel(Msg_Twist_CSPtr cmd, mvsim::VehicleBase* veh)
 /** Publish everything to be published at each simulation iteration */
 void MVSimNode::spinNotifyROS()
 {
-	if (!mvsim_world_) return;
-
+	if (!mvsim_world_)
+	{
+		return;
+	}
 	const auto& vehs = mvsim_world_->getListOfVehicles();
 
 	// skip if the node is already shutting down:
-	if (!ok()) return;
-
+	if (!ok())
+	{
+		return;
+	}
 	// Get current simulation time (for messages) and publish "/clock"
 	// ----------------------------------------------------------------
 #if PACKAGE_ROS_VERSION == 1
@@ -956,8 +968,10 @@ void MVSimNode::onNewObservation(
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "onNewObservation");
 
 	// skip if the node is already shutting down:
-	if (!ok()) return;
-
+	if (!ok())
+	{
+		return;
+	}
 	ASSERT_(obs);
 	ASSERT_(!obs->sensorLabel.empty());
 
