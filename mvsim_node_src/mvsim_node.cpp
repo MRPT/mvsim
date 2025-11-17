@@ -183,9 +183,13 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_);
 
 	// n_->declare_parameter("use_sim_time"); // already declared error?
-	if (true == n_->get_parameter_or("use_sim_time", false))
 	{
-		THROW_EXCEPTION("At present, MVSIM can only work with use_sim_time=false");
+		bool use_sim_time;
+		n_->get_parameter_or("use_sim_time", use_sim_time, false);
+		if (use_sim_time)
+		{
+			THROW_EXCEPTION("At present, MVSIM can only work with use_sim_time=false");
+		}
 	}
 #endif
 
@@ -444,8 +448,9 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 			{
 				obj->mvsim_world_->internalGraphicsLoopTasksForSimulation();
 
-				std::this_thread::sleep_for(std::chrono::microseconds(
-					static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
+				std::this_thread::sleep_for(
+					std::chrono::microseconds(
+						static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
 			}
 			else
 			{
@@ -786,15 +791,15 @@ void MVSimNode::spinNotifyROS()
 	// skip if the node is already shutting down:
 	if (!ok()) return;
 
-		// Get current simulation time (for messages) and publish "/clock"
-		// ----------------------------------------------------------------
+	// Get current simulation time (for messages) and publish "/clock"
+	// ----------------------------------------------------------------
 #if PACKAGE_ROS_VERSION == 1
-		// sim_time_.fromSec(mvsim_world_->get_simul_time());
-		// clockMsg_.clock = sim_time_;
-		// pub_clock_->publish(clockMsg_);
+	// sim_time_.fromSec(mvsim_world_->get_simul_time());
+	// clockMsg_.clock = sim_time_;
+	// pub_clock_->publish(clockMsg_);
 #else
-		// sim_time_ = myNow();
-		// MRPT_TODO("Publish /clock for ROS2 too?");
+	// sim_time_ = myNow();
+	// MRPT_TODO("Publish /clock for ROS2 too?");
 #endif
 
 	// Publish all TFs for each vehicle:
