@@ -147,7 +147,10 @@ void CameraSensor::internalGuiUpdate(
 	gl_sensor_origin_->setPose(pp);
 
 	const auto globalSensorPose = pp + sensor_params_.cameraPose.asTPose();
-	if (glCustomVisual_) glCustomVisual_->setPose(globalSensorPose);
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setPose(globalSensorPose);
+	}
 }
 
 void CameraSensor::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -158,12 +161,18 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	{
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
-		if (!has_to_render_.has_value()) return;
+		if (!has_to_render_.has_value())
+		{
+			return;
+		}
 	}
 
 	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGB");
 
-	if (glCustomVisual_) glCustomVisual_->setVisibility(false);
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setVisibility(false);
+	}
 
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservationImage::Create(sensor_params_);
@@ -228,7 +237,10 @@ void CameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
 		SensorBase::reportNewObservation(last_obs_, *has_to_render_);
 
-		if (glCustomVisual_) glCustomVisual_->setVisibility(true);
+		if (glCustomVisual_)
+		{
+			glCustomVisual_->setVisibility(true);
+		}
 
 		gui_uptodate_ = false;
 		has_to_render_.reset();

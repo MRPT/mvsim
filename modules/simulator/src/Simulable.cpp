@@ -50,8 +50,10 @@ void Simulable::simul_pre_timestep(	 //
 		if (interOk) this->setPose(initial_q_ + q);
 	}
 
-	if (!b2dBody_) return;
-
+	if (!b2dBody_)
+	{
+		return;
+	}
 	// Pos:
 	const auto qq = simulable_parent_->applyWorldRenderOffset(q_);
 	b2dBody_->SetTransform(b2Vec2(qq.x, qq.y), q_.yaw);
@@ -386,13 +388,17 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 
 	MRPT_START
 
-	if (publishPoseTopic_.empty() && publishRelativePoseTopic_.empty()) return;
-
+	if (publishPoseTopic_.empty() && publishRelativePoseTopic_.empty())
+	{
+		return;
+	}
 	auto& client = context.world->commsClient();
 
 	const double tNow = mrpt::Clock::toDouble(mrpt::Clock::now());
-	if (tNow < publishPoseLastTime_ + publishPosePeriod_) return;
-
+	if (tNow < publishPoseLastTime_ + publishPosePeriod_)
+	{
+		return;
+	}
 	publishPoseLastTime_ = tNow;
 
 	if (!publishPoseTopic_.empty())

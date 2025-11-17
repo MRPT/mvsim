@@ -243,14 +243,19 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 void VisualObject::showCollisionShape(bool show)
 {
-	if (!glCollision_) return;
+	if (!glCollision_)
+	{
+		return;
+	}
 	glCollision_->setVisibility(show);
 }
 
 void VisualObject::customVisualVisible(const bool visible)
 {
-	if (!glCustomVisual_) return;
-
+	if (!glCustomVisual_)
+	{
+		return;
+	}
 	glCustomVisual_->setVisibility(visible);
 }
 

@@ -52,8 +52,10 @@ class IMU : public SensorBase
 
 	void internal_simulate_imu(const TSimulContext& context);
 
+	double orientationStdNoise_ = 0.005;  //!< [rad]
 	double angularVelocityStdNoise_ = 2e-4;	 //!< [rad/s]
 	double linearAccelerationStdNoise_ = 0.017;	 //!< [m/s²]
+	bool measure_orientation_ = false;	//!< If true, the IMU will also measure orientation
 
 	// Store here all default parameters. This obj will be copied as a
 	// "pattern" to fill it with actual data.

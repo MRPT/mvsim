@@ -3,6 +3,7 @@
     <sensor_period>${sensor_period_sec|0.05}</sensor_period>
     <angular_velocity_std_noise>${sensor_angular_velocity_std_noise|2e-4}</angular_velocity_std_noise>
     <linear_acceleration_std_noise>${sensor_linear_acceleration_std_noise|0.017}</linear_acceleration_std_noise>
+    <measure_orientation>${sensor_measure_orientation|false}</measure_orientation>
     
     <visual enabled="${sensor_custom_visual|true}">
         <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_imu.dae</model_uri>
