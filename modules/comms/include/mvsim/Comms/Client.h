@@ -30,7 +30,7 @@ namespace mvsim
  * it can advertise and subscribe to topics and use remote services.
  *
  * Users should instance a class mvsim::Client (C++) or mvsim.Client (Python) to
- * communicate with the simulation runnin in mvsim::World or any other module.
+ * communicate with the simulation running in mvsim::World or any other module.
  *
  * Usage:
  *  - Instantiate a Client object.
@@ -52,6 +52,12 @@ class Client : public mrpt::system::COutputLogger
 	Client(const std::string& nodeName);
 
 	~Client();
+
+	// Delete copy and move operations
+	Client(const Client&) = delete;
+	Client& operator=(const Client&) = delete;
+	Client(Client&&) = delete;
+	Client& operator=(Client&&) = delete;
 
 	/** @name Main mvsim client communication API
 	 * @{ */
@@ -97,7 +103,8 @@ class Client : public mrpt::system::COutputLogger
 		const std::string& serviceName, const INPUT_MSG_T& input, OUTPUT_MSG_T& output);
 
 	/// Overload for python wrapper
-	std::string callService(const std::string& serviceName, const std::string& inputSerializedMsg);
+	std::vector<uint8_t> callService(
+		const std::string& serviceName, const std::vector<uint8_t>& inputSerializedMsg);
 
 	/// Overload for python wrapper (callback accepts bytes-string)
 	void subscribeTopic(
@@ -164,9 +171,9 @@ class Client : public mrpt::system::COutputLogger
 		const std::string& topicName, const google::protobuf::Descriptor* descriptor,
 		const topic_callback_t& callback);
 	void doCallService(
-		const std::string& serviceName, const std::string& inputSerializedMsg,
+		const std::string& serviceName, const std::vector<uint8_t>& inputSerializedMsg,
 		mrpt::optional_ref<google::protobuf::Message> outputMsg,
-		mrpt::optional_ref<std::string> outputSerializedMsg = std::nullopt,
+		mrpt::optional_ref<std::vector<uint8_t>> outputSerializedMsg = std::nullopt,
 		mrpt::optional_ref<std::string> outputMsgTypeName = std::nullopt);
 
 	friend struct internal::InfoPerService;
@@ -213,7 +220,9 @@ template <typename INPUT_MSG_T, typename OUTPUT_MSG_T>
 void Client::callService(
 	const std::string& serviceName, const INPUT_MSG_T& input, OUTPUT_MSG_T& output)
 {
-	doCallService(serviceName, input.SerializeAsString(), output);
+	const auto inputSerializedMsg = input.SerializeAsString();
+	std::vector<uint8_t> inData(inputSerializedMsg.begin(), inputSerializedMsg.end());
+	doCallService(serviceName, inData, output);
 }
 
 }  // namespace mvsim

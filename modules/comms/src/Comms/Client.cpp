@@ -697,14 +697,15 @@ void Client::internalTopicUpdatesThread()
 }
 
 // Overload for python wrapper
-std::string Client::callService(
-	const std::string& serviceName, const std::string& inputSerializedMsg)
+std::vector<uint8_t> Client::callService(
+	const std::string& serviceName, const std::vector<uint8_t>& inputSerializedMsg)
 {
 	MRPT_START
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mrpt::system::CTimeLoggerEntry tle(profiler_, "callService");
 
-	std::string outMsgData, outMsgType;
+	std::string outMsgType;
+	std::vector<uint8_t> outMsgData;
 	doCallService(serviceName, inputSerializedMsg, std::nullopt, outMsgData, outMsgType);
 	return outMsgData;
 #endif
@@ -733,9 +734,9 @@ void Client::subscribeTopic(
 }
 
 void Client::doCallService(
-	const std::string& serviceName, const std::string& inputSerializedMsg,
+	const std::string& serviceName, const std::vector<uint8_t>& inputSerializedMsg,
 	mrpt::optional_ref<google::protobuf::Message> outputMsg,
-	mrpt::optional_ref<std::string> outputSerializedMsg,
+	mrpt::optional_ref<std::vector<uint8_t>> outputSerializedMsg,
 	mrpt::optional_ref<std::string> outputMsgTypeName)
 {
 	MRPT_START
@@ -784,7 +785,7 @@ void Client::doCallService(
 
 	mvsim_msgs::CallService csMsg;
 	csMsg.set_servicename(serviceName);
-	csMsg.set_serializedinput(inputSerializedMsg);
+	csMsg.set_serializedinput(inputSerializedMsg.data(), inputSerializedMsg.size());
 
 	mvsim::sendMessage(csMsg, srvReqSock);
 
@@ -797,7 +798,9 @@ void Client::doCallService(
 	{
 		const auto [typeName, serializedData] = internal::parseMessageToParts(m);
 
-		outputSerializedMsg.value().get() = serializedData;
+		auto& outVecBytes = outputSerializedMsg.value().get();
+		outVecBytes.resize(serializedData.size());
+		::memcpy(outVecBytes.data(), serializedData.data(), serializedData.size());
 		if (outputMsgTypeName)
 		{
 			outputMsgTypeName.value().get() = typeName;

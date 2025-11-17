@@ -53,8 +53,10 @@
   <test_depend      condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
   <test_depend      condition="$ROS_VERSION == 2">ament_lint_common</test_depend>
   <build_depend     condition="$ROS_VERSION == 2">ament_cmake_xmllint</build_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake_python</buildtool_depend>
   <!-- to recognize launch files -->
   <exec_depend      condition="$ROS_VERSION == 2">ros2launch</exec_depend>
+  <exec_depend      condition="$ROS_VERSION == 2">python3</exec_depend>
 
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>

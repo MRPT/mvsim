@@ -13,7 +13,7 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, T*)
 PYBIND11_MAKE_OPAQUE(std::shared_ptr<void>)
 #endif
 
-// std::exception file:bits/exception.h line:61
+// std::exception file:bits/exception.h line:59
 struct PyCallBack_std_exception : public std::exception
 {
 	using std::exception::exception;
@@ -28,12 +28,7 @@ struct PyCallBack_std_exception : public std::exception
 			auto o = overload.operator()<pybind11::return_value_policy::reference>();
 			if (pybind11::detail::cast_is_temporary_value_reference<const char*>::value)
 			{
-// pybind11 <=2.4: overload_caster_t, otherwise: override_caster_t
-#if (PYBIND11_MAJOR_VERSION == 2 && PYBIND11_MINOR_VERSION <= 4)
-				static pybind11::detail::overload_caster_t<const char*> caster;
-#else
 				static pybind11::detail::override_caster_t<const char*> caster;
-#endif
 				return pybind11::detail::cast_ref<const char*>(std::move(o), caster);
 			}
 			else
@@ -45,7 +40,7 @@ struct PyCallBack_std_exception : public std::exception
 
 void bind_std_exception(std::function<pybind11::module&(std::string const& namespace_)>& M)
 {
-	{  // std::exception file:bits/exception.h line:61
+	{  // std::exception file:bits/exception.h line:59
 		pybind11::class_<std::exception, std::shared_ptr<std::exception>, PyCallBack_std_exception>
 			cl(M("std"), "exception", "");
 		cl.def(pybind11::init(
@@ -58,8 +53,8 @@ void bind_std_exception(std::function<pybind11::module&(std::string const& names
 			"assign",
 			(class std::exception & (std::exception::*)(const class std::exception&)) &
 				std::exception::operator=,
-			"C++: std::exception::operator=(const class std::exception &) --> "
-			"class std::exception &",
+			"C++: std::exception::operator=(const class std::exception &) --> class std::exception "
+			"&",
 			pybind11::return_value_policy::automatic, pybind11::arg(""));
 		cl.def(
 			"what", (const char* (std::exception::*)() const) & std::exception::what,
