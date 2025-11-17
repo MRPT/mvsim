@@ -9,6 +9,7 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/opengl/stock_objects.h>
+#include <mrpt/poses/Lie/SO.h>
 #include <mrpt/version.h>
 #include <mvsim/Sensors/IMU.h>
 #include <mvsim/VehicleBase.h>
@@ -40,7 +41,9 @@ void IMU::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["pose_3d"] = TParamEntry("%pose3d", &obs_model_.sensorPose);
 	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
 	params["angular_velocity_std_noise"] = TParamEntry("%lf", &angularVelocityStdNoise_);
+	params["orientation_std_noise"] = TParamEntry("%lf", &orientationStdNoise_);
 	params["linear_acceleration_std_noise"] = TParamEntry("%lf", &linearAccelerationStdNoise_);
+	params["measure_orientation"] = TParamEntry("%bool", &measure_orientation_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
@@ -73,8 +76,14 @@ void IMU::internalGuiUpdate(
 	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + obs_model_.sensorPose;
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(pp);
-	if (glCustomVisual_) glCustomVisual_->setPose(pp);
+	if (gl_sensor_origin_)
+	{
+		gl_sensor_origin_->setPose(pp);
+	}
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setPose(pp);
+	}
 }
 
 void IMU::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -125,6 +134,36 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 	outObs->set(mrpt::obs::IMU_X_ACC, linAccLocal.x);
 	outObs->set(mrpt::obs::IMU_Y_ACC, linAccLocal.y);
 	outObs->set(mrpt::obs::IMU_Z_ACC, linAccLocal.z);
+
+	// Orientation:
+	if (measure_orientation_)
+	{
+		// If using geo-referenced coordinates, get world to ENU rotation:
+		const auto& w2enu = parent()->georeferenceOptions().world_to_enu_rotation;
+
+		// Get vehicle pose on the world:
+		const auto& p = vehicle_.getCPose3D();
+
+		// compose with sensor pose:
+		auto& rng = mrpt::random::getRandomGenerator();
+		mrpt::math::CVectorFixed<double, 3> oriNoiseVec;
+		rng.drawGaussian1DVector(oriNoiseVec, .0, orientationStdNoise_);
+
+		const auto oriNoiseRot = mrpt::poses::Lie::SO<3>::exp(oriNoiseVec);
+
+		const mrpt::poses::CPose3D sensorPoseEnu =
+			mrpt::poses::CPose3D::FromYawPitchRoll(w2enu, .0, .0) + (p + obs_model_.sensorPose) +
+			mrpt::poses::CPose3D::FromRotationAndTranslation(
+				oriNoiseRot, mrpt::math::TVector3D(0, 0, 0));
+
+		mrpt::math::CQuaternionDouble q;
+		sensorPoseEnu.getAsQuaternion(q);
+
+		outObs->set(mrpt::obs::IMU_ORI_QUAT_W, q.r());
+		outObs->set(mrpt::obs::IMU_ORI_QUAT_X, q.x());
+		outObs->set(mrpt::obs::IMU_ORI_QUAT_Y, q.y());
+		outObs->set(mrpt::obs::IMU_ORI_QUAT_Z, q.z());
+	}
 
 	// Save:
 	{

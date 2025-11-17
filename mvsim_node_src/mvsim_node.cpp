@@ -456,9 +456,8 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 			{
 				obj->mvsim_world_->internalGraphicsLoopTasksForSimulation();
 
-				std::this_thread::sleep_for(
-					std::chrono::microseconds(
-						static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
+				std::this_thread::sleep_for(std::chrono::microseconds(
+					static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
 			}
 			else
 			{

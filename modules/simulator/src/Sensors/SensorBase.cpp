@@ -99,11 +99,10 @@ SensorBase::Ptr SensorBase::factory(Simulable& parent, const rapidxml::xml_node<
 
 	if (!root) throw runtime_error("[SensorBase::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "sensor"))
-		throw runtime_error(
-			mrpt::format(
-				"[SensorBase::factory] XML root element is '%s' ('sensor' "
-				"expected)",
-				root->name()));
+		throw runtime_error(mrpt::format(
+			"[SensorBase::factory] XML root element is '%s' ('sensor' "
+			"expected)",
+			root->name()));
 
 	// Get "class" attrib:
 	const xml_attribute<>* sensor_class = root->first_attribute("class");

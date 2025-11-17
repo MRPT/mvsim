@@ -370,9 +370,8 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 				noiseSeq.reserve(noiseLen);
 				for (size_t i = 0; i < noiseLen; i++)
 				{
-					noiseSeq.push_back(
-						static_cast<int16_t>(mrpt::round(
-							rng.drawGaussian1D(0.0, depth_noise_sigma_) / curObs.rangeUnits)));
+					noiseSeq.push_back(static_cast<int16_t>(mrpt::round(
+						rng.drawGaussian1D(0.0, depth_noise_sigma_) / curObs.rangeUnits)));
 				}
 			}
 
