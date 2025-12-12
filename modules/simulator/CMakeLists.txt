@@ -54,10 +54,12 @@ add_library(${PROJECT_NAME}
 	src/FrictionModels/FrictionBase.cpp
 	src/FrictionModels/WardIagnemmaFriction.cpp
 	src/FrictionModels/EllipseCurveMethod.cpp
+	src/FrictionModels/AdaptativeFriction.cpp # Fernando
 	include/mvsim/FrictionModels/DefaultFriction.h
 	include/mvsim/FrictionModels/FrictionBase.h
 	include/mvsim/FrictionModels/WardIagnemmaFriction.h
 	include/mvsim/FrictionModels/EllipseCurveMethod.h
+	include/mvsim/FrictionModels/AdaptativeFriction.h # Fernando
 
 	# Sensors:
 	src/Sensors/CameraSensor.cpp
@@ -156,4 +158,59 @@ PUBLIC
 target_include_directories(${PROJECT_NAME}
 	SYSTEM PUBLIC
 		$<BUILD_INTERFACE:${mvsim_SOURCE_DIR}/externals/rapidxml>
+)
+
+# ** TEMPORARY!! **
+# ROS2 dependencies: 
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(benchmark_msg REQUIRED)
+
+target_include_directories(${PROJECT_NAME}
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    ${rclcpp_INCLUDE_DIRS}
+    ${std_msgs_INCLUDE_DIRS}
+    ${tf2_INCLUDE_DIRS}
+    ${tf2_ros_INCLUDE_DIRS}
+    ${geometry_msgs_INCLUDE_DIRS}
+    ${sensor_msgs_INCLUDE_DIRS}
+    ${benchmark_msg_INCLUDE_DIRS}
+)
+
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
+    ${DEP_MVSIM_MSGS_TRG}
+    ${std_msgs_LIBRARIES}
+    ${geometry_msgs_LIBRARIES}
+    ${sensor_msgs_LIBRARIES}
+    ${rclcpp_LIBRARIES}
+    tf2::tf2
+    tf2_ros::tf2_ros
+    ${benchmark_msg_LIBRARIES}
+  PUBLIC
+    mrpt::obs
+    mrpt::opengl
+    mrpt::maps
+    mrpt::gui
+    mrpt::topography
+    ${DEP_MVSIM_COMMS_TRG}
+    ${BOX2D_LIBRARIES}
+)
+
+# Incluye las rutas de pid_msgs:
+target_include_directories(${PROJECT_NAME}
+  PUBLIC
+    ${pid_msgs_INCLUDE_DIRS}  # <-- Añade esto
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    ${rclcpp_INCLUDE_DIRS}
+    ${std_msgs_INCLUDE_DIRS}
+    ${tf2_INCLUDE_DIRS}
+    ${geometry_msgs_INCLUDE_DIRS}
 )

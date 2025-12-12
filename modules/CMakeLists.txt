@@ -2,6 +2,9 @@ project(libmvsim LANGUAGES CXX VERSION ${MVSIM_VERSION})
 
 include(CMakePackageConfigHelpers)
 
+# ** TEMPORARY **
+include_directories(SYSTEM /opt/ros/${ROS_DISTRO}/include)
+
 # ========================== Dependencies ====================================
 # It must be at the same directory than protobuf_generate_cpp()
 option(MVSIM_WITH_PROTOBUF "Use protobuf for communications" ON)
@@ -200,7 +203,7 @@ function(mvsim_common_target_settings MODULENAME_)
 endfunction()
 
 
-# ========================== Targets ====================================
+# ========================== Targets ============	========================
 if (MVSIM_WITH_PROTOBUF)
   add_subdirectory(comms)
   add_subdirectory(msgs)

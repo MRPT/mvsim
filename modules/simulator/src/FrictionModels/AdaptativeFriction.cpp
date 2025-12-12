@@ -1,13 +1,6 @@
-/*+-------------------------------------------------------------------------+
-  |                       MultiVehicle simulator (libmvsim)                 |
-  |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
-  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
-  | Distributed under 3-clause BSD License                                  |
-  |   See COPYING                                                           |
-  +-------------------------------------------------------------------------+ */
+// Fernando Cañadas Aránega, 5 Nov 2025
 
-#include <mvsim/FrictionModels/DefaultFriction.h>
+#include <mvsim/FrictionModels/AdaptativeFriction.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
@@ -17,21 +10,84 @@
 
 using namespace mvsim;
 
-DefaultFriction::DefaultFriction(VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
-	: FrictionBase(my_vehicle), mu_(0.8), C_damping_(1.0),  Crr_(0.02)
+AdaptativeFriction::AdaptativeFriction(
+	VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
+	: FrictionBase(my_vehicle), mu_(0.8), C_damping_(1.0), Crr_(0.02)
 {
-	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
 		throw std::runtime_error("<friction>...</friction> XML node was expected!!");
 
-	// Parse XML params:
-	if (node) parse_xmlnode_children_as_param(*node, params_, world_->user_defined_variables());
+	if (!node) return;
+
+	const rapidxml::xml_node<char>* zonesNode = node->first_node("zones");
+	if (!zonesNode) return;
+
+	for (auto zoneNode = zonesNode->first_node("zone"); zoneNode;
+		 zoneNode = zoneNode->next_sibling("zone"))
+	{
+		ZoneParams z;
+		z.name = zoneNode->first_attribute("name") ? zoneNode->first_attribute("name")->value()
+												   : "unknown";
+
+		z.mu =
+			zoneNode->first_attribute("mu") ? atof(zoneNode->first_attribute("mu")->value()) : mu_;
+		z.C_damping = zoneNode->first_attribute("C_damping")
+						  ? atof(zoneNode->first_attribute("C_damping")->value())
+						  : C_damping_;
+		z.Crr = zoneNode->first_attribute("Crr") ? atof(zoneNode->first_attribute("Crr")->value())
+												 : Crr_;
+
+		z.x_min = zoneNode->first_attribute("x_min")
+					  ? atof(zoneNode->first_attribute("x_min")->value())
+					  : -1e9;
+		z.x_max = zoneNode->first_attribute("x_max")
+					  ? atof(zoneNode->first_attribute("x_max")->value())
+					  : 1e9;
+		z.y_min = zoneNode->first_attribute("y_min")
+					  ? atof(zoneNode->first_attribute("y_min")->value())
+					  : -1e9;
+		z.y_max = zoneNode->first_attribute("y_max")
+					  ? atof(zoneNode->first_attribute("y_max")->value())
+					  : 1e9;
+
+		zones_.push_back(z);
+	}
 }
 
 // See docs in base class.
-mrpt::math::TVector2D DefaultFriction::evaluate_friction(
+mrpt::math::TVector2D AdaptativeFriction::evaluate_friction(
 	const FrictionBase::TFrictionInput& input) const
 {
+	// ------------------------------------------------------------
+	// 1. Obtener posición actual del vehículo
+	// ------------------------------------------------------------
+	const mrpt::math::TPose2D pose(myVehicle_.getPose());
+
+	double mu_local = mu_;
+	double C_damping_local = C_damping_;
+	double Crr_local = Crr_;
+
+	// ------------------------------------------------------------
+	// 2. Buscar zona activa según (x,y)
+	// ------------------------------------------------------------
+	// Buscar zona activa según (x,y)
+	for (const auto& z : zones_)
+	{
+		if (pose.x >= z.x_min && pose.x <= z.x_max && pose.y >= z.y_min && pose.y <= z.y_max)
+		{
+			mu_local = z.mu;
+			C_damping_local = z.C_damping;
+			Crr_local = z.Crr;
+			break;
+		}
+	}
+
+	// 💡 ACTUALIZAR los miembros internos para que getMu(), getCdamping(), getCrr()
+	// reflejen la fricción actual:
+	const_cast<AdaptativeFriction*>(this)->mu_ = mu_local;
+	const_cast<AdaptativeFriction*>(this)->C_damping_ = C_damping_local;
+	const_cast<AdaptativeFriction*>(this)->Crr_ = Crr_local;
+
 	// Rotate wheel velocity vector from veh. frame => wheel frame
 	const mrpt::poses::CPose2D wRot(0, 0, input.wheel.yaw);
 
@@ -39,6 +95,7 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 	const mrpt::math::TVector2D vel_w = wRot.inverseComposePoint(input.wheelCogLocalVel);
 
 	// Action/Reaction, slippage, etc:
+	// DUDA PARA JL; EL MODELO NO TIENE EN CUENTA LA MASA DEL VEHICULO?
 	// --------------------------------------
 	const double mu = mu_;
 	const double gravity = myVehicle_.parent()->get_gravity();
@@ -84,10 +141,13 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 
 	// Slippage: The friction with the ground is not infinite:
 	F_friction_lon = std::clamp(F_friction_lon, -max_friction, max_friction);
-	
+
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double actual_wheel_alpha =
 		(input.motorTorque - R * F_friction_lon - C_damping * input.wheel.getW()) / I_yy;
+
+	// std::cout << "[AdaptativeFriction] Evaluating friction for pose: ("
+	// 	<< pose.x << "," << pose.y << ")  mu=" << mu_local << std::endl;
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);

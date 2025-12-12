@@ -55,9 +55,9 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 
 	const double vel_act = veh_.getVelocityLocalOdoEstimate().vx;
 	const double vel_des = setpoint_lin_speed;
-
+	const double torque_slope = 0.0;  // No slope disturbance for Ackermann vehicles
 	// "-" because \tau<0 makes robot moves forwards.
-	co.drive_torque = -PID_.compute(vel_des - vel_act, ci.context.dt);
+	co.drive_torque = -PID_.compute(vel_des, vel_act, torque_slope, ci.context.dt);
 }
 
 void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(
