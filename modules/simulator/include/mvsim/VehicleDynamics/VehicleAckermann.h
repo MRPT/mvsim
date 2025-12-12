@@ -88,12 +88,26 @@ class DynamicsAckermann : public VehicleBase
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
-		double KP, KI, KD;	//!< PID controller parameters
+		double KP, KI, KD, N;  //!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 		/// setpoint magnitude below which it is treated as zero [m/s]
 		double zero_threshold = 0.001;
 		/// velocity magnitude below which vehicle is considered stopped [m/s]
 		double stop_threshold = 0.05;
+
+		// TEMPORARY
+		double tau_ff = 0.0, tau_ff1 = 0, tau_ff2 = 0, tau_ff3 = 0, tau_ff4 = 0, tau_ff5 = 0,
+			   tau_ff6 = 0;	 //!< Feedforward time constant (in seconds)
+		double K_ff = 0.0, K_ff1 = 0, K_ff2 = 0, K_ff3 = 0, K_ff4 = 0, K_ff5 = 0,
+			   K_ff6 = 0;  //!< Feedforward gain
+		double new_vel_max = 0.0, new_w_max = 0.0, dist_obst = 0.0;
+		double tau_f = 0.0;	 //!< Feedforward time constant for wheel 1 (in seconds)
+		int n_f = 1;  //!< Order of the reference filter
+		bool enable_antiwindup = true;
+		bool enable_feedforward = false;
+		bool enable_referencefilter = false;
+		bool enable_adaptative = false;
+		bool full_payload = false;
 
 		// See base docs.
 		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override

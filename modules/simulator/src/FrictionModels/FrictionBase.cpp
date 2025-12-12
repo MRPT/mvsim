@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mvsim/FrictionModels/AdaptativeFriction.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>
 #include <mvsim/FrictionModels/EllipseCurveMethod.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
@@ -34,6 +35,9 @@ void register_all_friction()
 	REGISTER_FRICTION("default", DefaultFriction)
 	REGISTER_FRICTION("wardiagnemma", WardIagnemmaFriction)
 	REGISTER_FRICTION("ellipse", EllipseCurveMethod)
+
+	// TEMPORARY!
+	REGISTER_FRICTION("AdaptativeFriction", AdaptativeFriction)
 }
 
 FrictionBase::FrictionBase(VehicleBase& my_vehicle)

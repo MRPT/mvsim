@@ -109,9 +109,34 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 		PID_[i].KI = KI;
 		PID_[i].KD = KD;
 		PID_[i].max_out = max_torque;
+
+		// TEMPORARY
+		PID_[i].N = N;
+		PID_[i].tau_ff = tau_ff;  // Feedforward time constant
+		PID_[i].tau_ff1 = tau_ff1;
+		PID_[i].tau_ff2 = tau_ff2;
+		PID_[i].tau_ff3 = tau_ff3;
+		PID_[i].tau_ff4 = tau_ff4;
+		PID_[i].tau_ff5 = tau_ff5;
+		PID_[i].tau_ff6 = tau_ff6;
+		PID_[i].K_ff = K_ff;  // Feedforward gain
+		PID_[i].K_ff1 = K_ff1;
+		PID_[i].K_ff2 = K_ff2;
+		PID_[i].K_ff3 = K_ff3;
+		PID_[i].K_ff4 = K_ff4;
+		PID_[i].K_ff5 = K_ff5;
+		PID_[i].K_ff6 = K_ff6;
+		PID_[i].tau_f = tau_f;	// Filter time constant
+		PID_[i].n_f = n_f;	// Filter order
+		PID_[i].enable_antiwindup = enable_antiwindup;
+		PID_[i].enable_feedforward = enable_feedforward;
+		PID_[i].enable_referencefilter = enable_referencefilter;
+		PID_[i].enable_adaptative = enable_adaptative;
+		PID_[i].full_payload = full_payload;
 	}
 
 	co.rl_torque = .0;
+	const double torque_slope = 0.0;  // No slope disturbance for Ackermann vehicles
 	co.rr_torque = .0;
 
 	const bool setpointIsZero =
@@ -130,10 +155,9 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	}
 	else
 	{
-		co.fl_torque = -PID_[0].compute(
-			vel_fl - act_vel_fl,
-			ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
-		co.fr_torque = -PID_[1].compute(vel_fr - act_vel_fr, ci.context.dt);
+		// "-" because \tau<0 makes robot moves forwards.
+		co.fl_torque = -PID_[0].compute(vel_fl, act_vel_fl, torque_slope, ci.context.dt);
+		co.fr_torque = -PID_[1].compute(vel_fr, act_vel_fr, torque_slope, ci.context.dt);
 
 		if (setpointIsZero)
 		{
@@ -167,6 +191,14 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["KD"] = TParamEntry("%lf", &KD);
+
+	// TEMPORARY
+	params["N"] = TParamEntry("%lf", &N);
+	params["tau_ff"] = TParamEntry("%lf", &tau_ff);
+	params["K_ff"] = TParamEntry("%lf", &K_ff);
+	params["tau_f"] = TParamEntry("%lf", &tau_f);
+	params["enable_antiwindup"] = TParamEntry("%bool", &enable_antiwindup);
+	params["enable_feedforward"] = TParamEntry("%bool", &enable_feedforward);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
 	params["zero_threshold"] = TParamEntry("%lf", &zero_threshold);
 	params["stop_threshold"] = TParamEntry("%lf", &stop_threshold);

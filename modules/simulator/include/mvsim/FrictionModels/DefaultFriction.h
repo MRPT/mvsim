@@ -29,10 +29,19 @@ class DefaultFriction : public FrictionBase
 	virtual mrpt::math::TVector2D evaluate_friction(
 		const FrictionBase::TFrictionInput& input) const override;
 
+	/// TEMPORARY
+	double getMu() const { return mu_; }
+	double getCdamping() const { return C_damping_; }
+	double getCrr() const { return Crr_; }
+
    private:
 	double mu_ = 0.8;  //!< friction coefficient (non-dimensional)
 	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
 	double C_rr_ = 0.0;	 //!< Rolling resistance coefficient (non-dimensional)
+
+	/// TEMPORARY
+	double Crr_;  //!< rolling resistance coefficient (non-dimensional). Only for Feedforward
+				  //!< controller
 
    public:
 	const TParameterDefinitions params_ = {

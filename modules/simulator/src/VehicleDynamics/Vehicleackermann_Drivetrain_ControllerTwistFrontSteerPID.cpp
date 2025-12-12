@@ -69,8 +69,9 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	}
 	else
 	{
+		const double torque_slope = 0.0;  // No slope disturbance for Ackermann vehicles
 		// "-" because \tau<0 makes robot moves forwards.
-		co.drive_torque = -PID_.compute(vel_des - vel_act, ci.context.dt);
+		co.drive_torque = -PID_.compute(vel_des, vel_act, torque_slope, ci.context.dt);
 
 		if (setpointIsZero)
 		{
@@ -152,11 +153,23 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::teleop_interface
 
 		if (js.buttons.size() > 7)
 		{
-			if (js.buttons[5]) joyMaxLinSpeed *= 1.01;
-			if (js.buttons[7]) joyMaxLinSpeed /= 1.01;
+			if (js.buttons[5])
+			{
+				joyMaxLinSpeed *= 1.01;
+			}
+			if (js.buttons[7])
+			{
+				joyMaxLinSpeed /= 1.01;
+			}
 
-			if (js.buttons[4]) joyMaxAngSpeed *= 1.01;
-			if (js.buttons[6]) joyMaxAngSpeed /= 1.01;
+			if (js.buttons[4])
+			{
+				joyMaxAngSpeed *= 1.01;
+			}
+			if (js.buttons[6])
+			{
+				joyMaxAngSpeed /= 1.01;
+			}
 
 			if (js.buttons[3])	// brake
 			{

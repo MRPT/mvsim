@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-<name>mvsim</name>
+  <name>mvsim</name>
   <description>A lightweight multivehicle simulation framework.</description>
 
   <!-- All version numbers in CMake scripts are taken from this line: -->
@@ -42,7 +42,13 @@
   <depend>unzip</depend>
   <depend>visualization_msgs</depend>
   <depend>wget</depend>
-  
+
+  <!-- TEMPORARY!! -->
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>benchmark_msg</depend>
+
   <!-- ROS1 -->
   <depend           condition="$ROS_VERSION == 1">roscpp</depend>
   <depend           condition="$ROS_VERSION == 1">dynamic_reconfigure</depend>
@@ -59,6 +65,10 @@
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>
     <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+
+    <!-- TEMPORARY!! -->
+    <ament_cmake_export_dependencies condition="$ROS_VERSION == 2">rclcpp</ament_cmake_export_dependencies>
+    <ament_cmake_export_dependencies condition="$ROS_VERSION == 2">benchmark_msg</ament_cmake_export_dependencies>
   </export>
 
 </package>
