@@ -345,13 +345,23 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	auto& curPts = *curPtsPtr;
 	curObs->pointcloud = curPtsPtr;
 
-#if MRPT_VERSION >= 0x020f00  // 2.15.0
+#if MRPT_VERSION >= 0x020f04  // 2.15.4
+	auto* curPts_Is =
+		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMap::POINT_FIELD_INTENSITY);
+	auto* curPts_Ts =
+		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMap::POINT_FIELD_TIMESTAMP);
+	auto* curPts_Rs =
+		curPts.getPointsBufferRef_uint16_field(mrpt::maps::CPointsMap::POINT_FIELD_RING_ID);
+#elif MRPT_VERSION >= 0x020f00	// 2.15.0
 	auto* curPts_Is =
 		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_INTENSITY);
 	auto* curPts_Ts =
 		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_TIMESTAMP);
 	auto* curPts_Rs =
 		curPts.getPointsBufferRef_uint_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_RING_ID);
+#endif
+
+#if MRPT_VERSION >= 0x020f00  // 2.15.0
 	ASSERT_(curPts_Is && curPts_Ts && curPts_Rs);
 #endif
 
