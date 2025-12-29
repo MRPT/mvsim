@@ -159,8 +159,10 @@ bool SensorBase::parseSensorPublish(
 void SensorBase::reportNewObservation(
 	const std::shared_ptr<mrpt::obs::CObservation>& obs, const TSimulContext& context)
 {
-	if (!obs) return;
-
+	if (!obs)
+	{
+		return;
+	}
 	// Notify the world:
 	world_->dispatchOnObservation(vehicle_, obs);
 
@@ -188,8 +190,10 @@ void SensorBase::reportNewObservation_lidar_2d(
 	using namespace std::string_literals;
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	if (publishTopic_.empty()) return;
-
+	if (publishTopic_.empty())
+	{
+		return;
+	}
 	mvsim_msgs::ObservationLidar2D msg;
 	msg.set_unixtimestamp(mrpt::Clock::toDouble(obs->timestamp));
 	msg.set_sourceobjectid(vehicle_.getName());
@@ -251,8 +255,10 @@ void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 {
-	if (!name_.empty()) return;
-
+	if (!name_.empty())
+	{
+		return;
+	}
 	size_t nextIdx = 0;
 	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v) nextIdx = v->getSensors().size() + 1;
 

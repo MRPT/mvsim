@@ -65,8 +65,10 @@ void World::run_simulation(double dt)
 /** Runs one individual time step */
 void World::internal_one_timestep(double dt)
 {
-	if (simulator_must_close()) return;
-
+	if (simulator_must_close())
+	{
+		return;
+	}
 	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
 
 	timer_iteration_.Tic();
@@ -225,8 +227,10 @@ double World::get_simul_timestep() const
 
 void World::internalPostSimulStepForRawlog()
 {
-	if (save_to_rawlog_.empty()) return;
-
+	if (save_to_rawlog_.empty())
+	{
+		return;
+	}
 	ASSERT_GT_(rawlog_odometry_rate_, 0.0);
 
 	const double now = get_simul_time();
@@ -260,8 +264,10 @@ void World::internalPostSimulStepForTrajectory()
 {
 	using namespace std::string_literals;
 
-	if (save_ground_truth_trajectory_.empty()) return;
-
+	if (save_ground_truth_trajectory_.empty())
+	{
+		return;
+	}
 	ASSERT_GT_(ground_truth_rate_, 0.0);
 
 	const double now = get_simul_time();

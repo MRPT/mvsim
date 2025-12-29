@@ -102,8 +102,10 @@ void World::load_from_XML(const std::string& xml_text, const std::string& fileNa
 
 void World::register_standard_xml_tag_parsers()
 {
-	if (!xmlParsers_.empty()) return;
-
+	if (!xmlParsers_.empty())
+	{
+		return;
+	}
 	register_tag_parser("vehicle", &World::parse_tag_vehicle);
 	register_tag_parser("vehicle:class", &World::parse_tag_vehicle_class);
 
@@ -346,8 +348,10 @@ void World::parse_tag_for(const XmlParserContext& ctx)
 void World::parse_tag_if(const XmlParserContext& ctx)
 {
 	bool isTrue = evaluate_tag_if(*ctx.node);
-	if (!isTrue) return;
-
+	if (!isTrue)
+	{
+		return;
+	}
 	for (auto childNode = ctx.node->first_node(); childNode; childNode = childNode->next_sibling())
 	{
 		internal_recursive_parse_XML({childNode, basePath_});

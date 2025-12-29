@@ -481,8 +481,10 @@ static void recursive_xml_to_str_solving_includes(
 	else if (strcmp(n->name(), "if") == 0)
 	{
 		bool isTrue = parent.evaluate_tag_if(*n);
-		if (!isTrue) return;
-
+		if (!isTrue)
+		{
+			return;
+		}
 		for (auto childNode = n->first_node(); childNode; childNode = childNode->next_sibling())
 		{
 			recursive_xml_to_str_solving_includes(parent, childNode, varsRetain, ss);

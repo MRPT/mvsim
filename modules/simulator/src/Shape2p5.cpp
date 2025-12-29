@@ -27,8 +27,8 @@
 #include <queue>
 
 // Uncomment only for development debugging
-//#define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-//#define DEBUG_DUMP_TRIANGLES
+// #define DEBUG_DUMP_ALL_TEMPORARY_GRIDS
+// #define DEBUG_DUMP_TRIANGLES
 
 using namespace mvsim;
 
@@ -276,10 +276,19 @@ void Shape2p5::internalGridFloodFill() const
 
 	const auto Set = [&](int x, int y)
 	{
-		if (x < 0 || y < 0) return;
-		if (x > cxMax || y > cyMax) return;
+		if (x < 0 || y < 0)
+		{
+			return;
+		}
+		if (x > cxMax || y > cyMax)
+		{
+			return;
+		}
 		uint8_t* c = grid_->cellByIndex(x, y);
-		if (!c) return;
+		if (!c)
+		{
+			return;
+		}
 		*c = CELL_FREE;
 	};
 
@@ -312,8 +321,10 @@ void Shape2p5::internalGridFloodFill() const
 				span_added = true
 	*/
 
-	if (!Inside(x0, y0)) return;
-
+	if (!Inside(x0, y0))
+	{
+		return;
+	}
 	struct Coord
 	{
 		Coord() = default;

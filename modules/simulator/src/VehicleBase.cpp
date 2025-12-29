@@ -409,8 +409,9 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	// Part of the vehicle weight on each wheel:
 	const double gravity = parent()->get_gravity();
 
-	MRPT_TODO("Use chassis cog point");
-	const double massPerWheel = getChassisMass() / nW;
+	// TODO: Use chassis cog point to estimate load on each wheel, caching it.
+	// TODO-TODO: Use dynamic load transfer too!
+	const double massPerWheel = getChassisMass() / static_cast<double>(nW);
 	const double weightPerWheel = massPerWheel * gravity;
 #if 0
 	if (wheel_index == 3)  //(Wpos.x > 0 && Wpos.y > 0)

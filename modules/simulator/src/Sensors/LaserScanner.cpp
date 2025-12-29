@@ -187,9 +187,18 @@ void LaserScanner::internalGuiUpdate(
 		gl_scan_->setPose(p2);
 	}
 
-	if (gl_sensor_fov_) gl_sensor_fov_->setPose(pp);
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(pp);
-	if (glCustomVisual_) glCustomVisual_->setPose(pp + scan_model_.sensorPose);
+	if (gl_sensor_fov_)
+	{
+		gl_sensor_fov_->setPose(pp);
+	}
+	if (gl_sensor_origin_)
+	{
+		gl_sensor_origin_->setPose(pp);
+	}
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setPose(pp + scan_model_.sensorPose);
+	}
 }
 
 void LaserScanner::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -293,7 +302,10 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 
 		auto makeFixtureInvisible = [&](b2Fixture* f)
 		{
-			if (!f) return;
+			if (!f)
+			{
+				return;
+			}
 			orgUserData[f] = f->GetUserData().pointer;
 			f->GetUserData().pointer = INVISIBLE_FIXTURE_USER_DATA;
 		};
@@ -443,7 +455,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	{
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
-		if (!has_to_render_.has_value()) return;
+		if (!has_to_render_.has_value())
+		{
+			return;
+		}
 	}
 
 	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar");
@@ -452,7 +467,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	tle1.stop();
 
-	if (glCustomVisual_) glCustomVisual_->setVisibility(false);
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setVisibility(false);
+	}
 
 	// Start making a copy of the pattern observation:
 	auto curObs = mrpt::obs::CObservation2DRangeScan::Create(scan_model_);
@@ -671,7 +689,10 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 		tlePub.stop();
 
-		if (glCustomVisual_) glCustomVisual_->setVisibility(true);
+		if (glCustomVisual_)
+		{
+			glCustomVisual_->setVisibility(true);
+		}
 
 		gui_uptodate_ = false;
 

@@ -108,11 +108,41 @@ void Lidar3D::internalGuiUpdate(
 	{
 		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
 
-		MRPT_TODO("render 3D lidar FOV");
-#if 0
-		auto fovScan = mrpt::opengl::CPlanarLaserScan::Create();
-		gl_sensor_fov_->insert(fovScan);
-#endif
+		// Create lines to represent the FOV, as a "360 deg" frustum:
+		auto fovLines = mrpt::opengl::CSetOfLines::Create();
+		const float fovRange = 1.0f;  // unit sphere
+		const size_t N_LINES = 32;
+		const double ang_vert_min = -0.5 * mrpt::DEG2RAD(vertical_fov_);
+		const double ang_vert_max = 0.5 * mrpt::DEG2RAD(vertical_fov_);
+
+		for (size_t i = 0; i < N_LINES; i++)
+		{
+			const double ang_horz = 2 * M_PI * static_cast<double>(i) / N_LINES;
+			// Lower line:
+			fovLines->appendLine(
+				0, 0, 0, fovRange * std::cos(ang_vert_min) * std::cos(ang_horz),
+				fovRange * std::cos(ang_vert_min) * std::sin(ang_horz),
+				fovRange * std::sin(ang_vert_min));
+			// Upper line:
+			fovLines->appendLine(
+				0, 0, 0, fovRange * std::cos(ang_vert_max) * std::cos(ang_horz),
+				fovRange * std::cos(ang_vert_max) * std::sin(ang_horz),
+				fovRange * std::sin(ang_vert_max));
+		}
+		// Vertical lines:
+		for (size_t i = 0; i < N_LINES; i++)
+		{
+			const double ang_horz = 2 * M_PI * static_cast<double>(i) / N_LINES;
+			fovLines->appendLine(
+				fovRange * std::cos(ang_vert_min) * std::cos(ang_horz),
+				fovRange * std::cos(ang_vert_min) * std::sin(ang_horz),
+				fovRange * std::sin(ang_vert_min),
+				fovRange * std::cos(ang_vert_max) * std::cos(ang_horz),
+				fovRange * std::cos(ang_vert_max) * std::sin(ang_horz),
+				fovRange * std::sin(ang_vert_max));
+		}
+		gl_sensor_fov_->insert(fovLines);
+
 		gl_sensor_fov_->setVisibility(false);
 		viz->get().insert(gl_sensor_fov_);
 		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
@@ -136,8 +166,14 @@ void Lidar3D::internalGuiUpdate(
 
 	if (glPoints_) glPoints_->setPose(pp);
 	if (gl_sensor_fov_) gl_sensor_fov_->setPose(pp);
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(pp);
-	if (glCustomVisual_) glCustomVisual_->setPose(pp);
+	if (gl_sensor_origin_)
+	{
+		gl_sensor_origin_->setPose(pp);
+	}
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setPose(pp);
+	}
 }
 
 void Lidar3D::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -280,7 +316,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	{
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
-		if (!has_to_render_.has_value()) return;
+		if (!has_to_render_.has_value())
+		{
+			return;
+		}
 	}
 
 	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar");
@@ -290,7 +329,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	tle1.stop();
 
 	// The sensor body must be made of transparent material! :-)
-	if (glCustomVisual_) glCustomVisual_->setVisibility(false);
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setVisibility(false);
+	}
 
 	// Create empty observation:
 	auto curObs = mrpt::obs::CObservationPointCloud::Create();
@@ -303,13 +345,23 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	auto& curPts = *curPtsPtr;
 	curObs->pointcloud = curPtsPtr;
 
-#if MRPT_VERSION >= 0x020f00  // 2.15.0
+#if MRPT_VERSION >= 0x020f04  // 2.15.4
+	auto* curPts_Is =
+		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMap::POINT_FIELD_INTENSITY);
+	auto* curPts_Ts =
+		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMap::POINT_FIELD_TIMESTAMP);
+	auto* curPts_Rs =
+		curPts.getPointsBufferRef_uint16_field(mrpt::maps::CPointsMap::POINT_FIELD_RING_ID);
+#elif MRPT_VERSION >= 0x020f00	// 2.15.0
 	auto* curPts_Is =
 		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_INTENSITY);
 	auto* curPts_Ts =
 		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_TIMESTAMP);
 	auto* curPts_Rs =
 		curPts.getPointsBufferRef_uint_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_RING_ID);
+#endif
+
+#if MRPT_VERSION >= 0x020f00  // 2.15.0
 	ASSERT_(curPts_Is && curPts_Ts && curPts_Rs);
 #endif
 
@@ -665,7 +717,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 		tlePub.stop();
 
-		if (glCustomVisual_) glCustomVisual_->setVisibility(true);
+		if (glCustomVisual_)
+		{
+			glCustomVisual_->setVisibility(true);
+		}
 
 		gui_uptodate_ = false;
 

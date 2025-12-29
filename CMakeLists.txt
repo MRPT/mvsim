@@ -238,7 +238,10 @@ if (NOT box2d_FOUND)
   endif()
 
   execute_process(COMMAND
-    ${CMAKE_COMMAND} --build ${EMBEDDED_box2d_BUILD_DIR} --target install
+    ${CMAKE_COMMAND}
+    --build ${EMBEDDED_box2d_BUILD_DIR}
+    --parallel
+    --target install
   RESULT_VARIABLE result
   ${echo_flag}
   )

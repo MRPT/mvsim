@@ -163,6 +163,14 @@
 		  sensor_vertical_std_noise="2.5"
 		  />
 
+		<!-- IMU -->
+		<include file="../definitions/imu.sensor.xml"
+		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.5" sensor_yaw="0"
+		  sensor_period_sec="0.05"
+		  sensor_name="imu"
+		  sensor_measure_orientation="true"
+		  />
+
 	</vehicle>
 
 	<!-- ======================================

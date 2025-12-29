@@ -194,11 +194,23 @@ void DepthCameraSensor::internalGuiUpdate(
 
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
-	if (gl_obs_) gl_obs_->setPose(pp);
-	if (gl_sensor_fov_) gl_sensor_fov_->setPose(pp);
-	if (gl_sensor_origin_) gl_sensor_origin_->setPose(pp);
+	if (gl_obs_)
+	{
+		gl_obs_->setPose(pp);
+	}
+	if (gl_sensor_fov_)
+	{
+		gl_sensor_fov_->setPose(pp);
+	}
+	if (gl_sensor_origin_)
+	{
+		gl_sensor_origin_->setPose(pp);
+	}
 
-	if (glCustomVisual_) glCustomVisual_->setPose(pp + sensor_params_.sensorPose.asTPose());
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setPose(pp + sensor_params_.sensorPose.asTPose());
+	}
 }
 
 void DepthCameraSensor::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
@@ -209,7 +221,10 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 
 	{
 		auto lckHasTo = mrpt::lockHelper(has_to_render_mtx_);
-		if (!has_to_render_.has_value()) return;
+		if (!has_to_render_.has_value())
+		{
+			return;
+		}
 	}
 
 	auto tleWhole = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD");
@@ -218,7 +233,10 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 
 	tle1.stop();
 
-	if (glCustomVisual_) glCustomVisual_->setVisibility(false);
+	if (glCustomVisual_)
+	{
+		glCustomVisual_->setVisibility(false);
+	}
 
 	// Start making a copy of the pattern observation:
 	auto curObsPtr = mrpt::obs::CObservation3DRangeScan::Create(sensor_params_);
@@ -403,7 +421,10 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 
 		tlePub.stop();
 
-		if (glCustomVisual_) glCustomVisual_->setVisibility(true);
+		if (glCustomVisual_)
+		{
+			glCustomVisual_->setVisibility(true);
+		}
 
 		gui_uptodate_ = false;
 		has_to_render_.reset();

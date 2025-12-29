@@ -315,8 +315,10 @@ void Block::updateMaxRadiusFromPoly()
 /** Create bodies, fixtures, etc. for the dynamical simulation */
 void Block::create_multibody_system(b2World& world)
 {
-	if (intangible_) return;
-
+	if (intangible_)
+	{
+		return;
+	}
 	// Update collision shape from shape loaded from XML or set manually:
 	{
 		Shape2p5 cs;
@@ -406,7 +408,10 @@ void Block::create_multibody_system(b2World& world)
 
 void Block::apply_force(const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {
-	if (intangible_) return;
+	if (intangible_)
+	{
+		return;
+	}
 	ASSERT_(b2dBody_);
 	// Application point -> world coords
 	const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(applyPoint.x, applyPoint.y));
@@ -422,7 +427,10 @@ bool Block::isStatic() const
 
 void Block::setIsStatic(bool b)
 {
-	if (intangible_) return;
+	if (intangible_)
+	{
+		return;
+	}
 	ASSERT_(b2dBody_);
 	b2dBody_->SetType(b ? b2_staticBody : b2_dynamicBody);
 }
@@ -435,8 +443,10 @@ void DummyInvisibleBlock::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	if (!viz || !physical) return;
-
+	if (!viz || !physical)
+	{
+		return;
+	}
 	for (auto& s : sensors_) s->guiUpdate(viz, physical);
 }
 
