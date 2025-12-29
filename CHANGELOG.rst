@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.15.0 (2025-12-29)
+-------------------
 * Fix build against upcoming mrpt 2.15.4
 * Implement missing visualization of 3D LiDAR FOV 'frustrum'
 * Merge pull request `#69 <https://github.com/MRPT/mvsim/issues/69>`_ from MRPT/feat/imu-with-heading
