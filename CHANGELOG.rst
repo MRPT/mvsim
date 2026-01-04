@@ -2,6 +2,18 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.15.0 (2025-12-29)
+-------------------
+* Fix build against upcoming mrpt 2.15.4
+* Implement missing visualization of 3D LiDAR FOV 'frustrum'
+* Merge pull request `#69 <https://github.com/MRPT/mvsim/issues/69>`_ from MRPT/feat/imu-with-heading
+  IMU sensor: add support for optional global heading sensor
+* Implement IMU sensor orientation mode
+* Fix clang-tidy style warnings
+* Fix misused get parameter API usage for use_sim_time
+* cmake now builds embedded box2d using --parallel
+* Contributors: Jose Luis Blanco-Claraco
+
 0.14.2 (2025-11-10)
 -------------------
 * Fix cmake requested mrpt 2.5.6, made version-less for forward compatibility
