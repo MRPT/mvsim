@@ -43,6 +43,7 @@ class AdaptativeFriction : public FrictionBase
 	double mu_;	 //!< Coeficiente de fricción
 	double C_damping_;	//!< Amortiguamiento interno de la rueda
 	double Crr_;
+    double F_friction_lon_act;
 	std::vector<ZoneParams> zones_;
 };
 }  // namespace mvsim
