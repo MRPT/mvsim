@@ -184,12 +184,7 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	double torque_dampinR = damping * actVelR;	// Additional torque [Nm]
 	double torque_dampingL = damping * actVelL;	 // Additional torque [Nm]
 	double torque_damping = (torque_dampinR + torque_dampingL) / 2.0;
-
-	// Usamos el miembro de la clase, no una variable local que lo oculte
 	torque_slope = (F_friction_lon * r) + torque_damping;
-
-	// Logger
-	RCLCPP_INFO(ros_node_->get_logger(), "Total robot mass = %.3f", m);
 
 	if (v > -0.01 && v < 0.01)
 	{
