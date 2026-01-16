@@ -162,8 +162,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	realtime_factor_ = n_->declare_parameter<double>("realtime_factor", realtime_factor_);
 
-	gui_refresh_period_ms_ =
-		n_->declare_parameter<double>("gui_refresh_period", gui_refresh_period_ms_);
+	gui_refresh_period_ms_ = static_cast<int>(
+		n_->declare_parameter<double>("gui_refresh_period", gui_refresh_period_ms_));
 
 	headless_ = n_->declare_parameter<bool>("headless", headless_);
 
@@ -176,8 +176,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	publish_tf_odom2baselink_ =
 		n_->declare_parameter<bool>("publish_tf_odom2baselink", publish_tf_odom2baselink_);
 
-	publisher_history_len_ =
-		n_->declare_parameter<int>("publisher_history_len", publisher_history_len_);
+	publisher_history_len_ = static_cast<int>(
+		n_->declare_parameter<int>("publisher_history_len", publisher_history_len_));
 
 	force_publish_vehicle_namespace_ = n_->declare_parameter<bool>(
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_);
@@ -830,6 +830,8 @@ void MVSimNode::spinNotifyROS()
 			// 1) Ground-truth pose and velocity
 			// --------------------------------------------
 			const mrpt::math::TPose3D& gh_veh_pose = veh->getPose();
+			const auto veh_odom_pose = veh->getOdometry();
+
 			// [vx,vy,w] in global frame
 			const auto& gh_veh_vel = veh->getTwist();
 
@@ -912,8 +914,6 @@ void MVSimNode::spinNotifyROS()
 			// 3) odometry transform
 			// --------------------------------------------
 			{
-				const mrpt::math::TPose3D odo_pose = gh_veh_pose;
-
 				// TF(namespace <Ri>): /odom -> /base_link
 				if (publish_tf_odom2baselink_)
 				{
@@ -921,7 +921,7 @@ void MVSimNode::spinNotifyROS()
 					tx.header.frame_id = "odom";
 					tx.child_frame_id = "base_link";
 					tx.header.stamp = myNow();
-					tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(odo_pose));
+					tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(veh_odom_pose));
 
 					Msg_TFMessage tfMsg;
 					tfMsg.transforms.push_back(tx);
@@ -931,7 +931,7 @@ void MVSimNode::spinNotifyROS()
 				// Apart from TF, publish to the "odom" topic as well
 				{
 					Msg_Odometry odoMsg;
-					odoMsg.pose.pose = mrpt2ros::toROS_Pose(odo_pose);
+					odoMsg.pose.pose = mrpt2ros::toROS_Pose(veh_odom_pose);
 
 					// first, we'll populate the header for the odometry msg
 					odoMsg.header.stamp = myNow();

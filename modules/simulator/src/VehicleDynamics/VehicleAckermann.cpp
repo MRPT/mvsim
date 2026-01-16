@@ -60,25 +60,6 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 {
 	const std::map<std::string, std::string> varValues = {{"NAME", name_}};
 
-	// <chassis ...> </chassis>
-	if (const rapidxml::xml_node<char>* xml_chassis = xml_node->first_node("chassis"); xml_chassis)
-	{
-		// Attribs:
-		TParameterDefinitions attribs;
-		attribs["mass"] = TParamEntry("%lf", &this->chassis_mass_);
-		attribs["zmin"] = TParamEntry("%lf", &this->chassis_z_min_);
-		attribs["zmax"] = TParamEntry("%lf", &this->chassis_z_max_);
-		attribs["color"] = TParamEntry("%color", &this->chassis_color_);
-
-		parse_xmlnode_attribs(
-			*xml_chassis, attribs, {}, "[DynamicsAckermann::dynamics_load_params_from_xml]");
-
-		// Shape node (optional, fallback to default shape if none found)
-		if (const rapidxml::xml_node<char>* xml_shape = xml_chassis->first_node("shape"); xml_shape)
-			mvsim::parse_xmlnode_shape(
-				*xml_shape, chassis_poly_, "[DynamicsAckermann::dynamics_load_params_from_xml]");
-	}
-
 	//<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
 	//<rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
 	//<fl_wheel mass="6.0" width="0.30" diameter="0.62" />

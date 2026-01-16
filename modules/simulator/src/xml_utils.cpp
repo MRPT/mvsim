@@ -46,69 +46,96 @@ void TParamEntry::parse(
 
 	// Special cases:
 	// "%s" ==> std::strings
-	if (std::string(frmt) == std::string("%s"))
+	if (std::string(format) == std::string("%s"))
 	{
 		std::string& val2 = *reinterpret_cast<std::string*>(val);
 		val2 = mrpt::system::trim(str);
 	}
-	// "%lf_deg" ==> mrpt::DEG2RAD()
-	else if (std::string(frmt) == std::string("%lf_deg"))
+	// "%lf_deg" ==> mrpt::DEG2RAD() (double)
+	else if (std::string(format) == std::string("%lf_deg"))
 	{
-		if (1 != ::sscanf(str.c_str(), frmt, val))
+		if (1 != ::sscanf(str.c_str(), format, val))
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing attribute '%s'='%s' (Expected "
 				"format:'%s')",
-				functionNameContext, varName.c_str(), str.c_str(), frmt));
+				functionNameContext, varName.c_str(), str.c_str(), format));
+		}
 		double& ang = *reinterpret_cast<double*>(val);
 		ang = mrpt::DEG2RAD(ang);
 	}
+	// "%f_deg" ==> mrpt::DEG2RAD() (float)
+	else if (std::string(format) == std::string("%f_deg"))
+	{
+		if (1 != ::sscanf(str.c_str(), "%f", reinterpret_cast<float*>(val)))
+		{
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing attribute '%s'='%s' (Expected "
+				"format:'%s')",
+				functionNameContext, varName.c_str(), str.c_str(), format));
+		}
+		float& ang = *reinterpret_cast<float*>(val);
+		ang = mrpt::DEG2RAD(ang);
+	}
 	// "%bool" ==> bool*
-	else if (std::string(frmt) == std::string("%bool"))
+	else if (std::string(format) == std::string("%bool"))
 	{
 		bool& bool_val = *reinterpret_cast<bool*>(val);
 
 		const std::string sStr = mrpt::system::lowerCase(mrpt::system::trim(std::string(str)));
 		if (sStr == "1" || sStr == "true")
+		{
 			bool_val = true;
+		}
 		else if (sStr == "0" || sStr == "false")
+		{
 			bool_val = false;
+		}
 		else
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing 'bool' attribute '%s'='%s' (Expected "
 				"'true' or 'false')",
 				functionNameContext, varName.c_str(), str.c_str()));
+		}
 	}
 	// "%color" ==> mrpt::img::TColor
-	else if (std::string(frmt) == std::string("%color"))
+	else if (std::string(format) == std::string("%color"))
 	{
 		// HTML-like format:
 		if (!(str.size() > 1 && str[0] == '#'))
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected "
 				"format:'#RRGGBB[AA]')",
 				functionNameContext, varName.c_str(), str.c_str()));
+		}
 
 		unsigned int r, g, b, a = 0xff;
 		int ret = ::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
 		if (ret != 3 && ret != 4)
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected "
 				"format:'#RRGGBB[AA]')",
 				functionNameContext, varName.c_str(), str.c_str()));
+		}
 		mrpt::img::TColor& col = *reinterpret_cast<mrpt::img::TColor*>(val);
 		col = mrpt::img::TColor(r, g, b, a);
 	}
 	// "%pose2d"
 	// "%pose2d_ptr3d"
-	else if (!strncmp(frmt, "%pose2d", strlen("%pose2d")))
+	else if (!strncmp(format, "%pose2d", strlen("%pose2d")))
 	{
 		double x, y, yaw;
 		int ret = ::sscanf(str.c_str(), "%lf %lf %lf", &x, &y, &yaw);
 		if (ret != 3)
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected format:'X Y "
 				"YAW_DEG')",
 				functionNameContext, varName.c_str(), str.c_str()));
+		}
 
 		// User provides angles in deg:
 		yaw = mrpt::DEG2RAD(yaw);
@@ -116,29 +143,33 @@ void TParamEntry::parse(
 		const mrpt::poses::CPose2D p(x, y, yaw);
 
 		// Sub-cases:
-		if (!strcmp(frmt, "%pose2d"))
+		if (!strcmp(format, "%pose2d"))
 		{
 			mrpt::poses::CPose2D& pp = *reinterpret_cast<mrpt::poses::CPose2D*>(val);
 			pp = p;
 		}
-		else if (!strcmp(frmt, "%pose2d_ptr3d"))
+		else if (!strcmp(format, "%pose2d_ptr3d"))
 		{
 			mrpt::poses::CPose3D& pp = *reinterpret_cast<mrpt::poses::CPose3D*>(val);
 			pp = mrpt::poses::CPose3D(p);
 		}
 		else
-			throw std::runtime_error(
-				mrpt::format("%s Error: Unknown format specifier '%s'", functionNameContext, frmt));
+		{
+			throw std::runtime_error(mrpt::format(
+				"%s Error: Unknown format specifier '%s'", functionNameContext, format));
+		}
 	}
 	// %point3d
-	else if (!strncmp(frmt, "%point3d", strlen("%point3d")))
+	else if (!strncmp(format, "%point3d", strlen("%point3d")))
 	{
 		double x = 0, y = 0, z = 0;
 		int ret = ::sscanf(str.c_str(), "%lf %lf %lf", &x, &y, &z);
 		if (ret != 2 && ret != 3)
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected format:'X Y [Z]')", functionNameContext,
 				varName.c_str(), str.c_str()));
+		}
 
 		mrpt::math::TPoint3D& pp = *reinterpret_cast<mrpt::math::TPoint3D*>(val);
 
@@ -147,16 +178,18 @@ void TParamEntry::parse(
 		pp.z = z;
 	}
 	// "%pose3d"
-	else if (!strncmp(frmt, "%pose3d", strlen("%pose3d")))
+	else if (!strncmp(format, "%pose3d", strlen("%pose3d")))
 	{
 		double x, y, z, yawDeg, pitchDeg, rollDeg;
 		int ret = ::sscanf(
 			str.c_str(), "%lf %lf %lf %lf %lf %lf", &x, &y, &z, &yawDeg, &pitchDeg, &rollDeg);
 		if (ret != 6)
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing '%s'='%s' (Expected format:'X Y Z"
 				"YAW_DEG PITCH_DEG ROLL_DEG')",
 				functionNameContext, varName.c_str(), str.c_str()));
+		}
 
 		// User provides angles in deg:
 		const auto yaw = mrpt::DEG2RAD(yawDeg);
@@ -171,11 +204,13 @@ void TParamEntry::parse(
 	else
 	{
 		// Generic parse:
-		if (1 != ::sscanf(str.c_str(), frmt, val))
+		if (1 != ::sscanf(str.c_str(), format, val))
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing attribute '%s'='%s' (Expected "
 				"format:'%s')",
-				functionNameContext, varName.c_str(), str.c_str(), frmt));
+				functionNameContext, varName.c_str(), str.c_str(), format));
+		}
 	}
 }
 
@@ -204,10 +239,7 @@ bool mvsim::parse_xmlnode_as_param(
 			xml_node.value(), xml_node.name(), variableNamesValues, functionNameContext);
 		return true;
 	}
-	else
-	{
-		return false;
-	}
+	return false;
 }
 
 /** Call \a parse_xmlnode_as_param() for all children nodes of the given node.
@@ -246,7 +278,9 @@ mrpt::math::TPose2D mvsim::parseXYPHI(
 	v.phi = mrpt::DEG2RAD(v.phi);
 
 	if ((na != 3 && !allow_missing_angle) || (na != 2 && na != 3 && allow_missing_angle))
+	{
 		throw std::runtime_error(mrpt::format("Malformed pose string: '%s'", s.c_str()));
+	}
 
 	return v;
 }
@@ -265,25 +299,31 @@ void mvsim::parse_xmlnode_shape(
 		 pt_node = pt_node->next_sibling("pt"))
 	{
 		if (!pt_node->value())
+		{
 			throw std::runtime_error(
 				mrpt::format("%s Error: <pt> node seems empty.", functionNameContext));
+		}
 
 		mrpt::math::TPoint2D pt;
 		const char* str_val = pt_node->value();
 		if (2 != ::sscanf(str_val, "%lf %lf", &pt.x, &pt.y))
+		{
 			throw std::runtime_error(mrpt::format(
 				"%s Error parsing <pt> node: '%s' (Expected format:'<pt>X "
 				"Y</pt>')",
 				functionNameContext, str_val));
+		}
 
 		out_poly.push_back(pt);
 	}
 
 	if (out_poly.size() < 3)
+	{
 		throw std::runtime_error(mrpt::format(
 			"%s Error: <shape> node requires 3 or more <pt>X Y</pt> "
 			"entries.",
 			functionNameContext));
+	}
 }
 
 std::tuple<std::shared_ptr<rapidxml::xml_document<>>, rapidxml::xml_node<>*>
@@ -346,7 +386,9 @@ static std::string::size_type findClosing(
 	{
 		const char ch = s[pos];
 		if (ch == otherStartChar)
+		{
 			openEnvs++;
+		}
 		else if (ch == searchEndChar)
 		{
 			openEnvs--;

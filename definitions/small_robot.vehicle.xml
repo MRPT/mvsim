@@ -31,6 +31,14 @@
         <C_damping>0.9</C_damping>
     </friction>
 
+
+    <!-- Noisy odometry parameters. These are multipliers to actual SE(2) increments -->
+    <odometry
+      x_multiplier="$f{1.0+0.02*randn()}"
+      y_multiplier="$f{1.0+0.01*randn()}"
+      yaw_multiplier="$f{1.0+0.03*randn()}"
+    />
+
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->
     <!--
