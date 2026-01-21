@@ -8,9 +8,6 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/maps/CPointsMapXYZIRT.h>
-#include <mrpt/maps/CSimplePointsMap.h>
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
@@ -19,6 +16,12 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
+
+#if MRPT_VERSION >= 0x020f00  // 2.15.0
+#include <mrpt/maps/CGenericPointsMap.h>
+#else
+#include <mrpt/maps/CPointsMapXYZIRT.h>
+#endif
 
 #include "xml_utils.h"
 
@@ -340,7 +343,11 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	curObs->timestamp = world_->get_simul_timestamp();
 	curObs->sensorLabel = name_;
 
+#if MRPT_VERSION >= 0x020f00  // 2.15.0
+	auto curPtsPtr = mrpt::maps::CGenericPointsMap::Create();
+#else
 	auto curPtsPtr = mrpt::maps::CPointsMapXYZIRT::Create();
+#endif
 
 	auto& curPts = *curPtsPtr;
 	curObs->pointcloud = curPtsPtr;
@@ -397,10 +404,16 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			std::vector<std::string> vertAnglesStrs;
 			mrpt::system::tokenize(vertical_ray_angles_str_, " \t\r\n", vertAnglesStrs);
 			ASSERT_EQUAL_(vertAnglesStrs.size(), static_cast<size_t>(vertNumRays_));
-			std::set<double> angs;
-			for (const auto& s : vertAnglesStrs) angs.insert(std::stod(s));
-			ASSERT_EQUAL_(angs.size(), static_cast<size_t>(vertNumRays_));
-			for (const auto a : angs) vertical_ray_angles_.push_back(a);
+			std::set<double> angles;
+			for (const auto& s : vertAnglesStrs)
+			{
+				angles.insert(std::stod(s));
+			}
+			ASSERT_EQUAL_(angles.size(), static_cast<size_t>(vertNumRays_));
+			for (const auto a : angles)
+			{
+				vertical_ray_angles_.push_back(a);
+			}
 		}
 
 		// Pass to radians:
@@ -413,10 +426,12 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const double vertFOVMax = vertical_ray_angles_.back();
 	const double vertFOVMin = std::abs(vertical_ray_angles_.front());
 
-	const int FBO_NROWS_UP = vertResolutionFactor_ * tan(vertFOVMax) *
-							 sqrt(square(camModel.fx()) + square(camModel.cx()));
-	const int FBO_NROWS_DOWN = vertResolutionFactor_ * tan(vertFOVMin) *
-							   sqrt(square(camModel.fx()) + square(camModel.cx()));
+	const int FBO_NROWS_UP = static_cast<int>(
+		vertResolutionFactor_ * tan(vertFOVMax) *
+		sqrt(square(camModel.fx()) + square(camModel.cx())));
+	const int FBO_NROWS_DOWN = static_cast<int>(
+		vertResolutionFactor_ * tan(vertFOVMin) *
+		sqrt(square(camModel.fx()) + square(camModel.cx())));
 
 	const int FBO_NROWS = FBO_NROWS_DOWN + FBO_NROWS_UP + 1;
 	camModel.nrows = FBO_NROWS;
@@ -597,7 +612,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				noiseSeq.reserve(noiseLen);
 				for (size_t i = 0; i < noiseLen; i++)
 				{
-					noiseSeq.push_back(rng.drawGaussian1D(0.0, rangeStdNoise_));
+					noiseSeq.push_back(static_cast<float>(rng.drawGaussian1D(0.0, rangeStdNoise_)));
 				}
 			}
 		}
@@ -689,8 +704,14 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (ignore_parent_body_)
 	{
-		if (visVeh) visVeh->customVisualVisible(formerVisVehState);
-		if (veh) veh->chassisAndWheelsVisible(formerVisVehState);
+		if (visVeh)
+		{
+			visVeh->customVisualVisible(formerVisVehState);
+		}
+		if (veh)
+		{
+			veh->chassisAndWheelsVisible(formerVisVehState);
+		}
 	}
 
 #if MRPT_VERSION >= 0x270
