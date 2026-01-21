@@ -356,7 +356,7 @@ void MVSimNode::spin()
 		tim_teleop_refresh_.Tic();
 
 		std::string txt2gui_tmp;
-		World::TGUIKeyEvent keyevent = gui_key_events_;
+		World::GUIKeyEvent keyevent = gui_key_events_;
 
 		// Global keys:
 		switch (keyevent.keycode)
@@ -406,7 +406,10 @@ void MVSimNode::spin()
 		msg2gui_ = txt2gui_tmp;	 // send txt msgs to show in the GUI
 
 		// Clear the keystroke buffer
-		if (keyevent.keycode != 0) gui_key_events_ = World::TGUIKeyEvent();
+		if (keyevent.keycode != 0)
+		{
+			gui_key_events_ = World::GUIKeyEvent();
+		}
 
 	}  // end refresh teleop stuff
 
@@ -456,8 +459,9 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 			{
 				obj->mvsim_world_->internalGraphicsLoopTasksForSimulation();
 
-				std::this_thread::sleep_for(std::chrono::microseconds(
-					static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
+				std::this_thread::sleep_for(
+					std::chrono::microseconds(
+						static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
 			}
 			else
 			{

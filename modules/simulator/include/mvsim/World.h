@@ -171,7 +171,7 @@ class World : public mrpt::system::COutputLogger
 	void run_simulation(double dt);
 
 	/** For usage in TUpdateGUIParams and \a update_GUI() */
-	struct TGUIKeyEvent
+	struct GUIKeyEvent
 	{
 		int keycode = 0;  //!< 0=no Key. Otherwise, ASCII code.
 		bool modifierShift = false;
@@ -179,12 +179,12 @@ class World : public mrpt::system::COutputLogger
 		bool modifierAlt = false;
 		bool modifierSuper = false;
 
-		TGUIKeyEvent() = default;
+		GUIKeyEvent() = default;
 	};
 
 	struct TUpdateGUIParams
 	{
-		TGUIKeyEvent keyevent;	//!< Keystrokes in the window are returned here.
+		GUIKeyEvent keyevent;  //!< Keystrokes in the window are returned here.
 		std::string msg_lines;	//!< Messages to show
 
 		TUpdateGUIParams() = default;
@@ -279,7 +279,7 @@ class World : public mrpt::system::COutputLogger
 	std::vector<std::function<void(void)>> guiUserPendingTasks_;
 	std::mutex guiUserPendingTasksMtx_;
 
-	TGUIKeyEvent lastKeyEvent_;
+	GUIKeyEvent lastKeyEvent_;
 	std::atomic_bool lastKeyEventValid_ = false;
 	std::mutex lastKeyEventMtx_;
 
