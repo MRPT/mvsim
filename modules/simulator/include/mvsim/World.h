@@ -87,6 +87,12 @@ class World : public mrpt::system::COutputLogger
 	World();  //!< Default ctor: inits an empty world
 	~World();  //!< Dtor.
 
+	// Rule of Five: explicitly delete copy operations, allow move operations
+	World(const World&) = delete;
+	World& operator=(const World&) = delete;
+	World(World&&) = delete;
+	World& operator=(World&&) = delete;
+
 	/** Resets the entire simulation environment to an empty world.
 	 */
 	void clear_all();
