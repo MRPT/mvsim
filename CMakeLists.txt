@@ -201,6 +201,10 @@ find_package(mrpt-gui  REQUIRED)
 find_package(mrpt-tfest  REQUIRED)
 find_package(mrpt-topography REQUIRED)
 
+if (mrpt-maps_VERSION VERSION_LESS "2.14.1")
+    message(FATAL_ERROR "MRPT version 2.14.1 or newer is required, but found ${mrpt-maps_VERSION}")
+endif()
+
 # --------------------------
 # Dependency: Box2D
 # --------------------------
