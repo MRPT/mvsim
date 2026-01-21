@@ -48,8 +48,8 @@ class PropertyRegion : public WorldElementBase
 	}
 
    protected:
-	mrpt::math::TPoint3D boxMin_ = {-1.0, -1.0, -1.0};
-	mrpt::math::TPoint3D boxMax_ = {1.0, 1.0, 1.0};
+	mrpt::math::TPoint3D boxMin_ = {-1.0, -1.0, -1000.0};
+	mrpt::math::TPoint3D boxMax_ = {1.0, 1.0, 1000.0};
 
 	std::string propertyName_;
 	std::any propertyValue_;
