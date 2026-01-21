@@ -81,7 +81,10 @@ void Lidar3D::internalGuiUpdate(
 	{
 		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
-		if (!glVizSensors) return;	// may happen during shutdown
+		if (!glVizSensors)
+		{
+			return;	 // may happen during shutdown
+		}
 	}
 
 	// 1st time?
@@ -165,8 +168,14 @@ void Lidar3D::internalGuiUpdate(
 	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + sensorPoseOnVeh_;
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
-	if (glPoints_) glPoints_->setPose(pp);
-	if (gl_sensor_fov_) gl_sensor_fov_->setPose(pp);
+	if (glPoints_)
+	{
+		glPoints_->setPose(pp);
+	}
+	if (gl_sensor_fov_)
+	{
+		gl_sensor_fov_->setPose(pp);
+	}
 	if (gl_sensor_origin_)
 	{
 		gl_sensor_origin_->setPose(pp);
@@ -401,7 +410,10 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		}
 
 		// Pass to radians:
-		for (double& a : vertical_ray_angles_) a = mrpt::DEG2RAD(a);
+		for (double& a : vertical_ray_angles_)
+		{
+			a = mrpt::DEG2RAD(a);
+		}
 	}
 
 	// worst vFOV case: at each sub-scan render corner:

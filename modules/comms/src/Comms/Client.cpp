@@ -166,11 +166,6 @@ void Client::connect()
 	zmq_->srvListenSocket.emplace(zmq_->context, ZMQ_REP);
 	zmq_->srvListenSocket->bind("tcp://0.0.0.0:*"s);
 
-	if (!zmq_->srvListenSocket)
-	{
-		THROW_EXCEPTION("Error binding service listening socket.");
-	}
-
 	ASSERTMSG_(!serviceInvokerThread_.joinable(), "Client service thread is already running!");
 
 	serviceInvokerThread_ = std::thread(&Client::internalServiceServingThread, this);
@@ -179,11 +174,6 @@ void Client::connect()
 	// Create listening socket for subscription updates:
 	zmq_->topicNotificationsSocket.emplace(zmq_->context, ZMQ_PAIR);
 	zmq_->topicNotificationsSocket->bind("tcp://0.0.0.0:*"s);
-
-	if (!zmq_->topicNotificationsSocket)
-	{
-		THROW_EXCEPTION("Error binding topic updates listening socket.");
-	}
 
 	zmq_->topicNotificationsEndPoint = get_zmq_endpoint(*zmq_->topicNotificationsSocket);
 
