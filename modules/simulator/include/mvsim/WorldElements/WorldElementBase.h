@@ -31,6 +31,12 @@ class WorldElementBase : public VisualObject, public Simulable
 
 	WorldElementBase(World* parent) : VisualObject(parent), Simulable(parent) {}
 	virtual ~WorldElementBase() {}
+
+	WorldElementBase(const WorldElementBase&) = delete;
+	WorldElementBase(WorldElementBase&&) = delete;
+	WorldElementBase& operator=(const WorldElementBase&) = delete;
+	WorldElementBase& operator=(WorldElementBase&&) = delete;
+
 	/** Class factory: Creates a world element from XML description of type
 	 * "<element class='*'>...</element>".
 	 * Only if xml_node==nullptr, the world element name can be passed in
@@ -40,6 +46,13 @@ class WorldElementBase : public VisualObject, public Simulable
 		World* parent, const rapidxml::xml_node<char>* xml_node, const char* class_name = nullptr);
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) = 0;
+
+	virtual std::optional<std::any> queryProperty(
+		[[maybe_unused]] const std::string& propertyName,
+		[[maybe_unused]] const mrpt::math::TPoint3D& worldXYZ) const
+	{
+		return {};
+	}
 
    protected:
 };

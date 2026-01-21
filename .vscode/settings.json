@@ -35,6 +35,7 @@
     },
     "ros.distro": "humble",
     "cSpell.words": [
+        "simul",
         "teleop",
         "teleoperation"
     ]

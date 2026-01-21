@@ -305,7 +305,7 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 
 std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) const
 {
-	// Assumption: getListOfSimulableObjectsMtx() is already adquired by all possible call paths?
+	// Assumption: getListOfSimulableObjectsMtx() is already acquired by all possible call paths?
 	std::set<float> ret;
 
 	// Optimized search for potential objects that influence this query:
@@ -339,9 +339,27 @@ std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) cons
 	}
 
 	// if none:
-	if (ret.empty()) ret.insert(.0f);
+	if (ret.empty())
+	{
+		ret.insert(.0f);
+	}
 
 	return ret;
+}
+
+std::optional<std::any> World::getPropertyAt(
+	const std::string& propertyName, const mrpt::math::TPoint3D& worldXYZ) const
+{
+	// 1) world elements: visit all
+	for (const auto& obj : worldElements_)
+	{
+		const auto optProp = obj->queryProperty(propertyName, worldXYZ);
+		if (optProp)
+		{
+			return optProp;
+		}
+	}
+	return {};
 }
 
 float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
@@ -351,7 +369,10 @@ float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
 	float prevZ = .0f;
 	for (float z : zs)
 	{
-		if (z > pt.z) break;
+		if (z > pt.z)
+		{
+			break;
+		}
 		prevZ = z;
 	}
 	return prevZ;

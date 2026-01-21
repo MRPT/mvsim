@@ -36,6 +36,7 @@
 #include <mvsim/Comms/Client.h>
 #endif
 
+#include <any>
 #include <functional>
 #include <list>
 #include <map>
@@ -420,6 +421,13 @@ class World : public mrpt::system::COutputLogger
 	float getHighestElevationUnder(const mrpt::math::TPoint3Df& queryPt) const;
 
 	void internal_simul_pre_step_terrain_elevation();
+
+	/** Query all mvsim::WorldElementBase objects for a given custom property at the specific 3D
+	 * location. It returns nullopt if no object defines this property.
+	 * \sa WorldElementBase::queryProperty()
+	 */
+	std::optional<std::any> getPropertyAt(
+		const std::string& propertyName, const mrpt::math::TPoint3D& worldXYZ) const;
 
    private:
 	friend class VehicleBase;

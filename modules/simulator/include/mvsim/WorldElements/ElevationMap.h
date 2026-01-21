@@ -31,6 +31,11 @@ class ElevationMap : public WorldElementBase
 	ElevationMap(World* parent, const rapidxml::xml_node<char>* root);
 	virtual ~ElevationMap();
 
+	ElevationMap(const ElevationMap&) = delete;
+	ElevationMap& operator=(const ElevationMap&) = delete;
+	ElevationMap(ElevationMap&&) = delete;
+	ElevationMap& operator=(ElevationMap&&) = delete;
+
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
 
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
