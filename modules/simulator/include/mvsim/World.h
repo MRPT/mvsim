@@ -647,7 +647,10 @@ class World : public mrpt::system::COutputLogger
 	/// (See docs for worldRenderOffset_)
 	void worldRenderOffsetPropose(const mrpt::math::TVector3D& v)
 	{
-		if (!worldRenderOffset_) worldRenderOffset_ = v;
+		if (!worldRenderOffset_)
+		{
+			worldRenderOffset_ = v;
+		}
 	}
 
    private:
@@ -710,7 +713,10 @@ class World : public mrpt::system::COutputLogger
 		bool operator()(
 			const lut_2d_coordinates_t& k1, const lut_2d_coordinates_t& k2) const noexcept
 		{
-			if (k1.x != k2.x) return k1.x < k2.x;
+			if (k1.x != k2.x)
+			{
+				return k1.x < k2.x;
+			}
 			return k1.y < k2.y;
 		}
 	};

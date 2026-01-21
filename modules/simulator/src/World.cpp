@@ -21,7 +21,10 @@ using namespace mvsim;
 using namespace std;
 
 // Default ctor: inits empty world.
-World::World() : mrpt::system::COutputLogger("mvsim::World") { this->clear_all(); }
+World::World() : mrpt::system::COutputLogger("mvsim::World")
+{  //
+	this->clear_all();
+}
 
 // Dtor.
 World::~World()
@@ -112,12 +115,22 @@ std::string World::local_to_abs_path(const std::string& s_in) const
 	// "X:\*", "/*"
 	// -------------------
 	bool is_relative = true;
-	if (s.size() > 2 && s[1] == ':' && (s[2] == '/' || s[2] == '\\')) is_relative = false;
-	if (s.size() > 0 && (s[0] == '/' || s[0] == '\\')) is_relative = false;
+	if (s.size() > 2 && s[1] == ':' && (s[2] == '/' || s[2] == '\\'))
+	{
+		is_relative = false;
+	}
+	if (s.size() > 0 && (s[0] == '/' || s[0] == '\\'))
+	{
+		is_relative = false;
+	}
 	if (is_relative)
+	{
 		ret = mrpt::system::pathJoin({basePath_, s});
+	}
 	else
+	{
 		ret = s;
+	}
 
 	return mrpt::system::toAbsolutePath(ret);
 }
@@ -125,7 +138,12 @@ std::string World::local_to_abs_path(const std::string& s_in) const
 void World::runVisitorOnVehicles(const vehicle_visitor_t& v)
 {
 	for (auto& veh : vehicles_)
-		if (veh.second) v(*veh.second);
+	{
+		if (veh.second)
+		{
+			v(*veh.second);
+		}
+	}
 }
 
 void World::runVisitorOnWorldElements(const world_element_visitor_t& v)
@@ -137,7 +155,12 @@ void World::runVisitorOnWorldElements(const world_element_visitor_t& v)
 void World::runVisitorOnBlocks(const block_visitor_t& v)
 {
 	for (auto& b : blocks_)
-		if (b.second) v(*b.second);
+	{
+		if (b.second)
+		{
+			v(*b.second);
+		}
+	}
 }
 
 void World::connectToServer()
@@ -191,7 +214,10 @@ void World::free_opengl_resources()
 bool World::sensor_has_to_create_egl_context()
 {
 	// If we have a GUI, reuse that context:
-	if (!headless()) return false;
+	if (!headless())
+	{
+		return false;
+	}
 
 	// otherwise, just the first time:
 	static bool first = true;
@@ -202,7 +228,10 @@ bool World::sensor_has_to_create_egl_context()
 
 std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 {
-	if (!joystickEnabled_) return {};
+	if (!joystickEnabled_)
+	{
+		return {};
+	}
 
 	if (!joystick_)
 	{
@@ -284,7 +313,10 @@ std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) cons
 	for (const auto& obj : worldElements_)
 	{
 		const auto optZ = obj->getElevationAt(worldXY);
-		if (optZ) ret.insert(*optZ);
+		if (optZ)
+		{
+			ret.insert(*optZ);
+		}
 	}
 
 	// 2) blocks: by hashed 2D LUT.
@@ -294,9 +326,15 @@ std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) cons
 	{
 		for (const auto& obj : it->second)
 		{
-			if (!obj) continue;
+			if (!obj)
+			{
+				continue;
+			}
 			const auto optZ = obj->getElevationAt(worldXY);
-			if (optZ) ret.insert(*optZ);
+			if (optZ)
+			{
+				ret.insert(*optZ);
+			}
 		}
 	}
 
