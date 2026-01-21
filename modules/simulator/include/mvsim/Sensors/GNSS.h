@@ -20,6 +20,8 @@ namespace mvsim
 {
 /** A Global Navigation Satellite System (GNSS) sensor (GPS).
  *
+ * \sa See the property `gps_no_coverage` in `property_region` world elements.
+ *
  * \ingroup sensors_module
  */
 class GNSS : public SensorBase
@@ -28,6 +30,12 @@ class GNSS : public SensorBase
    public:
 	GNSS(Simulable& parent, const rapidxml::xml_node<char>* root);
 	virtual ~GNSS();
+
+	// Deleted copy and move operations
+	GNSS(const GNSS&) = delete;
+	GNSS& operator=(const GNSS&) = delete;
+	GNSS(GNSS&&) = delete;
+	GNSS& operator=(GNSS&&) = delete;
 
 	// See docs in base class
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;

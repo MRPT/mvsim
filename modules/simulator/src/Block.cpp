@@ -248,10 +248,8 @@ void Block::internalGuiUpdate(
 			gl_poly->setLocation(0, 0, block_z_min_);
 			gl_poly->setColor_u8(block_color_);
 
-// Hide back faces:
-#if MRPT_VERSION >= 0x240
+			// Hide back faces:
 			// gl_poly->cullFaces(mrpt::opengl::TCullFace::FRONT);
-#endif
 
 			gl_block_->insert(gl_poly);
 

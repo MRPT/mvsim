@@ -8,12 +8,10 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/exceptions.h>
+#include <mrpt/system/thread_name.h>
 #include <mrpt/version.h>
 #include <mvsim/Comms/Server.h>
 #include <mvsim/Comms/common.h>
-#if MRPT_VERSION >= 0x204
-#include <mrpt/system/thread_name.h>
-#endif
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
@@ -46,9 +44,7 @@ void Server::start()
 	requestMainThreadTermination();
 	mainThread_ = std::thread(&Server::internalServerThread, this);
 
-#if MRPT_VERSION >= 0x204
 	mrpt::system::thread_name("serverMain", mainThread_);
-#endif
 
 #else
 	THROW_EXCEPTION("MVSIM needs building with ZMQ and PROTOBUF to enable client/server");

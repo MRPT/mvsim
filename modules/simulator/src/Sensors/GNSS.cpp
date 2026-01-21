@@ -66,9 +66,7 @@ void GNSS::internalGuiUpdate(
 	if (!gl_sensor_origin_ && viz)
 	{
 		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
-#if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
-#endif
 		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
@@ -115,6 +113,41 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 
 	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.GNSS");
 
+	// Where the GPS sensor is in the world frame:
+	mrpt::poses::CPose3D vehPoseInWorld = vehicle().getCPose3D();
+	const auto& georef = world()->georeferenceOptions();
+	if (georef.world_is_utm)
+	{
+		auto posLocal = vehPoseInWorld.translation() - georef.utmRef;
+
+		vehPoseInWorld.x(posLocal.x);
+		vehPoseInWorld.y(posLocal.y);
+		vehPoseInWorld.z(posLocal.z);
+	}
+
+	const auto worldRotation =
+		mrpt::poses::CPose3D::FromYawPitchRoll(georef.world_to_enu_rotation, .0, .0);
+
+	const mrpt::math::TPoint3D sensorPtNoNoise =
+		(worldRotation + (vehPoseInWorld + obs_model_.sensorPose)).translation();
+
+	// Are we into a no-coverage area?
+	const auto noCoverageProp = world_->getPropertyAt("gps_no_coverage", sensorPtNoNoise);
+	if (noCoverageProp.has_value())
+	{
+		const std::any& anyVal = *noCoverageProp;
+		const bool* noCoverage = std::any_cast<bool>(&anyVal);
+		if (noCoverage == nullptr)
+		{
+			THROW_EXCEPTION("'gps_no_coverage' property must be a bool");
+		}
+		if (*noCoverage == true)
+		{
+			// We don't have GPS coverage here. Skip.
+			return;
+		}
+	}
+
 	auto outObs = CObservationGPS::Create(obs_model_);
 
 	outObs->timestamp = world_->get_simul_timestamp();
@@ -126,25 +159,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 		rng_.drawGaussian1D(0.0, horizontal_std_noise_),
 		rng_.drawGaussian1D(0.0, vertical_std_noise_)};
 
-	// Where the GPS sensor is in the world frame:
-	const auto& georef = world()->georeferenceOptions();
-
-	const auto worldRotation =
-		mrpt::poses::CPose3D::FromYawPitchRoll(georef.world_to_enu_rotation, .0, .0);
-
-	mrpt::poses::CPose3D vehPoseInWorld = vehicle().getCPose3D();
-
-	if (georef.world_is_utm)
-	{
-		auto posLocal = vehPoseInWorld.translation() - georef.utmRef;
-
-		vehPoseInWorld.x(posLocal.x);
-		vehPoseInWorld.y(posLocal.y);
-		vehPoseInWorld.z(posLocal.z);
-	}
-
-	const mrpt::math::TPoint3D sensorPt =
-		(worldRotation + (vehPoseInWorld + outObs->sensorPose)).translation() + noise;
+	const mrpt::math::TPoint3D sensorPt = sensorPtNoNoise + noise;
 
 	// convert from ENU (world coordinates) to geodetic:
 	const thread_local auto WGS84 = mrpt::topography::TEllipsoid::Ellipsoid_WGS84();
@@ -176,7 +191,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 	mrpt::obs::gnss::Message_NMEA_GGA msgGGA;
 	auto& f = msgGGA.fields;
 	f.thereis_HDOP = true;
-	f.HDOP = horizontal_std_noise_ / 5.0;  // approximation
+	f.HDOP = mrpt::d2f(horizontal_std_noise_ / 5.0);  // approximation
 
 	mrpt::system::TTimeParts tp;
 	mrpt::system::timestampToParts(outObs->timestamp, tp);

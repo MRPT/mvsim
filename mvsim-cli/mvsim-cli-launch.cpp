@@ -51,7 +51,7 @@ struct TThreadParams
 static void mvsim_server_thread_update_GUI(TThreadParams& thread_params);
 static void mvsim_server_thread_headless(TThreadParams& thread_params);
 
-mvsim::World::TGUIKeyEvent gui_key_events;
+mvsim::World::GUIKeyEvent gui_key_events;
 std::mutex gui_key_events_mtx;
 std::string msg2gui;
 
@@ -103,7 +103,7 @@ void mvsim_install_signal_handler()
 
 // returns log strings
 std::string mvsim_launch_handle_teleop(
-	const mvsim::World::TGUIKeyEvent keyevent, const std::optional<mvsim::TJoyStickEvent>& js)
+	const mvsim::World::GUIKeyEvent keyevent, const std::optional<mvsim::TJoyStickEvent>& js)
 {
 	using namespace mvsim;
 
@@ -273,7 +273,7 @@ Available options:
 		// GUI msgs, teleop, etc.
 		// ====================================================
 		gui_key_events_mtx.lock();
-		World::TGUIKeyEvent keyevent = gui_key_events;
+		World::GUIKeyEvent keyevent = gui_key_events;
 		gui_key_events_mtx.unlock();
 
 		// Global keys:
@@ -301,7 +301,7 @@ Available options:
 
 		// Clear the keystroke buffer
 		gui_key_events_mtx.lock();
-		if (keyevent.keycode != 0) gui_key_events = World::TGUIKeyEvent();
+		if (keyevent.keycode != 0) gui_key_events = World::GUIKeyEvent();
 		gui_key_events_mtx.unlock();
 
 		msg2gui = txt2gui_tmp;	// send txt msgs to show in the GUI

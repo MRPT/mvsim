@@ -15,7 +15,6 @@
 #include <mrpt/math/TTwist2D.h>
 
 #include <cstdint>	// uintptr_t
-#include <string>
 #include <vector>
 
 class b2World;

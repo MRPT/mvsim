@@ -17,6 +17,7 @@
 #include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/obs/CObservationImage.h>
 #include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/system/thread_name.h>
 #include <mrpt/version.h>
 #include <mvsim/World.h>
 
@@ -24,9 +25,6 @@
 #include <rapidxml.hpp>
 
 #include "xml_utils.h"
-#if MRPT_VERSION >= 0x204
-#include <mrpt/system/thread_name.h>
-#endif
 
 using namespace mvsim;
 using namespace std;
@@ -52,11 +50,7 @@ void World::close_GUI() { gui_.gui_win.reset(); }
 // Add top menu subwindow:
 void World::GUI::prepare_control_window()
 {
-#if MRPT_VERSION >= 0x211
 	nanogui::Window* w = gui_win->createManagedSubWindow("Control");
-#else
-	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Control");
-#endif
 
 	// Place control UI at the top-left corner:
 	gui_win->getSubWindowsUI()->setPosition({1, 1});
@@ -96,7 +90,6 @@ void World::GUI::prepare_control_window()
 		 "Orthogonal view", [&](bool b) { gui_win->camera().setCameraProjective(!b); })
 		->setChecked(parent_.guiOptions_.ortho);
 
-#if MRPT_VERSION >= 0x270
 	w->add<nanogui::CheckBox>(
 		 "Enable shadows",
 		 [&](bool b)
@@ -108,7 +101,6 @@ void World::GUI::prepare_control_window()
 			 parent_.lightOptions_.enable_shadows = b;
 		 })
 		->setChecked(parent_.lightOptions_.enable_shadows);
-#endif
 
 	w->add<nanogui::Label>("Light azimuth:");
 	{
@@ -190,21 +182,11 @@ void World::GUI::prepare_control_window()
 // Add Status window
 void World::GUI::prepare_status_window()
 {
-#if MRPT_VERSION >= 0x211
 	nanogui::Window* w = gui_win->createManagedSubWindow("Status");
-#else
-	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Status");
-#endif
 
 	w->setPosition({5, 455});
 	w->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
 	w->setFixedWidth(320);
-
-#if MRPT_VERSION < 0x211
-	w->buttonPanel()
-		->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
-		->setCallback([w]() { w->setVisible(false); });
-#endif
 
 	lbCpuUsage = w->add<nanogui::Label>(" ");
 	lbStatuses.resize(12);
@@ -214,15 +196,8 @@ void World::GUI::prepare_status_window()
 // Add editor window
 void World::GUI::prepare_editor_window()
 {
-#if MRPT_VERSION >= 0x211
-#if MRPT_VERSION >= 0x231
 	const auto subwinIdx = gui_win->getSubwindowCount();
-#endif
 	nanogui::Window* w = gui_win->createManagedSubWindow("Editor");
-#else
-	nanogui::Window* w = new nanogui::Window(gui_win.get(), "Editor");
-#endif
-
 	constexpr int pnWidth = 300, pnHeight = 200;
 	constexpr int COORDS_LABEL_WIDTH = 60;
 	constexpr int slidersWidth = pnWidth - 80 - COORDS_LABEL_WIDTH;
@@ -231,12 +206,6 @@ void World::GUI::prepare_editor_window()
 	w->setLayout(
 		new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 3, 3));
 	w->setFixedWidth(pnWidth);
-
-#if MRPT_VERSION < 0x211
-	w->buttonPanel()
-		->add<nanogui::Button>("", ENTYPO_ICON_CROSS)
-		->setCallback([w]() { w->setVisible(false); });
-#endif
 
 	w->add<nanogui::Label>("Selected object", "sans-bold");
 
@@ -263,14 +232,20 @@ void World::GUI::prepare_editor_window()
 			t->setLayout(new nanogui::BoxLayout(
 				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3, 3));
 
-		std::array<nanogui::VScrollPanel*, NUM_TABS> vscrolls;
-		for (size_t i = 0; i < NUM_TABS; i++) vscrolls[i] = tabs[i]->add<nanogui::VScrollPanel>();
+		std::array<nanogui::VScrollPanel*, NUM_TABS> vscrolls = {};
+		for (size_t i = 0; i < NUM_TABS; i++)
+		{
+			vscrolls[i] = tabs[i]->add<nanogui::VScrollPanel>();
+		}
 
-		for (auto vs : vscrolls) vs->setFixedSize({pnWidth, pnHeight});
+		for (auto vs : vscrolls)
+		{
+			vs->setFixedSize({pnWidth, pnHeight});
+		}
 
 		// vscroll should only have *ONE* child. this is what `wrapper`
 		// is for
-		std::array<nanogui::Widget*, NUM_TABS> wrappers;
+		std::array<nanogui::Widget*, NUM_TABS> wrappers = {};
 		for (size_t i = 0; i < NUM_TABS; i++)
 		{
 			wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
@@ -328,12 +303,18 @@ void World::GUI::prepare_editor_window()
 				ipo.visual = dynamic_cast<VisualObject*>(v);
 			}
 
-			if (wrapperIdx < 0) continue;  // unknown / non-editable item.
+			if (wrapperIdx < 0)
+			{
+				continue;  // unknown / non-editable item.
+			}
 
 			auto wrapper = wrappers[wrapperIdx];
 
 			std::string label = name;
-			if (label.empty()) label = "(unnamed)";
+			if (label.empty())
+			{
+				label = "(unnamed)";
+			}
 
 			auto cb = wrapper->add<nanogui::CheckBox>(label);
 			ipo.cb = cb;
@@ -346,8 +327,13 @@ void World::GUI::prepare_editor_window()
 				{
 					// deselect former one:
 					if (gui_selectedObject.visual)
+					{
 						gui_selectedObject.visual->showCollisionShape(false);
-					if (gui_selectedObject.cb) gui_selectedObject.cb->setChecked(false);
+					}
+					if (gui_selectedObject.cb)
+					{
+						gui_selectedObject.cb->setChecked(false);
+					}
 					gui_selectedObject = InfoPerObject();
 
 					cb->setChecked(check);
@@ -364,7 +350,9 @@ void World::GUI::prepare_editor_window()
 
 					// Set current coordinates in controls:
 					if (ipo.simulable && onEntitySelected)
+					{
 						onEntitySelected(ipo.simulable->getRelativePose());
+					}
 				});
 		}
 
@@ -597,16 +585,8 @@ void World::GUI::prepare_editor_window()
 	// Disable all edit-controls since no object is selected:
 	for (auto b : btns_selectedOps) b->setEnabled(false);
 
-		// Minimize subwindow:
-#if MRPT_VERSION >= 0x231
+	// Minimize subwindow:
 	gui_win->subwindowMinimize(subwinIdx);
-#else
-	if (auto btnMinimize = dynamic_cast<nanogui::Button*>(w->buttonPanel()->children().at(0));
-		btnMinimize)
-	{
-		btnMinimize->callback()();	// "push" button
-	}
-#endif
 
 }  // end "editor" window
 
@@ -672,7 +652,6 @@ void World::internal_GUI_thread()
 
 		setLightDirectionFromAzimuthElevation(lo.light_azimuth, lo.light_elevation);
 
-#if MRPT_VERSION >= 0x270
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
 
@@ -689,25 +668,20 @@ void World::internal_GUI_thread()
 
 			vlp.color = colf;
 
-#if MRPT_VERSION >= 0x2A0  // New in mrpt>=2.10.0
 			vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
 
 			vlp.minimum_shadow_map_extension_ratio = lo.minimum_shadow_map_extension_ratio;
-#endif
 			// light view frustrum near/far planes:
 			v->setLightShadowClipDistances(lo.light_clip_plane_min, lo.light_clip_plane_max);
 
 			// Shadow bias should be proportional to clip range:
-#if MRPT_VERSION >= 0x281
 			vlp.shadow_bias = lo.shadow_bias;
 			vlp.shadow_bias_cam2frag = lo.shadow_bias_cam2frag;
 			vlp.shadow_bias_normal = lo.shadow_bias_normal;
-#endif
 		};
 
 		lambdaSetLightParams(vv);
 		lambdaSetLightParams(vp);
-#endif
 
 		// Main GUI loop
 		// ---------------------
@@ -715,14 +689,13 @@ void World::internal_GUI_thread()
 		gui_.gui_win->setVisible(true);
 
 		// Listen for keyboard events:
-#if MRPT_VERSION >= 0x232
 		gui_.gui_win->addKeyboardCallback(
-#else
-		gui_.gui_win->setKeyboardCallback(
-#endif
 			[&](int key, int /*scancode*/, int action, int modifiers)
 			{
-				if (action != GLFW_PRESS && action != GLFW_REPEAT) return false;
+				if (action != GLFW_PRESS && action != GLFW_REPEAT)
+				{
+					return false;
+				}
 
 				auto lck = mrpt::lockHelper(lastKeyEventMtx_);
 
@@ -743,7 +716,10 @@ void World::internal_GUI_thread()
 		// bool:
 		auto lambdaLoopCallback = [](World& me)
 		{
-			if (me.simulator_must_close()) nanogui::leave();
+			if (me.simulator_must_close())
+			{
+				nanogui::leave();
+			}
 
 			try
 			{
@@ -767,12 +743,7 @@ void World::internal_GUI_thread()
 			}
 		};
 
-#if MRPT_VERSION >= 0x232
-		gui_.gui_win->addLoopCallback(
-#else
-		gui_.gui_win->setLoopCallback(
-#endif
-			[=]() { lambdaLoopCallback(*this); });
+		gui_.gui_win->addLoopCallback([=]() { lambdaLoopCallback(*this); });
 
 		// Register observation callback:
 		const auto lambdaOnObservation =
@@ -792,13 +763,9 @@ void World::internal_GUI_thread()
 			"[World::internal_GUI_thread] Using GUI FPS=%i (T=%i ms)", guiOptions_.refresh_fps,
 			refresh_ms);
 
-#if MRPT_VERSION >= 0x253
 		const int idleLoopTasks_ms = 10;
 
 		nanogui::mainloop(idleLoopTasks_ms, refresh_ms);
-#else
-		nanogui::mainloop(refresh_ms);
-#endif
 
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
 
@@ -811,12 +778,17 @@ void World::internal_GUI_thread()
 		{
 			auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
 			if (gui_.gui_win->background_scene)
+			{
 				gui_.gui_win->background_scene->freeOpenGLResources();
+			}
 		}
 
 		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 
-		for (auto& obj : getListOfSimulableObjects()) obj.second->freeOpenGLResources();
+		for (auto& obj : getListOfSimulableObjects())
+		{
+			obj.second->freeOpenGLResources();
+		}
 
 		lckListObjs.unlock();
 
@@ -1029,9 +1001,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 			MRPT_LOG_DEBUG("[update_GUI] Launching GUI thread...");
 
 			gui_thread_ = std::thread(&World::internal_GUI_thread, this);
-#if MRPT_VERSION >= 0x204
 			mrpt::system::thread_name("guiThread", gui_thread_);
-#endif
 
 			const int MVSIM_OPEN_GUI_TIMEOUT_MS =
 				mrpt::get_env<int>("MVSIM_OPEN_GUI_TIMEOUT_MS", 3000);

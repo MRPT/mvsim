@@ -141,10 +141,8 @@ void HorizontalPlane::internalGuiUpdate(
 
 		gl_plane_text_->assignImage(texture);
 
-#if MRPT_VERSION >= 0x240
 		gl_plane_text_->cullFaces(
 			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
-#endif
 
 		glGroup_->insert(gl_plane_text_);
 		viz->get().insert(glGroup_);

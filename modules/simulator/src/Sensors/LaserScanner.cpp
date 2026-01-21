@@ -121,9 +121,7 @@ void LaserScanner::internalGuiUpdate(
 	if (!gl_sensor_origin_ && viz)
 	{
 		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
-#if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
-#endif
 		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
@@ -135,9 +133,7 @@ void LaserScanner::internalGuiUpdate(
 	if (!gl_sensor_fov_ && viz)
 	{
 		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
-#if MRPT_VERSION >= 0x270
 		gl_sensor_fov_->castShadows(false);
-#endif
 
 		auto fovScan = mrpt::opengl::CPlanarLaserScan::Create();
 		fovScan->enablePoints(false);
@@ -565,10 +561,8 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	cam.setProjectiveFromPinhole(camModel);
 
 	// Disable rendering of shadows for this sensor:
-#if MRPT_VERSION >= 0x270
 	const bool wasShadowEnabled = viewport->isShadowCastingEnabled();
 	viewport->enableShadowCasting(false);
-#endif
 
 	viewport->setViewportClipDistances(0.01, curObs->maxRange);
 	mrpt::math::CMatrixFloat depthImage;
@@ -640,14 +634,20 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		{
 			const auto scanRayIdx = numRaysPerRender * renderIdx + i;
 			// done with full scan range?
-			if (scanRayIdx >= curObs->getScanSize()) break;
+			if (scanRayIdx >= curObs->getScanSize())
+			{
+				break;
+			}
 
 			const auto u = angleIdx2pixelIdx_.at(i);
 
 			const float d = depthImage(0, u);
 			const float range = d * angleIdx2secant_.at(i);
 
-			if (range <= 0 || range >= curObs->maxRange) continue;	// invalid
+			if (range <= 0 || range >= curObs->maxRange)
+			{
+				continue;  // invalid
+			}
 
 			curObs->setScanRange(scanRayIdx, range);
 			curObs->setScanRangeValidity(scanRayIdx, true);
@@ -657,13 +657,17 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (ignore_parent_body_)
 	{
-		if (visVeh) visVeh->customVisualVisible(formerVisVehState);
-		if (veh) veh->chassisAndWheelsVisible(formerVisVehState);
+		if (visVeh)
+		{
+			visVeh->customVisualVisible(formerVisVehState);
+		}
+		if (veh)
+		{
+			veh->chassisAndWheelsVisible(formerVisVehState);
+		}
 	}
 
-#if MRPT_VERSION >= 0x270
 	viewport->enableShadowCasting(wasShadowEnabled);
-#endif
 
 	// Store generated obs:
 	{

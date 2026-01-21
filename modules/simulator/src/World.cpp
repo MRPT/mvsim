@@ -21,7 +21,10 @@ using namespace mvsim;
 using namespace std;
 
 // Default ctor: inits empty world.
-World::World() : mrpt::system::COutputLogger("mvsim::World") { this->clear_all(); }
+World::World() : mrpt::system::COutputLogger("mvsim::World")
+{  //
+	this->clear_all();
+}
 
 // Dtor.
 World::~World()
@@ -70,13 +73,8 @@ void World::internal_initialize()
 	ASSERT_(!initialized_);
 	ASSERT_(worldVisual_);
 
-#if MRPT_VERSION >= 0x270
 	worldVisual_->getViewport()->lightParameters().ambient = lightOptions_.light_ambient;
-#else
-	worldVisual_->getViewport()->lightParameters().ambient = {
-		lightOptions_.light_ambient, lightOptions_.light_ambient, lightOptions_.light_ambient,
-		1.0f};
-#endif
+
 	// Physical world light = visual world lights:
 	worldPhysical_.getViewport()->lightParameters() =
 		worldVisual_->getViewport()->lightParameters();
@@ -112,12 +110,22 @@ std::string World::local_to_abs_path(const std::string& s_in) const
 	// "X:\*", "/*"
 	// -------------------
 	bool is_relative = true;
-	if (s.size() > 2 && s[1] == ':' && (s[2] == '/' || s[2] == '\\')) is_relative = false;
-	if (s.size() > 0 && (s[0] == '/' || s[0] == '\\')) is_relative = false;
+	if (s.size() > 2 && s[1] == ':' && (s[2] == '/' || s[2] == '\\'))
+	{
+		is_relative = false;
+	}
+	if (s.size() > 0 && (s[0] == '/' || s[0] == '\\'))
+	{
+		is_relative = false;
+	}
 	if (is_relative)
+	{
 		ret = mrpt::system::pathJoin({basePath_, s});
+	}
 	else
+	{
 		ret = s;
+	}
 
 	return mrpt::system::toAbsolutePath(ret);
 }
@@ -125,7 +133,12 @@ std::string World::local_to_abs_path(const std::string& s_in) const
 void World::runVisitorOnVehicles(const vehicle_visitor_t& v)
 {
 	for (auto& veh : vehicles_)
-		if (veh.second) v(*veh.second);
+	{
+		if (veh.second)
+		{
+			v(*veh.second);
+		}
+	}
 }
 
 void World::runVisitorOnWorldElements(const world_element_visitor_t& v)
@@ -137,7 +150,12 @@ void World::runVisitorOnWorldElements(const world_element_visitor_t& v)
 void World::runVisitorOnBlocks(const block_visitor_t& v)
 {
 	for (auto& b : blocks_)
-		if (b.second) v(*b.second);
+	{
+		if (b.second)
+		{
+			v(*b.second);
+		}
+	}
 }
 
 void World::connectToServer()
@@ -191,7 +209,10 @@ void World::free_opengl_resources()
 bool World::sensor_has_to_create_egl_context()
 {
 	// If we have a GUI, reuse that context:
-	if (!headless()) return false;
+	if (!headless())
+	{
+		return false;
+	}
 
 	// otherwise, just the first time:
 	static bool first = true;
@@ -202,7 +223,10 @@ bool World::sensor_has_to_create_egl_context()
 
 std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 {
-	if (!joystickEnabled_) return {};
+	if (!joystickEnabled_)
+	{
+		return {};
+	}
 
 	if (!joystick_)
 	{
@@ -276,7 +300,7 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 
 std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) const
 {
-	// Assumption: getListOfSimulableObjectsMtx() is already adquired by all possible call paths?
+	// Assumption: getListOfSimulableObjectsMtx() is already acquired by all possible call paths?
 	std::set<float> ret;
 
 	// Optimized search for potential objects that influence this query:
@@ -284,7 +308,10 @@ std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) cons
 	for (const auto& obj : worldElements_)
 	{
 		const auto optZ = obj->getElevationAt(worldXY);
-		if (optZ) ret.insert(*optZ);
+		if (optZ)
+		{
+			ret.insert(*optZ);
+		}
 	}
 
 	// 2) blocks: by hashed 2D LUT.
@@ -294,16 +321,40 @@ std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) cons
 	{
 		for (const auto& obj : it->second)
 		{
-			if (!obj) continue;
+			if (!obj)
+			{
+				continue;
+			}
 			const auto optZ = obj->getElevationAt(worldXY);
-			if (optZ) ret.insert(*optZ);
+			if (optZ)
+			{
+				ret.insert(*optZ);
+			}
 		}
 	}
 
 	// if none:
-	if (ret.empty()) ret.insert(.0f);
+	if (ret.empty())
+	{
+		ret.insert(.0f);
+	}
 
 	return ret;
+}
+
+std::optional<std::any> World::getPropertyAt(
+	const std::string& propertyName, const mrpt::math::TPoint3D& worldXYZ) const
+{
+	// 1) world elements: visit all
+	for (const auto& obj : worldElements_)
+	{
+		const auto optProp = obj->queryProperty(propertyName, worldXYZ);
+		if (optProp)
+		{
+			return optProp;
+		}
+	}
+	return {};
 }
 
 float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
@@ -313,7 +364,10 @@ float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
 	float prevZ = .0f;
 	for (float z : zs)
 	{
-		if (z > pt.z) break;
+		if (z > pt.z)
+		{
+			break;
+		}
 		prevZ = z;
 	}
 	return prevZ;

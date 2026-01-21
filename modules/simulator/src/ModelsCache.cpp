@@ -28,7 +28,10 @@ mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
 	const std::string& localFileName, const Options& options)
 {
 	// already cached?
-	if (auto it = cache.find(localFileName); it != cache.end()) return it->second;
+	if (auto it = cache.find(localFileName); it != cache.end())
+	{
+		return it->second;
+	}
 
 	// No, it's a new model path, create its placeholder:
 	auto m = cache[localFileName] = mrpt::opengl::CAssimpModel::Create();
@@ -40,20 +43,22 @@ mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
 					mrpt::opengl::CAssimpModel::LoadFlags::FlipUVs;
 
 	if (options.modelColor != mrpt::img::TColor::white())
+	{
 		loadFlags |= mrpt::opengl::CAssimpModel::LoadFlags::IgnoreMaterialColor;
+	}
 
 	m->setColor_u8(options.modelColor);
 
 	if (mrpt::get_env<bool>("MVSIM_LOAD_MODELS_VERBOSE", false))
+	{
 		loadFlags |= mrpt::opengl::CAssimpModel::LoadFlags::Verbose;
+	}
 
 	m->loadScene(localFileName, loadFlags);
 
 	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(options.modelCull));
 
-#if MRPT_VERSION >= 0x20e01	 // Feature added in MRPT 2.14.1
 	m->split_triangles_rendering_bbox(options.splitSize);
-#endif
 
 	return m;
 }
