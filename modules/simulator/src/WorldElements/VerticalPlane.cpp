@@ -153,16 +153,12 @@ void VerticalPlane::internalGuiUpdate(
 		gl_plane_->setPose(pp);
 		gl_plane_->setName("VerticalPlane_"s + getName());
 
-#if MRPT_VERSION >= 0x270
 		gl_plane_->enableLighting(enableShadows_);
-#endif
 
 		gl_plane_->setColor_u8(color_);
 
-#if MRPT_VERSION >= 0x240
 		gl_plane_->cullFaces(
 			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
-#endif
 		glGroup_->insert(gl_plane_);
 		viz->get().insert(glGroup_);
 		physical->get().insert(glGroup_);
@@ -225,10 +221,8 @@ void VerticalPlane::internalGuiUpdate(
 
 		gl_plane_text_->assignImage(texture);
 
-#if MRPT_VERSION >= 0x240
 		gl_plane_text_->cullFaces(
 			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
-#endif
 
 		glGroup_->insert(gl_plane_text_);
 		viz->get().insert(glGroup_);

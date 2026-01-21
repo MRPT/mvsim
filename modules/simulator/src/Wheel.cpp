@@ -47,9 +47,7 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj, bool isPhysicalScene
 			{
 				mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
 					mrpt::opengl::stock_objects::CornerXYZSimple(0.9 * diameter, 2.0);
-#if MRPT_VERSION >= 0x270
 				gl_xyz->castShadows(false);
-#endif
 				gl_wheel_frame->insert(gl_xyz);
 			}
 			obj.insert(gl_wheel_frame);
@@ -81,8 +79,11 @@ void Wheel::loadFromXML(const rapidxml::xml_node<char>* xml_node)
 
 	parse_xmlnode_attribs(*xml_node, params_, {}, "[Wheel]");
 
-	// If not manually overrided, calc automatically:
-	if (Iyy == INERTIA_NOT_SET) this->recalcInertia();
+	// If not manually overridden, calc automatically:
+	if (Iyy == INERTIA_NOT_SET)
+	{
+		this->recalcInertia();
+	}
 
 	// parse custom visual stuff:
 	this->parseVisual(*xml_node);

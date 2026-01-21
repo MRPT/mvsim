@@ -96,9 +96,7 @@ void Lidar3D::internalGuiUpdate(
 	if (!gl_sensor_origin_ && viz)
 	{
 		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
-#if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
-#endif
 		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
@@ -224,22 +222,16 @@ void Lidar3D::freeOpenGLResources()
 	fbo_renderer_depth_.reset();
 }
 
-#if MRPT_VERSION >= 0x270
 // Do the log->linear conversion ourselves for this sensor,
 // since only a few depth points are actually used:
 // (older mrpt versions already returned the linearized depth)
 constexpr int DEPTH_LOG2LIN_BITS = 20;
 using depth_log2lin_t = mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
-#endif
 
 static float safeInterpolateRangeImage(
 	const mrpt::math::CMatrixFloat& depthImage, const float maxDepthInterpolationStepVert,
-	const float maxDepthInterpolationStepHorz, const int NCOLS, const int NROWS, float v, float u
-#if MRPT_VERSION >= 0x270
-	,
-	const depth_log2lin_t::lut_t& depth_log2lin_lut
-#endif
-)
+	const float maxDepthInterpolationStepHorz, const int NCOLS, const int NROWS, float v, float u,
+	const depth_log2lin_t::lut_t& depth_log2lin_lut)
 {
 	const int u0 = static_cast<int>(u);
 	const int v0 = static_cast<int>(v);
@@ -255,7 +247,6 @@ static float safeInterpolateRangeImage(
 	const float raw_d11 = depthImage(v1, u1);
 
 	// Linearize:
-#if MRPT_VERSION >= 0x270
 	// Do the log->linear conversion ourselves for this sensor,
 	// since only a few depth points are actually used:
 
@@ -264,13 +255,6 @@ static float safeInterpolateRangeImage(
 	const float d01 = depth_log2lin_lut[(raw_d01 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
 	const float d10 = depth_log2lin_lut[(raw_d10 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
 	const float d11 = depth_log2lin_lut[(raw_d11 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-#else
-	// "d" is already linear depth
-	const float d00 = raw_d00;
-	const float d01 = raw_d01;
-	const float d10 = raw_d10;
-	const float d11 = raw_d11;
-#endif
 
 	// max relative range difference in u and v directions:
 	const float A_u = std::max(std::abs(d00 - d10), std::abs(d01 - d11));
@@ -287,7 +271,8 @@ static float safeInterpolateRangeImage(
 			   d10 * uw * (1.0f - vw) +	 //
 			   d11 * uw * vw;
 	}
-	else if (A_v < maxStepV)
+
+	if (A_v < maxStepV)
 	{
 		// Linear interpolation in "v" only:
 		// Pick closest "u":
@@ -296,7 +281,8 @@ static float safeInterpolateRangeImage(
 
 		return d0 * (1.0f - vw) + d1 * vw;
 	}
-	else if (A_u < maxStepU)
+
+	if (A_u < maxStepU)
 	{
 		// Linear interpolation in "u" only:
 
@@ -306,11 +292,9 @@ static float safeInterpolateRangeImage(
 
 		return d0 * (1.0f - uw) + d1 * uw;
 	}
-	else
-	{
-		// too many changes in depth, do not interpolate:
-		return d00;
-	}
+
+	// too many changes in depth, do not interpolate:
+	return d00;
 }
 
 void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
@@ -714,9 +698,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		}
 	}
 
-#if MRPT_VERSION >= 0x270
 	viewport->enableShadowCasting(wasShadowEnabled);
-#endif
 
 	// Store generated obs:
 	{

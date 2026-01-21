@@ -78,11 +78,7 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 	const mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
 	const mrpt::poses::CPose3D& modelPose, const float modelScale)
 {
-#if MRPT_VERSION >= 0x260
-	using namespace mrpt::literals;	 // _deg
-#else
-	using namespace mrpt;  // _deg
-#endif
+	using mrpt::literals::operator""_deg;
 
 	if (auto oCyl = dynamic_cast<const mrpt::opengl::CCylinder*>(&obj); oCyl)
 	{
@@ -91,7 +87,9 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 		// ===============================
 		// If the cylinder is not upright, skip and go for the generic algorithm
 		if (std::abs(modelPose.pitch()) > 0.02_deg || std::abs(modelPose.roll()) > 0.02_deg)
+		{
 			return {};
+		}
 
 		const size_t actualEdgeCount = oCyl->getSlicesCount();
 		double actualRadius = std::max<double>(oCyl->getTopRadius(), oCyl->getBottomRadius());
@@ -99,32 +97,30 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 		return processCylinderLike(
 			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
 	}
-	else if (auto oSph = dynamic_cast<const mrpt::opengl::CSphere*>(&obj); oSph)
+
+	if (auto oSph = dynamic_cast<const mrpt::opengl::CSphere*>(&obj); oSph)
 	{
 		// ===============================
 		// Sphere
 		// ===============================
-#if MRPT_VERSION >= 0x271
 		const size_t actualEdgeCount = oSph->getNumberOfSegments();
-#else
-		// workaround mrpt <2.7.1
-		const size_t actualEdgeCount =
-			const_cast<mrpt::opengl::CSphere*>(oSph)->getNumberOfSegments();
-#endif
 
 		double actualRadius = oSph->getRadius();
 
 		return processCylinderLike(
 			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
 	}
-	else if (auto oBox = dynamic_cast<const mrpt::opengl::CBox*>(&obj); oBox)
+
+	if (auto oBox = dynamic_cast<const mrpt::opengl::CBox*>(&obj); oBox)
 	{
 		// ===============================
 		// Box
 		// ===============================
 		// If the object is not upright, skip and go for the generic algorithm
 		if (std::abs(modelPose.pitch()) > 0.02_deg || std::abs(modelPose.roll()) > 0.02_deg)
+		{
 			return {};
+		}
 
 		mrpt::math::TPoint3D p1, p2;
 		oBox->getBoxCorners(p1, p2);
@@ -136,17 +132,18 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 			modelPose.composePoint({p2.x, p2.y, 0}), modelPose.composePoint({p2.x, p1.y, 0})};
 
 		mrpt::math::TPolygon2D contour;
-		for (int i = 0; i < 4; i++) contour.emplace_back(corners[i].x, corners[i].y);
+		for (int i = 0; i < 4; i++)
+		{
+			contour.emplace_back(corners[i].x, corners[i].y);
+		}
 
 		Shape2p5 s;
 		s.setShapeManual(contour, zMin, zMax);
 		return {s};
 	}
-	else
-	{
-		// unknown:
-		return {};
-	}
+
+	// unknown:
+	return {};
 }
 
 Shape2p5 CollisionShapeCache::processGenericGeometry(
@@ -255,20 +252,24 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 		for (const auto& pt : pts) lambdaUpdatePt(pt);
 	}
 
-#if MRPT_VERSION >= 0x260
 	if (oAssimp)
 	{
 		const auto& txtrdObjs = oAssimp->texturedObjects();	 // mrpt>=2.6.0
 		for (const auto& o : txtrdObjs)
 		{
-			if (!o) continue;
+			if (!o)
+			{
+				continue;
+			}
 
 			auto lck = mrpt::lockHelper(o->shaderTexturedTrianglesBufferMutex().data);
 			const auto& tris = o->shaderTexturedTrianglesBuffer();
-			for (const auto& tri : tris) lambdaUpdateTri(tri);
+			for (const auto& tri : tris)
+			{
+				lambdaUpdateTri(tri);
+			}
 		}
 	}
-#endif
 
 	// Convert all points into an actual 2.5D volume:
 	// ---------------------------------------------------------
