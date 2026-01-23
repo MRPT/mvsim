@@ -140,10 +140,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(sElevationImgFile, 0 /*force load grayscale*/))
 		{
-			throw std::runtime_error(
-				mrpt::format(
-					"[ElevationMap] ERROR: Cannot read elevation image '%s'",
-					sElevationImgFile.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read elevation image '%s'",
+				sElevationImgFile.c_str()));
 		}
 
 		// Scale: [0,1] => [min_z,max_z]
@@ -258,10 +257,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		mesh_image.emplace();
 
 		if (!mesh_image->loadFromFile(sTextureImgFile))
-			throw std::runtime_error(
-				mrpt::format(
-					"[ElevationMap] ERROR: Cannot read texture image '%s'",
-					sTextureImgFile.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read texture image '%s'", sTextureImgFile.c_str()));
 
 		// Apply rotation:
 		switch (texture_rotate)
@@ -315,12 +312,22 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	const double LX = (elevation_data.rows() - 1) * resolution_;
 	const double LY = (elevation_data.cols() - 1) * resolution_;
 
-	if (corner_min_x == std::numeric_limits<double>::max()) corner_min_x = -0.5 * LX;
-	if (corner_min_y == std::numeric_limits<double>::max()) corner_min_y = -0.5 * LY;
+	if (corner_min_x == std::numeric_limits<double>::max())
+	{
+		corner_min_x = -0.5 * LX;
+	}
+	if (corner_min_y == std::numeric_limits<double>::max())
+	{
+		corner_min_y = -0.5 * LY;
+	}
 
 	// Propose to the "world" to use this coordinates as reference
 	// for opengl to work with very large coordinates (e.g. UTM)
-	parent()->worldRenderOffsetPropose({-corner_min_x, -corner_min_y, .0});
+	// Do only if strictly necessary. TODO: box2d fixtures for collisions need translation too!
+	if (std::abs(corner_min_x) > 1e6f)
+	{
+		parent()->worldRenderOffsetPropose({-corner_min_x, -corner_min_y, .0});
+	}
 
 	// Save copy for calcs:
 	meshCacheZ_ = elevation_data;
@@ -406,10 +413,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 					corner_min_y + iY * subSize + lenIy_p * resolution_);
 
 				// hint for rendering z-order:
-				gl_mesh->setLocalRepresentativePoint(
-					mrpt::math::TPoint3Df(
-						corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
-						subEle(0, 0)));
+				gl_mesh->setLocalRepresentativePoint(mrpt::math::TPoint3Df(
+					corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
+					subEle(0, 0)));
 			}
 		}
 	}

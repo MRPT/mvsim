@@ -323,7 +323,9 @@ void VerticalPlane::internalGuiUpdate(
 	// If "viz" does not have a value, it's because we are already inside a
 	// setPose() change event, so my caller already holds the mutex and we
 	// don't need/can't acquire it again:
-	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
+	const auto objectPoseOrg = viz.has_value() ? getPose() : getPoseNoLock();
+	const auto objectPose = parent()->applyWorldRenderOffset(objectPoseOrg);
+
 	glGroup_->setPose(objectPose);
 }
 

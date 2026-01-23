@@ -53,7 +53,7 @@
 			<width>1.2</width>        <!-- meters -->
 			<z_min>0.0</z_min>        <!-- bottom of door -->
 			<z_max>2.1</z_max>        <!-- top of door -->
-			<n>main_entrance</n>
+			<name>main_entrance</name>
 		</door>
 	</element>
 
@@ -77,7 +77,7 @@
 			<width>1.5</width>
 			<z_min>1.0</z_min>  <!-- 1m from ground -->
 			<z_max>2.5</z_max>  <!-- 2.5m from ground -->
-			<n>window_left</n>
+			<name>window_left</name>
 		</window>
 		
 		<!-- Second window -->
@@ -86,7 +86,7 @@
 			<width>1.5</width>
 			<z_min>1.0</z_min>
 			<z_max>2.5</z_max>
-			<n>window_right</n>
+			<name>window_right</name>
 		</window>
 	</element>
 
@@ -131,7 +131,7 @@
 			<width>1.5</width>
 			<z_min>0.0</z_min>
 			<z_max>2.2</z_max>
-			<n>side_door</n>
+			<name>side_door</name>
 		</door>
 		
 		<!-- High window for ventilation -->
@@ -140,7 +140,7 @@
 			<width>2.0</width>
 			<z_min>2.3</z_min>
 			<z_max>2.9</z_max>
-			<n>ventilation_window</n>
+			<name>ventilation_window</name>
 		</window>
 	</element>
 
