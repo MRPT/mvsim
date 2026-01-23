@@ -4,8 +4,8 @@
 	  Sensor Fusion Testing World
 	  
 	  This world is designed for testing sensor fusion algorithms in challenging scenarios:
-	  - Large outdoor terrain (75x75m) with asymmetric hills at corners
-	  - Central indoor room (15x15m) with furniture and windows
+	  - Large outdoor terrain with asymmetric hills at corners
+	  - Central indoor room with furniture and windows
 	  - Two corridors: one straight (15m), one with 90-degree turn
 	  - GNSS-denied areas in corridors and indoor room
 	  - Tests: 2D lidar, 3D lidar, GNSS, IMU, odometry
@@ -438,8 +438,8 @@
 	
 	<!-- Indoor room GNSS-denied zone -->
 	<element class="property_region">
-		<property_name>gnss_disabled</property_name>
-		<property_value>true</property_value>
+		<property_name>gps_no_coverage</property_name>
+		<value_bool>true</value_bool>
 		<x_min>-8.0</x_min>
 		<y_min>-8.0</y_min>
 		<z_min>-1.0</z_min>
@@ -450,8 +450,8 @@
 	
 	<!-- Corridor A GNSS-denied zone -->
 	<element class="property_region">
-		<property_name>gnss_disabled</property_name>
-		<property_value>true</property_value>
+		<property_name>gps_no_coverage</property_name>
+		<value_bool>true</value_bool>
 		<x_min>-$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.5}</x_min>
 		<y_min>-1.5</y_min>
 		<z_min>-1.0</z_min>
@@ -462,8 +462,8 @@
 	
 	<!-- Corridor B Part 1 GNSS-denied zone -->
 	<element class="property_region">
-		<property_name>gnss_disabled</property_name>
-		<property_value>true</property_value>
+		<property_name>gps_no_coverage</property_name>
+		<value_bool>true</value_bool>
 		<x_min>7.0</x_min>
 		<y_min>-1.5</y_min>
 		<z_min>-1.0</z_min>
@@ -474,8 +474,8 @@
 	
 	<!-- Corridor B Part 2 GNSS-denied zone -->
 	<element class="property_region">
-		<property_name>gnss_disabled</property_name>
-		<property_value>true</property_value>
+		<property_name>gps_no_coverage</property_name>
+		<value_bool>true</value_bool>
 		<x_min>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH-1.5}</x_min>
 		<y_min>0.3</y_min>
 		<z_min>-1.0</z_min>
@@ -498,6 +498,15 @@
 	<!-- Robot starting position at outdoor area -->
 	<vehicle name="robot" class="jackal">
 		<init_pose>$f{-CORRIDOR_STRAIGHT_LENGTH-0.5*INDOOR_ROOM_SIZE-5} 0 0</init_pose>
+
+		<include file="../definitions/gnss.sensor.xml"
+		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.25"
+		  sensor_period_sec="1.0"
+		  sensor_name="gps1"
+		  sensor_horizontal_std_noise="1.5"
+		  sensor_vertical_std_noise="2.5"
+		  />
+
 	</vehicle>
 
 </mvsim_world>
