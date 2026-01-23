@@ -240,7 +240,12 @@ void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& 
 				gl_pts->setColor(0, 0, 1);
 
 				gl_pts->setVisibility(show_grid_collision_points_);
-				gl_pts->setPose(mrpt::poses::CPose2D(ipv.pose));
+
+				// Apply world render offset for large coordinate systems (e.g. UTM)
+				const auto poseWithOffset =
+					parent()->applyWorldRenderOffset(mrpt::poses::CPose3D(ipv.pose).asTPose());
+				gl_pts->setPose(poseWithOffset);
+
 				gl_pts->clear();
 			}
 

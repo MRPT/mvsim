@@ -8,12 +8,18 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/maps/CPointsMapXYZIRT.h>
+#include <mrpt/maps/CGenericPointsMap.h>
+#include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/mvsim_node_core.h>
+
+#if MRPT_VERSION < 0x030000	 // support legacy <3.0.0 classes
+#include <mrpt/maps/CPointsMapXYZI.h>
+#include <mrpt/maps/CPointsMapXYZIRT.h>
+#endif
 
 #include "rapidxml_utils.hpp"
 
@@ -1486,32 +1492,40 @@ void MVSimNode::internalOn(
 	// Send observation:
 	{
 		// Convert observation MRPT -> ROS
-		Msg_PointCloud2 msg_pts;
+		auto msg_pts = mvsim_node::make_shared<Msg_PointCloud2>();
 		Msg_Header msg_header;
 		msg_header.stamp = now;
 		msg_header.frame_id = lbPoints;
 
+#if MRPT_VERSION < 0x030000	 // support legacy <3.0.0 classes
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(obs.pointcloud.get());
 			xyzirt)
 		{
-			mrpt2ros::toROS(*xyzirt, msg_header, msg_pts);
+			mrpt2ros::toROS(*xyzirt, msg_header, *msg_pts);
 		}
 		else if (auto* xyzi = dynamic_cast<const mrpt::maps::CPointsMapXYZI*>(obs.pointcloud.get());
 				 xyzi)
 		{
-			mrpt2ros::toROS(*xyzi, msg_header, msg_pts);
+			mrpt2ros::toROS(*xyzi, msg_header, *msg_pts);
 		}
+#endif
 		else if (auto* sPts =
 					 dynamic_cast<const mrpt::maps::CSimplePointsMap*>(obs.pointcloud.get());
 				 sPts)
 		{
-			mrpt2ros::toROS(*sPts, msg_header, msg_pts);
+			mrpt2ros::toROS(*sPts, msg_header, *msg_pts);
+		}
+		else if (auto* sGenPts =
+					 dynamic_cast<const mrpt::maps::CGenericPointsMap*>(obs.pointcloud.get());
+				 sGenPts)
+		{
+			mrpt2ros::toROS(*sGenPts, msg_header, *msg_pts);
 		}
 		else
 		{
 			THROW_EXCEPTION("Do not know how to handle this variant of CPointsMap");
 		}
 
-		pubPts->publish(mvsim_node::make_shared<Msg_PointCloud2>(msg_pts));
+		pubPts->publish(msg_pts);
 	}
 }
