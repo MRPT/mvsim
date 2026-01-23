@@ -336,8 +336,11 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	curObs->timestamp = world_->get_simul_timestamp();
 	curObs->sensorLabel = name_;
 
-#if MRPT_VERSION >= 0x020f00  // 2.15.0
+#if MRPT_VERSION >= 0x020f04  // 2.15.4
 	auto curPtsPtr = mrpt::maps::CGenericPointsMap::Create();
+	curPtsPtr->registerField_float("intensity");
+	curPtsPtr->registerField_float("t");
+	curPtsPtr->registerField_uint16("ring");
 #else
 	auto curPtsPtr = mrpt::maps::CPointsMapXYZIRT::Create();
 #endif
@@ -362,7 +365,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 #endif
 
 #if MRPT_VERSION >= 0x020f00  // 2.15.0
-	ASSERT_(curPts_Is && curPts_Ts && curPts_Rs);
+	ASSERT_(curPts_Is);
+	ASSERT_(curPts_Ts);
+	ASSERT_(curPts_Rs);
 #endif
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
