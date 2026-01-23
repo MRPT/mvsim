@@ -13,6 +13,7 @@
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/VerticalPlane.h>
 
+#include <iostream>
 #include <rapidxml.hpp>
 
 #include "JointXMLnode.h"
@@ -29,8 +30,6 @@ VerticalPlane::VerticalPlane(World* parent, const rapidxml::xml_node<char>* root
 	// in the mrpt::opengl object.
 	VerticalPlane::loadConfigFrom(root);
 }
-
-VerticalPlane::~VerticalPlane() {}
 
 bool VerticalPlane::Opening::overlaps(float pos_start, float pos_end) const
 {
@@ -101,15 +100,25 @@ void VerticalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 				const std::string attrValue = attr->value();
 
 				if (attrName == "position")
+				{
 					opening.position = std::stof(attrValue);
+				}
 				else if (attrName == "width")
+				{
 					opening.width = std::stof(attrValue);
+				}
 				else if (attrName == "z_min" || attrName == "z_start")
+				{
 					opening.z_min = std::stof(attrValue);
+				}
 				else if (attrName == "z_max" || attrName == "z_end")
+				{
 					opening.z_max = std::stof(attrValue);
+				}
 				else if (attrName == "name")
+				{
 					opening.name = attrValue;
+				}
 			}
 
 			// Parse child elements
@@ -126,15 +135,15 @@ void VerticalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			// Validate and add
 			if (opening.position < 0.0f || opening.position > 1.0f)
 			{
-				std::cerr << mrpt::format(
-					"Opening position must be in [0,1], got %.3f. Clamping.\n", opening.position);
+				std::cerr << "[VerticalPlane] Warning: Opening position must be in [0,1], got "
+						  << opening.position << ". Clamping." << std::endl;
 				opening.position = std::max(0.0f, std::min(1.0f, opening.position));
 			}
 
 			if (opening.width <= 0.0f)
 			{
-				std::cerr << mrpt::format(
-					"Opening width must be positive, got %.3f. Ignoring opening.\n", opening.width);
+				std::cerr << "[VerticalPlane] Warning: Opening width must be positive, got "
+						  << opening.width << ". Ignoring opening." << std::endl;
 				continue;
 			}
 
@@ -153,7 +162,10 @@ void VerticalPlane::createPhysicsBodies()
 	{
 		for (auto* fixture : fixtures_)
 		{
-			if (fixture) b2dBody_->DestroyFixture(fixture);
+			if (fixture)
+			{
+				b2dBody_->DestroyFixture(fixture);
+			}
 		}
 		fixtures_.clear();
 		world_->getBox2DWorld()->DestroyBody(b2dBody_);
@@ -283,7 +295,8 @@ void VerticalPlane::createPhysicsBodies()
 	if (fixtures_.empty())
 	{
 		// This shouldn't happen in practice, but handle it gracefully
-		std::cerr << "VerticalPlane has no collision geometry (all doors).\n";
+		std::cerr << "[VerticalPlane] Warning: VerticalPlane has no collision geometry (all doors)."
+				  << std::endl;
 	}
 
 	// Init pos: (the vertices already have the global coordinates)
@@ -326,7 +339,7 @@ void VerticalPlane::createVisualRepresentation(
 
 	ASSERT_(p0 != p1);
 	const auto v01 = p1 - p0;
-	// const float wall_length = v01.norm();
+	const float wall_length = v01.norm();
 	const auto dir = v01.unitarize();
 	const mrpt::math::TPoint2Df normal = {-dir.y, dir.x};
 
@@ -358,6 +371,10 @@ void VerticalPlane::createVisualRepresentation(
 	if (thickness_ > 0.05f)	 // Only render edges for walls thicker than 5cm
 	{
 		renderWallEdges(p0, p1, w_inner, w_outer, has_texture ? &texture : nullptr);
+
+		// Render reveals around door and window openings
+		renderOpeningReveals(
+			p0, p1, dir, w_inner, w_outer, wall_length, has_texture ? &texture : nullptr);
 	}
 
 	if (has_texture)
@@ -482,6 +499,10 @@ void VerticalPlane::renderWallFace(
 					t.vertices[0].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_start};
 					t.vertices[1].xyzrgba.pt = {seg_p1_2d.x, seg_p1_2d.y, seg.z_start};
 					t.vertices[2].xyzrgba.pt = {seg_p1_2d.x, seg_p1_2d.y, seg.z_end};
+
+					t.vertices[0].uv = {u_min, v_min};
+					t.vertices[1].uv = {u_max, v_min};
+					t.vertices[2].uv = {u_max, v_max};
 				}
 				else
 				{
@@ -489,11 +510,12 @@ void VerticalPlane::renderWallFace(
 					t.vertices[0].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_start};
 					t.vertices[1].xyzrgba.pt = {seg_p1_2d.x, seg_p1_2d.y, seg.z_end};
 					t.vertices[2].xyzrgba.pt = {seg_p1_2d.x, seg_p1_2d.y, seg.z_start};
-				}
 
-				t.vertices[0].uv = {u_min, v_min};
-				t.vertices[1].uv = {u_max, v_min};
-				t.vertices[2].uv = {u_max, v_max};
+					// UV coordinates must match the new vertex order
+					t.vertices[0].uv = {u_min, v_min};	// p0, z_start
+					t.vertices[1].uv = {u_max, v_max};	// p1, z_end
+					t.vertices[2].uv = {u_max, v_min};	// p1, z_start
+				}
 
 				t.computeNormals();
 				gl_plane_text_->insertTriangle(t);
@@ -507,6 +529,10 @@ void VerticalPlane::renderWallFace(
 					t.vertices[0].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_start};
 					t.vertices[1].xyzrgba.pt = {seg_p1_2d.x, seg_p1_2d.y, seg.z_end};
 					t.vertices[2].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_end};
+
+					t.vertices[0].uv = {u_min, v_min};
+					t.vertices[1].uv = {u_max, v_max};
+					t.vertices[2].uv = {u_min, v_max};
 				}
 				else
 				{
@@ -514,11 +540,12 @@ void VerticalPlane::renderWallFace(
 					t.vertices[0].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_start};
 					t.vertices[1].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_end};
 					t.vertices[2].xyzrgba.pt = {seg_p1_2d.x, seg_p1_2d.y, seg.z_end};
-				}
 
-				t.vertices[0].uv = {u_min, v_min};
-				t.vertices[1].uv = {u_max, v_max};
-				t.vertices[2].uv = {u_min, v_max};
+					// UV coordinates must match the new vertex order
+					t.vertices[0].uv = {u_min, v_min};	// p0, z_start
+					t.vertices[1].uv = {u_min, v_max};	// p0, z_end
+					t.vertices[2].uv = {u_max, v_max};	// p1, z_end
+				}
 
 				t.computeNormals();
 				gl_plane_text_->insertTriangle(t);
@@ -671,6 +698,122 @@ void VerticalPlane::renderWallEdges(
 		{p1_inner.x, p1_inner.y, z_}, {p1_outer.x, p1_outer.y, z_},
 		{p1_outer.x, p1_outer.y, z_ + height_}, {p1_inner.x, p1_inner.y, z_ + height_}, 0.0f, 0.0f,
 		thickness_ / textureSizeX_, height_ / textureSizeY_);
+}
+
+void VerticalPlane::renderOpeningReveals(
+	const mrpt::math::TPoint2Df& p0, [[maybe_unused]] const mrpt::math::TPoint2Df& p1,
+	const mrpt::math::TPoint2Df& dir, const mrpt::math::TPoint2Df& w_inner,
+	const mrpt::math::TPoint2Df& w_outer, float wall_length, const mrpt::img::CImage* texture)
+{
+	using namespace mrpt::math;
+
+	// Helper lambda to add a quad (2 triangles)
+	auto addQuad = [this, texture](
+					   const TPoint3Df& v0, const TPoint3Df& v1, const TPoint3Df& v2,
+					   const TPoint3Df& v3, float u0, float v0_uv, float u1, float v1_uv)
+	{
+		// Triangle 1
+		{
+			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+			t.vertices[0].xyzrgba.pt = v0;
+			t.vertices[1].xyzrgba.pt = v1;
+			t.vertices[2].xyzrgba.pt = v2;
+
+			if (texture)
+			{
+				t.vertices[0].uv = {u0, v0_uv};
+				t.vertices[1].uv = {u1, v0_uv};
+				t.vertices[2].uv = {u1, v1_uv};
+			}
+			else
+			{
+				t.vertices[0].setColor(color_);
+				t.vertices[1].setColor(color_);
+				t.vertices[2].setColor(color_);
+			}
+
+			t.computeNormals();
+			gl_plane_text_->insertTriangle(t);
+		}
+
+		// Triangle 2
+		{
+			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+			t.vertices[0].xyzrgba.pt = v0;
+			t.vertices[1].xyzrgba.pt = v2;
+			t.vertices[2].xyzrgba.pt = v3;
+
+			if (texture)
+			{
+				t.vertices[0].uv = {u0, v0_uv};
+				t.vertices[1].uv = {u1, v1_uv};
+				t.vertices[2].uv = {u0, v1_uv};
+			}
+			else
+			{
+				t.vertices[0].setColor(color_);
+				t.vertices[1].setColor(color_);
+				t.vertices[2].setColor(color_);
+			}
+
+			t.computeNormals();
+			gl_plane_text_->insertTriangle(t);
+		}
+	};
+
+	// Render reveals for each opening
+	for (const auto& opening : openings_)
+	{
+		const float opening_pos = opening.position * wall_length;
+		const float half_width = opening.width * 0.5f;
+		const float opening_start = opening_pos - half_width;
+		const float opening_end = opening_pos + half_width;
+
+		// Calculate the 4 corner positions of the opening
+		const auto opening_p0 = p0 + dir * opening_start;  // Left edge
+		const auto opening_p1 = p0 + dir * opening_end;	 // Right edge
+
+		const auto opening_p0_inner = opening_p0 + w_inner;
+		const auto opening_p0_outer = opening_p0 + w_outer;
+		const auto opening_p1_inner = opening_p1 + w_inner;
+		const auto opening_p1_outer = opening_p1 + w_outer;
+
+		const float z_bottom = opening.z_min;
+		const float z_top = opening.z_max;
+		const float opening_height = z_top - z_bottom;
+
+		// 1. LEFT REVEAL (vertical surface at left edge of opening)
+		addQuad(
+			{opening_p0_outer.x, opening_p0_outer.y, z_bottom},
+			{opening_p0_inner.x, opening_p0_inner.y, z_bottom},
+			{opening_p0_inner.x, opening_p0_inner.y, z_top},
+			{opening_p0_outer.x, opening_p0_outer.y, z_top}, 0.0f, 0.0f, thickness_ / textureSizeX_,
+			opening_height / textureSizeY_);
+
+		// 2. RIGHT REVEAL (vertical surface at right edge of opening)
+		addQuad(
+			{opening_p1_inner.x, opening_p1_inner.y, z_bottom},
+			{opening_p1_outer.x, opening_p1_outer.y, z_bottom},
+			{opening_p1_outer.x, opening_p1_outer.y, z_top},
+			{opening_p1_inner.x, opening_p1_inner.y, z_top}, 0.0f, 0.0f, thickness_ / textureSizeX_,
+			opening_height / textureSizeY_);
+
+		// 3. TOP REVEAL (horizontal surface at top of opening)
+		addQuad(
+			{opening_p0_inner.x, opening_p0_inner.y, z_top},
+			{opening_p1_inner.x, opening_p1_inner.y, z_top},
+			{opening_p1_outer.x, opening_p1_outer.y, z_top},
+			{opening_p0_outer.x, opening_p0_outer.y, z_top}, 0.0f, 0.0f,
+			opening.width / textureSizeX_, thickness_ / textureSizeY_);
+
+		// 4. BOTTOM REVEAL (horizontal surface at bottom of opening)
+		addQuad(
+			{opening_p0_outer.x, opening_p0_outer.y, z_bottom},
+			{opening_p1_outer.x, opening_p1_outer.y, z_bottom},
+			{opening_p1_inner.x, opening_p1_inner.y, z_bottom},
+			{opening_p0_inner.x, opening_p0_inner.y, z_bottom}, 0.0f, 0.0f,
+			opening.width / textureSizeX_, thickness_ / textureSizeY_);
+	}
 }
 
 void VerticalPlane::simul_pre_timestep(const TSimulContext& context)

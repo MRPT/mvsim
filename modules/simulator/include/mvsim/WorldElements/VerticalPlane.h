@@ -17,7 +17,7 @@
 
 namespace mvsim
 {
-/** A vertical plane, visible from one or both sides (see "cull_faces"),
+/** A vertical plane (or wall with thickness) visible from one or both sides (see "cull_faces"),
  *  conveniently defined by starting and end points (x0,y0)-(x1,y1).
  *  Supports doors and windows with proper collision handling and rendering.
  * \ingroup world_elements_module
@@ -27,7 +27,6 @@ class VerticalPlane : public WorldElementBase
 	DECLARES_REGISTER_WORLD_ELEMENT(VerticalPlane)
    public:
 	VerticalPlane(World* parent, const rapidxml::xml_node<char>* root);
-	virtual ~VerticalPlane();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
 	// ------- Interface with "World" ------
@@ -77,6 +76,13 @@ class VerticalPlane : public WorldElementBase
 	void renderWallEdges(
 		const mrpt::math::TPoint2Df& p0, const mrpt::math::TPoint2Df& p1,
 		const mrpt::math::TPoint2Df& w_inner, const mrpt::math::TPoint2Df& w_outer,
+		const mrpt::img::CImage* texture = nullptr);
+
+	/** Render the reveals (inner edges) around door and window openings */
+	void renderOpeningReveals(
+		const mrpt::math::TPoint2Df& p0, const mrpt::math::TPoint2Df& p1,
+		const mrpt::math::TPoint2Df& dir, const mrpt::math::TPoint2Df& w_inner,
+		const mrpt::math::TPoint2Df& w_outer, float wall_length,
 		const mrpt::img::CImage* texture = nullptr);
 
 	float x0_ = -10, x1_ = -10, y0_ = -10, y1_ = 10;
