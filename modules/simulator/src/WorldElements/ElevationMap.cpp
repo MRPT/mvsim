@@ -94,6 +94,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	std::string sElevationMatrixData;
 	params["elevation_data_matrix"] = TParamEntry("%s", &sElevationMatrixData);
+	float elevation_data_matrix_scale = 1.0f;
+	params["elevation_data_matrix_scale"] = TParamEntry("%f", &elevation_data_matrix_scale);
 
 	std::string sDemTextFile;
 	params["dem_xyzrgb_file"] = TParamEntry("%s", &sDemTextFile);
@@ -137,9 +139,12 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(sElevationImgFile, 0 /*force load grayscale*/))
-			throw std::runtime_error(mrpt::format(
-				"[ElevationMap] ERROR: Cannot read elevation image '%s'",
-				sElevationImgFile.c_str()));
+		{
+			throw std::runtime_error(
+				mrpt::format(
+					"[ElevationMap] ERROR: Cannot read elevation image '%s'",
+					sElevationImgFile.c_str()));
+		}
 
 		// Scale: [0,1] => [min_z,max_z]
 		// Get image normalized in range [0,1]
@@ -165,6 +170,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		{
 			THROW_EXCEPTION_FMT("Error parsing <elevation_data_matrix>: %s", sErrors.str().c_str());
 		}
+
+		elevation_data *= elevation_data_matrix_scale;
 	}
 	else
 	{
@@ -251,8 +258,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		mesh_image.emplace();
 
 		if (!mesh_image->loadFromFile(sTextureImgFile))
-			throw std::runtime_error(mrpt::format(
-				"[ElevationMap] ERROR: Cannot read texture image '%s'", sTextureImgFile.c_str()));
+			throw std::runtime_error(
+				mrpt::format(
+					"[ElevationMap] ERROR: Cannot read texture image '%s'",
+					sTextureImgFile.c_str()));
 
 		// Apply rotation:
 		switch (texture_rotate)
@@ -397,9 +406,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 					corner_min_y + iY * subSize + lenIy_p * resolution_);
 
 				// hint for rendering z-order:
-				gl_mesh->setLocalRepresentativePoint(mrpt::math::TPoint3Df(
-					corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
-					subEle(0, 0)));
+				gl_mesh->setLocalRepresentativePoint(
+					mrpt::math::TPoint3Df(
+						corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
+						subEle(0, 0)));
 			}
 		}
 	}

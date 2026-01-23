@@ -1,0 +1,576 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mvsim_world version="1.0">
+	<!-- ================================================================
+	     INDOOR/OUTDOOR CHALLENGE WORLD
+	     
+	     Features:
+	     - Outdoor starting area with GNSS coverage
+	     - Long featureless corridor (outdoor) leading to indoor building
+	     - Indoor area without GNSS coverage
+	     - Another featureless corridor leading back outdoors
+	     - Varied terrain elevations
+	     - Mobile robot with 2D LiDAR, 3D LiDAR, and GNSS
+	     ================================================================ -->
+
+	<!-- General simulation options -->
+	<simul_timestep>0</simul_timestep> <!-- 0 = auto-determine -->
+	
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>false</show_forces>
+		<force_scale>0.01</force_scale>
+		<cam_distance>45</cam_distance>
+		<cam_azimuth>45</cam_azimuth>
+		<cam_elevation>60</cam_elevation>
+		<fov_deg>65</fov_deg>
+		<!-- <follow_vehicle>robot1</follow_vehicle> -->
+	</gui>
+
+	<!-- Light parameters -->
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>-35.0</light_azimuth_deg>
+		<light_elevation_deg>45.0</light_elevation_deg>
+	</lights>
+
+	<!-- Variables for easy customization -->
+	<variable name="BUILDING_HEIGHT" value="4.5"></variable>
+	<variable name="CORRIDOR_WIDTH" value="2.0"></variable>
+	<variable name="CORRIDOR_HEIGHT" value="3.0"></variable>
+	
+	<!-- ================================================================
+	     OUTDOOR AREA 1: Starting area with GNSS
+	     ================================================================ -->
+	
+	<!-- Outdoor ground - grass/dirt -->
+	<element class="elevation_map">
+		<resolution>10.0</resolution>
+		<elevation_data_matrix>
+			[0.05 0.03 0.02 0.04 0.02 0.01 0.03 0.02 0.01 0.02;
+			 0.03 0.04 0.01 0.03 0.05 0.02 0.01 0.04 0.03 0.01;
+			 0.02 0.01 0.03 0.02 0.01 0.04 0.02 0.01 0.02 0.03;
+			 0.04 0.03 0.02 0.01 0.03 0.01 0.02 0.03 0.01 0.02;
+			 0.01 0.02 0.04 0.03 0.02 0.03 0.01 0.02 0.04 0.01]
+		</elevation_data_matrix>
+		<elevation_data_matrix_scale>10.0</elevation_data_matrix_scale>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ForestGround01_1K_BaseColor.png</texture_image>
+		<texture_extension_x>3.0</texture_extension_x>
+		<texture_extension_y>3.0</texture_extension_y>
+		<corner_min_x>-10</corner_min_x>
+		<corner_min_y>-10</corner_min_y>
+	</element>
+
+	<!-- Outdoor area GNSS coverage (property region) -->
+	<element class="property_region">
+		<geometry type="box">
+			<center_x>-5</center_x>
+			<center_y>0</center_y>
+			<width>10</width>
+			<length>20</length>
+		</geometry>
+		<gps_no_coverage>false</gps_no_coverage>
+	</element>
+
+	<!-- Some outdoor obstacles - rocks and trees -->
+	<block:class name="outdoor_rock">
+		<static>true</static>
+		<shape_from_visual/>
+		<zmin>0.0</zmin>
+		<zmax>1.5</zmax>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/rock01.zip/rock01/FallingRock01.dae</model_uri>
+			<model_scale>2.0</model_scale>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<block class="outdoor_rock">
+		<init_pose>-8 -6 0</init_pose>
+	</block>
+	
+	<block class="outdoor_rock">
+		<init_pose>-7 5 0</init_pose>
+	</block>
+
+	<block:class name="palm_tree">
+		<static>true</static>
+		<shape_from_visual/>
+		<zmin>0.0</zmin>
+		<zmax>0.5</zmax>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/TropicPalmTree.zip/TropicPalmTree/free_palm.dae</model_uri>
+			<model_roll>90</model_roll>
+			<model_scale>0.025</model_scale>
+		</visual>
+	</block:class>
+
+	<block class="palm_tree">
+		<init_pose>-3 -8 0</init_pose>
+	</block>
+
+	<block class="palm_tree">
+		<init_pose>-2 7 0</init_pose>
+	</block>
+
+	<!-- ================================================================
+	     CORRIDOR 1: Long featureless corridor (outdoor, no GNSS)
+	     Challenging for LiDAR odometry - smooth walls, no features
+	     ================================================================ -->
+	
+	<!-- Corridor 1 floor - smooth concrete -->
+	<element class="horizontal_plane">
+		<x_min>0</x_min>
+		<y_min>$f{-CORRIDOR_WIDTH}</y_min>
+		<x_max>20</x_max>
+		<y_max>$f{CORRIDOR_WIDTH}</y_max>
+		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- Corridor 1 ceiling -->
+	<element class="horizontal_plane">
+		<cull_face>FRONT</cull_face>
+		<x_min>0</x_min>
+		<y_min>$f{-CORRIDOR_WIDTH}</y_min>
+		<x_max>20</x_max>
+		<y_max>$f{CORRIDOR_WIDTH}</y_max>
+		<z>$f{CORRIDOR_HEIGHT}</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<texture_size_x>1.5</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>
+	</element>
+
+	<!-- Corridor 1 - Left wall (smooth, featureless) -->
+	<element class="vertical_plane">
+		<cull_face>NONE</cull_face>
+		<x0>0</x0>
+		<y0>$f{-CORRIDOR_WIDTH}</y0>
+		<x1>20</x1>
+		<y1>$f{-CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{CORRIDOR_HEIGHT}</height>
+		<!--<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<texture_size_x>10.0</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>-->
+	</element>
+
+	<!-- Corridor 1 - Right wall (smooth, featureless) -->
+	<element class="vertical_plane">
+		<cull_face>NONE</cull_face>
+		<x0>20</x0>
+		<y0>$f{CORRIDOR_WIDTH}</y0>
+		<x1>0</x1>
+		<y1>$f{CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{CORRIDOR_HEIGHT}</height>
+		<!--<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<texture_size_x>10.0</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>-->
+	</element>
+
+	<!-- NO GNSS coverage in corridor 1 -->
+	<element class="property_region">
+		<geometry type="box">
+			<center_x>10</center_x>
+			<center_y>0</center_y>
+			<width>22</width>
+			<length>$f{2*CORRIDOR_WIDTH + 2}</length>
+		</geometry>
+		<gps_no_coverage>true</gps_no_coverage>
+	</element>
+
+	<!-- ================================================================
+	     INDOOR BUILDING: Main area without GNSS
+	     ================================================================ -->
+	
+	<!-- Indoor floor - tile pattern -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>20</x_min>
+		<y_min>-15</y_min>
+		<x_max>50</x_max>
+		<y_max>15</y_max>
+		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+	</element>
+
+	<!-- Indoor ceiling -->
+	<element class="horizontal_plane">
+		<cull_face>FRONT</cull_face>
+		<x_min>20</x_min>
+		<y_min>-15</y_min>
+		<x_max>50</x_max>
+		<y_max>15</y_max>
+		<z>$f{BUILDING_HEIGHT}</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Wood02_1K_BaseColor.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
+	</element>
+
+	<!-- Building perimeter walls -->
+	<!-- Back wall -->
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>20</x0>
+		<y0>-15</y0>
+		<x1>20</x1>
+		<y1>15</y1>
+		<z>0.0</z>
+		<height>$f{BUILDING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>5.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- Left wall -->
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>20</x0>
+		<y0>-15</y0>
+		<x1>50</x1>
+		<y1>-15</y1>
+		<z>0.0</z>
+		<height>$f{BUILDING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>5.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- Right wall (with gap for exit corridor) -->
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>50</x0>
+		<y0>15</y0>
+		<x1>20</x1>
+		<y1>15</y1>
+		<z>0.0</z>
+		<height>$f{BUILDING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>5.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- Front wall with opening for exit corridor -->
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>50</x0>
+		<y0>-15</y0>
+		<x1>50</x1>
+		<y1>$f{-CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{BUILDING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>50</x0>
+		<y0>$f{CORRIDOR_WIDTH}</y0>
+		<x1>50</x1>
+		<y1>15</y1>
+		<z>0.0</z>
+		<height>$f{BUILDING_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- Indoor furniture/obstacles for variety -->
+	<block:class name="indoor_desk">
+		<static>true</static>
+		<shape_from_visual/>
+		<zmin>0.0</zmin>
+		<zmax>1.2</zmax>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/OfficeDesk.zip/OfficeDesk/desk.dae</model_uri>
+			<model_scale>1.5</model_scale>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<block class="indoor_desk">
+		<init_pose>25 -10 0 0 0 90</init_pose>
+	</block>
+
+	<block class="indoor_desk">
+		<init_pose>25 10 0 0 0 270</init_pose>
+	</block>
+
+	<block:class name="office_chair">
+		<static>true</static>
+		<shape_from_visual/>
+		<zmin>0.0</zmin>
+		<zmax>1.0</zmax>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/OfficeChair.zip/OfficeChair/officechair.dae</model_uri>
+			<model_scale>1.2</model_scale>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<block class="office_chair">
+		<init_pose>27 -10 0 0 0 45</init_pose>
+	</block>
+
+	<block class="office_chair">
+		<init_pose>27 10 0 0 0 315</init_pose>
+	</block>
+
+	<!-- Storage shelves -->
+	<block:class name="shelf">
+		<static>true</static>
+		<shape_from_visual/>
+		<zmin>0.0</zmin>
+		<zmax>2.5</zmax>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/shelf_01.zip/shelf_01/shelf_01.dae</model_uri>
+			<model_scale>1.0</model_scale>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<block class="shelf">
+		<init_pose>45 -12 0 0 0 90</init_pose>
+	</block>
+
+	<block class="shelf">
+		<init_pose>45 12 0 0 0 270</init_pose>
+	</block>
+
+	<!-- Pallets with goods -->
+	<block:class name="pallet_stack">
+		<static>true</static>
+		<shape_from_visual/>
+		<zmin>0.0</zmin>
+		<zmax>1.0</zmax>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/pallet.zip/pallet/pallet.dae</model_uri>
+			<model_scale>1.0</model_scale>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<block class="pallet_stack">
+		<init_pose>35 -8 0</init_pose>
+	</block>
+
+	<block class="pallet_stack">
+		<init_pose>35 8 0</init_pose>
+	</block>
+
+	<block class="pallet_stack">
+		<init_pose>38 -8 0</init_pose>
+	</block>
+
+	<!-- NO GNSS coverage in building -->
+	<element class="property_region">
+		<geometry type="box">
+			<center_x>35</center_x>
+			<center_y>0</center_y>
+			<width>32</width>
+			<length>32</length>
+		</geometry>
+		<gps_no_coverage>true</gps_no_coverage>
+	</element>
+
+	<!-- ================================================================
+	     CORRIDOR 2: Another featureless corridor back to outdoors
+	     ================================================================ -->
+	
+	<!-- Corridor 2 floor -->
+	<element class="horizontal_plane">
+		<x_min>50</x_min>
+		<y_min>$f{-CORRIDOR_WIDTH}</y_min>
+		<x_max>70</x_max>
+		<y_max>$f{CORRIDOR_WIDTH}</y_max>
+		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- Corridor 2 ceiling -->
+	<element class="horizontal_plane">
+		<cull_face>FRONT</cull_face>
+		<x_min>50</x_min>
+		<y_min>$f{-CORRIDOR_WIDTH}</y_min>
+		<x_max>70</x_max>
+		<y_max>$f{CORRIDOR_WIDTH}</y_max>
+		<z>$f{CORRIDOR_HEIGHT}</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<texture_size_x>1.5</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>
+	</element>
+
+	<!-- Corridor 2 - Left wall (smooth) -->
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>50</x0>
+		<y0>$f{-CORRIDOR_WIDTH}</y0>
+		<x1>70</x1>
+		<y1>$f{-CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{CORRIDOR_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<texture_size_x>10.0</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>
+	</element>
+
+	<!-- Corridor 2 - Right wall (smooth) -->
+	<element class="vertical_plane">
+		<cull_face>FRONT</cull_face>
+		<x0>70</x0>
+		<y0>$f{CORRIDOR_WIDTH}</y0>
+		<x1>50</x1>
+		<y1>$f{CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{CORRIDOR_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<texture_size_x>10.0</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>
+	</element>
+
+	<!-- NO GNSS in corridor 2 -->
+	<element class="property_region">
+		<geometry type="box">
+			<center_x>60</center_x>
+			<center_y>0</center_y>
+			<width>22</width>
+			<length>$f{2*CORRIDOR_WIDTH + 2}</length>
+		</geometry>
+		<gps_no_coverage>true</gps_no_coverage>
+	</element>
+
+	<!-- ================================================================
+	     OUTDOOR AREA 2: Exit area with GNSS restored
+	     ================================================================ -->
+	
+	<!-- Outdoor ground 2 -->
+	<element class="elevation_map">
+		<resolution>10.0</resolution>
+		<elevation_data_matrix>
+			[0.02 0.04 0.01 0.03 0.02 0.04 0.01 0.02 0.03 0.01;
+			 0.03 0.01 0.04 0.02 0.03 0.01 0.04 0.01 0.02 0.04;
+			 0.01 0.03 0.02 0.04 0.01 0.02 0.03 0.04 0.01 0.02;
+			 0.04 0.02 0.03 0.01 0.04 0.03 0.02 0.03 0.04 0.01;
+			 0.02 0.04 0.01 0.03 0.02 0.01 0.04 0.01 0.02 0.03]
+		</elevation_data_matrix>
+		<elevation_data_matrix_scale>10.0</elevation_data_matrix_scale>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_BaseColor.png</texture_image>
+		<texture_extension_x>3.0</texture_extension_x>
+		<texture_extension_y>3.0</texture_extension_y>
+		<corner_min_x>70</corner_min_x>
+		<corner_min_y>-10</corner_min_y>
+	</element>
+
+	<!-- Outdoor area 2 GNSS coverage restored -->
+	<element class="property_region">
+		<geometry type="box">
+			<center_x>75</center_x>
+			<center_y>0</center_y>
+			<width>10</width>
+			<length>20</length>
+		</geometry>
+		<gps_no_coverage>false</gps_no_coverage>
+	</element>
+
+	<!-- More outdoor obstacles -->
+	<block class="outdoor_rock">
+		<init_pose>72 -7 0</init_pose>
+	</block>
+	
+	<block class="outdoor_rock">
+		<init_pose>78 6 0</init_pose>
+	</block>
+
+	<block class="palm_tree">
+		<init_pose>76 -8 0</init_pose>
+	</block>
+
+	<block class="palm_tree">
+		<init_pose>77 7 0</init_pose>
+	</block>
+
+	<!-- ================================================================
+	     ROBOT DEFINITION
+	     ================================================================ -->
+	
+	<!-- Include a standard vehicle definition -->
+	<include file="../definitions/jackal.vehicle.xml" />
+
+	<vehicle name="robot1" class="jackal">
+		<init_pose>-5 0 0.5</init_pose>  <!-- Start in outdoor area 1 -->
+
+		<!-- 2D LiDAR Scanner -->
+		<include file="../definitions/lidar2d.sensor.xml"
+			sensor_x="0.15" sensor_y="0" sensor_z="0.35" sensor_yaw="0"
+			fov_degrees="360"
+			sensor_nrays="360"
+			sensor_name="lidar2d"
+			sensor_std_noise="0.01"
+			raytrace_3d="true"
+			sensor_publish="true"
+			sensor_period_sec="0.1"
+			viz_visibleLines="false"
+			viz_visiblePlane="true"
+		/>
+
+		<!-- 3D LiDAR (Velodyne-style) -->
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+			sensor_x="0.0" sensor_y="0" sensor_z="0.45" sensor_yaw="0"
+			sensor_std_noise="0.01"
+			sensor_publish="true"
+			sensor_name="lidar3d"
+			sensor_rpm="600"
+			horz_resolution_factor="1.0"
+			vert_resolution_factor="1.0"
+		/>
+
+		<!-- GNSS Sensor -->
+		<sensor class="gnss" name="gps">
+			<pose>0 0 0.5</pose>
+			<horizontal_std_noise>2.0</horizontal_std_noise>
+			<vertical_std_noise>4.0</vertical_std_noise>
+			<sensor_period>0.2</sensor_period>
+			<sensor_publish>true</sensor_publish>
+		</sensor>
+
+		<!-- IMU Sensor -->
+		<sensor class="imu" name="imu">
+			<pose>0 0 0.3</pose>
+			<sensor_period>0.01</sensor_period>
+			<sensor_publish>true</sensor_publish>
+			<!-- Add some realistic noise -->
+			<gyro_std_noise>0.001</gyro_std_noise>
+			<accel_std_noise>0.01</accel_std_noise>
+		</sensor>
+
+		<!-- Optional: RGB Camera -->
+		<include file="../definitions/camera.sensor.xml"
+			sensor_x="0.2" sensor_y="0" sensor_z="0.4"
+			ncols="640" nrows="480"
+			cx="320" cy="240"
+			sensor_period_sec="0.1"
+			sensor_name="camera_front"
+		/>
+	</vehicle>
+
+	<!-- ================================================================
+	     SKYBOX for atmosphere
+	     ================================================================ -->
+	<element class='skybox'>
+		<!-- Provide the URI printf-like "pattern" to the six texture files, 
+		     such that replacing "%s" with the following strings gives the path
+		     to the files: "Up", "Right", "Left", "Front", "Down", "Back".
+		 -->
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/TropicalSunnyDay.zip/TropicalSunnyDay/TropicalSunnyDay%s.jpg</textures>
+	</element>
+
+</mvsim_world>
