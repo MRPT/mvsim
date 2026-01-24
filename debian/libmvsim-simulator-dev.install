@@ -1,7 +1,0 @@
-usr/include/mvsim/*.h
-usr/include/mvsim/FrictionModels
-usr/include/mvsim/Sensors
-usr/include/mvsim/VehicleDynamics
-usr/include/mvsim/WorldElements
-usr/lib/*/libmvsim-simulator*.so
-usr/lib/*/cmake/mvsim-simulator/*
