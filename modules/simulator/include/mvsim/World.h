@@ -37,6 +37,7 @@
 #endif
 
 #include <any>
+#include <deque>
 #include <functional>
 #include <list>
 #include <map>
@@ -70,6 +71,110 @@ namespace mvsim
  *
  * Main documentation and tutorials live here: https://mvsimulator.readthedocs.io/
  */
+
+/** GUI operating modes for the simulator
+ * \ingroup mvsim_simulator_module
+ */
+enum class GUIMode : int
+{
+	Simulation = 0,	 ///< Normal simulation with teleop and click-to-navigate
+	WorldEdit = 1  ///< Live world editing mode
+};
+
+/** World edit tools available in WorldEdit mode
+ * \ingroup mvsim_simulator_module
+ */
+enum class WorldEditTool : int
+{
+	Select = 0,	 ///< Select objects
+	Move,  ///< Move selected object
+	Rotate,	 ///< Rotate selected object
+	AddWall,  ///< Add wall by clicking two points
+	AddBox,	 ///< Add box block at click location
+	AddCylinder,  ///< Add cylinder block at click location
+	AddSphere,	///< Add sphere block at click location
+	AddRamp,  ///< Add ramp at click location
+	Delete	///< Delete object at click location
+};
+
+/** Navigation target command for click-to-navigate feature
+ * \ingroup mvsim_simulator_module
+ */
+struct NavigationTarget
+{
+	/// Target position in world coordinates
+	mrpt::math::TPoint2D position{0, 0};
+
+	/// Optional target heading (radians). If not set, vehicle arrives at any heading.
+	std::optional<double> targetHeading;
+
+	/// Distance tolerance to consider target reached (meters)
+	double reachDistanceTolerance = 0.15;
+
+	/// Heading tolerance to consider target reached (radians)
+	double reachHeadingTolerance = 0.1;
+
+	/// Maximum linear speed (m/s)
+	double maxLinearSpeed = 1.0;
+
+	/// Maximum angular speed (rad/s)
+	double maxAngularSpeed = 1.5;
+
+	/// Is the target active?
+	bool active = false;
+
+	/// Navigation status
+	enum class Status
+	{
+		Inactive,
+		Navigating,
+		Reached,
+		Stuck
+	};
+	Status status = Status::Inactive;
+
+	/// Timestamp when target was set
+	double setTime = 0.0;
+
+	/// Time stuck (no progress) counter
+	double stuckTime = 0.0;
+
+	/// Last distance to target (for stuck detection)
+	double lastDistanceToTarget = 0.0;
+};
+
+/** Record of a world edit action for undo/redo support
+ * \ingroup mvsim_simulator_module
+ */
+struct WorldEditAction
+{
+	enum class Type
+	{
+		Add,  ///< Object was added
+		Delete,	 ///< Object was deleted
+		Move,  ///< Object was moved
+		Modify	///< Object properties were modified
+	};
+
+	Type type = Type::Add;
+	std::string objectName;
+	std::string objectClass;
+
+	/// XML representation before the action (for undo)
+	std::string xmlBefore;
+
+	/// XML representation after the action (for redo)
+	std::string xmlAfter;
+
+	/// Pose before (for move actions)
+	mrpt::math::TPose3D poseBefore;
+
+	/// Pose after (for move actions)
+	mrpt::math::TPose3D poseAfter;
+
+	/// Timestamp of the action
+	double timestamp = 0.0;
+};
 
 /** Simulation happens inside a World object.
  * This is the central class for usage from user code, running the simulation,
@@ -409,25 +514,82 @@ class World : public mrpt::system::COutputLogger
 
 	float collisionThreshold() const { return collisionThreshold_; }
 
-	/** Returns the list of "z" coordinate or "elevations" for all simulable objects at a given
-	 *  world-frame 2D coordinates (x,y). If no object reports any height, the value "0.0" will be
-	 * always reported by default. In multistorey worlds, for example, this will return the height
-	 * of each floor for the queried point.
+	/** Returns the list of "z" coordinate or "elevations" for all simulable
+	 * objects at a given world-frame 2D coordinates (x,y). If no object reports
+	 * any height, the value "0.0" will be always reported by default. In
+	 * multistorey worlds, for example, this will return the height of each
+	 * floor for the queried point.
 	 */
 	std::set<float> getElevationsAt(const mrpt::math::TPoint2D& worldXY) const;
 
-	/// with query points the center of a wheel, this returns the highest "ground" under it, or .0
-	/// if nothing found.
+	/// with query points the center of a wheel, this returns the highest
+	/// "ground" under it, or .0 if nothing found.
 	float getHighestElevationUnder(const mrpt::math::TPoint3Df& queryPt) const;
 
 	void internal_simul_pre_step_terrain_elevation();
 
-	/** Query all mvsim::WorldElementBase objects for a given custom property at the specific 3D
-	 * location. It returns nullopt if no object defines this property.
-	 * \sa WorldElementBase::queryProperty()
+	/** Query all mvsim::WorldElementBase objects for a given custom property at
+	 * the specific 3D location. It returns nullopt if no object defines this
+	 * property. \sa WorldElementBase::queryProperty()
 	 */
 	std::optional<std::any> getPropertyAt(
 		const std::string& propertyName, const mrpt::math::TPoint3D& worldXYZ) const;
+
+	// ========================================================================
+	// Navigation target API
+	// ========================================================================
+
+	/** Set a navigation target for a vehicle via GUI click
+	 * \param vehicleName Name of the vehicle to navigate
+	 * \param target The navigation target
+	 */
+	void setNavigationTarget(const std::string& vehicleName, const NavigationTarget& target);
+
+	/** Clear navigation target for a vehicle */
+	void clearNavigationTarget(const std::string& vehicleName);
+
+	/** Get current navigation target for a vehicle (if any) */
+	std::optional<NavigationTarget> getNavigationTarget(const std::string& vehicleName) const;
+
+	// ========================================================================
+	// World editing API
+	// ========================================================================
+
+	/** Add a wall to the world dynamically
+	 * \param p1 Start point (x, y)
+	 * \param p2 End point (x, y)
+	 * \param height Wall height
+	 * \param thickness Wall thickness (for collision)
+	 * \param texture Texture URL or path
+	 * \return Name of the created element
+	 */
+	std::string addWall(
+		const mrpt::math::TPoint2D& p1, const mrpt::math::TPoint2D& p2, double height,
+		double thickness, const std::string& texture = "");
+
+	/** Add a block to the world dynamically
+	 * \param blockClass Class name (e.g., "box", "cylinder")
+	 * \param pose Initial pose
+	 * \param params Additional parameters as XML string
+	 * \return Name of the created block
+	 */
+	std::string addBlock(
+		const std::string& blockClass, const mrpt::math::TPose3D& pose,
+		const std::string& params = "");
+
+	/** Remove an object from the world by name
+	 * \return true if object was found and removed
+	 */
+	bool removeObject(const std::string& objectName);
+
+	/** Export current world state to XML string */
+	std::string exportWorldToXML() const;
+
+	/** Get the current GUI mode */
+	GUIMode getGUIMode() const { return gui_.currentMode; }
+
+	/** Set the GUI mode */
+	void setGUIMode(GUIMode mode);
 
    private:
 	friend class VehicleBase;
@@ -529,6 +691,14 @@ class World : public mrpt::system::COutputLogger
 		std::string follow_vehicle;	 //!< Vehicle name to follow (empty=none)
 		bool headless = false;
 
+		// GUI mode and feature options
+		GUIMode default_mode = GUIMode::Simulation;
+		bool show_stats_panel = true;
+		std::string stats_panel_position = "left";	// "left" or "right"
+		bool enable_world_edit = true;
+		bool enable_click_navigation = true;
+		bool show_bottom_bar = true;
+
 		const TParameterDefinitions params = {
 			{"win_w", {"%u", &win_w}},
 			{"win_h", {"%u", &win_h}},
@@ -547,6 +717,11 @@ class World : public mrpt::system::COutputLogger
 			{"cam_azimuth", {"%lf", &camera_azimuth_deg}},
 			{"cam_elevation", {"%lf", &camera_elevation_deg}},
 			{"cam_point_to", {"%point3d", &camera_point_to}},
+			{"show_stats_panel", {"%bool", &show_stats_panel}},
+			{"stats_panel_position", {"%s", &stats_panel_position}},
+			{"enable_world_edit", {"%bool", &enable_world_edit}},
+			{"enable_click_navigation", {"%bool", &enable_click_navigation}},
+			{"show_bottom_bar", {"%bool", &show_bottom_bar}},
 		};
 
 		TGUI_Options() = default;
@@ -776,6 +951,207 @@ class World : public mrpt::system::COutputLogger
 
 		void handle_mouse_operations();
 
+		// ====================================================================
+		// Mode and state management
+		// ====================================================================
+
+		GUIMode currentMode = GUIMode::Simulation;
+
+		// --------------------------------------------------------------------
+		// World Edit Mode State
+		// --------------------------------------------------------------------
+		struct WorldEditState
+		{
+			WorldEditTool currentTool = WorldEditTool::Select;
+
+			/// Currently selected object for editing
+			Simulable::Ptr selectedObject;
+
+			/// Is currently drawing a wall (start point set)?
+			bool isDrawingWall = false;
+
+			/// Wall start point (world coords)
+			mrpt::math::TPoint3D wallStartPoint{0, 0, 0};
+
+			/// Preview wall end point
+			mrpt::math::TPoint3D wallPreviewEndPoint{0, 0, 0};
+
+			/// Default wall height
+			double wallHeight = 2.5;
+
+			/// Default wall thickness
+			double wallThickness = 0.15;
+
+			/// Default wall texture
+			std::string wallTexture =
+				"https://mrpt.github.io/mvsim-models/"
+				"textures-cgbookcase/wall-bricks-01.png";
+
+			/// Undo stack
+			std::deque<WorldEditAction> undoStack;
+
+			/// Redo stack
+			std::deque<WorldEditAction> redoStack;
+
+			/// Maximum undo history size
+			static constexpr size_t MAX_UNDO_SIZE = 50;
+
+			/// Preview object being placed (before click to confirm)
+			mrpt::opengl::CSetOfObjects::Ptr previewObject;
+
+			/// Grid snap enabled
+			bool snapToGrid = true;
+
+			/// Grid snap size (meters)
+			double gridSnapSize = 0.5;
+
+		} worldEditState;
+
+		// --------------------------------------------------------------------
+		// Navigation State (available in Simulation mode)
+		// --------------------------------------------------------------------
+		struct NavigationState
+		{
+			/// Vehicle to navigate (name)
+			std::string targetVehicleName;
+
+			/// Current navigation target
+			NavigationTarget target;
+
+			/// Show path visualization
+			bool showPath = true;
+
+			/// Show target marker
+			bool showTargetMarker = true;
+
+			/// Visual marker for navigation target
+			mrpt::opengl::CSetOfObjects::Ptr glTargetMarker;
+
+			/// Visual path line
+			mrpt::opengl::CSetOfLines::Ptr glPathLine;
+
+		} navigationState;
+
+		// --------------------------------------------------------------------
+		// Additional UI widgets
+		// --------------------------------------------------------------------
+
+		/// Statistics panel labels (sensor stats)
+		struct StatsPanel
+		{
+			nanogui::Window* window = nullptr;
+			nanogui::Label* lbSimTime = nullptr;
+			nanogui::Label* lbCpuUsage = nullptr;
+			nanogui::Label* lbSimRate = nullptr;
+			nanogui::Label* lbPhysicsFps = nullptr;
+			nanogui::Label* lbRenderFps = nullptr;
+
+			/// Selected vehicle info
+			nanogui::Label* lbSelectedVehicle = nullptr;
+			nanogui::Label* lbVehiclePosition = nullptr;
+			nanogui::Label* lbVehicleVelocity = nullptr;
+
+			/// Container for dynamic sensor stats
+			nanogui::Widget* sensorStatsContainer = nullptr;
+
+			/// Sensor stat labels (key = "vehicleName.sensorName")
+			std::map<std::string, nanogui::Widget*> sensorStatWidgets;
+
+		} statsPanel;
+
+		/// World edit panel
+		struct EditPanel
+		{
+			nanogui::Window* window = nullptr;
+
+			/// Tool buttons
+			std::vector<nanogui::Button*> toolButtons;
+
+			/// Property editors
+			nanogui::TextBox* tbPosX = nullptr;
+			nanogui::TextBox* tbPosY = nullptr;
+			nanogui::TextBox* tbPosZ = nullptr;
+			nanogui::TextBox* tbYaw = nullptr;
+			nanogui::TextBox* tbPitch = nullptr;
+			nanogui::TextBox* tbRoll = nullptr;
+
+			/// Wall properties
+			nanogui::TextBox* tbWallHeight = nullptr;
+			nanogui::TextBox* tbWallThickness = nullptr;
+
+			/// Undo/Redo buttons
+			nanogui::Button* btnUndo = nullptr;
+			nanogui::Button* btnRedo = nullptr;
+
+		} editPanel;
+
+		/// Navigation panel (shown in simulation mode)
+		struct NavPanel
+		{
+			nanogui::Window* window = nullptr;
+
+			/// Vehicle selector
+			nanogui::ComboBox* cbVehicle = nullptr;
+
+			/// Target info labels
+			nanogui::Label* lbTargetPos = nullptr;
+			nanogui::Label* lbDistanceToTarget = nullptr;
+			nanogui::Label* lbETA = nullptr;
+			nanogui::Label* lbStatus = nullptr;
+
+			/// Max speed slider
+			nanogui::Slider* slMaxSpeed = nullptr;
+			nanogui::Label* lbMaxSpeed = nullptr;
+
+			/// Clear target button
+			nanogui::Button* btnClearTarget = nullptr;
+
+		} navPanel;
+
+		/// Bottom status bar
+		struct BottomBar
+		{
+			nanogui::Window* window = nullptr;
+			nanogui::Label* lbStatus = nullptr;
+
+		} bottomBar;
+
+		// ====================================================================
+		// Window preparation methods
+		// ====================================================================
+
+		void prepare_mode_panel();
+		void prepare_stats_panel();
+		void prepare_edit_panel();
+		void prepare_nav_panel();
+		void prepare_bottom_bar();
+
+		void update_stats_panel();
+		void update_edit_panel();
+		void update_nav_panel();
+		void update_bottom_bar();
+
+		void setMode(GUIMode mode);
+
+		void handleSimulationModeClick(bool leftClick, const mrpt::math::TPoint3D& worldPt);
+
+		void handleWorldEditModeClick(bool leftClick, const mrpt::math::TPoint3D& worldPt);
+
+		void updateNavigationTargetMarker();
+		void updateWallPreview();
+
+		// ====================================================================
+		// World editing methods
+		// ====================================================================
+
+		void recordEditAction(const WorldEditAction& action);
+		void undo();
+		void redo();
+		void clearUndoHistory();
+
+		// Helper for updating sensor stats display
+		void updateSensorStatsForVehicle(const VehicleBase& veh);
+
 	   private:
 		World& parent_;
 	};
@@ -794,10 +1170,10 @@ class World : public mrpt::system::COutputLogger
 	mrpt::opengl::COpenGLScene worldPhysical_;
 	std::recursive_mutex worldPhysicalMtx_;
 
-	/// World coordinates offset for rendering. Useful mainly to keep numerical accuracy
-	/// in the OpenGL pipeline (using "floats") when using UTM world coordinates.
-	/// All coordinates to be send to OpenGL must **add** this number.
-	/// It is automatically set via calling worldRenderOffsetPropose()
+	/// World coordinates offset for rendering. Useful mainly to keep numerical
+	/// accuracy in the OpenGL pipeline (using "floats") when using UTM world
+	/// coordinates. All coordinates to be send to OpenGL must **add** this
+	/// number. It is automatically set via calling worldRenderOffsetPropose()
 	/// and must be retrieved via worldRenderOffset()
 	std::optional<mrpt::math::TVector3D> worldRenderOffset_;
 
@@ -921,6 +1297,31 @@ class World : public mrpt::system::COutputLogger
 	};
 	std::vector<std::optional<TInfoPerCollidableobj>> obstacles_for_each_obj_;
 	// ============ end of elevation field collision =================
+
+	// ========================================================================
+	// Navigation targets per vehicle
+	// ========================================================================
+	std::map<std::string, NavigationTarget> navigationTargets_;
+	mutable std::mutex navigationTargetsMtx_;
+
+	// ========================================================================
+	// Counter for generating unique names
+	// ========================================================================
+	size_t dynamicWallCounter_ = 0;
+	size_t dynamicBlockCounter_ = 0;
+
+	// ========================================================================
+	// Navigation controller helpers
+	// ========================================================================
+
+	/** Compute velocity command for navigation
+	 * Called internally during simulation step
+	 */
+	void processNavigationTargets(const TSimulContext& context);
+
+	/** Simple proportional navigation controller */
+	mrpt::math::TTwist2D computeNavigationTwist(
+		const mrpt::math::TPose3D& currentPose, const NavigationTarget& target) const;
 
 	// Services:
 	void internal_advertiseServices();	// called from connectToServer()

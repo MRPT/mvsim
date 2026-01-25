@@ -29,7 +29,10 @@ void World::run_simulation(double dt)
 	const double t0 = mrpt::Clock::nowDouble();
 
 	// Define start of simulation time:
-	if (!simul_start_wallclock_time_.has_value()) simul_start_wallclock_time_ = t0 - dt;
+	if (!simul_start_wallclock_time_.has_value())
+	{
+		simul_start_wallclock_time_ = t0 - dt;
+	}
 
 	timlogger_.registerUserMeasure("run_simulation.dt", dt);
 
@@ -45,16 +48,33 @@ void World::run_simulation(double dt)
 	const double timetol = 1e-4;
 	while (get_simul_time() < (end_time - timetol))
 	{
-		// Timestep: always "simul_step" for the sake of repeatibility,
+		// Timestep: always "simul_step" for the sake of repeatability,
 		// except if requested to run a shorter step:
 		const double remainingTime = end_time - get_simul_time();
-		if (remainingTime <= 0) break;
+		if (remainingTime <= 0)
+		{
+			break;
+		}
 
 		internal_one_timestep(remainingTime >= simulTimestep ? simulTimestep : remainingTime);
 
 		// IMPORTANT: This must be inside the loop to allow breaking if we are
 		// closing the app and simulatedTime is not ticking anymore.
-		if (simulator_must_close()) break;
+		if (simulator_must_close())
+		{
+			break;
+		}
+	}
+
+	// Process click-to-navigate targets
+	{
+		TSimulContext context;
+		context.world = this;
+		context.b2_world = box2d_world_.get();
+		context.simul_time = get_simul_time();
+		context.dt = dt;
+
+		processNavigationTargets(context);
 	}
 
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
@@ -85,7 +105,12 @@ void World::internal_one_timestep(double dt)
 	{
 		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.1.prestep");
 		for (auto& e : simulableObjects_)
-			if (e.second) e.second->simul_pre_timestep(context);
+		{
+			if (e.second)
+			{
+				e.second->simul_pre_timestep(context);
+			}
+		}
 	}
 	// 2) vehicles terrain elevation
 	{

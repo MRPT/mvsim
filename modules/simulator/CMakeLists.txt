@@ -20,6 +20,9 @@ add_library(${PROJECT_NAME}
 	src/VehicleBase.cpp
 	src/World.cpp
 	src/World_gui.cpp
+  src/World_gui_panels.cpp
+  src/World_gui_mouse.cpp
+  src/World_navigation.cpp
 	src/World_load_xml.cpp
 	src/World_services.cpp
 	src/World_simul.cpp

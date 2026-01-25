@@ -558,18 +558,19 @@ void World::GUI::prepare_editor_window()
 			formPose->add<nanogui::Button>("Accept")->setCallback(
 				[formPose, this, lbs]()
 				{
-					const mrpt::math::TPose3D newPose = {// X:
-														 std::stod(lbs[0]->value()),
-														 // Y:
-														 std::stod(lbs[1]->value()),
-														 // Z:
-														 std::stod(lbs[2]->value()),
-														 // Yaw
-														 mrpt::DEG2RAD(std::stod(lbs[3]->value())),
-														 // Pitch
-														 mrpt::DEG2RAD(std::stod(lbs[4]->value())),
-														 // Roll:
-														 mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
+					const mrpt::math::TPose3D newPose = {
+						// X:
+						std::stod(lbs[0]->value()),
+						// Y:
+						std::stod(lbs[1]->value()),
+						// Z:
+						std::stod(lbs[2]->value()),
+						// Yaw
+						mrpt::DEG2RAD(std::stod(lbs[3]->value())),
+						// Pitch
+						mrpt::DEG2RAD(std::stod(lbs[4]->value())),
+						// Roll:
+						mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
 
 					gui_selectedObject.simulable->setRelativePose(newPose);
 					onEntitySelected(newPose);
@@ -634,6 +635,17 @@ void World::internal_GUI_thread()
 		gui_.prepare_control_window();
 		gui_.prepare_status_window();
 		gui_.prepare_editor_window();
+
+		// Additional panels for statistics, navigation, and editing
+		gui_.prepare_stats_panel();
+		gui_.prepare_nav_panel();
+		gui_.prepare_edit_panel();
+		// gui_.prepare_mode_panel();  // Optional: adds mode switching UI
+		// gui_.prepare_bottom_bar();  // Optional: bottom status bar
+
+		// Set initial mode
+		gui_.currentMode = guiOptions_.default_mode;
+		gui_.setMode(gui_.currentMode);
 
 		// Finish GUI setup:
 		gui_.gui_win->performLayout();
@@ -730,6 +742,11 @@ void World::internal_GUI_thread()
 
 				// handle mouse operations:
 				me.gui_.handle_mouse_operations();
+
+				// Update GUI panels
+				me.gui_.update_stats_panel();
+				me.gui_.update_nav_panel();
+				me.gui_.update_edit_panel();
 			}
 			catch (const std::exception& e)
 			{
@@ -809,10 +826,12 @@ void World::internal_GUI_thread()
 void World::GUI::handle_mouse_operations()
 {
 	MRPT_START
+
 	if (!gui_win)
 	{
 		return;
 	}
+
 	mrpt::opengl::COpenGLViewport::Ptr vp;
 	{
 		auto lck = mrpt::lockHelper(gui_win->background_scene_mtx);
@@ -835,51 +854,49 @@ void World::GUI::handle_mouse_operations()
 	mrpt::math::TObject3D inters;
 	mrpt::math::intersect(ray, ground_plane, inters);
 
-	// Interpret the intersection as a point, if there is an
-	// intersection:
+	// Interpret the intersection as a point, if there is an intersection:
 	if (inters.getPoint(clickedPt))
 	{
 		// Apply world offset:
-		// P_GL = P_REAL + Off
-		// P_REAL = P_GL - Off
 		const auto dp = parent_.worldRenderOffset();
 		clickedPt.x -= dp.x;
 		clickedPt.y -= dp.y;
 		clickedPt.z -= dp.z;
 
 		// Find out the "z": get first elevation if many exist.
-		const auto zs = parent_.getElevationsAt(mrpt::math::TPoint2Df(clickedPt.x, clickedPt.y));
-		if (!zs.empty()) clickedPt.z = *zs.begin();
+		const auto zs = parent_.getElevationsAt(
+			mrpt::math::TPoint2Df(
+				static_cast<float>(clickedPt.x), static_cast<float>(clickedPt.y)));
+		if (!zs.empty())
+		{
+			clickedPt.z = static_cast<double>(*zs.begin());
+		}
 	}
 
 	const auto screen = gui_win->screen();
-	const bool leftClick = screen->mouseState() == 0x01;
+	const bool leftClick = (screen->mouseState() == 0x01);
 
-	// Replace object?
-	if (btnReplaceObject && btnReplaceObject->pushed())
+	// NEW: Route to appropriate handler based on mode
+	if (currentMode == GUIMode::WorldEdit)
 	{
-		static bool isReplacing = false;
+		handleWorldEditModeClick(leftClick, clickedPt);
 
-		// Start of replace? When the button push is released:
-		if (!isReplacing && !leftClick)
+		// Update wall preview during drawing
+		if (worldEditState.currentTool == WorldEditTool::AddWall)
 		{
-			isReplacing = true;
+			worldEditState.wallPreviewEndPoint = clickedPt;
+			if (worldEditState.snapToGrid)
+			{
+				const double gs = worldEditState.gridSnapSize;
+				worldEditState.wallPreviewEndPoint.x = std::round(clickedPt.x / gs) * gs;
+				worldEditState.wallPreviewEndPoint.y = std::round(clickedPt.y / gs) * gs;
+			}
+			updateWallPreview();
 		}
-		if (gui_selectedObject.simulable)
-		{
-			// btnReplaceObject->screen()->setCursor()
-
-			mrpt::math::TPose3D p = gui_selectedObject.simulable->getPose();
-			p.x = clickedPt.x;
-			p.y = clickedPt.y;
-
-			gui_selectedObject.simulable->setPose(p);
-		}
-		if (isReplacing && leftClick)
-		{
-			isReplacing = false;
-			btnReplaceObject->setPushed(false);
-		}
+	}
+	else  // Simulation mode
+	{
+		handleSimulationModeClick(leftClick, clickedPt);
 	}
 
 	MRPT_END
@@ -946,9 +963,11 @@ void World::internalUpdate3DSceneObjects(
 		double cpu_usage_ratio = std::max(1e-10, timlogger_.getMeanTime("run_simulation.cpu_dt")) /
 								 std::max(1e-10, timlogger_.getMeanTime("run_simulation.dt"));
 
-		gui_.lbCpuUsage->setCaption(mrpt::format(
-			"Time: %s (CPU usage: %.03f%%)",
-			mrpt::system::formatTimeInterval(get_simul_time()).c_str(), cpu_usage_ratio * 100.0));
+		gui_.lbCpuUsage->setCaption(
+			mrpt::format(
+				"Time: %s (CPU usage: %.03f%%)",
+				mrpt::system::formatTimeInterval(get_simul_time()).c_str(),
+				cpu_usage_ratio * 100.0));
 
 		// User supplied-lines:
 		guiMsgLinesMtx_.lock();
