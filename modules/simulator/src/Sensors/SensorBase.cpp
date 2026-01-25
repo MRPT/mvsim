@@ -21,7 +21,6 @@
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-#include <sstream>	// std::stringstream
 #include <string>
 
 #include "parse_utils.h"
@@ -42,9 +41,11 @@ void register_all_sensors()
 {
 	static bool done = false;
 	if (done)
+	{
 		return;
-	else
-		done = true;
+	}
+
+	done = true;
 
 	REGISTER_SENSOR("laser", LaserScanner)
 	REGISTER_SENSOR("rgbd_camera", DepthCameraSensor)
@@ -75,6 +76,7 @@ void SensorBase::RegisterSensorFOVViz(const mrpt::opengl::CSetOfObjects::Ptr& o)
 	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
 	gAllSensorsFOVViz->insert(o);
 }
+
 void SensorBase::RegisterSensorOriginViz(const mrpt::opengl::CSetOfObjects::Ptr& o)
 {
 	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
@@ -88,8 +90,6 @@ SensorBase::SensorBase(Simulable& vehicle)
 {
 }
 
-SensorBase::~SensorBase() = default;
-
 SensorBase::Ptr SensorBase::factory(Simulable& parent, const rapidxml::xml_node<char>* root)
 {
 	register_all_sensors();
@@ -97,19 +97,27 @@ SensorBase::Ptr SensorBase::factory(Simulable& parent, const rapidxml::xml_node<
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[SensorBase::factory] XML node is nullptr");
+	if (!root)
+	{
+		throw runtime_error("[SensorBase::factory] XML node is nullptr");
+	}
 	if (0 != strcmp(root->name(), "sensor"))
-		throw runtime_error(mrpt::format(
-			"[SensorBase::factory] XML root element is '%s' ('sensor' "
-			"expected)",
-			root->name()));
+	{
+		throw runtime_error(
+			mrpt::format(
+				"[SensorBase::factory] XML root element is '%s' ('sensor' "
+				"expected)",
+				root->name()));
+	}
 
 	// Get "class" attrib:
 	const xml_attribute<>* sensor_class = root->first_attribute("class");
 	if (!sensor_class || !sensor_class->value())
+	{
 		throw runtime_error(
 			"[VehicleBase::factory] Missing mandatory attribute 'class' in "
 			"node <sensor>");
+	}
 
 	const string sName = string(sensor_class->value());
 
@@ -117,8 +125,10 @@ SensorBase::Ptr SensorBase::factory(Simulable& parent, const rapidxml::xml_node<
 	auto we = classFactory_sensors.create(sName, parent, root);
 
 	if (!we)
+	{
 		throw runtime_error(
 			mrpt::format("[SensorBase::factory] Unknown sensor type '%s'", root->name()));
+	}
 
 	// parse the optional visual model:
 	we->parseVisual(*root);
@@ -131,7 +141,10 @@ bool SensorBase::parseSensorPublish(
 {
 	MRPT_START
 
-	if (node == nullptr) return false;
+	if (node == nullptr)
+	{
+		return false;
+	}
 
 	// Parse XML params:
 	{
@@ -149,7 +162,10 @@ bool SensorBase::parseSensorPublish(
 		parse_xmlnode_attribs(*node, auxPar, varValues);
 
 		// Reset publish topic if enabled==false
-		if (!publishEnabled) publishTopic_.clear();
+		if (!publishEnabled)
+		{
+			publishTopic_.clear();
+		}
 	}
 
 	return true;
@@ -163,6 +179,10 @@ void SensorBase::reportNewObservation(
 	{
 		return;
 	}
+
+	// Record observation timestamp for statistics
+	stats_.recordObservation(context.simul_time);
+
 	// Notify the world:
 	world_->dispatchOnObservation(vehicle_, obs);
 
@@ -194,6 +214,7 @@ void SensorBase::reportNewObservation_lidar_2d(
 	{
 		return;
 	}
+
 	mvsim_msgs::ObservationLidar2D msg;
 	msg.set_unixtimestamp(mrpt::Clock::toDouble(obs->timestamp));
 	msg.set_sourceobjectid(vehicle_.getName());
@@ -228,7 +249,10 @@ void SensorBase::registerOnServer(mvsim::Client& c)
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	// Topic:
-	if (!publishTopic_.empty()) c.advertiseTopic<mvsim_msgs::GenericObservation>(publishTopic_);
+	if (!publishTopic_.empty())
+	{
+		c.advertiseTopic<mvsim_msgs::GenericObservation>(publishTopic_);
+	}
 #endif
 }
 
@@ -259,8 +283,12 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 	{
 		return;
 	}
+
 	size_t nextIdx = 0;
-	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v) nextIdx = v->getSensors().size() + 1;
+	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v)
+	{
+		nextIdx = v->getSensors().size() + 1;
+	}
 
 	name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
 }
@@ -270,7 +298,10 @@ bool SensorBase::should_simulate_sensor(const TSimulContext& context)
 	// to fix edge cases with sensor period a multiple of simulation timestep:
 	const double timeEpsilon = 1e-6;
 
-	if (context.simul_time < sensor_last_timestamp_ + sensor_period_ - timeEpsilon) return false;
+	if (context.simul_time < sensor_last_timestamp_ + sensor_period_ - timeEpsilon)
+	{
+		return false;
+	}
 
 	if ((context.simul_time - sensor_last_timestamp_) >= 2 * sensor_period_)
 	{
