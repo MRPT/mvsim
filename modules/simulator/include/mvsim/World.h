@@ -957,6 +957,127 @@ class World : public mrpt::system::COutputLogger
 
 		GUIMode currentMode = GUIMode::Simulation;
 
+		/// Performance metrics for display
+		double lastRenderFps_ = 0.0;
+		double lastCpuUsage_ = 0.0;
+		double lastSimRate_ = 1.0;
+		double lastPhysicsHz_ = 0.0;
+
+		/// Navigation marker visibility
+		bool showNavigationMarker_ = true;
+
+		// --------------------------------------------------------------------
+		// Top Bar
+		// --------------------------------------------------------------------
+		struct TopBar
+		{
+			nanogui::DockablePanel* panel = nullptr;
+			nanogui::ComboBox* cbMode = nullptr;
+			nanogui::Label* lbTime = nullptr;
+			nanogui::Label* lbFps = nullptr;
+			nanogui::Label* lbCpu = nullptr;
+		} topBar;
+
+		// --------------------------------------------------------------------
+		// Left Panel - View, Navigate, Stats tabs
+		// --------------------------------------------------------------------
+		struct LeftPanel
+		{
+			nanogui::DockablePanel* panel = nullptr;
+
+			// View Tab widgets
+			struct ViewTab
+			{
+				nanogui::ComboBox* cbFollowVeh = nullptr;
+			} viewTab;
+
+			// Navigate Tab widgets
+			struct NavTab
+			{
+				nanogui::ComboBox* cbVehicle = nullptr;
+				nanogui::Label* lbTargetPos = nullptr;
+				nanogui::Label* lbDistance = nullptr;
+				nanogui::Label* lbETA = nullptr;
+				nanogui::Label* lbStatus = nullptr;
+				nanogui::Slider* slMaxSpeed = nullptr;
+				nanogui::Label* lbMaxSpeedValue = nullptr;
+				nanogui::Button* btnClear = nullptr;
+			} navTab;
+
+			// Stats Tab widgets
+			struct StatsTab
+			{
+				nanogui::Label* lbSimTime = nullptr;
+				nanogui::Label* lbCpuUsage = nullptr;
+				nanogui::Label* lbSimRate = nullptr;
+				nanogui::Label* lbPhysicsHz = nullptr;
+				nanogui::Label* lbRenderFps = nullptr;
+				nanogui::Label* lbSelectedName = nullptr;
+				nanogui::Label* lbSelectedPos = nullptr;
+				nanogui::Label* lbSelectedVel = nullptr;
+				nanogui::VScrollPanel* sensorScroll = nullptr;
+				nanogui::Widget* sensorListWidget = nullptr;
+				std::vector<nanogui::Label*> sensorLabels;
+			} statsTab;
+
+		} leftPanel;
+
+		// --------------------------------------------------------------------
+		// Right Panel - Add, Edit, Scene tabs (WorldEdit mode only)
+		// --------------------------------------------------------------------
+		struct RightPanel
+		{
+			nanogui::DockablePanel* panel = nullptr;
+
+			// Add Tab widgets
+			struct AddTab
+			{
+				nanogui::TextBox* tbWallHeight = nullptr;
+				nanogui::TextBox* tbWallThickness = nullptr;
+				nanogui::TextBox* tbBlockSize = nullptr;
+				nanogui::TextBox* tbBlockMass = nullptr;
+				nanogui::CheckBox* cbSnapToGrid = nullptr;
+				nanogui::TextBox* tbGridSize = nullptr;
+			} addTab;
+
+			// Edit Tab widgets
+			struct EditTab
+			{
+				nanogui::Label* lbSelectedName = nullptr;
+				nanogui::TextBox* tbPosX = nullptr;
+				nanogui::TextBox* tbPosY = nullptr;
+				nanogui::TextBox* tbPosZ = nullptr;
+				nanogui::Slider* slYaw = nullptr;
+				nanogui::Label* lbYawValue = nullptr;
+				nanogui::Button* btnDelete = nullptr;
+				nanogui::Button* btnDuplicate = nullptr;
+				nanogui::Button* btnApply = nullptr;
+			} editTab;
+
+			// Scene Tab widgets
+			struct SceneTab
+			{
+				nanogui::Button* btnUndo = nullptr;
+				nanogui::Button* btnRedo = nullptr;
+				nanogui::Label* lbHistoryCount = nullptr;
+				nanogui::VScrollPanel* objectScroll = nullptr;
+				nanogui::Widget* objectListWidget = nullptr;
+			} sceneTab;
+
+		} rightPanel;
+
+		// --------------------------------------------------------------------
+		// Bottom Bar
+		// --------------------------------------------------------------------
+		struct BottomBarNew
+		{
+			nanogui::DockablePanel* panel = nullptr;
+			nanogui::Label* lbMousePos = nullptr;
+			nanogui::Label* lbSelected = nullptr;
+			nanogui::Label* lbMode = nullptr;
+			nanogui::Label* lbStatus = nullptr;
+		} bottomBar;
+
 		// --------------------------------------------------------------------
 		// World Edit Mode State
 		// --------------------------------------------------------------------
@@ -1033,105 +1154,37 @@ class World : public mrpt::system::COutputLogger
 		} navigationState;
 
 		// --------------------------------------------------------------------
-		// Additional UI widgets
+		// Panel preparation methods (implemented in World_gui_dockpanels.cpp)
 		// --------------------------------------------------------------------
-
-		/// Statistics panel labels (sensor stats)
-		struct StatsPanel
-		{
-			nanogui::Window* window = nullptr;
-			nanogui::Label* lbSimTime = nullptr;
-			nanogui::Label* lbCpuUsage = nullptr;
-			nanogui::Label* lbSimRate = nullptr;
-			nanogui::Label* lbPhysicsFps = nullptr;
-			nanogui::Label* lbRenderFps = nullptr;
-
-			/// Selected vehicle info
-			nanogui::Label* lbSelectedVehicle = nullptr;
-			nanogui::Label* lbVehiclePosition = nullptr;
-			nanogui::Label* lbVehicleVelocity = nullptr;
-
-			/// Container for dynamic sensor stats
-			nanogui::Widget* sensorStatsContainer = nullptr;
-
-			/// Sensor stat labels (key = "vehicleName.sensorName")
-			std::map<std::string, nanogui::Widget*> sensorStatWidgets;
-
-		} statsPanel;
-
-		/// World edit panel
-		struct EditPanel
-		{
-			nanogui::Window* window = nullptr;
-
-			/// Tool buttons
-			std::vector<nanogui::Button*> toolButtons;
-
-			/// Property editors
-			nanogui::TextBox* tbPosX = nullptr;
-			nanogui::TextBox* tbPosY = nullptr;
-			nanogui::TextBox* tbPosZ = nullptr;
-			nanogui::TextBox* tbYaw = nullptr;
-			nanogui::TextBox* tbPitch = nullptr;
-			nanogui::TextBox* tbRoll = nullptr;
-
-			/// Wall properties
-			nanogui::TextBox* tbWallHeight = nullptr;
-			nanogui::TextBox* tbWallThickness = nullptr;
-
-			/// Undo/Redo buttons
-			nanogui::Button* btnUndo = nullptr;
-			nanogui::Button* btnRedo = nullptr;
-
-		} editPanel;
-
-		/// Navigation panel (shown in simulation mode)
-		struct NavPanel
-		{
-			nanogui::Window* window = nullptr;
-
-			/// Vehicle selector
-			nanogui::ComboBox* cbVehicle = nullptr;
-
-			/// Target info labels
-			nanogui::Label* lbTargetPos = nullptr;
-			nanogui::Label* lbDistanceToTarget = nullptr;
-			nanogui::Label* lbETA = nullptr;
-			nanogui::Label* lbStatus = nullptr;
-
-			/// Max speed slider
-			nanogui::Slider* slMaxSpeed = nullptr;
-			nanogui::Label* lbMaxSpeed = nullptr;
-
-			/// Clear target button
-			nanogui::Button* btnClearTarget = nullptr;
-
-		} navPanel;
-
-		/// Bottom status bar
-		struct BottomBar
-		{
-			nanogui::Window* window = nullptr;
-			nanogui::Label* lbStatus = nullptr;
-
-		} bottomBar;
-
-		// ====================================================================
-		// Window preparation methods
-		// ====================================================================
-
-		void prepare_mode_panel();
-		void prepare_stats_panel();
-		void prepare_edit_panel();
-		void prepare_nav_panel();
+		void prepare_top_bar();
+		void prepare_left_panel();
+		void prepare_right_panel();
 		void prepare_bottom_bar();
 
-		void update_stats_panel();
-		void update_edit_panel();
-		void update_nav_panel();
-		void update_bottom_bar();
+		void prepare_view_tab(nanogui::Widget* parent);
+		void prepare_navigate_tab(nanogui::Widget* parent);
+		void prepare_stats_tab(nanogui::Widget* parent);
+		void prepare_add_tab(nanogui::Widget* parent);
+		void prepare_edit_tab(nanogui::Widget* parent);
+		void prepare_scene_tab(nanogui::Widget* parent);
 
+		// --------------------------------------------------------------------
+		// Panel update methods (called each frame)
+		// --------------------------------------------------------------------
+		void update_top_bar();
+		void update_left_panel();
+		void update_right_panel();
+		void update_bottom_bar();
+		void update_navigate_tab();
+
+		// --------------------------------------------------------------------
+		// Mode and state management
+		// --------------------------------------------------------------------
 		void setMode(GUIMode mode);
+		void updateVehicleList();
+		void updateMousePosition(const mrpt::math::TPoint3D& worldPt);
+		void setStatusMessage(const std::string& msg);
+		void applyEditTabChanges();
 
 		void handleSimulationModeClick(bool leftClick, const mrpt::math::TPoint3D& worldPt);
 
