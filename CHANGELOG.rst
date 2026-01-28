@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.16.0 (2026-01-29)
+-------------------
 * docs: add new demo worlds
 * Remove debian leftover
 * Merge pull request `#78 <https://github.com/MRPT/mvsim/issues/78>`_ from MRPT/feat/new-indoor-outdoor-world
