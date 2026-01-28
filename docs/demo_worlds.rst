@@ -106,6 +106,75 @@ needed for RViz to show the sensors and send ``/cmd_vel`` commands.
       :language: xml
 
 
+demo_indoor_outdoor
+---------------------
+
+Example of a 3D Lidar Jackal robot in a world mixing indoor and outdoor scenarios. The GNSS sensor only works while outdoors.
+
+.. tab-set::
+    .. tab-item:: ROS 2
+        :selected:
+
+        .. code-block:: bash
+
+            ros2 launch mvsim demo_indoor_outdoor.launch.py
+
+    .. tab-item:: Standalone MVSim build
+
+        Assuming you compiled MVSim in the directory ``MVSIM_ROOT``,
+        with cmake build directory ``build-Release``, run:
+
+        .. code-block:: bash
+
+            cd MVSIM_ROOT
+            build-Release/bin/mvsim launch mvsim_tutorial/demo_indoor_outdoor.world.xml
+
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_indoor_outdoor.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_indoor_outdoor.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_indoor_outdoor.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_indoor_outdoor.world.xml
+      :language: xml
+
+demo_walls
+---------------------
+
+Example of how to define textured walls, with doors and windows.
+
+.. tab-set::
+    .. tab-item:: Standalone MVSim build
+
+        .. code-block:: bash
+
+            mvsim launch mvsim_tutorial/demo_walls.world.xml
+
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_walls.mp4" type="video/mp4">
+     </video>
+   </div>
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_walls.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_walls.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_walls.world.xml
+      :language: xml
+
+
 demo_1robot
 ------------------
 
