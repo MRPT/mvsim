@@ -10,6 +10,7 @@
 typedef std::function<pybind11::module&(std::string const&)> ModuleGetter;
 
 void bind_std_exception(std::function<pybind11::module&(std::string const& namespace_)>& M);
+void bind_std_stl_vector(std::function<pybind11::module&(std::string const& namespace_)>& M);
 void bind_std_stdexcept(std::function<pybind11::module&(std::string const& namespace_)>& M);
 void bind_mvsim_Comms_common(std::function<pybind11::module&(std::string const& namespace_)>& M);
 void bind_mvsim_Comms_Client(std::function<pybind11::module&(std::string const& namespace_)>& M);
@@ -59,6 +60,7 @@ PYBIND11_MODULE(pymvsim_comms, root_module)
 	// pybind11::class_<std::shared_ptr<void>>(M(""), "_encapsulated_data_");
 
 	bind_std_exception(M);
+	bind_std_stl_vector(M);
 	bind_std_stdexcept(M);
 	bind_mvsim_Comms_common(M);
 	bind_mvsim_Comms_Client(M);

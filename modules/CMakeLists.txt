@@ -263,6 +263,7 @@ if (pybind11_FOUND)
 		set(PYTHON_INSTALL_DIRECTORY ${CMAKE_INSTALL_PREFIX} CACHE PATH "Install prefix for python modules with 'make python-install'")
 	endif()
 
+	find_package(ament_cmake_python REQUIRED)
 	mvsim_ament_cmake_python_get_python_install_dir() # Gets PYTHON_INSTALL_DIR
 
 	# We need to do the install via a script run during "make install" so we can 
@@ -277,6 +278,18 @@ if (pybind11_FOUND)
 			COMMAND ${CMAKE_COMMAND} -P ${mvsim_BINARY_DIR}/install-python.cmake
 			DEPENDS mvsim-msgs pymvsim_comms
 			COMMENT "Running 'python-install'")
+
+	# Create colcon environment hook to set PYTHONPATH
+	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/pythonpath.dsv
+	"prepend-non-duplicate;PYTHONPATH;${PYTHON_INSTALL_DIR}"
+	)
+
+	# Install it where colcon expects environment hooks
+	install(
+		FILES ${CMAKE_CURRENT_BINARY_DIR}/pythonpath.dsv
+		DESTINATION share/mvsim/environment
+	)
+
 endif()
 
 # ========================== Show results ====================================

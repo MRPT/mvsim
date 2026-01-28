@@ -19,13 +19,24 @@ using namespace mvsim;
 
 void mvsim::sendMessage(const google::protobuf::MessageLite& m, zmq::socket_t& socket)
 {
-	mrpt::io::CMemoryStream buf;
-	auto arch = mrpt::serialization::archiveFrom(buf);
+	std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
 
-	arch << m.GetTypeName();
-	arch << m.SerializeAsString();
+	// typename:
+	const std::string typeName = m.GetTypeName();
+	const uint32_t typeNameLen = static_cast<uint32_t>(typeName.size());
+	ss.write(reinterpret_cast<const char*>(&typeNameLen), sizeof(typeNameLen));
+	ss.write(typeName.data(), static_cast<std::streamsize>(typeName.size()));
 
-	zmq::message_t msg(buf.getRawBufferData(), buf.getTotalBytesCount());
+	// serialized data:
+	const auto sData = m.SerializeAsString();
+	const uint32_t sDataLen = static_cast<uint32_t>(sData.size());
+	ss.write(reinterpret_cast<const char*>(&sDataLen), sizeof(sDataLen));
+	ss.write(sData.data(), static_cast<std::streamsize>(sData.size()));
+
+	// Send the message:
+	const auto& s = ss.str();
+	zmq::message_t msg(s.data(), s.size());
+
 #if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 3, 1)
 	socket.send(msg, zmq::send_flags::none);
 #else
@@ -35,13 +46,24 @@ void mvsim::sendMessage(const google::protobuf::MessageLite& m, zmq::socket_t& s
 
 std::tuple<std::string, std::string> mvsim::internal::parseMessageToParts(const zmq::message_t& msg)
 {
-	mrpt::io::CMemoryStream buf;
-	buf.assignMemoryNotOwn(msg.data(), msg.size());
+	std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+	ss.write(static_cast<const char*>(msg.data()), static_cast<std::streamsize>(msg.size()));
 
-	auto arch = mrpt::serialization::archiveFrom(buf);
+	// type:
+	uint32_t typeNameLen;
+	ss.read(reinterpret_cast<char*>(&typeNameLen), sizeof(typeNameLen));
+	char typeNameBuf[256];
+	ASSERT_(typeNameLen < sizeof(typeNameBuf));
+	ss.read(typeNameBuf, static_cast<std::streamsize>(typeNameLen));
+	std::string typeName(typeNameBuf, typeNameLen);
 
-	std::string typeName, serializedData;
-	arch >> typeName >> serializedData;
+	// Data:
+	uint32_t sDataLen;
+	ss.read(reinterpret_cast<char*>(&sDataLen), sizeof(sDataLen));
+	std::string serializedData;
+	serializedData.resize(sDataLen);
+	ss.read(reinterpret_cast<char*>(serializedData.data()), static_cast<std::streamsize>(sDataLen));
+
 	return {typeName, serializedData};
 }
 
@@ -51,13 +73,17 @@ void mvsim::parseMessage(const zmq::message_t& msg, google::protobuf::MessageLit
 
 	ASSERT_EQUAL_(typeName, out.GetTypeName());
 
-	bool ok = out.ParseFromString(serializedData);
+	// convert vector<uint8_t> to string:
+	const std::string sData(
+		reinterpret_cast<const char*>(serializedData.data()), serializedData.size());
+
+	bool ok = out.ParseFromString(sData);
 	if (!ok)
+	{
 		THROW_EXCEPTION_FMT(
-			"Format error: protobuf could not decode binary message of "
-			"type "
-			"'%s'",
+			"Format error: protobuf could not decode binary message of type '%s'",
 			typeName.c_str());
+	}
 }
 
 zmq::message_t mvsim::receiveMessage(zmq::socket_t& s)
