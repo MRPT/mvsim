@@ -13,14 +13,13 @@
 #include <mvsim/WorldElements/HorizontalPlane.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/WorldElements/PointCloud.h>
+#include <mvsim/WorldElements/PropertyRegion.h>
 #include <mvsim/WorldElements/SkyBox.h>
 #include <mvsim/WorldElements/VerticalPlane.h>
 
-#include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
-#include <sstream>	// std::stringstream
 #include <string>
 
 using namespace mvsim;
@@ -33,9 +32,11 @@ void register_all_world_elements()
 {
 	static bool done = false;
 	if (done)
+	{
 		return;
-	else
-		done = true;
+	}
+
+	done = true;
 
 	REGISTER_WORLD_ELEMENT("ground_grid", GroundGrid)
 	REGISTER_WORLD_ELEMENT("occupancy_grid", OccupancyGridMap)
@@ -44,6 +45,7 @@ void register_all_world_elements()
 	REGISTER_WORLD_ELEMENT("vertical_plane", VerticalPlane)
 	REGISTER_WORLD_ELEMENT("pointcloud", PointCloud)
 	REGISTER_WORLD_ELEMENT("skybox", SkyBox)
+	REGISTER_WORLD_ELEMENT("property_region", PropertyRegion)
 }
 
 WorldElementBase::Ptr WorldElementBase::factory(
@@ -62,26 +64,32 @@ WorldElementBase::Ptr WorldElementBase::factory(
 	else
 	{
 		if (0 != strcmp(root->name(), "element"))
+		{
 			throw runtime_error(mrpt::format(
 				"[WorldElementBase::factory] XML root element is '%s' "
 				"('<element>' expected)",
 				root->name()));
+		}
 
 		// Get class name:
 		const xml_attribute<>* attrib_class = root->first_attribute("class");
 		if (!attrib_class || !attrib_class->value())
+		{
 			throw runtime_error(
 				"[WorldElementBase::factory] Missing mandatory attribute "
 				"'class' in node <element>");
+		}
 
 		sName = string(attrib_class->value());
 	}
 	auto we = classFactory_worldElements.create(sName, parent, root);
 
 	if (!we)
+	{
 		throw runtime_error(mrpt::format(
 			"[WorldElementBase::factory] Unknown world element type '%s'",
 			root ? root->name() : "(root=nullptr)"));
+	}
 
 	return we;
 }

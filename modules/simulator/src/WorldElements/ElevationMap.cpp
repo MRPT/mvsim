@@ -94,6 +94,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	std::string sElevationMatrixData;
 	params["elevation_data_matrix"] = TParamEntry("%s", &sElevationMatrixData);
+	float elevation_data_matrix_scale = 1.0f;
+	params["elevation_data_matrix_scale"] = TParamEntry("%f", &elevation_data_matrix_scale);
 
 	std::string sDemTextFile;
 	params["dem_xyzrgb_file"] = TParamEntry("%s", &sDemTextFile);
@@ -137,9 +139,11 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(sElevationImgFile, 0 /*force load grayscale*/))
+		{
 			throw std::runtime_error(mrpt::format(
 				"[ElevationMap] ERROR: Cannot read elevation image '%s'",
 				sElevationImgFile.c_str()));
+		}
 
 		// Scale: [0,1] => [min_z,max_z]
 		// Get image normalized in range [0,1]
@@ -165,6 +169,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		{
 			THROW_EXCEPTION_FMT("Error parsing <elevation_data_matrix>: %s", sErrors.str().c_str());
 		}
+
+		elevation_data *= elevation_data_matrix_scale;
 	}
 	else
 	{
@@ -306,12 +312,22 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	const double LX = (elevation_data.rows() - 1) * resolution_;
 	const double LY = (elevation_data.cols() - 1) * resolution_;
 
-	if (corner_min_x == std::numeric_limits<double>::max()) corner_min_x = -0.5 * LX;
-	if (corner_min_y == std::numeric_limits<double>::max()) corner_min_y = -0.5 * LY;
+	if (corner_min_x == std::numeric_limits<double>::max())
+	{
+		corner_min_x = -0.5 * LX;
+	}
+	if (corner_min_y == std::numeric_limits<double>::max())
+	{
+		corner_min_y = -0.5 * LY;
+	}
 
 	// Propose to the "world" to use this coordinates as reference
 	// for opengl to work with very large coordinates (e.g. UTM)
-	parent()->worldRenderOffsetPropose({-corner_min_x, -corner_min_y, .0});
+	// Do only if strictly necessary. TODO: box2d fixtures for collisions need translation too!
+	if (std::abs(corner_min_x) > 1e6f)
+	{
+		parent()->worldRenderOffsetPropose({-corner_min_x, -corner_min_y, .0});
+	}
 
 	// Save copy for calcs:
 	meshCacheZ_ = elevation_data;

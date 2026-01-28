@@ -33,5 +33,10 @@
         "**/install": true,
         "**/log": true
     },
-    "ros.distro": "humble"
+    "ros.distro": "humble",
+    "cSpell.words": [
+        "simul",
+        "teleop",
+        "teleoperation"
+    ]
 }

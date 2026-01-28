@@ -1,88 +1,186 @@
+<?xml version="1.0"?>
 <mvsim_world version="1.0">
-	<!-- General simulation options -->
-	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
-
-	<!-- GUI options -->
+	<!-- Example world demonstrating doors and windows in vertical planes -->
+	<!-- All walls and ground use textures from the mvsim-models repository -->
+	
+	<simul_timestep>0</simul_timestep>
+	
 	<gui>
 		<ortho>false</ortho>
-		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>35</cam_distance>
+		<show_forces>false</show_forces>
+		<cam_distance>20</cam_distance>
 		<fov_deg>60</fov_deg>
-		<refresh_fps>20</refresh_fps>
-		<!-- <follow_vehicle>r1</follow_vehicle> -->
+		<refresh_fps>40</refresh_fps>
 	</gui>
 
 	<!-- Light parameters -->
 	<lights>
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>60.0</light_azimuth_deg>
+		<light_elevation_deg>75.0</light_elevation_deg>
 	</lights>
 
+	<variable name="WALL_THICKNESS" value="0.2"></variable>
 
-	<!-- ========================
-		   Scenario definition
-	     ======================== -->
-	<!-- ground grid (for visual reference) -->
-	<element class="ground_grid">
-		<floating>true</floating>
-	</element>
-
-	<!-- ground -->
+	<!-- Ground plane with concrete texture -->
 	<element class="horizontal_plane">
 		<cull_face>BACK</cull_face>
-		<x_min>-20</x_min>
-		<y_min>-20</y_min>
-		<x_max> 20</x_max>
-		<y_max> 20</y_max>
+		<x_min>-15</x_min> <y_min>-15</y_min>
+		<x_max> 15</x_max> <y_max> 15</y_max>
 		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
 	</element>
 
-	<!-- ceiling -->
-	<element class="horizontal_plane">
-		<cull_face>FRONT</cull_face>
-		<x_min>-20</x_min>
-		<y_min>-20</y_min>
-		<x_max> 20</x_max>
-		<y_max> 20</y_max>
-		<z>3.5</z>
+	<!-- ================================================================
+	     EXAMPLE 1: Wall with a single door (allows passage)
+	     Red brick texture - West wall
+	     ================================================================ -->
+	<element class="vertical_plane">
+		<x0>-10</x0> <y0>-10</y0>
+		<x1>-10</x1> <y1>10</y1>
+		<z>0.0</z> <height>3.0</height>
+		<cull_face>NONE</cull_face>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
+
+		<!-- Door at 50% position (middle of wall), 1.2m wide, standard height -->
+		<door>
+			<position>0.5</position>  <!-- 0.0 = start point, 1.0 = end point -->
+			<width>1.2</width>        <!-- meters -->
+			<z_min>0.0</z_min>        <!-- bottom of door -->
+			<z_max>2.1</z_max>        <!-- top of door -->
+			<name>main_entrance</name>
+		</door>
 	</element>
 
+	<!-- ================================================================
+	     EXAMPLE 2: Wall with multiple windows (collision enabled)
+	     Brown brick texture - East wall
+	     ================================================================ -->
+	<element class="vertical_plane">
+		<x0>10</x0> <y0>-10</y0>
+		<x1>10</x1> <y1>10</y1>
+		<z>0.0</z> <height>3.0</height>
+		<cull_face>NONE</cull_face>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-02.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
 
-	<!-- =============================
-		   Vehicle classes definition
-	     ============================= -->
-	<include file="../definitions/ackermann.vehicle.xml" />
+		<!-- First window -->
+		<window>
+			<position>0.25</position>
+			<width>1.5</width>
+			<z_min>1.0</z_min>  <!-- 1m from ground -->
+			<z_max>2.5</z_max>  <!-- 2.5m from ground -->
+			<name>window_left</name>
+		</window>
+		
+		<!-- Second window -->
+		<window>
+			<position>0.75</position>
+			<width>1.5</width>
+			<z_min>1.0</z_min>
+			<z_max>2.5</z_max>
+			<name>window_right</name>
+		</window>
+	</element>
 
-	<!-- ========================
-		   Vehicle(s) definition
-	     ======================== -->
-	<vehicle name="r1" class="car_ackermann">
-		<init_pose>5 10 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+	<!-- ================================================================
+	     EXAMPLE 3: Wall with door and windows (textured)
+	     Concrete wall texture - North wall
+	     ================================================================ -->
+	<element class="vertical_plane">
+		<x0>-10</x0> <y0>10</y0>
+		<x1>10</x1> <y1>10</y1>
+		<z>0.0</z> <height>3.0</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
 
-		<publish>
-		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
-		  <publish_pose_period>50e-3</publish_pose_period>
-		</publish>
+		<!-- Door near left end -->
+		<door position="0.15" width="1.0" z_min="0.0" z_max="2.1" />
+		
+		<!-- Windows above eye level -->
+		<window position="0.4" width="1.2" z_min="2.0" z_max="2.8" />
+		<window position="0.6" width="1.2" z_min="2.0" z_max="2.8" />
+		<window position="0.85" width="1.2" z_min="2.0" z_max="2.8" />
+	</element>
 
-		<!-- Sensors -->
-		<include file="../definitions/rplidar-a2.sensor.xml"
-			raytrace_3d="true" sensor_x="1.7" sensor_z="1.01" sensor_yaw="0" sensor_name="laser1" 
-			sensor_hz="10.0"
-			sensor_publish="true"
-		/>
-		<!-- Sensors -->
-		<include file="../definitions/camera.sensor.xml"
-			sensor_x="1.9" sensor_z="0.5" 
-			sensor_publish="true"
-		/>
-	</vehicle>
+	<!-- ================================================================
+	     EXAMPLE 4: Wall with door at different position
+	     Concrete texture - South wall
+	     ================================================================ -->
+	<element class="vertical_plane">
+		<x0>-10</x0> <y0>-10</y0>
+		<x1>10</x1> <y1>-10</y1>
+		<z>0.0</z> <height>3.0</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-concrete-01.jpg</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+		<thickness>0.3</thickness>  <!-- Wall thickness in meters -->
+
+		<!-- Door at 30% position from start -->
+		<door>
+			<position>0.3</position>
+			<width>1.5</width>
+			<z_min>0.0</z_min>
+			<z_max>2.2</z_max>
+			<name>side_door</name>
+		</door>
+		
+		<!-- High window for ventilation -->
+		<window>
+			<position>0.7</position>
+			<width>2.0</width>
+			<z_min>2.3</z_min>
+			<z_max>2.9</z_max>
+			<name>ventilation_window</name>
+		</window>
+	</element>
+
+	<!-- ================================================================
+	     EXAMPLE 5: Interior wall with double doors
+	     Wooden planks texture - Interior divider
+	     ================================================================ -->
+	<element class="vertical_plane">
+		<x0>0</x0> <y0>-5</y0>
+		<x1>0</x1> <y1>5</y1>
+		<z>0.0</z> <height>2.5</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WoodenPlanks01_1K_BaseColor.png</texture>
+		<texture_size_x>1.5</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>
+		<thickness>0.3</thickness>  <!-- Wall thickness in meters -->
+		
+		<!-- Left door of double door -->
+		<door position="0.4" width="0.9" z_min="0.0" z_max="2.1" name="double_door_left" />
+		
+		<!-- Right door of double door -->
+		<door position="0.6" width="0.9" z_min="0.0" z_max="2.1" name="double_door_right" />
+		
+		<!-- Note: These doors will be merged in collision handling since they overlap -->
+	</element>
+
 
 	<!-- ======================================
-	      Walls
+	      Walls from external 3D model
 	     ====================================== -->
-	<walls>
+	<!--<walls>
 	  <color>#505050</color>
 	  <model_uri>testWalls.dae</model_uri>
 	  <wallThickness>0.10</wallThickness>
-	</walls>
+	</walls> -->
+
+	<!-- Add a vehicle to test navigation through doors -->
+	<include file="../definitions/jackal.vehicle.xml" default_sensors="true" />
+	
+	<vehicle name="robot1" class="jackal">
+		<init_pose>-8 0 0</init_pose>
+	</vehicle>
 
 </mvsim_world>

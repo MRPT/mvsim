@@ -37,14 +37,14 @@ namespace mvsim
  */
 struct TParamEntry
 {
-	const char* frmt = nullptr;
+	const char* format = nullptr;
 	void* val = nullptr;
 
 	TParamEntry() = default;
 
 	template <typename T>
-	TParamEntry(const char* frmt_, T* targetVariable)
-		: frmt(frmt_), val(reinterpret_cast<void*>(targetVariable))
+	TParamEntry(const char* format_, T* targetVariable)
+		: format(format_), val(reinterpret_cast<void*>(targetVariable))
 	{
 	}
 

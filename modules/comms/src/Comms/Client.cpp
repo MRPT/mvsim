@@ -9,16 +9,13 @@
 
 #include <mrpt/core/exceptions.h>
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/system/thread_name.h>
 #include <mrpt/version.h>
 #include <mvsim/Comms/Client.h>
 #include <mvsim/Comms/common.h>
 #include <mvsim/Comms/ports.h>
 #include <mvsim/Comms/zmq_monitor.h>
-#if MRPT_VERSION >= 0x204
-#include <mrpt/system/thread_name.h>
-#endif
 
-#include <iostream>
 #include <mutex>
 #include <shared_mutex>
 
@@ -76,8 +73,16 @@ struct InfoPerSubscribedTopic
 	InfoPerSubscribedTopic(zmq::context_t& c) : context(c) {}
 	~InfoPerSubscribedTopic()
 	{
-		if (topicThread.joinable()) topicThread.join();
+		if (topicThread.joinable())
+		{
+			topicThread.join();
+		}
 	}
+
+	InfoPerSubscribedTopic(const InfoPerSubscribedTopic&) = delete;
+	InfoPerSubscribedTopic& operator=(const InfoPerSubscribedTopic&) = delete;
+	InfoPerSubscribedTopic(InfoPerSubscribedTopic&&) = default;
+	InfoPerSubscribedTopic& operator=(InfoPerSubscribedTopic&&) = delete;
 
 	zmq::context_t& context;
 
@@ -161,30 +166,21 @@ void Client::connect()
 	zmq_->srvListenSocket.emplace(zmq_->context, ZMQ_REP);
 	zmq_->srvListenSocket->bind("tcp://0.0.0.0:*"s);
 
-	if (!zmq_->srvListenSocket) THROW_EXCEPTION("Error binding service listening socket.");
-
 	ASSERTMSG_(!serviceInvokerThread_.joinable(), "Client service thread is already running!");
 
 	serviceInvokerThread_ = std::thread(&Client::internalServiceServingThread, this);
-#if MRPT_VERSION >= 0x204
 	mrpt::system::thread_name("services_"s + nodeName_, serviceInvokerThread_);
-#endif
 
 	// Create listening socket for subscription updates:
 	zmq_->topicNotificationsSocket.emplace(zmq_->context, ZMQ_PAIR);
 	zmq_->topicNotificationsSocket->bind("tcp://0.0.0.0:*"s);
-
-	if (!zmq_->topicNotificationsSocket)
-		THROW_EXCEPTION("Error binding topic updates listening socket.");
 
 	zmq_->topicNotificationsEndPoint = get_zmq_endpoint(*zmq_->topicNotificationsSocket);
 
 	ASSERTMSG_(!topicUpdatesThread_.joinable(), "Client topic updates thread is already running!");
 
 	topicUpdatesThread_ = std::thread(&Client::internalTopicUpdatesThread, this);
-#if MRPT_VERSION >= 0x204
 	mrpt::system::thread_name("topicUpdates_"s + nodeName_, topicUpdatesThread_);
-#endif
 
 #else
 	THROW_EXCEPTION(
@@ -220,8 +216,14 @@ void Client::shutdown() noexcept
 	zmq_ctx_shutdown(zmq_->context.operator void*());
 #endif
 
-	if (serviceInvokerThread_.joinable()) serviceInvokerThread_.join();
-	if (topicUpdatesThread_.joinable()) topicUpdatesThread_.join();
+	if (serviceInvokerThread_.joinable())
+	{
+		serviceInvokerThread_.join();
+	}
+	if (topicUpdatesThread_.joinable())
+	{
+		topicUpdatesThread_.join();
+	}
 	zmq_->subscribedTopics.clear();
 	zmq_->offeredServices.clear();
 
@@ -371,10 +373,12 @@ void Client::doAdvertiseTopic(
 	std::unique_lock<std::shared_mutex> lck(zmq_->advertisedTopics_mtx);
 
 	if (advTopics.find(topicName) != advTopics.end())
+	{
 		THROW_EXCEPTION_FMT(
 			"Topic `%s` already registered for publication in this same "
 			"client (!)",
 			topicName.c_str());
+	}
 
 	// the ctor of InfoPerAdvertisedTopic automatically creates a ZMQ_PUB
 	// socket in pubSocket
@@ -423,9 +427,11 @@ void Client::doAdvertiseTopic(
 	mvsim::parseMessage(reply, ans);
 
 	if (!ans.success())
+	{
 		THROW_EXCEPTION_FMT(
 			"Error registering topic `%s` in server: `%s`", topicName.c_str(),
 			ans.errormessage().c_str());
+	}
 
 #else
 	THROW_EXCEPTION("MVSIM built without ZMQ & PROTOBUF");
@@ -443,8 +449,10 @@ void Client::doAdvertiseService(
 	auto& services = zmq_->offeredServices;
 
 	if (services.find(serviceName) != services.end())
+	{
 		THROW_EXCEPTION_FMT(
 			"Service `%s` already registered in this same client!", serviceName.c_str());
+	}
 
 	internal::InfoPerService& ips = services[serviceName];
 
@@ -479,9 +487,11 @@ void Client::doAdvertiseService(
 	mvsim::parseMessage(reply, ans);
 
 	if (!ans.success())
+	{
 		THROW_EXCEPTION_FMT(
 			"Error registering service `%s` in server: `%s`", serviceName.c_str(),
 			ans.errormessage().c_str());
+	}
 
 #else
 	THROW_EXCEPTION("MVSIM built without ZMQ & PROTOBUF");
@@ -756,9 +766,11 @@ void Client::doCallService(
 		mvsim::parseMessage(m, gsia);
 
 		if (!gsia.success())
+		{
 			THROW_EXCEPTION_FMT(
 				"Error requesting information about service `%s`: %s", serviceName.c_str(),
 				gsia.errormessage().c_str());
+		}
 
 		srvEndpoint = gsia.serviceendpoint();
 
@@ -786,7 +798,10 @@ void Client::doCallService(
 		const auto [typeName, serializedData] = internal::parseMessageToParts(m);
 
 		outputSerializedMsg.value().get() = serializedData;
-		if (outputMsgTypeName) outputMsgTypeName.value().get() = typeName;
+		if (outputMsgTypeName)
+		{
+			outputMsgTypeName.value().get() = typeName;
+		}
 	}
 #endif
 	MRPT_END
@@ -872,7 +887,10 @@ void Client::internalTopicSubscribeThread(internal::InfoPerSubscribedTopic& ipt)
 			// Send to subscriber callbacks:
 			try
 			{
-				for (const auto& callback : ipt.callbacks) callback(m);
+				for (const auto& callback : ipt.callbacks)
+				{
+					callback(m);
+				}
 			}
 			catch (const std::exception& e)
 			{

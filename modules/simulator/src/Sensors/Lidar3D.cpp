@@ -8,9 +8,6 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/maps/CPointsMapXYZIRT.h>
-#include <mrpt/maps/CSimplePointsMap.h>
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
@@ -19,6 +16,12 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
+
+#if MRPT_VERSION >= 0x020f00  // 2.15.0
+#include <mrpt/maps/CGenericPointsMap.h>
+#else
+#include <mrpt/maps/CPointsMapXYZIRT.h>
+#endif
 
 #include "xml_utils.h"
 
@@ -78,7 +81,10 @@ void Lidar3D::internalGuiUpdate(
 	{
 		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
-		if (!glVizSensors) return;	// may happen during shutdown
+		if (!glVizSensors)
+		{
+			return;	 // may happen during shutdown
+		}
 	}
 
 	// 1st time?
@@ -93,9 +99,7 @@ void Lidar3D::internalGuiUpdate(
 	if (!gl_sensor_origin_ && viz)
 	{
 		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
-#if MRPT_VERSION >= 0x270
 		gl_sensor_origin_->castShadows(false);
-#endif
 		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
@@ -164,8 +168,14 @@ void Lidar3D::internalGuiUpdate(
 	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + sensorPoseOnVeh_;
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
-	if (glPoints_) glPoints_->setPose(pp);
-	if (gl_sensor_fov_) gl_sensor_fov_->setPose(pp);
+	if (glPoints_)
+	{
+		glPoints_->setPose(pp);
+	}
+	if (gl_sensor_fov_)
+	{
+		gl_sensor_fov_->setPose(pp);
+	}
 	if (gl_sensor_origin_)
 	{
 		gl_sensor_origin_->setPose(pp);
@@ -221,22 +231,16 @@ void Lidar3D::freeOpenGLResources()
 	fbo_renderer_depth_.reset();
 }
 
-#if MRPT_VERSION >= 0x270
 // Do the log->linear conversion ourselves for this sensor,
 // since only a few depth points are actually used:
 // (older mrpt versions already returned the linearized depth)
 constexpr int DEPTH_LOG2LIN_BITS = 20;
 using depth_log2lin_t = mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
-#endif
 
 static float safeInterpolateRangeImage(
 	const mrpt::math::CMatrixFloat& depthImage, const float maxDepthInterpolationStepVert,
-	const float maxDepthInterpolationStepHorz, const int NCOLS, const int NROWS, float v, float u
-#if MRPT_VERSION >= 0x270
-	,
-	const depth_log2lin_t::lut_t& depth_log2lin_lut
-#endif
-)
+	const float maxDepthInterpolationStepHorz, const int NCOLS, const int NROWS, float v, float u,
+	const depth_log2lin_t::lut_t& depth_log2lin_lut)
 {
 	const int u0 = static_cast<int>(u);
 	const int v0 = static_cast<int>(v);
@@ -252,7 +256,6 @@ static float safeInterpolateRangeImage(
 	const float raw_d11 = depthImage(v1, u1);
 
 	// Linearize:
-#if MRPT_VERSION >= 0x270
 	// Do the log->linear conversion ourselves for this sensor,
 	// since only a few depth points are actually used:
 
@@ -261,13 +264,6 @@ static float safeInterpolateRangeImage(
 	const float d01 = depth_log2lin_lut[(raw_d01 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
 	const float d10 = depth_log2lin_lut[(raw_d10 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
 	const float d11 = depth_log2lin_lut[(raw_d11 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-#else
-	// "d" is already linear depth
-	const float d00 = raw_d00;
-	const float d01 = raw_d01;
-	const float d10 = raw_d10;
-	const float d11 = raw_d11;
-#endif
 
 	// max relative range difference in u and v directions:
 	const float A_u = std::max(std::abs(d00 - d10), std::abs(d01 - d11));
@@ -284,7 +280,8 @@ static float safeInterpolateRangeImage(
 			   d10 * uw * (1.0f - vw) +	 //
 			   d11 * uw * vw;
 	}
-	else if (A_v < maxStepV)
+
+	if (A_v < maxStepV)
 	{
 		// Linear interpolation in "v" only:
 		// Pick closest "u":
@@ -293,7 +290,8 @@ static float safeInterpolateRangeImage(
 
 		return d0 * (1.0f - vw) + d1 * vw;
 	}
-	else if (A_u < maxStepU)
+
+	if (A_u < maxStepU)
 	{
 		// Linear interpolation in "u" only:
 
@@ -303,11 +301,9 @@ static float safeInterpolateRangeImage(
 
 		return d0 * (1.0f - uw) + d1 * uw;
 	}
-	else
-	{
-		// too many changes in depth, do not interpolate:
-		return d00;
-	}
+
+	// too many changes in depth, do not interpolate:
+	return d00;
 }
 
 void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
@@ -340,7 +336,14 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	curObs->timestamp = world_->get_simul_timestamp();
 	curObs->sensorLabel = name_;
 
+#if MRPT_VERSION >= 0x020f04  // 2.15.4
+	auto curPtsPtr = mrpt::maps::CGenericPointsMap::Create();
+	curPtsPtr->registerField_float("intensity");
+	curPtsPtr->registerField_float("t");
+	curPtsPtr->registerField_uint16("ring");
+#else
 	auto curPtsPtr = mrpt::maps::CPointsMapXYZIRT::Create();
+#endif
 
 	auto& curPts = *curPtsPtr;
 	curObs->pointcloud = curPtsPtr;
@@ -362,7 +365,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 #endif
 
 #if MRPT_VERSION >= 0x020f00  // 2.15.0
-	ASSERT_(curPts_Is && curPts_Ts && curPts_Rs);
+	ASSERT_(curPts_Is);
+	ASSERT_(curPts_Ts);
+	ASSERT_(curPts_Rs);
 #endif
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
@@ -397,14 +402,23 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 			std::vector<std::string> vertAnglesStrs;
 			mrpt::system::tokenize(vertical_ray_angles_str_, " \t\r\n", vertAnglesStrs);
 			ASSERT_EQUAL_(vertAnglesStrs.size(), static_cast<size_t>(vertNumRays_));
-			std::set<double> angs;
-			for (const auto& s : vertAnglesStrs) angs.insert(std::stod(s));
-			ASSERT_EQUAL_(angs.size(), static_cast<size_t>(vertNumRays_));
-			for (const auto a : angs) vertical_ray_angles_.push_back(a);
+			std::set<double> angles;
+			for (const auto& s : vertAnglesStrs)
+			{
+				angles.insert(std::stod(s));
+			}
+			ASSERT_EQUAL_(angles.size(), static_cast<size_t>(vertNumRays_));
+			for (const auto a : angles)
+			{
+				vertical_ray_angles_.push_back(a);
+			}
 		}
 
 		// Pass to radians:
-		for (double& a : vertical_ray_angles_) a = mrpt::DEG2RAD(a);
+		for (double& a : vertical_ray_angles_)
+		{
+			a = mrpt::DEG2RAD(a);
+		}
 	}
 
 	// worst vFOV case: at each sub-scan render corner:
@@ -413,10 +427,12 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	const double vertFOVMax = vertical_ray_angles_.back();
 	const double vertFOVMin = std::abs(vertical_ray_angles_.front());
 
-	const int FBO_NROWS_UP = vertResolutionFactor_ * tan(vertFOVMax) *
-							 sqrt(square(camModel.fx()) + square(camModel.cx()));
-	const int FBO_NROWS_DOWN = vertResolutionFactor_ * tan(vertFOVMin) *
-							   sqrt(square(camModel.fx()) + square(camModel.cx()));
+	const int FBO_NROWS_UP = static_cast<int>(
+		vertResolutionFactor_ * tan(vertFOVMax) *
+		sqrt(square(camModel.fx()) + square(camModel.cx())));
+	const int FBO_NROWS_DOWN = static_cast<int>(
+		vertResolutionFactor_ * tan(vertFOVMin) *
+		sqrt(square(camModel.fx()) + square(camModel.cx())));
 
 	const int FBO_NROWS = FBO_NROWS_DOWN + FBO_NROWS_UP + 1;
 	camModel.nrows = FBO_NROWS;
@@ -597,7 +613,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				noiseSeq.reserve(noiseLen);
 				for (size_t i = 0; i < noiseLen; i++)
 				{
-					noiseSeq.push_back(rng.drawGaussian1D(0.0, rangeStdNoise_));
+					noiseSeq.push_back(static_cast<float>(rng.drawGaussian1D(0.0, rangeStdNoise_)));
 				}
 			}
 		}
@@ -689,13 +705,17 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (ignore_parent_body_)
 	{
-		if (visVeh) visVeh->customVisualVisible(formerVisVehState);
-		if (veh) veh->chassisAndWheelsVisible(formerVisVehState);
+		if (visVeh)
+		{
+			visVeh->customVisualVisible(formerVisVehState);
+		}
+		if (veh)
+		{
+			veh->chassisAndWheelsVisible(formerVisVehState);
+		}
 	}
 
-#if MRPT_VERSION >= 0x270
 	viewport->enableShadowCasting(wasShadowEnabled);
-#endif
 
 	// Store generated obs:
 	{

@@ -199,7 +199,9 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 				mvsim::parse(nPose->value(), getSimulableWorldObject()->user_defined_variables())
 					.c_str(),
 				"%lf %lf %lf", &p.x, &p.y, &p.yaw))
+		{
 			THROW_EXCEPTION_FMT("Error parsing <init_pose>%s</init_pose>", nPose->value());
+		}
 		p.yaw *= M_PI / 180.0;	// deg->rad
 
 		initPose = p;
@@ -212,7 +214,9 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 				mvsim::parse(nPose3->value(), getSimulableWorldObject()->user_defined_variables())
 					.c_str(),
 				"%lf %lf %lf %lf %lf %lf ", &p.x, &p.y, &p.z, &p.yaw, &p.pitch, &p.roll))
+		{
 			THROW_EXCEPTION_FMT("Error parsing <init_pose3d>%s</init_pose3d>", nPose3->value());
+		}
 		p.yaw *= M_PI / 180.0;	// deg->rad
 		p.pitch *= M_PI / 180.0;  // deg->rad
 		p.roll *= M_PI / 180.0;	 // deg->rad
@@ -271,7 +275,9 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 				mvsim::parse(nInitVel->value(), getSimulableWorldObject()->user_defined_variables())
 					.c_str(),
 				"%lf %lf %lf", &dq.vx, &dq.vy, &dq.omega))
+		{
 			THROW_EXCEPTION_FMT("Error parsing <init_vel>%s</init_vel>", nInitVel->value());
+		}
 		dq.omega *= M_PI / 180.0;  // deg->rad
 
 		// Convert twist (velocity) from local -> global coords:

@@ -244,19 +244,17 @@ void World::internalPostSimulStepForRawlog()
 	rawlog_last_odom_time_ = now;
 
 	// Create one observation per robot:
-	for (const auto& veh : vehicles_)
+	for (const auto& [vehName, veh] : vehicles_)
 	{
 		auto obs = mrpt::obs::CObservationOdometry::Create();
 		obs->timestamp = get_simul_timestamp();
 		obs->sensorLabel = "odom";
-		obs->odometry = veh.second->getCPose2D();
+		obs->odometry = veh->getOdometry();
 
 		obs->hasVelocities = true;
-		obs->velocityLocal = veh.second->getVelocityLocal();
+		obs->velocityLocal = veh->getVelocityLocal();
 
-		// TODO: Simul noisy odometry and odom velocity
-
-		internalOnObservation(*veh.second, obs);
+		internalOnObservation(*veh, obs);
 	}
 }
 
@@ -587,7 +585,10 @@ void World::internal_simul_pre_step_terrain_elevation()
 
 const World::LUTCache& World::getLUTCacheOfObjects() const
 {
-	if (!lut2d_objects_is_up_to_date_) internal_update_lut_cache();
+	if (!lut2d_objects_is_up_to_date_)
+	{
+		internal_update_lut_cache();
+	}
 
 	return lut2d_objects_;
 }

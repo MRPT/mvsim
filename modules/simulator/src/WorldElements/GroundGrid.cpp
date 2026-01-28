@@ -112,5 +112,12 @@ void GroundGrid::internalGuiUpdate(
 					  (center_offset.x < 0 ? -1. : 1.);
 	center_offset.y = interval_ * ::floor(std::abs(center_offset.y) / interval_) *
 					  (center_offset.y < 0 ? -1. : 1.);
+
+	// Apply world render offset for large coordinate systems (e.g. UTM)
+	const auto worldOffset = parent()->worldRenderOffset();
+	center_offset.x += worldOffset.x;
+	center_offset.y += worldOffset.y;
+	center_offset.z += worldOffset.z;
+
 	gl_groundgrid_->setLocation(center_offset);
 }

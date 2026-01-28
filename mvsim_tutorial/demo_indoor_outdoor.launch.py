@@ -1,4 +1,4 @@
-# ROS2 launch file for Turtlebot world demo
+# ROS2 launch file for indoor/outdoor demo world
 # Invokes mvsim/launch/launch_world.launch.py
 # See: https://mvsimulator.readthedocs.io/en/latest/mvsim_node.html
 
@@ -16,10 +16,10 @@ def generate_launch_description():
 
     # World and configuration files
     world_file = os.path.join(
-        mvsim_dir, 'mvsim_tutorial', 'demo_turtlebot_world.world.xml'
+        mvsim_dir, 'mvsim_tutorial', 'demo_indoor_outdoor.world.xml'
     )
     rviz_config_file = os.path.join(
-        mvsim_dir, 'mvsim_tutorial', 'demo_turtlebot_world_ros2.rviz'
+        mvsim_dir, 'mvsim_tutorial', 'demo_indoor_outdoor_ros2.rviz'
     )
 
     # Launch configuration variables (no defaults here)

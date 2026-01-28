@@ -1,0 +1,512 @@
+<?xml version="1.0"?>
+<mvsim_world version="1.0">
+	<!--
+	  Sensor Fusion Testing World
+	  
+	  This world is designed for testing sensor fusion algorithms in challenging scenarios:
+	  - Large outdoor terrain with asymmetric hills at corners
+	  - Central indoor room with furniture and windows
+	  - Two corridors: one straight (15m), one with 90-degree turn
+	  - GNSS-denied areas in corridors and indoor room
+	  - Tests: 2D lidar, 3D lidar, GNSS, IMU, odometry
+	  
+	  Features:
+	  - Terrain with asymmetric elevation changes at corners
+	  - Palm trees and sparse vegetation for visual features
+	  - Transparent ceiling for light penetration
+	  - Proper wall thickness (0.2m)
+	-->
+	
+	<simul_timestep>0</simul_timestep>
+	<joystick_enabled>true</joystick_enabled>
+	
+	<!-- Georeference for GNSS simulation -->
+	<georeference>
+		<latitude>40.1234</latitude>
+		<longitude>-74.5678</longitude>
+		<height>100.0</height>
+		<world_to_enu_rotation_deg>0.0</world_to_enu_rotation_deg>
+	</georeference>
+	
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>false</show_forces>
+		<cam_distance>50</cam_distance>
+		<fov_deg>60</fov_deg>
+		<refresh_fps>40</refresh_fps>
+	</gui>
+	
+	<!-- Light parameters -->
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>45.0</light_azimuth_deg>
+		<light_elevation_deg>60.0</light_elevation_deg>
+	</lights>
+	
+	<!-- Variables for easy configuration -->
+	<variable name="WALL_THICKNESS" value="0.2"></variable>
+	<variable name="WALL_HEIGHT" value="2.5"></variable>
+	<variable name="INDOOR_ROOM_SIZE" value="10.0"></variable>
+	
+	<variable name="CORRIDOR_STRAIGHT_LENGTH" value="20.0"></variable>
+	<variable name="CORRIDOR_WIDTH" value="1.6"></variable>
+
+	<variable name="TERRAIN_RANGE" value="37.5"></variable>
+	<variable name="TERRAIN_HILL_HEIGHT" value="2.5"></variable>
+
+	<!-- A SkyBox decoration -->
+	<element class='skybox'>
+		<!-- Provide the URI printf-like "pattern" to the six texture files, 
+		     such that replacing "%s" with the following strings gives the path
+		     to the files: "Up", "Right", "Left", "Front", "Down", "Back".
+		 -->
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/SunSet.zip/SunSet/SunSet%s.jpg</textures>
+	</element>
+
+	<!-- ================================================================
+	     OUTDOOR TERRAIN (75x75 meters)
+	     ================================================================ -->
+	
+	<!-- Terrain elevation map with asymmetric hills at corners -->
+	<!-- PNG elevation map: grayscale image where pixel value represents height -->
+	<!-- Value range: 0-255 mapped to 0-10 meters elevation -->
+	<element class="elevation_map">
+		<elevation_image>sensor_fusion_terrain.png</elevation_image>
+		<elevation_image_min_z>0.0</elevation_image_min_z>
+		<elevation_image_max_z>4.0</elevation_image_max_z>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_BaseColor.png</texture_image>
+		<texture_size_x>1.5</texture_size_x>
+		<texture_size_y>1.5</texture_size_y>
+		<corner_min_x>-37.5</corner_min_x>
+		<corner_min_y>-37.5</corner_min_y>
+		<model_split_size>3.0</model_split_size>
+	</element>
+	
+	<block:class name="radio_tower">
+		<static>true</static>
+		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/RadioTower.zip/RadioTower/radio_tower.dae</model_uri>
+			<model_roll>90</model_roll>
+			<model_scale>0.4</model_scale>
+		</visual>
+		<skip_elevation_adjust>true</skip_elevation_adjust>
+	</block:class>	
+
+	<block class="radio_tower"> <init_pose3d>1 20 0.01 0 0 0</init_pose3d> </block>
+
+
+	<!-- ================================================================
+	     OUTDOOR VEGETATION
+	     ================================================================ -->
+	
+	<!-- Palm tree class -->
+	<block:class name="palm_tree">
+		<static>true</static>
+		<zmin>0.0</zmin>
+		<zmax>8.0</zmax>
+		<shape_from_visual/>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/TropicPalmTree.zip/TropicPalmTree/free_palm.dae</model_uri>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+	
+	<block class="palm_tree"> <init_pose3d>-30 -29 5.0  10 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d>-31 -19 5.0  45 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d>-26 -25 5.0  30 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d>-15 -14 5.0  80 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d>-20  15 5.0  90 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d>-34  34 5.0  20 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d> 17  30 5.0 -20 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d> 2  -22 5.0  33 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d>31  -21 5.0  94 0 0</init_pose3d>   </block>
+	<block class="palm_tree"> <init_pose3d>34  -20 5.0   2 0 0</init_pose3d>   </block>
+
+	<!-- ================================================================
+	     INDOOR ROOM (15x15) AT CENTER
+	     ================================================================ -->
+	
+	<!-- Indoor floor -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-$f{0.5*INDOOR_ROOM_SIZE}</x_min>
+		<y_min>-$f{0.5*INDOOR_ROOM_SIZE}</y_min>
+		<x_max>$f{0.5*INDOOR_ROOM_SIZE}</x_max>
+		<y_max>$f{0.5*INDOOR_ROOM_SIZE}</y_max>
+		<z>0.02</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	
+	<!-- Transparent ceiling (FRONT cull_face allows light through from below) -->
+	<element class="horizontal_plane">
+		<cull_face>FRONT</cull_face>
+		<x_min>-$f{0.5*INDOOR_ROOM_SIZE}</x_min>
+		<y_min>-$f{0.5*INDOOR_ROOM_SIZE}</y_min>
+		<x_max>$f{0.5*INDOOR_ROOM_SIZE}</x_max>
+		<y_max>$f{0.5*INDOOR_ROOM_SIZE}</y_max>
+		<z>$f{WALL_HEIGHT}</z>
+	</element>
+	
+	<!-- ================================================================
+	     INDOOR ROOM WALLS
+	     ================================================================ -->
+	
+	<!-- West wall with door to corridor A (straight) -->
+	<element class="vertical_plane">
+		<x0>-$f{0.5*INDOOR_ROOM_SIZE}</x0>
+		<y0>-$f{0.5*INDOOR_ROOM_SIZE}</y0>
+		<x1>-$f{0.5*INDOOR_ROOM_SIZE}</x1>
+		<y1>$f{0.5*INDOOR_ROOM_SIZE}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+		<!-- Door to corridor A at center -->
+		<door position="0.5" width="1.2" z_min="0.0" z_max="2.1" name="door_corridor_a" />
+	</element>
+	
+	<!-- East wall with door to corridor B (with turn) -->
+	<element class="vertical_plane">
+		<x0>$f{0.5*INDOOR_ROOM_SIZE}</x0>
+		<y0>-$f{0.5*INDOOR_ROOM_SIZE}</y0>
+		<x1>$f{0.5*INDOOR_ROOM_SIZE}</x1>
+		<y1>$f{0.5*INDOOR_ROOM_SIZE}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+		<!-- Door to corridor B at center -->
+		<door position="0.5" width="1.2" z_min="0.0" z_max="2.1" name="door_corridor_b" />
+	</element>
+	
+	<!-- North wall with windows -->
+	<element class="vertical_plane">
+		<x0>-$f{0.5*INDOOR_ROOM_SIZE}</x0>
+		<y0>$f{0.5*INDOOR_ROOM_SIZE}</y0>
+		<x1>$f{0.5*INDOOR_ROOM_SIZE}</x1>
+		<y1>$f{0.5*INDOOR_ROOM_SIZE}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+		<!-- Windows on north wall -->
+		<window position="0.3" width="1.2" z_min="1.0" z_max="2.3" name="window_north_left" />
+		<window position="0.7" width="1.2" z_min="1.0" z_max="2.3" name="window_north_right" />
+	</element>
+	
+	<!-- South wall with windows -->
+	<element class="vertical_plane">
+		<x0>$f{0.5*INDOOR_ROOM_SIZE}</x0>
+		<y0>-$f{0.5*INDOOR_ROOM_SIZE}</y0>
+		<x1>-$f{0.5*INDOOR_ROOM_SIZE}</x1>
+		<y1>-$f{0.5*INDOOR_ROOM_SIZE}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-concrete-01.jpg</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+		<!-- Windows on south wall -->
+		<window position="0.3" width="1.2" z_min="1.0" z_max="2.3" name="window_south_left" />
+		<window position="0.7" width="1.2" z_min="1.0" z_max="2.3" name="window_south_right" />
+	</element>
+	
+	<!-- ================================================================
+	     INDOOR FURNITURE
+	     ================================================================ -->
+	
+	<block:class name="table">
+		<mass>30</mass>
+		<static>true</static>
+		<zmin>0.0</zmin>
+		<zmax>$f{0.5*CORRIDOR_WIDTH}</zmax>
+		<shape_from_visual/>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/OfficeDesk.zip/OfficeDesk/desk.dae</model_uri>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+	
+	<block:class name="chair">
+		<mass>5</mass>
+		<zmin>0.0</zmin>
+		<zmax>$f{0.5*CORRIDOR_WIDTH}</zmax>
+		<shape_from_visual/>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/OfficeChair.zip/OfficeChair/officechair.dae</model_uri>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+	
+	<!-- Furniture placement -->
+	<block class="table"> <init_pose>-3 3.5 -90</init_pose> </block>
+	
+	<block class="chair"> <init_pose>-3.6 2.6 -5</init_pose> </block>
+	<block class="chair"> <init_pose>-2.6 2.55 120</init_pose> </block>
+
+	<block class="table"> <init_pose>3 -3.2 90</init_pose> </block>
+	<block class="chair"> <init_pose>3.2 -2.3 110</init_pose> </block>
+		
+	<!-- ================================================================
+	     CORRIDOR A (STRAIGHT, 15m length on West side)
+	     ================================================================ -->
+	
+	<!-- Corridor A floor -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH}</x_min>
+		<y_min>$f{-0.5*CORRIDOR_WIDTH}</y_min>
+		<x_max>-$f{0.5*INDOOR_ROOM_SIZE}</x_max>
+		<y_max>$f{0.5*CORRIDOR_WIDTH}</y_max>
+		<z>0.02</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	
+	<!-- Corridor A ceiling -->
+	<element class="horizontal_plane">
+		<cull_face>FRONT</cull_face>
+		<x_min>-$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH}</x_min>
+		<y_min>$f{-0.5*CORRIDOR_WIDTH}</y_min>
+		<x_max>-$f{0.5*INDOOR_ROOM_SIZE}</x_max>
+		<y_max>$f{0.5*CORRIDOR_WIDTH}</y_max>
+		<z>$f{WALL_HEIGHT}</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	
+	<!-- Corridor A north wall -->
+	<element class="vertical_plane">
+		<x0>-$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH}</x0>
+		<y0>$f{0.5*CORRIDOR_WIDTH}</y0>
+		<x1>-$f{0.5*INDOOR_ROOM_SIZE}</x1>
+		<y1>$f{0.5*CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+	</element>
+	
+	<!-- Corridor A south wall -->
+	<element class="vertical_plane">
+		<x0>-$f{0.5*INDOOR_ROOM_SIZE}</x0>
+		<y0>$f{-0.5*CORRIDOR_WIDTH}</y0>
+		<x1>-$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH}</x1>
+		<y1>$f{-0.5*CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+	</element>
+		
+	<!-- ================================================================
+	     CORRIDOR B (WITH 90-DEGREE TURN on East side)
+	     ================================================================ -->
+	
+	<!-- Corridor B - Part 1 (horizontal segment, 15m length) -->
+	
+	<!-- Corridor B Part 1 floor -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>$f{0.5*INDOOR_ROOM_SIZE}</x_min>
+		<y_min>$f{-0.5*CORRIDOR_WIDTH}</y_min>
+		<x_max>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.5*CORRIDOR_WIDTH}</x_max>
+		<y_max>$f{0.5*CORRIDOR_WIDTH}</y_max>
+		<z>0.02</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	
+	<!-- Corridor B Part 1 ceiling -->
+	<element class="horizontal_plane">
+		<cull_face>FRONT</cull_face>
+		<x_min>$f{0.5*INDOOR_ROOM_SIZE}</x_min>
+		<y_min>$f{-0.5*CORRIDOR_WIDTH}</y_min>
+		<x_max>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.5*CORRIDOR_WIDTH}</x_max>
+		<y_max>$f{0.5*CORRIDOR_WIDTH}</y_max>
+		<z>$f{WALL_HEIGHT}</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	
+	<!-- Corridor B Part 1 north wall -->
+	<element class="vertical_plane">
+		<x0>$f{0.5*INDOOR_ROOM_SIZE}</x0>
+		<y0>$f{0.5*CORRIDOR_WIDTH}</y0>
+		<x1>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH-0.5*CORRIDOR_WIDTH}</x1>
+		<y1>$f{0.5*CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+	</element>
+	
+	<!-- Corridor B Part 1 south wall -->
+	<element class="vertical_plane">
+		<x0>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.5*CORRIDOR_WIDTH}</x0>
+		<y0>$f{-0.5*CORRIDOR_WIDTH}</y0>
+		<x1>$f{0.5*INDOOR_ROOM_SIZE}</x1>
+		<y1>$f{-0.5*CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+	</element>
+	
+	<!-- Corridor B - Part 2 (vertical segment after 90-degree turn, 15m length) -->
+	
+	<!-- Corridor B Part 2 floor -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH-0.8}</x_min>
+		<y_min>$f{0.5*CORRIDOR_WIDTH}</y_min>
+		<x_max>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.8}</x_max>
+		<y_max>$f{0.8+CORRIDOR_STRAIGHT_LENGTH}</y_max>
+		<z>0.02</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	
+	<!-- Corridor B Part 2 ceiling -->
+	<element class="horizontal_plane">
+		<cull_face>FRONT</cull_face>
+		<x_min>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH-0.8}</x_min>
+		<y_min>$f{0.5*CORRIDOR_WIDTH}</y_min>
+		<x_max>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.8}</x_max>
+		<y_max>$f{0.8+CORRIDOR_STRAIGHT_LENGTH}</y_max>
+		<z>$f{WALL_HEIGHT}</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	
+	<!-- Corridor B Part 2 east wall (right side) -->
+	<element class="vertical_plane">
+		<x0>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.8}</x0>
+		<y0>$f{-0.5*CORRIDOR_WIDTH}</y0>
+		<x1>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.8}</x1>
+		<y1>$f{0.8+CORRIDOR_STRAIGHT_LENGTH}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+	</element>
+	
+	<!-- Corridor B Part 2 west wall (left side) -->
+	<element class="vertical_plane">
+		<x0>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH-0.8}</x0>
+		<y0>$f{0.8+CORRIDOR_STRAIGHT_LENGTH}</y0>
+		<x1>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH-0.8}</x1>
+		<y1>$f{0.5*CORRIDOR_WIDTH}</y1>
+		<z>0.0</z>
+		<height>$f{WALL_HEIGHT}</height>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<texture_size_x>2.5</texture_size_x>
+		<texture_size_y>2.5</texture_size_y>
+		<thickness>${WALL_THICKNESS}</thickness>
+	</element>
+	
+	
+	<!-- ================================================================
+	     GNSS-DENIED REGIONS (PropertyRegion elements)
+	     ================================================================ -->
+	
+	<!-- Indoor room GNSS-denied zone -->
+	<element class="property_region">
+		<property_name>gps_no_coverage</property_name>
+		<value_bool>true</value_bool>
+		<x_min>-8.0</x_min>
+		<y_min>-8.0</y_min>
+		<z_min>-1.0</z_min>
+		<x_max>8.0</x_max>
+		<y_max>8.0</y_max>
+		<z_max>3.0</z_max>
+	</element>
+	
+	<!-- Corridor A GNSS-denied zone -->
+	<element class="property_region">
+		<property_name>gps_no_coverage</property_name>
+		<value_bool>true</value_bool>
+		<x_min>-$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.5}</x_min>
+		<y_min>-1.5</y_min>
+		<z_min>-1.0</z_min>
+		<x_max>-7.0</x_max>
+		<y_max>1.5</y_max>
+		<z_max>3.0</z_max>
+	</element>
+	
+	<!-- Corridor B Part 1 GNSS-denied zone -->
+	<element class="property_region">
+		<property_name>gps_no_coverage</property_name>
+		<value_bool>true</value_bool>
+		<x_min>7.0</x_min>
+		<y_min>-1.5</y_min>
+		<z_min>-1.0</z_min>
+		<x_max>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+0.5}</x_max>
+		<y_max>1.5</y_max>
+		<z_max>3.0</z_max>
+	</element>
+	
+	<!-- Corridor B Part 2 GNSS-denied zone -->
+	<element class="property_region">
+		<property_name>gps_no_coverage</property_name>
+		<value_bool>true</value_bool>
+		<x_min>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH-1.5}</x_min>
+		<y_min>0.3</y_min>
+		<z_min>-1.0</z_min>
+		<x_max>$f{0.5*INDOOR_ROOM_SIZE+CORRIDOR_STRAIGHT_LENGTH+1.5}</x_max>
+		<y_max>$f{0.8+CORRIDOR_STRAIGHT_LENGTH+0.5}</y_max>
+		<z_max>3.0</z_max>
+	</element>
+	
+	<!-- ================================================================
+	     VEHICLE AND SENSORS
+	     ================================================================ -->
+	
+	<!-- Include vehicle definition with all sensors -->
+	<include file="../definitions/jackal.vehicle.xml"
+		default_sensors="true"
+		lidar2d_raytrace="true"
+		lidar2d_fov_degrees="360"
+		/>
+	
+	<!-- Robot starting position at outdoor area -->
+	<vehicle name="robot" class="jackal">
+		<init_pose>$f{-CORRIDOR_STRAIGHT_LENGTH-0.5*INDOOR_ROOM_SIZE-5} 0 0</init_pose>
+
+		<include file="../definitions/gnss.sensor.xml"
+		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.25"
+		  sensor_period_sec="1.0"
+		  sensor_name="gps1"
+		  sensor_horizontal_std_noise="1.5"
+		  sensor_vertical_std_noise="2.5"
+		  />
+
+	</vehicle>
+
+</mvsim_world>

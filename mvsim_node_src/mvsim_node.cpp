@@ -8,12 +8,18 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/maps/CPointsMapXYZIRT.h>
+#include <mrpt/maps/CGenericPointsMap.h>
+#include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/mvsim_node_core.h>
+
+#if MRPT_VERSION < 0x030000	 // support legacy <3.0.0 classes
+#include <mrpt/maps/CPointsMapXYZI.h>
+#include <mrpt/maps/CPointsMapXYZIRT.h>
+#endif
 
 #include "rapidxml_utils.hpp"
 
@@ -162,8 +168,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	realtime_factor_ = n_->declare_parameter<double>("realtime_factor", realtime_factor_);
 
-	gui_refresh_period_ms_ =
-		n_->declare_parameter<double>("gui_refresh_period", gui_refresh_period_ms_);
+	gui_refresh_period_ms_ = static_cast<int>(
+		n_->declare_parameter<double>("gui_refresh_period", gui_refresh_period_ms_));
 
 	headless_ = n_->declare_parameter<bool>("headless", headless_);
 
@@ -176,8 +182,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	publish_tf_odom2baselink_ =
 		n_->declare_parameter<bool>("publish_tf_odom2baselink", publish_tf_odom2baselink_);
 
-	publisher_history_len_ =
-		n_->declare_parameter<int>("publisher_history_len", publisher_history_len_);
+	publisher_history_len_ = static_cast<int>(
+		n_->declare_parameter<int>("publisher_history_len", publisher_history_len_));
 
 	force_publish_vehicle_namespace_ = n_->declare_parameter<bool>(
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_);
@@ -356,7 +362,7 @@ void MVSimNode::spin()
 		tim_teleop_refresh_.Tic();
 
 		std::string txt2gui_tmp;
-		World::TGUIKeyEvent keyevent = gui_key_events_;
+		World::GUIKeyEvent keyevent = gui_key_events_;
 
 		// Global keys:
 		switch (keyevent.keycode)
@@ -406,7 +412,10 @@ void MVSimNode::spin()
 		msg2gui_ = txt2gui_tmp;	 // send txt msgs to show in the GUI
 
 		// Clear the keystroke buffer
-		if (keyevent.keycode != 0) gui_key_events_ = World::TGUIKeyEvent();
+		if (keyevent.keycode != 0)
+		{
+			gui_key_events_ = World::GUIKeyEvent();
+		}
 
 	}  // end refresh teleop stuff
 
@@ -830,6 +839,8 @@ void MVSimNode::spinNotifyROS()
 			// 1) Ground-truth pose and velocity
 			// --------------------------------------------
 			const mrpt::math::TPose3D& gh_veh_pose = veh->getPose();
+			const auto veh_odom_pose = veh->getOdometry();
+
 			// [vx,vy,w] in global frame
 			const auto& gh_veh_vel = veh->getTwist();
 
@@ -912,8 +923,6 @@ void MVSimNode::spinNotifyROS()
 			// 3) odometry transform
 			// --------------------------------------------
 			{
-				const mrpt::math::TPose3D odo_pose = gh_veh_pose;
-
 				// TF(namespace <Ri>): /odom -> /base_link
 				if (publish_tf_odom2baselink_)
 				{
@@ -921,7 +930,7 @@ void MVSimNode::spinNotifyROS()
 					tx.header.frame_id = "odom";
 					tx.child_frame_id = "base_link";
 					tx.header.stamp = myNow();
-					tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(odo_pose));
+					tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(veh_odom_pose));
 
 					Msg_TFMessage tfMsg;
 					tfMsg.transforms.push_back(tx);
@@ -931,7 +940,7 @@ void MVSimNode::spinNotifyROS()
 				// Apart from TF, publish to the "odom" topic as well
 				{
 					Msg_Odometry odoMsg;
-					odoMsg.pose.pose = mrpt2ros::toROS_Pose(odo_pose);
+					odoMsg.pose.pose = mrpt2ros::toROS_Pose(veh_odom_pose);
 
 					// first, we'll populate the header for the odometry msg
 					odoMsg.header.stamp = myNow();
@@ -1483,32 +1492,40 @@ void MVSimNode::internalOn(
 	// Send observation:
 	{
 		// Convert observation MRPT -> ROS
-		Msg_PointCloud2 msg_pts;
+		auto msg_pts = mvsim_node::make_shared<Msg_PointCloud2>();
 		Msg_Header msg_header;
 		msg_header.stamp = now;
 		msg_header.frame_id = lbPoints;
 
+#if MRPT_VERSION < 0x030000	 // support legacy <3.0.0 classes
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(obs.pointcloud.get());
 			xyzirt)
 		{
-			mrpt2ros::toROS(*xyzirt, msg_header, msg_pts);
+			mrpt2ros::toROS(*xyzirt, msg_header, *msg_pts);
 		}
 		else if (auto* xyzi = dynamic_cast<const mrpt::maps::CPointsMapXYZI*>(obs.pointcloud.get());
 				 xyzi)
 		{
-			mrpt2ros::toROS(*xyzi, msg_header, msg_pts);
+			mrpt2ros::toROS(*xyzi, msg_header, *msg_pts);
 		}
+#endif
 		else if (auto* sPts =
 					 dynamic_cast<const mrpt::maps::CSimplePointsMap*>(obs.pointcloud.get());
 				 sPts)
 		{
-			mrpt2ros::toROS(*sPts, msg_header, msg_pts);
+			mrpt2ros::toROS(*sPts, msg_header, *msg_pts);
+		}
+		else if (auto* sGenPts =
+					 dynamic_cast<const mrpt::maps::CGenericPointsMap*>(obs.pointcloud.get());
+				 sGenPts)
+		{
+			mrpt2ros::toROS(*sGenPts, msg_header, *msg_pts);
 		}
 		else
 		{
 			THROW_EXCEPTION("Do not know how to handle this variant of CPointsMap");
 		}
 
-		pubPts->publish(mvsim_node::make_shared<Msg_PointCloud2>(msg_pts));
+		pubPts->publish(msg_pts);
 	}
 }

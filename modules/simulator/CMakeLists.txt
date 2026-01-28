@@ -98,6 +98,7 @@ add_library(${PROJECT_NAME}
 	src/WorldElements/HorizontalPlane.cpp
 	src/WorldElements/OccupancyGridMap.cpp
 	src/WorldElements/PointCloud.cpp
+	src/WorldElements/PropertyRegion.cpp
 	src/WorldElements/SkyBox.cpp
 	src/WorldElements/VerticalPlane.cpp
 	src/WorldElements/WorldElementBase.cpp
@@ -106,6 +107,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/WorldElements/HorizontalPlane.h
 	include/mvsim/WorldElements/OccupancyGridMap.h
 	include/mvsim/WorldElements/PointCloud.h
+	include/mvsim/WorldElements/PropertyRegion.h
 	include/mvsim/WorldElements/SkyBox.h
 	include/mvsim/WorldElements/VerticalPlane.h
 	include/mvsim/WorldElements/WorldElementBase.h

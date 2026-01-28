@@ -41,35 +41,16 @@ DynamicsDifferential::DynamicsDifferential(
 	updateMaxRadiusFromPoly();
 
 	fixture_chassis_ = nullptr;
-	for (auto& fw : fixture_wheels_) fw = nullptr;
+	for (auto& fw : fixture_wheels_)
+	{
+		fw = nullptr;
+	}
 }
 
 /** The derived-class part of load_params_from_xml() */
 void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node)
 {
 	const std::map<std::string, std::string> varValues = {{"NAME", name_}};
-
-	// <chassis ...> </chassis>
-	const rapidxml::xml_node<char>* xml_chassis = xml_node->first_node("chassis");
-	if (xml_chassis)
-	{
-		// Attribs:
-		TParameterDefinitions attribs;
-		attribs["mass"] = TParamEntry("%lf", &this->chassis_mass_);
-		attribs["zmin"] = TParamEntry("%lf", &this->chassis_z_min_);
-		attribs["zmax"] = TParamEntry("%lf", &this->chassis_z_max_);
-		attribs["color"] = TParamEntry("%color", &this->chassis_color_);
-
-		parse_xmlnode_attribs(
-			*xml_chassis, attribs, varValues,
-			"[DynamicsDifferential::dynamics_load_params_from_xml]");
-
-		// Shape node (optional, fallback to default shape if none found)
-		const rapidxml::xml_node<char>* xml_shape = xml_chassis->first_node("shape");
-		if (xml_shape)
-			mvsim::parse_xmlnode_shape(
-				*xml_shape, chassis_poly_, "[DynamicsDifferential::dynamics_load_params_from_xml]");
-	}
 
 	// <l_wheel ...>, <r_wheel ...>
 
@@ -83,7 +64,9 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 
 		const rapidxml::xml_node<char>* xml_wheel = xml_node->first_node(cpw.name.c_str());
 		if (xml_wheel)
+		{
 			wheels_info_[i].loadFromXML(xml_wheel);
+		}
 		else
 		{
 			wheels_info_[i].x = cpw.pos.x;
@@ -111,17 +94,22 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			else if (sCtrlClass == ControllerTwistIdeal::class_name())
 				controller_ = std::make_shared<ControllerTwistIdeal>(*this);
 			else
+			{
 				THROW_EXCEPTION_FMT(
 					"[DynamicsDifferential] Unknown 'class'='%s' in "
 					"<controller> XML node",
 					sCtrlClass.c_str());
+			}
 
 			controller_->load_config(*xml_control);
 		}
 	}
 
 	// Default controller:
-	if (!controller_) controller_ = std::make_shared<ControllerRawForces>(*this);
+	if (!controller_)
+	{
+		controller_ = std::make_shared<ControllerRawForces>(*this);
+	}
 }
 
 // See docs in base class:

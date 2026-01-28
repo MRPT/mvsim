@@ -29,7 +29,6 @@
 
         <!--   Motor controller -->
         <controller class="twist_ideal" />  <!-- "twist_ideal" or "twist_pid" -->
-
     </dynamics>
 
     <!-- Friction force simulation -->
@@ -37,6 +36,14 @@
         <mu>0.8</mu>
         <C_damping>0.05</C_damping>
     </friction>
+
+    <!-- Noisy odometry parameters. These are multipliers to actual SE(2) increments -->
+    <odometry
+      x_multiplier="$f{1.0+0.02*randn()}"
+      y_multiplier="$f{1.0+0.01*randn()}"
+      yaw_multiplier="$f{1.0+0.03*randn()}"
+    />
+
 
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->
@@ -54,6 +61,7 @@
         sensor_x="-0.15" sensor_z="0.25" sensor_yaw="180"
         sensor_period_sec="0.10"
         raytrace_3d="${lidar2d_raytrace|false}"
+        fov_degrees="${lidar2d_fov_degrees|180}"
         sensor_name="scanner1"
       />
 

@@ -11,11 +11,8 @@
 #include <mvsim/WorldElements/SkyBox.h>
 
 //
+#include <mrpt/opengl/CSkyBox.h>
 #include <mrpt/version.h>
-#if MRPT_VERSION >= 0x270
-#include <mrpt/opengl/CSkyBox.h>  // class introduced in mrpt 2.7.0
-#else
-#endif
 
 #include <rapidxml.hpp>
 
@@ -36,7 +33,10 @@ SkyBox::~SkyBox() = default;
 
 void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
-	if (!root) return;	// Assume defaults
+	if (!root)
+	{
+		return;	 // Assume defaults
+	}
 
 	std::string texturesPattern;
 
@@ -53,7 +53,6 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		"Texture pattern URI in <textures>...</textures> must contain one '%s' "
 		"placeholder.");
 
-#if MRPT_VERSION >= 0x270
 	using mrpt::opengl::CUBE_TEXTURE_FACE;
 
 	const std::vector<std::pair<CUBE_TEXTURE_FACE, const char*>> faceImages = {
@@ -75,9 +74,6 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 
 	glSkyBoxPrepared_ = sb;
-#else
-	std::cerr << "[mvsim::SkyBox] Ignoring SkyBox since MRPT>=2.7.0 is not available." << std::endl;
-#endif
 }
 
 void SkyBox::internalGuiUpdate(

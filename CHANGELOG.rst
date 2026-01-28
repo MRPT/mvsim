@@ -2,6 +2,28 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.16.0 (2026-01-29)
+-------------------
+* docs: add new demo worlds
+* Remove debian leftover
+* Merge pull request `#78 <https://github.com/MRPT/mvsim/issues/78>`_ from MRPT/feat/new-indoor-outdoor-world
+  Feat/new-indoor-outdoor-world
+* fix: ros node didn't publish CGenericPointsMap
+* Functional walls with doors and windows with thickness
+* Update vertical plane to have doors, windows, and thickness
+* fix: lidar3d error with latest mrpt api
+* docs: improve vehicles and physics docs
+* CircleCI: update to build for u22.04
+* Remove #if pragmas for too old mrpt versions
+* Implement GNSS honor 'gps_no_coverage' property
+* Add new world element: PropertyRegion
+* misc clang-tidy fixes
+* fix warnings for deprecated mrpt classes
+* Merge pull request `#70 <https://github.com/MRPT/mvsim/issues/70>`_ from MRPT/feature/noisy-odometry
+  Implement noisy odometry
+* Implement noisy odometry
+* Contributors: Jose Luis Blanco-Claraco
+
 0.15.0 (2025-12-29)
 -------------------
 * Fix build against upcoming mrpt 2.15.4

@@ -44,7 +44,9 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 	// <file>FILENAME.{png,gridmap}</file>
 	xml_node<>* xml_file = root->first_node("file");
 	if (!xml_file || !xml_file->value())
+	{
 		throw std::runtime_error("Error: <file></file> XML entry not found inside gridmap node!");
+	}
 
 	const string sFile = world_->local_to_abs_path(xml_file->value());
 	const string sFileExt = mrpt::system::extractFileExtension(sFile, true /*ignore gz*/);
@@ -52,12 +54,8 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 	// ROS YAML map files:
 	if (sFileExt == "yaml")
 	{
-#if MRPT_VERSION >= 0x250
 		bool ok = grid_.loadFromROSMapServerYAML(sFile);
 		ASSERTMSG_(ok, mrpt::format("Error loading ROS map file: '%s'", sFile.c_str()));
-#else
-		THROW_EXCEPTION("Loading ROS YAML map files requires MRPT>=2.5.0");
-#endif
 	}
 	else if (sFileExt == "gridmap")
 	{
@@ -79,8 +77,10 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 		parse_xmlnode_children_as_param(*root, other_params, world_->user_defined_variables());
 
 		if (!grid_.loadFromBitmapFile(sFile, resolution, {xcenterpixel, ycenterpixel}))
+		{
 			throw std::runtime_error(
 				mrpt::format("[OccupancyGridMap] ERROR: File not found '%s'", sFile.c_str()));
+		}
 	}
 
 	{
@@ -117,11 +117,7 @@ void OccupancyGridMap::internalGuiUpdate(
 	// 1st call OR gridmap changed?
 	if (!gui_uptodate_)
 	{
-#if MRPT_VERSION >= 0x240
 		grid_.getVisualizationInto(*gl_grid_);
-#else
-		grid_.getAs3DObject(gl_grid_);
-#endif
 		gui_uptodate_ = true;
 	}
 
@@ -244,7 +240,12 @@ void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& 
 				gl_pts->setColor(0, 0, 1);
 
 				gl_pts->setVisibility(show_grid_collision_points_);
-				gl_pts->setPose(mrpt::poses::CPose2D(ipv.pose));
+
+				// Apply world render offset for large coordinate systems (e.g. UTM)
+				const auto poseWithOffset =
+					parent()->applyWorldRenderOffset(mrpt::poses::CPose3D(ipv.pose).asTPose());
+				gl_pts->setPose(poseWithOffset);
+
 				gl_pts->clear();
 			}
 
