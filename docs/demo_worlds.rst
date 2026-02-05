@@ -27,7 +27,7 @@ in a loop.
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_warehouse.launch
+            roslaunch mvsim ros1_warehouse.launch
 
     .. tab-item:: ROS 2
         :selected:
@@ -185,7 +185,7 @@ A simple 2D world defined via an occupancy grid map and a robot equipped with 2D
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_1robot.launch
+            roslaunch mvsim ros1_1robot.launch
 
     .. tab-item:: ROS 2
         :selected:
@@ -232,7 +232,7 @@ A world with 2 simple robots and a couple of custom "blocks" (furniture).
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_2robots.launch
+            roslaunch mvsim ros1_2robots.launch
 
     .. tab-item:: ROS 2
         :selected:
@@ -280,7 +280,7 @@ Example of a robot with a camera sensor (RGB).
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_camera.launch
+            roslaunch mvsim ros1_camera.launch
 
     .. tab-item:: ROS 2
         :selected:
@@ -328,7 +328,7 @@ Example of a robot with a depth camera sensor (RGB+D).
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_depth_camera.launch
+            roslaunch mvsim ros1_depth_camera.launch
 
     .. tab-item:: ROS 2
         :selected:
@@ -375,7 +375,7 @@ Example of a 3D Lidar robot in a "2.5D" world defined by an elevation map.
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_elevation_map.launch
+            roslaunch mvsim ros1_elevation_map.launch
 
     .. tab-item:: ROS 2
         :selected:
@@ -424,7 +424,7 @@ slightly randomized-perturbations in plant poses, etc.
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_greenhouse.launch
+            roslaunch mvsim ros1_greenhouse.launch
 
     .. tab-item:: ROS 2
         :selected:
@@ -473,7 +473,7 @@ external ``.dae`` or ``.stl`` files.
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_turtlebot_world.launch
+            roslaunch mvsim ros1_turtlebot_world.launch
 
     .. tab-item:: ROS 2
         :selected:

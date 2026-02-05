@@ -20,7 +20,7 @@ The commands required to launch it depends on the installation method:
 
         .. code-block:: bash
 
-            roslaunch mvsim demo_warehouse.launch
+            roslaunch mvsim ros1_warehouse.launch
 
     .. tab-item:: ROS 2
         :selected:
