@@ -87,6 +87,8 @@ HELIOS 32 (26 deg FOV)
    .. literalinclude:: ../definitions/helios-32-FOV-26.sensor.xml
       :language: xml
 
+|
+
 HELIOS 32 (31 deg FOV)
 ##########################
 
@@ -114,6 +116,7 @@ HELIOS 32 (31 deg FOV)
    .. literalinclude:: ../definitions/helios-32-FOV-31.sensor.xml
       :language: xml
 
+|
 
 HELIOS 32 (70 deg FOV)
 ##########################
@@ -141,6 +144,7 @@ HELIOS 32 (70 deg FOV)
    .. literalinclude:: ../definitions/helios-32-FOV-70.sensor.xml
       :language: xml
 
+|
 
 OUSTER OS1
 ##########################
@@ -168,6 +172,7 @@ OUSTER OS1
    .. literalinclude:: ../definitions/ouster-os1.sensor.xml
       :language: xml
 
+|
 
 
 Velodyne VLP-16
@@ -196,6 +201,7 @@ Velodyne VLP-16
    .. literalinclude:: ../definitions/velodyne-vlp16.sensor.xml
       :language: xml
 
+----
 
 RGB camera
 ------------------
@@ -225,6 +231,7 @@ The user must provide the camera intrinsic and extrinsic parameters:
    .. literalinclude:: ../definitions/camera.sensor.xml
       :language: xml
 
+----
 
 IMU
 ------------------
@@ -329,7 +336,7 @@ The four XML parameters are:
    "On-Manifold Preintegration for Real-Time Visual-Inertial Odometry",
    *IEEE Transactions on Robotics*, vol. 33, no. 1, pp. 1-21, 2016.
 
-
+----
 
 2D laser scanner
 ------------------
@@ -370,6 +377,7 @@ Generic 2D LIDAR
    .. literalinclude:: ../definitions/lidar2d.sensor.xml
       :language: xml
 
+|
 
 RPLidar A2
 ##########################
@@ -399,6 +407,7 @@ Just like the generic Lidar above, but with a custom visualization for this part
    .. literalinclude:: ../definitions/rplidar-a2.sensor.xml
       :language: xml
 
+----
 
 Depth (RGBD) camera
 ---------------------
@@ -406,6 +415,31 @@ Depth (RGBD) camera
 .. image:: https://mrpt.github.io/imgs/mvsim-rgbd-camera.png
    :width: 100%
    :alt: sensor preview in MVSim
+
+An RGB+D (color plus depth) camera sensor, similar to an Intel RealSense or
+ASUS Xtion / Astra. It simulates both the RGB and depth channels independently
+(each with its own intrinsics and clip distances) and can optionally publish to
+ROS the following topics:
+
+.. list-table:: ROS topics published by the RGBD sensor
+   :header-rows: 1
+   :widths: 40 20 40
+
+   * - Topic
+     - Type
+     - Notes
+   * - ``<label>_image``
+     - ``sensor_msgs/Image``
+     - RGB image (always published when ``sense_rgb=true``)
+   * - ``<label>_points``
+     - ``sensor_msgs/PointCloud2``
+     - XYZ pointcloud, or **XYZRGB** if ``publish_ros_colored_pointcloud=true``
+   * - ``<label>_depth/image_raw``
+     - ``sensor_msgs/Image``
+     - 16UC1 depth image (each pixel = depth in ``rangeUnits``, default 1 mm; 0 = invalid). Published when ``publish_ros_depth_image=true``
+   * - ``<label>_depth/camera_info``
+     - ``sensor_msgs/CameraInfo``
+     - Depth camera intrinsics. Published when ``publish_ros_depth_image=true``
 
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
    :open:
@@ -416,6 +450,8 @@ Depth (RGBD) camera
 		  sensor_x="0.2" sensor_y="0"  sensor_z="0.29"
 		  sensor_period_sec="0.10"
 		  show_3d_pointcloud="true"
+		  publish_ros_depth_image="true"
+		  publish_ros_colored_pointcloud="false"
 		/>
 
 .. dropdown:: All parameters available in rgbd_camera.sensor.xml
@@ -424,6 +460,26 @@ Depth (RGBD) camera
 
    .. literalinclude:: ../definitions/rgbd_camera.sensor.xml
       :language: xml
+
+
+ROS publishing options
+##########################
+
+``publish_ros_depth_image`` (default: ``true``)
+  When enabled, the sensor publishes the depth channel as a separate
+  ``sensor_msgs/Image`` message encoded as **16UC1** on the topic
+  ``<label>_depth/image_raw``, together with a matching
+  ``sensor_msgs/CameraInfo`` on ``<label>_depth/camera_info``.
+  This matches the topic layout of real RGBD cameras such as the
+  ASUS Xtion / Astra (``/depth/image_raw``).
+
+``publish_ros_colored_pointcloud`` (default: ``false``)
+  When enabled **and** the sensor has ``sense_rgb=true``, the pointcloud
+  published on ``<label>_points`` will include per-point RGB color
+  (``XYZRGB`` fields) instead of plain ``XYZ``.
+
+
+----
 
 
 .. _sensors-gps:
