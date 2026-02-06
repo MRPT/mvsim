@@ -53,11 +53,11 @@ void mvsim::parseMessage(const zmq::message_t& msg, google::protobuf::MessageLit
 
 	bool ok = out.ParseFromString(serializedData);
 	if (!ok)
+	{
 		THROW_EXCEPTION_FMT(
-			"Format error: protobuf could not decode binary message of "
-			"type "
-			"'%s'",
+			"Format error: protobuf could not decode binary message of type '%s'",
 			typeName.c_str());
+	}
 }
 
 zmq::message_t mvsim::receiveMessage(zmq::socket_t& s)

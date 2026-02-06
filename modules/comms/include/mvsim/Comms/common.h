@@ -69,14 +69,15 @@ variant_t recursiveParse(const std::string& typeName, const std::string& seriali
 		{
 			bool ok = v.ParseFromString(serializedData);
 			if (!ok)
+			{
 				THROW_EXCEPTION_FMT(
-					"Format error: protobuf could not decode binary message of "
-					"type '%s'",
+					"Format error: protobuf could not decode binary message of type '%s'",
 					typeName.c_str());
+			}
 			return {v};
 		}
-		else
-			return recursiveParse<variant_t, IDX + 1>(typeName, serializedData);
+
+		return recursiveParse<variant_t, IDX + 1>(typeName, serializedData);
 	}
 	throw UnexpectedMessageException(
 		mrpt::format("Type '%s' not found in expected list of variant arguments.", typeName.c_str())
