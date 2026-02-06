@@ -83,7 +83,7 @@ struct WorldJoint
 	enum class Type : uint8_t
 	{
 		Distance = 0,  ///< b2DistanceJoint (rope-like max length constraint)
-		Revolute       ///< b2RevoluteJoint (pin/hinge)
+		Revolute  ///< b2RevoluteJoint (pin/hinge)
 	};
 
 	Type type = Type::Distance;
@@ -360,10 +360,7 @@ class World : public mrpt::system::COutputLogger
 	BlockList& getListOfBlocks() { return blocks_; }
 	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
 
-	const std::vector<WorldJoint>& getListOfJoints() const
-	{
-		return joints_;
-	}
+	const std::vector<WorldJoint>& getListOfJoints() const { return joints_; }
 
 	/// Always lock/unlock getListOfSimulableObjectsMtx() before using this:
 	SimulableList& getListOfSimulableObjects() { return simulableObjects_; }
@@ -929,7 +926,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_for(const XmlParserContext& ctx);
 	void parse_tag_if(const XmlParserContext& ctx);
 	void parse_tag_marker(const XmlParserContext& ctx);
-	void parse_tag_joint(const XmlParserContext& ctx);  //!< `<joint>`
+	void parse_tag_joint(const XmlParserContext& ctx);	//!< `<joint>`
 
 	// ======== end of XML parser tags ========
 

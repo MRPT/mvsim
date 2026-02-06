@@ -942,8 +942,7 @@ void World::internalUpdate3DSceneObjects(
 	{
 		static const std::string kJointsGlName = "__joint_lines";
 		auto glJoints =
-			std::dynamic_pointer_cast<mrpt::opengl::CSetOfLines>(
-				viz.getByName(kJointsGlName));
+			std::dynamic_pointer_cast<mrpt::opengl::CSetOfLines>(viz.getByName(kJointsGlName));
 		if (!glJoints)
 		{
 			glJoints = mrpt::opengl::CSetOfLines::Create();
@@ -972,45 +971,26 @@ void World::internalUpdate3DSceneObjects(
 					// Yellow line for rope
 					glJoints->setColor_u8(0xff, 0xcc, 0x00, 0xcc);
 					glJoints->appendLine(
-						static_cast<double>(wA.x) + oA.x,
-						static_cast<double>(wA.y) + oA.y,
-						zDraw,
-						static_cast<double>(wB.x) + oA.x,
-						static_cast<double>(wB.y) + oA.y,
-						zDraw);
+						static_cast<double>(wA.x) + oA.x, static_cast<double>(wA.y) + oA.y, zDraw,
+						static_cast<double>(wB.x) + oA.x, static_cast<double>(wB.y) + oA.y, zDraw);
 					break;
 				}
 				case WorldJoint::Type::Revolute:
 				{
 					// Red line + cross for pin
-					glJoints->setColor_u8(
-						0xff, 0x33, 0x33, 0xff);
+					glJoints->setColor_u8(0xff, 0x33, 0x33, 0xff);
 					glJoints->appendLine(
-						static_cast<double>(wA.x) + oA.x,
-						static_cast<double>(wA.y) + oA.y,
-						zDraw,
-						static_cast<double>(wB.x) + oA.x,
-						static_cast<double>(wB.y) + oA.y,
-						zDraw);
+						static_cast<double>(wA.x) + oA.x, static_cast<double>(wA.y) + oA.y, zDraw,
+						static_cast<double>(wB.x) + oA.x, static_cast<double>(wB.y) + oA.y, zDraw);
 
 					// Small cross at midpoint
 					const double mx =
-						0.5 *
-							(static_cast<double>(wA.x) +
-							 static_cast<double>(wB.x)) +
-						oA.x;
+						0.5 * (static_cast<double>(wA.x) + static_cast<double>(wB.x)) + oA.x;
 					const double my =
-						0.5 *
-							(static_cast<double>(wA.y) +
-							 static_cast<double>(wB.y)) +
-						oA.y;
+						0.5 * (static_cast<double>(wA.y) + static_cast<double>(wB.y)) + oA.y;
 					const double cs = 0.15;
-					glJoints->appendLine(
-						mx - cs, my, zDraw,
-						mx + cs, my, zDraw);
-					glJoints->appendLine(
-						mx, my - cs, zDraw,
-						mx, my + cs, zDraw);
+					glJoints->appendLine(mx - cs, my, zDraw, mx + cs, my, zDraw);
+					glJoints->appendLine(mx, my - cs, zDraw, mx, my + cs, zDraw);
 					break;
 				}
 			}

@@ -6,6 +6,8 @@
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
+#include <box2d/b2_distance_joint.h>
+#include <box2d/b2_revolute_joint.h>
 #include <mrpt/core/format.h>
 #include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
@@ -24,9 +26,6 @@
 
 #include "parse_utils.h"
 #include "xml_utils.h"
-
-#include <box2d/b2_distance_joint.h>
-#include <box2d/b2_revolute_joint.h>
 
 using namespace mvsim;
 using namespace std;
@@ -460,13 +459,9 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 	const std::string typeStr = typeAttr->value();
 
 	const auto* bodyAAttr = node->first_attribute("body_a");
-	ASSERTMSG_(
-		bodyAAttr,
-		"XML tag '<joint />' must have a 'body_a' attribute");
+	ASSERTMSG_(bodyAAttr, "XML tag '<joint />' must have a 'body_a' attribute");
 	const auto* bodyBAttr = node->first_attribute("body_b");
-	ASSERTMSG_(
-		bodyBAttr,
-		"XML tag '<joint />' must have a 'body_b' attribute");
+	ASSERTMSG_(bodyBAttr, "XML tag '<joint />' must have a 'body_b' attribute");
 
 	const auto* anchorAAttr = node->first_attribute("anchor_a");
 	ASSERTMSG_(
@@ -500,35 +495,27 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 	}
 
 	// Body names (resolve variables)
-	jd.bodyA_name =
-		mvsim::parse(bodyAAttr->value(), user_defined_variables());
-	jd.bodyB_name =
-		mvsim::parse(bodyBAttr->value(), user_defined_variables());
+	jd.bodyA_name = mvsim::parse(bodyAAttr->value(), user_defined_variables());
+	jd.bodyB_name = mvsim::parse(bodyBAttr->value(), user_defined_variables());
 
 	// Anchor points: "x y"
 	{
-		const std::string sA =
-			mvsim::parse(anchorAAttr->value(), user_defined_variables());
+		const std::string sA = mvsim::parse(anchorAAttr->value(), user_defined_variables());
 		double ax = 0;
 		double ay = 0;
 		if (sscanf(sA.c_str(), "%lf %lf", &ax, &ay) != 2)
 		{
-			THROW_EXCEPTION_FMT(
-				"Malformed anchor_a='%s'. Expected \"x y\".",
-				sA.c_str());
+			THROW_EXCEPTION_FMT("Malformed anchor_a='%s'. Expected \"x y\".", sA.c_str());
 		}
 		jd.anchorA = {ax, ay};
 	}
 	{
-		const std::string sB =
-			mvsim::parse(anchorBAttr->value(), user_defined_variables());
+		const std::string sB = mvsim::parse(anchorBAttr->value(), user_defined_variables());
 		double bx = 0;
 		double by = 0;
 		if (sscanf(sB.c_str(), "%lf %lf", &bx, &by) != 2)
 		{
-			THROW_EXCEPTION_FMT(
-				"Malformed anchor_b='%s'. Expected \"x y\".",
-				sB.c_str());
+			THROW_EXCEPTION_FMT("Malformed anchor_b='%s'. Expected \"x y\".", sB.c_str());
 		}
 		jd.anchorB = {bx, by};
 	}
@@ -541,14 +528,10 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 		attribs["stiffness"] = TParamEntry("%f", &jd.stiffness);
 		attribs["damping"] = TParamEntry("%f", &jd.damping);
 		attribs["enable_limit"] = TParamEntry("%bool", &jd.enableLimit);
-		attribs["lower_angle_deg"] =
-			TParamEntry("%f", &jd.lowerAngle_deg);
-		attribs["upper_angle_deg"] =
-			TParamEntry("%f", &jd.upperAngle_deg);
+		attribs["lower_angle_deg"] = TParamEntry("%f", &jd.lowerAngle_deg);
+		attribs["upper_angle_deg"] = TParamEntry("%f", &jd.upperAngle_deg);
 
-		parse_xmlnode_attribs(
-			*node, attribs, user_defined_variables(),
-			"[World::parse_tag_joint]");
+		parse_xmlnode_attribs(*node, attribs, user_defined_variables(), "[World::parse_tag_joint]");
 	}
 
 	// ---- Look up the two Simulable bodies ----
@@ -576,17 +559,15 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 	b2Body* b2bodyA = itA->second->b2d_body();
 	b2Body* b2bodyB = itB->second->b2d_body();
 	ASSERTMSG_(
-		b2bodyA,
-		mrpt::format(
-			"<joint> body_a='%s' has no Box2D body. "
-			"Is it a valid physical object?",
-			jd.bodyA_name.c_str()));
+		b2bodyA, mrpt::format(
+					 "<joint> body_a='%s' has no Box2D body. "
+					 "Is it a valid physical object?",
+					 jd.bodyA_name.c_str()));
 	ASSERTMSG_(
-		b2bodyB,
-		mrpt::format(
-			"<joint> body_b='%s' has no Box2D body. "
-			"Is it a valid physical object?",
-			jd.bodyB_name.c_str()));
+		b2bodyB, mrpt::format(
+					 "<joint> body_b='%s' has no Box2D body. "
+					 "Is it a valid physical object?",
+					 jd.bodyB_name.c_str()));
 
 	// ---- Create the Box2D joint ----
 	ASSERT_(box2d_world_);
@@ -599,11 +580,9 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 			djd.bodyA = b2bodyA;
 			djd.bodyB = b2bodyB;
 			djd.localAnchorA.Set(
-				static_cast<float>(jd.anchorA.x),
-				static_cast<float>(jd.anchorA.y));
+				static_cast<float>(jd.anchorA.x), static_cast<float>(jd.anchorA.y));
 			djd.localAnchorB.Set(
-				static_cast<float>(jd.anchorB.x),
-				static_cast<float>(jd.anchorB.y));
+				static_cast<float>(jd.anchorB.x), static_cast<float>(jd.anchorB.y));
 			djd.minLength = jd.minLength;
 			djd.maxLength = jd.maxLength;
 			// rest length = max for rope behavior
@@ -617,9 +596,7 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 			MRPT_LOG_INFO_FMT(
 				"Created distance joint between '%s' and '%s' "
 				"(maxLength=%.3f)",
-				jd.bodyA_name.c_str(),
-				jd.bodyB_name.c_str(),
-				jd.maxLength);
+				jd.bodyA_name.c_str(), jd.bodyB_name.c_str(), jd.maxLength);
 			break;
 		}
 		case WorldJoint::Type::Revolute:
@@ -628,25 +605,20 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 			rjd.bodyA = b2bodyA;
 			rjd.bodyB = b2bodyB;
 			rjd.localAnchorA.Set(
-				static_cast<float>(jd.anchorA.x),
-				static_cast<float>(jd.anchorA.y));
+				static_cast<float>(jd.anchorA.x), static_cast<float>(jd.anchorA.y));
 			rjd.localAnchorB.Set(
-				static_cast<float>(jd.anchorB.x),
-				static_cast<float>(jd.anchorB.y));
+				static_cast<float>(jd.anchorB.x), static_cast<float>(jd.anchorB.y));
 
 			// Compute reference angle from current body angles:
-			rjd.referenceAngle =
-				b2bodyB->GetAngle() - b2bodyA->GetAngle();
+			rjd.referenceAngle = b2bodyB->GetAngle() - b2bodyA->GetAngle();
 
 			if (jd.enableLimit)
 			{
 				rjd.enableLimit = true;
-				rjd.lowerAngle = static_cast<float>(
-					static_cast<double>(jd.lowerAngle_deg) *
-					M_PI / 180.0);
-				rjd.upperAngle = static_cast<float>(
-					static_cast<double>(jd.upperAngle_deg) *
-					M_PI / 180.0);
+				rjd.lowerAngle =
+					static_cast<float>(static_cast<double>(jd.lowerAngle_deg) * M_PI / 180.0);
+				rjd.upperAngle =
+					static_cast<float>(static_cast<double>(jd.upperAngle_deg) * M_PI / 180.0);
 			}
 
 			rjd.collideConnected = false;
@@ -654,8 +626,7 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 			jd.b2joint = box2d_world_->CreateJoint(&rjd);
 
 			MRPT_LOG_INFO_FMT(
-				"Created revolute joint between '%s' and '%s'",
-				jd.bodyA_name.c_str(),
+				"Created revolute joint between '%s' and '%s'", jd.bodyA_name.c_str(),
 				jd.bodyB_name.c_str());
 			break;
 		}
