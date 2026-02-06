@@ -13,6 +13,7 @@
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
+#include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/mvsim_node_core.h>
 
@@ -245,6 +246,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 							obsCopy ? obsCopy->sensorLabel.c_str() : "(nullptr)", e.what());
 					}
 				});
+			(void)fut;
 		});
 }
 
@@ -283,7 +285,10 @@ void MVSimNode::loadWorldModel(const std::string& world_xml_file)
  * ~MVSimNode()
  * Destructor.
  *----------------------------------------------------------------------------*/
-MVSimNode::~MVSimNode() { terminateSimulation(); }
+MVSimNode::~MVSimNode()
+{  // dtor
+	terminateSimulation();
+}
 
 void MVSimNode::terminateSimulation()
 {
@@ -294,7 +299,10 @@ void MVSimNode::terminateSimulation()
 	mvsim_world_->simulator_must_close(true);
 
 	thread_params_.closing = true;
-	if (thGUI_.joinable()) thGUI_.join();
+	if (thGUI_.joinable())
+	{
+		thGUI_.join();
+	}
 
 	mvsim_world_->free_opengl_resources();
 
@@ -333,7 +341,10 @@ void MVSimNode::spin()
 	// Do simulation itself:
 	// ========================================================================
 	// Handle 1st iter:
-	if (t_old_ < 0) t_old_ = realtime_tictac_.Tac();
+	if (t_old_ < 0)
+	{
+		t_old_ = realtime_tictac_.Tac();
+	}
 	// Compute how much time has passed to simulate in real-time:
 	const double t_new = realtime_tictac_.Tac();
 	const double incr_time = realtime_factor_ * (t_new - t_old_);
@@ -375,6 +386,9 @@ void MVSimNode::spin()
 			case '5':
 			case '6':
 				teleop_idx_veh_ = keyevent.keycode - '1';
+				break;
+			default:
+				// do nothing
 				break;
 		};
 
@@ -457,7 +471,10 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 				obj->mvsim_world_->update_GUI(&guiparams);
 
 				// Send key-strokes to the main thread:
-				if (guiparams.keyevent.keycode != 0) obj->gui_key_events_ = guiparams.keyevent;
+				if (guiparams.keyevent.keycode != 0)
+				{
+					obj->gui_key_events_ = guiparams.keyevent;
+				}
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(obj->gui_refresh_period_ms_));
 			}
@@ -526,7 +543,10 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	for (auto it = vehs.begin(); it != vehs.end(); ++it, ++idx)
 	{
 		mvsim::VehicleBase* veh = dynamic_cast<mvsim::VehicleBase*>(it->second.get());
-		if (!veh) continue;
+		if (!veh)
+		{
+			continue;
+		}
 
 		auto& pubsubs = pubsub_vehicles_[idx];
 
@@ -569,7 +589,7 @@ double MVSimNode::myNowSec() const
 #if PACKAGE_ROS_VERSION == 1
 	return ros::Time::now().toSec();
 #else
-	return clock_->now().nanoseconds() * 1e-9;
+	return static_cast<double>(clock_->now().nanoseconds()) * 1e-9;
 #endif
 }
 
@@ -657,7 +677,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 
 		chassis_shape_msg.header.frame_id = "base_link";
 		chassis_shape_msg.ns = "mvsim.chassis_shape";
-		chassis_shape_msg.id = veh->getVehicleIndex();
+		chassis_shape_msg.id = static_cast<int>(veh->getVehicleIndex());
 		chassis_shape_msg.scale.x = 0.05;
 		chassis_shape_msg.scale.y = 0.05;
 		chassis_shape_msg.scale.z = 0.02;
@@ -703,9 +723,9 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 			wheel_shape_msg.points[3].z = 0;
 			wheel_shape_msg.points[4] = wheel_shape_msg.points[0];
 
-			wheel_shape_msg.color.r = w.color.R / 255.0f;
-			wheel_shape_msg.color.g = w.color.G / 255.0f;
-			wheel_shape_msg.color.b = w.color.B / 255.0f;
+			wheel_shape_msg.color.r = mrpt::u8tof(w.color.R);
+			wheel_shape_msg.color.g = mrpt::u8tof(w.color.G);
+			wheel_shape_msg.color.b = mrpt::u8tof(w.color.B);
 			wheel_shape_msg.color.a = 1.0f;
 
 			// Set local pose of the wheel wrt the vehicle:
@@ -736,8 +756,8 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		poly_msg.points.resize(poly.size());
 		for (size_t i = 0; i < poly.size(); i++)
 		{
-			poly_msg.points[i].x = poly[i].x;
-			poly_msg.points[i].y = poly[i].y;
+			poly_msg.points[i].x = static_cast<float>(poly[i].x);
+			poly_msg.points[i].y = static_cast<float>(poly[i].y);
 			poly_msg.points[i].z = 0;
 		}
 		pubsubs.pub_chassis_shape->publish(poly_msg);
@@ -984,7 +1004,10 @@ void MVSimNode::onNewObservation(
 	ASSERT_(!obs->sensorLabel.empty());
 
 	const auto& vehPtr = dynamic_cast<const mvsim::VehicleBase*>(&sim);
-	if (!vehPtr) return;  // for example, if obs from invisible aux block.
+	if (!vehPtr)
+	{
+		return;	 // for example, if obs from invisible aux block.
+	}
 	const auto& veh = *vehPtr;
 
 	// -----------------------------
@@ -1036,10 +1059,7 @@ std::string MVSimNode::vehVarName(const std::string& sVarName, const mvsim::Vehi
 	{
 		return sVarName;
 	}
-	else
-	{
-		return veh.getName() + std::string("/") + sVarName;
-	}
+	return veh.getName() + std::string("/") + sVarName;
 }
 
 void MVSimNode::internalOn(
@@ -1247,13 +1267,19 @@ Msg_CameraInfo camInfoToRos(const mrpt::img::TCamera& c)
 		case mrpt::img::DistortionModel::plumb_bob:
 			ci.distortion_model = "plumb_bob";
 			dist.resize(5);
-			for (size_t i = 0; i < dist.size(); i++) dist[i] = c.dist[i];
+			for (size_t i = 0; i < dist.size(); i++)
+			{
+				dist[i] = c.dist[i];
+			}
 			break;
 
 		case mrpt::img::DistortionModel::none:
 			ci.distortion_model = "plumb_bob";
 			dist.resize(5);
-			for (size_t i = 0; i < dist.size(); i++) dist[i] = 0;
+			for (size_t i = 0; i < dist.size(); i++)
+			{
+				dist[i] = 0;
+			}
 			break;
 
 		default:
@@ -1274,6 +1300,24 @@ Msg_CameraInfo camInfoToRos(const mrpt::img::TCamera& c)
 
 	return ci;
 }
+
+/** Look up the DepthCameraSensor that generated an observation, by matching
+ *  sensorLabel against the vehicle's sensor list.
+ *  Returns nullptr if not found or not a DepthCameraSensor.
+ */
+static const mvsim::DepthCameraSensor* findDepthCameraSensor(
+	const mvsim::VehicleBase& veh, const std::string& sensorLabel)
+{
+	for (const auto& s : veh.getSensors())
+	{
+		if (s && s->getName() == sensorLabel)
+		{
+			return dynamic_cast<const mvsim::DepthCameraSensor*>(s.get());
+		}
+	}
+	return nullptr;
+}
+
 }  // namespace
 
 void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationImage& obs)
@@ -1346,13 +1390,20 @@ void MVSimNode::internalOn(
 {
 	using namespace std::string_literals;
 
+	// Look up sensor publish options:
+	const auto* depthSensor = findDepthCameraSensor(veh, obs.sensorLabel);
+	const bool wantDepthImage = depthSensor ? depthSensor->publishDepthImage() : true;
+	const bool wantColoredPc = depthSensor ? depthSensor->publishColoredPointcloud() : false;
+
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
 	const auto lbImage = obs.sensorLabel + "_image"s;
+	const auto lbDepthImage = obs.sensorLabel + "_depth/image_raw"s;  // NEW
+	const auto lbDepthCamInfo = obs.sensorLabel + "_depth/camera_info"s;  // NEW
 
-	// Create the publisher the first time an observation arrives:
+	// Create the publishers the first time an observation arrives:
 	const bool is_1st_pub = pubs.pub_sensors.find(lbPoints) == pubs.pub_sensors.end();
 
 	auto& pubPts = pubs.pub_sensors[lbPoints];
@@ -1372,12 +1423,36 @@ void MVSimNode::internalOn(
 			n_, vehVarName(lbPoints, veh), publisher_history_len_);
 #endif
 	}
+
+	// depth image + camera_info publishers
+	if (wantDepthImage && obs.hasRangeImage)
+	{
+		const bool is_1st_depth = pubs.pub_sensors.find(lbDepthImage) == pubs.pub_sensors.end();
+		if (is_1st_depth)
+		{
+			auto& pubDepthImg = pubs.pub_sensors[lbDepthImage];
+			auto& pubDepthCamInfo = pubs.pub_sensors[lbDepthCamInfo];
+#if PACKAGE_ROS_VERSION == 1
+			pubDepthImg = mvsim_node::make_shared<ros::Publisher>(
+				n_.advertise<Msg_Image>(vehVarName(lbDepthImage, veh), publisher_history_len_));
+			pubDepthCamInfo = mvsim_node::make_shared<ros::Publisher>(n_.advertise<Msg_CameraInfo>(
+				vehVarName(lbDepthCamInfo, veh), publisher_history_len_));
+#else
+			pubDepthImg = mvsim_node::make_shared<PublisherWrapper<Msg_Image>>(
+				n_, vehVarName(lbDepthImage, veh), publisher_history_len_);
+			pubDepthCamInfo = mvsim_node::make_shared<PublisherWrapper<Msg_CameraInfo>>(
+				n_, vehVarName(lbDepthCamInfo, veh), publisher_history_len_);
+#endif
+		}
+	}
+
 	lck.unlock();
 
 	const auto now = myNow();
 
-	// IMAGE
-	// --------
+	// ----------------------------------------------------------------
+	// RGB IMAGE
+	// ----------------------------------------------------------------
 	if (obs.hasIntensityImage)
 	{
 		// Send TF:
@@ -1396,7 +1471,6 @@ void MVSimNode::internalOn(
 
 		// Send observation:
 		{
-			// Convert observation MRPT -> ROS
 			Msg_Image msg_img;
 			Msg_Header msg_header;
 			msg_header.stamp = now;
@@ -1406,8 +1480,68 @@ void MVSimNode::internalOn(
 		}
 	}
 
-	// POINTS
-	// --------
+	// ----------------------------------------------------------------
+	// DEPTH IMAGE as 16UC1
+	// ----------------------------------------------------------------
+	if (wantDepthImage && obs.hasRangeImage)
+	{
+		// Send TF for depth frame:
+		{
+			mrpt::poses::CPose3D sensorPose = obs.sensorPose;
+			auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
+
+			Msg_TransformStamped tfStmp;
+			tfStmp.transform = tf2::toMsg(transform);
+			tfStmp.header.frame_id = "base_link";
+			tfStmp.child_frame_id = obs.sensorLabel + "_depth";
+			tfStmp.header.stamp = now;
+
+			Msg_TFMessage tfMsg;
+			tfMsg.transforms.push_back(tfStmp);
+			pubs.pub_tf->publish(tfMsg);
+		}
+
+		Msg_Header msg_header;
+		msg_header.stamp = now;
+		msg_header.frame_id = obs.sensorLabel + "_depth";
+
+		// Build 16UC1 depth image from rangeImage (uint16_t matrix).
+		// Each pixel = depth in rangeUnits (default 1 mm), 0 = invalid.
+		{
+			Msg_Image depth_msg;
+			depth_msg.header = msg_header;
+			depth_msg.width = static_cast<uint32_t>(obs.rangeImage.cols());
+			depth_msg.height = static_cast<uint32_t>(obs.rangeImage.rows());
+			depth_msg.encoding = "16UC1";
+			depth_msg.is_bigendian = 0;
+			depth_msg.step = static_cast<uint32_t>(obs.rangeImage.cols()) *
+							 static_cast<uint32_t>(sizeof(uint16_t));
+			const size_t totalBytes =
+				static_cast<size_t>(depth_msg.step) * static_cast<size_t>(depth_msg.height);
+			depth_msg.data.resize(totalBytes);
+			std::memcpy(depth_msg.data.data(), obs.rangeImage.data(), totalBytes);
+
+			auto lck2 = mrpt::lockHelper(pubsub_vehicles_mtx_);
+
+			auto& pubDepthImg = pubs.pub_sensors[lbDepthImage];
+			pubDepthImg->publish(mvsim_node::make_shared<Msg_Image>(depth_msg));
+		}
+
+		// Depth CameraInfo:
+		{
+			Msg_CameraInfo camInfo = camInfoToRos(obs.cameraParams);
+			camInfo.header = msg_header;
+
+			auto lck3 = mrpt::lockHelper(pubsub_vehicles_mtx_);
+
+			auto& pubDepthCamInfo = pubs.pub_sensors[lbDepthCamInfo];
+			pubDepthCamInfo->publish(mvsim_node::make_shared<Msg_CameraInfo>(camInfo));
+		}
+	}
+
+	// ----------------------------------------------------------------
+	// POINTS (XYZ or XYZRGB)
+	// ----------------------------------------------------------------
 	if (obs.hasRangeImage)
 	{
 		// Send TF:
@@ -1426,7 +1560,6 @@ void MVSimNode::internalOn(
 
 		// Send observation:
 		{
-			// Convert observation MRPT -> ROS
 			Msg_PointCloud2 msg_pts;
 			Msg_Header msg_header;
 			msg_header.stamp = now;
@@ -1435,9 +1568,24 @@ void MVSimNode::internalOn(
 			mrpt::obs::T3DPointsProjectionParams pp;
 			pp.takeIntoAccountSensorPoseOnRobot = false;
 
-			mrpt::maps::CSimplePointsMap pts;
-			const_cast<mrpt::obs::CObservation3DRangeScan&>(obs).unprojectInto(pts, pp);
-			mrpt2ros::toROS(pts, msg_header, msg_pts);
+			if (wantColoredPc && obs.hasIntensityImage)
+			{
+				// colored pointcloud (XYZRGB)
+				mrpt::maps::CGenericPointsMap pts;
+				pts.registerField_float(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Rf);
+				pts.registerField_float(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Gf);
+				pts.registerField_float(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Bf);
+
+				const_cast<mrpt::obs::CObservation3DRangeScan&>(obs).unprojectInto(pts, pp);
+				mrpt2ros::toROS(pts, msg_header, msg_pts);
+			}
+			else
+			{
+				// Original: plain XYZ pointcloud
+				mrpt::maps::CSimplePointsMap pts;
+				const_cast<mrpt::obs::CObservation3DRangeScan&>(obs).unprojectInto(pts, pp);
+				mrpt2ros::toROS(pts, msg_header, msg_pts);
+			}
 			pubPts->publish(mvsim_node::make_shared<Msg_PointCloud2>(msg_pts));
 		}
 	}

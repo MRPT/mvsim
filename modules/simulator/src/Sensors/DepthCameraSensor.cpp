@@ -92,6 +92,8 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	params["depth_noise_sigma"] = TParamEntry("%f", &depth_noise_sigma_);
 	params["show_3d_pointcloud"] = TParamEntry("%bool", &show_3d_pointcloud_);
+	params["publish_ros_depth_image"] = TParamEntry("%bool", &publish_depth_image_);
+	params["publish_ros_colored_pointcloud"] = TParamEntry("%bool", &publish_colored_pointcloud_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
