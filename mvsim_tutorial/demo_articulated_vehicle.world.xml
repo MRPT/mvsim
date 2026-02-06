@@ -211,23 +211,29 @@
 	<vehicle:class name="tractor_class">
 		<dynamics class="ackermann">
 			<!-- Rear wheels -->
-			<rl_wheel pos="0  0.75" mass="5.0" width="0.25" diameter="0.55" />
-			<rr_wheel pos="0 -0.75" mass="5.0" width="0.25" diameter="0.55" />
+			<rl_wheel pos="0  0.53" mass="5.0" width="0.25" diameter="0.70">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_rear_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</rl_wheel>
+
+			<rr_wheel pos="0 -0.53" mass="5.0" width="0.25" diameter="0.70">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_rear_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</rr_wheel>
 
 			<!-- Front wheels -->
-			<fl_wheel mass="5.0" width="0.25" diameter="0.55" />
-			<fr_wheel mass="5.0" width="0.25" diameter="0.55" />
-			<f_wheels_x>2.0</f_wheels_x>
-			<f_wheels_d>1.5</f_wheels_d>
+			<fl_wheel mass="5.0" width="0.25" diameter="0.46">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_front_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</fl_wheel>
+
+			<fr_wheel mass="5.0" width="0.25" diameter="0.46">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_front_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</fr_wheel>
+
+			<f_wheels_x>1.13</f_wheels_x>
+			<f_wheels_d>0.82</f_wheels_d>
 			<max_steer_ang_deg>35.0</max_steer_ang_deg>
 
 			<chassis mass="500.0" zmin="0.20" zmax="1.50">
-				<shape>
-					<pt>-0.6 -0.8</pt>
-					<pt>-0.6  0.8</pt>
-					<pt> 2.6  0.8</pt>
-					<pt> 2.6 -0.8</pt>
-				</shape>
+	            <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 			</chassis>
 
 			<!-- Motor controller: twist with PID -->
@@ -249,6 +255,23 @@
 			<mu>0.7</mu>
 			<C_damping>5</C_damping>
 		</friction>
+
+		<!-- Noisy odometry parameters. These are multipliers to actual SE(2) increments -->
+		<odometry
+			x_multiplier="$f{1.0+0.02*randn()}"
+			y_multiplier="$f{1.0+0.01*randn()}"
+			yaw_multiplier="$f{1.0+0.03*randn()}"
+		/>
+
+		<!--  Custom vehicle visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_body.fbx</model_uri>
+			<model_scale>1e-2</model_scale>
+			<model_yaw>90.0</model_yaw>
+			<model_roll>90.0</model_roll>
+		</visual>
+
 	</vehicle:class>
 
 	<vehicle name="tractor" class="tractor_class">
@@ -257,20 +280,20 @@
 
 	<!-- ======================== Trailer (passive) ======================== -->
 	<vehicle:class name="trailer_class">
-		<dynamics class="differential_4_wheels">
-			<!-- 4 passive wheels -->
-			<lr_wheel pos="0.0  0.7" mass="4.0" width="0.22" diameter="0.50" />
-			<rr_wheel pos="0.0 -0.7" mass="4.0" width="0.22" diameter="0.50" />
-			<lf_wheel pos="2.5  0.7" mass="4.0" width="0.22" diameter="0.50" />
-			<rf_wheel pos="2.5 -0.7" mass="4.0" width="0.22" diameter="0.50" />
+
+	<!-- Can use 'differential_4_wheels' for trailer with 4 wheels -->
+
+	<dynamics class="differential">
+		<!-- 2 passive wheels -->
+			<l_wheel pos="-1.33  0.7" mass="4.0" width="0.22" diameter="0.50">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/trailer_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</l_wheel>
+			<r_wheel pos="-1.33 -0.7" mass="4.0" width="0.22" diameter="0.50">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/trailer_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw></visual>
+			</r_wheel>
 
 			<chassis mass="300.0" zmin="0.30" zmax="2.00">
-				<shape>
-					<pt>-0.5 -0.8</pt>
-					<pt>-0.5  0.8</pt>
-					<pt> 3.5  0.8</pt>
-					<pt> 3.5 -0.8</pt>
-				</shape>
+				<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 			</chassis>
 
 			<!--
@@ -287,17 +310,22 @@
 			<mu>0.5</mu>
 			<C_damping>1.0</C_damping>
 		</friction>
+
+		<!--  Custom vehicle visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/trailer_body.fbx</model_uri>
+			<model_scale>1e-2</model_scale>
+			<model_yaw>90.0</model_yaw>
+			<model_roll>90.0</model_roll>
+		</visual>
+
 	</vehicle:class>
 
 	<vehicle name="trailer" class="trailer_class">
 		<!-- Place it behind the tractor.
-		     The tractor rear axle is at x=0, and the trailer coupling point
-		     is at +1.0 in trailer-local coords, so position it so the
-		     coupling points overlap: tractor anchor at x=-0.8,
-		     trailer anchor at x=+2.0.
-		     Initial trailer origin: tractor(0,0) + (-0.8) - (2.0) = -2.8
-		-->
-		<init_pose>-2.8 0 0</init_pose>
+		     The tractor rear axle is at x=0 -->
+		<init_pose>-0.524 0 0</init_pose>
 	</vehicle>
 
 
@@ -310,11 +338,11 @@
 	     - Optional: enable_limit with angle bounds to prevent jack-knifing.
 	-->
 	<joint type="revolute"
-		body_a="tractor"  anchor_a="-0.8 0.0"
-		body_b="trailer"  anchor_b=" 2.0 0.0"
+		body_a="tractor"  anchor_a="-0.524 0.0"
+		body_b="trailer"  anchor_b="0.0 0.0"
 		enable_limit="true"
-		lower_angle_deg="-75"
-		upper_angle_deg="75"
+		lower_angle_deg="-45"
+		upper_angle_deg="45"
 	/>
 
 	<!-- ======================== Example rope joint (commented out) ======= -->
