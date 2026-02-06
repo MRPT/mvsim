@@ -145,7 +145,7 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 
 	// Rotate the global-frame acceleration vector into the vehicle's
 	// local frame.
-	const auto globalAcc = vehicle_.getLinearAcceleration() + g;
+	const auto globalAcc = vehicle_.getLinearAcceleration() - g;
 	const auto R = vehicle_.getCPose3D().getRotationMatrix();  // 3×3
 
 	const mrpt::math::TVector3D trueAccLocal(
