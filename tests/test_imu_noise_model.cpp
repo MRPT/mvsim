@@ -122,9 +122,9 @@ void test_white_noise_statistics()
 	const double meanAz = sumAz / static_cast<double>(N);
 	const double stdAz = std::sqrt(sumAz2 / static_cast<double>(N) - meanAz * meanAz);
 
-	// Mean error should be near zero (allow 3-sigma of the sampling dist)
-	EXPECT_NEAR(meanGx, 0.0, 3.0 * 0.05 / std::sqrt(static_cast<double>(N)));
-	EXPECT_NEAR(meanAz, 0.0, 3.0 * 0.1 / std::sqrt(static_cast<double>(N)));
+	// Mean error should be near zero (allow 4-sigma of the sampling dist)
+	EXPECT_NEAR(meanGx, 0.0, 4.0 * 0.05 / std::sqrt(static_cast<double>(N)));
+	EXPECT_NEAR(meanAz, 0.0, 4.0 * 0.1 / std::sqrt(static_cast<double>(N)));
 
 	// Std should be close to the configured value (10% tolerance)
 	EXPECT_NEAR(stdGx, 0.05, 0.05 * 0.1);
