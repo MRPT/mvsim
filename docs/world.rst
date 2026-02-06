@@ -45,15 +45,17 @@ First, we have global definitions on the simulation itself, the GUI, and the lig
 World contents
 -----------------------
 
-Then we have to populate the world. MVSim defines **three kinds of objects**: 
+Then we have to populate the world. MVSim defines **three kinds of objects**:
 
-1. **Elements** (like walls, the ground, etc.) which normally do not move, 
-2. **Blocks**: most normally, obstacles, furniture, etc. Any object that may move or not, but which is not a controllable robot/vehicle; and 
+1. **Elements** (like walls, the ground, etc.) which normally do not move,
+2. **Blocks**: most normally, obstacles, furniture, etc. Any object that may move or not, but which is not a controllable robot/vehicle; and
 3. **Vehicles**: the robots/vehicles/agents themselves.
+
+Objects can optionally be connected via **Joints** (rope or pin/hinge
+constraints) for articulated vehicles, tow ropes, etc.
 
 Both, blocks and vehicles share two common APIs or interfaces: ``Simulable`` and ``VisualObject``, hence
 the properties of such interfaces are explained below in independent pages:
-
 
 .. toctree::
    :maxdepth: 2
@@ -61,6 +63,7 @@ the properties of such interfaces are explained below in independent pages:
    world_elements
    world_blocks
    world_vehicles
+   world_joints
    world_simulable
    world_visual_object
 

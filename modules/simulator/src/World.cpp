@@ -66,6 +66,7 @@ void World::clear_all()
 	vehicles_.clear();
 	worldElements_.clear();
 	blocks_.clear();
+	joints_.clear();
 }
 
 void World::internal_initialize()
