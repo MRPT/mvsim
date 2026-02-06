@@ -76,11 +76,10 @@ void World::load_from_XML(const std::string& xml_text, const std::string& fileNa
 	{
 		int ret = sscanf(attrb_version->value(), "%i.%i", &version_major, &version_min);
 		if (ret != 2)
-			throw runtime_error(
-				mrpt::format(
-					"Error parsing version attribute: '%s' ('%%i.%%i' "
-					"expected)",
-					attrb_version->value()));
+			throw runtime_error(mrpt::format(
+				"Error parsing version attribute: '%s' ('%%i.%%i' "
+				"expected)",
+				attrb_version->value()));
 	}
 
 	// register tags:

@@ -43,9 +43,8 @@ int nodeList()
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client;
 
-	client.setMinLoggingLevel(
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			cli->argVerbosity.getValue()));
+	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+		cli->argVerbosity.getValue()));
 
 	std::cout << "# Connecting to server...\n";
 	client.connect();

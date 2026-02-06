@@ -89,11 +89,10 @@ void GroundGrid::internalGuiUpdate(
 		World::VehicleList::const_iterator it_veh = vehs.find(float_center_at_vehicle_name_);
 		// not found -> error:
 		if (!float_center_at_vehicle_name_.empty() && it_veh == vehs.end())
-			throw std::runtime_error(
-				mrpt::format(
-					"[GroundGrid] *ERROR* Cannot find vehicle named '%s' to "
-					"focus on.",
-					float_center_at_vehicle_name_.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"[GroundGrid] *ERROR* Cannot find vehicle named '%s' to "
+				"focus on.",
+				float_center_at_vehicle_name_.c_str()));
 
 		// If the user didn't specify any name, assume it's the first vehicle,
 		// or ignore it if none exists:

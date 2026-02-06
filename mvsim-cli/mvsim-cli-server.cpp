@@ -30,9 +30,8 @@ void commonLaunchServer()
 
 	if (cli->argPort.isSet()) server->listenningPort(cli->argPort.getValue());
 
-	server->setMinLoggingLevel(
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-			cli->argVerbosity.getValue()));
+	server->setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+		cli->argVerbosity.getValue()));
 
 	server->start();
 #endif

@@ -353,9 +353,8 @@ void mvsim_server_thread_headless(TThreadParams& thread_params)
 		{
 			thread_params.world->internalGraphicsLoopTasksForSimulation();
 
-			std::this_thread::sleep_for(
-				std::chrono::microseconds(
-					mrpt::round(thread_params.world->get_simul_timestep() * 1000000)));
+			std::this_thread::sleep_for(std::chrono::microseconds(
+				mrpt::round(thread_params.world->get_simul_timestep() * 1000000)));
 		}
 
 		// in case we are here due to simulator_must_close()

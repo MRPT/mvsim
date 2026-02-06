@@ -140,10 +140,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		mrpt::img::CImage imgElev;
 		if (!imgElev.loadFromFile(sElevationImgFile, 0 /*force load grayscale*/))
 		{
-			throw std::runtime_error(
-				mrpt::format(
-					"[ElevationMap] ERROR: Cannot read elevation image '%s'",
-					sElevationImgFile.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read elevation image '%s'",
+				sElevationImgFile.c_str()));
 		}
 
 		// Scale: [0,1] => [min_z,max_z]
@@ -258,10 +257,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		mesh_image.emplace();
 
 		if (!mesh_image->loadFromFile(sTextureImgFile))
-			throw std::runtime_error(
-				mrpt::format(
-					"[ElevationMap] ERROR: Cannot read texture image '%s'",
-					sTextureImgFile.c_str()));
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read texture image '%s'", sTextureImgFile.c_str()));
 
 		// Apply rotation:
 		switch (texture_rotate)
@@ -416,10 +413,9 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 					corner_min_y + iY * subSize + lenIy_p * resolution_);
 
 				// hint for rendering z-order:
-				gl_mesh->setLocalRepresentativePoint(
-					mrpt::math::TPoint3Df(
-						corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
-						subEle(0, 0)));
+				gl_mesh->setLocalRepresentativePoint(mrpt::math::TPoint3Df(
+					corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
+					subEle(0, 0)));
 			}
 		}
 	}
