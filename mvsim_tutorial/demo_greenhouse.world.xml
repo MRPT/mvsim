@@ -37,13 +37,13 @@
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
 	<variable name="NUM_TILTED_BEAMS_Y" value="10"></variable>
 	
-	<variable name="NUM_CORRIDORS_X" value="10"></variable>
+	<variable name="NUM_CORRIDORS_X" value="5"></variable>
 	
-	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="8"></variable>
-	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="12"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="5"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="6"></variable>
 
-	<variable name="NUM_POLES_X" value="10"></variable>
-	<variable name="NUM_POLES_Y" value="10"></variable>
+	<variable name="NUM_POLES_X" value="8"></variable>
+	<variable name="NUM_POLES_Y" value="8"></variable>
 
 	<variable name="PLANTS_RAND_XY" value="0.35"></variable>
 	
@@ -149,11 +149,19 @@
 		  vert_resolution_factor="1.0"
 		/>
 		
-		<include file="../definitions/camera.sensor.xml" 
+		<!--<include file="../definitions/camera.sensor.xml" 
+		  sensor_x="0.9"  sensor_y="0" sensor_z="0.75"
+		  sensor_period_sec="0.20"
+		  />-->
+
+		<include file="../definitions/rgbd_camera.sensor.xml" 
 		  sensor_x="0.9"  sensor_y="0" sensor_z="0.75"
 		  sensor_period_sec="0.20"
 		  sensor_name="cam1"
-		  />
+		  show_3d_pointcloud="false"
+		  publish_ros_depth_image="true"
+		  publish_ros_colored_pointcloud="true"
+		/>
 
 		<include file="../definitions/gnss.sensor.xml"
 		  sensor_x="0.9"  sensor_y="0.2" sensor_z="0.75"
