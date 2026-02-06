@@ -1399,15 +1399,17 @@ void MVSimNode::internalOn(
 	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
-	const auto lbImage = obs.sensorLabel + "_image"s;
-	const auto lbDepthImage = obs.sensorLabel + "_depth/image_raw"s;  // NEW
-	const auto lbDepthCamInfo = obs.sensorLabel + "_depth/camera_info"s;  // NEW
+	const auto lbImage = obs.sensorLabel + "_rgb/image_raw"s;
+	const auto lbImageCamInfo = obs.sensorLabel + "_rgb/camera_info"s;
+	const auto lbDepthImage = obs.sensorLabel + "_depth/image_raw"s;
+	const auto lbDepthCamInfo = obs.sensorLabel + "_depth/camera_info"s;
 
 	// Create the publishers the first time an observation arrives:
 	const bool is_1st_pub = pubs.pub_sensors.find(lbPoints) == pubs.pub_sensors.end();
 
 	auto& pubPts = pubs.pub_sensors[lbPoints];
 	auto& pubImg = pubs.pub_sensors[lbImage];
+	auto& pubImgCamInfo = pubs.pub_sensors[lbImageCamInfo];
 
 	if (is_1st_pub)
 	{
@@ -1416,11 +1418,15 @@ void MVSimNode::internalOn(
 			n_.advertise<Msg_Image>(vehVarName(lbImage, veh), publisher_history_len_));
 		pubPts = mvsim_node::make_shared<ros::Publisher>(
 			n_.advertise<Msg_PointCloud2>(vehVarName(lbPoints, veh), publisher_history_len_));
+		pubImgCamInfo = mvsim_node::make_shared<ros::Publisher>(
+			n_.advertise<Msg_CameraInfo>(vehVarName(lbImageCamInfo, veh), publisher_history_len_));
 #else
 		pubImg = mvsim_node::make_shared<PublisherWrapper<Msg_Image>>(
 			n_, vehVarName(lbImage, veh), publisher_history_len_);
 		pubPts = mvsim_node::make_shared<PublisherWrapper<Msg_PointCloud2>>(
 			n_, vehVarName(lbPoints, veh), publisher_history_len_);
+		pubImgCamInfo = mvsim_node::make_shared<PublisherWrapper<Msg_CameraInfo>>(
+			n_, vehVarName(lbImageCamInfo, veh), publisher_history_len_);
 #endif
 	}
 
@@ -1469,14 +1475,22 @@ void MVSimNode::internalOn(
 		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
 
+		Msg_Header msg_header;
+		msg_header.stamp = now;
+		msg_header.frame_id = lbImage;
+
 		// Send observation:
 		{
 			Msg_Image msg_img;
-			Msg_Header msg_header;
-			msg_header.stamp = now;
-			msg_header.frame_id = lbImage;
 			msg_img = mrpt2ros::toROS(obs.intensityImage, msg_header);
 			pubImg->publish(mvsim_node::make_shared<Msg_Image>(msg_img));
+		}
+
+		// RGB CameraInfo:
+		{
+			Msg_CameraInfo camInfo = camInfoToRos(obs.cameraParamsIntensity);
+			camInfo.header = msg_header;
+			pubImgCamInfo->publish(mvsim_node::make_shared<Msg_CameraInfo>(camInfo));
 		}
 	}
 
