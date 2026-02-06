@@ -233,6 +233,7 @@ An inertial sensor that measures (in the current version of MVSim):
 
 - 3D linear proper acceleration.
 - 3D angular velocity.
+- (Optionally) 3D orientation as a quaternion.
 
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
    :open:
@@ -250,6 +251,83 @@ An inertial sensor that measures (in the current version of MVSim):
 
    .. literalinclude:: ../definitions/imu.sensor.xml
       :language: xml
+
+
+IMU noise model
+##########################
+
+The IMU sensor implements the standard continuous-time stochastic error model
+described in [Forster2016]_, with two independent noise components per axis
+for both the gyroscope and accelerometer channels:
+
+**White noise** (measurement noise).
+  Zero-mean Gaussian noise added to every sample. Configured via the
+  ``*_white_noise_std_noise`` parameters (standard deviation in the channel
+  units: ``rad/s`` for gyroscope, ``m/s²`` for accelerometer).
+
+**Bias random walk** (in-run stability / drift).
+  A slowly-varying bias modelled as a Wiener process (integral of white
+  noise). Configured via the ``*_random_walk_std_noise`` parameters
+  (units: ``rad/s/√s`` for gyroscope, ``m/s²/√s`` for accelerometer).
+  Set to ``0`` (default) to disable bias drift.
+
+The discrete-time update at each simulation step of duration :math:`\Delta t` is:
+
+.. math::
+
+   \mathbf{b}_{k} = \mathbf{b}_{k-1}
+       + \mathcal{N}\!\bigl(\mathbf{0},\;\sigma_{\mathrm{rw}}^{2}\,\Delta t\;\mathbf{I}\bigr)
+
+.. math::
+
+   \tilde{\mathbf{m}}_{k} = \mathbf{m}_{k}
+       + \mathbf{b}_{k}
+       + \mathcal{N}\!\bigl(\mathbf{0},\;\sigma_{w}^{2}\;\mathbf{I}\bigr)
+
+The four XML parameters are:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 55 15 30
+
+   * - Parameter
+     - Default
+     - Description
+   * - ``angular_velocity_white_noise_std_noise``
+     - ``2e-4``
+     - Gyroscope white noise σ (rad/s)
+   * - ``linear_acceleration_white_noise_std_noise``
+     - ``0.017``
+     - Accelerometer white noise σ (m/s²)
+   * - ``angular_velocity_random_walk_std_noise``
+     - ``0``
+     - Gyroscope bias random walk σ (rad/s/√s)
+   * - ``linear_acceleration_random_walk_std_noise``
+     - ``0``
+     - Accelerometer bias random walk σ (m/s²/√s)
+
+.. note::
+
+   The legacy parameter names ``angular_velocity_std_noise`` and
+   ``linear_acceleration_std_noise`` are still accepted and map to the
+   corresponding ``*_white_noise_std_noise`` parameters.
+
+**Example** — a noisy tactical-grade IMU with bias drift:
+
+.. code-block:: xml
+
+     <include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/imu.sensor.xml"
+       sensor_x="0.0" sensor_y="0.0" sensor_z="0.0"
+       sensor_period_sec="$f{1/200.0}"
+       sensor_angular_velocity_white_noise_std_noise="1.7e-4"
+       sensor_linear_acceleration_white_noise_std_noise="5.88e-3"
+       sensor_angular_velocity_random_walk_std_noise="1.0e-5"
+       sensor_linear_acceleration_random_walk_std_noise="3.0e-4"
+     />
+
+.. [Forster2016] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza,
+   "On-Manifold Preintegration for Real-Time Visual-Inertial Odometry",
+   *IEEE Transactions on Robotics*, vol. 33, no. 1, pp. 1-21, 2016.
 
 
 
@@ -374,5 +452,3 @@ For it to work, the ``world`` XML needs to have a :ref:`georeference tag <world-
 
    .. literalinclude:: ../definitions/gnss.sensor.xml
       :language: xml
-
-

@@ -63,6 +63,7 @@ add_library(${PROJECT_NAME}
 	src/Sensors/CameraSensor.cpp
 	src/Sensors/DepthCameraSensor.cpp
 	src/Sensors/IMU.cpp
+	src/Sensors/ImuNoiseModel.cpp
 	src/Sensors/GNSS.cpp
 	src/Sensors/LaserScanner.cpp
 	src/Sensors/Lidar3D.cpp
@@ -70,6 +71,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/Sensors/CameraSensor.h
 	include/mvsim/Sensors/DepthCameraSensor.h
 	include/mvsim/Sensors/IMU.h
+	include/mvsim/Sensors/ImuNoiseModel.h
 	include/mvsim/Sensors/GNSS.h
 	include/mvsim/Sensors/LaserScanner.h
 	include/mvsim/Sensors/Lidar3D.h
