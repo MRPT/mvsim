@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -558,18 +558,19 @@ void World::GUI::prepare_editor_window()
 			formPose->add<nanogui::Button>("Accept")->setCallback(
 				[formPose, this, lbs]()
 				{
-					const mrpt::math::TPose3D newPose = {// X:
-														 std::stod(lbs[0]->value()),
-														 // Y:
-														 std::stod(lbs[1]->value()),
-														 // Z:
-														 std::stod(lbs[2]->value()),
-														 // Yaw
-														 mrpt::DEG2RAD(std::stod(lbs[3]->value())),
-														 // Pitch
-														 mrpt::DEG2RAD(std::stod(lbs[4]->value())),
-														 // Roll:
-														 mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
+					const mrpt::math::TPose3D newPose = {
+						// X:
+						std::stod(lbs[0]->value()),
+						// Y:
+						std::stod(lbs[1]->value()),
+						// Z:
+						std::stod(lbs[2]->value()),
+						// Yaw
+						mrpt::DEG2RAD(std::stod(lbs[3]->value())),
+						// Pitch
+						mrpt::DEG2RAD(std::stod(lbs[4]->value())),
+						// Roll:
+						mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
 
 					gui_selectedObject.simulable->setRelativePose(newPose);
 					onEntitySelected(newPose);
@@ -946,9 +947,11 @@ void World::internalUpdate3DSceneObjects(
 		double cpu_usage_ratio = std::max(1e-10, timlogger_.getMeanTime("run_simulation.cpu_dt")) /
 								 std::max(1e-10, timlogger_.getMeanTime("run_simulation.dt"));
 
-		gui_.lbCpuUsage->setCaption(mrpt::format(
-			"Time: %s (CPU usage: %.03f%%)",
-			mrpt::system::formatTimeInterval(get_simul_time()).c_str(), cpu_usage_ratio * 100.0));
+		gui_.lbCpuUsage->setCaption(
+			mrpt::format(
+				"Time: %s (CPU usage: %.03f%%)",
+				mrpt::system::formatTimeInterval(get_simul_time()).c_str(),
+				cpu_usage_ratio * 100.0));
 
 		// User supplied-lines:
 		guiMsgLinesMtx_.lock();

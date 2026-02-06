@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -43,8 +43,9 @@ int nodeList()
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client;
 
-	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-		cli->argVerbosity.getValue()));
+	client.setMinLoggingLevel(
+		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+			cli->argVerbosity.getValue()));
 
 	std::cout << "# Connecting to server...\n";
 	client.connect();

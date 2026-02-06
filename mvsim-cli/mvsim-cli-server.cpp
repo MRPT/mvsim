@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -30,8 +30,9 @@ void commonLaunchServer()
 
 	if (cli->argPort.isSet()) server->listenningPort(cli->argPort.getValue());
 
-	server->setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-		cli->argVerbosity.getValue()));
+	server->setMinLoggingLevel(
+		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
+			cli->argVerbosity.getValue()));
 
 	server->start();
 #endif

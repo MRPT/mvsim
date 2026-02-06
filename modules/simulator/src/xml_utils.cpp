@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -56,10 +56,11 @@ void TParamEntry::parse(
 	{
 		if (1 != ::sscanf(str.c_str(), format, val))
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing attribute '%s'='%s' (Expected "
-				"format:'%s')",
-				functionNameContext, varName.c_str(), str.c_str(), format));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing attribute '%s'='%s' (Expected "
+					"format:'%s')",
+					functionNameContext, varName.c_str(), str.c_str(), format));
 		}
 		double& ang = *reinterpret_cast<double*>(val);
 		ang = mrpt::DEG2RAD(ang);
@@ -69,10 +70,11 @@ void TParamEntry::parse(
 	{
 		if (1 != ::sscanf(str.c_str(), "%f", reinterpret_cast<float*>(val)))
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing attribute '%s'='%s' (Expected "
-				"format:'%s')",
-				functionNameContext, varName.c_str(), str.c_str(), format));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing attribute '%s'='%s' (Expected "
+					"format:'%s')",
+					functionNameContext, varName.c_str(), str.c_str(), format));
 		}
 		float& ang = *reinterpret_cast<float*>(val);
 		ang = mrpt::DEG2RAD(ang);
@@ -93,10 +95,11 @@ void TParamEntry::parse(
 		}
 		else
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing 'bool' attribute '%s'='%s' (Expected "
-				"'true' or 'false')",
-				functionNameContext, varName.c_str(), str.c_str()));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing 'bool' attribute '%s'='%s' (Expected "
+					"'true' or 'false')",
+					functionNameContext, varName.c_str(), str.c_str()));
 		}
 	}
 	// "%color" ==> mrpt::img::TColor
@@ -105,20 +108,22 @@ void TParamEntry::parse(
 		// HTML-like format:
 		if (!(str.size() > 1 && str[0] == '#'))
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing '%s'='%s' (Expected "
-				"format:'#RRGGBB[AA]')",
-				functionNameContext, varName.c_str(), str.c_str()));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing '%s'='%s' (Expected "
+					"format:'#RRGGBB[AA]')",
+					functionNameContext, varName.c_str(), str.c_str()));
 		}
 
 		unsigned int r, g, b, a = 0xff;
 		int ret = ::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
 		if (ret != 3 && ret != 4)
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing '%s'='%s' (Expected "
-				"format:'#RRGGBB[AA]')",
-				functionNameContext, varName.c_str(), str.c_str()));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing '%s'='%s' (Expected "
+					"format:'#RRGGBB[AA]')",
+					functionNameContext, varName.c_str(), str.c_str()));
 		}
 		mrpt::img::TColor& col = *reinterpret_cast<mrpt::img::TColor*>(val);
 		col = mrpt::img::TColor(r, g, b, a);
@@ -131,10 +136,11 @@ void TParamEntry::parse(
 		int ret = ::sscanf(str.c_str(), "%lf %lf %lf", &x, &y, &yaw);
 		if (ret != 3)
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing '%s'='%s' (Expected format:'X Y "
-				"YAW_DEG')",
-				functionNameContext, varName.c_str(), str.c_str()));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing '%s'='%s' (Expected format:'X Y "
+					"YAW_DEG')",
+					functionNameContext, varName.c_str(), str.c_str()));
 		}
 
 		// User provides angles in deg:
@@ -155,8 +161,9 @@ void TParamEntry::parse(
 		}
 		else
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error: Unknown format specifier '%s'", functionNameContext, format));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error: Unknown format specifier '%s'", functionNameContext, format));
 		}
 	}
 	// %point3d
@@ -166,9 +173,10 @@ void TParamEntry::parse(
 		int ret = ::sscanf(str.c_str(), "%lf %lf %lf", &x, &y, &z);
 		if (ret != 2 && ret != 3)
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing '%s'='%s' (Expected format:'X Y [Z]')", functionNameContext,
-				varName.c_str(), str.c_str()));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing '%s'='%s' (Expected format:'X Y [Z]')", functionNameContext,
+					varName.c_str(), str.c_str()));
 		}
 
 		mrpt::math::TPoint3D& pp = *reinterpret_cast<mrpt::math::TPoint3D*>(val);
@@ -185,10 +193,11 @@ void TParamEntry::parse(
 			str.c_str(), "%lf %lf %lf %lf %lf %lf", &x, &y, &z, &yawDeg, &pitchDeg, &rollDeg);
 		if (ret != 6)
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing '%s'='%s' (Expected format:'X Y Z"
-				"YAW_DEG PITCH_DEG ROLL_DEG')",
-				functionNameContext, varName.c_str(), str.c_str()));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing '%s'='%s' (Expected format:'X Y Z"
+					"YAW_DEG PITCH_DEG ROLL_DEG')",
+					functionNameContext, varName.c_str(), str.c_str()));
 		}
 
 		// User provides angles in deg:
@@ -206,10 +215,11 @@ void TParamEntry::parse(
 		// Generic parse:
 		if (1 != ::sscanf(str.c_str(), format, val))
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing attribute '%s'='%s' (Expected "
-				"format:'%s')",
-				functionNameContext, varName.c_str(), str.c_str(), format));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing attribute '%s'='%s' (Expected "
+					"format:'%s')",
+					functionNameContext, varName.c_str(), str.c_str(), format));
 		}
 	}
 }
@@ -308,10 +318,11 @@ void mvsim::parse_xmlnode_shape(
 		const char* str_val = pt_node->value();
 		if (2 != ::sscanf(str_val, "%lf %lf", &pt.x, &pt.y))
 		{
-			throw std::runtime_error(mrpt::format(
-				"%s Error parsing <pt> node: '%s' (Expected format:'<pt>X "
-				"Y</pt>')",
-				functionNameContext, str_val));
+			throw std::runtime_error(
+				mrpt::format(
+					"%s Error parsing <pt> node: '%s' (Expected format:'<pt>X "
+					"Y</pt>')",
+					functionNameContext, str_val));
 		}
 
 		out_poly.push_back(pt);
@@ -319,10 +330,11 @@ void mvsim::parse_xmlnode_shape(
 
 	if (out_poly.size() < 3)
 	{
-		throw std::runtime_error(mrpt::format(
-			"%s Error: <shape> node requires 3 or more <pt>X Y</pt> "
-			"entries.",
-			functionNameContext));
+		throw std::runtime_error(
+			mrpt::format(
+				"%s Error: <shape> node requires 3 or more <pt>X Y</pt> "
+				"entries.",
+				functionNameContext));
 	}
 }
 

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
@@ -18,8 +18,7 @@ void ImuNoiseModel::reset()
 	accelBias_ = {0.0, 0.0, 0.0};
 }
 
-mrpt::math::TVector3D ImuNoiseModel::applyGyroscope(
-	const mrpt::math::TVector3D& trueVal, double dt)
+mrpt::math::TVector3D ImuNoiseModel::applyGyroscope(const mrpt::math::TVector3D& trueVal, double dt)
 {
 	return applyChannel(trueVal, dt, gyroscope, gyroBias_);
 }
@@ -31,9 +30,7 @@ mrpt::math::TVector3D ImuNoiseModel::applyAccelerometer(
 }
 
 mrpt::math::TVector3D ImuNoiseModel::applyChannel(
-	const mrpt::math::TVector3D& trueVal,
-	double dt,
-	const ChannelParams& params,
+	const mrpt::math::TVector3D& trueVal, double dt, const ChannelParams& params,
 	mrpt::math::TVector3D& bias)
 {
 	// 1) Integrate bias random walk:

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -195,10 +195,11 @@ void Server::db_advertise_topic(
 
 	if (!dbTopic.topicTypeName.empty() && dbTopic.topicTypeName != topicTypeName)
 	{
-		throw std::runtime_error(mrpt::format(
-			"Trying to register topic `%s` [%s] but already known with type "
-			"[%s]",
-			topicName.c_str(), topicTypeName.c_str(), dbTopic.topicTypeName.c_str()));
+		throw std::runtime_error(
+			mrpt::format(
+				"Trying to register topic `%s` [%s] but already known with type "
+				"[%s]",
+				topicName.c_str(), topicTypeName.c_str(), dbTopic.topicTypeName.c_str()));
 	}
 	dbTopic.topicName = topicName;
 	dbTopic.topicTypeName = topicTypeName;
@@ -301,13 +302,14 @@ void Server::db_advertise_service(
 	if (!dbSrv.inputTypeName.empty() &&
 		(dbSrv.inputTypeName != inputTypeName || dbSrv.outputTypeName != outputTypeName))
 	{
-		throw std::runtime_error(mrpt::format(
-			"Trying to register service `%s` [%s->%s] but already known "
-			"with "
-			"types "
-			"[%s->%s]",
-			serviceName.c_str(), inputTypeName.c_str(), outputTypeName.c_str(),
-			dbSrv.inputTypeName.c_str(), dbSrv.outputTypeName.c_str()));
+		throw std::runtime_error(
+			mrpt::format(
+				"Trying to register service `%s` [%s->%s] but already known "
+				"with "
+				"types "
+				"[%s->%s]",
+				serviceName.c_str(), inputTypeName.c_str(), outputTypeName.c_str(),
+				dbSrv.inputTypeName.c_str(), dbSrv.outputTypeName.c_str()));
 	}
 	dbSrv.serviceName = serviceName;
 	dbSrv.inputTypeName = inputTypeName;

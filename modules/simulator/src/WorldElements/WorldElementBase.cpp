@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -65,10 +65,11 @@ WorldElementBase::Ptr WorldElementBase::factory(
 	{
 		if (0 != strcmp(root->name(), "element"))
 		{
-			throw runtime_error(mrpt::format(
-				"[WorldElementBase::factory] XML root element is '%s' "
-				"('<element>' expected)",
-				root->name()));
+			throw runtime_error(
+				mrpt::format(
+					"[WorldElementBase::factory] XML root element is '%s' "
+					"('<element>' expected)",
+					root->name()));
 		}
 
 		// Get class name:
@@ -86,9 +87,10 @@ WorldElementBase::Ptr WorldElementBase::factory(
 
 	if (!we)
 	{
-		throw runtime_error(mrpt::format(
-			"[WorldElementBase::factory] Unknown world element type '%s'",
-			root ? root->name() : "(root=nullptr)"));
+		throw runtime_error(
+			mrpt::format(
+				"[WorldElementBase::factory] Unknown world element type '%s'",
+				root ? root->name() : "(root=nullptr)"));
 	}
 
 	return we;

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -368,8 +368,9 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 				noiseSeq.reserve(noiseLen);
 				for (size_t i = 0; i < noiseLen; i++)
 				{
-					noiseSeq.push_back(static_cast<int16_t>(mrpt::round(
-						rng.drawGaussian1D(0.0, depth_noise_sigma_) / curObs.rangeUnits)));
+					noiseSeq.push_back(
+						static_cast<int16_t>(mrpt::round(
+							rng.drawGaussian1D(0.0, depth_noise_sigma_) / curObs.rangeUnits)));
 				}
 			}
 

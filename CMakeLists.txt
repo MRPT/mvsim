@@ -3,7 +3,7 @@
 # |                                                                         |
 # |  https://github.com/ual-arm-ros-pkg/multivehicle-simulator              |
 # |                                                                         |
-# | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+# | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
 # | Distributed under 3-clause BSD License                                  |
 # |   See COPYING                                                           |
 # +-------------------------------------------------------------------------+

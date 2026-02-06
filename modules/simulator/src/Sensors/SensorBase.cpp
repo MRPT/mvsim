@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -99,10 +99,11 @@ SensorBase::Ptr SensorBase::factory(Simulable& parent, const rapidxml::xml_node<
 
 	if (!root) throw runtime_error("[SensorBase::factory] XML node is nullptr");
 	if (0 != strcmp(root->name(), "sensor"))
-		throw runtime_error(mrpt::format(
-			"[SensorBase::factory] XML root element is '%s' ('sensor' "
-			"expected)",
-			root->name()));
+		throw runtime_error(
+			mrpt::format(
+				"[SensorBase::factory] XML root element is '%s' ('sensor' "
+				"expected)",
+				root->name()));
 
 	// Get "class" attrib:
 	const xml_attribute<>* sensor_class = root->first_attribute("class");

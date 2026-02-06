@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -46,10 +46,11 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_class)
 
 		const rapidxml::xml_attribute<>* att_name = root_node->first_attribute("name");
 		if (!att_name || !att_name->value())
-			throw runtime_error(mrpt::format(
-				"[XmlClassesRegistry] Missing mandatory attribute "
-				"'name' in node <%s>",
-				tagname_.c_str()));
+			throw runtime_error(
+				mrpt::format(
+					"[XmlClassesRegistry] Missing mandatory attribute "
+					"'name' in node <%s>",
+					tagname_.c_str()));
 
 		const string sClassName = att_name->value();
 
@@ -62,9 +63,10 @@ void XmlClassesRegistry::add(const std::string& input_xml_node_class)
 	{
 		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
 		delete xml;
-		throw std::runtime_error(mrpt::format(
-			"[XmlClassesRegistry] XML parse error (Line %u): %s", static_cast<unsigned>(line),
-			e.what()));
+		throw std::runtime_error(
+			mrpt::format(
+				"[XmlClassesRegistry] XML parse error (Line %u): %s", static_cast<unsigned>(line),
+				e.what()));
 	}
 	catch (const std::exception&)
 	{

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -465,8 +465,9 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 			{
 				obj->mvsim_world_->internalGraphicsLoopTasksForSimulation();
 
-				std::this_thread::sleep_for(std::chrono::microseconds(
-					static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
+				std::this_thread::sleep_for(
+					std::chrono::microseconds(
+						static_cast<size_t>(obj->mvsim_world_->get_simul_timestep() * 1000000)));
 			}
 			else
 			{

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
@@ -78,8 +78,7 @@ class ImuNoiseModel
 	 * \param[in] dt      Simulation timestep (s).
 	 * \return Noisy angular velocity (rad/s).
 	 */
-	mrpt::math::TVector3D applyGyroscope(
-		const mrpt::math::TVector3D& trueVal, double dt);
+	mrpt::math::TVector3D applyGyroscope(const mrpt::math::TVector3D& trueVal, double dt);
 
 	/**
 	 * \brief Corrupt a true accelerometer reading with noise.
@@ -88,20 +87,13 @@ class ImuNoiseModel
 	 * \param[in] dt      Simulation timestep (s).
 	 * \return Noisy linear acceleration (m/s²).
 	 */
-	mrpt::math::TVector3D applyAccelerometer(
-		const mrpt::math::TVector3D& trueVal, double dt);
+	mrpt::math::TVector3D applyAccelerometer(const mrpt::math::TVector3D& trueVal, double dt);
 
 	/** Read-only access to current gyroscope bias (for diagnostics). */
-	const mrpt::math::TVector3D& gyroBias() const
-	{
-		return gyroBias_;
-	}
+	const mrpt::math::TVector3D& gyroBias() const { return gyroBias_; }
 
 	/** Read-only access to current accelerometer bias (for diagnostics). */
-	const mrpt::math::TVector3D& accelBias() const
-	{
-		return accelBias_;
-	}
+	const mrpt::math::TVector3D& accelBias() const { return accelBias_; }
 
    private:
 	/** Apply the two-component noise model to a 3-axis signal.
@@ -113,9 +105,7 @@ class ImuNoiseModel
 	 * \return Noisy measurement.
 	 */
 	mrpt::math::TVector3D applyChannel(
-		const mrpt::math::TVector3D& trueVal,
-		double dt,
-		const ChannelParams& params,
+		const mrpt::math::TVector3D& trueVal, double dt, const ChannelParams& params,
 		mrpt::math::TVector3D& bias);
 
 	mrpt::math::TVector3D gyroBias_{0.0, 0.0, 0.0};
