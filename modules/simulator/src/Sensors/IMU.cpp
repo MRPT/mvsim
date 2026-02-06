@@ -143,8 +143,15 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 	// --- Linear acceleration ---
 	const auto g = mrpt::math::TVector3D(0.0, 0.0, -world_->get_gravity());
 
-	const mrpt::math::TVector3D trueAccLocal =
-		vehicle_.getPose().inverseComposePoint(vehicle_.getLinearAcceleration() + g);
+	// Rotate the global-frame acceleration vector into the vehicle's
+	// local frame.
+	const auto globalAcc = vehicle_.getLinearAcceleration() + g;
+	const auto R = vehicle_.getCPose3D().getRotationMatrix();  // 3×3
+
+	const mrpt::math::TVector3D trueAccLocal(
+		R(0, 0) * globalAcc.x + R(1, 0) * globalAcc.y + R(2, 0) * globalAcc.z,
+		R(0, 1) * globalAcc.x + R(1, 1) * globalAcc.y + R(2, 1) * globalAcc.z,
+		R(0, 2) * globalAcc.x + R(1, 2) * globalAcc.y + R(2, 2) * globalAcc.z);
 
 	const mrpt::math::TVector3D linAccLocal = noiseModel_.applyAccelerometer(trueAccLocal, dt);
 
