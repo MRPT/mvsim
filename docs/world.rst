@@ -47,8 +47,6 @@ World contents
 
 Then we have to populate the world. MVSim defines **three kinds of objects**:
 
-Then we have to populate the world. MVSim defines **three kinds of objects**:
-
 1. **Elements** (like walls, the ground, etc.) which normally do not move and are 
    part of the environment structure,
 2. **Blocks**: obstacles, furniture, buildings, or any object that may be static or 

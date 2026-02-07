@@ -79,7 +79,7 @@ Loops can be nested to create 2D patterns:
         <for var="col" from="0" to="4">
             <block name="cube_${row}_${col}">
                 <init_pose>$f{col*2} $f{row*2} 0</init_pose>
-                <color>#$f{int(row*51):02X}$f{int(col*51):02X}FF</color>
+                <color>#FF0000FF</color>
                 <geometry type="box" lx="1.5" ly="1.5" lz="1.5"/>
             </block>
         </for>
@@ -98,7 +98,7 @@ Creating a circular arrangement:
     <variable name="NUM_ITEMS" value="12"/>
     <variable name="RADIUS" value="10.0"/>
     
-    <for var="i" from="0" to="${NUM_ITEMS}">
+    <for var="i" from="0" to="${NUM_ITEMS-1}">
         <block name="pillar_${i}" class="stone_pillar">
             <init_pose>
                 $f{RADIUS*cos(i*2*M_PI/NUM_ITEMS)}
@@ -312,18 +312,18 @@ Parametric vehicle placement
 .. code-block:: xml
 
     <variable name="NUM_ROBOTS" value="5"/>
-    <variable name="FORMATION" value="line"/>  <!-- line, circle, grid -->
+    <variable name="FORMATION" value="0"/>
     
     <for var="i" from="0" to="$f{NUM_ROBOTS-1}">
         <!-- Line formation -->
-        <if condition="$f{strcmp('${FORMATION}', 'line') == 0}">
+        <if condition="$f{FORMATION==0}">
             <vehicle name="robot_${i}" class="differential_robot">
                 <init_pose>$f{i*3} 0 0</init_pose>
             </vehicle>
         </if>
         
         <!-- Circular formation -->
-        <if condition="$f{strcmp('${FORMATION}', 'circle') == 0}">
+        <if condition="$f{FORMATION==1}">
             <vehicle name="robot_${i}" class="differential_robot">
                 <init_pose>
                     $f{5*cos(i*2*M_PI/NUM_ROBOTS)}

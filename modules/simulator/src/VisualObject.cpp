@@ -39,6 +39,8 @@ VisualObject::VisualObject(
 	glCollision_->setName("bbox");
 }
 
+VisualObject::~VisualObject() = default;
+
 void VisualObject::guiUpdate(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical)

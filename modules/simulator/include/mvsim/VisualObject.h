@@ -38,6 +38,13 @@ class VisualObject
 	VisualObject(
 		World* parent, bool insertCustomVizIntoViz = true, bool insertCustomVizIntoPhysical = true);
 
+	virtual ~VisualObject();
+
+	VisualObject(const VisualObject&) = delete;
+	VisualObject& operator=(const VisualObject&) = delete;
+	VisualObject(VisualObject&&) = delete;
+	VisualObject& operator=(VisualObject&&) = delete;
+
 	/** This creates a new object in the scene and/or update it according to the
 	 * current state of the object. If none of the scenes are passed, the poses
 	 * of existing visual objects are updated, but no new ones are created.
