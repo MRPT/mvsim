@@ -28,6 +28,11 @@ def generate_launch_description():
         "force_publish_vehicle_namespace", default_value='False',
         description='Use vehicle name namespace even if there is only one vehicle')
 
+    publish_log_topics_arg = DeclareLaunchArgument(
+        "publish_log_topics", default_value='False',
+        description='Publish every CSV-logger column as a std_msgs/Float64 topic per vehicle. '
+                    'High-rate, disabled by default.')
+
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz', default_value='True',
         description='Whether to launch RViz2'
@@ -50,6 +55,7 @@ def generate_launch_description():
                 "do_fake_localization": LaunchConfiguration('do_fake_localization'),
                 "publish_tf_odom2baselink": LaunchConfiguration('publish_tf_odom2baselink'),
                 "force_publish_vehicle_namespace": LaunchConfiguration('force_publish_vehicle_namespace'),
+                "publish_log_topics": LaunchConfiguration('publish_log_topics'),
             }]
     )
 
@@ -68,6 +74,7 @@ def generate_launch_description():
         do_fake_localization_arg,
         publish_tf_odom2baselink_arg,
         force_publish_vehicle_namespace_arg,
+        publish_log_topics_arg,
         use_rviz_arg,
         rviz_config_file_arg,
         mvsim_node,

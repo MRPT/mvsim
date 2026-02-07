@@ -189,6 +189,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	force_publish_vehicle_namespace_ = n_->declare_parameter<bool>(
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_);
 
+	publish_log_topics_ = n_->declare_parameter<bool>("publish_log_topics", publish_log_topics_);
+
 	// n_->declare_parameter("use_sim_time"); // already declared error?
 	{
 		bool use_sim_time;
@@ -551,6 +553,7 @@ void MVSimNode::notifyROSWorldIsUpdated()
 		auto& pubsubs = pubsub_vehicles_[idx];
 
 		initPubSubs(pubsubs, veh);
+		initLoggerTopicCallbacks(pubsubs, veh);
 	}
 
 #if PACKAGE_ROS_VERSION == 1
@@ -989,6 +992,90 @@ void MVSimNode::spinNotifyROS()
 	}  // end publish tf
 
 }  // end spinNotifyROS()
+
+#if PACKAGE_ROS_VERSION == 1
+void MVSimNode::initLoggerTopicCallbacks(
+	TPubSubPerVehicle& /*pubsubs*/, mvsim::VehicleBase* /*veh*/)
+{
+	// Log-topic publishing is only supported in ROS2.
+}
+#else
+void MVSimNode::initLoggerTopicCallbacks(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
+{
+	if (!publish_log_topics_)
+	{
+		return;
+	}
+
+	const size_t nLoggers = 1 + veh->getNumWheels();
+	size_t registeredCount = 0;
+
+	for (size_t li = 0; li < nLoggers; li++)
+	{
+		auto logger = veh->getLoggerPtr(li);
+		if (!logger)
+		{
+			continue;
+		}
+		++registeredCount;
+
+		// Determine a human-readable label for this logger
+		std::string loggerLabel;
+		if (li == mvsim::VehicleBase::LOGGER_IDX_POSE)
+		{
+			loggerLabel = "log/pose";
+		}
+		else
+		{
+			loggerLabel =
+				"log/wheel_" + std::to_string(li - mvsim::VehicleBase::LOGGER_IDX_WHEELS + 1);
+		}
+
+		const size_t loggerIdx = li;
+
+		// Register callback that publishes every column as a Float64 topic.
+		// Pointers captured here remain valid because:
+		//  - pubsubs lives in pubsub_vehicles_ (resized once, never again)
+		//  - veh lives in mvsim_world_ vehicle list (stable after load)
+		logger->registerOnRowCallback(
+			[this, &pubsubs, veh, loggerLabel,
+			 loggerIdx](const std::map<std::string_view, double>& columns)
+			{
+				auto& pubMap = pubsubs.pub_log_topics[loggerIdx];
+
+				for (const auto& [colName, value] : columns)
+				{
+					const std::string colStr(colName);
+
+					// Lazily create publisher on first encounter
+					auto it = pubMap.find(colStr);
+					if (it == pubMap.end())
+					{
+						const std::string topicName = vehVarName(loggerLabel + "/" + colStr, *veh);
+
+						it = pubMap
+								 .emplace(
+									 colStr, n_->create_publisher<Msg_Float64>(
+												 topicName, publisher_history_len_))
+								 .first;
+
+						RCLCPP_INFO(
+							n_->get_logger(), "[MVSimNode] Publishing log topic: %s",
+							topicName.c_str());
+					}
+
+					Msg_Float64 msg;
+					msg.data = value;
+					it->second->publish(msg);
+				}
+			});
+	}
+
+	RCLCPP_INFO(
+		n_->get_logger(), "[MVSimNode] Registered %zu log-topic callbacks for vehicle '%s'",
+		registeredCount, veh->getName().c_str());
+}
+#endif
 
 void MVSimNode::onNewObservation(
 	const mvsim::Simulable& sim, const mrpt::obs::CObservation::Ptr& obs)

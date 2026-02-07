@@ -26,7 +26,9 @@ def generate_launch_description():
     headless = LaunchConfiguration('headless')
     do_fake_localization = LaunchConfiguration('do_fake_localization')
     publish_tf_odom2baselink = LaunchConfiguration('publish_tf_odom2baselink')
-    force_publish_vehicle_namespace = LaunchConfiguration('force_publish_vehicle_namespace')
+    publish_log_topics = LaunchConfiguration('publish_log_topics')
+    force_publish_vehicle_namespace = LaunchConfiguration(
+        'force_publish_vehicle_namespace')
     use_rviz = LaunchConfiguration('use_rviz')
 
     # Create launch description
@@ -68,6 +70,14 @@ def generate_launch_description():
             description='Whether to launch RViz2'
         )
     )
+    ld.add_action(
+        DeclareLaunchArgument(
+            'publish_log_topics',
+            default_value='False',
+            description='Publish every CSV-logger column as a std_msgs/Float64 topic per vehicle. '
+                        'High-rate, disabled by default.'
+        )
+    )
 
     # Include world launch file
     ld.add_action(
@@ -85,6 +95,7 @@ def generate_launch_description():
                 'do_fake_localization': do_fake_localization,
                 'publish_tf_odom2baselink': publish_tf_odom2baselink,
                 'force_publish_vehicle_namespace': force_publish_vehicle_namespace,
+                'publish_log_topics': publish_log_topics,
                 'use_rviz': use_rviz,
                 'rviz_config_file': rviz_config_file
             }.items()
