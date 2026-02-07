@@ -109,40 +109,38 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 
 		// Instantaneous collision flag:
 		isInCollision_ = false;
-		if (b2ContactEdge* cl = b2dBody_->GetContactList(); cl != nullptr)
+		for (b2ContactEdge* ce = b2dBody_->GetContactList(); ce != nullptr; ce = ce->next)
 		{
-			for (auto contact = cl->contact; contact != nullptr; contact = contact->GetNext())
+			b2Contact* contact = ce->contact;
+			if (!contact)
 			{
-				// We may store with which other bodies it's in collision?
-				const auto shA = cl->contact->GetFixtureA()->GetShape();
-				const auto shB = cl->contact->GetFixtureB()->GetShape();
+				continue;
+			}
 
-				if (cl->contact->GetFixtureA()->IsSensor())
-				{
-					continue;
-				}
-				if (cl->contact->GetFixtureB()->IsSensor())
-				{
-					continue;
-				}
+			if (contact->GetFixtureA()->IsSensor() || contact->GetFixtureB()->IsSensor())
+			{
+				continue;
+			}
 
-				b2DistanceInput di;
-				di.proxyA.Set(shA, 0 /*index for chains*/);
-				di.proxyB.Set(shB, 0 /*index for chains*/);
-				di.transformA = cl->contact->GetFixtureA()->GetBody()->GetTransform();
-				di.transformB = cl->contact->GetFixtureB()->GetBody()->GetTransform();
-				di.useRadii = true;
+			const auto* shA = contact->GetFixtureA()->GetShape();
+			const auto* shB = contact->GetFixtureB()->GetShape();
 
-				b2SimplexCache dc{};
-				dc.count = 0;
-				b2DistanceOutput dO;
-				b2Distance(&dO, &dc, &di);
+			b2DistanceInput di;
+			di.proxyA.Set(shA, 0 /*index for chains*/);
+			di.proxyB.Set(shB, 0 /*index for chains*/);
+			di.transformA = contact->GetFixtureA()->GetBody()->GetTransform();
+			di.transformB = contact->GetFixtureB()->GetBody()->GetTransform();
+			di.useRadii = true;
 
-				if (dO.distance < simulable_parent_->collisionThreshold() ||
-					cl->contact->IsTouching())
-				{
-					isInCollision_ = true;
-				}
+			b2SimplexCache dc{};
+			dc.count = 0;
+			b2DistanceOutput dO;
+			b2Distance(&dO, &dc, &di);
+
+			if (dO.distance < simulable_parent_->collisionThreshold() || contact->IsTouching())
+			{
+				isInCollision_ = true;
+				break;	// no need to check further
 			}
 		}
 
