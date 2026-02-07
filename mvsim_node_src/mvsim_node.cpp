@@ -193,7 +193,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	// n_->declare_parameter("use_sim_time"); // already declared error?
 	{
-		bool use_sim_time;
+		bool use_sim_time = false;
 		n_->get_parameter_or("use_sim_time", use_sim_time, false);
 		if (use_sim_time)
 		{
@@ -1041,6 +1041,7 @@ void MVSimNode::initLoggerTopicCallbacks(TPubSubPerVehicle& pubsubs, mvsim::Vehi
 			[this, &pubsubs, veh, loggerLabel,
 			 loggerIdx](const std::map<std::string_view, double>& columns)
 			{
+				auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 				auto& pubMap = pubsubs.pub_log_topics[loggerIdx];
 
 				for (const auto& [colName, value] : columns)
