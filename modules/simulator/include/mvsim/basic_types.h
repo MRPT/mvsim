@@ -10,16 +10,13 @@
 
 // Misc. types & forwards declarations
 
+#include <box2d/id.h>  // for b2WorldId, b2BodyId, b2ShapeId
 #include <mrpt/math/TPoint2D.h>
 #include <mrpt/math/TPose2D.h>
 #include <mrpt/math/TTwist2D.h>
 
 #include <cstdint>	// uintptr_t
 #include <vector>
-
-class b2World;
-class b2Body;
-class b2Fixture;
 
 namespace rapidxml
 {
@@ -31,18 +28,6 @@ class xml_attribute;
 template <class Ch>
 class xml_document;
 }  // namespace rapidxml
-
-namespace mrpt
-{
-namespace opengl
-{
-class CSetOfObjects;
-}  // namespace opengl
-namespace slam
-{
-class CObservation;
-}
-}  // namespace mrpt
 
 namespace mvsim
 {
@@ -56,7 +41,7 @@ class JointXMLnode;
  */
 struct TSimulContext
 {
-	b2World* b2_world = nullptr;
+	b2WorldId b2_world = nullptr;
 	World* world = nullptr;
 	double simul_time = 0;	//!< Current time in the simulated world
 	double dt = 0;	//!< timestep

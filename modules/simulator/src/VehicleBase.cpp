@@ -88,10 +88,11 @@ void VehicleBase::register_vehicle_class(
 	}
 	if (0 != strcmp(xml_node->name(), "vehicle:class"))
 	{
-		throw runtime_error(mrpt::format(
-			"[VehicleBase::register_vehicle_class] XML element is '%s' "
-			"('vehicle:class' expected)",
-			xml_node->name()));
+		throw runtime_error(
+			mrpt::format(
+				"[VehicleBase::register_vehicle_class] XML element is '%s' "
+				"('vehicle:class' expected)",
+				xml_node->name()));
 	}
 
 	// Delay the replacement of this variable (used in Sensors) until
@@ -118,10 +119,11 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	}
 	if (0 != strcmp(root->name(), "vehicle"))
 	{
-		throw runtime_error(mrpt::format(
-			"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
-			"expected)",
-			root->name()));
+		throw runtime_error(
+			mrpt::format(
+				"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
+				"expected)",
+				root->name()));
 	}
 
 	// "class": When a vehicle has a 'class="XXX"' attribute, look for each
@@ -186,8 +188,9 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		const rapidxml::xml_node<char>* class_root = veh_classes_registry.get(sClassName);
 		if (!class_root)
 		{
-			throw runtime_error(mrpt::format(
-				"[VehicleBase::factory] Vehicle class '%s' undefined", sClassName.c_str()));
+			throw runtime_error(
+				mrpt::format(
+					"[VehicleBase::factory] Vehicle class '%s' undefined", sClassName.c_str()));
 		}
 
 		nodes.add(class_root);
@@ -213,8 +216,9 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	VehicleBase::Ptr veh = classFactory_vehicleDynamics.create(dyn_class->value(), parent);
 	if (!veh)
 	{
-		throw runtime_error(mrpt::format(
-			"[VehicleBase::factory] Unknown vehicle dynamics class '%s'", dyn_class->value()));
+		throw runtime_error(
+			mrpt::format(
+				"[VehicleBase::factory] Unknown vehicle dynamics class '%s'", dyn_class->value()));
 	}
 
 	// Initialize here all common params shared by any polymorphic class:
@@ -407,9 +411,10 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const std::string& xml_text
 	catch (rapidxml::parse_error& e)
 	{
 		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
-		throw std::runtime_error(mrpt::format(
-			"[VehicleBase::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line),
-			e.what()));
+		throw std::runtime_error(
+			mrpt::format(
+				"[VehicleBase::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line),
+				e.what()));
 	}
 	return VehicleBase::factory(parent, xml.first_node());
 }
@@ -437,7 +442,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	// configuration)
 	for (size_t i = 0; i < fixture_wheels_.size(); i++)
 	{
-		b2PolygonShape* wheelShape = dynamic_cast<b2PolygonShape*>(fixture_wheels_[i]->GetShape());
+		b2Polygon* wheelShape = dynamic_cast<b2Polygon*>(fixture_wheels_[i]->GetShape());
 		wheelShape->SetAsBox(
 			wheels_info_[i].diameter * 0.5, wheels_info_[i].width * 0.5,
 			b2Vec2(wheels_info_[i].x, wheels_info_[i].y), wheels_info_[i].yaw);
@@ -683,7 +688,7 @@ void VehicleBase::updateMaxRadiusFromPoly()
 void VehicleBase::create_multibody_system(b2World& world)
 {
 	// Define the dynamic body. We set its position and call the body factory.
-	b2BodyDef bodyDef;
+	b2BodyDef bodyDef = b2DefaultBodyDef();
 	bodyDef.type = b2_dynamicBody;
 
 	b2dBody_ = world.CreateBody(&bodyDef);
@@ -698,14 +703,14 @@ void VehicleBase::create_multibody_system(b2World& world)
 		std::vector<b2Vec2> pts(nPts);
 		for (size_t i = 0; i < nPts; i++) pts[i] = b2Vec2(chassis_poly_[i].x, chassis_poly_[i].y);
 
-		b2PolygonShape chassisPoly;
+		b2Polygon chassisPoly;
 		chassisPoly.Set(&pts[0], nPts);
 
 		// FIXED value by design in b2Box: The "skin" depth of the body
 		chassisPoly.m_radius = 2.5e-3;	// b2_polygonRadius;
 
 		// Define the dynamic body fixture.
-		b2FixtureDef fixtureDef;
+		b2ShapeDef fixtureDef = b2DefaultShapeDef();
 		fixtureDef.shape = &chassisPoly;
 		fixtureDef.restitution = 0.01;
 
@@ -734,13 +739,13 @@ void VehicleBase::create_multibody_system(b2World& world)
 
 	for (size_t i = 0; i < wheels_info_.size(); i++)
 	{
-		b2PolygonShape wheelShape;
+		b2Polygon wheelShape;
 		wheelShape.SetAsBox(
 			wheels_info_[i].diameter * 0.5, wheels_info_[i].width * 0.5,
 			b2Vec2(wheels_info_[i].x, wheels_info_[i].y), wheels_info_[i].yaw);
 
 		// Define the dynamic body fixture.
-		b2FixtureDef fixtureDef;
+		b2ShapeDef fixtureDef = b2DefaultShapeDef();
 		fixtureDef.shape = &wheelShape;
 		fixtureDef.restitution = 0.05;
 

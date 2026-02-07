@@ -6,8 +6,7 @@
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
-#include <box2d/b2_distance_joint.h>
-#include <box2d/b2_revolute_joint.h>
+#include <box2d/box2d.h>
 #include <mrpt/core/format.h>
 #include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
@@ -78,10 +77,11 @@ void World::load_from_XML(const std::string& xml_text, const std::string& fileNa
 	{
 		int ret = sscanf(attrb_version->value(), "%i.%i", &version_major, &version_min);
 		if (ret != 2)
-			throw runtime_error(mrpt::format(
-				"Error parsing version attribute: '%s' ('%%i.%%i' "
-				"expected)",
-				attrb_version->value()));
+			throw runtime_error(
+				mrpt::format(
+					"Error parsing version attribute: '%s' ('%%i.%%i' "
+					"expected)",
+					attrb_version->value()));
 	}
 
 	// register tags:
@@ -556,8 +556,8 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 			jd.bodyB_name.c_str());
 	}
 
-	b2Body* b2bodyA = itA->second->b2d_body();
-	b2Body* b2bodyB = itB->second->b2d_body();
+	b2BodyId b2bodyA = itA->second->b2d_body();
+	b2BodyId b2bodyB = itB->second->b2d_body();
 	ASSERTMSG_(
 		b2bodyA, mrpt::format(
 					 "<joint> body_a='%s' has no Box2D body. "

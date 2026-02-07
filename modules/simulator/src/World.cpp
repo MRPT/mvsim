@@ -58,7 +58,7 @@ void World::clear_all()
 	box2d_world_ = std::make_unique<b2World>(b2Vec2_zero);
 
 	// Define the ground body.
-	b2BodyDef groundBodyDef;
+	b2BodyDef groundBodyDef = b2DefaultBodyDef();
 	b2_ground_body_ = box2d_world_->CreateBody(&groundBodyDef);
 
 	// Clear lists of objs:

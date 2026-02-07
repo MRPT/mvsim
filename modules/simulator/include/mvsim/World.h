@@ -9,10 +9,7 @@
 
 #pragma once
 
-#include <box2d/b2_body.h>
-#include <box2d/b2_distance_joint.h>
-#include <box2d/b2_revolute_joint.h>
-#include <box2d/b2_world.h>
+#include <box2d/box2d.h>
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
 #include <mrpt/gui/CDisplayWindowGUI.h>
@@ -108,7 +105,7 @@ struct WorldJoint
 	float upperAngle_deg = 0.0f;
 
 	/// Runtime Box2D joint (owned by the b2World, do NOT delete manually)
-	b2Joint* b2joint = nullptr;
+	b2JointId b2joint = nullptr;
 };
 
 /** Simulation happens inside a World object.
@@ -351,9 +348,9 @@ class World : public mrpt::system::COutputLogger
 
 	/** \name Access inner working objects
 	  @{*/
-	std::unique_ptr<b2World>& getBox2DWorld() { return box2d_world_; }
-	const std::unique_ptr<b2World>& getBox2DWorld() const { return box2d_world_; }
-	b2Body* getBox2DGroundBody() { return b2_ground_body_; }
+	b2WorldId& getBox2DWorld() { return box2d_world_; }
+	const b2WorldId& getBox2DWorld() const { return box2d_world_; }
+	b2BodyId getBox2DGroundBody() { return b2_ground_body_; }
 	const VehicleList& getListOfVehicles() const { return vehicles_; }
 	VehicleList& getListOfVehicles() { return vehicles_; }
 	const BlockList& getListOfBlocks() const { return blocks_; }
@@ -718,10 +715,10 @@ class World : public mrpt::system::COutputLogger
 	std::recursive_mutex world_cs_;
 
 	/** Box2D dynamic simulator instance */
-	std::unique_ptr<b2World> box2d_world_;
+	b2WorldId box2d_world_;
 
 	/** Used to declare friction between vehicles-ground*/
-	b2Body* b2_ground_body_ = nullptr;
+	b2BodyId b2_ground_body_ = nullptr;
 
 	VehicleList vehicles_;
 	WorldElementList worldElements_;
@@ -949,14 +946,14 @@ class World : public mrpt::system::COutputLogger
 	struct TFixturePtr
 	{
 		TFixturePtr() = default;
-		b2Fixture* fixture = nullptr;
+		b2ShapeId fixture = nullptr;
 	};
 	struct TInfoPerCollidableobj
 	{
 		TInfoPerCollidableobj() = default;
 
 		mrpt::poses::CPose3D pose;
-		b2Body* collide_body = nullptr;
+		b2BodyId collide_body = nullptr;
 		double representativeHeight = 0.01;
 		double maxWorkableStepHeight = 0.10;
 		double speed = .0;

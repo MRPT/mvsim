@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <box2d/b2_settings.h>	// b2_maxPolygonVertices
+#include <box2d/box2d.h>  // b2_maxPolygonVertices
 #include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/CCylinder.h>

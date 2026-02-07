@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <box2d/b2_body.h>
+#include <box2d/box2d.h>
 #include <mrpt/math/TPoint2D.h>
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
@@ -122,8 +122,8 @@ class Simulable
 
 	virtual void registerOnServer(mvsim::Client& c);
 
-	const b2Body* b2d_body() const { return b2dBody_; }
-	b2Body* b2d_body() { return b2dBody_; }
+	const b2BodyId b2d_body() const { return b2dBody_; }
+	b2BodyId b2d_body() { return b2dBody_; }
 
 	World* getSimulableWorldObject() { return simulable_parent_; }
 	const World* getSimulableWorldObject() const { return simulable_parent_; }
@@ -149,7 +149,7 @@ class Simulable
 	 * This is used by \a simul_post_timestep() to extract the block
 	 * dynamical coords (q,\dot{q}) after each simulation step.
 	 */
-	b2Body* b2dBody_ = nullptr;
+	b2BodyId b2dBody_ = nullptr;
 
 	bool parseSimulable(const JointXMLnode<>& node, const ParseSimulableParams& p = {});
 

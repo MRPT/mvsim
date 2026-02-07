@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <box2d/b2_settings.h>	// b2_maxPolygonVertices
+#include <box2d/box2d.h>  // b2_maxPolygonVertices
 #include <mrpt/containers/yaml.h>
 #include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/math/TBoundingBox.h>

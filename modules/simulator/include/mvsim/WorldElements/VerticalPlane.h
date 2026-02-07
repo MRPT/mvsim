@@ -105,11 +105,11 @@ class VerticalPlane : public WorldElementBase
 	mrpt::opengl::CSetOfObjects::Ptr glGroup_;
 
 	/** Box2D body for the wall (may be split into multiple fixtures) */
-	b2Body* b2dBody_ = nullptr;
+	b2BodyId b2dBody_ = nullptr;
 	double restitution_ = 0.01;	 //!< Default: 0.01
 
 	/** Multiple fixtures for wall segments (to exclude door openings) */
-	std::vector<b2Fixture*> fixtures_;
+	std::vector<b2ShapeId> fixtures_;
 
 	/** List of openings (doors and windows) in this wall */
 	std::vector<Opening> openings_;

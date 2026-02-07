@@ -7,8 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <box2d/b2_contact.h>
-#include <box2d/b2_distance.h>
+#include <box2d/box2d.h>
 #include <mvsim/Block.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>

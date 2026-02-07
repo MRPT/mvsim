@@ -294,9 +294,9 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 		CObservation2DRangeScan& scan = lstScans.back();
 
 		// Avoid the lidar seeing the vehicle owns shape:
-		std::map<b2Fixture*, uintptr_t> orgUserData;
+		std::map<b2ShapeId, uintptr_t> orgUserData;
 
-		auto makeFixtureInvisible = [&](b2Fixture* f)
+		auto makeFixtureInvisible = [&](b2ShapeId f)
 		{
 			if (!f)
 			{
@@ -325,7 +325,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 			RayCastClosestCallback() = default;
 
 			float ReportFixture(
-				b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal,
+				b2ShapeId fixture, const b2Vec2& point, const b2Vec2& normal,
 				float fraction) override
 			{
 				if (!see_fixtures_ || fixture->GetUserData().pointer == INVISIBLE_FIXTURE_USER_DATA)

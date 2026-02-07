@@ -9,10 +9,7 @@
 
 #pragma once
 
-#include <box2d/b2_fixture.h>
-#include <box2d/b2_friction_joint.h>
-#include <box2d/b2_polygon_shape.h>
-#include <box2d/b2_world.h>
+#include <box2d/box2d.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/math/TPolygon2D.h>
 #include <mrpt/opengl/CSetOfLines.h>
@@ -78,7 +75,7 @@ class Block : public VisualObject, public Simulable
 	virtual float getMaxBlockRadius() const { return maxRadius_; }
 	/** Get the block mass */
 	virtual double getMass() const { return mass_; }
-	b2Body* getBox2DBlockBody() { return b2dBody_; }
+	b2BodyId getBox2DBlockBody() { return b2dBody_; }
 	mrpt::math::TPoint2D getBlockCenterOfMass() const
 	{
 		return block_com_;
@@ -148,7 +145,7 @@ class Block : public VisualObject, public Simulable
 	 * getblockIndex() (default=0) */
 	size_t blockIndex_ = 0;
 
-	std::vector<b2FrictionJoint*> friction_joints_;
+	std::vector<b2JointId> friction_joints_;
 
 	// Block info:
 	double mass_ = 30.0;
@@ -189,7 +186,7 @@ class Block : public VisualObject, public Simulable
 	void updateMaxRadiusFromPoly();
 
 	// Box2D elements:
-	b2Fixture* fixture_block_;
+	b2ShapeId fixture_block_;
 
    private:
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);

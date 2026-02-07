@@ -9,10 +9,7 @@
 
 #pragma once
 
-#include <box2d/b2_body.h>
-#include <box2d/b2_fixture.h>
-#include <box2d/b2_polygon_shape.h>
-#include <box2d/b2_world.h>
+#include <box2d/box2d.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/opengl/CSetOfLines.h>
 #include <mrpt/opengl/CSetOfObjects.h>
@@ -72,7 +69,7 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual float getMaxVehicleRadius() const { return maxRadius_; }
 	/** Get the overall vehicle mass, excluding wheels. */
 	virtual double getChassisMass() const { return chassis_mass_; }
-	b2Body* getBox2DChassisBody() { return b2dBody_; }
+	b2BodyId getBox2DChassisBody() { return b2dBody_; }
 	mrpt::math::TPoint2D getChassisCenterOfMass() const
 	{
 		return chassis_com_;
@@ -134,10 +131,10 @@ class VehicleBase : public VisualObject, public Simulable
 
 	void registerOnServer(mvsim::Client& c) override;
 
-	b2Fixture* get_fixture_chassis() { return fixture_chassis_; }
-	std::vector<b2Fixture*>& get_fixture_wheels() { return fixture_wheels_; }
-	const b2Fixture* get_fixture_chassis() const { return fixture_chassis_; }
-	const std::vector<b2Fixture*>& get_fixture_wheels() const { return fixture_wheels_; }
+	b2ShapeId get_fixture_chassis() { return fixture_chassis_; }
+	std::vector<b2ShapeId>& get_fixture_wheels() { return fixture_wheels_; }
+	const b2ShapeId get_fixture_chassis() const { return fixture_chassis_; }
+	const std::vector<b2ShapeId>& get_fixture_wheels() const { return fixture_wheels_; }
 
 	void freeOpenGLResources() override
 	{
@@ -241,11 +238,11 @@ class VehicleBase : public VisualObject, public Simulable
 	std::deque<Wheel> wheels_info_;
 
 	// Box2D elements:
-	b2Fixture* fixture_chassis_ = nullptr;	//!< Created at
+	b2ShapeId fixture_chassis_ = nullptr;  //!< Created at
 
 	/** [0]:rear-left, etc. (depending on derived class). Size set at
 	 * constructor. */
-	std::vector<b2Fixture*> fixture_wheels_;
+	std::vector<b2ShapeId> fixture_wheels_;
 
    private:
 	// Called from internalGuiUpdate()

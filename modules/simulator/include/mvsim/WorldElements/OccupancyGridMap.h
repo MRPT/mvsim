@@ -58,7 +58,7 @@ class OccupancyGridMap : public WorldElementBase
 	struct TFixturePtr
 	{
 		TFixturePtr() = default;
-		b2Fixture* fixture = nullptr;
+		b2ShapeId fixture = nullptr;
 	};
 
 	struct TInfoPerCollidableobj
@@ -66,7 +66,7 @@ class OccupancyGridMap : public WorldElementBase
 		TInfoPerCollidableobj() = default;
 
 		mrpt::poses::CPose2D pose;
-		b2Body* collide_body = nullptr;
+		b2BodyId collide_body = nullptr;
 		mrpt::obs::CObservation2DRangeScan::Ptr scan;
 		std::vector<TFixturePtr> collide_fixtures;
 		float max_obstacles_ranges = 0;

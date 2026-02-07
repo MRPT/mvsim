@@ -518,7 +518,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 		// Create Box2D objects upon first usage:
 		if (!ipv.collide_body)
 		{
-			b2BodyDef bdef;
+			b2BodyDef bdef = b2DefaultBodyDef();
 			ipv.collide_body = getBox2DWorld()->CreateBody(&bdef);
 			ASSERT_(ipv.collide_body);
 		}
@@ -537,10 +537,10 @@ void World::internal_simul_pre_step_terrain_elevation()
 			{
 				// Physical properties of each "obstacle":
 				// make the size proportional to speed to avoid "going thru" walls:
-				b2PolygonShape sqrPoly;
+				b2Polygon sqrPoly;
 				sqrPoly.SetAsBox(obsW, obsW);
 				sqrPoly.m_radius = 1e-3;  // The "skin" depth of the body
-				b2FixtureDef fixtureDef;
+				b2ShapeDef fixtureDef = b2DefaultShapeDef();
 				fixtureDef.shape = &sqrPoly;
 				fixtureDef.restitution = 0.1f;	// restitution_;
 				fixtureDef.density = 0;	 // Fixed (inf. mass)
@@ -564,8 +564,8 @@ void World::internal_simul_pre_step_terrain_elevation()
 				ipv.collide_fixtures[k].fixture->SetSensor(false);
 				ipv.collide_fixtures[k].fixture->GetUserData().pointer = 0;
 
-				b2PolygonShape* poly =
-					dynamic_cast<b2PolygonShape*>(ipv.collide_fixtures[k].fixture->GetShape());
+				b2Polygon* poly =
+					dynamic_cast<b2Polygon*>(ipv.collide_fixtures[k].fixture->GetShape());
 				ASSERT_(poly != nullptr);
 
 				const auto ptLocal = mrpt::math::TPoint3D(

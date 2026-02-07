@@ -175,7 +175,7 @@ void VerticalPlane::createPhysicsBodies()
 	b2World& world = *world_->getBox2DWorld();
 
 	// Define the static body
-	b2BodyDef bodyDef;
+	b2BodyDef bodyDef = b2DefaultBodyDef();
 	bodyDef.type = b2_staticBody;
 	b2dBody_ = world.CreateBody(&bodyDef);
 
@@ -248,10 +248,10 @@ void VerticalPlane::createPhysicsBodies()
 			pts.emplace_back(seg_p11.x, seg_p11.y);
 			pts.emplace_back(seg_p10.x, seg_p10.y);
 
-			b2PolygonShape blockPoly;
+			b2Polygon blockPoly;
 			blockPoly.Set(&pts[0], 4);
 
-			b2FixtureDef fixtureDef;
+			b2ShapeDef fixtureDef = b2DefaultShapeDef();
 			fixtureDef.shape = &blockPoly;
 			fixtureDef.restitution = restitution_;
 
@@ -281,10 +281,10 @@ void VerticalPlane::createPhysicsBodies()
 		pts.emplace_back(seg_p11.x, seg_p11.y);
 		pts.emplace_back(seg_p10.x, seg_p10.y);
 
-		b2PolygonShape blockPoly;
+		b2Polygon blockPoly;
 		blockPoly.Set(&pts[0], 4);
 
-		b2FixtureDef fixtureDef;
+		b2ShapeDef fixtureDef = b2DefaultShapeDef();
 		fixtureDef.shape = &blockPoly;
 		fixtureDef.restitution = restitution_;
 

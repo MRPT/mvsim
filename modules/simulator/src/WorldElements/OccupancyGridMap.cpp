@@ -222,7 +222,7 @@ void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& 
 			// Create Box2D objects upon first usage:
 			if (!ipv.collide_body)
 			{
-				b2BodyDef bdef;
+				b2BodyDef bdef = b2DefaultBodyDef();
 				ipv.collide_body = world_->getBox2DWorld()->CreateBody(&bdef);
 				ASSERT_(ipv.collide_body);
 			}
@@ -251,10 +251,10 @@ void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& 
 
 			// Physical properties of each "occupied cell":
 			const float occCellSemiWidth = grid_.getResolution() * 0.4f;
-			b2PolygonShape sqrPoly;
+			b2Polygon sqrPoly;
 			sqrPoly.SetAsBox(occCellSemiWidth, occCellSemiWidth);
 			sqrPoly.m_radius = 1e-3;  // The "skin" depth of the body
-			b2FixtureDef fixtureDef;
+			b2ShapeDef fixtureDef = b2DefaultShapeDef();
 			fixtureDef.shape = &sqrPoly;
 			fixtureDef.restitution = restitution_;
 			fixtureDef.density = 0;	 // Fixed (inf. mass)
@@ -282,8 +282,8 @@ void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& 
 					ipv.collide_fixtures[k].fixture->SetSensor(false);
 					ipv.collide_fixtures[k].fixture->GetUserData().pointer = 0;
 
-					b2PolygonShape* poly =
-						dynamic_cast<b2PolygonShape*>(ipv.collide_fixtures[k].fixture->GetShape());
+					b2Polygon* poly =
+						dynamic_cast<b2Polygon*>(ipv.collide_fixtures[k].fixture->GetShape());
 					ASSERT_(poly != nullptr);
 
 					const float llx = sincos_tab.ccos[k] * scan->getScanRange(k);
