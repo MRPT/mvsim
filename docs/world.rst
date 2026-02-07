@@ -47,12 +47,18 @@ World contents
 
 Then we have to populate the world. MVSim defines **three kinds of objects**:
 
-1. **Elements** (like walls, the ground, etc.) which normally do not move,
-2. **Blocks**: most normally, obstacles, furniture, etc. Any object that may move or not, but which is not a controllable robot/vehicle; and
-3. **Vehicles**: the robots/vehicles/agents themselves.
+1. **Elements** (like walls, the ground, etc.) which normally do not move and are 
+   part of the environment structure,
+2. **Blocks**: obstacles, furniture, buildings, or any object that may be static or 
+   dynamic but is not a controllable robot/vehicle. Blocks support per-instance 
+   visual scaling and can use reusable class definitions; and
+3. **Vehicles**: the robots, vehicles, or agents themselves that can be controlled 
+   and typically have sensors.
 
-Objects can optionally be connected via **Joints** (rope or pin/hinge
-constraints) for articulated vehicles, tow ropes, etc.
+
+Objects can optionally be connected via **Joints** (rope or pin/hinge constraints) 
+for articulated vehicles, tow ropes, or multi-body systems. This allows modeling 
+trailers, cranes, or any mechanically linked objects.
 
 Both, blocks and vehicles share two common APIs or interfaces: ``Simulable`` and ``VisualObject``, hence
 the properties of such interfaces are explained below in independent pages:

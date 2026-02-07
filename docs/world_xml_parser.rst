@@ -57,3 +57,39 @@ which provide much more than just mathematical operations, but also ``if`` struc
 
 .. note:: By defining the environment variable ``MVSIM_VERBOSE_PARSE`` to ``1``,
     you can see all the details about the parser evaluations, useful for debugging.
+
+
+Control flow structures
+========================
+
+MVSim XML parser supports programming-like control flow:
+
+For loops
+^^^^^^^^^
+
+Repeat XML content with an iteration variable:
+
+.. code-block:: xml
+
+    <for var="i" from="0" to="9">
+        <block name="box_${i}">
+            <init_pose>${i} 0 0</init_pose>
+        </block>
+    </for>
+
+See :ref:`flow control documentation <world-flow-control>` for complete details.
+
+Conditional inclusion
+^^^^^^^^^^^^^^^^^^^^^
+
+Include XML content conditionally:
+
+.. code-block:: xml
+
+    <variable name="ENABLE_SENSORS" value="true"/>
+    
+    <if condition="${ENABLE_SENSORS}">
+        <include file="sensors.xml"/>
+    </if>
+
+See :ref:`flow control documentation <world-flow-control>` for complete details.
