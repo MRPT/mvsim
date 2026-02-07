@@ -47,7 +47,10 @@ void Simulable::simul_pre_timestep(	 //
 		poseSeq.interpolate(
 			mrpt::Clock::fromDouble(std::fmod(context.simul_time, tMax)), q, interOk);
 
-		if (interOk) this->setPose(initial_q_ + q);
+		if (interOk)
+		{
+			this->setPose(initial_q_ + q);
+		}
 	}
 
 	if (!b2dBody_)
@@ -82,7 +85,10 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		// world-element modifies them! (e.g. elevation map)
 
 		// Update the GUI element **poses** only:
-		if (auto* vo = meAsVisualObject(); vo) vo->guiUpdate(std::nullopt, std::nullopt);
+		if (auto* vo = meAsVisualObject(); vo)
+		{
+			vo->guiUpdate(std::nullopt, std::nullopt);
+		}
 
 		// Vel:
 		const b2Vec2& vel = b2dBody_->GetLinearVelocity();
@@ -91,9 +97,15 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		dq_.vy = vel(1);
 		dq_.omega = w;
 
-		// Estimate acceleration from finite differences:
-		ddq_lin_ = (q_.translation() - former_q_.translation()) * (1.0 / context.dt);
+		// Estimate linear acceleration from finite differences of velocity:
+		{
+			const double inv_dt = 1.0 / context.dt;
+			ddq_lin_.x = (dq_.vx - former_dq_.vx) * inv_dt;
+			ddq_lin_.y = (dq_.vy - former_dq_.vy) * inv_dt;
+			ddq_lin_.z = 0.0;  // 2D sim only
+		}
 		former_q_ = q_;
+		former_dq_ = dq_;
 
 		// Instantaneous collision flag:
 		isInCollision_ = false;
@@ -105,8 +117,14 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 				const auto shA = cl->contact->GetFixtureA()->GetShape();
 				const auto shB = cl->contact->GetFixtureB()->GetShape();
 
-				if (cl->contact->GetFixtureA()->IsSensor()) continue;
-				if (cl->contact->GetFixtureB()->IsSensor()) continue;
+				if (cl->contact->GetFixtureA()->IsSensor())
+				{
+					continue;
+				}
+				if (cl->contact->GetFixtureB()->IsSensor())
+				{
+					continue;
+				}
 
 				b2DistanceInput di;
 				di.proxyA.Set(shA, 0 /*index for chains*/);
@@ -115,14 +133,16 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 				di.transformB = cl->contact->GetFixtureB()->GetBody()->GetTransform();
 				di.useRadii = true;
 
-				b2SimplexCache dc;
+				b2SimplexCache dc{};
 				dc.count = 0;
 				b2DistanceOutput dO;
 				b2Distance(&dO, &dc, &di);
 
 				if (dO.distance < simulable_parent_->collisionThreshold() ||
 					cl->contact->IsTouching())
+				{
 					isInCollision_ = true;
+				}
 			}
 		}
 
@@ -311,7 +331,10 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 			parse_xmlnode_attribs(*node, auxPar, varValues);
 
 			// Reset publish topic if enabled==false
-			if (!publishEnabled) publishPoseTopic_.clear();
+			if (!publishEnabled)
+			{
+				publishPoseTopic_.clear();
+			}
 		}
 
 		if (!listObjects.empty())
@@ -350,7 +373,9 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 								n->value(), getSimulableWorldObject()->user_defined_variables())
 								.c_str(),
 							"%lf %lf %lf %lf", &t, &p.x, &p.y, &p.yaw))
+					{
 						THROW_EXCEPTION_FMT("Error parsing <time_pose>:\n%s", n->value());
+					}
 					p.yaw *= M_PI / 180.0;	// deg->rad
 
 					poseSeq.insert(mrpt::Clock::fromDouble(t), p);
@@ -366,7 +391,9 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 								.c_str(),
 							"%lf %lf %lf %lf %lf %lf %lf", &t, &p.x, &p.y, &p.z, &p.yaw, &p.pitch,
 							&p.roll))
+					{
 						THROW_EXCEPTION_FMT("Error parsing <time_pose3d>:\n%s", n->value());
+					}
 					p.yaw *= M_PI / 180.0;	// deg->rad
 					p.pitch *= M_PI / 180.0;  // deg->rad
 					p.roll *= M_PI / 180.0;	 // deg->rad
@@ -474,10 +501,14 @@ void Simulable::registerOnServer(mvsim::Client& c)
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	// Topic:
 	if (!publishPoseTopic_.empty())
+	{
 		c.advertiseTopic<mvsim_msgs::TimeStampedPose>(publishPoseTopic_);
+	}
 
 	if (!publishRelativePoseTopic_.empty())
+	{
 		c.advertiseTopic<mvsim_msgs::TimeStampedPose>(publishRelativePoseTopic_);
+	}
 #endif
 
 	MRPT_END
@@ -493,10 +524,16 @@ void Simulable::setPose(const mrpt::math::TPose3D& p, bool notifyChange) const
 		me.q_ = p;
 
 		// Update the GUI element poses only:
-		if (auto* vo = me.meAsVisualObject(); vo) vo->guiUpdate(std::nullopt, std::nullopt);
+		if (auto* vo = me.meAsVisualObject(); vo)
+		{
+			vo->guiUpdate(std::nullopt, std::nullopt);
+		}
 	}
 
-	if (notifyChange) const_cast<Simulable*>(this)->notifySimulableSetPose(p);
+	if (notifyChange)
+	{
+		const_cast<Simulable*>(this)->notifySimulableSetPose(p);
+	}
 }
 
 mrpt::math::TPose3D Simulable::getPose() const
