@@ -54,6 +54,9 @@ https://github.com/user-attachments/assets/766db164-2d16-44f4-acbf-2f15b73c1ab3
 
 ![screenshot-demo](docs/imgs/mvsim-ros2-demo.gif)
 
+
+https://github.com/user-attachments/assets/93c95aeb-71e9-4c35-b1dc-ba895c79daf7
+
 [![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
 
 
