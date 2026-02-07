@@ -131,6 +131,13 @@ class Block : public VisualObject, public Simulable
 		gl_block_.reset();	// regenerate 3D view
 	}
 
+	double visual_scale() const { return visual_scale_; }
+	void visual_scale(double v)
+	{
+		visual_scale_ = v;
+		gl_block_.reset();	// regenerate 3D view
+	}
+
 	/// returns true if none of the min/max block z limits has been set
 	/// explicitly yet. Used while parsing the shape_from_visual tag.
 	bool default_block_z_min_max() const;
@@ -173,6 +180,10 @@ class Block : public VisualObject, public Simulable
 	 * detected by sensors, nor collide  */
 	bool intangible_ = false;
 
+	/** Per-instance visual scale override. If NaN, uses the scale from the
+	 * visual model definition */
+	double visual_scale_ = std::numeric_limits<double>::quiet_NaN();
+
 	const TParameterDefinitions params_ = {
 		{"mass", {"%lf", &mass_}},
 		{"zmin", {"%lf", &block_z_min_}},
@@ -182,7 +193,8 @@ class Block : public VisualObject, public Simulable
 		{"restitution", {"%lf", &restitution_}},
 		{"color", {"%color", &block_color_}},
 		{"intangible", {"%bool", &intangible_}},
-		{"static", {"%bool", &isStatic_}}
+		{"static", {"%bool", &isStatic_}},
+		{"visual_scale", {"%lf", &visual_scale_}}
 		//
 	};
 

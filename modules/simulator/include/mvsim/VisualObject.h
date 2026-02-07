@@ -38,8 +38,6 @@ class VisualObject
 	VisualObject(
 		World* parent, bool insertCustomVizIntoViz = true, bool insertCustomVizIntoPhysical = true);
 
-	virtual ~VisualObject();
-
 	/** This creates a new object in the scene and/or update it according to the
 	 * current state of the object. If none of the scenes are passed, the poses
 	 * of existing visual objects are updated, but no new ones are created.
@@ -90,7 +88,8 @@ class VisualObject
 		const mrpt::opengl::CRenderizable::Ptr& glModel, const mrpt::poses::CPose3D& modelPose = {},
 		const float modelScale = 1.0f, const std::string& modelName = "group",
 		const std::optional<std::string>& modelURI = std::nullopt,
-		const bool initialShowBoundingBox = false);
+		const bool initialShowBoundingBox = false,
+		const std::optional<double>& scaleOverride = std::nullopt);
 
 	void setCollisionShape(const Shape2p5& cs) { collisionShape_ = cs; }
 

@@ -46,6 +46,9 @@
 	<variable name="NUM_POLES_Y" value="8"></variable>
 
 	<variable name="PLANTS_RAND_XY" value="0.35"></variable>
+
+	<!-- Variability of plant scale (1 sigma of normally distributed scale additional term to sum on top of 1.0) -->
+	<variable name="PLANTS_RAND_SIZE_STD" value="0.20" />
 	
 	<variable name="CEILING_HEIGHT" value="3.0"></variable>
 
@@ -285,17 +288,21 @@
 		<for var="iY" from="0" to="$f{NUM_PLANTS_CORRIDOR_SOUTH-1}">
 			<block class="plant_tomato">
 				<init_pose>$f{3.95+4*iX+rand()*PLANTS_RAND_XY} $f{3.0+iY*(9/NUM_PLANTS_CORRIDOR_SOUTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<visual_scale>$f{1.0+PLANTS_RAND_SIZE_STD*randn()}</visual_scale>
 			</block>
 			<block class="plant_tomato">
 				<init_pose>$f{3.95+4*iX+3.0+rand()*PLANTS_RAND_XY} $f{3.0+iY*(9/NUM_PLANTS_CORRIDOR_SOUTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<visual_scale>$f{1.0+PLANTS_RAND_SIZE_STD*randn()}</visual_scale>
 			</block>
 		</for>
 		<for var="iY" from="0" to="$f{NUM_PLANTS_CORRIDOR_NORTH-1}">
 			<block class="plant_tomato">
 				<init_pose>$f{3.95+4*iX+rand()*PLANTS_RAND_XY} $f{15.0+iY*(12/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<visual_scale>$f{1.0+PLANTS_RAND_SIZE_STD*randn()}</visual_scale>
 			</block>
 			<block class="plant_tomato">
 				<init_pose>$f{3.95+4*iX+3.0+rand()*PLANTS_RAND_XY} $f{15.0+iY*(12/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<visual_scale>$f{1.0+PLANTS_RAND_SIZE_STD*randn()}</visual_scale>
 			</block>
 		</for>
 	</for>
