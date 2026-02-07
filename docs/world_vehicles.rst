@@ -194,3 +194,46 @@ wheel angular velocity and acceleration, lateral and longitudinal forces, etc.
 
 If you want to add new variables to this logger, look for ``logger->updateColumn(...)`` in the code
 for usage examples.
+
+
+ROS 2 Integration
+------------------
+
+When running MVSim with the ROS 2 node, vehicles automatically publish their state and sensor data to ROS 2 topics. See :ref:`vehicles` section 10 for complete topic listings.
+
+Published Topics
+^^^^^^^^^^^^^^^^^
+
+**Core topics** (always published):
+
+* ``<VEH>/odom`` — Odometry with realistic noise
+* ``<VEH>/base_pose_ground_truth`` — Perfect ground truth for evaluation
+* ``<VEH>/collision`` — Collision detection status
+* ``<VEH>/tf`` — Transform tree for the vehicle
+
+**Sensor topics** are published dynamically as observations are generated. Topic names are derived from the sensor's ``name`` attribute in the XML definition.
+
+Subscribed Topics  
+^^^^^^^^^^^^^^^^^^
+
+* ``<VEH>/cmd_vel`` — Velocity commands (geometry_msgs/Twist)
+
+The vehicle processes these commands through its configured controller (see Motion controllers section). Commands are valid for 1 second, after which the vehicle stops for safety.
+
+ROS 2 Launch Parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Key parameters when launching the mvsim_node:
+
+* ``realtime_factor`` — Simulation speed multiplier (default: 1.0)
+* ``headless`` — Run without GUI (default: false)  
+* ``period_ms_publish_tf`` — Transform publication rate in milliseconds (default: 20)
+* ``do_fake_localization`` — Enable fake AMCL output (default: false)
+* ``publish_tf_odom2baselink`` — Publish odom→base_link transform (default: true)
+* ``publisher_history_len`` — Queue size for publishers (default: 10)
+
+Example launch:
+
+.. code-block:: bash
+
+   ros2 launch mvsim demo_warehouse.launch.py realtime_factor:=1.0 headless:=false
