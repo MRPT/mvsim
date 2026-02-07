@@ -763,6 +763,35 @@ MVSim uses the REP-105 standard coordinate frames:
 * ``base_footprint`` - Projection of base_link onto the ground plane
 * ``<sensor_name>`` - Individual sensor frames (camera, lidar, etc.)
 
+CSV Logger → ROS 2 publishing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If publishing log topics is enabled via ``publish_log_topics:=True``:
+
+
+.. code-block:: bash
+
+   ros2 launch mvsim launch_world.launch.py \
+      world_file:=my.world.xml \
+      publish_log_topics:=True
+
+these topics will be created (per vehicle, lazily on first data):
+
+
+* ``<VEH>/log/pose/Timestamp``          (Float64)
+* ``<VEH>/log/pose/q0x``                (Float64)
+* ``<VEH>/log/pose/q1y``                (Float64)
+* ``<VEH>/log/pose/dqx``                (Float64)
+
+...
+
+* ``<VEH>/log/wheel_1/torque``          (Float64)
+* ``<VEH>/log/wheel_1/friction_x``      (Float64)
+
+...
+
+
+
 11. ROS 2 Subscribed Topics
 ----------------------------
 
