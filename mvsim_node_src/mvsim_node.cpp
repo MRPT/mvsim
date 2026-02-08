@@ -17,7 +17,7 @@
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/mvsim_node_core.h>
 
-#if MRPT_VERSION < 0x030000	 // support legacy <3.0.0 classes
+#if MRPT_VERSION < 0x020f00	 // 2.15.0 support legacy classes
 #include <mrpt/maps/CPointsMapXYZI.h>
 #include <mrpt/maps/CPointsMapXYZIRT.h>
 #endif
@@ -1747,7 +1747,7 @@ void MVSimNode::internalOn(
 		msg_header.stamp = now;
 		msg_header.frame_id = lbPoints;
 
-#if MRPT_VERSION < 0x030000	 // support legacy <3.0.0 classes
+#if MRPT_VERSION < 0x020f00	 // 2.15.0 support legacy classes
 		if (auto* xyzirt = dynamic_cast<const mrpt::maps::CPointsMapXYZIRT*>(obs.pointcloud.get());
 			xyzirt)
 		{
@@ -1758,10 +1758,11 @@ void MVSimNode::internalOn(
 		{
 			mrpt2ros::toROS(*xyzi, msg_header, *msg_pts);
 		}
+		else
 #endif
-		else if (auto* sPts =
-					 dynamic_cast<const mrpt::maps::CSimplePointsMap*>(obs.pointcloud.get());
-				 sPts)
+			if (auto* sPts =
+					dynamic_cast<const mrpt::maps::CSimplePointsMap*>(obs.pointcloud.get());
+				sPts)
 		{
 			mrpt2ros::toROS(*sPts, msg_header, *msg_pts);
 		}
