@@ -28,6 +28,7 @@
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/topography/data_types.h>
 #include <mvsim/Block.h>
+#include <mvsim/HumanActor.h>
 #include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
 #include <mvsim/TParameterDefinitions.h>
@@ -347,6 +348,9 @@ class World : public mrpt::system::COutputLogger
 	 * also stored here for each look-up by name */
 	using SimulableList = std::multimap<std::string, Simulable::Ptr>;
 
+	/** Map 'actor-name' => actor object. See getListOfActors() */
+	using ActorList = std::multimap<std::string, HumanActor::Ptr>;
+
 	/** @} */
 
 	/** \name Access inner working objects
@@ -361,6 +365,9 @@ class World : public mrpt::system::COutputLogger
 	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
 
 	const std::vector<WorldJoint>& getListOfJoints() const { return joints_; }
+
+	const ActorList& getListOfActors() const { return actors_; }
+	ActorList& getListOfActors() { return actors_; }
 
 	/// Always lock/unlock getListOfSimulableObjectsMtx() before using this:
 	SimulableList& getListOfSimulableObjects() { return simulableObjects_; }
@@ -726,6 +733,7 @@ class World : public mrpt::system::COutputLogger
 	VehicleList vehicles_;
 	WorldElementList worldElements_;
 	BlockList blocks_;
+	ActorList actors_;
 
 	/// Inter-body joints (distance / revolute)
 	std::vector<WorldJoint> joints_;
@@ -927,6 +935,8 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_if(const XmlParserContext& ctx);
 	void parse_tag_marker(const XmlParserContext& ctx);
 	void parse_tag_joint(const XmlParserContext& ctx);	//!< `<joint>`
+	void parse_tag_actor(const XmlParserContext& ctx);
+	void parse_tag_actor_class(const XmlParserContext& ctx);
 
 	// ======== end of XML parser tags ========
 

@@ -78,10 +78,11 @@ void World::load_from_XML(const std::string& xml_text, const std::string& fileNa
 	{
 		int ret = sscanf(attrb_version->value(), "%i.%i", &version_major, &version_min);
 		if (ret != 2)
-			throw runtime_error(mrpt::format(
-				"Error parsing version attribute: '%s' ('%%i.%%i' "
-				"expected)",
-				attrb_version->value()));
+			throw runtime_error(
+				mrpt::format(
+					"Error parsing version attribute: '%s' ('%%i.%%i' "
+					"expected)",
+					attrb_version->value()));
 	}
 
 	// register tags:
@@ -125,7 +126,11 @@ void World::register_standard_xml_tag_parsers()
 	register_tag_parser("for", &World::parse_tag_for);
 	register_tag_parser("if", &World::parse_tag_if);
 	register_tag_parser("marker", &World::parse_tag_marker);
+
 	register_tag_parser("joint", &World::parse_tag_joint);
+
+	register_tag_parser("actor", &World::parse_tag_actor);
+	register_tag_parser("actor:class", &World::parse_tag_actor_class);
 }
 
 void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
@@ -635,4 +640,23 @@ void World::parse_tag_joint(const XmlParserContext& ctx)
 	}
 
 	joints_.emplace_back(std::move(jd));
+}
+
+void World::parse_tag_actor(const XmlParserContext& ctx)
+{
+	HumanActor::Ptr actor = HumanActor::factory(this, ctx.node);
+
+	ASSERTMSG_(
+		actors_.count(actor->getName()) == 0,
+		mrpt::format("Duplicated actor name: '%s'", actor->getName().c_str()));
+
+	actors_.insert(ActorList::value_type(actor->getName(), actor));
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+	simulableObjects_.emplace(actor->getName(), std::dynamic_pointer_cast<Simulable>(actor));
+}
+
+void World::parse_tag_actor_class(const XmlParserContext& ctx)
+{
+	HumanActor::register_actor_class(*this, ctx.node);
 }

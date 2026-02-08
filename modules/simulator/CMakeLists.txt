@@ -9,6 +9,7 @@ add_library(${PROJECT_NAME}
 	src/CsvLogger.cpp
 	src/JointXMLnode.h
 	src/Joystick.cpp
+	src/HumanActor.cpp
 	src/ModelsCache.cpp
 	src/ModelsCache.h
 	src/parse_utils.cpp
