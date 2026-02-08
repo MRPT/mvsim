@@ -16,6 +16,10 @@
     
     <show_3d_pointcloud>${show_3d_pointcloud|false}</show_3d_pointcloud>
 
+    <!-- ROS publishing options for depth image & colored pointcloud -->
+    <publish_ros_depth_image>${publish_ros_depth_image|true}</publish_ros_depth_image>
+    <publish_ros_colored_pointcloud>${publish_ros_colored_pointcloud|false}</publish_ros_colored_pointcloud>
+
     <depth_ncols>640</depth_ncols>
     <depth_nrows>480</depth_nrows>
     <depth_cx>320</depth_cx>

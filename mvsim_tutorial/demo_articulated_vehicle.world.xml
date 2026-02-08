@@ -1,0 +1,358 @@
+<mvsim_world version="1.0">
+	<!-- =============================================================
+	     Demo: Articulated vehicle (tractor + trailer)
+	     The tractor is a driven ackermann vehicle.
+	     The trailer is a passive 4-wheel vehicle (zero torque).
+	     They are connected via a revolute (pin) joint at the hitch.
+	     =============================================================  -->
+
+	<!-- ======================== World settings ======================== -->
+	<simul_timestep>0.005</simul_timestep>
+	<gravity>9.81</gravity>
+	<b2d_vel_iters>10</b2d_vel_iters>
+	<b2d_pos_iters>5</b2d_pos_iters>
+
+	<!-- ======================== GUI settings ======================== -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>false</show_forces>
+		<cam_distance>35</cam_distance>
+		<cam_azimuth>90</cam_azimuth>
+		<cam_elevation>70</cam_elevation>
+		<follow_vehicle>tractor</follow_vehicle>
+	</gui>
+
+	<!-- ======================== Ground plane ======================== -->
+
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>-90</texture_image_rotate>
+		<texture_extension_x>8.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>-24</corner_min_x>
+		<corner_min_y>-2</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<texture_image_rotate>-90</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>24</corner_min_x>
+		<corner_min_y>-2</corner_min_y>
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2 2e-2 1e-2 1e-2 1e-2 4e-2 4e-2 1e-2; 1e-2 3e-2 2e-2 1e-2 4e-2 1e-2 1e-2 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>8.0</texture_extension_y>
+		<corner_min_x>24</corner_min_x>
+		<corner_min_y>2</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>24</corner_min_x>
+		<corner_min_y>34</corner_min_y>
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>-90</texture_image_rotate>
+		<texture_extension_x>8.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>-24</corner_min_x>
+		<corner_min_y>34</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2 2e-2 1e-2 1e-2 1e-2 4e-2 4e-2 1e-2; 1e-2 3e-2 2e-2 1e-2 4e-2 1e-2 1e-2 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>8.0</texture_extension_y>
+		<corner_min_x>-28</corner_min_x>
+		<corner_min_y>2</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<texture_image_rotate>180</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>-28</corner_min_x>
+		<corner_min_y>-2</corner_min_y>
+	</element>
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<texture_image_rotate>90</texture_image_rotate>
+		<texture_extension_x>4.0</texture_extension_x>
+		<texture_extension_y>4.0</texture_extension_y>
+		<corner_min_x>-28</corner_min_x>
+		<corner_min_y>34</corner_min_y>
+	</element>
+
+
+
+	<element class='elevation_map'>
+		<resolution>8.0</resolution>
+		<elevation_data_matrix>
+			[0  0.05   0    0.05   0;
+			 0.05  0.8 1.5  2   0.05;
+			 0  0.7 2.5  3   0;
+			 0  1   3    4   0;
+			 0  0.7 2.9  4   0;
+			 0.05  1.5 0.5  2   0.05;
+			 0  0.02  0    0.05   0
+			]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>3.0</texture_extension_x>
+		<texture_extension_y>3.0</texture_extension_y>
+		<corner_min_x>-24</corner_min_x>
+		<corner_min_y>2</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+
+	<element class='elevation_map'>
+		<resolution>4.0</resolution>
+		<elevation_data_matrix>
+			[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+			 2 2.5 3.2 3.9 3 3.2 3.5 3.8 2.8 3.1 2.3 3.7 4.5 3.4 2.8 3.7 2.9 4.0 0  0;
+			 3 4.3 4.7 5 3.4 4.8 4.9 5.5 4.2 4.4 3.8 5.8 5.4 4.5 3.9 4.3 4.1 5.2 0  1
+			]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>3.0</texture_extension_x>
+		<texture_extension_y>3.0</texture_extension_y>
+		<corner_min_x>-44</corner_min_x>
+		<corner_min_y>-36</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+
+
+	<element class='elevation_map'>
+		<resolution>8.0</resolution>
+		<elevation_data_matrix>
+			[0  1   4     30;
+			 0  3   3     25;
+			 0  3   3     25;
+			 0  3   3     25;
+			 0  3   3     25;
+			 0  4   2.5   28;
+			 0  4   3     30;
+			 0  4   2.9   29;
+			 0  1   0     27;
+			 0  1   0     27;
+			 0  1   0     27;
+			 0  1  5.4   27;
+			 1  1  5.8   25
+			]</elevation_data_matrix>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_BaseColor.png</texture_image>
+		<texture_image_rotate>0</texture_image_rotate>
+		<texture_extension_x>3.0</texture_extension_x>
+		<texture_extension_y>3.0</texture_extension_y>
+		<corner_min_x>-44</corner_min_x>
+		<corner_min_y>38</corner_min_y>
+		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
+	</element>
+
+
+	<!-- A SkyBox decoration -->
+	<element class='skybox'>
+		<!-- Provide the URI printf-like "pattern" to the six texture files, 
+		     such that replacing "%s" with the following strings gives the path
+		     to the files: "Up", "Right", "Left", "Front", "Down", "Back".
+		 -->
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/SunSet.zip/SunSet/SunSet%s.jpg</textures>
+	</element>
+
+	<!-- ======================== Tractor (driven) ======================== -->
+	<vehicle:class name="tractor_class">
+		<dynamics class="ackermann">
+			<!-- Rear wheels -->
+			<rl_wheel pos="0  0.53" mass="5.0" width="0.25" diameter="0.70">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_rear_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</rl_wheel>
+
+			<rr_wheel pos="0 -0.53" mass="5.0" width="0.25" diameter="0.70">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_rear_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</rr_wheel>
+
+			<!-- Front wheels -->
+			<fl_wheel mass="5.0" width="0.25" diameter="0.46">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_front_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</fl_wheel>
+
+			<fr_wheel mass="5.0" width="0.25" diameter="0.46">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_front_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</fr_wheel>
+
+			<f_wheels_x>1.13</f_wheels_x>
+			<f_wheels_d>0.82</f_wheels_d>
+			<max_steer_ang_deg>35.0</max_steer_ang_deg>
+
+			<chassis mass="500.0" zmin="0.20" zmax="1.50">
+	            <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+			</chassis>
+
+			<!-- Motor controller: twist with PID -->
+			<controller class="twist_front_steer_pid">
+				<KP>1000</KP>
+				<KI>50</KI>
+				<I_MAX>20</I_MAX>
+				<KD>0</KD>
+				<V>0.0</V>
+				<W>0</W>
+				<max_torque>500</max_torque>
+			</controller>
+
+			<drivetrain type="open_rear">
+			</drivetrain>
+		</dynamics>
+
+		<friction class="default">
+			<mu>0.7</mu>
+			<C_damping>5</C_damping>
+		</friction>
+
+		<!-- Noisy odometry parameters. These are multipliers to actual SE(2) increments -->
+		<odometry
+			x_multiplier="$f{1.0+0.02*randn()}"
+			y_multiplier="$f{1.0+0.01*randn()}"
+			yaw_multiplier="$f{1.0+0.03*randn()}"
+		/>
+
+		<!--  Custom vehicle visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/tractor_body.fbx</model_uri>
+			<model_scale>1e-2</model_scale>
+			<model_yaw>90.0</model_yaw>
+			<model_roll>90.0</model_roll>
+		</visual>
+
+	</vehicle:class>
+
+	<vehicle name="tractor" class="tractor_class">
+		<init_pose>0 0 0</init_pose>
+	</vehicle>
+
+	<!-- ======================== Trailer (passive) ======================== -->
+	<vehicle:class name="trailer_class">
+
+	<!-- Can use 'differential_4_wheels' for trailer with 4 wheels -->
+
+	<dynamics class="differential">
+		<!-- 2 passive wheels -->
+			<l_wheel pos="-1.33  0.4" mass="4.0" width="0.22" diameter="0.50">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/trailer_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
+			</l_wheel>
+			<r_wheel pos="-1.33 -0.4" mass="4.0" width="0.22" diameter="0.50">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/trailer_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw></visual>
+			</r_wheel>
+
+			<chassis mass="300.0" zmin="0.30" zmax="2.00">
+				<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
+			</chassis>
+
+			<!--
+			     IMPORTANT: Use "raw" controller with zero torque to make
+			     this a passive (unpowered) vehicle. The trailer is pulled
+			     entirely by the tractor through the pin joint.
+			-->
+			<controller class="raw">
+			</controller>
+		</dynamics>
+
+		<!-- Low friction for passive rolling -->
+		<friction class="default">
+			<mu>0.5</mu>
+			<C_damping>1.0</C_damping>
+		</friction>
+
+		<!--  Custom vehicle visualization model -->
+		<!-- 3D model filename to load (local or remote http://uri ) -->
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/trailer_body.fbx</model_uri>
+			<model_scale>1e-2</model_scale>
+			<model_yaw>90.0</model_yaw>
+			<model_roll>90.0</model_roll>
+		</visual>
+
+	</vehicle:class>
+
+	<vehicle name="trailer" class="trailer_class">
+		<!-- Place it behind the tractor.
+		     The tractor rear axle is at x=0 -->
+		<init_pose>-0.524 0 0</init_pose>
+	</vehicle>
+
+
+	<!-- ======================== Pin joint (hitch) ======================== -->
+	<!--
+	     Connects the rear of the tractor to the front of the trailer.
+	     - Tractor: anchor at x=-0.8 (behind rear axle), y=0 (centerline)
+	     - Trailer: anchor at x=+2.0 (the drawbar tip), y=0
+	     - The revolute joint allows free rotation (like a real hitch pin).
+	     - Optional: enable_limit with angle bounds to prevent jack-knifing.
+	-->
+	<joint type="revolute"
+		body_a="tractor"  anchor_a="-0.524 0.0"
+		body_b="trailer"  anchor_b="0.0 0.0"
+		enable_limit="true"
+		lower_angle_deg="-45"
+		upper_angle_deg="45"
+	/>
+	<!-- ======================== Example rope joint (commented out) ======= -->
+	<!-- Uncomment to add a rope between two vehicles instead of a pin:
+	<joint type="distance"
+		body_a="tractor"  anchor_a="-0.524 0.0"
+		body_b="trailer"  anchor_b="0.0 0.0"
+		max_length="3.5"
+		min_length="0.0"
+		stiffness="0.0"
+		damping="0.0"
+	/>
+	-->
+</mvsim_world>

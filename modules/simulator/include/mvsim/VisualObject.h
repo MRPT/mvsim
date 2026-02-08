@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -39,6 +39,11 @@ class VisualObject
 		World* parent, bool insertCustomVizIntoViz = true, bool insertCustomVizIntoPhysical = true);
 
 	virtual ~VisualObject();
+
+	VisualObject(const VisualObject&) = delete;
+	VisualObject& operator=(const VisualObject&) = delete;
+	VisualObject(VisualObject&&) = delete;
+	VisualObject& operator=(VisualObject&&) = delete;
 
 	/** This creates a new object in the scene and/or update it according to the
 	 * current state of the object. If none of the scenes are passed, the poses
@@ -90,7 +95,8 @@ class VisualObject
 		const mrpt::opengl::CRenderizable::Ptr& glModel, const mrpt::poses::CPose3D& modelPose = {},
 		const float modelScale = 1.0f, const std::string& modelName = "group",
 		const std::optional<std::string>& modelURI = std::nullopt,
-		const bool initialShowBoundingBox = false);
+		const bool initialShowBoundingBox = false,
+		const std::optional<double>& scaleOverride = std::nullopt);
 
 	void setCollisionShape(const Shape2p5& cs) { collisionShape_ = cs; }
 

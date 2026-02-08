@@ -15,6 +15,7 @@ def generate_launch_description():
     # Launch configuration variables (no defaults here)
     world_file = LaunchConfiguration('world_file')
     do_fake_localization = LaunchConfiguration('do_fake_localization')
+    publish_log_topics = LaunchConfiguration('publish_log_topics')
 
     # Declare launch arguments (defaults defined here)
     world_file_launch_arg = DeclareLaunchArgument(
@@ -27,7 +28,13 @@ def generate_launch_description():
     do_fake_localization_arg = DeclareLaunchArgument(
         'do_fake_localization',
         default_value='True',
-        description='Publish tf odom -> base_link'
+        description='Publish fake identity tf "map" -> "odom"'
+    )
+    publish_log_topics_arg = DeclareLaunchArgument(
+        'publish_log_topics',
+        default_value='False',
+        description='Publish every CSV-logger column as a std_msgs/Float64 topic per vehicle. '
+                    'High-rate, disabled by default.'
     )
 
     # MVSim node
@@ -42,6 +49,7 @@ def generate_launch_description():
                 'world_file': world_file,
                 'headless': False,
                 'do_fake_localization': do_fake_localization,
+                'publish_log_topics': publish_log_topics,
             }
         ]
     )
@@ -54,12 +62,14 @@ def generate_launch_description():
         arguments=[
             '-d',
             os.path.join(mvsim_dir, 'mvsim_tutorial', 'demo_depth_camera_ros2.rviz')
-        ]
+        ],
+        output='screen'
     )
 
     return LaunchDescription([
         world_file_launch_arg,
         do_fake_localization_arg,
+        publish_log_topics_arg,
         mvsim_node,
         rviz2_node
     ])

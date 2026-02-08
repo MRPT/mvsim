@@ -692,3 +692,114 @@ This creates CSV files:
 * ``mvsim_<name>_pose.csv`` - Vehicle pose and velocity over time
 * ``mvsim_<name>_wheel_<N>.csv`` - Per-wheel forces, torques, and velocities
 
+10. ROS 2 Topics
+-----------------
+
+MVSim publishes the following ROS 2 topics for each vehicle. Topic names are prefixed with the vehicle name when multiple vehicles exist in the simulation, or published directly when only one vehicle is present.
+
+Standard Vehicle Topics
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Always published for each vehicle:
+
+* ``<VEH>/odom`` (nav_msgs/Odometry) - Odometry computed from wheel encoders with configurable noise
+* ``<VEH>/base_pose_ground_truth`` (nav_msgs/Odometry) - Perfect ground truth pose and velocity
+* ``<VEH>/collision`` (std_msgs/Bool) - Collision detection flag, true when vehicle collides
+* ``<VEH>/chassis_markers`` (visualization_msgs/MarkerArray) - RViz markers for chassis and wheel visualization
+* ``<VEH>/chassis_polygon`` (geometry_msgs/Polygon) - 2D footprint polygon of the vehicle
+* ``<VEH>/tf`` (tf2_msgs/TFMessage) - Dynamic transforms (odom→base_link, sensor frames)
+* ``<VEH>/tf_static`` (tf2_msgs/TFMessage) - Static transforms (base_link→base_footprint)
+
+Fake Localization Topics
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Published when ``do_fake_localization`` parameter is enabled:
+
+* ``<VEH>/amcl_pose`` (geometry_msgs/PoseWithCovarianceStamped) - Fake AMCL localization output
+* ``<VEH>/particlecloud`` (geometry_msgs/PoseArray) - Single-particle fake particle filter
+
+Sensor Topics
+~~~~~~~~~~~~~
+
+Published dynamically based on sensors attached to the vehicle:
+
+**2D LiDAR:**
+
+* ``<VEH>/<SENSOR_LABEL>`` (sensor_msgs/LaserScan) - 2D laser scan data
+
+**3D LiDAR:**
+
+* ``<VEH>/<SENSOR_LABEL>_points`` (sensor_msgs/PointCloud2) - 3D point cloud (XYZ, XYZRGB, XYZIRT)
+
+**Camera:**
+
+* ``<VEH>/<SENSOR_LABEL>/image_raw`` (sensor_msgs/Image) - Camera image
+* ``<VEH>/<SENSOR_LABEL>/camera_info`` (sensor_msgs/CameraInfo) - Camera calibration parameters
+
+**Depth Camera (RGBD):**
+
+* ``<VEH>/<SENSOR_LABEL>_image`` (sensor_msgs/Image) - RGB image
+* ``<VEH>/<SENSOR_LABEL>_image_camera_info`` (sensor_msgs/CameraInfo) - RGB camera calibration
+* ``<VEH>/<SENSOR_LABEL>_depth`` (sensor_msgs/Image) - Depth image (16UC1, values in millimeters)
+* ``<VEH>/<SENSOR_LABEL>_depth_camera_info`` (sensor_msgs/CameraInfo) - Depth camera calibration
+* ``<VEH>/<SENSOR_LABEL>_points`` (sensor_msgs/PointCloud2) - Point cloud (XYZ or XYZRGB)
+
+**IMU:**
+
+* ``<VEH>/<SENSOR_LABEL>`` (sensor_msgs/Imu) - Inertial measurement data
+
+**GNSS/GPS:**
+
+* ``<VEH>/<SENSOR_LABEL>`` (sensor_msgs/NavSatFix) - GPS position with optional covariance
+
+Coordinate Frames
+~~~~~~~~~~~~~~~~~
+
+MVSim uses the REP-105 standard coordinate frames:
+
+* ``map`` - World fixed frame (only with fake_localization)
+* ``odom`` - Odometry frame, drift-free over short periods
+* ``base_link`` - Robot body frame at the center of rotation
+* ``base_footprint`` - Projection of base_link onto the ground plane
+* ``<sensor_name>`` - Individual sensor frames (camera, lidar, etc.)
+
+CSV Logger → ROS 2 publishing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If publishing log topics is enabled via ``publish_log_topics:=True``:
+
+
+.. code-block:: bash
+
+   ros2 launch mvsim launch_world.launch.py \
+      world_file:=my.world.xml \
+      publish_log_topics:=True
+
+these topics will be created (per vehicle, lazily on first data):
+
+
+* ``<VEH>/log/pose/Timestamp``          (Float64)
+* ``<VEH>/log/pose/q0x``                (Float64)
+* ``<VEH>/log/pose/q1y``                (Float64)
+* ``<VEH>/log/pose/dqx``                (Float64)
+
+...
+
+* ``<VEH>/log/wheel_1/torque``          (Float64)
+* ``<VEH>/log/wheel_1/friction_x``      (Float64)
+
+...
+
+
+
+11. ROS 2 Subscribed Topics
+----------------------------
+
+Command Topics
+~~~~~~~~~~~~~~
+
+Each vehicle subscribes to:
+
+* ``<VEH>/cmd_vel`` (geometry_msgs/Twist) - Velocity commands (linear.x, linear.y, angular.z)
+
+The command is processed by the vehicle's controller (twist_pid, twist_ideal, etc.) and converted to wheel torques. Commands older than 1 second are automatically discarded for safety.

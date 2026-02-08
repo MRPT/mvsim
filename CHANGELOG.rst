@@ -2,6 +2,43 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.0 (2026-02-08)
+------------------
+* Merge pull request `#89 <https://github.com/MRPT/mvsim/issues/89>`_ from MRPT/fix/elevation-2-wheels
+  Fix elevation maps for 2-wheels vehicles
+* Merge pull request `#88 <https://github.com/MRPT/mvsim/issues/88>`_ from MRPT/feat/human-actors
+  Add: human actors
+* Merge pull request `#86 <https://github.com/MRPT/mvsim/issues/86>`_ from MRPT/feat/publish-log-to-ros
+  Optional publish to ROS2 all CsvLogger entries
+* Merge pull request `#85 <https://github.com/MRPT/mvsim/issues/85>`_ from MRPT/feat/per-block-scale
+  Feat/per-block-scale
+* Implement per block scale (Fixes `#38 <https://github.com/MRPT/mvsim/issues/38>`_)
+* Merge pull request `#84 <https://github.com/MRPT/mvsim/issues/84>`_ from MRPT/fix/box2d-bugs
+  Fix/box2d-bugs
+* docs: add ROS2 topics
+* fix bug in setTwist()
+* Fix wrong collision detection (Fixes `#42 <https://github.com/MRPT/mvsim/issues/42>`_)
+* Fix linear acceleration
+* Merge pull request `#83 <https://github.com/MRPT/mvsim/issues/83>`_ from MRPT/feat/new-joints
+  Implement joints between archors
+* Demo worlds: update to add RGBD camera in greenhouse
+* ROS node: fix missing publication of RGBD CameraInfo for RGB channel
+* Merge pull request `#82 <https://github.com/MRPT/mvsim/issues/82>`_ from MRPT/feat/rgbd-publish-new-types
+  RGBD cameras: implement publishing depth and RGB clouds
+* RGBD cameras: implement publishing depth and RGB clouds
+* Merge pull request `#81 <https://github.com/MRPT/mvsim/issues/81>`_ from MRPT/fix/py-bytes
+  Fix: use py-bytes
+* Fix trying to decode strings as utf-8 (Closes `#62 <https://github.com/MRPT/mvsim/issues/62>`_)
+* Merge pull request `#80 <https://github.com/MRPT/mvsim/issues/80>`_ from MRPT/feat/imu-noise
+  IMU: add random walk and fix bug in acceleration
+* Fix g sign
+* Bump copyright year
+* BUG FIX: Fix wrong linear acceleration in IMU readings
+* Implement IMU noise model with random walk biases
+* Rename ROS1 launch files so they don't interfere with autocomplete for ROS2
+* indoor_outdoor demo: add IMU to robot
+* Contributors: Jose Luis Blanco-Claraco
+
 0.16.0 (2026-01-29)
 -------------------
 * docs: add new demo worlds

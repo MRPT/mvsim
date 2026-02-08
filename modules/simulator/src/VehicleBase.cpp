@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -424,7 +424,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 
 	for (size_t i = 0; i < getNumWheels(); i++)
 	{
-		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isRecording())
+		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isActive())
 		{
 			if (!frictions_.at(i)->hasLogger())
 			{
@@ -432,7 +432,6 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 			}
 		}
 	}
-
 	// Update wheels position (they may turn, etc. as in an Ackermann
 	// configuration)
 	for (size_t i = 0; i < fixture_wheels_.size(); i++)
@@ -491,7 +490,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
 
 		// log
-		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isRecording())
+		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isActive())
 		{
 			auto& logger = *l;
 
@@ -499,7 +498,6 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 			logger.updateColumn("wheel_pos_x", w.x);
 			logger.updateColumn("wheel_pos_y", w.y);
 
-			logger.updateColumn(DL_TIMESTAMP, context.simul_time);
 			logger.updateColumn(WL_TORQUE, fi.motorTorque);
 			logger.updateColumn(WL_FORCE_Z, fi.Fz);
 			logger.updateColumn(WL_VEL_X, fi.wheelCogLocalVel.x);
@@ -507,7 +505,6 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 			logger.updateColumn(WL_FRIC_X, F_r.x);
 			logger.updateColumn(WL_FRIC_Y, F_r.y);
 		}
-
 		// save it for optional rendering:
 		if (world_->guiOptions_.show_forces)
 		{
@@ -584,7 +581,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	const auto q = getPose();
 	const auto dq = getTwist();
 
-	if (auto& l = loggers_[LOGGER_IDX_POSE]; l->isRecording())
+	if (auto& l = loggers_[LOGGER_IDX_POSE]; l->isActive())
 	{
 		auto& logger = *l;
 		logger.updateColumn(DL_TIMESTAMP, context.simul_time);
@@ -892,7 +889,7 @@ void VehicleBase::writeLogStrings()
 {
 	for (auto& logger : loggers_)
 	{
-		if (!logger->isRecording())
+		if (!logger->isActive())
 		{
 			continue;
 		}
@@ -900,7 +897,6 @@ void VehicleBase::writeLogStrings()
 		logger->writeRow();
 	}
 }
-
 void VehicleBase::apply_force(
 	const mrpt::math::TVector2D& force, const mrpt::math::TPoint2D& applyPoint)
 {

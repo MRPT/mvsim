@@ -7,6 +7,7 @@ add_library(${PROJECT_NAME}
 	src/Block.cpp
 	src/CollisionShapeCache.cpp
 	src/CsvLogger.cpp
+	src/HumanActor.cpp
 	src/JointXMLnode.h
 	src/Joystick.cpp
 	src/ModelsCache.cpp
@@ -18,27 +19,28 @@ add_library(${PROJECT_NAME}
 	src/Shape2p5.cpp
 	src/Simulable.cpp
 	src/VehicleBase.cpp
-	src/World.cpp
+	src/VisualObject.cpp
+	src/Wheel.cpp
 	src/World_gui.cpp
 	src/World_load_xml.cpp
 	src/World_services.cpp
 	src/World_simul.cpp
 	src/World_walls.cpp
-	src/XMLClassesRegistry.cpp
-	src/XMLClassesRegistry.h
+	src/World.cpp
 	src/xml_utils.cpp
 	src/xml_utils.h
-	src/VisualObject.cpp
-	src/Wheel.cpp
+	src/XMLClassesRegistry.cpp
+	src/XMLClassesRegistry.h
 	include/mvsim/basic_types.h
 	include/mvsim/Block.h
 	include/mvsim/ClassFactory.h
 	include/mvsim/CollisionShapeCache.h
 	include/mvsim/ControllerBase.h
 	include/mvsim/CsvLogger.h
+	include/mvsim/HumanActor.h
 	include/mvsim/Joystick.h
-	include/mvsim/mvsim.h
 	include/mvsim/mvsim_version.h
+	include/mvsim/mvsim.h
 	include/mvsim/PID_Controller.h
 	include/mvsim/RemoteResourcesManager.h
 	include/mvsim/Shape2p5.h
@@ -63,6 +65,7 @@ add_library(${PROJECT_NAME}
 	src/Sensors/CameraSensor.cpp
 	src/Sensors/DepthCameraSensor.cpp
 	src/Sensors/IMU.cpp
+	src/Sensors/ImuNoiseModel.cpp
 	src/Sensors/GNSS.cpp
 	src/Sensors/LaserScanner.cpp
 	src/Sensors/Lidar3D.cpp
@@ -70,6 +73,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/Sensors/CameraSensor.h
 	include/mvsim/Sensors/DepthCameraSensor.h
 	include/mvsim/Sensors/IMU.h
+	include/mvsim/Sensors/ImuNoiseModel.h
 	include/mvsim/Sensors/GNSS.h
 	include/mvsim/Sensors/LaserScanner.h
 	include/mvsim/Sensors/Lidar3D.h

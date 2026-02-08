@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -53,11 +53,11 @@ void mvsim::parseMessage(const zmq::message_t& msg, google::protobuf::MessageLit
 
 	bool ok = out.ParseFromString(serializedData);
 	if (!ok)
+	{
 		THROW_EXCEPTION_FMT(
-			"Format error: protobuf could not decode binary message of "
-			"type "
-			"'%s'",
+			"Format error: protobuf could not decode binary message of type '%s'",
 			typeName.c_str());
+	}
 }
 
 zmq::message_t mvsim::receiveMessage(zmq::socket_t& s)

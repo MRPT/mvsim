@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -68,9 +68,15 @@ void VisualObject::guiUpdate(
 			glCustomVisual_->setName(name);
 
 			// Add to the 3D scene:
-			if (insertCustomVizIntoViz_) viz->get().insert(glCustomVisual_);
+			if (insertCustomVizIntoViz_)
+			{
+				viz->get().insert(glCustomVisual_);
+			}
 
-			if (insertCustomVizIntoPhysical_) physical->get().insert(glCustomVisual_);
+			if (insertCustomVizIntoPhysical_)
+			{
+				physical->get().insert(glCustomVisual_);
+			}
 		}
 
 		// Update pose:
@@ -224,7 +230,10 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	// Parse XML params:
 	parse_xmlnode_children_as_param(visNode, params);
 
-	if (modelURI.empty()) return false;
+	if (modelURI.empty())
+	{
+		return false;
+	}
 
 	const std::string localFileName = world_->xmlPathToActualPath(modelURI);
 
@@ -232,9 +241,21 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 	auto glModel = gModelsCache.get(localFileName, opts);
 
+	// Check if this is a Block with a visual_scale override
+	std::optional<double> scaleOverride;
+	if (const Block* block = dynamic_cast<const Block*>(this))
+	{
+		const double blockScale = block->visual_scale();
+		if (blockScale == blockScale)  // not NaN
+		{
+			scaleOverride = blockScale;
+		}
+	}
+
 	// Add the 3D model as custom viz:
 	addCustomVisualization(
-		glModel, mrpt::poses::CPose3D(modelPose), modelScale, objectName, modelURI);
+		glModel, mrpt::poses::CPose3D(modelPose), static_cast<float>(modelScale), objectName,
+		modelURI, initialShowBoundingBox, scaleOverride);
 
 	return true;  // yes, we have a custom viz model
 
@@ -267,7 +288,8 @@ bool VisualObject::customVisualVisible() const
 void VisualObject::addCustomVisualization(
 	const mrpt::opengl::CRenderizable::Ptr& glModel, const mrpt::poses::CPose3D& modelPose,
 	const float modelScale, const std::string& modelName,
-	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox)
+	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox,
+	const std::optional<double>& scaleOverride)
 {
 	ASSERT_(glModel);
 
@@ -279,9 +301,14 @@ void VisualObject::addCustomVisualization(
 	if (const Block* block = dynamic_cast<const Block*>(this);
 		block && !block->default_block_z_min_max())
 	{
-		zMin = block->block_z_min() - GeometryEpsilon;
-		zMax = block->block_z_max() + GeometryEpsilon;
+		zMin = static_cast<float>(block->block_z_min() - GeometryEpsilon);
+		zMax = static_cast<float>(block->block_z_max() + GeometryEpsilon);
 	}
+
+	// Apply scale override if provided
+	const float effectiveScale =
+		scaleOverride.has_value() ? static_cast<float>(scaleOverride.value()) : modelScale;
+
 #if 0
 	std::cout << "MODEL: " << (modelURI ? *modelURI : "none")
 			  << " glModel: " << glModel->GetRuntimeClass()->className
@@ -290,14 +317,14 @@ void VisualObject::addCustomVisualization(
 #endif
 
 	// Calculate its convex hull:
-	const auto shape = chc.get(*glModel, zMin, zMax, modelPose, modelScale, modelURI);
+	const auto shape = chc.get(*glModel, zMin, zMax, modelPose, effectiveScale, modelURI);
 
 	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
 
 	// Note: we cannot apply pose/scale to the original glModel since
 	// it may be shared (many instances of the same object):
 	glGroup->insert(glModel);
-	glGroup->setScale(modelScale);
+	glGroup->setScale(effectiveScale);
 	glGroup->setPose(modelPose);
 
 	glGroup->setName(modelName);
@@ -309,7 +336,10 @@ void VisualObject::addCustomVisualization(
 	}
 	glCustomVisual_->insert(glGroup);
 
-	if (glCollision_) glCollision_->setVisibility(initialShowBoundingBox);
+	if (glCollision_)
+	{
+		glCollision_->setVisibility(initialShowBoundingBox);
+	}
 
 	// Auto bounds from visual model bounding-box:
 	if (!collisionShape_)

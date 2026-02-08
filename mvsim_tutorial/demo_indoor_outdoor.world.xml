@@ -507,6 +507,17 @@
 		  sensor_vertical_std_noise="2.5"
 		  />
 
+		<!-- IMU -->
+		<include file="../definitions/imu.sensor.xml"
+		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.5" sensor_yaw="0"
+		  sensor_name="imu"
+		  sensor_measure_orientation="true"
+		  sensor_period_sec="$f{1/200.0}"
+		  sensor_angular_velocity_white_noise_std_noise="1.7e-4"
+		  sensor_linear_acceleration_white_noise_std_noise="5.88e-3"
+		  sensor_angular_velocity_random_walk_std_noise="1.0e-5"
+		  sensor_linear_acceleration_random_walk_std_noise="3.0e-4"
+		/>
 	</vehicle>
 
 </mvsim_world>

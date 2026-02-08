@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -10,6 +10,8 @@
 #pragma once
 
 #include <box2d/b2_body.h>
+#include <box2d/b2_distance_joint.h>
+#include <box2d/b2_revolute_joint.h>
 #include <box2d/b2_world.h>
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
@@ -26,6 +28,7 @@
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/topography/data_types.h>
 #include <mvsim/Block.h>
+#include <mvsim/HumanActor.h>
 #include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
 #include <mvsim/TParameterDefinitions.h>
@@ -70,6 +73,44 @@ namespace mvsim
  *
  * Main documentation and tutorials live here: https://mvsimulator.readthedocs.io/
  */
+
+/** Describes an inter-body joint parsed from the world XML.
+ *  Supports distance (rope) and revolute (pin/hinge) joint types.
+ *
+ *  \ingroup mvsim_simulator_module
+ */
+struct WorldJoint
+{
+	enum class Type : uint8_t
+	{
+		Distance = 0,  ///< b2DistanceJoint (rope-like max length constraint)
+		Revolute  ///< b2RevoluteJoint (pin/hinge)
+	};
+
+	Type type = Type::Distance;
+
+	/// Names of the two connected Simulable objects (vehicles, blocks, etc.)
+	std::string bodyA_name;
+	std::string bodyB_name;
+
+	/// Local anchor points on each body (in body-local coordinates)
+	mrpt::math::TPoint2D anchorA{0, 0};
+	mrpt::math::TPoint2D anchorB{0, 0};
+
+	/// Distance joint parameters (only used when type == Distance):
+	float maxLength = 5.0f;
+	float minLength = 0.0f;
+	float stiffness = 0.0f;
+	float damping = 0.0f;
+
+	/// Revolute joint parameters:
+	bool enableLimit = false;
+	float lowerAngle_deg = 0.0f;  ///< Parsed in degrees, converted to radians
+	float upperAngle_deg = 0.0f;
+
+	/// Runtime Box2D joint (owned by the b2World, do NOT delete manually)
+	b2Joint* b2joint = nullptr;
+};
 
 /** Simulation happens inside a World object.
  * This is the central class for usage from user code, running the simulation,
@@ -307,6 +348,9 @@ class World : public mrpt::system::COutputLogger
 	 * also stored here for each look-up by name */
 	using SimulableList = std::multimap<std::string, Simulable::Ptr>;
 
+	/** Map 'actor-name' => actor object. See getListOfActors() */
+	using ActorList = std::multimap<std::string, HumanActor::Ptr>;
+
 	/** @} */
 
 	/** \name Access inner working objects
@@ -319,6 +363,11 @@ class World : public mrpt::system::COutputLogger
 	const BlockList& getListOfBlocks() const { return blocks_; }
 	BlockList& getListOfBlocks() { return blocks_; }
 	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
+
+	const std::vector<WorldJoint>& getListOfJoints() const { return joints_; }
+
+	const ActorList& getListOfActors() const { return actors_; }
+	ActorList& getListOfActors() { return actors_; }
 
 	/// Always lock/unlock getListOfSimulableObjectsMtx() before using this:
 	SimulableList& getListOfSimulableObjects() { return simulableObjects_; }
@@ -684,6 +733,10 @@ class World : public mrpt::system::COutputLogger
 	VehicleList vehicles_;
 	WorldElementList worldElements_;
 	BlockList blocks_;
+	ActorList actors_;
+
+	/// Inter-body joints (distance / revolute)
+	std::vector<WorldJoint> joints_;
 
 	bool initialized_ = false;
 
@@ -881,6 +934,9 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_for(const XmlParserContext& ctx);
 	void parse_tag_if(const XmlParserContext& ctx);
 	void parse_tag_marker(const XmlParserContext& ctx);
+	void parse_tag_joint(const XmlParserContext& ctx);	//!< `<joint>`
+	void parse_tag_actor(const XmlParserContext& ctx);
+	void parse_tag_actor_class(const XmlParserContext& ctx);
 
 	// ======== end of XML parser tags ========
 

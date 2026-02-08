@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -49,6 +49,16 @@ class DepthCameraSensor : public SensorBase
 
 	void freeOpenGLResources() override;
 
+	/** Whether to publish the depth image as a separate 16UC1 ROS topic.
+	 *  Parsed from the XML tag `<publish_ros_depth_image>`. Default: true.
+	 */
+	bool publishDepthImage() const { return publish_depth_image_; }
+
+	/** Whether to publish the pointcloud with per-point RGB color.
+	 *  Parsed from the XML tag `<publish_ros_colored_pointcloud>`. Default: false.
+	 */
+	bool publishColoredPointcloud() const { return publish_colored_pointcloud_; }
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
@@ -91,6 +101,9 @@ class DepthCameraSensor : public SensorBase
 
 	bool sense_depth_ = true;  //!< Simulate the DEPTH sensor part
 	bool sense_rgb_ = true;	 //!< Simulate the RGB sensor part
+
+	bool publish_depth_image_ = true;  //!< Publish depth as 16UC1 image + CameraInfo
+	bool publish_colored_pointcloud_ = false;  //!< Publish XYZRGB instead of XYZ pointcloud
 
 	float depth_noise_sigma_ = 1e-3;
 	bool show_3d_pointcloud_ = false;

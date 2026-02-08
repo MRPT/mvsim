@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -936,6 +936,74 @@ void World::internalUpdate3DSceneObjects(
 	for (auto& v : blocks_) v.second->guiUpdate(viz, physical);
 
 	timlogger_.leave("update_GUI.4.blocks");
+
+	// Update view of actors
+	// -----------------------------
+	timlogger_.enter("update_GUI.4b.actors");
+
+	for (auto& a : actors_)
+	{
+		a.second->guiUpdate(viz, physical);
+	}
+
+	timlogger_.leave("update_GUI.4b.actors");
+
+	// Update view of joints
+	// -----------------------------
+	{
+		static const std::string kJointsGlName = "__joint_lines";
+		auto glJoints =
+			std::dynamic_pointer_cast<mrpt::opengl::CSetOfLines>(viz.getByName(kJointsGlName));
+		if (!glJoints)
+		{
+			glJoints = mrpt::opengl::CSetOfLines::Create();
+			glJoints->setName(kJointsGlName);
+			glJoints->setLineWidth(2.0f);
+			glJoints->setColor_u8(0xff, 0xcc, 0x00, 0xcc);
+			viz.insert(glJoints);
+		}
+		glJoints->clear();
+
+		for (const auto& jd : joints_)
+		{
+			if (!jd.b2joint)
+			{
+				continue;
+			}
+
+			const b2Vec2 wA = jd.b2joint->GetAnchorA();
+			const b2Vec2 wB = jd.b2joint->GetAnchorB();
+			const auto oA = worldRenderOffset();
+			const double zDraw = 0.5;
+
+			switch (jd.type)
+			{
+				case WorldJoint::Type::Distance:
+				{
+					glJoints->appendLine(
+						static_cast<double>(wA.x) + oA.x, static_cast<double>(wA.y) + oA.y, zDraw,
+						static_cast<double>(wB.x) + oA.x, static_cast<double>(wB.y) + oA.y, zDraw);
+					break;
+				}
+				case WorldJoint::Type::Revolute:
+				{
+					glJoints->appendLine(
+						static_cast<double>(wA.x) + oA.x, static_cast<double>(wA.y) + oA.y, zDraw,
+						static_cast<double>(wB.x) + oA.x, static_cast<double>(wB.y) + oA.y, zDraw);
+
+					// Small cross at midpoint
+					const double mx =
+						0.5 * (static_cast<double>(wA.x) + static_cast<double>(wB.x)) + oA.x;
+					const double my =
+						0.5 * (static_cast<double>(wA.y) + static_cast<double>(wB.y)) + oA.y;
+					const double cs = 0.15;
+					glJoints->appendLine(mx - cs, my, zDraw, mx + cs, my, zDraw);
+					glJoints->appendLine(mx, my - cs, zDraw, mx, my + cs, zDraw);
+					break;
+				}
+			}
+		}
+	}
 
 	// Other messages
 	// -----------------------------

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -30,7 +30,7 @@ namespace mvsim
  * it can advertise and subscribe to topics and use remote services.
  *
  * Users should instance a class mvsim::Client (C++) or mvsim.Client (Python) to
- * communicate with the simulation runnin in mvsim::World or any other module.
+ * communicate with the simulation running in mvsim::World or any other module.
  *
  * Usage:
  *  - Instantiate a Client object.

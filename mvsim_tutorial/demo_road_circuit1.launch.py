@@ -17,6 +17,7 @@ def generate_launch_description():
     world_file = LaunchConfiguration('world_file')
     headless = LaunchConfiguration('headless')
     do_fake_localization = LaunchConfiguration('do_fake_localization')
+    publish_log_topics = LaunchConfiguration('publish_log_topics')
     use_rviz = LaunchConfiguration('use_rviz')
 
     # Declare launch arguments (defaults defined here)
@@ -35,7 +36,13 @@ def generate_launch_description():
     do_fake_localization_arg = DeclareLaunchArgument(
         'do_fake_localization',
         default_value='True',
-        description='Publish tf odom -> base_link'
+        description='Publish fake identity tf "map" -> "odom"'
+    )
+    publish_log_topics_arg = DeclareLaunchArgument(
+        'publish_log_topics',
+        default_value='False',
+        description='Publish every CSV-logger column as a std_msgs/Float64 topic per vehicle. '
+                    'High-rate, disabled by default.'
     )
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz',
@@ -55,42 +62,42 @@ def generate_launch_description():
                 'world_file': world_file,
                 'headless': headless,
                 'do_fake_localization': do_fake_localization,
+                'publish_log_topics': publish_log_topics,
             }
         ]
     )
 
-    # RViz2 nodes for each robot
-    rviz2_nodes = [
-        Node(
-            condition=IfCondition(use_rviz),
-            package='rviz2',
-            executable='rviz2',
-            name='rviz2',
-            arguments=[
-                '-d',
-                os.path.join(mvsim_dir, 'mvsim_tutorial', 'demo_road_circuit1_ros2.rviz')
-            ],
-            output='screen',
-            remappings=[
-                ('/map', f'/r{idx}/map'),
-                ('/tf', f'/r{idx}/tf'),
-                ('/tf_static', f'/r{idx}/tf_static'),
-                ('/goal_pose', f'/r{idx}/goal_pose'),
-                ('/clicked_point', f'/r{idx}/clicked_point'),
-                ('/vehs/cmd_vel', f'/r{idx}/cmd_vel'),
-                ('/vehs/lidar1_points', f'/r{idx}/lidar1_points'),
-                ('/vehs/camera1/image_raw', f'/r{idx}/camera1/image_raw'),
-                ('/vehs/chassis_markers', f'/r{idx}/chassis_markers'),
-                ('/vehs/scanner1', f'/r{idx}/scanner1'),
-            ],
-        )
-        for idx in range(1, 2)
-    ]
+    # RViz2 node for robot r1
+    rviz2_node = Node(
+        condition=IfCondition(use_rviz),
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=[
+            '-d',
+            os.path.join(mvsim_dir, 'mvsim_tutorial', 'demo_road_circuit1_ros2.rviz')
+        ],
+        output='screen',
+        remappings=[
+            ('/map', '/r1/map'),
+            ('/tf', '/r1/tf'),
+            ('/tf_static', '/r1/tf_static'),
+            ('/goal_pose', '/r1/goal_pose'),
+            ('/clicked_point', '/r1/clicked_point'),
+            ('/vehs/cmd_vel', '/r1/cmd_vel'),
+            ('/vehs/lidar1_points', '/r1/lidar1_points'),
+            ('/vehs/camera1/image_raw', '/r1/camera1/image_raw'),
+            ('/vehs/chassis_markers', '/r1/chassis_markers'),
+            ('/vehs/scanner1', '/r1/scanner1'),
+        ]
+    )
 
     return LaunchDescription([
         world_file_launch_arg,
         headless_launch_arg,
         do_fake_localization_arg,
+        publish_log_topics_arg,
         use_rviz_arg,
-        mvsim_node
-    ] + rviz2_nodes)
+        mvsim_node,
+        rviz2_node
+    ])

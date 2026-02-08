@@ -37,15 +37,18 @@
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
 	<variable name="NUM_TILTED_BEAMS_Y" value="10"></variable>
 	
-	<variable name="NUM_CORRIDORS_X" value="10"></variable>
+	<variable name="NUM_CORRIDORS_X" value="5"></variable>
 	
-	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="8"></variable>
-	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="12"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="5"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="6"></variable>
 
-	<variable name="NUM_POLES_X" value="10"></variable>
-	<variable name="NUM_POLES_Y" value="10"></variable>
+	<variable name="NUM_POLES_X" value="8"></variable>
+	<variable name="NUM_POLES_Y" value="8"></variable>
 
 	<variable name="PLANTS_RAND_XY" value="0.35"></variable>
+
+	<!-- Variability of plant scale (1 sigma of normally distributed scale additional term to sum on top of 1.0) -->
+	<variable name="PLANTS_RAND_SIZE_STD" value="0.20" />
 	
 	<variable name="CEILING_HEIGHT" value="3.0"></variable>
 
@@ -149,11 +152,19 @@
 		  vert_resolution_factor="1.0"
 		/>
 		
-		<include file="../definitions/camera.sensor.xml" 
+		<!--<include file="../definitions/camera.sensor.xml" 
+		  sensor_x="0.9"  sensor_y="0" sensor_z="0.75"
+		  sensor_period_sec="0.20"
+		  />-->
+
+		<include file="../definitions/rgbd_camera.sensor.xml" 
 		  sensor_x="0.9"  sensor_y="0" sensor_z="0.75"
 		  sensor_period_sec="0.20"
 		  sensor_name="cam1"
-		  />
+		  show_3d_pointcloud="false"
+		  publish_ros_depth_image="true"
+		  publish_ros_colored_pointcloud="true"
+		/>
 
 		<include file="../definitions/gnss.sensor.xml"
 		  sensor_x="0.9"  sensor_y="0.2" sensor_z="0.75"
@@ -277,17 +288,21 @@
 		<for var="iY" from="0" to="$f{NUM_PLANTS_CORRIDOR_SOUTH-1}">
 			<block class="plant_tomato">
 				<init_pose>$f{3.95+4*iX+rand()*PLANTS_RAND_XY} $f{3.0+iY*(9/NUM_PLANTS_CORRIDOR_SOUTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<visual_scale>$f{1.0+PLANTS_RAND_SIZE_STD*randn()}</visual_scale>
 			</block>
 			<block class="plant_tomato">
 				<init_pose>$f{3.95+4*iX+3.0+rand()*PLANTS_RAND_XY} $f{3.0+iY*(9/NUM_PLANTS_CORRIDOR_SOUTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<visual_scale>$f{1.0+PLANTS_RAND_SIZE_STD*randn()}</visual_scale>
 			</block>
 		</for>
 		<for var="iY" from="0" to="$f{NUM_PLANTS_CORRIDOR_NORTH-1}">
 			<block class="plant_tomato">
 				<init_pose>$f{3.95+4*iX+rand()*PLANTS_RAND_XY} $f{15.0+iY*(12/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<visual_scale>$f{1.0+PLANTS_RAND_SIZE_STD*randn()}</visual_scale>
 			</block>
 			<block class="plant_tomato">
 				<init_pose>$f{3.95+4*iX+3.0+rand()*PLANTS_RAND_XY} $f{15.0+iY*(12/NUM_PLANTS_CORRIDOR_NORTH)+rand()*PLANTS_RAND_XY} $f{rand()*360}</init_pose>
+				<visual_scale>$f{1.0+PLANTS_RAND_SIZE_STD*randn()}</visual_scale>
 			</block>
 		</for>
 	</for>

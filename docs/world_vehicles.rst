@@ -16,19 +16,18 @@ Inside **<vehicle:class>** tag, there are tags **<dynamics>**,
 Vehicle kinematic and dynamics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-At present, there are three types of vehicle dynamics implemented.
-Refer [vehicle\_models] for more information.
+There are five vehicle dynamics models. See :ref:`vehicle_models` for details.
 
-**<dynamics>** with attribute *class* specifies class of dynamics used.
+**<dynamics>** with attribute *class* specifies which model to use.
 Currently available classes:
 
--  differential
+-  ``differential`` — 2-wheel differential drive
+-  ``differential_3_wheels`` — 3-wheel differential (e.g. with a rear caster)
+-  ``differential_4_wheels`` — 4-wheel skid-steer differential
+-  ``ackermann`` — front-axle steered, simplified torque model
+-  ``ackermann_drivetrain`` — front-axle steered with explicit drivetrain
 
--  car\_ackermann
-
--  ackermann\_drivetrain
-
-Each class has specific inner tags structure for its own configuration.
+Each class has specific inner tags for its own configuration.
 
 Common
 ^^^^^^
@@ -63,25 +62,32 @@ steering angle.
 Motion controllers
 ^^^^^^^^^^^^^^^^^^^
 
-There are controllers for every dynamics type [sec:controllers]. In XML
-their names are
+Each dynamics class has one or more controllers. The available controller
+``class`` names are:
 
--  raw - control raw forces
+-  ``raw`` — control raw wheel torques directly (available for all dynamics)
+-  ``twist_pid`` — [differential only] control with ``(v, omega)`` twist messages via PID
+-  ``twist_ideal`` — [differential only] ideal twist tracking (no PID, instantaneous)
+-  ``twist_front_steer_pid`` — [Ackermann / Ackermann-drivetrain] control with
+   ``(v, steer_angle)`` via PID
+-  ``front_steer_pid`` — [Ackermann / Ackermann-drivetrain] control with PID for
+   velocity and raw steering angles
 
--  twist\_pid - control with twist messages
+Controllers with *pid* in their names use a PID regulator that needs to
+be configured with tags **<KP>**, **<KI>**, **<KD>**, and
+**<max_torque>**.
 
--  front\_steer\_pid - [Ackermann only] - control with PID for velocity
-   and raw steering angles
-
-Controllers with *pid* in their names use PID regulator which needs to
-be configured. There are tags **<KP><KI><KD>** for this purpose. Also
-they need the parameter **<max\_torque>** to be set.
-
-Twist controllers need to set initial **<V>** and **<W>** for linear and
+Twist controllers need initial **<V>** and **<W>** for linear and
 angular velocities respectively.
 
-Steer controllers need to set initial **<V>** and **<STEER\_ANG>** for
+Steer controllers need initial **<V>** and **<STEER_ANG>** for
 linear velocity and steering angle respectively.
+
+.. tip::
+
+   Use the ``raw`` controller with zero torques to create a passive,
+   unpowered body (e.g. a trailer pulled through a :ref:`joint <world_joints>`).
+
 
 Ackermann-drivetrain model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -121,7 +127,7 @@ which are pretty self-explanatory.
 Friction
 ^^^^^^^^
 
-Friction models are described in [sec:friction\_models] and defined
+Friction models are described below and defined
 outside of **<dynamics>**. The tag for friction is **<friction>** with
 attribute *class*.
 
@@ -131,7 +137,7 @@ Class names in XML are:
 
 -  default
 
-**Default** friction [sec:default\_friction] uses subtags:
+**Default** friction uses subtags:
 
 -  **<mu>** - the friction coefficient
 
@@ -145,7 +151,7 @@ In addition to **default**, **Ward-Iagnemma** friction includes subtags:
 
 -  **R2**
 
-that are described in [sec:wi\_friction].
+that are described in the Ward-Iagnemma friction model documentation.
 
 
 Vehicle instances
@@ -188,3 +194,46 @@ wheel angular velocity and acceleration, lateral and longitudinal forces, etc.
 
 If you want to add new variables to this logger, look for ``logger->updateColumn(...)`` in the code
 for usage examples.
+
+
+ROS 2 Integration
+------------------
+
+When running MVSim with the ROS 2 node, vehicles automatically publish their state and sensor data to ROS 2 topics. See :ref:`vehicles` section 10 for complete topic listings.
+
+Published Topics
+^^^^^^^^^^^^^^^^^
+
+**Core topics** (always published):
+
+* ``<VEH>/odom`` — Odometry with realistic noise
+* ``<VEH>/base_pose_ground_truth`` — Perfect ground truth for evaluation
+* ``<VEH>/collision`` — Collision detection status
+* ``<VEH>/tf`` — Transform tree for the vehicle
+
+**Sensor topics** are published dynamically as observations are generated. Topic names are derived from the sensor's ``name`` attribute in the XML definition.
+
+Subscribed Topics  
+^^^^^^^^^^^^^^^^^^
+
+* ``<VEH>/cmd_vel`` — Velocity commands (geometry_msgs/Twist)
+
+The vehicle processes these commands through its configured controller (see Motion controllers section). Commands are valid for 1 second, after which the vehicle stops for safety.
+
+ROS 2 Launch Parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Key parameters when launching the mvsim_node:
+
+* ``realtime_factor`` — Simulation speed multiplier (default: 1.0)
+* ``headless`` — Run without GUI (default: false)  
+* ``period_ms_publish_tf`` — Transform publication rate in milliseconds (default: 20)
+* ``do_fake_localization`` — Enable fake AMCL output (default: false)
+* ``publish_tf_odom2baselink`` — Publish odom→base_link transform (default: true)
+* ``publisher_history_len`` — Queue size for publishers (default: 10)
+
+Example launch:
+
+.. code-block:: bash
+
+   ros2 launch mvsim demo_warehouse.launch.py realtime_factor:=1.0 headless:=false

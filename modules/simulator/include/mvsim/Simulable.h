@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -178,6 +178,7 @@ class Simulable
 	mrpt::math::TVector3D ddq_lin_{0, 0, 0};
 
 	mrpt::math::TPose3D former_q_;	//!< Updated in simul_post_timestep()
+	mrpt::math::TTwist2D former_dq_{0, 0, 0};  //!< Previous-step velocity for acceleration
 
 	// ============ ANIMATION VARIABLES ============
 	/** Initial pose, per configuration XML world file */

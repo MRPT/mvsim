@@ -14,9 +14,11 @@
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>25</cam_distance>
+		<cam_distance>15</cam_distance>
 		<fov_deg>60</fov_deg>
 		<refresh_fps>40</refresh_fps>
+		<cam_azimuth>170</cam_azimuth>
+		<cam_elevation>30</cam_elevation>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
 
 	</gui>
@@ -233,20 +235,6 @@
 	
 <!--	<block class="my_bump"> <init_pose>4 0 90</init_pose> </block> -->
 
-	<block class="pallet_jack"> 
-		<init_pose>0 0 0</init_pose>
-		<animation type="keyframes">
-			<time_pose>0.0  -13 -3  0</time_pose>
-			<time_pose>10.0  5  -3  0</time_pose>
-			<time_pose>11.0  5  -3  0</time_pose>
-			<time_pose>14.0  5  -3  180</time_pose>
-			<time_pose>24.0  -13 -3 180</time_pose>
-			<time_pose>25.0  -13 -3 180</time_pose>
-			<time_pose>26.0  -13 -3 0</time_pose>
-		</animation>
-	</block>
-
-
 	<block class="stairs"> <init_pose>-12 -11.5 -90</init_pose> </block>
 	<block class="stairs"> <init_pose> 15  11.5 90</init_pose> </block>
 
@@ -273,5 +261,51 @@
 	<block class="extinguisher"> <init_pose3d>-14.8 12 1.1 90 0 0</init_pose3d> </block>
 	<block class="extinguisher"> <init_pose3d> 6.5 12.9 1.1 0 0 0</init_pose3d> </block>
 	<block class="extinguisher"> <init_pose3d> 2.5 -12.9 1.1 180 0 0</init_pose3d> </block>
+
+
+	<!-- A Pallet that moves on its own on a corridor -->
+	<block class="pallet_jack"> 
+		<init_pose>0 0 0</init_pose>
+		<animation type="keyframes">
+			<time_pose>0.0  -9.4 12  0</time_pose>
+			<time_pose>10.0  5   12  0</time_pose>
+			<time_pose>11.0  5   12  0</time_pose>
+			<time_pose>14.0  5   12  180</time_pose>
+			<time_pose>24.0 -9.4 12  180</time_pose>
+			<time_pose>25.0 -9.4 12  180</time_pose>
+			<time_pose>26.0 -9.4 12  0</time_pose>
+		</animation>
+	</block>
+
+	<!-- A human actor moving around in the scene, demonstrating animation features -->
+
+	<actor:class name="pedestrian">
+		<walking_speed>1.4</walking_speed>
+		<running_speed>3.5</running_speed>
+		<height>1.75</height>
+		<collision_radius>0.3</collision_radius>
+		<animation_idle>HumanArmature|Man_Idle</animation_idle>
+		<animation_walk>HumanArmature|Man_Walk</animation_walk>
+		<animation_run>HumanArmature|Man_Run</animation_run>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/AnimatedMenCharacters.zip/FBX/Male_Shirt.fbx</model_uri>
+			<model_scale>0.0027</model_scale>
+			<model_roll>90.0</model_roll>
+			<model_yaw>90.0</model_yaw>
+		</visual>
+	</actor:class>
+
+	<actor name="person1" class="pedestrian">
+		<init_pose>-7.8 -3.3 90</init_pose>
+		<path loop="true">
+			<!-- x y yaw_deg -->
+			<waypoint pause="2.0">-7.8 -3.3 -90</waypoint>
+			<waypoint pause="3.0" animation="run">-3.1 -3.2 -90</waypoint>
+			<waypoint pause="3.0">3.8 -3.3 -90</waypoint>
+			<waypoint pause="2.0" animation="run">6.7 3.6 90</waypoint>
+			<waypoint pause="3.0">1.1 -3.2 -90</waypoint>
+		</path>
+	</actor>
+
 
 </mvsim_world>

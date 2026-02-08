@@ -1,11 +1,13 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
+#include <box2d/b2_distance_joint.h>
+#include <box2d/b2_revolute_joint.h>
 #include <mrpt/core/format.h>
 #include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
@@ -123,6 +125,11 @@ void World::register_standard_xml_tag_parsers()
 	register_tag_parser("for", &World::parse_tag_for);
 	register_tag_parser("if", &World::parse_tag_if);
 	register_tag_parser("marker", &World::parse_tag_marker);
+
+	register_tag_parser("joint", &World::parse_tag_joint);
+
+	register_tag_parser("actor", &World::parse_tag_actor);
+	register_tag_parser("actor:class", &World::parse_tag_actor_class);
 }
 
 void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
@@ -437,4 +444,218 @@ void World::GeoreferenceOptions::parse_from(
 	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
 	parse_xmlnode_children_as_param(node, params, {}, "[World::GeoreferenceOptions]", &logger);
+}
+
+void World::parse_tag_joint(const XmlParserContext& ctx)
+{
+	using namespace rapidxml;
+	using namespace std::string_literals;
+
+	const xml_node<char>* node = ctx.node;
+	ASSERT_(node);
+
+	// ---- Parse required attributes ----
+	const auto* typeAttr = node->first_attribute("type");
+	ASSERTMSG_(
+		typeAttr,
+		"XML tag '<joint />' must have a 'type' attribute "
+		"(\"distance\" or \"revolute\")");
+	const std::string typeStr = typeAttr->value();
+
+	const auto* bodyAAttr = node->first_attribute("body_a");
+	ASSERTMSG_(bodyAAttr, "XML tag '<joint />' must have a 'body_a' attribute");
+	const auto* bodyBAttr = node->first_attribute("body_b");
+	ASSERTMSG_(bodyBAttr, "XML tag '<joint />' must have a 'body_b' attribute");
+
+	const auto* anchorAAttr = node->first_attribute("anchor_a");
+	ASSERTMSG_(
+		anchorAAttr,
+		"XML tag '<joint />' must have an 'anchor_a' attribute "
+		"(\"x y\" in body-local coords)");
+	const auto* anchorBAttr = node->first_attribute("anchor_b");
+	ASSERTMSG_(
+		anchorBAttr,
+		"XML tag '<joint />' must have an 'anchor_b' attribute "
+		"(\"x y\" in body-local coords)");
+
+	// ---- Build descriptor ----
+	WorldJoint jd;
+
+	// Type
+	if (typeStr == "distance" || typeStr == "rope")
+	{
+		jd.type = WorldJoint::Type::Distance;
+	}
+	else if (typeStr == "revolute" || typeStr == "pin")
+	{
+		jd.type = WorldJoint::Type::Revolute;
+	}
+	else
+	{
+		THROW_EXCEPTION_FMT(
+			"Unknown <joint> type='%s'. "
+			"Expected 'distance' (or 'rope') or 'revolute' (or 'pin').",
+			typeStr.c_str());
+	}
+
+	// Body names (resolve variables)
+	jd.bodyA_name = mvsim::parse(bodyAAttr->value(), user_defined_variables());
+	jd.bodyB_name = mvsim::parse(bodyBAttr->value(), user_defined_variables());
+
+	// Anchor points: "x y"
+	{
+		const std::string sA = mvsim::parse(anchorAAttr->value(), user_defined_variables());
+		double ax = 0;
+		double ay = 0;
+		if (sscanf(sA.c_str(), "%lf %lf", &ax, &ay) != 2)
+		{
+			THROW_EXCEPTION_FMT("Malformed anchor_a='%s'. Expected \"x y\".", sA.c_str());
+		}
+		jd.anchorA = {ax, ay};
+	}
+	{
+		const std::string sB = mvsim::parse(anchorBAttr->value(), user_defined_variables());
+		double bx = 0;
+		double by = 0;
+		if (sscanf(sB.c_str(), "%lf %lf", &bx, &by) != 2)
+		{
+			THROW_EXCEPTION_FMT("Malformed anchor_b='%s'. Expected \"x y\".", sB.c_str());
+		}
+		jd.anchorB = {bx, by};
+	}
+
+	// ---- Optional attributes ----
+	{
+		TParameterDefinitions attribs;
+		attribs["max_length"] = TParamEntry("%f", &jd.maxLength);
+		attribs["min_length"] = TParamEntry("%f", &jd.minLength);
+		attribs["stiffness"] = TParamEntry("%f", &jd.stiffness);
+		attribs["damping"] = TParamEntry("%f", &jd.damping);
+		attribs["enable_limit"] = TParamEntry("%bool", &jd.enableLimit);
+		attribs["lower_angle_deg"] = TParamEntry("%f", &jd.lowerAngle_deg);
+		attribs["upper_angle_deg"] = TParamEntry("%f", &jd.upperAngle_deg);
+
+		parse_xmlnode_attribs(*node, attribs, user_defined_variables(), "[World::parse_tag_joint]");
+	}
+
+	// ---- Look up the two Simulable bodies ----
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+
+	auto itA = simulableObjects_.find(jd.bodyA_name);
+	if (itA == simulableObjects_.end())
+	{
+		THROW_EXCEPTION_FMT(
+			"<joint> body_a='%s' not found among simulable objects. "
+			"Make sure the <vehicle> or <block> is defined BEFORE the "
+			"<joint> tag.",
+			jd.bodyA_name.c_str());
+	}
+	auto itB = simulableObjects_.find(jd.bodyB_name);
+	if (itB == simulableObjects_.end())
+	{
+		THROW_EXCEPTION_FMT(
+			"<joint> body_b='%s' not found among simulable objects. "
+			"Make sure the <vehicle> or <block> is defined BEFORE the "
+			"<joint> tag.",
+			jd.bodyB_name.c_str());
+	}
+
+	b2Body* b2bodyA = itA->second->b2d_body();
+	b2Body* b2bodyB = itB->second->b2d_body();
+	ASSERTMSG_(
+		b2bodyA, mrpt::format(
+					 "<joint> body_a='%s' has no Box2D body. "
+					 "Is it a valid physical object?",
+					 jd.bodyA_name.c_str()));
+	ASSERTMSG_(
+		b2bodyB, mrpt::format(
+					 "<joint> body_b='%s' has no Box2D body. "
+					 "Is it a valid physical object?",
+					 jd.bodyB_name.c_str()));
+
+	// ---- Create the Box2D joint ----
+	ASSERT_(box2d_world_);
+
+	switch (jd.type)
+	{
+		case WorldJoint::Type::Distance:
+		{
+			b2DistanceJointDef djd;
+			djd.bodyA = b2bodyA;
+			djd.bodyB = b2bodyB;
+			djd.localAnchorA.Set(
+				static_cast<float>(jd.anchorA.x), static_cast<float>(jd.anchorA.y));
+			djd.localAnchorB.Set(
+				static_cast<float>(jd.anchorB.x), static_cast<float>(jd.anchorB.y));
+			djd.minLength = jd.minLength;
+			djd.maxLength = jd.maxLength;
+			// rest length = max for rope behavior
+			djd.length = jd.maxLength;
+			djd.stiffness = jd.stiffness;
+			djd.damping = jd.damping;
+			djd.collideConnected = false;
+
+			jd.b2joint = box2d_world_->CreateJoint(&djd);
+
+			MRPT_LOG_INFO_FMT(
+				"Created distance joint between '%s' and '%s' "
+				"(maxLength=%.3f)",
+				jd.bodyA_name.c_str(), jd.bodyB_name.c_str(), jd.maxLength);
+			break;
+		}
+		case WorldJoint::Type::Revolute:
+		{
+			b2RevoluteJointDef rjd;
+			rjd.bodyA = b2bodyA;
+			rjd.bodyB = b2bodyB;
+			rjd.localAnchorA.Set(
+				static_cast<float>(jd.anchorA.x), static_cast<float>(jd.anchorA.y));
+			rjd.localAnchorB.Set(
+				static_cast<float>(jd.anchorB.x), static_cast<float>(jd.anchorB.y));
+
+			// Compute reference angle from current body angles:
+			rjd.referenceAngle = b2bodyB->GetAngle() - b2bodyA->GetAngle();
+
+			if (jd.enableLimit)
+			{
+				rjd.enableLimit = true;
+				rjd.lowerAngle =
+					static_cast<float>(static_cast<double>(jd.lowerAngle_deg) * M_PI / 180.0);
+				rjd.upperAngle =
+					static_cast<float>(static_cast<double>(jd.upperAngle_deg) * M_PI / 180.0);
+			}
+
+			rjd.collideConnected = false;
+
+			jd.b2joint = box2d_world_->CreateJoint(&rjd);
+
+			MRPT_LOG_INFO_FMT(
+				"Created revolute joint between '%s' and '%s'", jd.bodyA_name.c_str(),
+				jd.bodyB_name.c_str());
+			break;
+		}
+		default:
+			THROW_EXCEPTION("Unhandled joint type");
+	}
+
+	joints_.emplace_back(std::move(jd));
+}
+
+void World::parse_tag_actor(const XmlParserContext& ctx)
+{
+	HumanActor::Ptr actor = HumanActor::factory(this, ctx.node);
+
+	ASSERTMSG_(
+		actors_.count(actor->getName()) == 0,
+		mrpt::format("Duplicated actor name: '%s'", actor->getName().c_str()));
+
+	actors_.insert(ActorList::value_type(actor->getName(), actor));
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+	simulableObjects_.emplace(actor->getName(), std::dynamic_pointer_cast<Simulable>(actor));
+}
+
+void World::parse_tag_actor_class(const XmlParserContext& ctx)
+{
+	HumanActor::register_actor_class(*this, ctx.node);
 }

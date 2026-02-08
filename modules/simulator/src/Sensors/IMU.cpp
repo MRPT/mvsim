@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -29,21 +29,37 @@ IMU::IMU(Simulable& parent, const rapidxml::xml_node<char>* root) : SensorBase(p
 	IMU::loadConfigFrom(root);
 }
 
-IMU::~IMU() {}
-
 void IMU::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	SensorBase::loadConfigFrom(root);
 	SensorBase::make_sure_we_have_a_name("imu");
 
+	// Noise-model defaults (same as old hard-coded values):
+	noiseModel_.gyroscope.white_noise_std = 2e-4;  // [rad/s]
+	noiseModel_.accelerometer.white_noise_std = 0.017;	// [m/s²]
+
 	TParameterDefinitions params;
 	params["pose"] = TParamEntry("%pose2d_ptr3d", &obs_model_.sensorPose);
 	params["pose_3d"] = TParamEntry("%pose3d", &obs_model_.sensorPose);
 	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
-	params["angular_velocity_std_noise"] = TParamEntry("%lf", &angularVelocityStdNoise_);
 	params["orientation_std_noise"] = TParamEntry("%lf", &orientationStdNoise_);
-	params["linear_acceleration_std_noise"] = TParamEntry("%lf", &linearAccelerationStdNoise_);
 	params["measure_orientation"] = TParamEntry("%bool", &measure_orientation_);
+
+	// Legacy parameter names (kept for backward compatibility):
+	params["angular_velocity_std_noise"] =
+		TParamEntry("%lf", &noiseModel_.gyroscope.white_noise_std);
+	params["linear_acceleration_std_noise"] =
+		TParamEntry("%lf", &noiseModel_.accelerometer.white_noise_std);
+
+	// New Forster-model parameter names:
+	params["angular_velocity_white_noise_std_noise"] =
+		TParamEntry("%lf", &noiseModel_.gyroscope.white_noise_std);
+	params["linear_acceleration_white_noise_std_noise"] =
+		TParamEntry("%lf", &noiseModel_.accelerometer.white_noise_std);
+	params["angular_velocity_random_walk_std_noise"] =
+		TParamEntry("%lf", &noiseModel_.gyroscope.random_walk_std);
+	params["linear_acceleration_random_walk_std_noise"] =
+		TParamEntry("%lf", &noiseModel_.accelerometer.random_walk_std);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
@@ -112,28 +128,38 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 	outObs->timestamp = world_->get_simul_timestamp();
 	outObs->sensorLabel = name_;
 
-	// angular velocity:
-	mrpt::math::TVector3D w(0.0, 0.0, vehicle_.getTwist().omega);
-	rng_.drawGaussian1DVector(w, 0.0, angularVelocityStdNoise_);
+	const double dt = context.dt;
+
+	// --- Angular velocity ---
+	// Ground-truth: only yaw-rate from the 2D dynamics for now.
+	const mrpt::math::TVector3D trueW(0.0, 0.0, vehicle_.getTwist().omega);
+
+	const mrpt::math::TVector3D w = noiseModel_.applyGyroscope(trueW, dt);
 
 	outObs->set(mrpt::obs::IMU_WX, w.x);
 	outObs->set(mrpt::obs::IMU_WY, w.y);
 	outObs->set(mrpt::obs::IMU_WZ, w.z);
 
-	// linear acceleration:
-	const auto g = mrpt::math::TVector3D(.0, .0, -world_->get_gravity());
+	// --- Linear acceleration ---
+	const auto g = mrpt::math::TVector3D(0.0, 0.0, -world_->get_gravity());
 
-	mrpt::math::TVector3D linAccNoise(0, 0, 0);
-	rng_.drawGaussian1DVector(linAccNoise, 0.0, linearAccelerationStdNoise_);
+	// Rotate the global-frame acceleration vector into the vehicle's
+	// local frame.
+	const auto globalAcc = vehicle_.getLinearAcceleration() - g;
+	const auto R = vehicle_.getCPose3D().getRotationMatrix();  // 3×3
 
-	const mrpt::math::TVector3D linAccLocal =
-		vehicle_.getPose().inverseComposePoint(vehicle_.getLinearAcceleration() + g) + linAccNoise;
+	const mrpt::math::TVector3D trueAccLocal(
+		R(0, 0) * globalAcc.x + R(1, 0) * globalAcc.y + R(2, 0) * globalAcc.z,
+		R(0, 1) * globalAcc.x + R(1, 1) * globalAcc.y + R(2, 1) * globalAcc.z,
+		R(0, 2) * globalAcc.x + R(1, 2) * globalAcc.y + R(2, 2) * globalAcc.z);
+
+	const mrpt::math::TVector3D linAccLocal = noiseModel_.applyAccelerometer(trueAccLocal, dt);
 
 	outObs->set(mrpt::obs::IMU_X_ACC, linAccLocal.x);
 	outObs->set(mrpt::obs::IMU_Y_ACC, linAccLocal.y);
 	outObs->set(mrpt::obs::IMU_Z_ACC, linAccLocal.z);
 
-	// Orientation:
+	// --- Orientation ---
 	if (measure_orientation_)
 	{
 		// If using geo-referenced coordinates, get world to ENU rotation:
@@ -142,15 +168,15 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 		// Get vehicle pose on the world:
 		const auto& p = vehicle_.getCPose3D();
 
-		// compose with sensor pose:
+		// compose with sensor pose + orientation noise:
 		auto& rng = mrpt::random::getRandomGenerator();
 		mrpt::math::CVectorFixed<double, 3> oriNoiseVec;
-		rng.drawGaussian1DVector(oriNoiseVec, .0, orientationStdNoise_);
+		rng.drawGaussian1DVector(oriNoiseVec, 0.0, orientationStdNoise_);
 
 		const auto oriNoiseRot = mrpt::poses::Lie::SO<3>::exp(oriNoiseVec);
 
 		const mrpt::poses::CPose3D sensorPoseEnu =
-			mrpt::poses::CPose3D::FromYawPitchRoll(w2enu, .0, .0) + (p + obs_model_.sensorPose) +
+			mrpt::poses::CPose3D::FromYawPitchRoll(w2enu, 0.0, 0.0) + (p + obs_model_.sensorPose) +
 			mrpt::poses::CPose3D::FromRotationAndTranslation(
 				oriNoiseRot, mrpt::math::TVector3D(0, 0, 0));
 

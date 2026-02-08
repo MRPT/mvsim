@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -17,6 +17,7 @@
 #include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
+#include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/World.h>
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -74,6 +75,7 @@ using Msg_CameraInfo = sensor_msgs::CameraInfo;
 #include <rclcpp/time_source.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/float64.hpp>
 #include <tf2/LinearMath/Transform.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -93,6 +95,7 @@ using Msg_OccupancyGrid = nav_msgs::msg::OccupancyGrid;
 using Msg_Odometry = nav_msgs::msg::Odometry;
 using Msg_MapMetaData = nav_msgs::msg::MapMetaData;
 using Msg_Bool = std_msgs::msg::Bool;
+using Msg_Float64 = std_msgs::msg::Float64;
 using Msg_TFMessage = tf2_msgs::msg::TFMessage;
 using Msg_MarkerArray = visualization_msgs::msg::MarkerArray;
 using Msg_CameraInfo = sensor_msgs::msg::CameraInfo;
@@ -170,6 +173,10 @@ class MVSimNode
 	bool publish_tf_odom2baselink_ = true;
 
 	int publisher_history_len_ = 50;
+
+	/// If true, publish each CSV-logger column as a Float64 topic per
+	/// vehicle at every simulation timestep. Disabled by default.
+	bool publish_log_topics_ = false;
 
    protected:
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -261,6 +268,11 @@ class MVSimNode
 		rclcpp::Publisher<Msg_TFMessage>::SharedPtr pub_tf_static;
 
 		Msg_MarkerArray chassis_shape_msg;
+
+		/// Per-logger, per-column Float64 publishers for diagnostic topics.
+		/// Outer key = logger index, inner key = column name.
+		std::map<size_t, std::map<std::string, rclcpp::Publisher<Msg_Float64>::SharedPtr>>
+			pub_log_topics;
 #endif
 	};
 
@@ -272,6 +284,10 @@ class MVSimNode
 	/** Initialize all pub/subs required for each vehicle, for the specific
 	 * vehicle \a veh */
 	void initPubSubs(TPubSubPerVehicle& out_pubsubs, mvsim::VehicleBase* veh);
+
+	/// When publish_log_topics_==true, registers a per-column Float64
+	/// publisher callback on each of the vehicle's CSV loggers.
+	void initLoggerTopicCallbacks(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh);
 
 	// === End ROS Publishers ====
 

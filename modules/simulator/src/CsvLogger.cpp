@@ -1,8 +1,18 @@
+/*+-------------------------------------------------------------------------+
+  |                       MultiVehicle simulator (libmvsim)                 |
+  |                                                                         |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
+  | Distributed under 3-clause BSD License                                  |
+  |   See COPYING                                                           |
+  +-------------------------------------------------------------------------+ */
+
 #include "mvsim/CsvLogger.h"
 
 CSVLogger::CSVLogger() { file_ = std::make_shared<std::ofstream>(); }
 
 CSVLogger::~CSVLogger() { close(); }
+
 void CSVLogger::updateColumn(const std::string_view& name, double value) { columns_[name] = value; }
 
 bool CSVLogger::writeHeader()
@@ -29,9 +39,21 @@ bool CSVLogger::writeHeader()
 
 bool CSVLogger::writeRow()
 {
-	if (!isRecording_) return true;
+	// Always notify registered listeners, regardless of file recording:
+	for (const auto& cb : onRowCallbacks_)
+	{
+		cb(columns_);
+	}
 
-	if (!isOpen()) clear();
+	if (!isRecording_)
+	{
+		return true;
+	}
+
+	if (!isOpen())
+	{
+		clear();
+	}
 
 	for (auto it = columns_.begin(); it != columns_.end();)
 	{
@@ -73,7 +95,10 @@ bool CSVLogger::close()
 
 bool CSVLogger::clear()
 {
-	if (isOpen()) close();
+	if (isOpen())
+	{
+		close();
+	}
 
 	if (open())
 	{

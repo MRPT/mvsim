@@ -10,7 +10,7 @@ It is tailored to analysis of vehicle dynamics, wheel-ground contact forces and 
 This package includes C++ libraries, standalone applications, and ROS 1 and ROS 2 nodes.
 
 License: 3-clause BSD License
-Copyright (C) 2014-2025 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
+Copyright (C) 2014-2026 Jose Luis Blanco <jlblanco@ual.es> (University of Almeria) and collaborators
 
 Please, refer to [the MVSim SoftwareX paper](https://www.sciencedirect.com/science/article/pii/S2352711023001395) (or the [ArXiV preprint](https://arxiv.org/abs/2302.11033))
 for a gentle introduction to the project architecture.
@@ -53,6 +53,9 @@ Demo videos
 https://github.com/user-attachments/assets/766db164-2d16-44f4-acbf-2f15b73c1ab3
 
 ![screenshot-demo](docs/imgs/mvsim-ros2-demo.gif)
+
+
+https://github.com/user-attachments/assets/93c95aeb-71e9-4c35-b1dc-ba895c79daf7
 
 [![MvSim intro](https://img.youtube.com/vi/xMUMjEG8xlk/0.jpg)](https://www.youtube.com/watch?v=xMUMjEG8xlk)
 

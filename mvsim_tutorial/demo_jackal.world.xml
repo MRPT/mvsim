@@ -62,6 +62,8 @@
 		  sensor_x="0.22" sensor_z="0.29"
 		  sensor_period_sec="0.10"
 		  show_3d_pointcloud="true"
+		  publish_ros_depth_image="true"
+		  publish_ros_colored_pointcloud="true"
 		/>
 	</vehicle>
 

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
@@ -29,7 +29,10 @@ void World::run_simulation(double dt)
 	const double t0 = mrpt::Clock::nowDouble();
 
 	// Define start of simulation time:
-	if (!simul_start_wallclock_time_.has_value()) simul_start_wallclock_time_ = t0 - dt;
+	if (!simul_start_wallclock_time_.has_value())
+	{
+		simul_start_wallclock_time_ = t0 - dt;
+	}
 
 	timlogger_.registerUserMeasure("run_simulation.dt", dt);
 
@@ -48,13 +51,19 @@ void World::run_simulation(double dt)
 		// Timestep: always "simul_step" for the sake of repeatibility,
 		// except if requested to run a shorter step:
 		const double remainingTime = end_time - get_simul_time();
-		if (remainingTime <= 0) break;
+		if (remainingTime <= 0)
+		{
+			break;
+		}
 
 		internal_one_timestep(remainingTime >= simulTimestep ? simulTimestep : remainingTime);
 
 		// IMPORTANT: This must be inside the loop to allow breaking if we are
 		// closing the app and simulatedTime is not ticking anymore.
-		if (simulator_must_close()) break;
+		if (simulator_must_close())
+		{
+			break;
+		}
 	}
 
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
@@ -85,7 +94,12 @@ void World::internal_one_timestep(double dt)
 	{
 		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.1.prestep");
 		for (auto& e : simulableObjects_)
-			if (e.second) e.second->simul_pre_timestep(context);
+		{
+			if (e.second)
+			{
+				e.second->simul_pre_timestep(context);
+			}
+		}
 	}
 	// 2) vehicles terrain elevation
 	{
@@ -116,7 +130,10 @@ void World::internal_one_timestep(double dt)
 
 		for (auto& e : simulableObjects_)
 		{
-			if (!e.second) continue;
+			if (!e.second)
+			{
+				continue;
+			}
 			// process:
 			e.second->simul_post_timestep(context);
 
@@ -124,7 +141,10 @@ void World::internal_one_timestep(double dt)
 			copy_of_objects_dynstate_pose_[e.first] = e.second->getPose();
 			copy_of_objects_dynstate_twist_[e.first] = e.second->getTwist();
 
-			if (e.second->hadCollision()) copy_of_objects_had_collision_.insert(e.first);
+			if (e.second->hadCollision())
+			{
+				copy_of_objects_had_collision_.insert(e.first);
+			}
 		}
 	}
 	{
@@ -132,7 +152,9 @@ void World::internal_one_timestep(double dt)
 		for (const auto& sId : reset_collision_flags_)
 		{
 			if (auto itV = simulableObjects_.find(sId); itV != simulableObjects_.end())
+			{
 				itV->second->resetCollisionFlag();
+			}
 		}
 		reset_collision_flags_.clear();
 	}
@@ -145,7 +167,9 @@ void World::internal_one_timestep(double dt)
 		// Use a huge timeout here to avoid timing out in build farms / cloud
 		// containers:
 		for (int i = 0; i < 20000 && pending_running_sensors_on_3D_scene(); i++)
+		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
 
 		if (pending_running_sensors_on_3D_scene())
 		{
@@ -167,7 +191,10 @@ void World::internal_one_timestep(double dt)
 
 	const double ts = timer_iteration_.Tac();
 	timlogger_.registerUserMeasure("timestep", ts);
-	if (ts > dt) timlogger_.registerUserMeasure("timestep.too_slow_alert", ts);
+	if (ts > dt)
+	{
+		timlogger_.registerUserMeasure("timestep.too_slow_alert", ts);
+	}
 }
 
 double World::get_simul_timestep() const
@@ -180,14 +207,21 @@ double World::get_simul_timestep() const
 		std::optional<double> ret;
 		for (const auto& veh : vehicles_)
 		{
-			if (!veh.second) continue;
+			if (!veh.second)
+			{
+				continue;
+			}
 			for (const auto& s : veh.second->getSensors())
 			{
 				const double T = s->sensor_period();
 				if (ret)
+				{
 					mrpt::keep_min(*ret, T);
+				}
 				else
+				{
 					ret = T;
+				}
 			}
 		}
 		return ret;
@@ -200,7 +234,10 @@ double World::get_simul_timestep() const
 		simulTimestep_ = 5e-3;
 
 		auto sensorMinPeriod = lambdaMinimumSensorPeriod();
-		if (sensorMinPeriod) mrpt::keep_min(simulTimestep_, *sensorMinPeriod);
+		if (sensorMinPeriod)
+		{
+			mrpt::keep_min(simulTimestep_, *sensorMinPeriod);
+		}
 
 		MRPT_LOG_INFO_FMT(
 			"Physics simulation timestep automatically determined as: %.02f ms",
@@ -363,7 +400,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 				corr.local = mrpt::math::TPoint3D(wheel.x, wheel.y, 0);
 
 				// Global frame
-				const mrpt::math::TPoint3D gPt = cur_cpose.composePoint({wheel.x, wheel.y, 0.0});
+				const mrpt::math::TPoint3D gPt = cur_cpose.composePoint(corr.local);
 
 				const mrpt::math::TPoint3D gPtWheelsAxis =
 					gPt + mrpt::math::TPoint3D(.0, .0, 0.5 * wheel.diameter);
@@ -373,8 +410,14 @@ void World::internal_simul_pre_step_terrain_elevation()
 
 				wheelHeights[iW] = z;
 
-				if (!equal_zs) equal_zs = z;
-				if (std::abs(*equal_zs - z) > 1e-4) all_equal = false;
+				if (!equal_zs)
+				{
+					equal_zs = z;
+				}
+				if (std::abs(*equal_zs - z) > 1e-4)
+				{
+					all_equal = false;
+				}
 
 				corr.globalIdx = iW;
 				corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, z);
@@ -382,6 +425,59 @@ void World::internal_simul_pre_step_terrain_elevation()
 				corrs.push_back(corr);
 			}  // end for each Wheel
 
+			// Special case for trailer vehicles with 2 wheels: use pin point with tractor as "3rd
+			// wheel":
+			if (nWheels == 2)
+			{
+				// Does the veh have a revolute joint?
+				std::optional<mrpt::math::TPoint2D> anchorLocal;
+				for (const auto& joint : joints_)
+				{
+					if (veh->getName() == joint.bodyA_name)
+					{
+						anchorLocal = joint.anchorA;
+						break;
+					}
+					if (veh->getName() == joint.bodyB_name)
+					{
+						anchorLocal = joint.anchorB;
+						break;
+					}
+				}
+				if (anchorLocal)
+				{
+					// Local frame
+					mrpt::tfest::TMatchingPair corr;
+
+					corr.localIdx = corrs.size();
+					corr.local = mrpt::math::TPoint3D(anchorLocal->x, anchorLocal->y, 0);
+
+					// Global frame
+					const mrpt::math::TPoint3D gPt = cur_cpose.composePoint(corr.local);
+
+					const mrpt::math::TPoint3D gPtWheelsAxis =
+						gPt + mrpt::math::TPoint3D(.0, .0, 0.5);
+
+					// Get "the ground" under my wheel axis:
+					const float z = this->getHighestElevationUnder(gPtWheelsAxis);
+
+					if (!equal_zs)
+					{
+						equal_zs = z;
+					}
+					if (std::abs(*equal_zs - z) > 1e-4)
+					{
+						all_equal = false;
+					}
+
+					corr.globalIdx = corr.localIdx;
+					corr.global = mrpt::math::TPoint3D(gPt.x, gPt.y, z);
+
+					corrs.push_back(corr);
+				}
+			}
+
+			// Find optimal pose:
 			if (all_equal && equal_zs.has_value())
 			{
 				// Optimization: just use the constant elevation without optimizing:
@@ -448,7 +544,10 @@ void World::internal_simul_pre_step_terrain_elevation()
 	for (auto& [name, veh] : lstVehs)
 	{
 		auto& e = obstacles_for_each_obj_.at(objIdx);
-		if (!e.has_value()) e.emplace();
+		if (!e.has_value())
+		{
+			e.emplace();
+		}
 
 		TInfoPerCollidableobj& ipv = e.value();
 		ipv.pose = veh->getCPose3D();
@@ -492,14 +591,20 @@ void World::internal_simul_pre_step_terrain_elevation()
 	// around the vehicle, so it can collide with the environment:
 	for (auto& e : obstacles_for_each_obj_)
 	{
-		if (!e.has_value()) continue;
+		if (!e.has_value())
+		{
+			continue;
+		}
 
 		TInfoPerCollidableobj& ipv = e.value();
 
 		ASSERT_(ipv.wheel_heights);
 		// Get mean wheels elevation:
 		float avrg_wheels_z = .0f;
-		for (const auto z : *ipv.wheel_heights) avrg_wheels_z += z;
+		for (const auto z : *ipv.wheel_heights)
+		{
+			avrg_wheels_z += z;
+		}
 		avrg_wheels_z /= 1.0f * ipv.wheel_heights->size();
 
 		ipv.contour_heights.assign(ipv.contour.size(), 0);
@@ -617,6 +722,9 @@ void World::internal_update_lut_cache() const
 			const auto c = xy_to_lut_coords(mrpt::math::TPoint2Df(pt.x, pt.y));
 			affected_coords.insert(c);
 		}
-		for (const auto& c : affected_coords) lut2d_objects_[c].push_back(obj);
+		for (const auto& c : affected_coords)
+		{
+			lut2d_objects_[c].push_back(obj);
+		}
 	}
 }
