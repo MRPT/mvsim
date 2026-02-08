@@ -285,10 +285,10 @@
 
 	<dynamics class="differential">
 		<!-- 2 passive wheels -->
-			<l_wheel pos="-1.33  0.7" mass="4.0" width="0.22" diameter="0.50">
+			<l_wheel pos="-1.33  0.4" mass="4.0" width="0.22" diameter="0.50">
 			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/trailer_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw> </visual>
 			</l_wheel>
-			<r_wheel pos="-1.33 -0.7" mass="4.0" width="0.22" diameter="0.50">
+			<r_wheel pos="-1.33 -0.4" mass="4.0" width="0.22" diameter="0.50">
 			<visual> <model_uri>https://mrpt.github.io/mvsim-models/tractor-trailer-kidbi.zip/tractor-trailer-kidbi/trailer_wheel.fbx</model_uri> <model_scale>1e-2</model_scale> <model_yaw>90.0</model_yaw></visual>
 			</r_wheel>
 
@@ -344,12 +344,11 @@
 		lower_angle_deg="-45"
 		upper_angle_deg="45"
 	/>
-
 	<!-- ======================== Example rope joint (commented out) ======= -->
 	<!-- Uncomment to add a rope between two vehicles instead of a pin:
 	<joint type="distance"
-		body_a="tractor"  anchor_a="-0.8 0.0"
-		body_b="trailer"  anchor_b=" 2.0 0.0"
+		body_a="tractor"  anchor_a="-0.524 0.0"
+		body_b="trailer"  anchor_b="0.0 0.0"
 		max_length="3.5"
 		min_length="0.0"
 		stiffness="0.0"
