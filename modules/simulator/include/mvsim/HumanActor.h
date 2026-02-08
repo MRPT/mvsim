@@ -1,22 +1,30 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
 #pragma once
 
-#include <mrpt/opengl/CAnimatedAssimpModel.h>
 #include <mrpt/opengl/CCylinder.h>
 #include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/opengl/CSphere.h>
 #include <mrpt/poses/CPose3DInterpolator.h>
+#include <mrpt/version.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VisualObject.h>
+
+#define MIN_MRPT_VERSION_ANIMATED_ASSIMP 0x020f08
+
+#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
+#include <mrpt/opengl/CAnimatedAssimpModel.h>
+#else
+#include <mrpt/opengl/CAssimpModel.h>
+#endif
 
 #include <memory>
 #include <string>
@@ -152,7 +160,6 @@ class HumanActor : public VisualObject, public Simulable
 
 	double walkingSpeed_ = 1.4;	 //!< m/s (typical human walking speed)
 	double runningSpeed_ = 3.5;	 //!< m/s
-	double turningRate_ = 120.0;  //!< deg/s
 	double height_ = 1.75;	//!< meters
 
 	// Collision shape (capsule approximation)
@@ -169,7 +176,6 @@ class HumanActor : public VisualObject, public Simulable
 	const TParameterDefinitions params_ = {
 		{"walking_speed", {"%lf", &walkingSpeed_}},
 		{"running_speed", {"%lf", &runningSpeed_}},
-		{"turning_rate", {"%lf_deg", &turningRate_}},
 		{"height", {"%lf", &height_}},
 		{"collision_radius", {"%lf", &collisionRadius_}},
 		{"collision_height", {"%lf", &collisionHeight_}},
@@ -193,6 +199,8 @@ class HumanActor : public VisualObject, public Simulable
 	double pathSegmentProgress_ = 0.0;	//!< [0, 1]
 	double pathSegmentLength_ = 0.0;
 
+	void initializePathFromCurrentPose();
+
 	// ==================== Animation ====================
 
 	AnimationState animState_ = AnimationState::Idle;
@@ -203,8 +211,11 @@ class HumanActor : public VisualObject, public Simulable
 	double currentMovementSpeed_ = 0.0;	 //!< actual speed for anim sync
 
 	// ==================== Rendering ====================
-
+#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
 	mrpt::opengl::CAnimatedAssimpModel::Ptr glModel_;
+#else
+	mrpt::opengl::CAssimpModel::Ptr glModel_;
+#endif
 	bool glInitialized_ = false;
 
 	/** Resolved filesystem path to the 3D model (used by

@@ -1,7 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
-  | Copyright (C) 2014-2025  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Distributed under 3-clause BSD License                                  |
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
@@ -43,11 +43,10 @@ void HumanActor::register_actor_class(const World& parent, const rapidxml::xml_n
 	}
 	if (0 != strcmp(xml_node->name(), "actor:class"))
 	{
-		throw runtime_error(
-			mrpt::format(
-				"[HumanActor::register_actor_class] XML element is '%s' "
-				"('actor:class' expected)",
-				xml_node->name()));
+		throw runtime_error(mrpt::format(
+			"[HumanActor::register_actor_class] XML element is '%s' "
+			"('actor:class' expected)",
+			xml_node->name()));
 	}
 
 	actor_classes_registry.add(xml_to_str_solving_includes(parent, xml_node));
@@ -67,11 +66,10 @@ HumanActor::Ptr HumanActor::factory(World* parent, const rapidxml::xml_node<char
 	}
 	if (0 != strcmp(root->name(), "actor"))
 	{
-		throw runtime_error(
-			mrpt::format(
-				"[HumanActor::factory] XML root element is '%s' "
-				"('actor' expected)",
-				root->name()));
+		throw runtime_error(mrpt::format(
+			"[HumanActor::factory] XML root element is '%s' "
+			"('actor' expected)",
+			root->name()));
 	}
 
 	// ----- Combine class definition + instance definition -----
@@ -257,15 +255,21 @@ void HumanActor::setPath(const std::vector<Waypoint>& waypoints, bool loop)
 	waypointPauseTimer_ = 0.0;
 	isAtWaypoint_ = false;
 
-	if (!path_.empty())
-	{
-		pathStartPose_ = getPose();
-		pathTargetPose_ = path_[0].pose;
+	initializePathFromCurrentPose();
+}
 
-		const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
-		pathSegmentLength_ = delta.norm();
-		pathSegmentProgress_ = 0.0;
+void HumanActor::initializePathFromCurrentPose()
+{
+	if (path_.empty())
+	{
+		return;
 	}
+	pathStartPose_ = getPose();
+	pathTargetPose_ = path_[0].pose;
+
+	const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
+	pathSegmentLength_ = delta.norm();
+	pathSegmentProgress_ = 0.0;
 }
 
 void HumanActor::clearPath()
@@ -453,6 +457,18 @@ mrpt::math::TPose3D HumanActor::interpolatePathPose(double progress) const
 		yaw = std::atan2(delta.y, delta.x);
 	}
 
+	// Smooth yaw change at the beginning.
+	if (progress < 0.1)
+	{
+		const double t = progress / 0.1;
+		const double startYaw = pathStartPose_.yaw;
+		const double endYaw = yaw;
+
+		// Shortest-path angle interpolation.
+		const double deltaYaw = mrpt::math::wrapToPi(endYaw - startYaw);
+		yaw = startYaw + deltaYaw * t;
+	}
+
 	// Smooth yaw towards target orientation near the end.
 	if (progress > 0.8)
 	{
@@ -537,6 +553,7 @@ void HumanActor::updateSkeletalAnimation(double dt)
 
 	currentAnimTime_ += dt * animSpeedScale;
 
+#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
 	// Drive the CAnimatedAssimpModel if we have one.
 	// Lazy discovery: walk the visual hierarchy on first use.
 	if (glCustomVisual_ && !glModel_)
@@ -576,6 +593,7 @@ void HumanActor::updateSkeletalAnimation(double dt)
 		glModel_->setActiveAnimation(animName);
 		glModel_->setAnimationTime(currentAnimTime_);
 	}
+#endif
 }
 
 // ============================================================================
@@ -626,6 +644,9 @@ void HumanActor::internalGuiUpdate(
 
 void HumanActor::upgradeToAnimatedModel()
 {
+	// Update initial pose for animated paths:
+	initializePathFromCurrentPose();
+
 	if (!glCustomVisual_)
 	{
 		return;
@@ -668,8 +689,11 @@ void HumanActor::upgradeToAnimatedModel()
 	}
 
 	// Create a dedicated CAnimatedAssimpModel and load from file.
+#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
 	auto animModel = mrpt::opengl::CAnimatedAssimpModel::Create();
-
+#else
+	auto animModel = mrpt::opengl::CAssimpModel::Create();
+#endif
 	const int loadFlags = mrpt::opengl::CAssimpModel::LoadFlags::RealTimeMaxQuality |
 						  mrpt::opengl::CAssimpModel::LoadFlags::FlipUVs;
 
@@ -683,7 +707,7 @@ void HumanActor::upgradeToAnimatedModel()
 				  << "': " << e.what() << "\n";
 		return;
 	}
-
+#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
 	std::cout << "[HumanActor] Animations loaded: " << animModel->getAnimationCount() << ": ";
 	for (size_t animIdx = 0; animIdx < animModel->getAnimationCount(); animIdx++)
 	{
@@ -699,6 +723,7 @@ void HumanActor::upgradeToAnimatedModel()
 
 	// Carry over visual properties from the original model.
 	animModel->setColor_u8(foundModel->getColor_u8());
+#endif
 
 	// Preserve the wrapper group's pose and scale, then swap the model.
 	const auto savedPose = containingGroup->getPose();
@@ -712,5 +737,3 @@ void HumanActor::upgradeToAnimatedModel()
 	// Keep a direct handle for the animation driver.
 	glModel_ = animModel;
 }
-
-// end of HumanActor.cpp

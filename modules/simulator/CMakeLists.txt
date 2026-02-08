@@ -7,9 +7,9 @@ add_library(${PROJECT_NAME}
 	src/Block.cpp
 	src/CollisionShapeCache.cpp
 	src/CsvLogger.cpp
+	src/HumanActor.cpp
 	src/JointXMLnode.h
 	src/Joystick.cpp
-	src/HumanActor.cpp
 	src/ModelsCache.cpp
 	src/ModelsCache.h
 	src/parse_utils.cpp
@@ -19,27 +19,28 @@ add_library(${PROJECT_NAME}
 	src/Shape2p5.cpp
 	src/Simulable.cpp
 	src/VehicleBase.cpp
-	src/World.cpp
+	src/VisualObject.cpp
+	src/Wheel.cpp
 	src/World_gui.cpp
 	src/World_load_xml.cpp
 	src/World_services.cpp
 	src/World_simul.cpp
 	src/World_walls.cpp
-	src/XMLClassesRegistry.cpp
-	src/XMLClassesRegistry.h
+	src/World.cpp
 	src/xml_utils.cpp
 	src/xml_utils.h
-	src/VisualObject.cpp
-	src/Wheel.cpp
+	src/XMLClassesRegistry.cpp
+	src/XMLClassesRegistry.h
 	include/mvsim/basic_types.h
 	include/mvsim/Block.h
 	include/mvsim/ClassFactory.h
 	include/mvsim/CollisionShapeCache.h
 	include/mvsim/ControllerBase.h
 	include/mvsim/CsvLogger.h
+	include/mvsim/HumanActor.h
 	include/mvsim/Joystick.h
-	include/mvsim/mvsim.h
 	include/mvsim/mvsim_version.h
+	include/mvsim/mvsim.h
 	include/mvsim/PID_Controller.h
 	include/mvsim/RemoteResourcesManager.h
 	include/mvsim/Shape2p5.h
