@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.0 (2026-02-08)
+------------------
 * Merge pull request `#89 <https://github.com/MRPT/mvsim/issues/89>`_ from MRPT/fix/elevation-2-wheels
   Fix elevation maps for 2-wheels vehicles
 * Merge pull request `#88 <https://github.com/MRPT/mvsim/issues/88>`_ from MRPT/feat/human-actors
