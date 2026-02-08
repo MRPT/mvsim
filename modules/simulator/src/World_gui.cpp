@@ -937,6 +937,17 @@ void World::internalUpdate3DSceneObjects(
 
 	timlogger_.leave("update_GUI.4.blocks");
 
+	// Update view of actors
+	// -----------------------------
+	timlogger_.enter("update_GUI.4b.actors");
+
+	for (auto& a : actors_)
+	{
+		a.second->guiUpdate(viz, physical);
+	}
+
+	timlogger_.leave("update_GUI.4b.actors");
+
 	// Update view of joints
 	// -----------------------------
 	{

@@ -67,6 +67,7 @@ void World::clear_all()
 	worldElements_.clear();
 	blocks_.clear();
 	joints_.clear();
+	actors_.clear();
 }
 
 void World::internal_initialize()
