@@ -274,4 +274,26 @@
 	<block class="extinguisher"> <init_pose3d> 6.5 12.9 1.1 0 0 0</init_pose3d> </block>
 	<block class="extinguisher"> <init_pose3d> 2.5 -12.9 1.1 180 0 0</init_pose3d> </block>
 
+
+	<actor:class name="pedestrian">
+		<walking_speed>1.4</walking_speed>
+		<animation_walk>HumanArmature|Man_Walk</animation_walk>
+		<animation_idle>idle</animation_idle>
+		<visual>
+			<model_uri>/home/jlblanco/Downloads/AnimatedMenCharacters/FBX/Male_Casual.fbx</model_uri>
+			<model_scale>0.0027</model_scale>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</actor:class>
+
+	<actor name="person1" class="pedestrian">
+		<init_pose>5 10 0</init_pose>
+		<path type="waypoints" loop="true">
+			<waypoint>0 0 0</waypoint>
+			<waypoint> 10 0 0</waypoint>
+			<waypoint>10 10 90</waypoint>
+		</path>
+	</actor>
+
+
 </mvsim_world>

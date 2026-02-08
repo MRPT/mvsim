@@ -426,7 +426,7 @@ double HumanActor::computeDesiredSpeed() const
 	{
 		return runningSpeed_;
 	}
-	else if (wp.animationHint == "idle")
+	if (wp.animationHint == "idle")
 	{
 		return 0.0;
 	}
@@ -683,6 +683,13 @@ void HumanActor::upgradeToAnimatedModel()
 				  << "': " << e.what() << "\n";
 		return;
 	}
+
+	std::cout << "[HumanActor] Animations loaded: " << animModel->getAnimationCount() << ": ";
+	for (size_t animIdx = 0; animIdx < animModel->getAnimationCount(); animIdx++)
+	{
+		std::cout << "'" << animModel->getAnimationName(animIdx) << "', ";
+	}
+	std::cout << "\n";
 
 	// If no animations were found, keep the original (lighter).
 	if (animModel->getAnimationCount() == 0)
