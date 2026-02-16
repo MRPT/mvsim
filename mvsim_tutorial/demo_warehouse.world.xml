@@ -103,7 +103,8 @@
 	<include file="../definitions/jackal.vehicle.xml"
 		default_sensors="true"
 		lidar2d_raytrace="true"
-	/>  <!-- lidar2d_raytrace: Use accurate 3D raytrace mode for the 2D lidar sensor too -->
+	/>
+	<!-- lidar2d_raytrace: Use accurate 3D raytrace mode for the 2D lidar sensor too -->
 
 	<!-- ========================
 		   Vehicle(s) definition

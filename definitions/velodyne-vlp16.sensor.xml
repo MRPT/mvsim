@@ -21,13 +21,15 @@
     <vert_resolution_factor>${vert_resolution_factor|1.0}</vert_resolution_factor>
 
     <!-- Depth ratio (0 to 1) between adjacent depth image to allow linear interpolation of ranges -->
-    <max_vert_relative_depth_to_interpolatate>${max_vert_relative_depth_to_interpolatate|0.3}</max_vert_relative_depth_to_interpolatate>
-    <max_horz_relative_depth_to_interpolatate>${max_horz_relative_depth_to_interpolatate|0.1}</max_horz_relative_depth_to_interpolatate>
+    <max_vert_relative_depth_to_interpolate>${max_vert_relative_depth_to_interpolate|0.3}</max_vert_relative_depth_to_interpolate>
+    <max_horz_relative_depth_to_interpolate>${max_horz_relative_depth_to_interpolate|0.1}</max_horz_relative_depth_to_interpolate>
 
     <range_std_noise>${sensor_std_noise|0.005}</range_std_noise>
     <max_range>${max_range|80.0}</max_range>
     
     <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/velodyne-vlp16.dae</model_uri> <model_roll>90</model_roll> </visual>
+
+    <generate_intensity>${generate_intensity|false}</generate_intensity>
 
     <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
     <publish enabled="${sensor_publish|false}">

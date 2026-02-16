@@ -71,6 +71,7 @@
         sensor_publish="false"
         sensor_name="lidar1"
         sensor_rate="10.0"
+        generate_intensity="true"
         horz_resolution_factor="1.5"
         vert_resolution_factor="1.0"
       />
