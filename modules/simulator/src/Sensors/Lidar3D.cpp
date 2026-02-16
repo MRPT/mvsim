@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/maps/CGenericPointsMap.h>
 #include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
 #include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
@@ -16,12 +17,6 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
-
-#if MRPT_VERSION >= 0x020f00  // 2.15.0
-#include <mrpt/maps/CGenericPointsMap.h>
-#else
-#include <mrpt/maps/CPointsMapXYZIRT.h>
-#endif
 
 #include "xml_utils.h"
 
@@ -34,8 +29,6 @@ Lidar3D::Lidar3D(Simulable& parent, const rapidxml::xml_node<char>* root) : Sens
 {
 	Lidar3D::loadConfigFrom(root);
 }
-
-Lidar3D::~Lidar3D() {}
 
 void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
@@ -62,10 +55,11 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["horz_resolution_factor"] = TParamEntry("%lf", &horzResolutionFactor_);
 	params["vert_resolution_factor"] = TParamEntry("%lf", &vertResolutionFactor_);
 
-	params["max_vert_relative_depth_to_interpolatate"] =
+	params["max_vert_relative_depth_to_interpolate"] =
 		TParamEntry("%f", &maxDepthInterpolationStepVert_);
-	params["max_horz_relative_depth_to_interpolatate"] =
+	params["max_horz_relative_depth_to_interpolate"] =
 		TParamEntry("%f", &maxDepthInterpolationStepHorz_);
+	params["generate_intensity"] = TParamEntry("%bool", &generateIntensityFromRGB_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
@@ -247,8 +241,8 @@ static float safeInterpolateRangeImage(
 	const int u1 = std::min(u0 + 1, NCOLS - 1);
 	const int v1 = std::min(v0 + 1, NROWS - 1);
 
-	const float uw = u - u0;
-	const float vw = v - v0;
+	const float uw = u - static_cast<float>(u0);
+	const float vw = v - static_cast<float>(v0);
 
 	const float raw_d00 = depthImage(v0, u0);
 	const float raw_d01 = depthImage(v1, u0);
@@ -260,10 +254,17 @@ static float safeInterpolateRangeImage(
 	// since only a few depth points are actually used:
 
 	// map d in [-1.0f,+1.0f] ==> real depth values:
-	const float d00 = depth_log2lin_lut[(raw_d00 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-	const float d01 = depth_log2lin_lut[(raw_d01 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-	const float d10 = depth_log2lin_lut[(raw_d10 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
-	const float d11 = depth_log2lin_lut[(raw_d11 + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2];
+
+	const auto toIdx = [](float raw_d) -> depth_log2lin_t::lut_t::size_type
+	{
+		return static_cast<depth_log2lin_t::lut_t::size_type>(std::clamp(
+			(raw_d + 1.0f) * (depth_log2lin_t::NUM_ENTRIES - 1) / 2.0f, 0.0f,
+			static_cast<float>(depth_log2lin_t::NUM_ENTRIES - 1)));
+	};
+	const float d00 = depth_log2lin_lut[toIdx(raw_d00)];
+	const float d01 = depth_log2lin_lut[toIdx(raw_d01)];
+	const float d10 = depth_log2lin_lut[toIdx(raw_d10)];
+	const float d11 = depth_log2lin_lut[toIdx(raw_d11)];
 
 	// max relative range difference in u and v directions:
 	const float A_u = std::max(std::abs(d00 - d10), std::abs(d01 - d11));
@@ -336,39 +337,24 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	curObs->timestamp = world_->get_simul_timestamp();
 	curObs->sensorLabel = name_;
 
-#if MRPT_VERSION >= 0x020f04  // 2.15.4
 	auto curPtsPtr = mrpt::maps::CGenericPointsMap::Create();
 	curPtsPtr->registerField_float("intensity");
 	curPtsPtr->registerField_float("t");
 	curPtsPtr->registerField_uint16("ring");
-#else
-	auto curPtsPtr = mrpt::maps::CPointsMapXYZIRT::Create();
-#endif
 
 	auto& curPts = *curPtsPtr;
 	curObs->pointcloud = curPtsPtr;
 
-#if MRPT_VERSION >= 0x020f04  // 2.15.4
 	auto* curPts_Is =
 		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMap::POINT_FIELD_INTENSITY);
 	auto* curPts_Ts =
 		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMap::POINT_FIELD_TIMESTAMP);
 	auto* curPts_Rs =
 		curPts.getPointsBufferRef_uint16_field(mrpt::maps::CPointsMap::POINT_FIELD_RING_ID);
-#elif MRPT_VERSION >= 0x020f00	// 2.15.0
-	auto* curPts_Is =
-		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_INTENSITY);
-	auto* curPts_Ts =
-		curPts.getPointsBufferRef_float_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_TIMESTAMP);
-	auto* curPts_Rs =
-		curPts.getPointsBufferRef_uint_field(mrpt::maps::CPointsMapXYZIRT::POINT_FIELD_RING_ID);
-#endif
 
-#if MRPT_VERSION >= 0x020f00  // 2.15.0
 	ASSERT_(curPts_Is);
 	ASSERT_(curPts_Ts);
 	ASSERT_(curPts_Rs);
-#endif
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	constexpr double camModel_hFOV = 120.01_deg;
@@ -550,8 +536,20 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	cam.set6DOFMode(true);
 	cam.setProjectiveFromPinhole(camModel);
 
-	viewport->setViewportClipDistances(minRange_, maxRange_);
+	// The OpenGL near clip must be small enough so that no valid lidar
+	// return (range >= minRange_) is clipped.  A ray at the worst-case
+	// oblique angles (edge of horizontal sub-render and maximum vertical
+	// angle) produces depth = range * cos(h) * cos(v), so:
+	const double worstCaseNearDepth = static_cast<double>(minRange_) *
+									  std::cos(camModel_hFOV * 0.5) *
+									  std::cos(std::max(vertFOVMax, vertFOVMin));
+
+	const float actualNearClip = static_cast<float>(std::max(0.01, worstCaseNearDepth));
+
+	viewport->setViewportClipDistances(actualNearClip, maxRange_);
+
 	mrpt::math::CMatrixFloat depthImage;
+	mrpt::img::CImage convergenceRgbImage;
 
 	// make owner's own body invisible?
 	auto visVeh = dynamic_cast<VisualObject*>(&vehicle_);
@@ -573,12 +571,13 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	// Do the log->linear conversion ourselves for this sensor,
 	// since only a few depth points are actually used:
 	auto& depth_log2lin = depth_log2lin_t::Instance();
-	const auto& depth_log2lin_lut = depth_log2lin.lut_from_zn_zf(minRange_, maxRange_);
+	const auto& depth_log2lin_lut = depth_log2lin.lut_from_zn_zf(actualNearClip, maxRange_);
 
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
 		const double thisRenderMidAngle =
-			firstAngle + (camModel_hFOV / 2.0 + camModel_hFOV * renderIdx) * (scanIsCW ? 1 : -1);
+			firstAngle + (camModel_hFOV / 2.0 + camModel_hFOV * static_cast<double>(renderIdx)) *
+							 (scanIsCW ? 1 : -1);
 
 		const auto thisDepthSensorPoseWrtSensor =
 			mrpt::poses::CPose3D::FromYawPitchRoll(thisRenderMidAngle, 0.0, 0.0) +
@@ -596,7 +595,14 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		auto tleRender =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.renderSubScan");
 
-		fbo_renderer_depth_->render_depth(world3DScene, depthImage);
+		if (generateIntensityFromRGB_)
+		{
+			fbo_renderer_depth_->render_RGBD(world3DScene, convergenceRgbImage, depthImage);
+		}
+		else
+		{
+			fbo_renderer_depth_->render_depth(world3DScene, depthImage);
+		}
 
 		tleRender.stop();
 
@@ -665,9 +671,9 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 				// un-project: depth -> range:
 				const float range = d * e.depth2range;
 
-				if (range <= 0 || range >= maxRange_)
+				if (range <= minRange_ || range >= maxRange_)
 				{
-					continue;  // invalid
+					continue;  // invalid or out of sensor range
 				}
 
 				ASSERTDEB_LT_(j, rangeImage.rows());
@@ -681,23 +687,41 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 					d * (v - camModel.cy()) / camModel.fy(), d};
 				curPts.insertPoint(thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
 
-#if MRPT_VERSION >= 0x020f00  // 2.15.0
+				// Extract intensity from rendered RGB grayscale:
+				float intensity = 1.0f;
+				if (generateIntensityFromRGB_ && convergenceRgbImage.getWidth() > 0)
+				{
+					const int pu = std::clamp(
+						static_cast<int>(std::round(u)), 0,
+						static_cast<int>(convergenceRgbImage.getWidth()) - 1);
+					const int pv = std::clamp(
+						static_cast<int>(std::round(v)), 0,
+						static_cast<int>(convergenceRgbImage.getHeight()) - 1);
+
+					if (convergenceRgbImage.isColor())
+					{
+						const auto* px = convergenceRgbImage.ptr<uint8_t>(pu, pv, 0);
+						// ITU-R BT.601 luminance (BGR channel order):
+						intensity = (0.114f * static_cast<float>(px[0]) +
+									 0.587f * static_cast<float>(px[1]) +
+									 0.299f * static_cast<float>(px[2])) /
+									255.0f;
+					}
+					else
+					{
+						intensity =
+							static_cast<float>(*convergenceRgbImage.ptr<uint8_t>(pu, pv)) / 255.0f;
+					}
+				}
+
 				// Add "ring" field:
-				curPts_Rs->push_back(j);
+				curPts_Rs->push_back(static_cast<uint16_t>(j));
 
 				// Add "timestamp" field: all to zero since we are simulating an ideal "flash"
 				// lidar:
 				curPts_Ts->push_back(0.0f);
-				// intensity=1.0 for now
-				curPts_Is->push_back(1.0f);
-#else
-				// Add "ring" field:
-				curPtsPtr->getPointsBufferRef_ring()->push_back(j);
-
-				// Add "timestamp" field: all to zero since we are simulating an ideal "flash"
-				// lidar:
-				curPtsPtr->getPointsBufferRef_timestamp()->push_back(.0);
-#endif
+				// intensity from rendered scene grayscale:
+				curPts_Is->push_back(intensity);
 			}
 		}
 		tleStore.stop();
