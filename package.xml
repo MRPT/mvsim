@@ -5,7 +5,7 @@
   <description>A lightweight multivehicle simulation framework.</description>
 
   <!-- All version numbers in CMake scripts are taken from this line: -->
-  <version>1.0.0</version>
+  <version>1.1.0</version>
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
   <license>BSD</license>

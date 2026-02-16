@@ -2,6 +2,13 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.1.0 (2026-02-16)
+------------------
+* Merge pull request `#91 <https://github.com/MRPT/mvsim/issues/91>`_ from MRPT/fix/lidar-3d
+  Lidar3D: fix min clip bug; add real intensity color
+* Lidar3D: fix min clip bug; add real intensity color
+* Contributors: Jose Luis Blanco-Claraco
+
 1.0.0 (2026-02-08)
 ------------------
 * Merge pull request `#89 <https://github.com/MRPT/mvsim/issues/89>`_ from MRPT/fix/elevation-2-wheels
