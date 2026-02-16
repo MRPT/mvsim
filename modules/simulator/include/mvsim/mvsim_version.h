@@ -11,7 +11,7 @@
 
 // clang-format off
 #define MVSIM_MAJOR_VERSION 1
-#define MVSIM_MINOR_VERSION 0
+#define MVSIM_MINOR_VERSION 1
 #define MVSIM_PATCH_VERSION 0
 
 #define MVSIM_STR_EXP(__A) #__A
