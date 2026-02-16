@@ -32,7 +32,6 @@ class Lidar3D : public SensorBase
 	DECLARES_REGISTER_SENSOR(Lidar3D)
    public:
 	Lidar3D(Simulable& parent, const rapidxml::xml_node<char>* root);
-	virtual ~Lidar3D();
 
 	// See docs in base class
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
@@ -97,6 +96,10 @@ class Lidar3D : public SensorBase
 	std::mutex has_to_render_mtx_;
 
 	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_depth_;
+
+	/** If true, intensity values will be generated from the grayscale of
+	 *  the rendered RGB image for each lidar return. */
+	bool generateIntensityFromRGB_ = true;
 
 	struct PerRayLUT
 	{
