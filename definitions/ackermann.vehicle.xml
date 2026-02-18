@@ -30,7 +30,7 @@
             <max_torque>600</max_torque>
         </controller>
 
-        <!-- Available types: 
+        <!-- Available types (only if dynamics class="ackermann_drivetrain") 
             open_front
             open_rear
             open_4wd
