@@ -8,6 +8,8 @@
   +-------------------------------------------------------------------------+ */
 
 #include <box2d/b2_settings.h>	// b2_maxPolygonVertices
+#include <mrpt/containers/yaml.h>
+#include <mrpt/core/get_env.h>
 #include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/CCylinder.h>
@@ -30,7 +32,10 @@ Shape2p5 CollisionShapeCache::get(
 	// already cached?
 	if (modelFile)
 	{
-		if (auto it = cache.find(modelFile.value()); it != cache.end()) return it->second.shape;
+		if (auto it = cache.find(modelFile.value()); it != cache.end())
+		{
+			return it->second.shape;
+		}
 	}
 
 	// No, it's a new model path, create its placeholder:
@@ -51,16 +56,18 @@ Shape2p5 CollisionShapeCache::get(
 
 	const auto vol = ret.volume();
 
-#if 0
-	std::cout << "shape2.5 for ["
-			  << (modelFile.has_value() ? *modelFile : "none")
-			  << "] glClass=" << obj.GetRuntimeClass()->className
-			  << " shape=" << ret.getContour().size() << " pts, "
-			  << " volume=" << vol << " zMin=" << zMin << " zMax=" << zMax
-			  << " modelScale= " << modelScale
-			  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n"
-			  << ret.getContour().asYAML() << "\n\n";
-#endif
+	const thread_local bool MVSIM_COLLISION_SHAPE_CACHE_VERBOSE =
+		mrpt::get_env<bool>("MVSIM_COLLISION_SHAPE_CACHE_VERBOSE");
+	if (MVSIM_COLLISION_SHAPE_CACHE_VERBOSE)
+	{
+		std::cout << "shape2.5 for [" << (modelFile.has_value() ? *modelFile : "none")
+				  << "] glClass=" << obj.GetRuntimeClass()->className
+				  << " shape=" << ret.getContour().size() << " pts, "
+				  << " volume=" << vol << " zMin=" << zMin << " zMax=" << zMax
+				  << " modelScale= " << modelScale
+				  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n"
+				  << ret.getContour().asYAML() << "\n\n";
+	}
 
 	if (vol < 1e-8)
 	{
