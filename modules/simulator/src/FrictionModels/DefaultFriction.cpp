@@ -22,10 +22,15 @@ DefaultFriction::DefaultFriction(VehicleBase& my_vehicle, const rapidxml::xml_no
 {
 	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))
+	{
 		throw std::runtime_error("<friction>...</friction> XML node was expected!!");
+	}
 
 	// Parse XML params:
-	if (node) parse_xmlnode_children_as_param(*node, params_, world_->user_defined_variables());
+	if (node)
+	{
+		parse_xmlnode_children_as_param(*node, params_, world_->user_defined_variables());
+	}
 }
 
 // See docs in base class.
@@ -112,6 +117,7 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 		logger->updateColumn("F_friction_lon", F_friction_lon);
 		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
 		logger->updateColumn("motor_torque", input.motorTorque);
+		logger->updateColumn("wheel_long_friction", wheel_long_friction);
 	}
 
 	return res;

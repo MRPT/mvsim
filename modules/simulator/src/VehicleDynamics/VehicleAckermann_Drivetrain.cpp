@@ -90,9 +90,11 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		// Shape node (optional, fallback to default shape if none found)
 		const rapidxml::xml_node<char>* xml_shape = xml_chassis->first_node("shape");
 		if (xml_shape)
+		{
 			mvsim::parse_xmlnode_shape(
 				*xml_shape, chassis_poly_,
 				"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
+		}
 	}
 
 	//<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />

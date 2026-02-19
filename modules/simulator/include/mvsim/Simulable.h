@@ -95,6 +95,7 @@ class Simulable
 	 * the global frame if its a top-level entity. */
 	virtual void setRelativePose(const mrpt::math::TPose3D& p) { setPose(p); }
 
+	/** Set the body twist (in the local, body frame) */
 	void setTwist(const mrpt::math::TTwist2D& dq) const;
 
 	/// Alternative to getPose()

@@ -63,7 +63,7 @@ Shape2p5 CollisionShapeCache::get(
 		std::cout << "shape2.5 for [" << (modelFile.has_value() ? *modelFile : "none")
 				  << "] glClass=" << obj.GetRuntimeClass()->className
 				  << " shape=" << ret.getContour().size() << " pts, "
-				  << " volume=" << vol << " zMin=" << zMin << " zMax=" << zMax
+				  << " volume=" << vol << " zMin=" << ret.zMin() << " zMax=" << ret.zMax()
 				  << " modelScale= " << modelScale
 				  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n"
 				  << ret.getContour().asYAML() << "\n\n";
@@ -203,7 +203,10 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	{
 		numTotalPts++;
 		auto pt = modelPose.composePoint(orgPt * modelScale);
-		if (pt.z < zMin || pt.z > zMax) return;	 // skip
+		if (pt.z < zMin || pt.z > zMax)
+		{
+			return;	 // skip
+		}
 		ret.buildAddPoint(pt);
 		numPassedPts++;
 	};
@@ -225,10 +228,19 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 				anyIn = true;
 				break;
 			}
-			if (p.z > zMax) outUp = true;
-			if (p.z < zMin) outDown = true;
+			if (p.z > zMax)
+			{
+				outUp = true;
+			}
+			if (p.z < zMin)
+			{
+				outDown = true;
+			}
 		}
-		if (!(anyIn || (outUp && outDown))) return;	 // skip triangle
+		if (!(anyIn || (outUp && outDown)))
+		{
+			return;	 // skip triangle
+		}
 
 		ret.buildAddTriangle(t);
 		numPassedPts += 3;
@@ -238,25 +250,37 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	{
 		auto lck = mrpt::lockHelper(oRST->shaderTrianglesBufferMutex().data);
 		const auto& tris = oRST->shaderTrianglesBuffer();
-		for (const auto& tri : tris) lambdaUpdateTri(tri);
+		for (const auto& tri : tris)
+		{
+			lambdaUpdateTri(tri);
+		}
 	}
 	if (oRSTT)
 	{
 		auto lck = mrpt::lockHelper(oRSTT->shaderTexturedTrianglesBufferMutex().data);
 		const auto& tris = oRSTT->shaderTexturedTrianglesBuffer();
-		for (const auto& tri : tris) lambdaUpdateTri(tri);
+		for (const auto& tri : tris)
+		{
+			lambdaUpdateTri(tri);
+		}
 	}
 	if (oRP)
 	{
 		auto lck = mrpt::lockHelper(oRP->shaderPointsBuffersMutex().data);
 		const auto& pts = oRP->shaderPointsVertexPointBuffer();
-		for (const auto& pt : pts) lambdaUpdatePt(pt);
+		for (const auto& pt : pts)
+		{
+			lambdaUpdatePt(pt);
+		}
 	}
 	if (oRSWF)
 	{
 		auto lck = mrpt::lockHelper(oRSWF->shaderWireframeBuffersMutex().data);
 		const auto& pts = oRSWF->shaderWireframeVertexPointBuffer();
-		for (const auto& pt : pts) lambdaUpdatePt(pt);
+		for (const auto& pt : pts)
+		{
+			lambdaUpdatePt(pt);
+		}
 	}
 
 	if (oAssimp)

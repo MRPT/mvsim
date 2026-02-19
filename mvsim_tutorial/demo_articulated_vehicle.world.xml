@@ -7,7 +7,7 @@
 	     =============================================================  -->
 
 	<!-- ======================== World settings ======================== -->
-	<simul_timestep>0.005</simul_timestep>
+	<simul_timestep>5e-3</simul_timestep>
 	<gravity>9.81</gravity>
 	<b2d_vel_iters>10</b2d_vel_iters>
 	<b2d_pos_iters>5</b2d_pos_iters>
@@ -247,12 +247,10 @@
 				<max_torque>500</max_torque>
 			</controller>
 
-			<drivetrain type="open_rear">
-			</drivetrain>
 		</dynamics>
 
 		<friction class="default">
-			<mu>0.7</mu>
+			<mu>0.8</mu>
 			<C_damping>5</C_damping>
 		</friction>
 
@@ -307,7 +305,7 @@
 
 		<!-- Low friction for passive rolling -->
 		<friction class="default">
-			<mu>0.5</mu>
+			<mu>0.8</mu>
 			<C_damping>1.0</C_damping>
 		</friction>
 

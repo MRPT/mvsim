@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<mvsim_world version="1.0">
+	<simul_timestep>0.005</simul_timestep>  <!-- 0: auto -->
+	<gravity>9.81</gravity>
+
+	<gui>
+		<ortho>false</ortho>
+		<cam_distance>20</cam_distance>
+		<cam_azimuth>45</cam_azimuth>
+		<cam_elevation>45</cam_elevation>
+	</gui>
+
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>45.0</light_azimuth_deg>
+		<light_elevation_deg>60.0</light_elevation_deg>
+	</lights>
+
+	<element class='skybox'>
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/SunSet.zip/SunSet/SunSet%s.jpg</textures>
+	</element>
+
+	<element class='horizontal_plane'>
+		<x_min>-30</x_min> <y_min>-30</y_min>
+		<x_max>30</x_max> <y_max>30</y_max>
+		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<texture_size_x>5.0</texture_size_x>
+		<texture_size_y>5.0</texture_size_y>
+	</element>
+
+	<element class="vertical_plane">
+		<x0>-30</x0> <y0>-30</y0> <x1>30</x1> <y1>-30</y1>
+		<z>0</z> <height>3.5</height>
+		<thickness>0.4</thickness>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+	</element>
+	<element class="vertical_plane">
+		<x0>30</x0> <y0>-30</y0> <x1>30</x1> <y1>30</y1>
+		<z>0</z> <height>3.5</height>
+		<thickness>0.4</thickness>
+	</element>
+
+	<element class="vertical_plane">
+		<x0>-20</x0> <y0>20</y0> <x1>20</x1> <y1>20</y1>
+		<z>0</z> <height>10</height>
+		<thickness>0.5</thickness>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<door position="0.2" width="4.0" z_min="0" z_max="4.5" />
+		<door position="0.5" width="4.0" z_min="0" z_max="4.5" />
+		<door position="0.8" width="4.0" z_min="0" z_max="4.5" />
+	</element>
+
+	<vehicle:class name="scania_truck">
+		<dynamics class="ackermann">
+			<rl_wheel pos="0  1.0" mass="15.0" width="0.35" diameter="1.0">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll><model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+			</rl_wheel>
+			<rr_wheel pos="0 -1.0" mass="15.0" width="0.35" diameter="1.0">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
+			</rr_wheel>
+			<fl_wheel mass="15.0" width="0.35" diameter="1.0">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
+			</fl_wheel>
+			<fr_wheel mass="15.0" width="0.35" diameter="1.0">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri>  <model_roll>90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
+			</fr_wheel>
+
+			<f_wheels_x>3.0</f_wheels_x>
+			<f_wheels_d>1.8</f_wheels_d>
+			<max_steer_ang_deg>40.0</max_steer_ang_deg>
+
+			<chassis mass="3000.0" zmin="0.4" zmax="3.5">
+				<!-- <shape_from_visual/> -->
+				<shape>
+					<pt>2.5  1.0</pt>
+					<pt>4.0  1.0</pt>
+					<pt>4.0 -1.0</pt>
+					<pt>2.5 -1.0</pt>
+				</shape>
+			</chassis>
+
+			<controller class="twist_front_steer_pid">
+				<KP>5000</KP> <KI>200</KI> <V>0.0</V> <max_torque>16000</max_torque>
+			</controller>
+
+		</dynamics>
+
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck.dae</model_uri>
+			<model_scale>2.0</model_scale>
+			<model_roll>90.0</model_roll>
+			<model_yaw>90.0</model_yaw>
+		</visual>
+	</vehicle:class>
+
+	<vehicle:class name="scania_trailer">
+		<dynamics class="differential_4_wheels">
+			<!-- Params -->
+			<lf_wheel pos="-4.25  0.8" mass="10.0" width="0.35" diameter="0.75">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  <model_roll>-90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+			</lf_wheel>
+			<rf_wheel pos="-4.25 -0.8" mass="10.0" width="0.35" diameter="0.75">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  <model_roll>90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+			</rf_wheel>
+			<lr_wheel pos="-5.25  0.8" mass="10.0" width="0.35" diameter="0.75">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  <model_roll>-90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+			</lr_wheel>
+			<rr_wheel pos="-5.25 -0.8" mass="10.0" width="0.35" diameter="0.75">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  <model_roll>90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+			</rr_wheel>
+
+			<chassis mass="4000.0" zmin="0.5" zmax="4.0">
+				<shape_from_visual/>
+			</chassis>
+			<controller class="raw"/>
+		</dynamics>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer.dae</model_uri>
+			<model_scale>2.0</model_scale>
+			<model_roll>88.0</model_roll>
+			<model_yaw>90.0</model_yaw>
+			<model_offset_z>0.22</model_offset_z>
+		</visual>
+
+		<!-- Plus: the two additional cheater wheels -->
+		<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  
+			<model_roll>-90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale> 
+			<model_offset_x>-3.2</model_offset_x>
+			<model_offset_y>0.8</model_offset_y>
+			<model_offset_z>0.5</model_offset_z>
+		</visual>
+		<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  
+			<model_roll>-90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> 
+			<model_offset_x>-3.2</model_offset_x>
+			<model_offset_y>-0.8</model_offset_y>
+			<model_offset_z>0.5</model_offset_z>
+		</visual>
+
+	</vehicle:class>
+
+	<vehicle name="01a_truck" class="scania_truck">
+		<init_pose>0 0 0</init_pose>
+	</vehicle>
+
+	<vehicle name="01b_trailer" class="scania_trailer">
+		<init_pose>+0.09 0 0</init_pose>
+	</vehicle>
+
+	<joint type="revolute"
+		body_a="01a_truck"  anchor_a="0.18 0.0"
+		body_b="01b_trailer" anchor_b="0.0 0.0"
+		enable_limit="true"
+		lower_angle_deg="-70"
+		upper_angle_deg="70"
+	/>
+
+
+	<vehicle name="parked_trailer_3" class="scania_trailer"> <init_pose>-20 -16 -1</init_pose> </vehicle>
+	<vehicle name="parked_trailer_4" class="scania_trailer"> <init_pose>-20 -9 0</init_pose> </vehicle>
+	<vehicle name="parked_trailer_5" class="scania_trailer"> <init_pose>-20 -2 3</init_pose> </vehicle>
+	<vehicle name="parked_trailer_6" class="scania_trailer"> <init_pose>-20 5 2</init_pose> </vehicle>
+	<vehicle name="parked_trailer_7" class="scania_trailer"> <init_pose>-20 12 -2</init_pose> </vehicle>
+	<vehicle name="parked_trailer_8" class="scania_trailer"> <init_pose>-20 19 2</init_pose> </vehicle>
+
+
+</mvsim_world>
