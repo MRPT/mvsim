@@ -53,11 +53,11 @@
 
 	<vehicle:class name="scania_truck">
 		<dynamics class="ackermann">
-			<rl_wheel pos="0  -1.0" mass="15.0" width="0.35" diameter="1.0">
-				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll><model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+			<rl_wheel pos="0  1.0" mass="15.0" width="0.35" diameter="1.0">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll><model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
 			</rl_wheel>
-			<rr_wheel pos="0 1.0" mass="15.0" width="0.35" diameter="1.0">
-				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
+			<rr_wheel pos="0 -1.0" mass="15.0" width="0.35" diameter="1.0">
+				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
 			</rr_wheel>
 			<fl_wheel mass="15.0" width="0.35" diameter="1.0">
 				<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
@@ -128,6 +128,12 @@
 			<model_roll>-90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale> 
 			<model_offset_x>-3.2</model_offset_x>
 			<model_offset_y>0.8</model_offset_y>
+			<model_offset_z>0.5</model_offset_z>
+		</visual>
+		<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  
+			<model_roll>-90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> 
+			<model_offset_x>-3.2</model_offset_x>
+			<model_offset_y>-0.8</model_offset_y>
 			<model_offset_z>0.5</model_offset_z>
 		</visual>
 
