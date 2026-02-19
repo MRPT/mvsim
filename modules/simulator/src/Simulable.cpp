@@ -59,11 +59,12 @@ void Simulable::simul_pre_timestep(	 //
 	}
 	// Pos:
 	const auto qq = simulable_parent_->applyWorldRenderOffset(q_);
-	b2dBody_->SetTransform(b2Vec2(qq.x, qq.y), q_.yaw);
+	b2dBody_->SetTransform(
+		b2Vec2(static_cast<float>(qq.x), static_cast<float>(qq.y)), static_cast<float>(q_.yaw));
 
 	// Vel:
-	b2dBody_->SetLinearVelocity(b2Vec2(dq_.vx, dq_.vy));
-	b2dBody_->SetAngularVelocity(dq_.omega);
+	b2dBody_->SetLinearVelocity(b2Vec2(static_cast<float>(dq_.vx), static_cast<float>(dq_.vy)));
+	b2dBody_->SetAngularVelocity(static_cast<float>(dq_.omega));
 }
 
 void Simulable::simul_post_timestep(const TSimulContext& context)
@@ -489,6 +490,8 @@ void Simulable::internalHandlePublish(const TSimulContext& context)
 	}
 
 	MRPT_END
+#else
+	(void)context;
 #endif
 }
 
@@ -507,6 +510,9 @@ void Simulable::registerOnServer(mvsim::Client& c)
 	{
 		c.advertiseTopic<mvsim_msgs::TimeStampedPose>(publishRelativePoseTopic_);
 	}
+#else
+		(void)
+	c;
 #endif
 
 	MRPT_END
@@ -562,7 +568,11 @@ void Simulable::setTwist(const mrpt::math::TTwist2D& dq) const
 
 	if (b2dBody_)
 	{
-		b2dBody_->SetLinearVelocity(b2Vec2(static_cast<float>(dq.vx), static_cast<float>(dq.vy)));
+		// Convert from body to global frame:
+		mrpt::math::TTwist2D local_dq = dq.rotated(q_.yaw);
+
+		b2dBody_->SetLinearVelocity(
+			b2Vec2(static_cast<float>(local_dq.vx), static_cast<float>(local_dq.vy)));
 		b2dBody_->SetAngularVelocity(static_cast<float>(dq.omega));
 	}
 }
