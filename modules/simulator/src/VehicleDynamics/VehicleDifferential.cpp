@@ -154,7 +154,10 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 
 void DynamicsDifferential::invoke_motor_controllers_post_step(const TSimulContext& context)
 {
-	if (controller_) controller_->on_post_step(context);
+	if (controller_)
+	{
+		controller_->on_post_step(context);
+	}
 }
 
 // See docs in base class:
