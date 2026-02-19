@@ -39,3 +39,9 @@ mvsim_add_test(
 	SOURCES test_imu_noise_model.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
+
+mvsim_add_test(
+	TARGET test_vehicle_trajectories
+	SOURCES test_vehicle_trajectories.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)

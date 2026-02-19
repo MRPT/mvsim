@@ -100,6 +100,8 @@ class VehicleBase : public VisualObject, public Simulable
 		return loggers_.at(logger_index);
 	}
 
+	const auto& getLoggers() const { return loggers_; }
+
 	/** Get the 2D shape of the vehicle chassis, as set from the config file
 	 * (only used for collision detection) */
 	const mrpt::math::TPolygon2D& getChassisShape() const { return chassis_poly_; }
@@ -284,7 +286,7 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr std::string_view PL_Q_ROLL = "q5roll";
 	static constexpr std::string_view PL_DQ_X = "dqx";
 	static constexpr std::string_view PL_DQ_Y = "dqy";
-	static constexpr std::string_view PL_DQ_Z = "dqz";
+	static constexpr std::string_view PL_DQ_W = "dqw";
 
 	static constexpr std::string_view PL_ODO_X = "odo_x";
 	static constexpr std::string_view PL_ODO_Y = "odo_y";

@@ -593,7 +593,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		logger.updateColumn(PL_Q_ROLL, q.roll);
 		logger.updateColumn(PL_DQ_X, dq.vx);
 		logger.updateColumn(PL_DQ_Y, dq.vy);
-		logger.updateColumn(PL_DQ_Z, dq.omega);
+		logger.updateColumn(PL_DQ_W, dq.omega);
 		logger.updateColumn(PL_ODO_X, odometry_.x());
 		logger.updateColumn(PL_ODO_Y, odometry_.y());
 		logger.updateColumn(PL_ODO_YAW, odometry_.phi());
