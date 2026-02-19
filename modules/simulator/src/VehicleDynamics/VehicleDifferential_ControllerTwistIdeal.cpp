@@ -87,7 +87,7 @@ void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
 		setpoint_.vx = -js_y * joyMaxLinSpeed;
 		setpoint_.omega = -js_x * joyMaxAngSpeed;
 
-		if (js.buttons.size() >= 7)
+		if (js.buttons.size() > 7)
 		{
 			if (js.buttons[5])
 			{
