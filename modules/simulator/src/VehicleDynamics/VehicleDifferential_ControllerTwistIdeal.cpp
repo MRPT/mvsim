@@ -46,6 +46,9 @@ void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
 
 	switch (in.keycode)
 	{
+		default:
+			break;
+
 		case 'W':
 		case 'w':
 			setpoint_.vx += 0.1;
@@ -86,14 +89,29 @@ void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
 
 		if (js.buttons.size() >= 7)
 		{
-			if (js.buttons[5]) joyMaxLinSpeed *= 1.01;
-			if (js.buttons[7]) joyMaxLinSpeed /= 1.01;
+			if (js.buttons[5])
+			{
+				joyMaxLinSpeed *= 1.01;
+			}
+			if (js.buttons[7])
+			{
+				joyMaxLinSpeed /= 1.01;
+			}
 
-			if (js.buttons[4]) joyMaxAngSpeed *= 1.01;
-			if (js.buttons[6]) joyMaxAngSpeed /= 1.01;
+			if (js.buttons[4])
+			{
+				joyMaxAngSpeed *= 1.01;
+			}
+			if (js.buttons[6])
+			{
+				joyMaxAngSpeed /= 1.01;
+			}
 
 			// brake
-			if (js.buttons[3]) setpoint_ = {0, 0, 0};
+			if (js.buttons[3])
+			{
+				setpoint_ = {0, 0, 0};
+			}
 		}
 
 		out.append_gui_lines += mrpt::format(
