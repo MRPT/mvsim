@@ -405,7 +405,7 @@ void MVSimNode::spin()
 				std::advance(it_veh, teleop_idx_veh_);
 
 				// Get speed: ground truth
-				txt2gui_tmp += "gt. vel: "s + it_veh->second->getVelocityLocal().asString();
+				txt2gui_tmp += "gt. vel: "s + it_veh->second->getRefVelocityLocal().asString();
 
 				// Get speed: ground truth
 				txt2gui_tmp +=
@@ -865,7 +865,7 @@ void MVSimNode::spinNotifyROS()
 			const auto veh_odom_pose = veh->getOdometry();
 
 			// [vx,vy,w] in global frame
-			const auto& gh_veh_vel = veh->getTwist();
+			const auto& gh_veh_vel = veh->getRefVelocityLocal();
 
 			{
 				Msg_Odometry gtOdoMsg;

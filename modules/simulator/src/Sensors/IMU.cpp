@@ -132,7 +132,7 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 
 	// --- Angular velocity ---
 	// Ground-truth: only yaw-rate from the 2D dynamics for now.
-	const mrpt::math::TVector3D trueW(0.0, 0.0, vehicle_.getTwist().omega);
+	const mrpt::math::TVector3D trueW(0.0, 0.0, vehicle_.getRefVelocityLocal().omega);
 
 	const mrpt::math::TVector3D w = noiseModel_.applyGyroscope(trueW, dt);
 

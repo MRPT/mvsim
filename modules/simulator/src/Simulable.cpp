@@ -32,8 +32,7 @@
 
 using namespace mvsim;
 
-void Simulable::simul_pre_timestep(	 //
-	[[maybe_unused]] const TSimulContext& context)
+void Simulable::simul_pre_timestep([[maybe_unused]] const TSimulContext& context)
 {
 	// Follow animation, if enabled:
 	if (anim_keyframes_path_ && !anim_keyframes_path_->empty())
@@ -57,14 +56,16 @@ void Simulable::simul_pre_timestep(	 //
 	{
 		return;
 	}
-	// Pos:
+
+	// Position of the body reference point:
 	const auto qq = simulable_parent_->applyWorldRenderOffset(q_);
 	b2dBody_->SetTransform(
 		b2Vec2(static_cast<float>(qq.x), static_cast<float>(qq.y)), static_cast<float>(q_.yaw));
 
-	// Vel:
-	b2dBody_->SetLinearVelocity(b2Vec2(static_cast<float>(dq_.vx), static_cast<float>(dq_.vy)));
-	b2dBody_->SetAngularVelocity(static_cast<float>(dq_.omega));
+	// Vel of the center of mass:
+	b2dBody_->SetLinearVelocity(
+		b2Vec2(static_cast<float>(dq_com_.vx), static_cast<float>(dq_com_.vy)));
+	b2dBody_->SetAngularVelocity(static_cast<float>(dq_com_.omega));
 }
 
 void Simulable::simul_post_timestep(const TSimulContext& context)
@@ -75,7 +76,7 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 
 		// simulable_parent_->physical_objects_mtx(): already locked by caller
 
-		// Pos:
+		// Position of the reference point:
 		const b2Vec2& pos = b2dBody_->GetPosition();
 		const float angle = b2dBody_->GetAngle();
 		const auto off = simulable_parent_->worldRenderOffset();
@@ -91,14 +92,24 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 			vo->guiUpdate(std::nullopt, std::nullopt);
 		}
 
-		// Vel:
-		const b2Vec2& vel = b2dBody_->GetLinearVelocity();
+		// Velocities: Box2D gives us the velocity of the center of mass, but we want to keep both:
+		const b2Vec2& vel_com = b2dBody_->GetLinearVelocity();
 		const float w = b2dBody_->GetAngularVelocity();
-		dq_.vx = vel(0);
-		dq_.vy = vel(1);
-		dq_.omega = w;
+		mrpt::math::TTwist2D global_dq_com{vel_com(0), vel_com(1), w};
+		mrpt::math::TTwist2D global_dq_ref = global_dq_com;
+		if (b2dBody_->GetLocalCenter().x != 0 || b2dBody_->GetLocalCenter().y != 0)
+		{
+			// We have a reference point different from the center of mass, so we need to
+			// compute the velocity of the reference point:
+			const b2Vec2 r = -b2dBody_->GetLocalCenter();  // position of the ref point wrt COM
+			const b2Vec2 v_ref = vel_com + b2Vec2(-w * r.y, w * r.x);
+			global_dq_ref.vx = v_ref(0);
+			global_dq_ref.vy = v_ref(1);
+		}
+		dq_ = global_dq_ref;
+		dq_com_ = global_dq_com;
 
-		// Estimate linear acceleration from finite differences of velocity:
+		// Estimate linear acceleration from finite differences of velocity of the reference point:
 		{
 			const double inv_dt = 1.0 / context.dt;
 			ddq_lin_.x = (dq_.vx - former_dq_.vx) * inv_dt;
@@ -145,7 +156,7 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 			}
 		}
 
-		// Reseteable collision flag:
+		// Resettable collision flag:
 		hadCollisionFlag_ = hadCollisionFlag_ || isInCollision_;
 	}
 
@@ -159,13 +170,28 @@ void Simulable::apply_force(
 { /* default: do nothing*/
 }
 
-mrpt::math::TTwist2D Simulable::getVelocityLocal() const
+mrpt::math::TTwist2D Simulable::getRefVelocityLocal() const
 {
 	std::shared_lock lck(q_mtx_);
 
+	// dq_: is the velocity of the ref point in global coords.
 	mrpt::math::TTwist2D local_vel = dq_;
 	local_vel.rotate(-q_.yaw);	// "-" means inverse pose
 	return local_vel;
+}
+
+mrpt::math::TTwist2D Simulable::getRefVelocityGlobal() const
+{
+	std::shared_lock lck(q_mtx_);
+	// dq_: is the velocity of the ref point in global coords.
+	return dq_;
+}
+
+mrpt::math::TTwist2D Simulable::getComVelocityGlobal() const
+{
+	std::shared_lock lck(q_mtx_);
+	// dq_com_: is the velocity of the COM point in global coords.
+	return dq_com_;
 }
 
 mrpt::poses::CPose2D Simulable::getCPose2D() const
@@ -299,9 +325,9 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 		}
 		dq.omega *= M_PI / 180.0;  // deg->rad
 
-		// setTwist() expects body-frame twist and handles the conversion
+		// setRefVelocityLocal() expects body-frame twist and handles the conversion
 		// to global frame internally:
-		this->setTwist(dq);
+		this->setRefVelocityLocal(dq);
 	}
 
 	// -------------------------------------
@@ -548,43 +574,43 @@ mrpt::math::TPose3D Simulable::getPose() const
 
 mrpt::math::TPose3D Simulable::getPoseNoLock() const { return q_; }
 
-mrpt::math::TTwist2D Simulable::getTwist() const
-{
-	std::shared_lock lck(q_mtx_);
-	return dq_;
-}
-
 mrpt::math::TVector3D Simulable::getLinearAcceleration() const
 {
 	std::shared_lock lck(q_mtx_);
 	return ddq_lin_;
 }
 
-void Simulable::setTwist(const mrpt::math::TTwist2D& dq) const
+void Simulable::setRefVelocityLocal(const mrpt::math::TTwist2D& dq)
 {
 	std::unique_lock lck(q_mtx_);
 
 	if (b2dBody_)
 	{
-		// Use the Box2D body's current angle (which reflects the latest
-		// integration) rather than q_.yaw (which may be stale if this is
-		// called between Box2D Step and simul_post_timestep):
-		const double currentYaw = b2dBody_->GetAngle();
+		const double currentYaw = q_.yaw;
 
 		// Convert from body to global frame:
-		mrpt::math::TTwist2D global_dq = dq.rotated(currentYaw);
+		mrpt::math::TTwist2D global_dq_ref = dq.rotated(currentYaw);
+
+		// and now transform into the center of mass frame:
+		// v_com = v_ref + ω × r_com_ref
+		const auto com = b2dBody_->GetLocalCenter();
+
+		mrpt::math::TTwist2D global_dq_com = global_dq_ref;
+		global_dq_com.vx += -com.y * dq.omega;
+		global_dq_com.vy += com.x * dq.omega;
 
 		b2dBody_->SetLinearVelocity(
-			b2Vec2(static_cast<float>(global_dq.vx), static_cast<float>(global_dq.vy)));
+			b2Vec2(static_cast<float>(global_dq_com.vx), static_cast<float>(global_dq_com.vy)));
 		b2dBody_->SetAngularVelocity(static_cast<float>(dq.omega));
 
-		// Store in global frame (consistent with simul_post_timestep which
-		// also stores global-frame velocity in dq_):
-		const_cast<mrpt::math::TTwist2D&>(dq_) = global_dq;
+		// Store in global frame:
+		dq_ = global_dq_ref;
+		dq_com_ = global_dq_com;
 	}
 	else
 	{
 		// No Box2D body: store as-is (body frame)
-		const_cast<mrpt::math::TTwist2D&>(dq_) = dq;
+		dq_ = dq;
+		dq_com_ = dq;
 	}
 }

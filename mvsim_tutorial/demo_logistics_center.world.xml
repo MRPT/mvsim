@@ -80,10 +80,8 @@
 				</shape>
 			</chassis>
 
-			<controller class="twist_front_steer_pid">
-				<KP>5000</KP> <KI>200</KI> <V>0.0</V> <max_torque>16000</max_torque>
+			<controller class="twist_ideal">
 			</controller>
-
 		</dynamics>
 
 		<visual>

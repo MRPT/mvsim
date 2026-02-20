@@ -64,7 +64,7 @@ void DynamicsAckermann::ControllerTwistIdeal::on_post_step(
 	// Fake / ideal controller: directly override the vehicle twist with the
 	// setpoint. Box2D integration will propagate this to the pose.
 	const auto sp = setpoint();
-	veh_.setTwist(sp);
+	veh_.setRefVelocityLocal(sp);
 }
 
 void DynamicsAckermann::ControllerTwistIdeal::teleop_interface(

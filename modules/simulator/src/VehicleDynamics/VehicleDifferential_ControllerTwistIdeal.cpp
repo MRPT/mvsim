@@ -38,7 +38,7 @@ void DynamicsDifferential::ControllerTwistIdeal::on_post_step(
 {
 	// Fake controller: just set the setpoint as state and we are done.
 	const auto sp = setpoint();
-	this->veh_.setTwist(sp);
+	this->veh_.setRefVelocityLocal(sp);
 }
 
 void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(

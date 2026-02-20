@@ -82,17 +82,25 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 		{
 			rapidxml::xml_attribute<char>* control_class = xml_control->first_attribute("class");
 			if (!control_class || !control_class->value())
+			{
 				throw runtime_error(
 					"[DynamicsDifferential] Missing 'class' attribute in "
 					"<controller> XML node");
+			}
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
+			{
 				controller_ = std::make_shared<ControllerRawForces>(*this);
+			}
 			else if (sCtrlClass == ControllerTwistPID::class_name())
+			{
 				controller_ = std::make_shared<ControllerTwistPID>(*this);
+			}
 			else if (sCtrlClass == ControllerTwistIdeal::class_name())
+			{
 				controller_ = std::make_shared<ControllerTwistIdeal>(*this);
+			}
 			else
 			{
 				THROW_EXCEPTION_FMT(

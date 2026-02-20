@@ -184,12 +184,15 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 	{
 		// Init pos:
 		const auto q = parent->applyWorldRenderOffset(block->getPose());
-		const auto dq = block->getTwist();
+		const auto dq_com = block->getComVelocityGlobal();
 
-		block->b2dBody_->SetTransform(b2Vec2(q.x, q.y), q.yaw);
+		block->b2dBody_->SetTransform(
+			b2Vec2(static_cast<float>(q.x), static_cast<float>(q.y)), static_cast<float>(q.yaw));
+
 		// Init vel:
-		block->b2dBody_->SetLinearVelocity(b2Vec2(dq.vx, dq.vy));
-		block->b2dBody_->SetAngularVelocity(dq.omega);
+		block->b2dBody_->SetLinearVelocity(
+			b2Vec2(static_cast<float>(dq_com.vx), static_cast<float>(dq_com.vy)));
+		block->b2dBody_->SetAngularVelocity(static_cast<float>(dq_com.omega));
 	}
 
 	return block;
@@ -263,7 +266,10 @@ void Block::internalGuiUpdate(
 		// mutex and we don't need/can't acquire it again:
 		const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
 
-		if (gl_block_) gl_block_->setPose(parent()->applyWorldRenderOffset(objectPose));
+		if (gl_block_)
+		{
+			gl_block_->setPose(parent()->applyWorldRenderOffset(objectPose));
+		}
 	}
 
 	if (!gl_forces_ && viz)
@@ -279,7 +285,10 @@ void Block::internalGuiUpdate(
 	}
 
 	// Other common stuff:
-	if (viz) internal_internalGuiUpdate_forces(viz->get());
+	if (viz)
+	{
+		internal_internalGuiUpdate_forces(viz->get());
+	}
 }
 
 void Block::internal_internalGuiUpdate_forces(	//
@@ -328,6 +337,8 @@ void Block::create_multibody_system(b2World& world)
 	// factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
+	bodyDef.linearDamping = linear_damping_;
+	bodyDef.angularDamping = angular_damping_;
 
 	b2dBody_ = world.CreateBody(&bodyDef);
 
@@ -339,7 +350,10 @@ void Block::create_multibody_system(b2World& world)
 		ASSERT_(nPts >= 3);
 		ASSERT_LE_(nPts, (size_t)b2_maxPolygonVertices);
 		std::vector<b2Vec2> pts(nPts);
-		for (size_t i = 0; i < nPts; i++) pts[i] = b2Vec2(block_poly_[i].x, block_poly_[i].y);
+		for (size_t i = 0; i < nPts; i++)
+		{
+			pts[i] = b2Vec2(block_poly_[i].x, block_poly_[i].y);
+		}
 
 		b2PolygonShape blockPoly;
 		blockPoly.Set(&pts[0], nPts);
