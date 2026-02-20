@@ -101,8 +101,14 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		{
 			// We have a reference point different from the center of mass, so we need to
 			// compute the velocity of the reference point:
-			const b2Vec2 r = -b2dBody_->GetLocalCenter();  // position of the ref point wrt COM
-			const b2Vec2 v_ref = vel_com + b2Vec2(-w * r.y, w * r.x);
+			// v_ref = v_com + ω × r_com→ref  (where r_com→ref = -localCenter)
+			// r is in body frame, so rotate to global frame first:
+			const b2Vec2 r_local = -b2dBody_->GetLocalCenter();
+			const float cos_a = std::cos(angle);
+			const float sin_a = std::sin(angle);
+			const b2Vec2 r_global(
+				cos_a * r_local.x - sin_a * r_local.y, sin_a * r_local.x + cos_a * r_local.y);
+			const b2Vec2 v_ref = vel_com + b2Vec2(-w * r_global.y, w * r_global.x);
 			global_dq_ref.vx = v_ref(0);
 			global_dq_ref.vy = v_ref(1);
 		}
@@ -588,16 +594,19 @@ void Simulable::setRefVelocityLocal(const mrpt::math::TTwist2D& dq)
 	{
 		const double currentYaw = q_.yaw;
 
-		// Convert from body to global frame:
-		mrpt::math::TTwist2D global_dq_ref = dq.rotated(currentYaw);
-
-		// and now transform into the center of mass frame:
-		// v_com = v_ref + ω × r_com_ref
+		// Compute COM velocity in body frame first:
+		// v_com_body = v_ref_body + ω × r_ref→com
+		// where r_ref→com = (com.x, com.y) in body frame
 		const auto com = b2dBody_->GetLocalCenter();
 
-		mrpt::math::TTwist2D global_dq_com = global_dq_ref;
-		global_dq_com.vx += -com.y * dq.omega;
-		global_dq_com.vy += com.x * dq.omega;
+		mrpt::math::TTwist2D body_dq_com;
+		body_dq_com.vx = dq.vx + (-com.y * dq.omega);
+		body_dq_com.vy = dq.vy + (com.x * dq.omega);
+		body_dq_com.omega = dq.omega;
+
+		// Convert both to global frame:
+		mrpt::math::TTwist2D global_dq_ref = dq.rotated(currentYaw);
+		mrpt::math::TTwist2D global_dq_com = body_dq_com.rotated(currentYaw);
 
 		b2dBody_->SetLinearVelocity(
 			b2Vec2(static_cast<float>(global_dq_com.vx), static_cast<float>(global_dq_com.vy)));
