@@ -478,16 +478,18 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		// eval friction (in the frame of the vehicle):
 		const mrpt::math::TPoint2D F_r = frictions_.at(i)->evaluate_friction(fi);
 
-		// Apply force:
 		// Force vector -> world coords
 		const b2Vec2 wForce = b2dBody_->GetWorldVector(b2Vec2(F_r.x, F_r.y));
 		// Application point -> world coords
 		const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
 
-		// printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f
-		// Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
-
-		b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
+		// Apply force to the chassis (skip for ideal controllers that
+		// directly impose the vehicle twist — friction reaction forces would
+		// corrupt the kinematically-imposed trajectory):
+		if (!idealControllerActive_)
+		{
+			b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
+		}
 
 		// log
 		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isActive())

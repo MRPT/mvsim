@@ -190,6 +190,13 @@ class VehicleBase : public VisualObject, public Simulable
 
 	VisualObject* meAsVisualObject() override { return this; }
 
+	/** When true, friction forces are computed (for wheel spin updates and
+	 *  logging) but NOT applied to the Box2D chassis body. This is set by
+	 *  ideal controllers that directly override the vehicle twist, so that
+	 *  friction reaction forces don't corrupt the kinematically-imposed
+	 *  trajectory. */
+	bool idealControllerActive_ = false;
+
 	/** user-supplied index number: must be set/get'ed with setVehicleIndex()
 	 * getVehicleIndex() (default=0) */
 	size_t vehicle_index_ = 0;

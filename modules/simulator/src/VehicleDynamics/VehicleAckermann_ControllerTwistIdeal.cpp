@@ -19,6 +19,10 @@ DynamicsAckermann::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsAckermann&
 	// (vx, omega) twist setpoint:  steer_ang = atan(omega * L / vx)
 	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
 	ASSERT_(r2f_L_ > 0.0);
+
+	// Signal that friction reaction forces must not be applied to the
+	// chassis body — the twist is imposed directly by this controller.
+	veh_.idealControllerActive_ = true;
 }
 
 void DynamicsAckermann::ControllerTwistIdeal::control_step(

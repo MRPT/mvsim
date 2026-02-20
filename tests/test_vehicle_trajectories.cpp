@@ -54,6 +54,13 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 	auto veh = mvsim::VehicleBase::factory(&world, xml);
 	world.insert_vehicle(veh);
 
+	// Debug: print Box2D local center of mass
+	if (auto* b2d = veh->getBox2DChassisBody(); b2d)
+	{
+		const auto lc = b2d->GetLocalCenter();
+		std::printf("  Box2D local center of mass: (%.4f, %.4f)\n", lc.x, lc.y);
+	}
+
 	// 2. Setup Friction / CSVLogger verification
 	double max_friction_y = 0.0;
 
@@ -143,8 +150,12 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 	EXPECT_NEAR(pose_curve.y, 0.459, tol);
 	EXPECT_NEAR(pose_curve.yaw, 1.0, tol);
 
-	// 3. Friction Verification
-	EXPECT_GT(max_friction_y, 1.0);	 // Should be well over 1.0 Newton when cornering at 1m/s
+	// 3. Friction Verification (only relevant for non-ideal controllers
+	//    where friction actually provides the centripetal force):
+	if (!is_ideal)
+	{
+		EXPECT_GT(max_friction_y, 1.0);
+	}
 }
 
 }  // namespace

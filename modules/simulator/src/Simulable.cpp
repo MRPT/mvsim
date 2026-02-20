@@ -299,8 +299,8 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 		}
 		dq.omega *= M_PI / 180.0;  // deg->rad
 
-		// Convert twist (velocity) from local -> global coords:
-		dq.rotate(this->getPose().yaw);
+		// setTwist() expects body-frame twist and handles the conversion
+		// to global frame internally:
 		this->setTwist(dq);
 	}
 
@@ -564,15 +564,27 @@ void Simulable::setTwist(const mrpt::math::TTwist2D& dq) const
 {
 	std::unique_lock lck(q_mtx_);
 
-	const_cast<mrpt::math::TTwist2D&>(dq_) = dq;
-
 	if (b2dBody_)
 	{
+		// Use the Box2D body's current angle (which reflects the latest
+		// integration) rather than q_.yaw (which may be stale if this is
+		// called between Box2D Step and simul_post_timestep):
+		const double currentYaw = b2dBody_->GetAngle();
+
 		// Convert from body to global frame:
-		mrpt::math::TTwist2D local_dq = dq.rotated(q_.yaw);
+		mrpt::math::TTwist2D global_dq = dq.rotated(currentYaw);
 
 		b2dBody_->SetLinearVelocity(
-			b2Vec2(static_cast<float>(local_dq.vx), static_cast<float>(local_dq.vy)));
+			b2Vec2(static_cast<float>(global_dq.vx), static_cast<float>(global_dq.vy)));
 		b2dBody_->SetAngularVelocity(static_cast<float>(dq.omega));
+
+		// Store in global frame (consistent with simul_post_timestep which
+		// also stores global-frame velocity in dq_):
+		const_cast<mrpt::math::TTwist2D&>(dq_) = global_dq;
+	}
+	else
+	{
+		// No Box2D body: store as-is (body frame)
+		const_cast<mrpt::math::TTwist2D&>(dq_) = dq;
 	}
 }
