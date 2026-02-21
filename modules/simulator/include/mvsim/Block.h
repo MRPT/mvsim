@@ -75,7 +75,8 @@ class Block : public VisualObject, public Simulable
 
 	/** Get (an approximation of) the max radius of the block, from its point of
 	 * reference (in meters) */
-	virtual float getMaxBlockRadius() const { return maxRadius_; }
+	virtual double getMaxBlockRadius() const { return maxRadius_; }
+
 	/** Get the block mass */
 	virtual double getMass() const { return mass_; }
 	b2Body* getBox2DBlockBody() { return b2dBody_; }
@@ -176,6 +177,12 @@ class Block : public VisualObject, public Simulable
 	double groundFriction_ = 0.5;  //!< Default: 0.5
 	double restitution_ = 0.01;	 //!< Default: 0.01
 
+	/** Damping ("c" viscous friction coefficient) for linear velocities of the chassis on world */
+	float linear_damping_ = 0.1;
+
+	/** Damping ("c" viscous friction coefficient) for angular velocities of the chassis on world */
+	float angular_damping_ = 0.1;
+
 	/** If intangible, a block will be rendered visually but will be neither
 	 * detected by sensors, nor collide  */
 	bool intangible_ = false;
@@ -194,7 +201,9 @@ class Block : public VisualObject, public Simulable
 		{"color", {"%color", &block_color_}},
 		{"intangible", {"%bool", &intangible_}},
 		{"static", {"%bool", &isStatic_}},
-		{"visual_scale", {"%lf", &visual_scale_}}
+		{"visual_scale", {"%lf", &visual_scale_}},
+		{"linear_damping", {"%f", &linear_damping_}},
+		{"angular_damping", {"%f", &angular_damping_}}
 		//
 	};
 
@@ -261,12 +270,18 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 	virtual void simul_pre_timestep(const TSimulContext& context) override
 	{
 		Simulable::simul_pre_timestep(context);
-		for (auto& s : sensors_) s->simul_pre_timestep(context);
+		for (auto& s : sensors_)
+		{
+			s->simul_pre_timestep(context);
+		}
 	}
 	virtual void simul_post_timestep(const TSimulContext& context) override
 	{
 		Simulable::simul_post_timestep(context);
-		for (auto& s : sensors_) s->simul_post_timestep(context);
+		for (auto& s : sensors_)
+		{
+			s->simul_post_timestep(context);
+		}
 	}
 
 	virtual void apply_force(
@@ -277,7 +292,7 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 
 	virtual void create_multibody_system(b2World&) {}
 
-	virtual float getMaxBlockRadius() const { return 0; }
+	virtual double getMaxBlockRadius() const { return 0; }
 
 	/** Get the block mass */
 	virtual double getMass() const { return 0; }
@@ -294,7 +309,10 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 	{
 		// register myself, and my children objects:
 		Simulable::registerOnServer(c);
-		for (auto& sensor : sensors_) sensor->registerOnServer(c);
+		for (auto& sensor : sensors_)
+		{
+			sensor->registerOnServer(c);
+		}
 	}
 
    private:

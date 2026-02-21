@@ -139,7 +139,7 @@ void World::internal_one_timestep(double dt)
 
 			// save our own copy of the kinematic state:
 			copy_of_objects_dynstate_pose_[e.first] = e.second->getPose();
-			copy_of_objects_dynstate_twist_[e.first] = e.second->getTwist();
+			copy_of_objects_dynstate_twist_[e.first] = e.second->getRefVelocityLocal();
 
 			if (e.second->hadCollision())
 			{
@@ -289,7 +289,7 @@ void World::internalPostSimulStepForRawlog()
 		obs->odometry = veh->getOdometry();
 
 		obs->hasVelocities = true;
-		obs->velocityLocal = veh->getVelocityLocal();
+		obs->velocityLocal = veh->getRefVelocityLocal();
 
 		internalOnObservation(*veh, obs);
 	}
@@ -555,7 +555,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 		ipv.contour = veh->getChassisShape();
 		ipv.maxWorkableStepHeight = 0.55 * veh->getWheelInfo(0).diameter;
 
-		const auto& tw = veh->getTwist();
+		const auto& tw = veh->getRefVelocityGlobal();
 		ipv.speed = mrpt::math::TVector2D(tw.vx, tw.vy).norm();
 
 		if (auto it = wheel_heights_per_vehicle.find(veh.get());
@@ -575,7 +575,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 
 		// only for moving blocks:
 		if (block->isStatic()) continue;
-		const auto tw = block->getTwist();
+		const auto tw = block->getRefVelocityLocal();
 		if (std::abs(tw.vx) < 1e-4 && std::abs(tw.vy) < 1e-4 && std::abs(tw.omega) < 1e-4) continue;
 
 		if (!e.has_value()) e.emplace();

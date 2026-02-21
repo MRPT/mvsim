@@ -119,13 +119,12 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 		if (xml_control)
 		{
 			rapidxml::xml_attribute<char>* control_class = xml_control->first_attribute("class");
-			if (!control_class || !control_class->value())
+			if (!control_class || control_class->value_size() == 0)
 			{
-				throw runtime_error(
+				THROW_EXCEPTION(
 					"[DynamicsAckermann] Missing 'class' attribute in "
 					"<controller> XML node");
 			}
-
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
 			{

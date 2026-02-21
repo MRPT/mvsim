@@ -64,19 +64,19 @@ class VehicleBase : public VisualObject, public Simulable
 		const mrpt::math::TPoint2D& applyPoint = mrpt::math::TPoint2D(0, 0)) override;
 
 	/** Create bodies, fixtures, etc. for the dynamical simulation. May be
-	 * overrided by derived classes */
+	 * overriden by derived classes */
 	virtual void create_multibody_system(b2World& world);
 
 	/** Get (an approximation of) the max radius of the vehicle, from its point
 	 * of reference (in meters) */
-	virtual float getMaxVehicleRadius() const { return maxRadius_; }
+	virtual double getMaxVehicleRadius() const { return maxRadius_; }
+
 	/** Get the overall vehicle mass, excluding wheels. */
 	virtual double getChassisMass() const { return chassis_mass_; }
 	b2Body* getBox2DChassisBody() { return b2dBody_; }
-	mrpt::math::TPoint2D getChassisCenterOfMass() const
-	{
-		return chassis_com_;
-	}  //!< In local coordinates (this excludes the mass of wheels)
+
+	/// In local coordinates (this excludes the mass of wheels)
+	mrpt::math::TPoint2D getChassisCenterOfMass() const { return chassis_com_; }
 
 	size_t getNumWheels() const { return wheels_info_.size(); }
 	const Wheel& getWheelInfo(const size_t idx) const { return wheels_info_[idx]; }
@@ -99,6 +99,8 @@ class VehicleBase : public VisualObject, public Simulable
 	{
 		return loggers_.at(logger_index);
 	}
+
+	const std::vector<CSVLogger::Ptr>& getLoggers() const { return loggers_; }
 
 	/** Get the 2D shape of the vehicle chassis, as set from the config file
 	 * (only used for collision detection) */
@@ -188,6 +190,13 @@ class VehicleBase : public VisualObject, public Simulable
 
 	VisualObject* meAsVisualObject() override { return this; }
 
+	/** When true, friction forces are computed (for wheel spin updates and
+	 *  logging) but NOT applied to the Box2D chassis body. This is set by
+	 *  ideal controllers that directly override the vehicle twist, so that
+	 *  friction reaction forces don't corrupt the kinematically-imposed
+	 *  trajectory. */
+	bool idealControllerActive_ = false;
+
 	/** user-supplied index number: must be set/get'ed with setVehicleIndex()
 	 * getVehicleIndex() (default=0) */
 	size_t vehicle_index_ = 0;
@@ -200,6 +209,12 @@ class VehicleBase : public VisualObject, public Simulable
 	// Chassis info:
 	double chassis_mass_ = 15.0;
 	mrpt::math::TPolygon2D chassis_poly_;
+
+	/** Damping ("c" viscous friction coefficient) for linear velocities of the chassis on world */
+	float linear_damping_ = 0.1;
+
+	/** Damping ("c" viscous friction coefficient) for angular velocities of the chassis on world */
+	float angular_damping_ = 0.1;
 
 	/** Automatically computed from chassis_poly_ upon each change via
 	 * updateMaxRadiusFromPoly() */
@@ -284,7 +299,7 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr std::string_view PL_Q_ROLL = "q5roll";
 	static constexpr std::string_view PL_DQ_X = "dqx";
 	static constexpr std::string_view PL_DQ_Y = "dqy";
-	static constexpr std::string_view PL_DQ_Z = "dqz";
+	static constexpr std::string_view PL_DQ_W = "dqw";
 
 	static constexpr std::string_view PL_ODO_X = "odo_x";
 	static constexpr std::string_view PL_ODO_Y = "odo_y";

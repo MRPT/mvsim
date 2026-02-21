@@ -19,6 +19,10 @@ DynamicsAckermann::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsAckermann&
 	// (vx, omega) twist setpoint:  steer_ang = atan(omega * L / vx)
 	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
 	ASSERT_(r2f_L_ > 0.0);
+
+	// Signal that friction reaction forces must not be applied to the
+	// chassis body — the twist is imposed directly by this controller.
+	veh_.idealControllerActive_ = true;
 }
 
 void DynamicsAckermann::ControllerTwistIdeal::control_step(
@@ -60,7 +64,7 @@ void DynamicsAckermann::ControllerTwistIdeal::on_post_step(
 	// Fake / ideal controller: directly override the vehicle twist with the
 	// setpoint. Box2D integration will propagate this to the pose.
 	const auto sp = setpoint();
-	veh_.setTwist(sp);
+	veh_.setRefVelocityLocal(sp);
 }
 
 void DynamicsAckermann::ControllerTwistIdeal::teleop_interface(

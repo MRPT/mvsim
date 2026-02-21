@@ -251,6 +251,8 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		attribs["zmin"] = TParamEntry("%lf", &veh->chassis_z_min_);
 		attribs["zmax"] = TParamEntry("%lf", &veh->chassis_z_max_);
 		attribs["color"] = TParamEntry("%color", &veh->chassis_color_);
+		attribs["linear_damping"] = TParamEntry("%lf", &veh->linear_damping_);
+		attribs["angular_damping"] = TParamEntry("%lf", &veh->angular_damping_);
 
 		parse_xmlnode_attribs(*xml_chassis, attribs, varValues, "[VehicleBase::factory]");
 
@@ -343,12 +345,15 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	{
 		// Init pos:
 		const auto q = parent->applyWorldRenderOffset(veh->getPose());
-		const auto dq = veh->getTwist();
+		const auto dq_com = veh->getComVelocityGlobal();
 
-		veh->b2dBody_->SetTransform(b2Vec2(q.x, q.y), q.yaw);
+		veh->b2dBody_->SetTransform(
+			b2Vec2(static_cast<float>(q.x), static_cast<float>(q.y)), static_cast<float>(q.yaw));
+
 		// Init vel:
-		veh->b2dBody_->SetLinearVelocity(b2Vec2(dq.vx, dq.vy));
-		veh->b2dBody_->SetAngularVelocity(dq.omega);
+		veh->b2dBody_->SetLinearVelocity(
+			b2Vec2(static_cast<float>(dq_com.vx), static_cast<float>(dq_com.vy)));
+		veh->b2dBody_->SetAngularVelocity(static_cast<float>(dq_com.omega));
 	}
 
 	// Friction model:
@@ -458,7 +463,7 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	const double weightPerWheel = massPerWheel * gravity;
 
 	const std::vector<mrpt::math::TVector2D> wheelLocalVels =
-		getWheelsVelocityLocal(getVelocityLocal());
+		getWheelsVelocityLocal(getRefVelocityLocal());
 
 	ASSERT_EQUAL_(wheelLocalVels.size(), nW);
 
@@ -478,16 +483,18 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		// eval friction (in the frame of the vehicle):
 		const mrpt::math::TPoint2D F_r = frictions_.at(i)->evaluate_friction(fi);
 
-		// Apply force:
 		// Force vector -> world coords
 		const b2Vec2 wForce = b2dBody_->GetWorldVector(b2Vec2(F_r.x, F_r.y));
 		// Application point -> world coords
 		const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
 
-		// printf("w%i: Lx=%6.3f Ly=%6.3f  | Gx=%11.9f
-		// Gy=%11.9f\n",(int)i,net_force_.x,net_force_.y,wForce.x,wForce.y);
-
-		b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
+		// Apply force to the chassis (skip for ideal controllers that
+		// directly impose the vehicle twist — friction reaction forces would
+		// corrupt the kinematically-imposed trajectory):
+		if (!idealControllerActive_)
+		{
+			b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
+		}
 
 		// log
 		if (auto& l = loggers_[LOGGER_IDX_WHEELS + i]; l->isActive())
@@ -579,7 +586,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	}
 
 	const auto q = getPose();
-	const auto dq = getTwist();
+	const auto dq = getRefVelocityLocal();
 
 	if (auto& l = loggers_[LOGGER_IDX_POSE]; l->isActive())
 	{
@@ -593,7 +600,7 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		logger.updateColumn(PL_Q_ROLL, q.roll);
 		logger.updateColumn(PL_DQ_X, dq.vx);
 		logger.updateColumn(PL_DQ_Y, dq.vy);
-		logger.updateColumn(PL_DQ_Z, dq.omega);
+		logger.updateColumn(PL_DQ_W, dq.omega);
 		logger.updateColumn(PL_ODO_X, odometry_.x());
 		logger.updateColumn(PL_ODO_Y, odometry_.y());
 		logger.updateColumn(PL_ODO_YAW, odometry_.phi());
@@ -682,6 +689,8 @@ void VehicleBase::create_multibody_system(b2World& world)
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
+	bodyDef.linearDamping = linear_damping_;
+	bodyDef.angularDamping = angular_damping_;
 
 	b2dBody_ = world.CreateBody(&bodyDef);
 
@@ -693,7 +702,10 @@ void VehicleBase::create_multibody_system(b2World& world)
 		ASSERT_(nPts >= 3);
 		ASSERT_LE_(nPts, (size_t)b2_maxPolygonVertices);
 		std::vector<b2Vec2> pts(nPts);
-		for (size_t i = 0; i < nPts; i++) pts[i] = b2Vec2(chassis_poly_[i].x, chassis_poly_[i].y);
+		for (size_t i = 0; i < nPts; i++)
+		{
+			pts[i] = b2Vec2(chassis_poly_[i].x, chassis_poly_[i].y);
+		}
 
 		b2PolygonShape chassisPoly;
 		chassisPoly.Set(&pts[0], nPts);

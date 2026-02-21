@@ -24,9 +24,9 @@
 		<x_min>-30</x_min> <y_min>-30</y_min>
 		<x_max>30</x_max> <y_max>30</y_max>
 		<z>0.0</z>
-		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
-		<texture_size_x>5.0</texture_size_x>
-		<texture_size_y>5.0</texture_size_y>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
 	</element>
 
 	<element class="vertical_plane">
@@ -80,10 +80,8 @@
 				</shape>
 			</chassis>
 
-			<controller class="twist_front_steer_pid">
-				<KP>5000</KP> <KI>200</KI> <V>0.0</V> <max_torque>16000</max_torque>
+			<controller class="twist_ideal">
 			</controller>
-
 		</dynamics>
 
 		<visual>
@@ -112,6 +110,8 @@
 
 			<chassis mass="4000.0" zmin="0.5" zmax="4.0">
 				<shape_from_visual/>
+				<!-- Damping ("c" viscous friction coefficient) for 2D linear velocities of the chassis on world -->
+				<linear_damping>10.0</linear_damping>
 			</chassis>
 			<controller class="raw"/>
 		</dynamics>
