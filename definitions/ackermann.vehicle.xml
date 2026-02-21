@@ -53,7 +53,7 @@
     <!-- Friction force simulation -->
     <friction class="default">
         <mu>0.7</mu>
-        <C_damping>10</C_damping>
+        <C_damping>0.5</C_damping>
     </friction>
 
 

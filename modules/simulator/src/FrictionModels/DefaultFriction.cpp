@@ -18,7 +18,7 @@
 using namespace mvsim;
 
 DefaultFriction::DefaultFriction(VehicleBase& my_vehicle, const rapidxml::xml_node<char>* node)
-	: FrictionBase(my_vehicle), mu_(0.8), C_damping_(1.0)
+	: FrictionBase(my_vehicle), mu_(0.8), C_damping_(0.01)
 {
 	// Sanity: we can tolerate node==nullptr (=> means use default params).
 	if (node && 0 != strcmp(node->name(), "friction"))

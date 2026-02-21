@@ -299,7 +299,7 @@
 		<!-- Low friction for passive rolling -->
 		<friction class="default">
 			<mu>0.8</mu>
-			<C_damping>1.0</C_damping>
+			<C_damping>0.1</C_damping>
 		</friction>
 
 		<!--  Custom vehicle visualization model -->

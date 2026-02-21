@@ -26,12 +26,15 @@ int g_failures = 0;
 namespace
 {
 
-void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_class, bool is_ideal)
+void run_single_test(
+	const std::string& dyn_class, const std::string& ctrl_class, bool is_ideal,
+	const std::string& test_name, const mrpt::math::TTwist2D& twist_cmd,
+	const mrpt::math::TPose3D& expected_pose, double tol_override = -1.0)
 {
-	std::cout << "[TEST] Dynamics: " << dyn_class << " | Controller: " << ctrl_class << "\n";
+	std::cout << "[TEST] " << test_name << " | " << dyn_class << " | " << ctrl_class << "\n";
 
-	const double simulStep = 0.001;	 // 10 ms step
-	const double final_time = 1.0;	// Run for 1 second to reach steady state
+	const double simulStep = 0.001;
+	const double final_time = 1.0;
 	const int steps = static_cast<int>(final_time / simulStep);
 
 	mvsim::World world;
@@ -42,22 +45,32 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 
 	std::string wheels_config;
 
-	if (dyn_class == "differential_4_wheels")
+	if (dyn_class == "differential")
 	{
 		wheels_config = R"(
-        <lf_wheel pos="0.13  0.16" mass="1.0" width="0.03" diameter="0.20" />
-        <rf_wheel pos="0.13 -0.16" mass="1.0" width="0.03" diameter="0.20" />
-        <lr_wheel pos="-0.13  0.16" mass="1.0" width="0.03" diameter="0.20" />
-        <rr_wheel pos="-0.13 -0.16" mass="1.0" width="0.03" diameter="0.20" />
+        <l_wheel pos="0  0.5" mass="1.0" width="0.03" diameter="0.20" />
+        <r_wheel pos="0 -0.5" mass="1.0" width="0.03" diameter="0.20" />
+		)";
+	}
+	else if (dyn_class == "differential_4w")
+	{
+		// 4-wheel differential: front/rear pairs at small x offsets.
+		// Lateral friction at non-zero x creates anti-yaw moment during turns,
+		// so curves will have larger tracking error than 2-wheel differential.
+		wheels_config = R"(
+        <l_wheel  pos=" 0.3  0.5" mass="1.0" width="0.03" diameter="0.20" />
+        <r_wheel  pos=" 0.3 -0.5" mass="1.0" width="0.03" diameter="0.20" />
+        <lr_wheel pos="-0.3  0.5" mass="1.0" width="0.03" diameter="0.20" />
+        <rr_wheel pos="-0.3 -0.5" mass="1.0" width="0.03" diameter="0.20" />
 		)";
 	}
 	else if (dyn_class == "ackermann")
 	{
-		wheels_config = R"(	
+		wheels_config = R"(
 	    <!-- Rear wheels -->
         <rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
         <rr_wheel pos="0 -1" mass="6.0" width="0.30" diameter="0.62" />
-        
+
         <!-- Front wheels -->
         <fl_wheel mass="6.0" width="0.30" diameter="0.62" />
         <fr_wheel mass="6.0" width="0.30" diameter="0.62" />
@@ -67,13 +80,32 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 	)";
 	}
 
-	// 1. Programmatic vehicle insertion via inline XML
+	// Controller PID parameters depend on vehicle type:
+	// - Differential (small wheels R=0.1, I_yy=0.005): KP must be low enough
+	//   that KP*max_error < max_friction_torque (~3.73 Nm) to avoid wheel slip.
+	//   max_torque set high enough to not clip the differential between wheels.
+	// - Ackermann (large wheels R=0.31, I_yy=0.289): KP can be high (no slip),
+	//   max_torque capped below friction limit for fast ramp-up then precise tracking.
+	std::string pid_config;
+	// Both "differential" and "differential_4w" use the same PID params
+	const std::string actual_dyn_class =
+		(dyn_class == "differential_4w") ? std::string("differential") : dyn_class;
+
+	if (actual_dyn_class == "differential")
+		pid_config = "<KP>4</KP><KI>3</KI><KD>0</KD><max_torque>20</max_torque>";
+	else
+		pid_config = "<KP>1000</KP><KI>0</KI><KD>0</KD><max_torque>300</max_torque>";
+
 	std::string xml =
 		"<vehicle name=\"test_veh\">"
 		"  <dynamics class=\"" +
-		dyn_class + "\">" + wheels_config + "    <controller class=\"" + ctrl_class +
+		actual_dyn_class +
 		"\">"
-		"      <KP>150</KP><KI>0</KI><KD>0</KD><max_torque>5000</max_torque>"
+		"    <chassis linear_damping=\"0\" angular_damping=\"0\" />" +
+		wheels_config + "    <controller class=\"" + ctrl_class +
+		"\">"
+		"      " +
+		pid_config +
 		"    </controller>"
 		"  </dynamics>"
 		"<init_pose>0 0 0</init_pose>"
@@ -89,28 +121,19 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 		std::printf("  Box2D local center of mass: (%.4f, %.4f)\n", lc.x, lc.y);
 	}
 	{
-		veh->getChassisCenterOfMass();
 		std::printf(
 			"  Vehicle COM (from getChassisCenterOfMass): (%.4f, %.4f)\n",
 			veh->getChassisCenterOfMass().x, veh->getChassisCenterOfMass().y);
 	}
 
-	// 2. Setup Friction / CSVLogger verification
+	// Setup Friction / CSVLogger verification
 	double max_friction_y = 0.0;
-
-	// Assuming `getLoggers()` or similar exposes the vector of CSVLoggers.
-	// (Adjust getter name to match your exact `VehicleBase` header API).
 	double simul_time = 0.0;
-
-	std::cout << "Vehicle loggers count: " << veh->getLoggers().size() << "\n";
 
 	for (auto& logger : veh->getLoggers())
 	{
-		if (!logger)
-		{
-			continue;
-		}
-		logger->setRecording(true);	 // Force logger to become 'active'
+		if (!logger) continue;
+		logger->setRecording(true);
 		logger->registerOnRowCallback(
 			[&max_friction_y, &simul_time](const std::map<std::string_view, double>& cols)
 			{
@@ -119,90 +142,29 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 					max_friction_y =
 						std::max(max_friction_y, std::abs(cols.at(mvsim::VehicleBase::WL_FRIC_Y)));
 				}
-
-#if 1
-				// print trajectory for debugging:
-				// PL_DQ_{X,Y} are the linear velocities in the GLOBAL frame.
-				static int print_step = 0;
-				if (++print_step % 20 != 0)
-				{
-					return;
-				}
-				if (cols.count(mvsim::VehicleBase::PL_Q_X) &&
-					cols.count(mvsim::VehicleBase::PL_Q_Y) &&
-					cols.count(mvsim::VehicleBase::PL_Q_YAW))
-				{
-					std::printf(
-						"t=%.03lf Pose: x=%.3f y=%.3f yaw=%.3f | vx=%.3f vy=%.3f w=%.03f | "
-						"max_fric_y=%.2f\n",
-						simul_time, cols.at(mvsim::VehicleBase::PL_Q_X),
-						cols.at(mvsim::VehicleBase::PL_Q_Y), cols.at(mvsim::VehicleBase::PL_Q_YAW),
-						cols.at(mvsim::VehicleBase::PL_DQ_X), cols.at(mvsim::VehicleBase::PL_DQ_Y),
-						cols.at(mvsim::VehicleBase::PL_DQ_W), max_friction_y);
-				}
-#endif
 			});
 	}
 
-	// ------------------------------------------------------------------
-	// PHASE A: Straight Trajectory
-	// ------------------------------------------------------------------
-	std::cout << "== TEST A: Straight Trajectory\n";
-
-	veh->setPose(mrpt::math::TPose3D::Identity());
-	veh->setRefVelocityLocal({0.0, 0.0, 0.0});
-	veh->getControllerInterface()->setTwistCommand({1.0, 0.0, 0.0});  // vx = 1 m/s
+	// Run simulation
+	veh->getControllerInterface()->setTwistCommand(twist_cmd);
 
 	for (int i = 0; i < steps; ++i)
 	{
-		simul_time = i * simulStep;	 // Update simul_time for logging callback
+		simul_time = i * simulStep;
 		world.run_simulation(simulStep);
 	}
 
-	auto pose_straight = veh->getPose();
-	const auto gt_pose_straight = mrpt::math::TPose3D(1.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-	std::cout << "Final pose   : " << pose_straight << "\n";
-	std::cout << "Expected pose: " << gt_pose_straight << "\n";
+	auto pose = veh->getPose();
+	std::cout << "Final pose   : " << pose << "\n";
+	std::cout << "Expected pose: " << expected_pose << "\n";
 
-	// Ideal controllers perfectly match constraints. PID needs settling tolerance.
-	double tol = is_ideal ? 0.04 : 0.25;
-	EXPECT_NEAR(pose_straight.x, gt_pose_straight.x, tol);
-	EXPECT_NEAR(pose_straight.y, gt_pose_straight.y, tol);
-	EXPECT_NEAR(pose_straight.yaw, gt_pose_straight.yaw, tol);
+	double tol = (tol_override > 0) ? tol_override : (is_ideal ? 0.04 : 0.25);
+	EXPECT_NEAR(pose.x, expected_pose.x, tol);
+	EXPECT_NEAR(pose.y, expected_pose.y, tol);
+	EXPECT_NEAR(pose.yaw, expected_pose.yaw, tol);
 
-	// ------------------------------------------------------------------
-	// PHASE B: Curve Trajectory
-	// ------------------------------------------------------------------
-	std::cout << "== TEST B: Curve Trajectory\n";
-	veh->setPose(mrpt::math::TPose3D::Identity());
-	veh->setRefVelocityLocal({0.0, 0.0, 0.0});
-	veh->getControllerInterface()->setTwistCommand({1.0, 0.0, 1.0});  // vx = 1 m/s, w = 1 rad/s
-
-	max_friction_y = 0.0;  // Reset friction tracker for the curve
-
-	for (int i = 0; i < steps; ++i)
-	{
-		simul_time = i * simulStep;	 // Update simul_time for logging callback
-		world.run_simulation(simulStep);
-	}
-
-	const auto gt_pose_curve = mrpt::math::TPose3D(0.841, 0.459, 0.0, 1.0, 0.0, 0.0);
-	auto pose_curve = veh->getPose();
-	std::cout << "Final pose   : " << pose_curve << "\n";
-	std::cout << "Expected pose: " << gt_pose_curve << "\n";
-
-	// Expected ideal kinematics (R = v/w = 1.0 m):
-	// x(t) = R * sin(w*t) => sin(1) ≈ 0.841
-	// y(t) = R * (1 - cos(w*t)) => 1 - cos(1) ≈ 0.459
-	// yaw(t) = w*t => 1.0
-
-	EXPECT_NEAR(pose_curve.x, gt_pose_curve.x, tol);
-	EXPECT_NEAR(pose_curve.y, gt_pose_curve.y, tol);
-	EXPECT_NEAR(pose_curve.yaw, gt_pose_curve.yaw, tol);
-
-	// 3. Friction Verification (only relevant for non-ideal controllers
-	//    where friction actually provides the centripetal force):
-	if (!is_ideal)
+	// Friction verification (only for non-ideal curve tests)
+	if (!is_ideal && twist_cmd.omega != 0.0)
 	{
 		EXPECT_GT(max_friction_y, 1.0);
 	}
@@ -212,13 +174,31 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 
 int main()
 {
-	// Test Matrix: Differential
-	run_trajectory_test("differential_4_wheels", "twist_ideal", true);
-	run_trajectory_test("differential_4_wheels", "twist_pid", false);
+	const auto straight_cmd = mrpt::math::TTwist2D(1.0, 0.0, 0.0);
+	const auto curve_cmd = mrpt::math::TTwist2D(1.0, 0.0, 1.0);
+	const auto gt_straight = mrpt::math::TPose3D(1.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+	const auto gt_curve = mrpt::math::TPose3D(0.841, 0.459, 0.0, 1.0, 0.0, 0.0);
 
-	// Test Matrix: Ackermann
-	run_trajectory_test("ackermann", "twist_ideal", true);
-	run_trajectory_test("ackermann", "twist_front_steer_pid", false);
+	// Differential tests (2-wheel: no lateral slip during turns)
+	run_single_test("differential", "twist_ideal", true, "Straight", straight_cmd, gt_straight);
+	run_single_test("differential", "twist_ideal", true, "Curve", curve_cmd, gt_curve);
+	run_single_test("differential", "twist_pid", false, "Straight", straight_cmd, gt_straight);
+	run_single_test("differential", "twist_pid", false, "Curve", curve_cmd, gt_curve);
+
+	// 4-wheel differential tests:
+	// Lateral friction at front/rear wheels (x!=0) creates anti-yaw torque during
+	// turns, so curve tracking is less precise than 2-wheel differential.
+	run_single_test("differential_4w", "twist_ideal", true, "Straight", straight_cmd, gt_straight);
+	run_single_test("differential_4w", "twist_ideal", true, "Curve", curve_cmd, gt_curve);
+	run_single_test("differential_4w", "twist_pid", false, "Straight", straight_cmd, gt_straight);
+	run_single_test("differential_4w", "twist_pid", false, "Curve", curve_cmd, gt_curve, 0.35);
+
+	// Ackermann tests
+	run_single_test("ackermann", "twist_ideal", true, "Straight", straight_cmd, gt_straight);
+	run_single_test("ackermann", "twist_ideal", true, "Curve", curve_cmd, gt_curve);
+	run_single_test(
+		"ackermann", "twist_front_steer_pid", false, "Straight", straight_cmd, gt_straight);
+	run_single_test("ackermann", "twist_front_steer_pid", false, "Curve", curve_cmd, gt_curve);
 
 	if (g_failures == 0)
 	{

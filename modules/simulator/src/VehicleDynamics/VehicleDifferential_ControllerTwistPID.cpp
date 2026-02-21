@@ -59,8 +59,8 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 
 	if (std::abs(spVelL) < zeroThres &&	 //
 		std::abs(spVelR) < zeroThres &&	 //
-		std::abs(spVelR) < zeroThres &&	 //
-		std::abs(spVelR) < zeroThres)
+		std::abs(actVelL) < zeroThres &&  //
+		std::abs(actVelR) < zeroThres)
 	{
 		co.wheel_torque_l = 0;
 		co.wheel_torque_r = 0;
