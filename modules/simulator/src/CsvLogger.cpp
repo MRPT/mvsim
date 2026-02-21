@@ -45,7 +45,7 @@ bool CSVLogger::writeRow()
 		cb(columns_);
 	}
 
-	if (!isRecording_)
+	if (!isRecording_ || !fileWritingEnabled_)
 	{
 		return true;
 	}

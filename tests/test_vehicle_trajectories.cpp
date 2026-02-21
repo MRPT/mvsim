@@ -134,6 +134,7 @@ void run_single_test(
 	{
 		if (!logger) continue;
 		logger->setRecording(true);
+		logger->setFileWritingEnabled(false);  // callbacks only, no .csv files
 		logger->registerOnRowCallback(
 			[&max_friction_y, &simul_time](const std::map<std::string_view, double>& cols)
 			{
