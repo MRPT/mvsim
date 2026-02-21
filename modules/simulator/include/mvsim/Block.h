@@ -292,7 +292,7 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 
 	virtual void create_multibody_system(b2World&) {}
 
-	virtual float getMaxBlockRadius() const { return 0; }
+	virtual double getMaxBlockRadius() const { return 0; }
 
 	/** Get the block mass */
 	virtual double getMass() const { return 0; }

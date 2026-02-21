@@ -100,7 +100,7 @@ class VehicleBase : public VisualObject, public Simulable
 		return loggers_.at(logger_index);
 	}
 
-	const auto& getLoggers() const { return loggers_; }
+	const std::vector<CSVLogger::Ptr>& getLoggers() const { return loggers_; }
 
 	/** Get the 2D shape of the vehicle chassis, as set from the config file
 	 * (only used for collision detection) */

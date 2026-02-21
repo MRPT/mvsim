@@ -30,10 +30,14 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 {
 	std::cout << "[TEST] Dynamics: " << dyn_class << " | Controller: " << ctrl_class << "\n";
 
+	const double simulStep = 0.001;	 // 10 ms step
+	const double final_time = 1.0;	// Run for 1 second to reach steady state
+	const int steps = static_cast<int>(final_time / simulStep);
+
 	mvsim::World world;
 	world.headless(true);
 	world.set_gravity(9.81);
-	world.set_simul_timestep(0.01);
+	world.set_simul_timestep(simulStep);
 	world.internal_initialize();
 
 	std::string wheels_config;
@@ -148,10 +152,6 @@ void run_trajectory_test(const std::string& dyn_class, const std::string& ctrl_c
 	veh->setPose(mrpt::math::TPose3D::Identity());
 	veh->setRefVelocityLocal({0.0, 0.0, 0.0});
 	veh->getControllerInterface()->setTwistCommand({1.0, 0.0, 0.0});  // vx = 1 m/s
-
-	const double simulStep = 0.001;	 // 10 ms step
-	const double final_time = 1.0;	// Run for 1 second to reach steady state
-	const int steps = static_cast<int>(final_time / simulStep);
 
 	for (int i = 0; i < steps; ++i)
 	{

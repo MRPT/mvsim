@@ -74,7 +74,6 @@ class Simulable
 	mrpt::math::TTwist2D getRefVelocityGlobal() const;
 
 	/** Last time-step velocity of the Box2D center of mass point, in global coords
-	 * Note this is converted from Box2D center of mass velocity into our own reference point.
 	 */
 	mrpt::math::TTwist2D getComVelocityGlobal() const;
 
@@ -180,7 +179,7 @@ class Simulable
    private:
 	World* simulable_parent_ = nullptr;
 
-	/** protects q_, dq_, ddq_lin_ */
+	/** protects q_, dq_, dq_com_, ddq_lin_ */
 	mutable std::shared_mutex q_mtx_;
 
 	/** Last time-step pose (of the ref. point, in global coords) */
