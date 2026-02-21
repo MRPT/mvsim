@@ -214,11 +214,11 @@ int main()
 {
 	// Test Matrix: Differential
 	run_trajectory_test("differential_4_wheels", "twist_ideal", true);
-	// run_trajectory_test("differential_4_wheels", "twist_pid", false);
+	run_trajectory_test("differential_4_wheels", "twist_pid", false);
 
 	// Test Matrix: Ackermann
 	run_trajectory_test("ackermann", "twist_ideal", true);
-	// run_trajectory_test("ackermann", "twist_front_steer_pid", false);
+	run_trajectory_test("ackermann", "twist_front_steer_pid", false);
 
 	if (g_failures == 0)
 	{
