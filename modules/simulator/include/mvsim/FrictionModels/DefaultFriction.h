@@ -13,8 +13,6 @@
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/TParameterDefinitions.h>
 
-#include <vector>
-
 namespace mvsim
 {
 /** The default friction model for interaction between each wheel-ground contact
@@ -32,8 +30,8 @@ class DefaultFriction : public FrictionBase
 		const FrictionBase::TFrictionInput& input) const override;
 
    private:
-	double mu_;	 //!< friction coeficient (non-dimensional)
-	double C_damping_;	//!< For wheels "internal friction" (N*m*s/rad)
+	double mu_ = 0.8;  //!< friction coefficient (non-dimensional)
+	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
 
    public:
 	const TParameterDefinitions params_ = {
