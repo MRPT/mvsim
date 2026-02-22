@@ -69,8 +69,8 @@ class Simulable
 	mrpt::math::TTwist2D getRefVelocityLocal() const;
 
 	/** Deprecated: replace with getRefVelocityLocal()  */
-	[[deprecated("Use getRefVelocityLocal() instead")]]
-	mrpt::math::TTwist2D getVelocityLocal() const
+	[[deprecated("Use getRefVelocityLocal() instead")]] mrpt::math::TTwist2D getVelocityLocal()
+		const
 	{
 		return getRefVelocityLocal();
 	}
