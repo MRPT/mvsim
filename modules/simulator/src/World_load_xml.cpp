@@ -304,7 +304,8 @@ void World::parse_tag_include(const XmlParserContext& ctx)
 	const auto [xml, root] = readXmlAndGetRoot(absFile, vars);
 	(void)xml;	// unused
 
-	// recursive parse all root-level nodes (supports files with multiple roots):
+	// recursive parse all root-level nodes
+	// (supports included files with multiple sibling elements):
 	const auto newBasePath = mrpt::system::extractFileDirectory(absFile);
 	for (auto* n = root; n; n = n->next_sibling())
 	{

@@ -97,6 +97,10 @@ static PlantModel run_open_loop_step(
 		ackVeh->getController() =
 			std::make_shared<mvsim::DynamicsAckermann::ControllerRawForces>(*ackVeh);
 	}
+	else
+	{
+		THROW_EXCEPTION("Unsupported vehicle dynamics type for PID tuning.");
+	}
 
 	world.insert_vehicle(veh);
 
@@ -545,6 +549,12 @@ int main(int argc, char** argv)
 		const double sim_duration = argDuration.getValue();
 		const double sim_step = argStep.getValue();
 		const double aggressiveness = argAggressiveness.getValue();
+
+		if (aggressiveness <= 0)
+		{
+			std::fprintf(stderr, "Error: aggressiveness must be > 0.\n");
+			return 1;
+		}
 
 		std::printf(
 			"======================================\n"

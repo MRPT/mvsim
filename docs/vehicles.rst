@@ -365,6 +365,7 @@ indoor robotics applications.
    <friction class="default">
        <mu>0.8</mu>              <!-- Friction coefficient -->
        <C_damping>1.0</C_damping>  <!-- Viscous damping [N·m·s/rad] -->
+       <C_rr>0.01</C_rr>          <!-- Rolling resistance coefficient -->
    </friction>
 
 **Model Equations:**
@@ -403,6 +404,7 @@ Includes velocity-dependent rolling resistance for more realistic off-road simul
        <A_roll>50</A_roll>  <!-- Rolling resistance shape parameter -->
        <R1>0.0075</R1>      <!-- Static rolling resistance coefficient -->
        <R2>0.02</R2>        <!-- Dynamic rolling resistance coefficient -->
+       <C_rr>0.0</C_rr>     <!-- Rolling resistance torque coefficient -->
    </friction>
 
 **Rolling Resistance:**
@@ -425,12 +427,13 @@ slip ratio effects, suitable for vehicle dynamics research.
 
    <friction class="ellipse">
        <C_damping>0.05</C_damping>
-       
+       <C_rr>0.01</C_rr>                    <!-- Rolling resistance coefficient -->
+
        <!-- Lateral slip parameters -->
        <C_alpha>8.5</C_alpha>              <!-- Lateral coefficient -->
        <slip_angle_saturation>0.1</slip_angle_saturation>  <!-- rad -->
        <C_alpha_s>0.5</C_alpha_s>          <!-- Coupling coefficient -->
-       
+
        <!-- Longitudinal slip parameters -->
        <C_s>7.5</C_s>                      <!-- Longitudinal coefficient -->
        <slip_ratio_saturation>0.1</slip_ratio_saturation>

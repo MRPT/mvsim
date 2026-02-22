@@ -86,7 +86,7 @@
 	<visual>
 		<model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer.dae</model_uri>
 		<model_scale>2.0</model_scale>
-		<model_roll>88.0</model_roll>
+		<model_roll>88.0</model_roll>  <!-- 88 deg = 2 deg tilted -->
 		<model_yaw>90.0</model_yaw>
 		<model_offset_z>0.22</model_offset_z>
 	</visual>

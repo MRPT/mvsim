@@ -75,8 +75,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
 		// Impulse to cancel lateral velocity + counteract gravity slope:
-		wheel_lateral_friction =
-			-vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
+		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
 
 		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
 	}
@@ -103,14 +102,24 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// const mrpt::math::TPoint2D wheel_damping(- C_damping *
 	// input.wheel_speed.x, 0.0);
 
-	// Actually, Ward-Iagnemma rolling resistance is here (longitudinal one):
+	// Two independent rolling-resistance models coexist here:
+	//
+	// 1) F_rr (ground-contact): Ward-Iagnemma terrain interaction model using
+	//    params R1_, R2_, A_roll_. Velocity-dependent force added directly to
+	//    the longitudinal friction equation.
+	//
+	// 2) T_rolling_resistance (tire deformation): torque-based model using
+	//    C_rr_. Opposes wheel spin as a shaft-level torque subtracted from
+	//    the effective motor torque.
+	//
+	// Both may be enabled simultaneously for off-road scenarios where terrain
+	// drag (F_rr) and tire hysteresis (T_rolling_resistance) are distinct
+	// effects. If only one source of rolling resistance is desired, configure
+	// either {R1_, R2_, A_roll_} or C_rr_, not both.
 
 	const double F_rr = -sign(vel_w.x) * partial_mass * gravity *
 						(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
 
-	// Rolling resistance: constant-magnitude torque opposing wheel rotation,
-	// proportional to normal force: T_rr = C_rr * F_normal * R
-	// Uses a smooth tanh approximation near zero to avoid sign discontinuity.
 	const double F_normal = partial_mass * gravity;
 	const double T_rolling_resistance =
 		(C_rr_ > 0 && std::abs(input.wheel.getW()) > 1e-4)
@@ -133,8 +142,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 
 	// Add slope gravity force to the contact-patch friction (acts on chassis,
 	// not on wheel spin). Clamped by remaining friction capacity.
-	const double remaining_lon =
-		max_friction - std::abs(F_friction_lon);
+	const double remaining_lon = max_friction - std::abs(F_friction_lon);
 	F_friction_lon -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:

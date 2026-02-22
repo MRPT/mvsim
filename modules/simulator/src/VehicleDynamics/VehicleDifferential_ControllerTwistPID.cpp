@@ -55,14 +55,13 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	const double followErrorL = spVelL - actVelL;
 	const double followErrorR = spVelR - actVelR;
 
-	const double zeroThres = 0.001;	 // m/s
-	const double stopThres = 0.05;	 // m/s — wider threshold for stop detection
+	const double zero_threshold = 0.001;  // m/s
+	const double stop_threshold = 0.05;	 // m/s — wider threshold for stop detection
 
 	const bool setpointIsZero =
-		std::abs(spVelL) < zeroThres && std::abs(spVelR) < zeroThres;
+		std::abs(spVelL) < zero_threshold && std::abs(spVelR) < zero_threshold;
 
-	if (setpointIsZero &&
-		std::abs(actVelL) < stopThres && std::abs(actVelR) < stopThres)
+	if (setpointIsZero && std::abs(actVelL) < stop_threshold && std::abs(actVelR) < stop_threshold)
 	{
 		// Near-zero velocity with zero setpoint: full stop, reset PIDs
 		co.wheel_torque_l = 0;
@@ -181,9 +180,9 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 			{
 				setpoint_ = {0, 0, 0};
 				for (auto& pid : PIDs_)
-			{
-				pid.reset();
-			}
+				{
+					pid.reset();
+				}
 			}
 		}
 

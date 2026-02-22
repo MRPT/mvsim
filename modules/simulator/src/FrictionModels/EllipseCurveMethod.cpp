@@ -124,8 +124,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
 		// Impulse to cancel lateral velocity + counteract gravity slope:
-		wheel_lateral_friction =
-			-vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
+		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
 
 		wheel_lateral_friction =
 			std::clamp(wheel_lateral_friction, -max_friction_lateral_Fy, max_friction_lateral_Fy);
@@ -142,10 +141,9 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Rolling resistance: constant-magnitude torque opposing wheel rotation,
 	// proportional to normal force: T_rr = C_rr * F_normal * R
 	// Uses a smooth tanh approximation near zero to avoid sign discontinuity.
-	const double T_rolling_resistance =
-		(C_rr_ > 0 && std::abs(input.wheel.getW()) > 1e-4)
-			? C_rr_ * Fz * R * std::tanh(input.wheel.getW() * 100.0)
-			: 0.0;
+	const double T_rolling_resistance = (C_rr_ > 0 && std::abs(input.wheel.getW()) > 1e-4)
+											? C_rr_ * Fz * R * std::tanh(input.wheel.getW() * 100.0)
+											: 0.0;
 
 	const double I_yy = input.wheel.Iyy;
 
@@ -164,8 +162,7 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	// Add slope gravity force to the contact-patch friction (acts on chassis,
 	// not on wheel spin). Clamped by remaining friction capacity.
-	const double remaining_lon =
-		max_friction_longitudinal_Fx - std::abs(wheel_long_friction);
+	const double remaining_lon = max_friction_longitudinal_Fx - std::abs(wheel_long_friction);
 	wheel_long_friction -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:

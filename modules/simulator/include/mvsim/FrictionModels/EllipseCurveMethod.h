@@ -39,7 +39,7 @@ class EllipseCurveMethod : public FrictionBase
 	// double CA_ = 8;	 //!< aerodynamic force coefficient (non-dimensional)
 
 	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
-	double C_rr_ = 0.0;  //!< Rolling resistance coefficient (non-dimensional)
+	double C_rr_ = 0.0;	 //!< Rolling resistance coefficient (non-dimensional)
 
 	// Ellipse curve parameters:
 	double C_alpha_ = 8.5;	//!< Coefficient for lateral slip angle (non-dimensional)

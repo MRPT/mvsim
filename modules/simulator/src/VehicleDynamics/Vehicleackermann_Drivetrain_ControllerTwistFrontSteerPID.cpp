@@ -56,12 +56,12 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	const double vel_act = veh_.getVelocityLocalOdoEstimate().vx;
 	const double vel_des = setpoint_lin_speed;
 
-	const double zeroThres = 0.001;	 // m/s
-	const double stopThres = 0.05;	 // m/s — wider threshold for stop detection
+	const double zero_threshold = 0.001;  // m/s
+	const double stop_threshold = 0.05;	 // m/s — wider threshold for stop detection
 
-	const bool setpointIsZero = std::abs(vel_des) < zeroThres;
+	const bool setpointIsZero = std::abs(vel_des) < zero_threshold;
 
-	if (setpointIsZero && std::abs(vel_act) < stopThres)
+	if (setpointIsZero && std::abs(vel_act) < stop_threshold)
 	{
 		// Near-zero velocity with zero setpoint: full stop, reset PID
 		co.drive_torque = 0;
@@ -111,6 +111,8 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::teleop_interface
 
 	switch (in.keycode)
 	{
+		default:
+			break;
 		case 'W':
 		case 'w':
 			setpoint_lin_speed += 0.1;

@@ -21,6 +21,7 @@ MVSim: a lightweight MultiVehicle Simulator
    teleoperation
    mvsim-cli
    mvsim_node
+   mvsim-pid-tuner
    physics
    extending
    bibliography

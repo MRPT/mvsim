@@ -114,14 +114,11 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	co.rl_torque = .0;
 	co.rr_torque = .0;
 
-	const double zeroThres = 0.001;	 // m/s
-	const double stopThres = 0.05;	 // m/s — wider threshold for stop detection
-
 	const bool setpointIsZero =
-		std::abs(vel_fl) < zeroThres && std::abs(vel_fr) < zeroThres;
+		std::abs(vel_fl) < zero_threshold && std::abs(vel_fr) < zero_threshold;
 
-	if (setpointIsZero &&
-		std::abs(act_vel_fl) < stopThres && std::abs(act_vel_fr) < stopThres)
+	if (setpointIsZero && std::abs(act_vel_fl) < stop_threshold &&
+		std::abs(act_vel_fr) < stop_threshold)
 	{
 		// Near-zero velocity with zero setpoint: full stop, reset PIDs
 		co.fl_torque = 0;
@@ -171,6 +168,8 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["KD"] = TParamEntry("%lf", &KD);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
+	params["zero_threshold"] = TParamEntry("%lf", &zero_threshold);
+	params["stop_threshold"] = TParamEntry("%lf", &stop_threshold);
 
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
@@ -209,6 +208,12 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::teleop_interface(
 		case ' ':
 			setpoint_lin_speed = .0;
 			setpoint_ang_speed = .0;
+			for (auto& pid : PID_)
+			{
+				pid.reset();
+			}
+			break;
+		default:
 			break;
 	};
 
@@ -225,16 +230,32 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::teleop_interface(
 
 		if (js.buttons.size() > 7)
 		{
-			if (js.buttons[5]) joyMaxLinSpeed *= 1.01;
-			if (js.buttons[7]) joyMaxLinSpeed /= 1.01;
+			if (js.buttons[5])
+			{
+				joyMaxLinSpeed *= 1.01;
+			}
+			if (js.buttons[7])
+			{
+				joyMaxLinSpeed /= 1.01;
+			}
 
-			if (js.buttons[4]) joyMaxAngSpeed *= 1.01;
-			if (js.buttons[6]) joyMaxAngSpeed /= 1.01;
+			if (js.buttons[4])
+			{
+				joyMaxAngSpeed *= 1.01;
+			}
+			if (js.buttons[6])
+			{
+				joyMaxAngSpeed /= 1.01;
+			}
 
 			if (js.buttons[3])	// brake
 			{
 				setpoint_lin_speed = 0;
 				setpoint_ang_speed = 0;
+				for (auto& pid : PID_)
+				{
+					pid.reset();
+				}
 			}
 		}
 

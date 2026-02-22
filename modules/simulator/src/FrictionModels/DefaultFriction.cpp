@@ -58,8 +58,7 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
 		// Impulse to cancel lateral velocity + counteract gravity slope:
-		wheel_lateral_friction =
-			-vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
+		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
 
 		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
 	}
@@ -110,8 +109,7 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 
 	// Add slope gravity force to the contact-patch friction (acts on chassis,
 	// not on wheel spin). Clamped by remaining friction capacity.
-	const double remaining_lon =
-		max_friction - std::abs(F_friction_lon);
+	const double remaining_lon = max_friction - std::abs(F_friction_lon);
 	F_friction_lon -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:

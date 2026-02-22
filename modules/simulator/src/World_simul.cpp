@@ -510,8 +510,9 @@ void World::internal_simul_pre_step_terrain_elevation()
 
 		// compute "down" direction and store on vehicle for friction models:
 		{
+			const mrpt::poses::CPose3D vehPose(veh->getPose());
 			mrpt::poses::CPose3D rot_only;
-			rot_only.setRotationMatrix(optimalTf.getRotationMatrix());
+			rot_only.setRotationMatrix(vehPose.getRotationMatrix());
 			rot_only.inverseComposePoint(.0, .0, -1.0, dir_down.x, dir_down.y, dir_down.z);
 			veh->setSlopeDirection(dir_down);
 		}

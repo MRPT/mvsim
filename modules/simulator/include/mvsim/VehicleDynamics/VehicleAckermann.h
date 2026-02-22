@@ -90,6 +90,10 @@ class DynamicsAckermann : public VehicleBase
 
 		double KP, KI, KD;	//!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
+		/// setpoint magnitude below which it is treated as zero [m/s]
+		double zero_threshold = 0.001;
+		/// velocity magnitude below which vehicle is considered stopped [m/s]
+		double stop_threshold = 0.05;
 
 		// See base docs.
 		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override
