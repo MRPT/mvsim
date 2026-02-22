@@ -480,6 +480,13 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		fi.Fz = weightPerWheel;
 		fi.wheelCogLocalVel = wheelLocalVels[i];
 
+		// Gravity slope force per wheel (in vehicle-local coords).
+		// Total mass per wheel = chassis share + wheel own mass.
+		const double totalMassPerWheel = massPerWheel + w.mass;
+		fi.gravSlopeForce = {
+			slopeDir_.x * totalMassPerWheel * gravity,
+			slopeDir_.y * totalMassPerWheel * gravity};
+
 		// eval friction (in the frame of the vehicle):
 		const mrpt::math::TPoint2D F_r = frictions_.at(i)->evaluate_friction(fi);
 
@@ -494,6 +501,14 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		if (!idealControllerActive_)
 		{
 			b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
+
+			// Apply the gravity slope force at this wheel's contact point.
+			// The friction model already counteracts this force in its output,
+			// so the net result is zero when the vehicle is held stationary by
+			// friction, or a residual downhill force when friction is exceeded.
+			const b2Vec2 wGravForce = b2dBody_->GetWorldVector(
+				b2Vec2(fi.gravSlopeForce.x, fi.gravSlopeForce.y));
+			b2dBody_->ApplyForce(wGravForce, wPt, true /*wake up*/);
 		}
 
 		// log

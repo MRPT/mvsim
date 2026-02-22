@@ -53,6 +53,12 @@ class FrictionBase
 		 *  center of gravity (cog) point. */
 		mrpt::math::TVector2D wheelCogLocalVel{0, 0};
 
+		/** Gravity slope force (Newtons) acting on this wheel's share of the
+		 *  vehicle mass, in vehicle local coordinates. This allows friction
+		 *  models to preemptively counteract gravity on slopes, preventing
+		 *  drift. On flat ground this is (0,0). */
+		mrpt::math::TVector2D gravSlopeForce{0, 0};
+
 		TFrictionInput(const TSimulContext& _context, Wheel& _wheel)
 			: context(_context), wheel(_wheel)
 		{

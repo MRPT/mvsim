@@ -59,6 +59,10 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	mrpt::math::TPoint2D vel_w;
 	wRotInv.composePoint(input.wheelCogLocalVel, vel_w);
 
+	// Gravity slope force in wheel-local frame:
+	mrpt::math::TPoint2D gravSlope_w;
+	wRotInv.composePoint(input.gravSlopeForce, gravSlope_w);
+
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
 	const double mu = mu_;
@@ -70,8 +74,9 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// --------------------------------------------
 	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
-		// Impulse required to step the lateral slippage:
-		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt;
+		// Impulse to cancel lateral velocity + counteract gravity slope:
+		wheel_lateral_friction =
+			-vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
 
 		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
 	}
@@ -118,7 +123,6 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	const double effectiveTorque =
 		input.motorTorque - C_damping * input.wheel.getW() - T_rolling_resistance;
 
-	//                                  There are torques this is force   v
 	double F_friction_lon = (effectiveTorque - I_yy * desired_wheel_alpha) / R + F_rr;
 
 	// Slippage: The friction with the ground is not infinite:
@@ -126,6 +130,12 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double actual_wheel_alpha = (effectiveTorque - R * F_friction_lon) / I_yy;
+
+	// Add slope gravity force to the contact-patch friction (acts on chassis,
+	// not on wheel spin). Clamped by remaining friction capacity.
+	const double remaining_lon =
+		max_friction - std::abs(F_friction_lon);
+	F_friction_lon -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);

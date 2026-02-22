@@ -153,6 +153,13 @@ class VehicleBase : public VisualObject, public Simulable
 	double chassisZMin() const { return chassis_z_min_; }
 	double chassisZMax() const { return chassis_z_max_; }
 
+	/** The "down" direction (0,0,-1) in vehicle local frame, as computed
+	 *  from the terrain slope. Updated each timestep by the terrain
+	 *  elevation module. On flat ground this is (0,0,-1). On a slope,
+	 *  the x/y components indicate the gravity slope force direction. */
+	const mrpt::math::TPoint3D& getSlopeDirection() const { return slopeDir_; }
+	void setSlopeDirection(const mrpt::math::TPoint3D& d) { slopeDir_ = d; }
+
 	/** Gets the noisy, biased, odometry estimation.
 	 */
 	mrpt::poses::CPose2D getOdometry() const { return odometry_; }
@@ -227,6 +234,10 @@ class VehicleBase : public VisualObject, public Simulable
 	/** center of mass. in local coordinates (this excludes the mass of wheels)
 	 */
 	mrpt::math::TPoint2D chassis_com_{0, 0};
+
+	/** Gravity "down" direction in vehicle local frame. On flat ground = (0,0,-1).
+	 *  Updated by internal_simul_pre_step_terrain_elevation() each timestep. */
+	mrpt::math::TPoint3D slopeDir_{0, 0, -1};
 
 	void updateMaxRadiusFromPoly();
 

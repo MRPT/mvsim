@@ -74,6 +74,10 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Velocity of the wheel cog in the frame of the wheel itself:
 	const mrpt::math::TPoint3D vel_w = wRotInv.composePoint(vel_v);
 
+	// Gravity slope force in wheel-local frame:
+	mrpt::math::TPoint2D gravSlope_w;
+	wRotInv.composePoint(input.gravSlopeForce, gravSlope_w);
+
 	// wheel angle around the vertical axis (wrt the vehicle frame):
 	const double wheel_delta = input.wheel.yaw;
 
@@ -119,8 +123,9 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// --------------------------------------------
 	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
-		// Impulse required to step the lateral slippage:
-		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt;
+		// Impulse to cancel lateral velocity + counteract gravity slope:
+		wheel_lateral_friction =
+			-vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
 
 		wheel_lateral_friction =
 			std::clamp(wheel_lateral_friction, -max_friction_lateral_Fy, max_friction_lateral_Fy);
@@ -156,6 +161,12 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
 	const double actual_wheel_alpha = (effectiveTorque - R * wheel_long_friction) / I_yy;
+
+	// Add slope gravity force to the contact-patch friction (acts on chassis,
+	// not on wheel spin). Clamped by remaining friction capacity.
+	const double remaining_lon =
+		max_friction_longitudinal_Fx - std::abs(wheel_long_friction);
+	wheel_long_friction -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
