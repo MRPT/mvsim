@@ -287,6 +287,7 @@ add_subdirectory(modules)
 #       Apps
 # --------------------------
 add_subdirectory(mvsim-cli)
+add_subdirectory(mvsim-pid-tuner)
 
 if (BUILD_FOR_ROS)
   ###########

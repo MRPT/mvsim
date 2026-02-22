@@ -113,10 +113,54 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 
 	co.rl_torque = .0;
 	co.rr_torque = .0;
-	co.fl_torque = -PID_[0].compute(
-		vel_fl - act_vel_fl,
-		ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
-	co.fr_torque = -PID_[1].compute(vel_fr - act_vel_fr, ci.context.dt);
+
+	const double zeroThres = 0.001;	 // m/s
+	const double stopThres = 0.05;	 // m/s — wider threshold for stop detection
+
+	const bool setpointIsZero =
+		std::abs(vel_fl) < zeroThres && std::abs(vel_fr) < zeroThres;
+
+	if (setpointIsZero &&
+		std::abs(act_vel_fl) < stopThres && std::abs(act_vel_fr) < stopThres)
+	{
+		// Near-zero velocity with zero setpoint: full stop, reset PIDs
+		co.fl_torque = 0;
+		co.fr_torque = 0;
+		for (auto& pid : PID_)
+		{
+			pid.reset();
+		}
+	}
+	else
+	{
+		co.fl_torque = -PID_[0].compute(
+			vel_fl - act_vel_fl,
+			ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
+		co.fr_torque = -PID_[1].compute(vel_fr - act_vel_fr, ci.context.dt);
+
+		if (setpointIsZero)
+		{
+			// Braking toward zero: clamp torque so it can only oppose current
+			// motion direction, preventing the PID integral from causing rebound.
+			if (act_vel_fl > 0)
+			{
+				co.fl_torque = std::max(0.0, co.fl_torque);
+			}
+			else if (act_vel_fl < 0)
+			{
+				co.fl_torque = std::min(0.0, co.fl_torque);
+			}
+
+			if (act_vel_fr > 0)
+			{
+				co.fr_torque = std::max(0.0, co.fr_torque);
+			}
+			else if (act_vel_fr < 0)
+			{
+				co.fr_torque = std::min(0.0, co.fr_torque);
+			}
+		}
+	}
 }
 
 void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(

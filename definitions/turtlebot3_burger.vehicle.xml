@@ -30,6 +30,7 @@
     <friction class="default">
         <mu>0.8</mu>
         <C_damping>0.01</C_damping>
+        <C_rr>0.01</C_rr>  <!-- Rolling resistance coefficient -->
     </friction>
 
     <!-- Noisy odometry parameters. These are multipliers to actual SE(2) increments -->

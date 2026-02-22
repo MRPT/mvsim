@@ -517,7 +517,10 @@ static void recursive_xml_to_str_solving_includes(
 		(void)xml;
 
 		ss << "<!-- INCLUDE: '" << absFile << "' -->\n";
-		recursive_xml_to_str_solving_includes(parent, nRoot, varsRetain, ss);
+		for (auto* r = nRoot; r; r = r->next_sibling())
+		{
+			recursive_xml_to_str_solving_includes(parent, r, varsRetain, ss);
+		}
 	}
 	// TAG: <if>
 	else if (strcmp(n->name(), "if") == 0)

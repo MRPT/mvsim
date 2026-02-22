@@ -56,8 +56,36 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	const double vel_act = veh_.getVelocityLocalOdoEstimate().vx;
 	const double vel_des = setpoint_lin_speed;
 
-	// "-" because \tau<0 makes robot moves forwards.
-	co.drive_torque = -PID_.compute(vel_des - vel_act, ci.context.dt);
+	const double zeroThres = 0.001;	 // m/s
+	const double stopThres = 0.05;	 // m/s — wider threshold for stop detection
+
+	const bool setpointIsZero = std::abs(vel_des) < zeroThres;
+
+	if (setpointIsZero && std::abs(vel_act) < stopThres)
+	{
+		// Near-zero velocity with zero setpoint: full stop, reset PID
+		co.drive_torque = 0;
+		PID_.reset();
+	}
+	else
+	{
+		// "-" because \tau<0 makes robot moves forwards.
+		co.drive_torque = -PID_.compute(vel_des - vel_act, ci.context.dt);
+
+		if (setpointIsZero)
+		{
+			// Braking toward zero: clamp torque so it can only oppose current
+			// motion direction, preventing the PID integral from causing rebound.
+			if (vel_act > 0)
+			{
+				co.drive_torque = std::max(0.0, co.drive_torque);
+			}
+			else if (vel_act < 0)
+			{
+				co.drive_torque = std::min(0.0, co.drive_torque);
+			}
+		}
+	}
 }
 
 void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(
