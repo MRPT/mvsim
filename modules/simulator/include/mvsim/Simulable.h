@@ -68,6 +68,13 @@ class Simulable
 	 */
 	mrpt::math::TTwist2D getRefVelocityLocal() const;
 
+	/** Deprecated: replace with getRefVelocityLocal()  */
+	[[deprecated("Use getRefVelocityLocal() instead")]]
+	mrpt::math::TTwist2D getVelocityLocal() const
+	{
+		return getRefVelocityLocal();
+	}
+
 	/** Last time-step velocity (of the reference point, in global coords)
 	 * Note this is converted from Box2D center of mass velocity into our own reference point.
 	 */
