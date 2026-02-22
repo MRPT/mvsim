@@ -134,23 +134,28 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w - input.wheel.getW());
 	const double desired_wheel_alpha = desired_wheel_w_impulse / input.context.dt;
 
-	// Force for rolling resistance:
-	const double F_rr = 0;	// -sign(vel_w.x) * partial_mass * gravity *  (R1_ * (1 - exp(-A_roll_ *
-							// fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
+	// Rolling resistance: constant-magnitude torque opposing wheel rotation,
+	// proportional to normal force: T_rr = C_rr * F_normal * R
+	// Uses a smooth tanh approximation near zero to avoid sign discontinuity.
+	const double T_rolling_resistance =
+		(C_rr_ > 0 && std::abs(input.wheel.getW()) > 1e-4)
+			? C_rr_ * Fz * R * std::tanh(input.wheel.getW() * 100.0)
+			: 0.0;
 
 	const double I_yy = input.wheel.Iyy;
 
-	double wheel_long_friction =
-		(input.motorTorque - I_yy * desired_wheel_alpha - C_damping_ * input.wheel.getW()) / R +
-		F_rr;
+	// Effective motor torque after subtracting bearing damping and rolling resistance:
+	const double effectiveTorque =
+		input.motorTorque - C_damping_ * input.wheel.getW() - T_rolling_resistance;
+
+	double wheel_long_friction = (effectiveTorque - I_yy * desired_wheel_alpha) / R;
 
 	// Slippage: The friction with the ground is not infinite:
 	wheel_long_friction = std::clamp(
 		wheel_long_friction, -max_friction_longitudinal_Fx, max_friction_longitudinal_Fx);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
-	const double actual_wheel_alpha =
-		(input.motorTorque - R * wheel_long_friction - C_damping_ * input.wheel.getW()) / I_yy;
+	const double actual_wheel_alpha = (effectiveTorque - R * wheel_long_friction) / I_yy;
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);

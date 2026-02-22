@@ -38,6 +38,7 @@ WardIagnemmaFriction::WardIagnemmaFriction(
 		TParameterDefinitions params;
 		params["mu"] = TParamEntry("%lf", &mu_);
 		params["C_damping"] = TParamEntry("%lf", &C_damping_);
+		params["C_rr"] = TParamEntry("%lf", &C_rr_);
 		params["A_roll"] = TParamEntry("%lf", &A_roll_);
 		params["R1"] = TParamEntry("%lf", &R1_);
 		params["R2"] = TParamEntry("%lf", &R2_);
@@ -102,18 +103,29 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	const double F_rr = -sign(vel_w.x) * partial_mass * gravity *
 						(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
 
+	// Rolling resistance: constant-magnitude torque opposing wheel rotation,
+	// proportional to normal force: T_rr = C_rr * F_normal * R
+	// Uses a smooth tanh approximation near zero to avoid sign discontinuity.
+	const double F_normal = partial_mass * gravity;
+	const double T_rolling_resistance =
+		(C_rr_ > 0 && std::abs(input.wheel.getW()) > 1e-4)
+			? C_rr_ * F_normal * R * std::tanh(input.wheel.getW() * 100.0)
+			: 0.0;
+
 	const double I_yy = input.wheel.Iyy;
+
+	// Effective motor torque after subtracting bearing damping and rolling resistance:
+	const double effectiveTorque =
+		input.motorTorque - C_damping * input.wheel.getW() - T_rolling_resistance;
+
 	//                                  There are torques this is force   v
-	double F_friction_lon =
-		(input.motorTorque - I_yy * desired_wheel_alpha - C_damping * input.wheel.getW()) / R +
-		F_rr;
+	double F_friction_lon = (effectiveTorque - I_yy * desired_wheel_alpha) / R + F_rr;
 
 	// Slippage: The friction with the ground is not infinite:
 	F_friction_lon = std::clamp(F_friction_lon, -max_friction, max_friction);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
-	const double actual_wheel_alpha =
-		(input.motorTorque - R * F_friction_lon - C_damping * input.wheel.getW()) / I_yy;
+	const double actual_wheel_alpha = (effectiveTorque - R * F_friction_lon) / I_yy;
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);

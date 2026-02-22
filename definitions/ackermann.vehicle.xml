@@ -56,6 +56,7 @@
     <friction class="default">
         <mu>0.7</mu>
         <C_damping>0.5</C_damping>
+        <C_rr>0.01</C_rr>  <!-- Rolling resistance coefficient -->
     </friction>
 
 

@@ -16,7 +16,7 @@
 namespace mvsim
 {
 /** The default friction model for interaction between each wheel-ground contact
- * point. No rolling resistance.
+ * point.
  * \ingroup friction_module
  */
 class DefaultFriction : public FrictionBase
@@ -32,9 +32,12 @@ class DefaultFriction : public FrictionBase
    private:
 	double mu_ = 0.8;  //!< friction coefficient (non-dimensional)
 	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
+	double C_rr_ = 0.0;  //!< Rolling resistance coefficient (non-dimensional)
 
    public:
 	const TParameterDefinitions params_ = {
-		{"mu", {"%lf", &mu_}}, {"C_damping", {"%lf", &C_damping_}}};
+		{"mu", {"%lf", &mu_}},
+		{"C_damping", {"%lf", &C_damping_}},
+		{"C_rr", {"%lf", &C_rr_}}};
 };
 }  // namespace mvsim
