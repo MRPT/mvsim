@@ -141,8 +141,9 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Rolling resistance: constant-magnitude torque opposing wheel rotation,
 	// proportional to normal force: T_rr = C_rr * F_normal * R
 	// Uses a smooth tanh approximation near zero to avoid sign discontinuity.
-	const double T_rolling_resistance = (C_rr_ > 0 && std::abs(input.wheel.getW()) > 1e-4)
-											? C_rr_ * Fz * R * std::tanh(input.wheel.getW() * 100.0)
+	const double C_rr = input.C_rr_override.value_or(C_rr_);
+	const double T_rolling_resistance = (C_rr > 0 && std::abs(input.wheel.getW()) > 1e-4)
+											? C_rr * Fz * R * std::tanh(input.wheel.getW() * 100.0)
 											: 0.0;
 
 	const double I_yy = input.wheel.Iyy;

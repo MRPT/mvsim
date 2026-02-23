@@ -57,7 +57,7 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	const double vel_des = setpoint_lin_speed;
 
 	const double zero_threshold = 0.001;  // m/s
-	const double stop_threshold = 0.05;	 // m/s — wider threshold for stop detection
+	const double stop_threshold = 0.05;	 // m/s , wider threshold for stop detection
 
 	const bool setpointIsZero = std::abs(vel_des) < zero_threshold;
 

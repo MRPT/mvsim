@@ -231,7 +231,7 @@ The wheel angular acceleration :math:`\alpha` is computed from torque balance:
 
 .. math::
 
-   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w}{I_{yy}}
+   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w − T_{rr}}{I_{yy}}
 
 The angular velocity is updated using explicit Euler integration:
 
@@ -365,7 +365,7 @@ interaction suitable for indoor robots and general applications.
 
    .. math::
 
-      F_{x,desired} = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega_w}{R}
+      F_{x,desired} = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega_w - T_{rr}}{R}
 
    Clamped to maximum friction:
 
@@ -610,6 +610,52 @@ The friction model incorporates these forces in both lateral and longitudinal di
 
 This ensures vehicles remain stationary on slopes when no motor torque is applied,
 and behave realistically when driving on uneven terrain with elevation maps.
+
+Per-Region Friction Overrides
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MVSim supports spatially varying friction parameters using ``PropertyRegion`` world elements.
+By defining regions with the property names ``friction_mu`` and/or ``friction_C_rr``, you can
+override the friction coefficient and rolling resistance on a per-wheel basis depending on
+where each wheel contacts the ground.
+
+During each simulation timestep, the world position of every wheel is queried against all
+active ``PropertyRegion`` elements. If a wheel falls within a region that defines
+``friction_mu`` or ``friction_C_rr``, the region's value overrides the friction model's
+default parameter for that wheel only. Wheels outside any friction region use the values
+from the vehicle's ``<friction>`` XML configuration as usual.
+
+This enables scenarios such as icy patches, sand zones, or other terrain variations without
+modifying vehicle definitions.
+
+**XML Example:**
+
+.. code-block:: xml
+
+   <!-- Ice patch: very low friction coefficient -->
+   <element class="property_region">
+       <property_name>friction_mu</property_name>
+       <value_double>0.15</value_double>
+       <x_min>-7</x_min>  <y_min>-2</y_min>  <z_min>-1</z_min>
+       <x_max>-3</x_max>  <y_max>2</y_max>   <z_max>2</z_max>
+   </element>
+
+   <!-- Sand zone: high rolling resistance -->
+   <element class="property_region">
+       <property_name>friction_C_rr</property_name>
+       <value_double>0.08</value_double>
+       <x_min>3</x_min>  <y_min>-2</y_min>  <z_min>-1</z_min>
+       <x_max>7</x_max>  <y_max>2</y_max>   <z_max>2</z_max>
+   </element>
+
+**Supported properties:**
+
+* ``friction_mu`` (double) — Overrides the Coulomb friction coefficient :math:`\mu`.
+  Applies to the Default and Ward-Iagnemma friction models. The Ellipse Curve method
+  does not use :math:`\mu` (it uses slip-based curves instead).
+
+* ``friction_C_rr`` (double) — Overrides the rolling resistance coefficient :math:`C_{rr}`.
+  Applies to all three friction models.
 
 3. Vehicle Dynamics Models
 --------------------------

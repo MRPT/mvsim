@@ -352,8 +352,6 @@ void World::internal_simul_pre_step_terrain_elevation()
 	// For each vehicle:
 	// (1/2) Compute its 3D pose according to the mesh tilt angle.
 	//       and apply gravity force.
-	const double gravity = get_gravity();
-
 	mrpt::tfest::TMatchingPairList corrs;
 	mrpt::poses::CPose3D optimalTf;
 

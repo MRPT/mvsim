@@ -65,7 +65,7 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 
 	// Action/Reaction, slippage, etc:
 	// --------------------------------------
-	const double mu = mu_;
+	const double mu = input.mu_override.value_or(mu_);
 	const double gravity = myVehicle_.parent()->get_gravity();
 	const double partial_mass = input.Fz / gravity + input.wheel.mass;
 	const double max_friction = mu * partial_mass * gravity;
@@ -121,9 +121,10 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 						(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
 
 	const double F_normal = partial_mass * gravity;
+	const double C_rr = input.C_rr_override.value_or(C_rr_);
 	const double T_rolling_resistance =
-		(C_rr_ > 0 && std::abs(input.wheel.getW()) > 1e-4)
-			? C_rr_ * F_normal * R * std::tanh(input.wheel.getW() * 100.0)
+		(C_rr > 0 && std::abs(input.wheel.getW()) > 1e-4)
+			? C_rr * F_normal * R * std::tanh(input.wheel.getW() * 100.0)
 			: 0.0;
 
 	const double I_yy = input.wheel.Iyy;

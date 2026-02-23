@@ -28,7 +28,13 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="twist_ideal" />  <!-- "twist_ideal" or "twist_pid" -->
+        <controller class="${controller|twist_ideal}">  <!-- "twist_ideal" or "twist_pid" -->
+          <!-- Optimal parameters from the mvsim-pid-tuner tool -->
+          <KP>20</KP>
+          <KI>10</KI>
+          <KD>0.0000</KD>
+          <max_torque>100</max_torque>
+        </controller>
     </dynamics>
 
     <!-- Friction force simulation -->

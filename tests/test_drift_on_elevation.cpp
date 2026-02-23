@@ -84,7 +84,7 @@ void run_drift_test(const std::string& ctrl_class, const std::string& test_name)
 	std::printf("  Init pose: x=%.6f y=%.6f yaw=%.6f\n", initPose.x, initPose.y, initPose.yaw);
 
 	// Run simulation with ZERO velocity command (vehicle should stay still)
-	// No need to set twist — default is zero.
+	// No need to set twist , default is zero.
 
 	for (int i = 0; i < steps; ++i)
 	{

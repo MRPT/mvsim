@@ -49,7 +49,7 @@ void test_zero_noise()
 }
 
 // ---------------------------------------------------------------
-// Test 2: White noise only — check mean ≈ true, std ≈ sigma
+// Test 2: White noise only , check mean ≈ true, std ≈ sigma
 // ---------------------------------------------------------------
 void test_white_noise_statistics()
 {
@@ -100,7 +100,7 @@ void test_white_noise_statistics()
 }
 
 // ---------------------------------------------------------------
-// Test 3: Random walk — bias drifts away from zero over time
+// Test 3: Random walk , bias drifts away from zero over time
 // ---------------------------------------------------------------
 void test_random_walk_drift()
 {

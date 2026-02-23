@@ -352,6 +352,11 @@ Useful for testing high-level algorithms without worrying about low-level contro
 
 Friction models simulate tire-ground interaction, determining forces and wheel slip.
 
+.. note::
+   The ``mu`` and ``C_rr`` parameters of any friction model can be overridden spatially
+   using ``PropertyRegion`` world elements with the property names ``friction_mu`` and
+   ``friction_C_rr``. See :ref:`physics` for details.
+
 Default Friction
 ~~~~~~~~~~~~~~~~
 
@@ -386,7 +391,7 @@ Longitudinal friction (accelerates/decelerates wheel):
 
 .. math::
 
-   F_{lon} = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega}{R}
+   F_{lon} = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega - T_rr}{R}
 
 Ward-Iagnemma Friction
 ~~~~~~~~~~~~~~~~~~~~~~

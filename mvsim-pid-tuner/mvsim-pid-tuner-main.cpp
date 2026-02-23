@@ -69,11 +69,12 @@ static PlantModel run_open_loop_step(
 
 	// Load the vehicle:class definition by wrapping it in a minimal world XML
 	{
+		// default_sensors="false" to avoid requiring sensor simulation in this tool.
 		std::string world_xml =
 			"<mvsim_world version=\"1.0\">"
 			"  <include file=\"" +
 			vehicle_xml_path +
-			"\" />"
+			"\" default_sensors=\"false\" />"
 			"</mvsim_world>";
 		world.load_from_XML(world_xml, vehicle_xml_path);
 	}
@@ -334,7 +335,7 @@ static ValidationResult validate_pid(
 			"<mvsim_world version=\"1.0\">"
 			"  <include file=\"" +
 			vehicle_xml_path +
-			"\" />"
+			"\" default_sensors=\"false\" />"
 			"</mvsim_world>";
 		world.load_from_XML(world_xml, vehicle_xml_path);
 	}
@@ -430,6 +431,7 @@ static ValidationResult validate_pid(
 
 	// Analyze step-up response
 	// Rise time: time to reach 90% of setpoint
+	result.rise_time = step_up_time;  // fallback: never reached
 	for (const auto& s : samples)
 	{
 		if (s.time > step_up_time)
@@ -586,7 +588,7 @@ int main(int argc, char** argv)
 				"<mvsim_world version=\"1.0\">"
 				"  <include file=\"" +
 				vehicle_xml +
-				"\" />"
+				"\" default_sensors=\"false\" />"
 				"</mvsim_world>";
 			tmpWorld.load_from_XML(world_xml, vehicle_xml);
 		}

@@ -309,6 +309,10 @@ void World::parse_tag_include(const XmlParserContext& ctx)
 	const auto newBasePath = mrpt::system::extractFileDirectory(absFile);
 	for (auto* n = root; n; n = n->next_sibling())
 	{
+		if (n->type() != rapidxml::node_element)
+		{
+			continue;
+		}
 		internal_recursive_parse_XML({n, newBasePath});
 	}
 }

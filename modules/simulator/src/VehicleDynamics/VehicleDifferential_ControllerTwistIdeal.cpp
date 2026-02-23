@@ -21,7 +21,7 @@ DynamicsDifferential::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsDiffere
 	ASSERT_(distWheels_ > 0);
 
 	// Signal that friction reaction forces must not be applied to the
-	// chassis body — the twist is imposed directly by this controller.
+	// chassis body , the twist is imposed directly by this controller.
 	veh_.idealControllerActive_ = true;
 }
 

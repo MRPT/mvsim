@@ -129,6 +129,9 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 
 	if (controller_)
 	{
+		// Reset before invoking , the ideal controller will re-set it if active:
+		idealControllerActive_ = false;
+
 		// Invoke controller:
 		TControllerInput ci;
 		ci.context = context;
