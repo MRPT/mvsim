@@ -9,110 +9,101 @@
 
 #include <mvsim/PID_Controller.h>
 
+#include <algorithm>
 #include <cmath>
-#include <cstdio>
 
 using namespace mvsim;
 
-double PID_Controller::compute(double spVel, double actVel, double torque_slope, double dt)
+double PID_Controller::filterReference(double setpoint, double dt)
 {
-	// --------- 0) Sanitizar dt ----------
+	if (!enable_reference_filter || dt <= 0.0)
+	{
+		return setpoint;
+	}
+
+	const double tau = std::max(1e-6, reference_filter_tau);
+	const double a = std::exp(-dt / tau);
+
+	if (reference_filter_order <= 1)
+	{
+		refFilter_y1_ = a * refFilter_y1_ + (1.0 - a) * setpoint;
+		return refFilter_y1_;
+	}
+
+	// Two cascaded 1st-order filters => 2nd order
+	refFilter_y1_ = a * refFilter_y1_ + (1.0 - a) * setpoint;
+	refFilter_y2_ = a * refFilter_y2_ + (1.0 - a) * refFilter_y1_;
+	return refFilter_y2_;
+}
+
+double PID_Controller::compute(double err, double dt, double feedforward)
+{
 	if (dt <= 0.0)
 	{
 		dt = 1e-3;
 	}
-	// --------- 1) Filtro en la referencia (opcional) ----------
-	// Gref(s)=1/(tau_f*s+1)^2  -> dos 1er orden en cascada
-	if (enable_referencefilter)
-	{
-		const double a = std::exp(-dt / std::max(1e-6, tau_f));
 
-		if (n_f <= 1)
-		{
-			// Filtro de primer orden: Gref(s) = 1 / (tau_f*s + 1)
-			spVel_f_y1 = a * spVel_f_y1 + (1.0 - a) * spVel;
-			spVel = spVel_f_y1;
-		}
-		else
-		{
-			// Filtro de segundo orden: Gref(s) = 1 / (tau_f*s + 1)^2
-			spVel_f_y1 = a * spVel_f_y1 + (1.0 - a) * spVel;
-			spVel_f_y2 = a * spVel_f_y2 + (1.0 - a) * spVel_f_y1;
-			spVel = spVel_f_y2;
-		}
+	// Proportional:
+	const double P = KP * err;
+
+	// Integral:
+	i_state_ += KI * err * dt;
+
+	// Derivative (with optional filtering):
+	double D = 0;
+	if (N > 0)
+	{
+		// Filtered derivative: d_state tracks the error through a first-order
+		// filter, then D = KD * N * (e - d_state). Equivalent to:
+		//   d_state += dt * N * (err - d_state)
+		//   D = KD * d_state   [where d_state ≈ de/dt when converged]
+		// But the standard formulation is:
+		//   D_dot = N * (KD * e - D) => D[k] = D[k-1] + dt*N*(KD*err - D[k-1])
+		d_state_ += dt * N * (KD * err - d_state_);
+		D = d_state_;
+	}
+	else if (!firstCall_)
+	{
+		// Standard unfiltered derivative:
+		D = KD * (err - e_prev_) / dt;
 	}
 
-	// --------- 2) Error ----------
-	const double e = spVel - actVel;
+	e_prev_ = err;
+	firstCall_ = false;
 
-	// --------- 3) Feedforward (primer orden) ----------
-	double ff_output = 0.0;
-	if (enable_feedforward)
-	{
-		const double a_ff = std::exp(-dt / std::max(1e-6, tau_ff));
-		// OJO: si avanzar en MVSim es par NEGATIVO, invierte el signo aquí si procede:
-		const double torque_est = K_ff * torque_slope;	// escala
-		ff_state = a_ff * ff_state + (1.0 - a_ff) * torque_est;
-		ff_output = ff_state;
-	}
+	// Unsaturated output:
+	double u_unsat = P + i_state_ + D + feedforward;
 
-	// --------- 4) PID paralelo (posicional) ----------
-	// 4.a) Integrador con antiwindup por back-calculation
-	// (el término Kaw*Kp ≈ Ki para mantener magnitudes; ajusta si quieres)
-	const double Kaw = (enable_antiwindup && KP > 1e-12) ? (KI / KP) : 0.0;
-	// OJO: todavía no aplicamos la corrección de antiwindup; primero formamos u_unsat
-
-	// 4.b) Derivada filtrada de primer orden sobre el error:
-	// x_d_dot = N*(e - x_d)  =>  x_d[k] = x_d + dt*N*(e - x_d)
-	// D = KD * x_d
-	const double Nclamped = std::max(0.0, N);
-	d_state += dt * Nclamped * (e - d_state);
-	const double D = KD * d_state;
-
-	// 4.c) Integramos el I puro (sin back-calc por ahora):
-	i_state += KI * e * dt;
-
-	// 4.d) Salida no saturada:
-	const double P = KP * e;
-	double u_unsat = P + i_state + D + ff_output;
-
-	// --------- 5) Saturación ----------
+	// Saturate:
 	double u_sat = u_unsat;
 	if (max_out > 0.0)
 	{
-		if (u_sat > max_out) u_sat = max_out;
-		if (u_sat < -max_out) u_sat = -max_out;
+		u_sat = std::clamp(u_sat, -max_out, max_out);
 	}
 
-	// --------- 6) Anti-windup (back-calculation) ----------
-	if (enable_antiwindup && Kaw > 0.0)
+	// Anti-windup via back-calculation:
+	if (enable_antiwindup && KP > 1e-12 && max_out > 0.0)
 	{
-		const double error_aw = u_sat - u_unsat;  // negativo si nos hemos pasado
-		i_state += Kaw * error_aw * dt;	 // corrige el integrador
-		// Recalcula u con el integrador corregido (sin tocar D ni FF):
-		u_unsat = P + i_state + D + ff_output;
-		// y re-satura:
-		u_sat = u_unsat;
-		if (max_out > 0.0)
-		{
-			if (u_sat > max_out) u_sat = max_out;
-			if (u_sat < -max_out) u_sat = -max_out;
-		}
+		const double Kaw = KI / KP;
+		const double sat_error = u_sat - u_unsat;
+		i_state_ += Kaw * sat_error * dt;
+
+		// Recompute with corrected integrator:
+		u_unsat = P + i_state_ + D + feedforward;
+		u_sat = std::clamp(u_unsat, -max_out, max_out);
 	}
 
-	lastOutput = u_sat;
+	lastOutput_ = u_sat;
 	return u_sat;
 }
 
 void PID_Controller::reset()
 {
-	lastOutput = 0.0;
-	// errores
-	e_n = e_n_1 = e_n_2 = 0.0;	// ya no se usan, pero no molesta
-	// estados
-	i_state = 0.0;
-	d_state = 0.0;
-	ff_state = 0.0;
-	spVel_f_y1 = 0.0;
-	spVel_f_y2 = 0.0;
+	lastOutput_ = 0.0;
+	i_state_ = 0.0;
+	d_state_ = 0.0;
+	e_prev_ = 0.0;
+	refFilter_y1_ = 0.0;
+	refFilter_y2_ = 0.0;
+	firstCall_ = true;
 }

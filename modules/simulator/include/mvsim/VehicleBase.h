@@ -93,6 +93,14 @@ class VehicleBase : public VisualObject, public Simulable
 	 * \sa getRefVelocityLocal() */
 	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const = 0;
 
+	/** Estimate the per-wheel torque needed to counteract gravity on a slope.
+	 *  Returns the torque (in Nm) that would be needed per driven wheel
+	 *  to hold the vehicle stationary on the current slope.
+	 *  Positive = uphill resistance (opposing forward motion on an uphill).
+	 *  \param[in] nDrivenWheels Number of driven wheels sharing the load.
+	 */
+	double estimateSlopeTorquePerWheel(size_t nDrivenWheels = 0) const;
+
 	const TListSensors& getSensors() const { return sensors_; }
 	TListSensors& getSensors() { return sensors_; }
 	CSVLogger::Ptr getLoggerPtr(const std::size_t logger_index)

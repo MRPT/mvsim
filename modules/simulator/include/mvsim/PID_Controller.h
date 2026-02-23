@@ -10,47 +10,64 @@
 
 namespace mvsim
 {
-/** \ingroup mvsim_simulator_module */
+/** PID controller with optional features:
+ *  - Filtered derivative (coefficient N)
+ *  - Anti-windup via back-calculation
+ *  - Optional reference setpoint filter (1st or 2nd order)
+ *
+ * \ingroup mvsim_simulator_module
+ */
 struct PID_Controller
 {
 	PID_Controller() = default;
 
-	double KP, KI, KD, N;  //!< PID controller parameters
-	double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
+	double KP = 1.0, KI = 0, KD = 0;
 
-	// TEMPORARY!
-	double tau_ff = 0.0, tau_ff1 = 0, tau_ff2 = 0, tau_ff3 = 0, tau_ff4 = 0, tau_ff5 = 0,
-		   tau_ff6 = 0;	 //!< Feedforward time constant (in seconds)
-	double K_ff = 0.0, K_ff1 = 0, K_ff2 = 0, K_ff3 = 0, K_ff4 = 0, K_ff5 = 0,
-		   K_ff6 = 0;  //!< Feedforward gain
+	/** Derivative filter coefficient. Higher values = less filtering.
+	 *  Typical range: 2-20. Set to 0 to disable filtered derivative
+	 *  (falls back to standard difference). */
+	double N = 0;
 
-	double new_vel_max = 0.0, new_w_max = 0.0, dist_obst = 0.0;
+	double max_out = 0;	 //!< For clamping (0=no clamp)
 
-	double tau_f = 0.0;	 //!< Time constant for reference filter
-	int n_f = 1;  //!< Order of the reference filter
+	bool enable_antiwindup = false;
 
-	double max_out = 0.0;  //!< Maximum absolute output value
+	/** Enable low-pass filter on reference (setpoint) before error
+	 *  computation. */
+	bool enable_reference_filter = false;
 
-	bool enable_antiwindup = true;
-	bool enable_feedforward = false;
-	bool enable_referencefilter = false;
-	bool enable_adaptative = false;
+	/** Time constant for the reference filter [seconds]. */
+	double reference_filter_tau = 0.1;
 
-	bool full_payload = false;
+	/** Order of the reference filter: 1 or 2. */
+	int reference_filter_order = 1;
 
-	/** err = desired-actual, dt=ellapsed time in secs */
-	double compute(double spVel, double actVel, double torque_slope, double dt);
+	/** Compute PID output.
+	 *  \param[in] err  Error = desired - actual
+	 *  \param[in] dt   Elapsed time in seconds
+	 *  \param[in] feedforward  Optional feedforward term added to the output
+	 *  \return Control output (torque, force, etc.)
+	 */
+	double compute(double err, double dt, double feedforward = 0);
 
-	/** Reset internal status to all zeros (KP, KI,DP, max_out remain
+	/** Filter a setpoint through the reference filter.
+	 *  Call this on the setpoint *before* computing the error, if
+	 *  enable_reference_filter is true.
+	 *  \return Filtered setpoint value.
+	 */
+	double filterReference(double setpoint, double dt);
+
+	/** Reset internal status to all zeros (gains and settings remain
 	 * unmodified) */
 	void reset();
 
    private:
-	double spVel_f_y1 = 0.0;
-	double spVel_f_y2 = 0.0;
-	double d_state = 0.0;
-	double ff_state = 0.0;
-	double lastOutput = 0;
-	double e_n = 0, e_n_1 = 0, e_n_2 = 0, i_state = 0.0;
+	double lastOutput_ = 0;
+	double i_state_ = 0;  //!< Integrator accumulator
+	double d_state_ = 0;  //!< Filtered derivative state
+	double e_prev_ = 0;	 //!< Previous error (for unfiltered derivative)
+	double refFilter_y1_ = 0;  //!< Reference filter 1st stage state
+	double refFilter_y2_ = 0;  //!< Reference filter 2nd stage state
+	bool firstCall_ = true;
 };
 }  // namespace mvsim

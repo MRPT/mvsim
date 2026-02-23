@@ -108,35 +108,29 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 		PID_[i].KP = KP;
 		PID_[i].KI = KI;
 		PID_[i].KD = KD;
-		PID_[i].max_out = max_torque;
-
-		// TEMPORARY
 		PID_[i].N = N;
-		PID_[i].tau_ff = tau_ff;  // Feedforward time constant
-		PID_[i].tau_ff1 = tau_ff1;
-		PID_[i].tau_ff2 = tau_ff2;
-		PID_[i].tau_ff3 = tau_ff3;
-		PID_[i].tau_ff4 = tau_ff4;
-		PID_[i].tau_ff5 = tau_ff5;
-		PID_[i].tau_ff6 = tau_ff6;
-		PID_[i].K_ff = K_ff;  // Feedforward gain
-		PID_[i].K_ff1 = K_ff1;
-		PID_[i].K_ff2 = K_ff2;
-		PID_[i].K_ff3 = K_ff3;
-		PID_[i].K_ff4 = K_ff4;
-		PID_[i].K_ff5 = K_ff5;
-		PID_[i].K_ff6 = K_ff6;
-		PID_[i].tau_f = tau_f;	// Filter time constant
-		PID_[i].n_f = n_f;	// Filter order
+		PID_[i].max_out = max_torque;
 		PID_[i].enable_antiwindup = enable_antiwindup;
-		PID_[i].enable_feedforward = enable_feedforward;
-		PID_[i].enable_referencefilter = enable_referencefilter;
-		PID_[i].enable_adaptative = enable_adaptative;
-		PID_[i].full_payload = full_payload;
+		PID_[i].enable_reference_filter = enable_reference_filter;
+		PID_[i].reference_filter_tau = reference_filter_tau;
+		PID_[i].reference_filter_order = reference_filter_order;
+	}
+
+	// Optional: filter reference setpoints
+	if (enable_reference_filter)
+	{
+		vel_fl = PID_[0].filterReference(vel_fl, ci.context.dt);
+		vel_fr = PID_[1].filterReference(vel_fr, ci.context.dt);
+	}
+
+	// Feedforward for slope compensation:
+	double ff = 0;
+	if (enable_feedforward)
+	{
+		ff = feedforward_gain * veh_.estimateSlopeTorquePerWheel(2);
 	}
 
 	co.rl_torque = .0;
-	const double torque_slope = 0.0;  // No slope disturbance for Ackermann vehicles
 	co.rr_torque = .0;
 
 	const bool setpointIsZero =
@@ -156,8 +150,8 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	else
 	{
 		// "-" because \tau<0 makes robot moves forwards.
-		co.fl_torque = -PID_[0].compute(vel_fl, act_vel_fl, torque_slope, ci.context.dt);
-		co.fr_torque = -PID_[1].compute(vel_fr, act_vel_fr, torque_slope, ci.context.dt);
+		co.fl_torque = -PID_[0].compute(vel_fl - act_vel_fl, ci.context.dt, ff);
+		co.fr_torque = -PID_[1].compute(vel_fr - act_vel_fr, ci.context.dt, ff);
 
 		if (setpointIsZero)
 		{
@@ -191,17 +185,16 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["KD"] = TParamEntry("%lf", &KD);
-
-	// TEMPORARY
 	params["N"] = TParamEntry("%lf", &N);
-	params["tau_ff"] = TParamEntry("%lf", &tau_ff);
-	params["K_ff"] = TParamEntry("%lf", &K_ff);
-	params["tau_f"] = TParamEntry("%lf", &tau_f);
-	params["enable_antiwindup"] = TParamEntry("%bool", &enable_antiwindup);
-	params["enable_feedforward"] = TParamEntry("%bool", &enable_feedforward);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
 	params["zero_threshold"] = TParamEntry("%lf", &zero_threshold);
 	params["stop_threshold"] = TParamEntry("%lf", &stop_threshold);
+	params["enable_antiwindup"] = TParamEntry("%bool", &enable_antiwindup);
+	params["enable_feedforward"] = TParamEntry("%bool", &enable_feedforward);
+	params["feedforward_gain"] = TParamEntry("%lf", &feedforward_gain);
+	params["enable_reference_filter"] = TParamEntry("%bool", &enable_reference_filter);
+	params["reference_filter_tau"] = TParamEntry("%lf", &reference_filter_tau);
+	params["reference_filter_order"] = TParamEntry("%d", &reference_filter_order);
 
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);

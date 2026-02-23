@@ -13,15 +13,6 @@
 #include <mvsim/PID_Controller.h>
 #include <mvsim/VehicleBase.h>
 
-// TEMPORARY!
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2/LinearMath/Quaternion.h>
-
-#include <benchmark_msg/msg/benchmark_params.hpp>
-#include <mutex>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/imu.hpp>
-
 namespace mvsim
 {
 /** @addtogroup vehicle_dynamics_module  Vehicle kinematic models
@@ -131,27 +122,30 @@ class DynamicsDifferential : public VehicleBase
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		/// PID controller parameters
-		double KP = 100;
-		double KI = 0;
-		double KD = 0;
-		double N = 1.0;
-		double tau_ff = 0.0, tau_ff1 = 0, tau_ff2 = 0, tau_ff3 = 0, tau_ff4 = 0, tau_ff5 = 0,
-			   tau_ff6 = 0;	 //!< Feedforward time constant (in seconds)
-		double K_ff = 0.0, K_ff1 = 0, K_ff2 = 0, K_ff3 = 0, K_ff4 = 0, K_ff5 = 0,
-			   K_ff6 = 0;  //!< Feedforward gain
-		double new_vel_max = 0.0, new_w_max = 0.0, dist_obst = 0.0;
-		double tau_f = 0.0;
-		int n_f = 1;  //!< Order of the reference filter
-		double pitch = 0.0;
-		double torque_slope = 0.0;
-		bool enable_antiwindup = true;
-		bool enable_feedforward = false;
-		bool enable_referencefilter = false;
-		bool enable_adaptative = false;
-		bool full_payload = false;
+		double KP = 10, KI = 0, KD = 0;
+
+		/** Derivative filter coefficient (0=unfiltered, typical: 2-20) */
+		double N = 0;
 
 		/// Maximum abs. value torque (for clamp) [Nm]
 		double max_torque = 100;
+
+		bool enable_antiwindup = false;
+
+		/** Enable slope feedforward compensation */
+		bool enable_feedforward = false;
+
+		/** Gain for slope feedforward (1.0 = full compensation) */
+		double feedforward_gain = 1.0;
+
+		/** Enable reference (setpoint) filter */
+		bool enable_reference_filter = false;
+
+		/** Time constant for reference filter [seconds] */
+		double reference_filter_tau = 0.1;
+
+		/** Order of the reference filter (1 or 2) */
+		int reference_filter_order = 1;
 
 		// See base docs.
 		bool setTwistCommand(const mrpt::math::TTwist2D& t) override
@@ -176,9 +170,6 @@ class DynamicsDifferential : public VehicleBase
 		std::array<PID_Controller, 2> PIDs_;
 		mrpt::math::TTwist2D setpoint_{0, 0, 0};  //!< "vx" and "omega" only
 		mutable std::mutex setpointMtx_;
-
-		std::shared_ptr<rclcpp::Node> ros_node_;
-		rclcpp::Publisher<benchmark_msg::msg::BenchmarkParams>::SharedPtr benchmark_pub_;
 
 		double joyMaxLinSpeed = 1.0;
 		double joyMaxAngSpeed = 0.5;

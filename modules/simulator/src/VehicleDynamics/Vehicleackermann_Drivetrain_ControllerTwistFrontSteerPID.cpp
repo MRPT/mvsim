@@ -51,10 +51,28 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	PID_.KP = KP;
 	PID_.KI = KI;
 	PID_.KD = KD;
+	PID_.N = N;
 	PID_.max_out = max_torque;
+	PID_.enable_antiwindup = enable_antiwindup;
+	PID_.enable_reference_filter = enable_reference_filter;
+	PID_.reference_filter_tau = reference_filter_tau;
+	PID_.reference_filter_order = reference_filter_order;
 
 	const double vel_act = veh_.getVelocityLocalOdoEstimate().vx;
-	const double vel_des = setpoint_lin_speed;
+	double vel_des = setpoint_lin_speed;
+
+	if (enable_reference_filter)
+	{
+		vel_des = PID_.filterReference(vel_des, ci.context.dt);
+	}
+
+	// Feedforward for slope compensation:
+	double ff = 0;
+	if (enable_feedforward)
+	{
+		// Drivetrain has a single drive torque shared across all wheels
+		ff = feedforward_gain * veh_.estimateSlopeTorquePerWheel(4) * 4.0;
+	}
 
 	const double zero_threshold = 0.001;  // m/s
 	const double stop_threshold = 0.05;	 // m/s , wider threshold for stop detection
@@ -69,9 +87,8 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	}
 	else
 	{
-		const double torque_slope = 0.0;  // No slope disturbance for Ackermann vehicles
 		// "-" because \tau<0 makes robot moves forwards.
-		co.drive_torque = -PID_.compute(vel_des, vel_act, torque_slope, ci.context.dt);
+		co.drive_torque = -PID_.compute(vel_des - vel_act, ci.context.dt, ff);
 
 		if (setpointIsZero)
 		{
@@ -96,7 +113,14 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["KD"] = TParamEntry("%lf", &KD);
+	params["N"] = TParamEntry("%lf", &N);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
+	params["enable_antiwindup"] = TParamEntry("%bool", &enable_antiwindup);
+	params["enable_feedforward"] = TParamEntry("%bool", &enable_feedforward);
+	params["feedforward_gain"] = TParamEntry("%lf", &feedforward_gain);
+	params["enable_reference_filter"] = TParamEntry("%bool", &enable_reference_filter);
+	params["reference_filter_tau"] = TParamEntry("%lf", &reference_filter_tau);
+	params["reference_filter_order"] = TParamEntry("%d", &reference_filter_order);
 
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
