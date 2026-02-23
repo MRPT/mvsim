@@ -1,0 +1,108 @@
+<!--
+  Vehicle class definition file: Scania truck + trailer.
+  Intended to be included into world XML files.
+  Refer to mvsim_tutorial example files.
+-->
+
+<!-- ======================== Truck (driven) ======================== -->
+<vehicle:class name="scania_truck">
+	<dynamics class="ackermann">
+		<rl_wheel pos="0  1.0" mass="15.0" width="0.35" diameter="1.0">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll><model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+		</rl_wheel>
+		<rr_wheel pos="0 -1.0" mass="15.0" width="0.35" diameter="1.0">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
+		</rr_wheel>
+		<fl_wheel mass="15.0" width="0.35" diameter="1.0">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri> <model_roll>90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
+		</fl_wheel>
+		<fr_wheel mass="15.0" width="0.35" diameter="1.0">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck_wheel.dae</model_uri>  <model_roll>90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale>  </visual>
+		</fr_wheel>
+
+		<f_wheels_x>3.0</f_wheels_x>
+		<f_wheels_d>1.8</f_wheels_d>
+		<max_steer_ang_deg>40.0</max_steer_ang_deg>
+
+		<chassis mass="3000.0" zmin="0.4" zmax="3.5">
+			<!-- <shape_from_visual/> -->
+			<shape>
+				<pt>2.5  1.0</pt>
+				<pt>4.0  1.0</pt>
+				<pt>4.0 -1.0</pt>
+				<pt>2.5 -1.0</pt>
+			</shape>
+		</chassis>
+
+		<controller class="twist_ideal">
+		</controller>
+	</dynamics>
+
+	<friction class="default">
+		<mu>0.7</mu>
+		<C_damping>0.5</C_damping>
+		<C_rr>0.01</C_rr>  <!-- Rolling resistance coefficient -->
+	</friction>
+
+	<visual>
+		<model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/truck.dae</model_uri>
+		<model_scale>2.0</model_scale>
+		<model_roll>90.0</model_roll>
+		<model_yaw>90.0</model_yaw>
+	</visual>
+</vehicle:class>
+
+<!-- ======================== Trailer (passive) ======================== -->
+<vehicle:class name="scania_trailer">
+	<dynamics class="differential_4_wheels">
+		<lf_wheel pos="-4.25  0.8" mass="10.0" width="0.35" diameter="0.75">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  <model_roll>-90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+		</lf_wheel>
+		<rf_wheel pos="-4.25 -0.8" mass="10.0" width="0.35" diameter="0.75">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  <model_roll>90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+		</rf_wheel>
+		<lr_wheel pos="-5.25  0.8" mass="10.0" width="0.35" diameter="0.75">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  <model_roll>-90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+		</lr_wheel>
+		<rr_wheel pos="-5.25 -0.8" mass="10.0" width="0.35" diameter="0.75">
+			<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>  <model_roll>90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale> </visual>
+		</rr_wheel>
+
+		<chassis mass="4000.0" zmin="0.5" zmax="4.0">
+			<shape_from_visual/>
+			<!-- Damping ("c" viscous friction coefficient) for 2D linear velocities of the chassis on world -->
+			<linear_damping>10.0</linear_damping>
+		</chassis>
+		<controller class="raw"/>
+	</dynamics>
+
+	<!-- Low friction for passive rolling -->
+	<friction class="default">
+		<mu>0.8</mu>
+		<C_damping>0.1</C_damping>
+		<C_rr>0.03</C_rr>  <!-- Rolling resistance coefficient -->
+	</friction>
+
+	<visual>
+		<model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer.dae</model_uri>
+		<model_scale>2.0</model_scale>
+		<model_roll>88.0</model_roll>  <!-- 88 deg = 2 deg tilted -->
+		<model_yaw>90.0</model_yaw>
+		<model_offset_z>0.22</model_offset_z>
+	</visual>
+
+	<!-- Plus: the two additional cheater wheels -->
+	<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>
+		<model_roll>-90.0</model_roll> <model_yaw>90.0</model_yaw> <model_scale>2.0</model_scale>
+		<model_offset_x>-3.2</model_offset_x>
+		<model_offset_y>0.8</model_offset_y>
+		<model_offset_z>0.5</model_offset_z>
+	</visual>
+	<visual> <model_uri>https://mrpt.github.io/mvsim-models/scania-trucktrailer.zip/scania-trucktrailer/trailer_wheel.dae</model_uri>
+		<model_roll>-90.0</model_roll> <model_yaw>-90.0</model_yaw> <model_scale>2.0</model_scale>
+		<model_offset_x>-3.2</model_offset_x>
+		<model_offset_y>-0.8</model_offset_y>
+		<model_offset_z>0.5</model_offset_z>
+	</visual>
+
+</vehicle:class>

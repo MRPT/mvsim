@@ -28,13 +28,20 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="twist_ideal" />  <!-- "twist_ideal" or "twist_pid" -->
+        <controller class="${controller|twist_ideal}">  <!-- "twist_ideal" or "twist_pid" -->
+          <!-- Optimal parameters from the mvsim-pid-tuner tool -->
+          <KP>20</KP>
+          <KI>10</KI>
+          <KD>0.0000</KD>
+          <max_torque>100</max_torque>
+        </controller>
     </dynamics>
 
     <!-- Friction force simulation -->
     <friction class="default">
         <mu>0.8</mu>
         <C_damping>0.05</C_damping>
+        <C_rr>0.01</C_rr>  <!-- Rolling resistance coefficient -->
     </friction>
 
     <!-- Noisy odometry parameters. These are multipliers to actual SE(2) increments -->

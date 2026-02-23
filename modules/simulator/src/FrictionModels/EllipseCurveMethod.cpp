@@ -74,6 +74,10 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// Velocity of the wheel cog in the frame of the wheel itself:
 	const mrpt::math::TPoint3D vel_w = wRotInv.composePoint(vel_v);
 
+	// Gravity slope force in wheel-local frame:
+	mrpt::math::TPoint2D gravSlope_w;
+	wRotInv.composePoint(input.gravSlopeForce, gravSlope_w);
+
 	// wheel angle around the vertical axis (wrt the vehicle frame):
 	const double wheel_delta = input.wheel.yaw;
 
@@ -119,8 +123,8 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// --------------------------------------------
 	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
-		// Impulse required to step the lateral slippage:
-		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt;
+		// Impulse to cancel lateral velocity + counteract gravity slope:
+		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
 
 		wheel_lateral_friction =
 			std::clamp(wheel_lateral_friction, -max_friction_lateral_Fy, max_friction_lateral_Fy);
@@ -134,23 +138,33 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w - input.wheel.getW());
 	const double desired_wheel_alpha = desired_wheel_w_impulse / input.context.dt;
 
-	// Force for rolling resistance:
-	const double F_rr = 0;	// -sign(vel_w.x) * partial_mass * gravity *  (R1_ * (1 - exp(-A_roll_ *
-							// fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
+	// Rolling resistance: constant-magnitude torque opposing wheel rotation,
+	// proportional to normal force: T_rr = C_rr * F_normal * R
+	// Uses a smooth tanh approximation near zero to avoid sign discontinuity.
+	const double C_rr = input.C_rr_override.value_or(C_rr_);
+	const double T_rolling_resistance = (C_rr > 0 && std::abs(input.wheel.getW()) > 1e-4)
+											? C_rr * Fz * R * std::tanh(input.wheel.getW() * 100.0)
+											: 0.0;
 
 	const double I_yy = input.wheel.Iyy;
 
-	double wheel_long_friction =
-		(input.motorTorque - I_yy * desired_wheel_alpha - C_damping_ * input.wheel.getW()) / R +
-		F_rr;
+	// Effective motor torque after subtracting bearing damping and rolling resistance:
+	const double effectiveTorque =
+		input.motorTorque - C_damping_ * input.wheel.getW() - T_rolling_resistance;
+
+	double wheel_long_friction = (effectiveTorque - I_yy * desired_wheel_alpha) / R;
 
 	// Slippage: The friction with the ground is not infinite:
 	wheel_long_friction = std::clamp(
 		wheel_long_friction, -max_friction_longitudinal_Fx, max_friction_longitudinal_Fx);
 
 	// Recalc wheel ang. velocity impulse with this reduced force:
-	const double actual_wheel_alpha =
-		(input.motorTorque - R * wheel_long_friction - C_damping_ * input.wheel.getW()) / I_yy;
+	const double actual_wheel_alpha = (effectiveTorque - R * wheel_long_friction) / I_yy;
+
+	// Add slope gravity force to the contact-patch friction (acts on chassis,
+	// not on wheel spin). Clamped by remaining friction capacity.
+	const double remaining_lon = max_friction_longitudinal_Fx - std::abs(wheel_long_friction);
+	wheel_long_friction -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);

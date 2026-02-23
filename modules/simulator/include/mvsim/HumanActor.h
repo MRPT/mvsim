@@ -95,7 +95,7 @@ class HumanActor : public VisualObject, public Simulable
 		const mrpt::math::TVector2D& force,
 		const mrpt::math::TPoint2D& applyPoint = mrpt::math::TPoint2D(0, 0)) override
 	{
-		// Actors are kinematic — they do not respond to external forces.
+		// Actors are kinematic, they do not respond to external forces.
 		(void)force;
 		(void)applyPoint;
 	}
@@ -171,7 +171,7 @@ class HumanActor : public VisualObject, public Simulable
 	std::string animNameWalk_ = "walk";
 	std::string animNameRun_ = "run";
 
-	/** XML-parseable parameter table — follows the Block pattern.
+	/** XML-parseable parameter table, follows the Block pattern.
 	 *  Addresses point to the member variables above. */
 	const TParameterDefinitions params_ = {
 		{"walking_speed", {"%lf", &walkingSpeed_}},

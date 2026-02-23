@@ -480,6 +480,33 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		fi.Fz = weightPerWheel;
 		fi.wheelCogLocalVel = wheelLocalVels[i];
 
+		// Gravity slope force per wheel (in vehicle-local coords).
+		// Total mass per wheel = chassis share + wheel own mass.
+		const double totalMassPerWheel = massPerWheel + w.mass;
+		fi.gravSlopeForce = {
+			slopeDir_.x * totalMassPerWheel * gravity, slopeDir_.y * totalMassPerWheel * gravity};
+
+		// Query per-region friction overrides at the wheel's world position:
+		{
+			const b2Vec2 wPtQuery = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
+			const mrpt::math::TPoint3D wheelWorldPos(wPtQuery.x, wPtQuery.y, 0);
+
+			if (auto prop = world_->getPropertyAt("friction_mu", wheelWorldPos))
+			{
+				if (auto* val = std::any_cast<double>(&*prop))
+				{
+					fi.mu_override = *val;
+				}
+			}
+			if (auto prop = world_->getPropertyAt("friction_C_rr", wheelWorldPos))
+			{
+				if (auto* val = std::any_cast<double>(&*prop))
+				{
+					fi.C_rr_override = *val;
+				}
+			}
+		}
+
 		// eval friction (in the frame of the vehicle):
 		const mrpt::math::TPoint2D F_r = frictions_.at(i)->evaluate_friction(fi);
 
@@ -489,11 +516,19 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 		const b2Vec2 wPt = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
 
 		// Apply force to the chassis (skip for ideal controllers that
-		// directly impose the vehicle twist — friction reaction forces would
+		// directly impose the vehicle twist , friction reaction forces would
 		// corrupt the kinematically-imposed trajectory):
 		if (!idealControllerActive_)
 		{
 			b2dBody_->ApplyForce(wForce, wPt, true /*wake up*/);
+
+			// Apply the gravity slope force at this wheel's contact point.
+			// The friction model already counteracts this force in its output,
+			// so the net result is zero when the vehicle is held stationary by
+			// friction, or a residual downhill force when friction is exceeded.
+			const b2Vec2 wGravForce =
+				b2dBody_->GetWorldVector(b2Vec2(fi.gravSlopeForce.x, fi.gravSlopeForce.y));
+			b2dBody_->ApplyForce(wGravForce, wPt, true /*wake up*/);
 		}
 
 		// log

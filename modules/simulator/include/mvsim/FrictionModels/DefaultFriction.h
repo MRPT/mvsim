@@ -13,12 +13,10 @@
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/TParameterDefinitions.h>
 
-#include <vector>
-
 namespace mvsim
 {
 /** The default friction model for interaction between each wheel-ground contact
- * point. No rolling resistance.
+ * point.
  * \ingroup friction_module
  */
 class DefaultFriction : public FrictionBase
@@ -32,11 +30,12 @@ class DefaultFriction : public FrictionBase
 		const FrictionBase::TFrictionInput& input) const override;
 
    private:
-	double mu_;	 //!< friction coeficient (non-dimensional)
-	double C_damping_;	//!< For wheels "internal friction" (N*m*s/rad)
+	double mu_ = 0.8;  //!< friction coefficient (non-dimensional)
+	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
+	double C_rr_ = 0.0;	 //!< Rolling resistance coefficient (non-dimensional)
 
    public:
 	const TParameterDefinitions params_ = {
-		{"mu", {"%lf", &mu_}}, {"C_damping", {"%lf", &C_damping_}}};
+		{"mu", {"%lf", &mu_}}, {"C_damping", {"%lf", &C_damping_}}, {"C_rr", {"%lf", &C_rr_}}};
 };
 }  // namespace mvsim

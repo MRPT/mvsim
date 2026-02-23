@@ -39,6 +39,7 @@ class EllipseCurveMethod : public FrictionBase
 	// double CA_ = 8;	 //!< aerodynamic force coefficient (non-dimensional)
 
 	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)
+	double C_rr_ = 0.0;	 //!< Rolling resistance coefficient (non-dimensional)
 
 	// Ellipse curve parameters:
 	double C_alpha_ = 8.5;	//!< Coefficient for lateral slip angle (non-dimensional)
@@ -52,6 +53,8 @@ class EllipseCurveMethod : public FrictionBase
 
    public:
 	const TParameterDefinitions params_ = {
+		{"C_damping", {"%lf", &C_damping_}},
+		{"C_rr", {"%lf", &C_rr_}},
 		{"C_s", {"%lf", &C_s_}},
 		{"slip_angle_saturation", {"%lf", &slip_angle_saturation_}},
 		{"slip_ratio_saturation", {"%lf", &slip_ratio_saturation_}},

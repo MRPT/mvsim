@@ -46,3 +46,9 @@ mvsim_add_test(
 	SOURCES test_vehicle_trajectories.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
+
+mvsim_add_test(
+	TARGET test_drift_on_elevation
+	SOURCES test_drift_on_elevation.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
