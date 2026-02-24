@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.2.0 (2026-02-24)
+------------------
 * Merge pull request `#94 <https://github.com/MRPT/mvsim/issues/94>`_ from MRPT/feat/tune-pid
   Feature: tune pid
 * Support zones with different friction and rolling resistance
