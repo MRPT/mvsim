@@ -55,21 +55,50 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	const double followErrorL = spVelL - actVelL;
 	const double followErrorR = spVelR - actVelR;
 
-	const double zeroThres = 0.001;	 // m/s
+	const double zero_threshold = 0.001;  // m/s
+	const double stop_threshold = 0.05;	 // m/s , wider threshold for stop detection
 
-	if (std::abs(spVelL) < zeroThres &&	 //
-		std::abs(spVelR) < zeroThres &&	 //
-		std::abs(spVelR) < zeroThres &&	 //
-		std::abs(spVelR) < zeroThres)
+	const bool setpointIsZero =
+		std::abs(spVelL) < zero_threshold && std::abs(spVelR) < zero_threshold;
+
+	if (setpointIsZero && std::abs(actVelL) < stop_threshold && std::abs(actVelR) < stop_threshold)
 	{
+		// Near-zero velocity with zero setpoint: full stop, reset PIDs
 		co.wheel_torque_l = 0;
 		co.wheel_torque_r = 0;
-		for (auto& pid : PIDs_) pid.reset();
+		for (auto& pid : PIDs_)
+		{
+			pid.reset();
+		}
 	}
 	else
 	{
 		co.wheel_torque_l = -PIDs_[0].compute(followErrorL, ci.context.dt);
 		co.wheel_torque_r = -PIDs_[1].compute(followErrorR, ci.context.dt);
+
+		if (setpointIsZero)
+		{
+			// Braking toward zero: clamp torque so it can only oppose current
+			// motion direction, preventing the PID integral from causing rebound.
+			// Sign convention: positive co.wheel_torque = backward motor force.
+			if (actVelL > 0)
+			{
+				co.wheel_torque_l = std::max(0.0, co.wheel_torque_l);
+			}
+			else if (actVelL < 0)
+			{
+				co.wheel_torque_l = std::min(0.0, co.wheel_torque_l);
+			}
+
+			if (actVelR > 0)
+			{
+				co.wheel_torque_r = std::max(0.0, co.wheel_torque_r);
+			}
+			else if (actVelR < 0)
+			{
+				co.wheel_torque_r = std::min(0.0, co.wheel_torque_r);
+			}
+		}
 	}
 }
 
@@ -120,7 +149,10 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 		case ' ':
 		{
 			setpoint_ = {0, 0, 0};
-			for (auto& pid : PIDs_) pid.reset();
+			for (auto& pid : PIDs_)
+			{
+				pid.reset();
+			}
 		}
 		break;
 	};
@@ -136,7 +168,7 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 		setpoint_.vx = -js_y * joyMaxLinSpeed;
 		setpoint_.omega = -js_x * joyMaxAngSpeed;
 
-		if (js.buttons.size() >= 7)
+		if (js.buttons.size() > 7)
 		{
 			if (js.buttons[5]) joyMaxLinSpeed *= 1.01;
 			if (js.buttons[7]) joyMaxLinSpeed /= 1.01;
@@ -147,7 +179,10 @@ void DynamicsDifferential::ControllerTwistPID::teleop_interface(
 			if (js.buttons[3])	// brake
 			{
 				setpoint_ = {0, 0, 0};
-				for (auto& pid : PIDs_) pid.reset();
+				for (auto& pid : PIDs_)
+				{
+					pid.reset();
+				}
 			}
 		}
 

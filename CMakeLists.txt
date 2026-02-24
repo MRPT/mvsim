@@ -287,6 +287,7 @@ add_subdirectory(modules)
 #       Apps
 # --------------------------
 add_subdirectory(mvsim-cli)
+add_subdirectory(mvsim-pid-tuner)
 
 if (BUILD_FOR_ROS)
   ###########
@@ -435,7 +436,7 @@ if (MVSIM_UNIT_TESTS AND
   message(STATUS "*Warning*: Disabling unit tests in this architecture (${CMAKE_SYSTEM_PROCESSOR})")
 endif()
 
-if (MVSIM_UNIT_TESTS AND MVSIM_WITH_PYTHON AND MVSIM_WITH_ZMQ)
+if (MVSIM_UNIT_TESTS)
   enable_testing()  # This must be in the root cmake file
   add_subdirectory(tests)
 endif()

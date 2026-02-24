@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<mvsim_world version="1.0">
+	<!--
+	  Friction Zones Demo
+
+	  Demonstrates per-region friction overrides using PropertyRegion elements.
+	  A flat open area with two distinct zones:
+	  - Ice patch (low friction coefficient, mu=0.15)
+	  - Sand patch (high rolling resistance, C_rr=0.08)
+
+	  Drive the Jackal robot over the patches to observe slipping on ice
+	  and deceleration on sand.
+	-->
+
+	<simul_timestep>0</simul_timestep>
+	<joystick_enabled>true</joystick_enabled>
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>true</show_forces>
+		<cam_distance>25</cam_distance>
+		<fov_deg>60</fov_deg>
+		<refresh_fps>40</refresh_fps>
+	</gui>
+
+	<!-- Light parameters -->
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>-75.0</light_azimuth_deg>
+		<light_elevation_deg>50.0</light_elevation_deg>
+	</lights>
+
+	<!-- A SkyBox decoration -->
+	<element class='skybox'>
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/SunSet.zip/SunSet/SunSet%s.jpg</textures>
+	</element>
+
+	<!-- ================================================================
+	     GROUND PLANE
+	     ================================================================ -->
+
+	<!-- Main grass ground -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-25</x_min>
+		<y_min>-25</y_min>
+		<x_max>25</x_max>
+		<y_max>25</y_max>
+		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- ================================================================
+	     ICE PATCH (4x4m, centered at x=-5, y=0)
+	     Low friction coefficient: mu=0.15
+	     ================================================================ -->
+
+	<!-- Visual: light blue surface slightly above ground -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-7</x_min>
+		<y_min>-2</y_min>
+		<x_max>1</x_max>
+		<y_max>6</y_max>
+		<z>0.01</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/StopRoadMarking01_1K_BaseColor.png</texture>
+		<texture_size_x>4.0</texture_size_x>
+		<texture_size_y>4.0</texture_size_y>
+	</element>
+
+	<!-- Property region: low friction mu -->
+	<element class="property_region">
+		<property_name>friction_mu</property_name>
+		<value_double>0.15</value_double>
+		<x_min>-7</x_min>
+		<y_min>-2</y_min>
+		<z_min>-1.0</z_min>
+		<x_max>1</x_max>
+		<y_max>6</y_max>
+		<z_max>2.0</z_max>
+	</element>
+
+	<!-- ================================================================
+	     SAND PATCH (4x4m, centered at x=5, y=0)
+	     High rolling resistance: C_rr=0.08
+	     ================================================================ -->
+
+	<!-- Visual: sandy surface slightly above ground -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>3</x_min>
+		<y_min>-2</y_min>
+		<x_max>7</x_max>
+		<y_max>2</y_max>
+		<z>0.01</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WhiteGravel02_512_BaseColor.png</texture>
+		<texture_size_x>1.0</texture_size_x>
+		<texture_size_y>1.0</texture_size_y>
+	</element>
+
+	<!-- Property region: high rolling resistance -->
+	<element class="property_region">
+		<property_name>friction_C_rr</property_name>
+		<value_double>0.08</value_double>
+		<x_min>3</x_min>
+		<y_min>-2</y_min>
+		<z_min>-1.0</z_min>
+		<x_max>7</x_max>
+		<y_max>2</y_max>
+		<z_max>2.0</z_max>
+	</element>
+
+	<!-- ================================================================
+	     DECORATION: Palm trees
+	     ================================================================ -->
+
+	<block:class name="palm_tree">
+		<static>true</static>
+		<zmin>0.0</zmin>
+		<zmax>8.0</zmax>
+		<shape_from_visual/>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/TropicPalmTree.zip/TropicPalmTree/free_palm.dae</model_uri>
+			<model_roll>90.0</model_roll>
+		</visual>
+	</block:class>
+
+	<block class="palm_tree"> <init_pose>-12 8 30</init_pose>   </block>
+	<block class="palm_tree"> <init_pose>10 -9 60</init_pose>   </block>
+	<block class="palm_tree"> <init_pose>-10 -10 120</init_pose> </block>
+	<block class="palm_tree"> <init_pose>14 7 15</init_pose>    </block>
+
+	<!-- ================================================================
+	     VEHICLE
+	     ================================================================ -->
+
+	<include file="../definitions/jackal.vehicle.xml"
+		default_sensors="false"
+		controller="twist_pid"
+		/>
+
+	<!-- Jackal starting position: between the two patches -->
+	<vehicle name="robot" class="jackal">
+		<init_pose>0 -6 0</init_pose>
+	</vehicle>
+
+</mvsim_world>

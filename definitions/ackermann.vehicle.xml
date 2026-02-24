@@ -25,12 +25,14 @@
         <!--   Motor controller -->
         <controller class="twist_front_steer_pid">
             <!-- Params -->
-            <KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+            <KP>150.2758</KP>
+            <KI>59.1637</KI>
+            <KD>0.0000</KD>
+            <max_torque>400.94</max_torque>
             <V>0.0</V><W>0</W>
-            <max_torque>600</max_torque>
         </controller>
 
-        <!-- Available types: 
+        <!-- Available types (only if dynamics class="ackermann_drivetrain") 
             open_front
             open_rear
             open_4wd
@@ -53,7 +55,8 @@
     <!-- Friction force simulation -->
     <friction class="default">
         <mu>0.7</mu>
-        <C_damping>10</C_damping>
+        <C_damping>0.5</C_damping>
+        <C_rr>0.01</C_rr>  <!-- Rolling resistance coefficient -->
     </friction>
 
 

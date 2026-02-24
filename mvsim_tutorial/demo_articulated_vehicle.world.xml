@@ -7,7 +7,7 @@
 	     =============================================================  -->
 
 	<!-- ======================== World settings ======================== -->
-	<simul_timestep>0.005</simul_timestep>
+	<simul_timestep>5e-3</simul_timestep>
 	<gravity>9.81</gravity>
 	<b2d_vel_iters>10</b2d_vel_iters>
 	<b2d_pos_iters>5</b2d_pos_iters>
@@ -236,24 +236,16 @@
 	            <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
 			</chassis>
 
-			<!-- Motor controller: twist with PID -->
-			<controller class="twist_front_steer_pid">
-				<KP>1000</KP>
-				<KI>50</KI>
-				<I_MAX>20</I_MAX>
-				<KD>0</KD>
-				<V>0.0</V>
-				<W>0</W>
-				<max_torque>500</max_torque>
+			<!-- Motor controller -->
+			<controller class="twist_ideal">
 			</controller>
 
-			<drivetrain type="open_rear">
-			</drivetrain>
 		</dynamics>
 
 		<friction class="default">
-			<mu>0.7</mu>
+			<mu>0.8</mu>
 			<C_damping>5</C_damping>
+			<C_rr>0.01</C_rr>  <!-- Rolling resistance coefficient -->
 		</friction>
 
 		<!-- Noisy odometry parameters. These are multipliers to actual SE(2) increments -->
@@ -307,8 +299,9 @@
 
 		<!-- Low friction for passive rolling -->
 		<friction class="default">
-			<mu>0.5</mu>
-			<C_damping>1.0</C_damping>
+			<mu>0.8</mu>
+			<C_damping>0.1</C_damping>
+			<C_rr>0.01</C_rr>  <!-- Rolling resistance coefficient -->
 		</friction>
 
 		<!--  Custom vehicle visualization model -->

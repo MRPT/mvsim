@@ -90,9 +90,11 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		// Shape node (optional, fallback to default shape if none found)
 		const rapidxml::xml_node<char>* xml_shape = xml_chassis->first_node("shape");
 		if (xml_shape)
+		{
 			mvsim::parse_xmlnode_shape(
 				*xml_shape, chassis_poly_,
 				"[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
+		}
 	}
 
 	//<rl_wheel pos="0  1" mass="6.0" width="0.30" diameter="0.62" />
@@ -189,30 +191,42 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		if (xml_control)
 		{
 			rapidxml::xml_attribute<char>* control_class = xml_control->first_attribute("class");
-			if (!control_class || !control_class->value())
-				throw runtime_error(
-					"[DynamicsAckermannDrivetrain] Missing 'class' attribute "
-					"in <controller> XML node");
-
+			if (!control_class || control_class->value_size() == 0)
+			{
+				THROW_EXCEPTION(
+					"[DynamicsAckermannDrivetrain] Missing 'class' attribute in "
+					"<controller> XML node");
+			}
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
+			{
 				controller_ = std::make_shared<ControllerRawForces>(*this);
+			}
 			else if (sCtrlClass == ControllerTwistFrontSteerPID::class_name())
+			{
 				controller_ = std::make_shared<ControllerTwistFrontSteerPID>(*this);
+			}
 			else if (sCtrlClass == ControllerFrontSteerPID::class_name())
+			{
 				controller_ = std::make_shared<ControllerFrontSteerPID>(*this);
+			}
 			else
+			{
 				THROW_EXCEPTION_FMT(
 					"[DynamicsAckermannDrivetrain] Unknown 'class'='%s' in "
 					"<controller> XML node",
 					sCtrlClass.c_str());
+			}
 
 			controller_->load_config(*xml_control);
 		}
 	}
 
 	// Default controller:
-	if (!controller_) controller_ = std::make_shared<ControllerRawForces>(*this);
+	if (!controller_)
+	{
+		controller_ = std::make_shared<ControllerRawForces>(*this);
+	}
 }
 
 // See docs in base class:
@@ -226,6 +240,9 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 
 	if (controller_)
 	{
+		// Reset before invoking , the ideal controller will re-set it if active:
+		idealControllerActive_ = false;
+
 		// Invoke controller:
 		TControllerInput ci;
 		ci.context = context;

@@ -49,14 +49,20 @@ class CSVLogger
 
 	void setRecording(bool recording) { isRecording_ = recording; }
 	[[nodiscard]] bool isRecording() const { return isRecording_; }
+
+	/// When disabled, writeRow() still fires callbacks but skips all file
+	/// I/O. Useful when only in-memory callbacks are needed (e.g. unit tests,
+	/// auto-tuning) to avoid generating useless .csv files on disk.
+	void setFileWritingEnabled(bool enabled) { fileWritingEnabled_ = enabled; }
+	[[nodiscard]] bool isFileWritingEnabled() const { return fileWritingEnabled_; }
 	void newSession();
 
 	/// Register a callback to be invoked on every writeRow().
 	/// \sa isActive()
 	void registerOnRowCallback(const on_row_callback_t& cb) { onRowCallbacks_.emplace_back(cb); }
 
-	/// Returns true when this logger should be "active" — i.e. columns
-	/// should be updated — because either file recording is on **or** at
+	/// Returns true when this logger should be "active", i.e. columns
+	/// should be updated, because either file recording is on **or** at
 	/// least one listener callback is registered.
 	[[nodiscard]] bool isActive() const { return isRecording_ || !onRowCallbacks_.empty(); }
 
@@ -68,6 +74,7 @@ class CSVLogger
 	std::shared_ptr<std::ofstream> file_;
 	std::string filepath_;
 	bool isRecording_ = false;
+	bool fileWritingEnabled_ = true;
 
 	std::vector<on_row_callback_t> onRowCallbacks_;
 };

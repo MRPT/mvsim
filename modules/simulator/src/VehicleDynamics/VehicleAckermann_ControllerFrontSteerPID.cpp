@@ -120,7 +120,7 @@ void DynamicsAckermann::ControllerFrontSteerPID::teleop_interface(
 		setpoint_lin_speed = -js_y * joyMaxLinSpeed;
 		setpoint_steer_ang = -js_x * joyMaxSteerAng;
 
-		if (js.buttons.size() >= 7)
+		if (js.buttons.size() > 7)
 		{
 			if (js.buttons[5]) joyMaxLinSpeed *= 1.01;
 			if (js.buttons[7]) joyMaxLinSpeed /= 1.01;

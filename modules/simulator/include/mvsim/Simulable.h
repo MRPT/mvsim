@@ -63,8 +63,26 @@ class Simulable
 
 	virtual VisualObject* meAsVisualObject() { return nullptr; }
 
-	/** Last time-step velocity (of the ref. point, in local coords) */
-	mrpt::math::TTwist2D getVelocityLocal() const;
+	/** Last time-step velocity (of the reference point, in local coords)
+	 * Note this is converted from Box2D center of mass velocity into our own reference point.
+	 */
+	mrpt::math::TTwist2D getRefVelocityLocal() const;
+
+	/** Deprecated: replace with getRefVelocityLocal()  */
+	[[deprecated("Use getRefVelocityLocal() instead")]] mrpt::math::TTwist2D getVelocityLocal()
+		const
+	{
+		return getRefVelocityLocal();
+	}
+
+	/** Last time-step velocity (of the reference point, in global coords)
+	 * Note this is converted from Box2D center of mass velocity into our own reference point.
+	 */
+	mrpt::math::TTwist2D getRefVelocityGlobal() const;
+
+	/** Last time-step velocity of the Box2D center of mass point, in global coords
+	 */
+	mrpt::math::TTwist2D getComVelocityGlobal() const;
 
 	/** Last time-step pose (of the ref. point, in global coords) (ground-truth)
 	 */
@@ -78,8 +96,6 @@ class Simulable
 
 	/// No thread-safe version. Used internally only.
 	mrpt::math::TPose3D getPoseNoLock() const;
-
-	mrpt::math::TTwist2D getTwist() const;
 
 	/** Last time-step acceleration of the ref. point (global coords).
 	 * Note this is the "coordinate acceleration" vector, not the proper
@@ -95,7 +111,12 @@ class Simulable
 	 * the global frame if its a top-level entity. */
 	virtual void setRelativePose(const mrpt::math::TPose3D& p) { setPose(p); }
 
-	void setTwist(const mrpt::math::TTwist2D& dq) const;
+	/** Set the body twist in the local, body frame.
+	 * The linear velocity corresponds to the object local origin.
+	 * It is then internally converted into the velocity of the Box2D center of mass,
+	 * in global coordinates as expected by Box2D.
+	 */
+	void setRefVelocityLocal(const mrpt::math::TTwist2D& dq);
 
 	/// Alternative to getPose()
 	mrpt::poses::CPose2D getCPose2D() const;
@@ -165,14 +186,17 @@ class Simulable
    private:
 	World* simulable_parent_ = nullptr;
 
-	/** protects q_, dq_, ddq_lin_ */
+	/** protects q_, dq_, dq_com_, ddq_lin_ */
 	mutable std::shared_mutex q_mtx_;
 
 	/** Last time-step pose (of the ref. point, in global coords) */
 	mrpt::math::TPose3D q_ = mrpt::math::TPose3D::Identity();
 
-	/** Last time-step velocity (of the ref. point, in global coords) */
+	/** Last time-step velocity of the reference point in global coords */
 	mrpt::math::TTwist2D dq_{0, 0, 0};
+
+	/** Last time-step velocity of the center of mass in global coords, as used by Box2D */
+	mrpt::math::TTwist2D dq_com_{0, 0, 0};
 
 	/// See notes of getLinearAcceleration()
 	mrpt::math::TVector3D ddq_lin_{0, 0, 0};

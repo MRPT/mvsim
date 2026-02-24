@@ -7,41 +7,67 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mvsim/VehicleDynamics/VehicleDifferential.h>
+#include <mvsim/VehicleDynamics/VehicleAckermann.h>
 
 using namespace mvsim;
 
-DynamicsDifferential::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsDifferential& veh)
+DynamicsAckermann::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsAckermann& veh)
 	: ControllerBase(veh)
 {
-	// Get distance between wheels:
-	// Warning: the controller *assumes* that both wheels are parallel (as it's
-	// a rule in differential robots!!)
-	distWheels_ = veh_.wheels_info_[0].y - veh_.wheels_info_[1].y;
-	ASSERT_(distWheels_ > 0);
+	// Pre-compute the rear-to-front axle distance (wheelbase).
+	// This is needed to derive the equivalent Ackermann steering angle from a
+	// (vx, omega) twist setpoint:  steer_ang = atan(omega * L / vx)
+	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
+	ASSERT_(r2f_L_ > 0.0);
 
 	// Signal that friction reaction forces must not be applied to the
 	// chassis body , the twist is imposed directly by this controller.
 	veh_.idealControllerActive_ = true;
 }
 
-void DynamicsDifferential::ControllerTwistIdeal::control_step(
-	[[maybe_unused]] const DynamicsDifferential::TControllerInput& ci,
-	DynamicsDifferential::TControllerOutput& co)
+void DynamicsAckermann::ControllerTwistIdeal::control_step(
+	[[maybe_unused]] const DynamicsAckermann::TControllerInput& ci,
+	DynamicsAckermann::TControllerOutput& co)
 {
-	co.wheel_torque_l = 0;
-	co.wheel_torque_r = 0;
+	// Ideal controller: no wheel torques are needed, the twist is imposed
+	// directly in on_post_step(). We still need to fill steer_ang so that
+	// computeFrontWheelAngles() receives a sensible value.
+	co.fl_torque = 0;
+	co.fr_torque = 0;
+	co.rl_torque = 0;
+	co.rr_torque = 0;
+
+	const auto sp = setpoint();
+
+	// Compute the equivalent central Ackermann steering angle from (vx, omega).
+	// Kinematic relation:  omega = vx * tan(delta) / L
+	//   => delta = atan(omega * L / vx)
+	// When vx == 0 we fall back to a direct omega-based clamped angle.
+	if (std::abs(sp.vx) > 1e-3)
+	{
+		co.steer_ang = std::atan(sp.omega * r2f_L_ / sp.vx);
+	}
+	else
+	{
+		co.steer_ang = (sp.omega >= 0 ? 1.0 : -1.0) *
+					   std::min(std::abs(sp.omega * r2f_L_), veh_.getMaxSteeringAngle());
+	}
+
+	// Clamp to vehicle steering limits
+	co.steer_ang =
+		std::clamp(co.steer_ang, -veh_.getMaxSteeringAngle(), veh_.getMaxSteeringAngle());
 }
 
-void DynamicsDifferential::ControllerTwistIdeal::on_post_step(
+void DynamicsAckermann::ControllerTwistIdeal::on_post_step(
 	[[maybe_unused]] const TSimulContext& context)
 {
-	// Fake controller: just set the setpoint as state and we are done.
+	// Fake / ideal controller: directly override the vehicle twist with the
+	// setpoint. Box2D integration will propagate this to the pose.
 	const auto sp = setpoint();
-	this->veh_.setRefVelocityLocal(sp);
+	veh_.setRefVelocityLocal(sp);
 }
 
-void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
+void DynamicsAckermann::ControllerTwistIdeal::teleop_interface(
 	const TeleopInput& in, TeleopOutput& out)
 {
 	ControllerBase::teleop_interface(in, out);
@@ -52,7 +78,6 @@ void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
 	{
 		default:
 			break;
-
 		case 'W':
 		case 'w':
 			setpoint_.vx += 0.1;
@@ -65,12 +90,12 @@ void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
 
 		case 'A':
 		case 'a':
-			setpoint_.omega += 2.0 * M_PI / 180;
+			setpoint_.omega += 2.0 * M_PI / 180.0;
 			break;
 
 		case 'D':
 		case 'd':
-			setpoint_.omega -= 2.0 * M_PI / 180;
+			setpoint_.omega -= 2.0 * M_PI / 180.0;
 			break;
 
 		case ' ':
@@ -134,5 +159,5 @@ void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(
 	}
 
 	out.append_gui_lines += mrpt::format(
-		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx, 180.0 / M_PI * setpoint_.omega);
+		"setpoint: lin=%.03f ang=%.03f deg/s\n", setpoint_.vx, mrpt::RAD2DEG(setpoint_.omega));
 }

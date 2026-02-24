@@ -124,13 +124,17 @@ std::string mvsim_launch_handle_teleop(
 
 	// is it logging?
 	if (veh.isLogging())
+	{
 		txt2gui_tmp += " (LOGGING)\n";
+	}
 	else
+	{
 		txt2gui_tmp += "\n";
+	}
 
 	// Get speed: ground truth
 	{
-		const mrpt::math::TTwist2D& vel = veh.getVelocityLocal();
+		const mrpt::math::TTwist2D& vel = veh.getRefVelocityLocal();
 		txt2gui_tmp += mrpt::format(
 			"gt. vel: lx=%7.03f, ly=%7.03f, w= %7.03fdeg/s\n", vel.vx, vel.vy,
 			mrpt::RAD2DEG(vel.omega));
@@ -165,7 +169,10 @@ int launchSimulation()
 	// check args:
 	bool badArgs = false;
 	const auto& unlabeledArgs = cli->argCmd.getValue();
-	if (unlabeledArgs.size() != 2) badArgs = true;
+	if (unlabeledArgs.size() != 2)
+	{
+		badArgs = true;
+	}
 
 	if (cli->argHelp.isSet() || badArgs)
 	{
@@ -207,9 +214,15 @@ Available options:
 	app->world.setMinLoggingLevel(verbosityLevel);
 
 	// CLI flags:
-	if (cli->argFullProfiler.isSet()) app->world.getTimeLogger().enableKeepWholeHistory();
+	if (cli->argFullProfiler.isSet())
+	{
+		app->world.getTimeLogger().enableKeepWholeHistory();
+	}
 
-	if (cli->argHeadless.isSet()) app->world.headless(true);
+	if (cli->argHeadless.isSet())
+	{
+		app->world.headless(true);
+	}
 
 	// Load from XML:
 	try
@@ -252,7 +265,10 @@ Available options:
 	while (!doExit)
 	{
 		// was the quit button hit in the GUI?
-		if (app->world.simulator_must_close()) break;
+		if (app->world.simulator_must_close())
+		{
+			break;
+		}
 
 		// Simulation
 		// ============================================================
@@ -279,6 +295,9 @@ Available options:
 		// Global keys:
 		switch (keyevent.keycode)
 		{
+			default:
+				break;
+
 			case GLFW_KEY_ESCAPE:
 				doExit = true;
 				break;
@@ -301,12 +320,18 @@ Available options:
 
 		// Clear the keystroke buffer
 		gui_key_events_mtx.lock();
-		if (keyevent.keycode != 0) gui_key_events = World::GUIKeyEvent();
+		if (keyevent.keycode != 0)
+		{
+			gui_key_events = World::GUIKeyEvent();
+		}
 		gui_key_events_mtx.unlock();
 
 		msg2gui = txt2gui_tmp;	// send txt msgs to show in the GUI
 
-		if (app->thread_params.isClosing()) doExit = true;
+		if (app->thread_params.isClosing())
+		{
+			doExit = true;
+		}
 
 	}  // end while()
 

@@ -81,18 +81,26 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 		if (xml_control)
 		{
 			rapidxml::xml_attribute<char>* control_class = xml_control->first_attribute("class");
-			if (!control_class || !control_class->value())
-				throw runtime_error(
+			if (!control_class || control_class->value_size() == 0)
+			{
+				THROW_EXCEPTION(
 					"[DynamicsDifferential] Missing 'class' attribute in "
 					"<controller> XML node");
+			}
 
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
+			{
 				controller_ = std::make_shared<ControllerRawForces>(*this);
+			}
 			else if (sCtrlClass == ControllerTwistPID::class_name())
+			{
 				controller_ = std::make_shared<ControllerTwistPID>(*this);
+			}
 			else if (sCtrlClass == ControllerTwistIdeal::class_name())
+			{
 				controller_ = std::make_shared<ControllerTwistIdeal>(*this);
+			}
 			else
 			{
 				THROW_EXCEPTION_FMT(
@@ -121,6 +129,9 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 
 	if (controller_)
 	{
+		// Reset before invoking , the ideal controller will re-set it if active:
+		idealControllerActive_ = false;
+
 		// Invoke controller:
 		TControllerInput ci;
 		ci.context = context;
@@ -154,7 +165,10 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 
 void DynamicsDifferential::invoke_motor_controllers_post_step(const TSimulContext& context)
 {
-	if (controller_) controller_->on_post_step(context);
+	if (controller_)
+	{
+		controller_->on_post_step(context);
+	}
 }
 
 // See docs in base class:

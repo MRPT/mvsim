@@ -14,6 +14,8 @@
 #include <mvsim/Wheel.h>
 #include <mvsim/basic_types.h>	// fwrd decls.
 
+#include <optional>
+
 namespace mvsim
 {
 /** @addtogroup friction_module  Friction simulation module
@@ -52,6 +54,18 @@ class FrictionBase
 		/** Instantaneous velocity vector (in vehicle local coordinates) of the wheel
 		 *  center of gravity (cog) point. */
 		mrpt::math::TVector2D wheelCogLocalVel{0, 0};
+
+		/** Gravity slope force (Newtons) acting on this wheel's share of the
+		 *  vehicle mass, in vehicle local coordinates. This allows friction
+		 *  models to preemptively counteract gravity on slopes, preventing
+		 *  drift. On flat ground this is (0,0). */
+		mrpt::math::TVector2D gravSlopeForce{0, 0};
+
+		/** If set, overrides friction model's mu (from PropertyRegion) */
+		std::optional<double> mu_override;
+
+		/** If set, overrides friction model's C_rr (from PropertyRegion) */
+		std::optional<double> C_rr_override;
 
 		TFrictionInput(const TSimulContext& _context, Wheel& _wheel)
 			: context(_context), wheel(_wheel)

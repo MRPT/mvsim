@@ -2,6 +2,34 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2026-02-24)
+------------------
+* Merge pull request `#94 <https://github.com/MRPT/mvsim/issues/94>`_ from MRPT/feat/tune-pid
+  Feature: tune pid
+* Support zones with different friction and rolling resistance
+* Better docs, expose more params
+* FIX: sliding bug on slopes
+* Add new unit test for ramps bug
+* fix stop exactly with any controller. Add rolling resistance
+* new PID tuning tool
+* add backwards compat method
+* Merge pull request `#93 <https://github.com/MRPT/mvsim/issues/93>`_ from MRPT/feat/add-trajectory-tests
+  Add unit test for vehicle trajectory
+* CsvLogger: feature not to write to disk
+* minor edits in demo world
+* Fix bug in velocity composition
+* Clearer distinction between COM and REF point velocities
+* Add unit test for vehicle trajectory
+* Merge pull request `#92 <https://github.com/MRPT/mvsim/issues/92>`_ from MRPT/feat/truck-trailer-demo
+  Feat/truck-trailer-demo
+* DefaultFriction: fix missing logged variables
+* Add new Ackermann ideal twist controller
+* Revert "fix bug in setTwist()": it was actually a serious regression
+  This reverts commit 07a9fd2a0ab5b4665a4f2d07638f75c1737dbdec.
+* clang-tidy warning fixes
+* Add env var MVSIM_COLLISION_SHAPE_CACHE_VERBOSE
+* Contributors: Jose Luis Blanco-Claraco
+
 1.1.0 (2026-02-16)
 ------------------
 * Merge pull request `#91 <https://github.com/MRPT/mvsim/issues/91>`_ from MRPT/fix/lidar-3d

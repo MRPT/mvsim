@@ -113,10 +113,51 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 
 	co.rl_torque = .0;
 	co.rr_torque = .0;
-	co.fl_torque = -PID_[0].compute(
-		vel_fl - act_vel_fl,
-		ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
-	co.fr_torque = -PID_[1].compute(vel_fr - act_vel_fr, ci.context.dt);
+
+	const bool setpointIsZero =
+		std::abs(vel_fl) < zero_threshold && std::abs(vel_fr) < zero_threshold;
+
+	if (setpointIsZero && std::abs(act_vel_fl) < stop_threshold &&
+		std::abs(act_vel_fr) < stop_threshold)
+	{
+		// Near-zero velocity with zero setpoint: full stop, reset PIDs
+		co.fl_torque = 0;
+		co.fr_torque = 0;
+		for (auto& pid : PID_)
+		{
+			pid.reset();
+		}
+	}
+	else
+	{
+		co.fl_torque = -PID_[0].compute(
+			vel_fl - act_vel_fl,
+			ci.context.dt);	 // "-" because \tau<0 makes robot moves forwards.
+		co.fr_torque = -PID_[1].compute(vel_fr - act_vel_fr, ci.context.dt);
+
+		if (setpointIsZero)
+		{
+			// Braking toward zero: clamp torque so it can only oppose current
+			// motion direction, preventing the PID integral from causing rebound.
+			if (act_vel_fl > 0)
+			{
+				co.fl_torque = std::max(0.0, co.fl_torque);
+			}
+			else if (act_vel_fl < 0)
+			{
+				co.fl_torque = std::min(0.0, co.fl_torque);
+			}
+
+			if (act_vel_fr > 0)
+			{
+				co.fr_torque = std::max(0.0, co.fr_torque);
+			}
+			else if (act_vel_fr < 0)
+			{
+				co.fr_torque = std::min(0.0, co.fr_torque);
+			}
+		}
+	}
 }
 
 void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(
@@ -127,6 +168,8 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["KD"] = TParamEntry("%lf", &KD);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
+	params["zero_threshold"] = TParamEntry("%lf", &zero_threshold);
+	params["stop_threshold"] = TParamEntry("%lf", &stop_threshold);
 
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
@@ -165,6 +208,12 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::teleop_interface(
 		case ' ':
 			setpoint_lin_speed = .0;
 			setpoint_ang_speed = .0;
+			for (auto& pid : PID_)
+			{
+				pid.reset();
+			}
+			break;
+		default:
 			break;
 	};
 
@@ -179,18 +228,34 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::teleop_interface(
 		setpoint_lin_speed = -js_y * joyMaxLinSpeed;
 		setpoint_ang_speed = -js_x * joyMaxAngSpeed;
 
-		if (js.buttons.size() >= 7)
+		if (js.buttons.size() > 7)
 		{
-			if (js.buttons[5]) joyMaxLinSpeed *= 1.01;
-			if (js.buttons[7]) joyMaxLinSpeed /= 1.01;
+			if (js.buttons[5])
+			{
+				joyMaxLinSpeed *= 1.01;
+			}
+			if (js.buttons[7])
+			{
+				joyMaxLinSpeed /= 1.01;
+			}
 
-			if (js.buttons[4]) joyMaxAngSpeed *= 1.01;
-			if (js.buttons[6]) joyMaxAngSpeed /= 1.01;
+			if (js.buttons[4])
+			{
+				joyMaxAngSpeed *= 1.01;
+			}
+			if (js.buttons[6])
+			{
+				joyMaxAngSpeed /= 1.01;
+			}
 
 			if (js.buttons[3])	// brake
 			{
 				setpoint_lin_speed = 0;
 				setpoint_ang_speed = 0;
+				for (auto& pid : PID_)
+				{
+					pid.reset();
+				}
 			}
 		}
 

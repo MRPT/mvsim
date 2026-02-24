@@ -90,9 +90,15 @@ void World::internal_one_timestep(double dt)
 
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 
-	// 1) Pre-step
+	// 1) Vehicles terrain elevation (must run before pre-step so that
+	//    friction models can access the slope direction for this timestep)
 	{
-		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.1.prestep");
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.1.terrain_elevation");
+		internal_simul_pre_step_terrain_elevation();
+	}
+	// 2) Pre-step (controllers + friction)
+	{
+		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.2.prestep");
 		for (auto& e : simulableObjects_)
 		{
 			if (e.second)
@@ -100,11 +106,6 @@ void World::internal_one_timestep(double dt)
 				e.second->simul_pre_timestep(context);
 			}
 		}
-	}
-	// 2) vehicles terrain elevation
-	{
-		mrpt::system::CTimeLoggerEntry tle(timlogger_, "timestep.2.terrain_elevation");
-		internal_simul_pre_step_terrain_elevation();
 	}
 
 	// 3) Run dynamics
@@ -139,7 +140,7 @@ void World::internal_one_timestep(double dt)
 
 			// save our own copy of the kinematic state:
 			copy_of_objects_dynstate_pose_[e.first] = e.second->getPose();
-			copy_of_objects_dynstate_twist_[e.first] = e.second->getTwist();
+			copy_of_objects_dynstate_twist_[e.first] = e.second->getRefVelocityLocal();
 
 			if (e.second->hadCollision())
 			{
@@ -289,7 +290,7 @@ void World::internalPostSimulStepForRawlog()
 		obs->odometry = veh->getOdometry();
 
 		obs->hasVelocities = true;
-		obs->velocityLocal = veh->getVelocityLocal();
+		obs->velocityLocal = veh->getRefVelocityLocal();
 
 		internalOnObservation(*veh, obs);
 	}
@@ -351,8 +352,6 @@ void World::internal_simul_pre_step_terrain_elevation()
 	// For each vehicle:
 	// (1/2) Compute its 3D pose according to the mesh tilt angle.
 	//       and apply gravity force.
-	const double gravity = get_gravity();
-
 	mrpt::tfest::TMatchingPairList corrs;
 	mrpt::poses::CPose3D optimalTf;
 
@@ -496,7 +495,9 @@ void World::internal_simul_pre_step_terrain_elevation()
 				optimalTf = mrpt::poses::CPose3D(tmpl);
 
 				new_pose.z = optimalTf.z();
-				new_pose.yaw = optimalTf.yaw();
+				// Do NOT override yaw from the terrain fit: yaw is determined
+				// solely by Box2D 2D dynamics. The se3_l2 fit may introduce a
+				// spurious yaw component on tilted surfaces, causing drift.
 				new_pose.pitch = optimalTf.pitch();
 				new_pose.roll = optimalTf.roll();
 			}
@@ -505,31 +506,24 @@ void World::internal_simul_pre_step_terrain_elevation()
 
 		}  // end iters
 
-		// compute "down" direction:
+		// compute "down" direction and store on vehicle for friction models:
 		{
+			const mrpt::poses::CPose3D vehPose(veh->getPose());
 			mrpt::poses::CPose3D rot_only;
-			rot_only.setRotationMatrix(optimalTf.getRotationMatrix());
+			rot_only.setRotationMatrix(vehPose.getRotationMatrix());
 			rot_only.inverseComposePoint(.0, .0, -1.0, dir_down.x, dir_down.y, dir_down.z);
+			veh->setSlopeDirection(dir_down);
 		}
 
-		// 2) Apply gravity force
-		// -------------------------------------------------------------
-		{
-			// To chassis:
-			const double chassis_weight = veh->getChassisMass() * gravity;
-			const mrpt::math::TPoint2D chassis_com = veh->getChassisCenterOfMass();
-			veh->apply_force(
-				{dir_down.x * chassis_weight, dir_down.y * chassis_weight}, chassis_com);
-
-			// To wheels:
-			for (size_t iW = 0; iW < nWheels; iW++)
-			{
-				const Wheel& wheel = veh->getWheelInfo(iW);
-				const double wheel_weight = wheel.mass * gravity;
-				veh->apply_force(
-					{dir_down.x * wheel_weight, dir_down.y * wheel_weight}, {wheel.x, wheel.y});
-			}
-		}
+		// Gravity slope effect: Instead of applying gravity XY forces
+		// directly to the Box2D body (which causes drift because the
+		// friction model can't preemptively counteract them), we pass
+		// the slope direction to the friction model via
+		// TFrictionInput::gravSlopeForce.  The friction model then
+		// includes the slope force in its computation and applies the
+		// net result at each wheel contact point, which correctly
+		// handles both static friction (vehicle holds on slope) and
+		// sliding (friction limit exceeded).
 	}  // end for each vehicle
 
 	// (2/2) Collisions due to steep slopes
@@ -555,7 +549,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 		ipv.contour = veh->getChassisShape();
 		ipv.maxWorkableStepHeight = 0.55 * veh->getWheelInfo(0).diameter;
 
-		const auto& tw = veh->getTwist();
+		const auto& tw = veh->getRefVelocityGlobal();
 		ipv.speed = mrpt::math::TVector2D(tw.vx, tw.vy).norm();
 
 		if (auto it = wheel_heights_per_vehicle.find(veh.get());
@@ -575,7 +569,7 @@ void World::internal_simul_pre_step_terrain_elevation()
 
 		// only for moving blocks:
 		if (block->isStatic()) continue;
-		const auto tw = block->getTwist();
+		const auto tw = block->getRefVelocityLocal();
 		if (std::abs(tw.vx) < 1e-4 && std::abs(tw.vy) < 1e-4 && std::abs(tw.omega) < 1e-4) continue;
 
 		if (!e.has_value()) e.emplace();

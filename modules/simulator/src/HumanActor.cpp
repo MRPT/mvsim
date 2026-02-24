@@ -201,7 +201,7 @@ void HumanActor::parsePath(const rapidxml::xml_node<char>* pathNode)
 
 		if (parsed == 3)
 		{
-			// "x y yaw_deg" format — third value is yaw.
+			// "x y yaw_deg" format , third value is yaw.
 			yaw = z;
 			z = 0;
 			wp.pose = mrpt::math::TPose3D(x, y, 0, yaw * M_PI / 180.0, 0, 0);
@@ -244,7 +244,7 @@ void HumanActor::parsePath(const rapidxml::xml_node<char>* pathNode)
 }
 
 // ============================================================================
-// Path Control — public API
+// Path Control , public API
 // ============================================================================
 
 void HumanActor::setPath(const std::vector<Waypoint>& waypoints, bool loop)
@@ -400,7 +400,7 @@ void HumanActor::advanceToNextWaypoint()
 		}
 		else
 		{
-			// Path finished — stay at last waypoint.
+			// Path finished , stay at last waypoint.
 			currentWaypointIdx_ = path_.size() - 1;
 			currentMovementSpeed_ = 0.0;
 			animState_ = AnimationState::Idle;
@@ -685,7 +685,7 @@ void HumanActor::upgradeToAnimatedModel()
 
 	if (!foundModel)
 	{
-		return;	 // no 3D model in hierarchy — placeholder visual
+		return;	 // no 3D model in hierarchy , placeholder visual
 	}
 
 	// Create a dedicated CAnimatedAssimpModel and load from file.

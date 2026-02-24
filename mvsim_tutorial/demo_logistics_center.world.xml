@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<mvsim_world version="1.0">
+	<simul_timestep>0.005</simul_timestep>  <!-- 0: auto -->
+	<gravity>9.81</gravity>
+
+	<gui>
+		<ortho>false</ortho>
+		<cam_distance>20</cam_distance>
+		<cam_azimuth>45</cam_azimuth>
+		<cam_elevation>45</cam_elevation>
+	</gui>
+
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>45.0</light_azimuth_deg>
+		<light_elevation_deg>60.0</light_elevation_deg>
+	</lights>
+
+	<element class='skybox'>
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/SunSet.zip/SunSet/SunSet%s.jpg</textures>
+	</element>
+
+	<element class='horizontal_plane'>
+		<x_min>-30</x_min> <y_min>-30</y_min>
+		<x_max>30</x_max> <y_max>30</y_max>
+		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_BaseColor.png</texture>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<element class="vertical_plane">
+		<x0>-30</x0> <y0>-30</y0> <x1>30</x1> <y1>-30</y1>
+		<z>0</z> <height>3.5</height>
+		<thickness>0.4</thickness>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+	</element>
+	<element class="vertical_plane">
+		<x0>30</x0> <y0>-30</y0> <x1>30</x1> <y1>30</y1>
+		<z>0</z> <height>3.5</height>
+		<thickness>0.4</thickness>
+	</element>
+
+	<element class="vertical_plane">
+		<x0>-20</x0> <y0>20</y0> <x1>20</x1> <y1>20</y1>
+		<z>0</z> <height>10</height>
+		<thickness>0.5</thickness>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<door position="0.2" width="4.0" z_min="0" z_max="4.5" />
+		<door position="0.5" width="4.0" z_min="0" z_max="4.5" />
+		<door position="0.8" width="4.0" z_min="0" z_max="4.5" />
+	</element>
+
+	<include file="../definitions/scania_truck.vehicle.xml" />
+
+	<vehicle name="01a_truck" class="scania_truck">
+		<init_pose>0 0 0</init_pose>
+	</vehicle>
+
+	<vehicle name="01b_trailer" class="scania_trailer">
+		<init_pose>+0.09 0 0</init_pose>
+	</vehicle>
+
+	<joint type="revolute"
+		body_a="01a_truck"  anchor_a="0.18 0.0"
+		body_b="01b_trailer" anchor_b="0.0 0.0"
+		enable_limit="true"
+		lower_angle_deg="-70"
+		upper_angle_deg="70"
+	/>
+
+
+	<vehicle name="parked_trailer_3" class="scania_trailer"> <init_pose>-20 -16 -1</init_pose> </vehicle>
+	<vehicle name="parked_trailer_4" class="scania_trailer"> <init_pose>-20 -9 0</init_pose> </vehicle>
+	<vehicle name="parked_trailer_5" class="scania_trailer"> <init_pose>-20 -2 3</init_pose> </vehicle>
+	<vehicle name="parked_trailer_6" class="scania_trailer"> <init_pose>-20 5 2</init_pose> </vehicle>
+	<vehicle name="parked_trailer_7" class="scania_trailer"> <init_pose>-20 12 -2</init_pose> </vehicle>
+	<vehicle name="parked_trailer_8" class="scania_trailer"> <init_pose>-20 19 2</init_pose> </vehicle>
+
+
+</mvsim_world>

@@ -11,46 +11,10 @@
 #include <cmath>
 #include <cstdio>
 
+#include "test_utils.h"
+
 // Minimal test framework (no external deps required):
-static int g_failures = 0;
-
-#define EXPECT_NEAR(a, b, tol)                                                      \
-	do                                                                              \
-	{                                                                               \
-		const double va = static_cast<double>(a);                                   \
-		const double vb = static_cast<double>(b);                                   \
-		if (std::abs(va - vb) > static_cast<double>(tol))                           \
-		{                                                                           \
-			std::fprintf(                                                           \
-				stderr, "FAIL %s:%d  |%f - %f| > %f\n", __FILE__, __LINE__, va, vb, \
-				static_cast<double>(tol));                                          \
-			++g_failures;                                                           \
-		}                                                                           \
-	} while (false)
-
-#define EXPECT_GT(a, b)                                                                    \
-	do                                                                                     \
-	{                                                                                      \
-		const double va = static_cast<double>(a);                                          \
-		const double vb = static_cast<double>(b);                                          \
-		if (!(va > vb))                                                                    \
-		{                                                                                  \
-			std::fprintf(stderr, "FAIL %s:%d  %f not > %f\n", __FILE__, __LINE__, va, vb); \
-			++g_failures;                                                                  \
-		}                                                                                  \
-	} while (false)
-
-#define EXPECT_LT(a, b)                                                                    \
-	do                                                                                     \
-	{                                                                                      \
-		const double va = static_cast<double>(a);                                          \
-		const double vb = static_cast<double>(b);                                          \
-		if (!(va < vb))                                                                    \
-		{                                                                                  \
-			std::fprintf(stderr, "FAIL %s:%d  %f not < %f\n", __FILE__, __LINE__, va, vb); \
-			++g_failures;                                                                  \
-		}                                                                                  \
-	} while (false)
+int g_failures = 0;
 
 namespace
 {
@@ -85,7 +49,7 @@ void test_zero_noise()
 }
 
 // ---------------------------------------------------------------
-// Test 2: White noise only — check mean ≈ true, std ≈ sigma
+// Test 2: White noise only , check mean ≈ true, std ≈ sigma
 // ---------------------------------------------------------------
 void test_white_noise_statistics()
 {
@@ -136,7 +100,7 @@ void test_white_noise_statistics()
 }
 
 // ---------------------------------------------------------------
-// Test 3: Random walk — bias drifts away from zero over time
+// Test 3: Random walk , bias drifts away from zero over time
 // ---------------------------------------------------------------
 void test_random_walk_drift()
 {

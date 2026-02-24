@@ -8,6 +8,8 @@
   +-------------------------------------------------------------------------+ */
 
 #include <box2d/b2_settings.h>	// b2_maxPolygonVertices
+#include <mrpt/containers/yaml.h>
+#include <mrpt/core/get_env.h>
 #include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/opengl/CBox.h>
 #include <mrpt/opengl/CCylinder.h>
@@ -30,7 +32,10 @@ Shape2p5 CollisionShapeCache::get(
 	// already cached?
 	if (modelFile)
 	{
-		if (auto it = cache.find(modelFile.value()); it != cache.end()) return it->second.shape;
+		if (auto it = cache.find(modelFile.value()); it != cache.end())
+		{
+			return it->second.shape;
+		}
 	}
 
 	// No, it's a new model path, create its placeholder:
@@ -51,16 +56,18 @@ Shape2p5 CollisionShapeCache::get(
 
 	const auto vol = ret.volume();
 
-#if 0
-	std::cout << "shape2.5 for ["
-			  << (modelFile.has_value() ? *modelFile : "none")
-			  << "] glClass=" << obj.GetRuntimeClass()->className
-			  << " shape=" << ret.getContour().size() << " pts, "
-			  << " volume=" << vol << " zMin=" << zMin << " zMax=" << zMax
-			  << " modelScale= " << modelScale
-			  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n"
-			  << ret.getContour().asYAML() << "\n\n";
-#endif
+	const thread_local bool MVSIM_COLLISION_SHAPE_CACHE_VERBOSE =
+		mrpt::get_env<bool>("MVSIM_COLLISION_SHAPE_CACHE_VERBOSE");
+	if (MVSIM_COLLISION_SHAPE_CACHE_VERBOSE)
+	{
+		std::cout << "shape2.5 for [" << (modelFile.has_value() ? *modelFile : "none")
+				  << "] glClass=" << obj.GetRuntimeClass()->className
+				  << " shape=" << ret.getContour().size() << " pts, "
+				  << " volume=" << vol << " zMin=" << ret.zMin() << " zMax=" << ret.zMax()
+				  << " modelScale= " << modelScale
+				  << " was simpleGeom=" << (simpleGeom ? "yes" : "no") << "\n"
+				  << ret.getContour().asYAML() << "\n\n";
+	}
 
 	if (vol < 1e-8)
 	{
@@ -196,7 +203,10 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	{
 		numTotalPts++;
 		auto pt = modelPose.composePoint(orgPt * modelScale);
-		if (pt.z < zMin || pt.z > zMax) return;	 // skip
+		if (pt.z < zMin || pt.z > zMax)
+		{
+			return;	 // skip
+		}
 		ret.buildAddPoint(pt);
 		numPassedPts++;
 	};
@@ -218,10 +228,19 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 				anyIn = true;
 				break;
 			}
-			if (p.z > zMax) outUp = true;
-			if (p.z < zMin) outDown = true;
+			if (p.z > zMax)
+			{
+				outUp = true;
+			}
+			if (p.z < zMin)
+			{
+				outDown = true;
+			}
 		}
-		if (!(anyIn || (outUp && outDown))) return;	 // skip triangle
+		if (!(anyIn || (outUp && outDown)))
+		{
+			return;	 // skip triangle
+		}
 
 		ret.buildAddTriangle(t);
 		numPassedPts += 3;
@@ -231,25 +250,37 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	{
 		auto lck = mrpt::lockHelper(oRST->shaderTrianglesBufferMutex().data);
 		const auto& tris = oRST->shaderTrianglesBuffer();
-		for (const auto& tri : tris) lambdaUpdateTri(tri);
+		for (const auto& tri : tris)
+		{
+			lambdaUpdateTri(tri);
+		}
 	}
 	if (oRSTT)
 	{
 		auto lck = mrpt::lockHelper(oRSTT->shaderTexturedTrianglesBufferMutex().data);
 		const auto& tris = oRSTT->shaderTexturedTrianglesBuffer();
-		for (const auto& tri : tris) lambdaUpdateTri(tri);
+		for (const auto& tri : tris)
+		{
+			lambdaUpdateTri(tri);
+		}
 	}
 	if (oRP)
 	{
 		auto lck = mrpt::lockHelper(oRP->shaderPointsBuffersMutex().data);
 		const auto& pts = oRP->shaderPointsVertexPointBuffer();
-		for (const auto& pt : pts) lambdaUpdatePt(pt);
+		for (const auto& pt : pts)
+		{
+			lambdaUpdatePt(pt);
+		}
 	}
 	if (oRSWF)
 	{
 		auto lck = mrpt::lockHelper(oRSWF->shaderWireframeBuffersMutex().data);
 		const auto& pts = oRSWF->shaderWireframeVertexPointBuffer();
-		for (const auto& pt : pts) lambdaUpdatePt(pt);
+		for (const auto& pt : pts)
+		{
+			lambdaUpdatePt(pt);
+		}
 	}
 
 	if (oAssimp)

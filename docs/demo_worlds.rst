@@ -16,6 +16,34 @@ MVSim.
    :backlinks: none
 
 
+demo_friction_zones
+---------------------
+
+Demonstrates per-region friction overrides using ``PropertyRegion`` elements.
+A flat open area contains two zones with different ground properties:
+
+- **Ice patch** (left): Very low friction coefficient (``friction_mu = 0.15``), causing the robot to slip.
+- **Sand patch** (right): High rolling resistance (``friction_C_rr = 0.08``), causing the robot to decelerate.
+
+Each zone is visually marked with a distinct ground texture. Drive the Jackal robot over
+the patches to observe the effects.
+
+.. tab-set::
+    .. tab-item:: Standalone MVSim build
+
+        .. code-block:: bash
+
+            mvsim launch mvsim_tutorial/demo_friction_zones.world.xml
+
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_friction_zones.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_friction_zones.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_friction_zones.world.xml
+      :language: xml
+
+
 demo_warehouse
 ---------------------
 

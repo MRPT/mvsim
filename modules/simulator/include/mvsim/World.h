@@ -212,6 +212,8 @@ class World : public mrpt::system::COutputLogger
 	 */
 	void run_simulation(double dt);
 
+	void insert_vehicle(const VehicleBase::Ptr& veh);
+
 	/** For usage in TUpdateGUIParams and \a update_GUI() */
 	struct GUIKeyEvent
 	{

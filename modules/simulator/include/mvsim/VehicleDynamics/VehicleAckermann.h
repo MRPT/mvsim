@@ -90,6 +90,10 @@ class DynamicsAckermann : public VehicleBase
 
 		double KP, KI, KD;	//!< PID controller parameters
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
+		/// setpoint magnitude below which it is treated as zero [m/s]
+		double zero_threshold = 0.001;
+		/// velocity magnitude below which vehicle is considered stopped [m/s]
+		double stop_threshold = 0.05;
 
 		// See base docs.
 		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override
@@ -135,6 +139,59 @@ class DynamicsAckermann : public VehicleBase
 		double joyMaxSteerAng = 0.7;
 	};
 
+	/** Ideal twist controller for Ackermann vehicles.
+	 *
+	 *  Works exactly like the differential ControllerTwistIdeal: the desired
+	 *  (vx, omega) twist is imposed directly on the vehicle state every step,
+	 *  bypassing the physical wheel torque model.  It is useful for high-level
+	 *  planning tests where tyre dynamics are not of interest.
+	 *
+	 *  Keyboard teleop: w/s = faster/slower, a/d = turn left/right,
+	 *  spacebar = stop.
+	 */
+	class ControllerTwistIdeal : public ControllerBase
+	{
+	   public:
+		ControllerTwistIdeal(DynamicsAckermann& veh);
+		static const char* class_name() { return "twist_ideal"; }
+
+		/** Desired twist setpoint (vx [m/s], vy ignored, omega [rad/s]) */
+		mrpt::math::TTwist2D setpoint() const
+		{
+			auto lck = mrpt::lockHelper(setpointMtx_);
+			return setpoint_;
+		}
+		void setSetpoint(const mrpt::math::TTwist2D& sp)
+		{
+			auto lck = mrpt::lockHelper(setpointMtx_);
+			setpoint_ = sp;
+		}
+
+		virtual void control_step(
+			const DynamicsAckermann::TControllerInput& ci,
+			DynamicsAckermann::TControllerOutput& co) override;
+
+		virtual void on_post_step(const TSimulContext& context) override;
+
+		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
+
+		// Accept Twist commands from ROS / mvsim-server
+		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override
+		{
+			setSetpoint(t);
+			return true;
+		}
+
+	   private:
+		mutable std::mutex setpointMtx_;
+		mrpt::math::TTwist2D setpoint_{0, 0, 0};
+
+		double r2f_L_ = 1.0;  //!< Wheelbase (rear-to-front axle distance) [m]
+
+		double joyMaxLinSpeed = 1.0;  //!< [m/s]
+		double joyMaxAngSpeed = 0.7;  //!< [rad/s]
+	};
+
 	const ControllerBase::Ptr& getController() const { return controller_; }
 	ControllerBase::Ptr& getController() { return controller_; }
 	virtual ControllerBaseInterface* getControllerInterface() override { return controller_.get(); }
@@ -156,6 +213,7 @@ class DynamicsAckermann : public VehicleBase
 	virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node) override;
 	// See base class doc
 	virtual std::vector<double> invoke_motor_controllers(const TSimulContext& context) override;
+	virtual void invoke_motor_controllers_post_step(const TSimulContext& context) override;
 
    private:
 	ControllerBase::Ptr controller_;  //!< The installed controller

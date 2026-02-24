@@ -231,7 +231,7 @@ The wheel angular acceleration :math:`\alpha` is computed from torque balance:
 
 .. math::
 
-   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w}{I_{yy}}
+   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w − T_{rr}}{I_{yy}}
 
 The angular velocity is updated using explicit Euler integration:
 
@@ -304,6 +304,7 @@ interaction suitable for indoor robots and general applications.
    <friction class="default">
        <mu>0.8</mu>              <!-- Friction coefficient -->
        <C_damping>1.0</C_damping>  <!-- Damping coefficient [N·m·s/rad] -->
+       <C_rr>0.01</C_rr>          <!-- Rolling resistance coefficient -->
    </friction>
 
 **Algorithm:**
@@ -364,7 +365,7 @@ interaction suitable for indoor robots and general applications.
 
    .. math::
 
-      F_{x,desired} = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega_w}{R}
+      F_{x,desired} = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega_w - T_{rr}}{R}
 
    Clamped to maximum friction:
 
@@ -390,10 +391,24 @@ interaction suitable for indoor robots and general applications.
 
       \vec{F}_{vehicle} = R(\Phi_w) \cdot (F_x, F_y)
 
+**Rolling Resistance Torque:**
+
+When ``C_rr`` > 0, a shaft-level torque opposing wheel spin is applied:
+
+.. math::
+
+   T_{rr} = C_{rr} \cdot F_{normal} \cdot R \cdot \tanh(\omega_w \cdot 100)
+
+where :math:`F_{normal}` is the normal force on the wheel, :math:`R` is the wheel radius,
+and :math:`\omega_w` is the wheel angular velocity. The :math:`\tanh` provides a smooth
+transition near zero angular velocity, avoiding sign discontinuities. This torque is
+subtracted from the effective motor torque before computing longitudinal friction.
+
 **Parameters:**
 
 * :math:`\mu` - Coulomb friction coefficient (typical values: 0.7-0.9)
 * :math:`C_{damp}` - Viscous damping in wheel bearing [N·m·s/rad]
+* :math:`C_{rr}` - Rolling resistance coefficient (dimensionless, typical values: 0.005-0.03). Default: 0 (disabled)
 
 Ward-Iagnemma Friction Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -411,6 +426,7 @@ based on the paper by Ward and Iagnemma (2008) :cite:`ward2008dynamic`.
        <A_roll>50</A_roll>    <!-- Rolling resistance shape parameter -->
        <R1>0.0075</R1>        <!-- Static rolling resistance coefficient -->
        <R2>0.02</R2>          <!-- Dynamic rolling resistance coefficient -->
+       <C_rr>0.0</C_rr>       <!-- Rolling resistance torque coefficient -->
    </friction>
 
 **Rolling Resistance Model:**
@@ -457,6 +473,25 @@ Default values from the reference paper:
 
 These can be tuned for different terrains (asphalt, dirt, sand, etc.).
 
+**Two Rolling Resistance Mechanisms:**
+
+This model supports two independent sources of rolling resistance that may be combined:
+
+1. **Ground-contact force** (:math:`F_{rr}`) from ``R1``, ``R2``, ``A_roll`` — models
+   terrain/ground contact drag (velocity-dependent force added to the longitudinal friction
+   equation).
+
+2. **Tire deformation torque** (:math:`T_{rr}`) from ``C_rr`` — models tire hysteresis as
+   a shaft-level torque opposing wheel spin, using the same formula as the default friction model:
+
+   .. math::
+
+      T_{rr} = C_{rr} \cdot F_{normal} \cdot R \cdot \tanh(\omega_w \cdot 100)
+
+Both may be enabled simultaneously for off-road scenarios where terrain drag and tire
+hysteresis are distinct effects. For simpler configurations, use only one: either
+``R1``/``R2``/``A_roll`` or ``C_rr``.
+
 Ellipse Curve Friction Method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -470,12 +505,13 @@ driving simulation.
 
    <friction class="ellipse">
        <C_damping>0.05</C_damping>
-       
+       <C_rr>0.01</C_rr>          <!-- Rolling resistance coefficient -->
+
        <!-- Lateral slip parameters -->
        <C_alpha>8.5</C_alpha>
        <slip_angle_saturation>0.1</slip_angle_saturation>  <!-- rad -->
        <C_alpha_s>0.5</C_alpha_s>
-       
+
        <!-- Longitudinal slip parameters -->
        <C_s>7.5</C_s>
        <slip_ratio_saturation>0.1</slip_ratio_saturation>
@@ -552,6 +588,74 @@ the physical limitation that total tire force cannot exceed a maximum value.
 3. Compute desired forces to achieve target wheel velocities
 4. Clamp desired forces to maximum available forces
 5. Update wheel angular velocity based on actual applied forces
+
+When ``C_rr`` is set, a rolling resistance torque :math:`T_{rr} = C_{rr} \cdot F_z \cdot R \cdot \tanh(\omega_w \cdot 100)`
+is subtracted from the effective motor torque, providing velocity-independent resistance
+to wheel spin.
+
+Gravity Slope Handling
+~~~~~~~~~~~~~~~~~~~~~~~
+
+All friction models receive per-wheel gravity slope forces via the ``gravSlopeForce``
+input field. When a vehicle drives on a terrain elevation map, the component of
+gravitational force along the ground plane is computed for each wheel and passed to the
+friction model.
+
+The friction model incorporates these forces in both lateral and longitudinal directions:
+
+* **Lateral:** The gravity slope force is added to the impulse that cancels lateral
+  velocity, preventing the vehicle from sliding sideways on slopes.
+* **Longitudinal:** The gravity slope force is added to the contact-patch friction
+  (clamped by remaining friction capacity), counteracting the tendency to roll downhill.
+
+This ensures vehicles remain stationary on slopes when no motor torque is applied,
+and behave realistically when driving on uneven terrain with elevation maps.
+
+Per-Region Friction Overrides
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MVSim supports spatially varying friction parameters using ``PropertyRegion`` world elements.
+By defining regions with the property names ``friction_mu`` and/or ``friction_C_rr``, you can
+override the friction coefficient and rolling resistance on a per-wheel basis depending on
+where each wheel contacts the ground.
+
+During each simulation timestep, the world position of every wheel is queried against all
+active ``PropertyRegion`` elements. If a wheel falls within a region that defines
+``friction_mu`` or ``friction_C_rr``, the region's value overrides the friction model's
+default parameter for that wheel only. Wheels outside any friction region use the values
+from the vehicle's ``<friction>`` XML configuration as usual.
+
+This enables scenarios such as icy patches, sand zones, or other terrain variations without
+modifying vehicle definitions.
+
+**XML Example:**
+
+.. code-block:: xml
+
+   <!-- Ice patch: very low friction coefficient -->
+   <element class="property_region">
+       <property_name>friction_mu</property_name>
+       <value_double>0.15</value_double>
+       <x_min>-7</x_min>  <y_min>-2</y_min>  <z_min>-1</z_min>
+       <x_max>-3</x_max>  <y_max>2</y_max>   <z_max>2</z_max>
+   </element>
+
+   <!-- Sand zone: high rolling resistance -->
+   <element class="property_region">
+       <property_name>friction_C_rr</property_name>
+       <value_double>0.08</value_double>
+       <x_min>3</x_min>  <y_min>-2</y_min>  <z_min>-1</z_min>
+       <x_max>7</x_max>  <y_max>2</y_max>   <z_max>2</z_max>
+   </element>
+
+**Supported properties:**
+
+* ``friction_mu`` (double) — Overrides the Coulomb friction coefficient :math:`\mu`.
+  Applies to the Default and Ward-Iagnemma friction models. The Ellipse Curve method
+  does not use :math:`\mu` (it uses slip-based curves instead).
+
+* ``friction_C_rr`` (double) — Overrides the rolling resistance coefficient :math:`C_{rr}`.
+  Applies to all three friction models.
 
 3. Vehicle Dynamics Models
 --------------------------

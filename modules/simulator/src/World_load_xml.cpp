@@ -16,7 +16,6 @@
 #include <mrpt/topography/conversions.h>
 #include <mvsim/World.h>
 
-#include <algorithm>  // count()
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
@@ -42,7 +41,10 @@ void World::load_from_XML(const std::string& xml_text, const std::string& fileNa
 	using namespace rapidxml;
 
 	std::string fileDir = mrpt::system::extractFileDirectory(fileNameForPath);
-	if (fileDir.empty()) fileDir = ".";
+	if (fileDir.empty())
+	{
+		fileDir = ".";
+	}
 
 	// Extract base path of file:
 	basePath_ = mrpt::system::toAbsolutePath(fileDir, false /*canonical*/);
@@ -68,8 +70,10 @@ void World::load_from_XML(const std::string& xml_text, const std::string& fileNa
 	(void)xml;	// unused
 
 	if (0 != strcmp(root->name(), "mvsim_world"))
+	{
 		throw runtime_error(
 			mrpt::format("XML root element is '%s' ('mvsim_world' expected)", root->name()));
+	}
 
 	// Optional: format version attrib:
 	const xml_attribute<>* attrb_version = root->first_attribute("version");
@@ -78,10 +82,12 @@ void World::load_from_XML(const std::string& xml_text, const std::string& fileNa
 	{
 		int ret = sscanf(attrb_version->value(), "%i.%i", &version_major, &version_min);
 		if (ret != 2)
+		{
 			throw runtime_error(mrpt::format(
 				"Error parsing version attribute: '%s' ('%%i.%%i' "
 				"expected)",
 				attrb_version->value()));
+		}
 	}
 
 	// register tags:
@@ -178,10 +184,10 @@ void World::parse_tag_element(const XmlParserContext& ctx)
 	simulableObjects_.emplace(e->getName(), std::dynamic_pointer_cast<Simulable>(e));
 }
 
-void World::parse_tag_vehicle(const XmlParserContext& ctx)
+void World::insert_vehicle(const VehicleBase::Ptr& veh)
 {
-	// <vehicle> entries:
-	VehicleBase::Ptr veh = VehicleBase::factory(this, ctx.node);
+	auto lck = mrpt::lockHelper(world_cs_);
+
 	// Assign each vehicle a unique "index" number
 	veh->setVehicleIndex(vehicles_.size());
 
@@ -193,6 +199,13 @@ void World::parse_tag_vehicle(const XmlParserContext& ctx)
 
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 	simulableObjects_.emplace(veh->getName(), std::dynamic_pointer_cast<Simulable>(veh));
+}
+
+void World::parse_tag_vehicle(const XmlParserContext& ctx)
+{
+	// <vehicle> entries:
+	VehicleBase::Ptr veh = VehicleBase::factory(this, ctx.node);
+	insert_vehicle(veh);
 }
 
 void World::parse_tag_vehicle_class(const XmlParserContext& ctx)
@@ -281,16 +294,27 @@ void World::parse_tag_include(const XmlParserContext& ctx)
 	// Plus new variables as XML attributes, local only:
 	for (auto attr = ctx.node->first_attribute(); attr; attr = attr->next_attribute())
 	{
-		if (strcmp(attr->name(), "file") == 0) continue;
+		if (strcmp(attr->name(), "file") == 0)
+		{
+			continue;
+		}
 		vars[attr->name()] = attr->value();
 	}
 
 	const auto [xml, root] = readXmlAndGetRoot(absFile, vars);
 	(void)xml;	// unused
 
-	// recursive parse:
+	// recursive parse all root-level nodes
+	// (supports included files with multiple sibling elements):
 	const auto newBasePath = mrpt::system::extractFileDirectory(absFile);
-	internal_recursive_parse_XML({root, newBasePath});
+	for (auto* n = root; n; n = n->next_sibling())
+	{
+		if (n->type() != rapidxml::node_element)
+		{
+			continue;
+		}
+		internal_recursive_parse_XML({n, newBasePath});
+	}
 }
 
 void World::parse_tag_variable(const XmlParserContext& ctx)
@@ -375,7 +399,10 @@ bool World::evaluate_tag_if(const rapidxml::xml_node<char>& node) const
 	std::optional<int> intVal;
 	char* retStr = nullptr;
 	const long long ret = std::strtoll(str.c_str(), &retStr, 0 /*auto base*/);
-	if (retStr != 0 && retStr != str.c_str()) intVal = ret;
+	if (retStr != 0 && retStr != str.c_str())
+	{
+		intVal = ret;
+	}
 
 	bool isTrue = str == "y" || str == "Y" || str == "yes" || str == "Yes" || str == "YES" ||
 				  str == "true" || str == "True" || str == "TRUE" || str == "on" || str == "ON" ||
@@ -426,9 +453,13 @@ void World::parse_tag_marker(const XmlParserContext& ctx)
 			pt += worldRenderOffset();
 
 			if (i == 0)
+			{
 				glObj->appendLine(pt, pt);
+			}
 			else
+			{
 				glObj->appendLineStrip(pt);
+			}
 		}
 
 		auto lckPhys = mrpt::lockHelper(physical_objects_mtx());

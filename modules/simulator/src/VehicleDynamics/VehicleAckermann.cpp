@@ -38,7 +38,10 @@ DynamicsAckermann::DynamicsAckermann(World* parent) : VehicleBase(parent, 4 /*nu
 	updateMaxRadiusFromPoly();
 
 	fixture_chassis_ = nullptr;
-	for (int i = 0; i < 4; i++) fixture_wheels_[i] = nullptr;
+	for (int i = 0; i < 4; i++)
+	{
+		fixture_wheels_[i] = nullptr;
+	}
 
 	// Default values:
 	// rear-left:
@@ -116,29 +119,45 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 		if (xml_control)
 		{
 			rapidxml::xml_attribute<char>* control_class = xml_control->first_attribute("class");
-			if (!control_class || !control_class->value())
-				throw runtime_error(
+			if (!control_class || control_class->value_size() == 0)
+			{
+				THROW_EXCEPTION(
 					"[DynamicsAckermann] Missing 'class' attribute in "
 					"<controller> XML node");
-
+			}
 			const std::string sCtrlClass = std::string(control_class->value());
 			if (sCtrlClass == ControllerRawForces::class_name())
+			{
 				controller_ = std::make_shared<ControllerRawForces>(*this);
+			}
 			else if (sCtrlClass == ControllerTwistFrontSteerPID::class_name())
+			{
 				controller_ = std::make_shared<ControllerTwistFrontSteerPID>(*this);
+			}
 			else if (sCtrlClass == ControllerFrontSteerPID::class_name())
+			{
 				controller_ = std::make_shared<ControllerFrontSteerPID>(*this);
+			}
+			else if (sCtrlClass == ControllerTwistIdeal::class_name())
+			{
+				controller_ = std::make_shared<ControllerTwistIdeal>(*this);
+			}
 			else
+			{
 				THROW_EXCEPTION_FMT(
 					"[DynamicsAckermann] Unknown 'class'='%s' in "
 					"<controller> XML node",
 					sCtrlClass.c_str());
+			}
 
 			controller_->load_config(*xml_control);
 		}
 	}
 	// Default controller:
-	if (!controller_) controller_ = std::make_shared<ControllerRawForces>(*this);
+	if (!controller_)
+	{
+		controller_ = std::make_shared<ControllerRawForces>(*this);
+	}
 }
 
 // See docs in base class:
@@ -150,6 +169,9 @@ std::vector<double> DynamicsAckermann::invoke_motor_controllers(const TSimulCont
 
 	if (controller_)
 	{
+		// Reset before invoking , the ideal controller will re-set it if active:
+		idealControllerActive_ = false;
+
 		// Invoke controller:
 		TControllerInput ci;
 		ci.context = context;
@@ -168,6 +190,14 @@ std::vector<double> DynamicsAckermann::invoke_motor_controllers(const TSimulCont
 			co.steer_ang, wheels_info_[WHEEL_FL].yaw, wheels_info_[WHEEL_FR].yaw);
 	}
 	return out_torque_per_wheel;
+}
+
+void DynamicsAckermann::invoke_motor_controllers_post_step(const TSimulContext& context)
+{
+	if (controller_)
+	{
+		controller_->on_post_step(context);
+	}
 }
 
 void DynamicsAckermann::computeFrontWheelAngles(

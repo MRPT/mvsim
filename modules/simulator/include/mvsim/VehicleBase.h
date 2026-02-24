@@ -64,33 +64,33 @@ class VehicleBase : public VisualObject, public Simulable
 		const mrpt::math::TPoint2D& applyPoint = mrpt::math::TPoint2D(0, 0)) override;
 
 	/** Create bodies, fixtures, etc. for the dynamical simulation. May be
-	 * overrided by derived classes */
+	 * overriden by derived classes */
 	virtual void create_multibody_system(b2World& world);
 
 	/** Get (an approximation of) the max radius of the vehicle, from its point
 	 * of reference (in meters) */
-	virtual float getMaxVehicleRadius() const { return maxRadius_; }
+	virtual double getMaxVehicleRadius() const { return maxRadius_; }
+
 	/** Get the overall vehicle mass, excluding wheels. */
 	virtual double getChassisMass() const { return chassis_mass_; }
 	b2Body* getBox2DChassisBody() { return b2dBody_; }
-	mrpt::math::TPoint2D getChassisCenterOfMass() const
-	{
-		return chassis_com_;
-	}  //!< In local coordinates (this excludes the mass of wheels)
+
+	/// In local coordinates (this excludes the mass of wheels)
+	mrpt::math::TPoint2D getChassisCenterOfMass() const { return chassis_com_; }
 
 	size_t getNumWheels() const { return wheels_info_.size(); }
 	const Wheel& getWheelInfo(const size_t idx) const { return wheels_info_[idx]; }
 	Wheel& getWheelInfo(const size_t idx) { return wheels_info_[idx]; }
 
 	/** Current velocity of each wheel's center point (in local coords). Call
-	 * with veh_vel_local=getVelocityLocal() for ground-truth.  */
+	 * with veh_vel_local=getRefVelocityLocal() for ground-truth.  */
 	std::vector<mrpt::math::TVector2D> getWheelsVelocityLocal(
 		const mrpt::math::TTwist2D& veh_vel_local) const;
 
 	/** Gets the current estimation of odometry-based velocity as reconstructed
 	 * solely from wheels spinning velocities and geometry.
 	 * This is the input of any realistic low-level controller onboard.
-	 * \sa getVelocityLocal() */
+	 * \sa getRefVelocityLocal() */
 	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const = 0;
 
 	const TListSensors& getSensors() const { return sensors_; }
@@ -99,6 +99,8 @@ class VehicleBase : public VisualObject, public Simulable
 	{
 		return loggers_.at(logger_index);
 	}
+
+	const std::vector<CSVLogger::Ptr>& getLoggers() const { return loggers_; }
 
 	/** Get the 2D shape of the vehicle chassis, as set from the config file
 	 * (only used for collision detection) */
@@ -151,6 +153,13 @@ class VehicleBase : public VisualObject, public Simulable
 	double chassisZMin() const { return chassis_z_min_; }
 	double chassisZMax() const { return chassis_z_max_; }
 
+	/** The "down" direction (0,0,-1) in vehicle local frame, as computed
+	 *  from the terrain slope. Updated each timestep by the terrain
+	 *  elevation module. On flat ground this is (0,0,-1). On a slope,
+	 *  the x/y components indicate the gravity slope force direction. */
+	const mrpt::math::TPoint3D& getSlopeDirection() const { return slopeDir_; }
+	void setSlopeDirection(const mrpt::math::TPoint3D& d) { slopeDir_ = d; }
+
 	/** Gets the noisy, biased, odometry estimation.
 	 */
 	mrpt::poses::CPose2D getOdometry() const { return odometry_; }
@@ -188,6 +197,13 @@ class VehicleBase : public VisualObject, public Simulable
 
 	VisualObject* meAsVisualObject() override { return this; }
 
+	/** When true, friction forces are computed (for wheel spin updates and
+	 *  logging) but NOT applied to the Box2D chassis body. This is set by
+	 *  ideal controllers that directly override the vehicle twist, so that
+	 *  friction reaction forces don't corrupt the kinematically-imposed
+	 *  trajectory. */
+	bool idealControllerActive_ = false;
+
 	/** user-supplied index number: must be set/get'ed with setVehicleIndex()
 	 * getVehicleIndex() (default=0) */
 	size_t vehicle_index_ = 0;
@@ -201,6 +217,12 @@ class VehicleBase : public VisualObject, public Simulable
 	double chassis_mass_ = 15.0;
 	mrpt::math::TPolygon2D chassis_poly_;
 
+	/** Damping ("c" viscous friction coefficient) for linear velocities of the chassis on world */
+	float linear_damping_ = 0.1;
+
+	/** Damping ("c" viscous friction coefficient) for angular velocities of the chassis on world */
+	float angular_damping_ = 0.1;
+
 	/** Automatically computed from chassis_poly_ upon each change via
 	 * updateMaxRadiusFromPoly() */
 	double maxRadius_ = 0.1;
@@ -212,6 +234,10 @@ class VehicleBase : public VisualObject, public Simulable
 	/** center of mass. in local coordinates (this excludes the mass of wheels)
 	 */
 	mrpt::math::TPoint2D chassis_com_{0, 0};
+
+	/** Gravity "down" direction in vehicle local frame. On flat ground = (0,0,-1).
+	 *  Updated by internal_simul_pre_step_terrain_elevation() each timestep. */
+	mrpt::math::TPoint3D slopeDir_{0, 0, -1};
 
 	void updateMaxRadiusFromPoly();
 
@@ -284,7 +310,7 @@ class VehicleBase : public VisualObject, public Simulable
 	static constexpr std::string_view PL_Q_ROLL = "q5roll";
 	static constexpr std::string_view PL_DQ_X = "dqx";
 	static constexpr std::string_view PL_DQ_Y = "dqy";
-	static constexpr std::string_view PL_DQ_Z = "dqz";
+	static constexpr std::string_view PL_DQ_W = "dqw";
 
 	static constexpr std::string_view PL_ODO_X = "odo_x";
 	static constexpr std::string_view PL_ODO_Y = "odo_y";
