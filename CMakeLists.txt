@@ -46,7 +46,7 @@ configure_file(
   cmake/mvsim_version.h.in
   ${CMAKE_CURRENT_SOURCE_DIR}/modules/simulator/include/mvsim/mvsim_version.h
   @ONLY
-  )
+)
 #----
 
 # This is required for pybind11 to generate C++17 code in all OS versions:
@@ -97,6 +97,19 @@ if (DETECTED_ROS2)
   set(BUILD_FOR_ROS TRUE)
 
   find_package(rclcpp REQUIRED)
+
+  # *** TEMPORARY ***!!!
+  find_package(ament_cmake REQUIRED)
+  find_package(geometry_msgs REQUIRED)
+  find_package(nav_msgs REQUIRED)
+  find_package(sensor_msgs REQUIRED)
+  find_package(visualization_msgs REQUIRED)
+  find_package(tf2 REQUIRED)
+  find_package(tf2_geometry_msgs REQUIRED)
+  find_package(mrpt-ros2bridge REQUIRED)
+  find_package(std_msgs REQUIRED)
+  # 💡 Usamos el paquete de MENSAJES
+  find_package(benchmark_msg REQUIRED)
 endif()
 
 
@@ -125,26 +138,13 @@ if (BUILD_FOR_ROS AND DETECTED_ROS1)
   if (dynamic_reconfigure_FOUND)
     generate_dynamic_reconfigure_options(
       cfg/mvsimNode.cfg
-      )
+    )
   endif()
-
-  ###################################
-  ## catkin specific configuration ##
-  ###################################
-  ## The catkin_package macro generates cmake config files for your package
-  ## Declare things to be passed to dependent projects
-  ## INCLUDE_DIRS: uncomment this if you package contains header files
-  ## LIBRARIES: libraries you create in this project that dependent projects also need
-  ## CATKIN_DEPENDS: catkin_packages dependent projects also need
-  ## DEPENDS: system dependencies of this project that dependent projects also need
 
   catkin_package(
     CATKIN_DEPENDS
       dynamic_reconfigure nav_msgs roscpp sensor_msgs visualization_msgs
       tf2 tf2_geometry_msgs
-  #  INCLUDE_DIRS include
-  #  LIBRARIES mrpt_localization
-  #  DEPENDS mrpt
   )
 endif()
 
@@ -226,6 +226,7 @@ if (NOT box2d_FOUND)
   if(NOT ${CMAKE_VERSION} VERSION_LESS "3.15")
     set(echo_flag COMMAND_ECHO STDOUT)
   endif()
+
   execute_process(COMMAND
     ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" "${${PROJECT_NAME}_SOURCE_DIR}/externals/box2d"
     -DBOX2D_BUILD_DOCS=OFF
@@ -233,9 +234,9 @@ if (NOT box2d_FOUND)
     -DBOX2D_BUILD_UNIT_TESTS=OFF
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     -DCMAKE_INSTALL_PREFIX=${EMBEDDED_box2d_INSTALL_DIR}
-  RESULT_VARIABLE result
-  WORKING_DIRECTORY "${EMBEDDED_box2d_BUILD_DIR}"
-  ${echo_flag}
+    RESULT_VARIABLE result
+    WORKING_DIRECTORY "${EMBEDDED_box2d_BUILD_DIR}"
+    ${echo_flag}
   )
   if(result)
     message(FATAL_ERROR "CMake step for box2d failed: ${result}")
@@ -263,15 +264,16 @@ if (NOT box2d_FOUND)
   execute_process(COMMAND
     ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" "${${PROJECT_NAME}_SOURCE_DIR}/externals/box2d"
     -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-  RESULT_VARIABLE result
-  WORKING_DIRECTORY "${EMBEDDED_box2d_BUILD_DIR}"
-  ${echo_flag}
+    RESULT_VARIABLE result
+    WORKING_DIRECTORY "${EMBEDDED_box2d_BUILD_DIR}"
+    ${echo_flag}
   )
-    install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} --build \"${EMBEDDED_box2d_BUILD_DIR}\" --target install)")
+
+  install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} --build \"${EMBEDDED_box2d_BUILD_DIR}\" --target install)")
 endif()
 
 if (NOT box2d_FOUND)
-    message(FATAL_ERROR "box2d not found, neither as system library nor git submodule. Check error messages above for possible reasons.")
+  message(FATAL_ERROR "box2d not found, neither as system library nor git submodule.")
 endif()
 
 if (box2d_FOUND)
@@ -289,12 +291,11 @@ add_subdirectory(modules)
 add_subdirectory(mvsim-cli)
 add_subdirectory(mvsim-pid-tuner)
 
+# ================================================================
+#                  ROS NODES (BUILD_FOR_ROS)
+# ================================================================
 if (BUILD_FOR_ROS)
-  ###########
-  ## Build ##
-  ###########
 
-  ## Declare a cpp executable
   add_executable(mvsim_node
     mvsim_node_src/mvsim_node.cpp
     mvsim_node_src/mvsim_node_main.cpp
@@ -304,8 +305,34 @@ if (BUILD_FOR_ROS)
 
   mvsim_set_target_build_options(mvsim_node)
 
-  target_include_directories(mvsim_node PRIVATE "mvsim_node_src/include")
+  target_include_directories(mvsim_node PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mvsim_node_src/include
+  )
 
+  # ** TEMPORARY** !!!
+  target_include_directories(mvsim_node PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/simulator/src
+    ${rclcpp_INCLUDE_DIRS}
+    ${geometry_msgs_INCLUDE_DIRS}
+    ${nav_msgs_INCLUDE_DIRS}
+    ${sensor_msgs_INCLUDE_DIRS}
+    ${visualization_msgs_INCLUDE_DIRS}
+    ${tf2_geometry_msgs_INCLUDE_DIRS}
+  )
+
+  ament_target_dependencies(mvsim_node
+    rclcpp
+    geometry_msgs
+    nav_msgs
+    sensor_msgs
+    visualization_msgs
+    tf2_geometry_msgs
+    std_msgs
+    tf2
+    tf2_ros
+    benchmark_msg
+  )
+  
   if (catkin_INCLUDE_DIRS)
     # Specify additional locations of header files
     # Your package locations should be listed before other locations
@@ -347,7 +374,7 @@ if (BUILD_FOR_ROS)
   endif()
 
   target_compile_definitions(mvsim_node PRIVATE
-  PACKAGE_ROS_VERSION=${PACKAGE_ROS_VERSION}
+    PACKAGE_ROS_VERSION=${PACKAGE_ROS_VERSION}
   )
 
   if (TARGET mvsim::comms)
@@ -409,29 +436,24 @@ if (BUILD_FOR_ROS)
 
   # Mark executables and/or libraries for installation
   if (DETECTED_ROS2)
-    #ament_export_dependencies(mrpt-gui)
-
-    # Export old-style CMake variables
-    #ament_export_include_directories("include/${PROJECT_NAME}")
-    #ament_export_libraries(${PROJECT_NAME})
-
-    # Export modern CMake targets
-    #ament_export_targets(export_${PROJECT_NAME})
     ament_package()
   endif()
 endif() # BUILD_FOR_ROS
 
+# =========================================================
+#  UNIT TESTS
+# =========================================================
 option(MVSIM_UNIT_TESTS "Build and run MVSIM unit tests (requires Python and ZMQ)" ON)
 
 # Disable tests in armhf, since they fail due to (probably?) very slow rendering capabilities.
 # See: https://github.com/ros-infrastructure/ros_buildfarm_config/pull/220
 if (MVSIM_UNIT_TESTS AND
   (
-  ("armhf" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}") OR
-  ("arm64" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}") OR
-  ("aarch64" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}")
+    ("armhf" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}") OR
+    ("arm64" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}") OR
+    ("aarch64" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}")
   )
-  )
+)
   set(MVSIM_UNIT_TESTS OFF CACHE BOOL "" FORCE)
   message(STATUS "*Warning*: Disabling unit tests in this architecture (${CMAKE_SYSTEM_PROCESSOR})")
 endif()

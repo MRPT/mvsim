@@ -908,7 +908,8 @@ void MVSimNode::spinNotifyROS()
 						Msg_TransformStamped tx;
 						tx.header.frame_id = "map";
 						tx.child_frame_id = "odom";
-						tx.header.stamp = myNow();
+						tx.header.stamp =
+							myNow() + std::chrono::milliseconds(50);  // Fix deay Fernando
 						tx.transform = tf2::toMsg(tf2::Transform::getIdentity());
 
 						Msg_TFMessage tfMsg;

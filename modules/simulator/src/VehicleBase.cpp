@@ -21,6 +21,7 @@
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 
+#include <cmath>
 #include <map>
 #include <rapidxml.hpp>
 #include <string>
@@ -336,6 +337,17 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	}
 
 	veh->initLoggers();
+
+	// <Optional> auto_start_recording
+	if (const xml_node<>* asr_node = nodes.first_node("auto_start_recording"); asr_node)
+	{
+		const std::string val = asr_node->value();
+		veh->auto_start_recording_ = (val == "true" || val == "1");
+	}
+	if (veh->auto_start_recording_)
+	{
+		veh->setRecording(true);
+	}
 
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
@@ -672,7 +684,10 @@ void VehicleBase::internal_internalGuiUpdate_sensors(
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
 	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical)
 {
-	for (auto& s : sensors_) s->guiUpdate(viz, physical);
+	for (auto& s : sensors_)
+	{
+		s->guiUpdate(viz, physical);
+	}
 }
 
 void VehicleBase::internal_internalGuiUpdate_forces(  //
@@ -694,6 +709,37 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 		glForces_->setVisibility(false);
 		glMotorTorques_->setVisibility(false);
 	}
+}
+
+double mvsim::VehicleBase::estimateSlopeTorquePerWheel(size_t nDrivenWheels) const
+{
+	if (nDrivenWheels == 0)
+	{
+		nDrivenWheels = getNumWheels();
+	}
+	if (nDrivenWheels == 0)
+	{
+		return 0;
+	}
+
+	// Vehicle pitch from 3D pose:
+	double yaw, pitch, roll;
+	getCPose3D().getYawPitchRoll(yaw, pitch, roll);
+
+	const double g = parent()->get_gravity();
+	const double m = getChassisMass();
+	// Average wheel radius:
+	double R = 0;
+	for (size_t i = 0; i < getNumWheels(); i++)
+	{
+		R += getWheelInfo(i).diameter;
+	}
+	R *= 0.5 / static_cast<double>(getNumWheels());
+
+	// Torque per driven wheel to hold the vehicle on the slope:
+	// F_grade = m * g * sin(pitch), shared across driven wheels,
+	// converted to torque: tau = F * R / nDrivenWheels
+	return m * g * std::sin(pitch) * R / static_cast<double>(nDrivenWheels);
 }
 
 bool mvsim::VehicleBase::isLogging() const

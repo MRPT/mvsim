@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-<name>mvsim</name>
+  <name>mvsim</name>
   <description>A lightweight multivehicle simulation framework.</description>
 
   <!-- All version numbers in CMake scripts are taken from this line: -->
@@ -42,7 +42,7 @@
   <depend>unzip</depend>
   <depend>visualization_msgs</depend>
   <depend>wget</depend>
-  
+
   <!-- ROS1 -->
   <depend           condition="$ROS_VERSION == 1">roscpp</depend>
   <depend           condition="$ROS_VERSION == 1">dynamic_reconfigure</depend>

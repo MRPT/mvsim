@@ -124,8 +124,28 @@ class DynamicsDifferential : public VehicleBase
 		/// PID controller parameters
 		double KP = 10, KI = 0, KD = 0;
 
+		/** Derivative filter coefficient (0=unfiltered, typical: 2-20) */
+		double N = 0;
+
 		/// Maximum abs. value torque (for clamp) [Nm]
 		double max_torque = 100;
+
+		bool enable_antiwindup = false;
+
+		/** Enable slope feedforward compensation */
+		bool enable_feedforward = false;
+
+		/** Gain for slope feedforward (1.0 = full compensation) */
+		double feedforward_gain = 1.0;
+
+		/** Enable reference (setpoint) filter */
+		bool enable_reference_filter = false;
+
+		/** Time constant for reference filter [seconds] */
+		double reference_filter_tau = 0.1;
+
+		/** Order of the reference filter (1 or 2) */
+		int reference_filter_order = 1;
 
 		// See base docs.
 		bool setTwistCommand(const mrpt::math::TTwist2D& t) override
