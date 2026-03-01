@@ -55,6 +55,29 @@
 
 	<vehicle name="01a_truck" class="scania_truck">
 		<init_pose>0 0 0</init_pose>
+		
+		<!-- Front-right 3D Lidar -->
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+			sensor_x="3.58" sensor_y="-0.84" sensor_z="2.76"
+			sensor_yaw="5" sensor_pitch="-12.6" sensor_roll="45.0"
+			sensor_name="front_right_lidar"
+			sensor_rpm="600"
+		/>
+		<!-- Front-left 3D Lidar -->
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+			sensor_x="3.58" sensor_y="+0.84" sensor_z="2.76"
+			sensor_yaw="-5" sensor_pitch="-12.6" sensor_roll="-45.0"
+			sensor_name="front_left_lidar"
+			sensor_rpm="600"
+		/>
+		
+		<!-- front 3D Lidar -->
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+			sensor_x="3.79" sensor_y="0" sensor_z="2.72"
+			sensor_yaw="-5" sensor_pitch="53.6" sensor_roll="0"
+			sensor_name="front_lidar"
+			sensor_rpm="600"
+		/>
 	</vehicle>
 
 	<vehicle name="01b_trailer" class="scania_trailer">
