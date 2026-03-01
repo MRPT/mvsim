@@ -108,8 +108,6 @@ if (DETECTED_ROS2)
   find_package(tf2_geometry_msgs REQUIRED)
   find_package(mrpt-ros2bridge REQUIRED)
   find_package(std_msgs REQUIRED)
-  # 💡 Usamos el paquete de MENSAJES
-  find_package(benchmark_msg REQUIRED)
 endif()
 
 
@@ -330,7 +328,6 @@ if (BUILD_FOR_ROS)
     std_msgs
     tf2
     tf2_ros
-    benchmark_msg
   )
   
   if (catkin_INCLUDE_DIRS)
