@@ -181,6 +181,7 @@ class VehicleBase : public VisualObject, public Simulable
    protected:
 	std::vector<CSVLogger::Ptr> loggers_;
 	std::string log_path_;
+	bool auto_start_recording_ = false;
 
 	virtual void initLoggers();
 	virtual void writeLogStrings();

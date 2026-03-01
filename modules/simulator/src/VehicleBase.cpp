@@ -338,6 +338,17 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 
 	veh->initLoggers();
 
+	// <Optional> auto_start_recording
+	if (const xml_node<>* asr_node = nodes.first_node("auto_start_recording"); asr_node)
+	{
+		const std::string val = asr_node->value();
+		veh->auto_start_recording_ = (val == "true" || val == "1");
+	}
+	if (veh->auto_start_recording_)
+	{
+		veh->setRecording(true);
+	}
+
 	// Register bodies, fixtures, etc. in Box2D simulator:
 	// ----------------------------------------------------
 	veh->create_multibody_system(*parent->getBox2DWorld());
