@@ -9,11 +9,11 @@
 
 #include <mrpt/io/CFileGZInputStream.h>
 #include <mrpt/maps/CSimplePointsMap.h>
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/serialization/CArchive.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 
@@ -95,16 +95,15 @@ void OccupancyGridMap::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void OccupancyGridMap::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	[[maybe_unused]] bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 
 	// 1st time call?? -> Create objects
 	if (!gl_grid_ && viz && physical)
 	{
-		gl_grid_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_grid_ = mrpt::viz::CSetOfObjects::Create();
 		gl_grid_->setName("OccupancyGridMap");
 		viz->get().insert(gl_grid_);
 		physical->get().insert(gl_grid_);
@@ -127,10 +126,10 @@ void OccupancyGridMap::internalGuiUpdate(
 		std::lock_guard<std::mutex> csl(gl_obs_clouds_buffer_cs_);
 		for (size_t i = 0; i < gl_obs_clouds_.size(); i++)
 		{
-			mrpt::opengl::CSetOfObjects::Ptr& gl_objs = gl_obs_clouds_[i];
+			mrpt::viz::CSetOfObjects::Ptr& gl_objs = gl_obs_clouds_[i];
 			if (!gl_objs)
 			{
-				gl_objs = mrpt::opengl::CSetOfObjects::Create();
+				gl_objs = mrpt::viz::CSetOfObjects::Create();
 				gl_objs->setName(
 					"OccupancyGridMap"s + this->getName() + ".obstacles["s + std::to_string(i) +
 					"]"s);
@@ -232,10 +231,10 @@ void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& 
 
 			// GL:
 			// 1st usage?
-			mrpt::opengl::CPointCloud::Ptr& gl_pts = gl_obs_clouds_buffer_[obj_idx];
+			mrpt::viz::CPointCloud::Ptr& gl_pts = gl_obs_clouds_buffer_[obj_idx];
 			if (show_grid_collision_points_)
 			{
-				gl_pts = mrpt::opengl::CPointCloud::Create();
+				gl_pts = mrpt::viz::CPointCloud::Create();
 				gl_pts->setPointSize(4.0f);
 				gl_pts->setColor(0, 0, 1);
 
@@ -303,7 +302,7 @@ void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& 
 
 					if (gl_pts && show_grid_collision_points_)
 					{
-						gl_pts->mrpt::opengl::CPointCloud::insertPoint(lx, ly, .0);
+						gl_pts->mrpt::viz::CPointCloud::insertPoint(lx, ly, .0);
 					}
 				}
 			}

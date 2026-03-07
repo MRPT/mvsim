@@ -7,9 +7,9 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/HorizontalPlane.h>
 
@@ -26,7 +26,7 @@ HorizontalPlane::HorizontalPlane(World* parent, const rapidxml::xml_node<char>* 
 	: WorldElementBase(parent)
 {
 	// Create opengl object: in this class, we'll store most state data directly
-	// in the mrpt::opengl object.
+	// in the mrpt::viz object.
 	HorizontalPlane::loadConfigFrom(root);
 }
 
@@ -66,19 +66,18 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void HorizontalPlane::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	[[maybe_unused]] bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 	using namespace std::string_literals;
 
-	if (!glGroup_) glGroup_ = mrpt::opengl::CSetOfObjects::Create();
+	if (!glGroup_) glGroup_ = mrpt::viz::CSetOfObjects::Create();
 
 	// 1st call? (w/o texture)
 	if (!gl_plane_ && textureFileName_.empty() && viz && physical)
 	{
-		gl_plane_ = mrpt::opengl::CTexturedPlane::Create();
+		gl_plane_ = mrpt::viz::CTexturedPlane::Create();
 		gl_plane_->setPlaneCorners(x_min_, x_max_, y_min_, y_max_);
 		gl_plane_->setLocation(0, 0, z_);
 		gl_plane_->setName("HorizontalPlane_"s + getName());
@@ -86,7 +85,7 @@ void HorizontalPlane::internalGuiUpdate(
 		gl_plane_->enableLighting(enableShadows_);
 		gl_plane_->setColor_u8(color_);
 		gl_plane_->cullFaces(
-			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
+			mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(cull_faces_));
 		glGroup_->insert(gl_plane_);
 		viz->get().insert(glGroup_);
 		physical->get().insert(glGroup_);
@@ -107,13 +106,13 @@ void HorizontalPlane::internalGuiUpdate(
 		float u_max = (x_max_ - x_min_) / textureSizeX_;
 		float v_max = (y_max_ - y_min_) / textureSizeY_;
 
-		gl_plane_text_ = mrpt::opengl::CSetOfTexturedTriangles::Create();
+		gl_plane_text_ = mrpt::viz::CSetOfTexturedTriangles::Create();
 		gl_plane_text_->setName("HorizontalPlane_"s + getName());
 
 		gl_plane_text_->enableLight(enableShadows_);
 
 		{
-			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+			mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 			t.vertices[0].xyzrgba.pt = {x_min_, y_min_, z_};
 			t.vertices[1].xyzrgba.pt = {x_max_, y_min_, z_};
 			t.vertices[2].xyzrgba.pt = {x_max_, y_max_, z_};
@@ -126,7 +125,7 @@ void HorizontalPlane::internalGuiUpdate(
 			gl_plane_text_->insertTriangle(t);
 		}
 		{
-			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+			mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 			t.vertices[0].xyzrgba.pt = {x_min_, y_min_, z_};
 			t.vertices[1].xyzrgba.pt = {x_max_, y_max_, z_};
 			t.vertices[2].xyzrgba.pt = {x_min_, y_max_, z_};
@@ -142,7 +141,7 @@ void HorizontalPlane::internalGuiUpdate(
 		gl_plane_text_->assignImage(texture);
 
 		gl_plane_text_->cullFaces(
-			mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
+			mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(cull_faces_));
 
 		glGroup_->insert(gl_plane_text_);
 		viz->get().insert(glGroup_);

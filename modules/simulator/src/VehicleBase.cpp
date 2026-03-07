@@ -9,10 +9,10 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
-#include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/random.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/viz/CPolyhedron.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/VehicleBase.h>
@@ -59,7 +59,7 @@ void register_all_veh_dynamics()
 
 // Protected ctor:
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
-	: VisualObject(parent), Simulable(parent), fixture_wheels_(nWheels, nullptr)
+	: CVisualObject(parent), Simulable(parent), fixture_wheels_(nWheels, nullptr)
 {
 	// Create wheels:
 	for (size_t i = 0; i < nWheels; i++)
@@ -681,8 +681,8 @@ std::vector<mrpt::math::TVector2D> VehicleBase::getWheelsVelocityLocal(
 }
 
 void VehicleBase::internal_internalGuiUpdate_sensors(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical)
 {
 	for (auto& s : sensors_)
 	{
@@ -691,7 +691,7 @@ void VehicleBase::internal_internalGuiUpdate_sensors(
 }
 
 void VehicleBase::internal_internalGuiUpdate_forces(  //
-	[[maybe_unused]] mrpt::opengl::COpenGLScene& scene)
+	[[maybe_unused]] mrpt::viz::Scene& scene)
 {
 	if (world_->guiOptions_.show_forces)
 	{
@@ -847,18 +847,18 @@ void VehicleBase::create_multibody_system(b2World& world)
 }
 
 void VehicleBase::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly)
 {
 	// 1st time call?? -> Create objects
 	// ----------------------------------
 	const size_t nWs = this->getNumWheels();
 	if (!glChassisViz_ && viz && physical)
 	{
-		glChassisViz_ = mrpt::opengl::CSetOfObjects::Create();
+		glChassisViz_ = mrpt::viz::CSetOfObjects::Create();
 		glChassisViz_->setName("vehicle_chassis_"s + name_);
 
-		glChassisPhysical_ = mrpt::opengl::CSetOfObjects::Create();
+		glChassisPhysical_ = mrpt::viz::CSetOfObjects::Create();
 		glChassisPhysical_->setName("vehicle_chassis_"s + name_);
 
 		// Wheels shape:
@@ -866,11 +866,11 @@ void VehicleBase::internalGuiUpdate(
 		glWheelsPhysical_.resize(nWs);
 		for (size_t i = 0; i < nWs; i++)
 		{
-			glWheelsViz_[i] = mrpt::opengl::CSetOfObjects::Create();
+			glWheelsViz_[i] = mrpt::viz::CSetOfObjects::Create();
 			this->getWheelInfo(i).getAs3DObject(*glWheelsViz_[i], false);
 			glChassisViz_->insert(glWheelsViz_[i]);
 
-			glWheelsPhysical_[i] = mrpt::opengl::CSetOfObjects::Create();
+			glWheelsPhysical_[i] = mrpt::viz::CSetOfObjects::Create();
 			this->getWheelInfo(i).getAs3DObject(*glWheelsPhysical_[i], true);
 			glChassisPhysical_->insert(glWheelsPhysical_[i]);
 		}
@@ -878,7 +878,7 @@ void VehicleBase::internalGuiUpdate(
 		if (!childrenOnly)
 		{
 			// Robot shape:
-			auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
+			auto gl_poly = mrpt::viz::CPolyhedron::CreateCustomPrism(
 				chassis_poly_, chassis_z_max_ - chassis_z_min_);
 			gl_poly->setLocation(0, 0, chassis_z_min_);
 			gl_poly->setColor_u8(chassis_color_);
@@ -914,7 +914,7 @@ void VehicleBase::internalGuiUpdate(
 
 			if (!w.linked_yaw_object_name.empty())
 			{
-				auto glLinked = VisualObject::glCustomVisual_->getByName(w.linked_yaw_object_name);
+				auto glLinked = CVisualObject::glCustomVisual_->getByName(w.linked_yaw_object_name);
 				if (!glLinked)
 				{
 					THROW_EXCEPTION_FMT(
@@ -934,7 +934,7 @@ void VehicleBase::internalGuiUpdate(
 	if (!glForces_ && viz)
 	{
 		// Visualization of forces:
-		glForces_ = mrpt::opengl::CSetOfLines::Create();
+		glForces_ = mrpt::viz::CSetOfLines::Create();
 		glForces_->setLineWidth(3.0);
 		glForces_->setColor_u8(0xff, 0xff, 0xff);
 		glForces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
@@ -944,7 +944,7 @@ void VehicleBase::internalGuiUpdate(
 	if (!glMotorTorques_ && viz)
 	{
 		// Visualization of forces:
-		glMotorTorques_ = mrpt::opengl::CSetOfLines::Create();
+		glMotorTorques_ = mrpt::viz::CSetOfLines::Create();
 		glMotorTorques_->setLineWidth(3.0);
 		glMotorTorques_->setColor_u8(0xff, 0x00, 0x00);
 		glMotorTorques_->setPose(

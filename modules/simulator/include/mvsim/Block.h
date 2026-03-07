@@ -15,10 +15,10 @@
 #include <box2d/b2_world.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/math/TPolygon2D.h>
-#include <mrpt/opengl/CSetOfLines.h>
-#include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/typemeta/TEnumType.h>
+#include <mrpt/viz/CSetOfLines.h>
+#include <mrpt/viz/CSetOfObjects.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Sensors/SensorBase.h>
 #include <mvsim/Simulable.h>
@@ -47,7 +47,7 @@ enum class GeometryType : int32_t
 /** A non-vehicle "actor" for the simulation, typically obstacle blocks.
  * \ingroup mvsim_simulator_module
  */
-class Block : public VisualObject, public Simulable
+class Block : public CVisualObject, public Simulable
 {
    public:
 	using Ptr = std::shared_ptr<Block>;
@@ -143,14 +143,14 @@ class Block : public VisualObject, public Simulable
 	/// explicitly yet. Used while parsing the shape_from_visual tag.
 	bool default_block_z_min_max() const;
 
-	VisualObject* meAsVisualObject() override { return this; }
+	CVisualObject* meAsCVisualObject() override { return this; }
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	/** user-supplied index number: must be set/get'ed with setblockIndex()
 	 * getblockIndex() (default=0) */
@@ -213,7 +213,7 @@ class Block : public VisualObject, public Simulable
 	b2Fixture* fixture_block_;
 
    private:
-	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
+	void internal_internalGuiUpdate_forces(mrpt::viz::Scene& scene);
 
 	void internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node);
 
@@ -242,8 +242,8 @@ class Block : public VisualObject, public Simulable
 
 	GeometryParams geomParams_;
 
-	mrpt::opengl::CSetOfObjects::Ptr gl_block_;
-	mrpt::opengl::CSetOfLines::Ptr gl_forces_;
+	mrpt::viz::CSetOfObjects::Ptr gl_block_;
+	mrpt::viz::CSetOfLines::Ptr gl_forces_;
 	std::mutex force_segments_for_rendering_cs_;
 	std::vector<mrpt::math::TSegment3D> force_segments_for_rendering_;
 
@@ -253,7 +253,7 @@ class Block : public VisualObject, public Simulable
  * \ingroup mvsim_simulator_module
  *
  */
-class DummyInvisibleBlock : public VisualObject, public Simulable
+class DummyInvisibleBlock : public CVisualObject, public Simulable
 {
    public:
 	using Ptr = std::shared_ptr<DummyInvisibleBlock>;
@@ -301,8 +301,8 @@ class DummyInvisibleBlock : public VisualObject, public Simulable
 
    protected:
 	void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical,
 		[[maybe_unused]] bool childrenOnly) override;
 
 	void registerOnServer(mvsim::Client& c) override

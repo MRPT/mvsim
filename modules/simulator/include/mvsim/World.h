@@ -252,7 +252,7 @@ class World : public mrpt::system::COutputLogger
 	 * There are two sets of objects: "viz" for visualization only, "physical"
 	 * for objects which should be detected by sensors.
 	 */
-	mrpt::opengl::CSetOfObjects::Ptr guiUserObjectsPhysical_, guiUserObjectsViz_;
+	mrpt::viz::CSetOfObjects::Ptr guiUserObjectsPhysical_, guiUserObjectsViz_;
 	std::mutex guiUserObjectsMtx_;
 
 	/// Update 3D vehicles, sensors, run render-based sensors, etc:
@@ -260,10 +260,9 @@ class World : public mrpt::system::COutputLogger
 	/// mode.
 	void internalGraphicsLoopTasksForSimulation();
 
-	void internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObjects);
+	void internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects);
 
-	void internalUpdate3DSceneObjects(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
+	void internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene& physical);
 	void internal_GUI_thread();
 	void internal_process_pending_gui_user_tasks();
 
@@ -557,8 +556,8 @@ class World : public mrpt::system::COutputLogger
 
 	/// This private container will be filled with objects in the public
 	/// gui_user_objects_
-	mrpt::opengl::CSetOfObjects::Ptr glUserObjsPhysical_ = mrpt::opengl::CSetOfObjects::Create();
-	mrpt::opengl::CSetOfObjects::Ptr glUserObjsViz_ = mrpt::opengl::CSetOfObjects::Create();
+	mrpt::viz::CSetOfObjects::Ptr glUserObjsPhysical_ = mrpt::viz::CSetOfObjects::Create();
+	mrpt::viz::CSetOfObjects::Ptr glUserObjsViz_ = mrpt::viz::CSetOfObjects::Create();
 
 	// ------- GUI options -----
 	struct TGUI_Options
@@ -815,7 +814,7 @@ class World : public mrpt::system::COutputLogger
 		{
 			nanogui::CheckBox* cb = nullptr;
 			Simulable::Ptr simulable;
-			VisualObject* visual = nullptr;
+			CVisualObject* visual = nullptr;
 		};
 
 		// Buttons that must be {dis,en}abled when there is a selected object:
@@ -839,14 +838,14 @@ class World : public mrpt::system::COutputLogger
 	/** 3D scene with all visual objects (vehicles, obstacles, markers, etc.)
 	 *  \sa worldPhysical_
 	 */
-	mrpt::opengl::COpenGLScene::Ptr worldVisual_ = mrpt::opengl::COpenGLScene::Create();
+	mrpt::viz::Scene::Ptr worldVisual_ = mrpt::viz::Scene::Create();
 
 	/** 3D scene with all physically observable objects: we will use this
 	 * scene as input to simulated sensors like cameras, where we don't wont
 	 * to see visualization marks, etc.
 	 * \sa world_visual_
 	 */
-	mrpt::opengl::COpenGLScene worldPhysical_;
+	mrpt::viz::Scene worldPhysical_;
 	std::recursive_mutex worldPhysicalMtx_;
 
 	/// World coordinates offset for rendering. Useful mainly to keep numerical accuracy

@@ -1,5 +1,7 @@
 project(mvsim-pid-tuner)
 
+find_package(CLI11 REQUIRED)
+
 # === Define executable ===
 add_executable(${PROJECT_NAME}
 	mvsim-pid-tuner-main.cpp
@@ -7,7 +9,7 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(
 	${PROJECT_NAME}
 	mvsim::simulator
-	mrpt::tclap
+	CLI11::CLI11
 	${BOX2D_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT}
 	)

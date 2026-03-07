@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include <mrpt/opengl/CCylinder.h>
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/opengl/CSphere.h>
 #include <mrpt/poses/CPose3DInterpolator.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CCylinder.h>
+#include <mrpt/viz/CSetOfObjects.h>
+#include <mrpt/viz/CSphere.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
@@ -21,9 +21,9 @@
 #define MIN_MRPT_VERSION_ANIMATED_ASSIMP 0x020f08
 
 #if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
-#include <mrpt/opengl/CAnimatedAssimpModel.h>
+#include <mrpt/viz/CAnimatedAssimpModel.h>
 #else
-#include <mrpt/opengl/CAssimpModel.h>
+#include <mrpt/viz/CAssimpModel.h>
 #endif
 
 #include <memory>
@@ -63,7 +63,7 @@ class World;
  *
  * \ingroup mvsim_simulator_module
  */
-class HumanActor : public VisualObject, public Simulable
+class HumanActor : public CVisualObject, public Simulable
 {
    public:
 	using Ptr = std::shared_ptr<HumanActor>;
@@ -153,8 +153,8 @@ class HumanActor : public VisualObject, public Simulable
 
    protected:
 	void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	// ==================== Configuration Parameters ====================
 
@@ -212,9 +212,9 @@ class HumanActor : public VisualObject, public Simulable
 
 	// ==================== Rendering ====================
 #if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
-	mrpt::opengl::CAnimatedAssimpModel::Ptr glModel_;
+	mrpt::viz::CAnimatedAssimpModel::Ptr glModel_;
 #else
-	mrpt::opengl::CAssimpModel::Ptr glModel_;
+	mrpt::viz::CAssimpModel::Ptr glModel_;
 #endif
 	bool glInitialized_ = false;
 

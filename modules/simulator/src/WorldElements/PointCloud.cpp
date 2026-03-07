@@ -8,7 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/maps/CSimplePointsMap.h>
-#include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/PointCloud.h>
 
@@ -65,16 +65,15 @@ void PointCloud::doLoadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void PointCloud::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	[[maybe_unused]] bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 
 	// 1st time call?? -> Create objects
 	if (!gl_points_ && viz && physical)
 	{
-		gl_points_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_points_ = mrpt::viz::CSetOfObjects::Create();
 		gl_points_->setName("PointCloud");
 
 		gl_points_->setPose(parent()->applyWorldRenderOffset(pointcloud_pose_));
