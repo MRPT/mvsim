@@ -32,8 +32,15 @@ Special variables
 Environment variables
 ========================
 
-Environment variables can be dereferenced with the notation ``${var_name}``.
-Using undefined variables is an error.
+Environment variables can be read with the notation ``$env{VAR_NAME}``.
+Using undefined environment variables is an error.
+
+Example:
+
+.. code-block:: xml
+
+    <variable name="PAYLOAD" value="$f{$env{PAYLOAD_MASS}}"/>
+
 
 Output of an external program
 ===============================
