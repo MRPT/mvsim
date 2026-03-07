@@ -18,7 +18,7 @@
    | Released under BSD License. See: https://www.mrpt.org/License          |
    +------------------------------------------------------------------------+ */
 
-#include <mrpt/config.h>
+#include <mrpt/core/config.h>
 #include <mrpt/core/exceptions.h>
 
 #ifdef _WIN32

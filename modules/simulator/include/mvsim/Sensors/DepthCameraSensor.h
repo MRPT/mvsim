@@ -10,8 +10,8 @@
 #pragma once
 
 #include <mrpt/obs/CObservation3DRangeScan.h>
-#include <mrpt/opengl/CFBORender.h>
-#include <mrpt/opengl/CPointCloudColoured.h>
+#include <mrpt/viz/CFBORender.h>
+#include <mrpt/viz/CPointCloudColoured.h>
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
@@ -45,7 +45,7 @@ class DepthCameraSensor : public SensorBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
+	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 
 	void freeOpenGLResources() override;
 
@@ -61,8 +61,8 @@ class DepthCameraSensor : public SensorBase
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
@@ -85,12 +85,12 @@ class DepthCameraSensor : public SensorBase
 	mrpt::obs::CObservation3DRangeScan::Ptr last_obs2gui_;
 
 	// Note: we need 2 to support different resolutions for RGB vs Depth.
-	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_rgb_, fbo_renderer_depth_;
+	std::shared_ptr<mrpt::viz::CFBORender> fbo_renderer_rgb_, fbo_renderer_depth_;
 
 	/** Whether gl_scan_ has to be updated upon next call of
 	 * internalGuiUpdate() from last_scan2gui_ */
 	bool gui_uptodate_ = false;
-	mrpt::opengl::CPointCloudColoured::Ptr gl_obs_;
+	mrpt::viz::CPointCloudColoured::Ptr gl_obs_;
 
 	std::optional<TSimulContext> has_to_render_;
 	std::mutex has_to_render_mtx_;
@@ -108,8 +108,8 @@ class DepthCameraSensor : public SensorBase
 	float depth_noise_sigma_ = 1e-3;
 	bool show_3d_pointcloud_ = false;
 
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
 
 	mrpt::math::CMatrixFloat depthImage_;  // to avoid memory allocs
 };

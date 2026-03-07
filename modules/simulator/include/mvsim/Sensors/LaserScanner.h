@@ -10,9 +10,9 @@
 #pragma once
 
 #include <mrpt/obs/CObservation2DRangeScan.h>
-#include <mrpt/opengl/CFBORender.h>
-#include <mrpt/opengl/CPlanarLaserScan.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/viz/CFBORender.h>
+#include <mrpt/viz/CPlanarLaserScan.h>
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
@@ -41,15 +41,15 @@ class LaserScanner : public SensorBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
+	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 	void freeOpenGLResources() override;
 
 	void registerOnServer(mvsim::Client& c) override;
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
@@ -99,14 +99,14 @@ class LaserScanner : public SensorBase
 	 * internalGuiUpdate() from last_scan2gui_ */
 	bool gui_uptodate_ = false;
 
-	mrpt::opengl::CPlanarLaserScan::Ptr gl_scan_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_;
+	mrpt::viz::CPlanarLaserScan::Ptr gl_scan_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_;
 
 	std::optional<TSimulContext> has_to_render_;
 	std::mutex has_to_render_mtx_;
 
-	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_depth_;
+	std::shared_ptr<mrpt::viz::CFBORender> fbo_renderer_depth_;
 
 	std::vector<size_t> angleIdx2pixelIdx_;
 	std::vector<float> angleIdx2secant_;

@@ -24,7 +24,7 @@ ModelsCache& ModelsCache::Instance()
 	return o;
 }
 
-mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
+mrpt::viz::CAssimpModel::Ptr ModelsCache::get(
 	const std::string& localFileName, const Options& options)
 {
 	// already cached?
@@ -34,29 +34,29 @@ mrpt::opengl::CAssimpModel::Ptr ModelsCache::get(
 	}
 
 	// No, it's a new model path, create its placeholder:
-	auto m = cache[localFileName] = mrpt::opengl::CAssimpModel::Create();
+	auto m = cache[localFileName] = mrpt::viz::CAssimpModel::Create();
 
 	ASSERT_FILE_EXISTS_(localFileName);
 
 	// En/Dis-able the extra verbosity while loading the 3D model:
-	int loadFlags = mrpt::opengl::CAssimpModel::LoadFlags::RealTimeMaxQuality |
-					mrpt::opengl::CAssimpModel::LoadFlags::FlipUVs;
+	int loadFlags = mrpt::viz::CAssimpModel::LoadFlags::RealTimeMaxQuality |
+					mrpt::viz::CAssimpModel::LoadFlags::FlipUVs;
 
 	if (options.modelColor != mrpt::img::TColor::white())
 	{
-		loadFlags |= mrpt::opengl::CAssimpModel::LoadFlags::IgnoreMaterialColor;
+		loadFlags |= mrpt::viz::CAssimpModel::LoadFlags::IgnoreMaterialColor;
 	}
 
 	m->setColor_u8(options.modelColor);
 
 	if (mrpt::get_env<bool>("MVSIM_LOAD_MODELS_VERBOSE", false))
 	{
-		loadFlags |= mrpt::opengl::CAssimpModel::LoadFlags::Verbose;
+		loadFlags |= mrpt::viz::CAssimpModel::LoadFlags::Verbose;
 	}
 
 	m->loadScene(localFileName, loadFlags);
 
-	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(options.modelCull));
+	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(options.modelCull));
 
 	m->split_triangles_rendering_bbox(options.splitSize);
 

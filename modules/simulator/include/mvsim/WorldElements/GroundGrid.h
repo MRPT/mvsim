@@ -10,7 +10,7 @@
 #pragma once
 
 #include <mrpt/img/TColor.h>
-#include <mrpt/opengl/CGridPlaneXY.h>
+#include <mrpt/viz/CGridPlaneXY.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 namespace mvsim
@@ -29,8 +29,8 @@ class GroundGrid : public WorldElementBase
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	bool is_floating_;
 	std::string float_center_at_vehicle_name_;
@@ -38,6 +38,6 @@ class GroundGrid : public WorldElementBase
 	mrpt::img::TColor color_;
 	double line_width_;
 
-	mrpt::opengl::CGridPlaneXY::Ptr gl_groundgrid_;
+	mrpt::viz::CGridPlaneXY::Ptr gl_groundgrid_;
 };
 }  // namespace mvsim

@@ -98,7 +98,6 @@ if (DETECTED_ROS2)
 
   find_package(rclcpp REQUIRED)
 
-  # *** TEMPORARY ***!!!
   find_package(ament_cmake REQUIRED)
   find_package(geometry_msgs REQUIRED)
   find_package(nav_msgs REQUIRED)
@@ -193,15 +192,10 @@ endif()
 # Dependency: MRPT
 # Use the first cmd to set the minimum required version
 # ----------------------------------------------------------
-find_package(mrpt-maps  REQUIRED)
-find_package(mrpt-tclap  REQUIRED)
-find_package(mrpt-gui  REQUIRED)
-find_package(mrpt-tfest  REQUIRED)
-find_package(mrpt-topography REQUIRED)
-
-if (mrpt-maps_VERSION VERSION_LESS "2.14.1")
-    message(FATAL_ERROR "MRPT version 2.14.1 or newer is required, but found ${mrpt-maps_VERSION}")
-endif()
+find_package(mrpt_maps  REQUIRED)
+find_package(mrpt_gui  REQUIRED)
+find_package(mrpt_tfest  REQUIRED)
+find_package(mrpt_topography REQUIRED)
 
 # --------------------------
 # Dependency: Box2D

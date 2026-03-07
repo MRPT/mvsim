@@ -10,9 +10,9 @@
 #pragma once
 
 #include <mrpt/img/TColor.h>
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/opengl/CSetOfTexturedTriangles.h>
-#include <mrpt/opengl/CTexturedPlane.h>
+#include <mrpt/viz/CSetOfObjects.h>
+#include <mrpt/viz/CSetOfTexturedTriangles.h>
+#include <mrpt/viz/CTexturedPlane.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 namespace mvsim
@@ -36,8 +36,8 @@ class HorizontalPlane : public WorldElementBase
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	float x_min_ = -10, x_max_ = 10, y_min_ = -10, y_max_ = 10;
 	mrpt::img::TColor color_ = {0xa0, 0xa0, 0xa0, 0xff};
@@ -51,8 +51,8 @@ class HorizontalPlane : public WorldElementBase
 	float z_ = .0f;
 	std::string cull_faces_ = "NONE";
 
-	mrpt::opengl::CTexturedPlane::Ptr gl_plane_;
-	mrpt::opengl::CSetOfTexturedTriangles::Ptr gl_plane_text_;
-	mrpt::opengl::CSetOfObjects::Ptr glGroup_;
+	mrpt::viz::CTexturedPlane::Ptr gl_plane_;
+	mrpt::viz::CSetOfTexturedTriangles::Ptr gl_plane_text_;
+	mrpt::viz::CSetOfObjects::Ptr glGroup_;
 };
 }  // namespace mvsim

@@ -7,9 +7,9 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/VerticalPlane.h>
 
@@ -27,7 +27,7 @@ VerticalPlane::VerticalPlane(World* parent, const rapidxml::xml_node<char>* root
 	: WorldElementBase(parent)
 {
 	// Create opengl object: in this class, we'll store most state data directly
-	// in the mrpt::opengl object.
+	// in the mrpt::viz object.
 	VerticalPlane::loadConfigFrom(root);
 }
 
@@ -304,14 +304,13 @@ void VerticalPlane::createPhysicsBodies()
 }
 
 void VerticalPlane::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	[[maybe_unused]] bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 	using namespace std::string_literals;
 
-	if (!glGroup_) glGroup_ = mrpt::opengl::CSetOfObjects::Create();
+	if (!glGroup_) glGroup_ = mrpt::viz::CSetOfObjects::Create();
 
 	// Create visual representation on first call
 	if (!gl_plane_ && !gl_plane_text_ && viz && physical)
@@ -330,8 +329,8 @@ void VerticalPlane::internalGuiUpdate(
 }
 
 void VerticalPlane::createVisualRepresentation(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical)
 {
 	using namespace mrpt::math;
 	using namespace std::string_literals;
@@ -361,7 +360,7 @@ void VerticalPlane::createVisualRepresentation(
 		ASSERT_(has_texture);
 	}
 
-	gl_plane_text_ = mrpt::opengl::CSetOfTexturedTriangles::Create();
+	gl_plane_text_ = mrpt::viz::CSetOfTexturedTriangles::Create();
 	gl_plane_text_->setName("VerticalPlane_"s + getName());
 	gl_plane_text_->enableLight(enableShadows_);
 
@@ -385,7 +384,7 @@ void VerticalPlane::createVisualRepresentation(
 	}
 
 	gl_plane_text_->cullFaces(
-		mrpt::typemeta::TEnumType<mrpt::opengl::TCullFace>::name2value(cull_faces_));
+		mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(cull_faces_));
 
 	glGroup_->insert(gl_plane_text_);
 	viz->get().insert(glGroup_);
@@ -495,7 +494,7 @@ void VerticalPlane::renderWallFace(
 
 			// Triangle 1
 			{
-				mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+				mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 				if (is_front_face)
 				{
 					t.vertices[0].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_start};
@@ -525,7 +524,7 @@ void VerticalPlane::renderWallFace(
 
 			// Triangle 2
 			{
-				mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+				mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 				if (is_front_face)
 				{
 					t.vertices[0].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_start};
@@ -558,7 +557,7 @@ void VerticalPlane::renderWallFace(
 			// Plain color
 			// Triangle 1
 			{
-				mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+				mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 				if (is_front_face)
 				{
 					t.vertices[0].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_start};
@@ -582,7 +581,7 @@ void VerticalPlane::renderWallFace(
 
 			// Triangle 2
 			{
-				mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+				mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 				if (is_front_face)
 				{
 					t.vertices[0].xyzrgba.pt = {seg_p0_2d.x, seg_p0_2d.y, seg.z_start};
@@ -630,7 +629,7 @@ void VerticalPlane::renderWallEdges(
 	{
 		// Triangle 1
 		{
-			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+			mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 			t.vertices[0].xyzrgba.pt = v0;
 			t.vertices[1].xyzrgba.pt = v1;
 			t.vertices[2].xyzrgba.pt = v2;
@@ -654,7 +653,7 @@ void VerticalPlane::renderWallEdges(
 
 		// Triangle 2
 		{
-			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+			mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 			t.vertices[0].xyzrgba.pt = v0;
 			t.vertices[1].xyzrgba.pt = v2;
 			t.vertices[2].xyzrgba.pt = v3;
@@ -716,7 +715,7 @@ void VerticalPlane::renderOpeningReveals(
 	{
 		// Triangle 1
 		{
-			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+			mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 			t.vertices[0].xyzrgba.pt = v0;
 			t.vertices[1].xyzrgba.pt = v1;
 			t.vertices[2].xyzrgba.pt = v2;
@@ -740,7 +739,7 @@ void VerticalPlane::renderOpeningReveals(
 
 		// Triangle 2
 		{
-			mrpt::opengl::CSetOfTexturedTriangles::TTriangle t;
+			mrpt::viz::CSetOfTexturedTriangles::TTriangle t;
 			t.vertices[0].xyzrgba.pt = v0;
 			t.vertices[1].xyzrgba.pt = v2;
 			t.vertices[2].xyzrgba.pt = v3;

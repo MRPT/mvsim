@@ -9,10 +9,10 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/maps/CGenericPointsMap.h>
-#include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
-#include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/OpenGLDepth2LinearLUTs.h>
+#include <mrpt/viz/stock_objects.h>
 #include <mvsim/Sensors/Lidar3D.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -66,14 +66,14 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void Lidar3D::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::viz::Scene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
+	mrpt::viz::CSetOfObjects::Ptr glVizSensors;
 	if (viz)
 	{
-		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+		glVizSensors = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
 		if (!glVizSensors)
 		{
@@ -84,7 +84,7 @@ void Lidar3D::internalGuiUpdate(
 	// 1st time?
 	if (!glPoints_ && glVizSensors)
 	{
-		glPoints_ = mrpt::opengl::CPointCloudColoured::Create();
+		glPoints_ = mrpt::viz::CPointCloudColoured::Create();
 		glPoints_->setPointSize(viz_pointSize_);
 		glPoints_->setLocalRepresentativePoint({0, 0, 0.10f});
 
@@ -92,9 +92,9 @@ void Lidar3D::internalGuiUpdate(
 	}
 	if (!gl_sensor_origin_ && viz)
 	{
-		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_origin_ = mrpt::viz::CSetOfObjects::Create();
 		gl_sensor_origin_->castShadows(false);
-		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::viz::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
@@ -104,10 +104,10 @@ void Lidar3D::internalGuiUpdate(
 	}
 	if (!gl_sensor_fov_ && viz)
 	{
-		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_fov_ = mrpt::viz::CSetOfObjects::Create();
 
 		// Create lines to represent the FOV, as a "360 deg" frustum:
-		auto fovLines = mrpt::opengl::CSetOfLines::Create();
+		auto fovLines = mrpt::viz::CSetOfLines::Create();
 		const float fovRange = 1.0f;  // unit sphere
 		const size_t N_LINES = 32;
 		const double ang_vert_min = -0.5 * mrpt::DEG2RAD(vertical_fov_);
@@ -229,7 +229,7 @@ void Lidar3D::freeOpenGLResources()
 // since only a few depth points are actually used:
 // (older mrpt versions already returned the linearized depth)
 constexpr int DEPTH_LOG2LIN_BITS = 20;
-using depth_log2lin_t = mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
+using depth_log2lin_t = mrpt::viz::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
 
 static float safeInterpolateRangeImage(
 	const mrpt::math::CMatrixFloat& depthImage, const float maxDepthInterpolationStepVert,
@@ -307,7 +307,7 @@ static float safeInterpolateRangeImage(
 	return d00;
 }
 
-void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
+void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 {
 	using namespace mrpt;  // _deg
 
@@ -427,7 +427,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (!fbo_renderer_depth_)
 	{
-		mrpt::opengl::CFBORender::Parameters p;
+		mrpt::viz::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
@@ -436,7 +436,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 		// few depth points are actually used.
 		p.raw_depth = true;
 
-		fbo_renderer_depth_ = std::make_shared<mrpt::opengl::CFBORender>(p);
+		fbo_renderer_depth_ = std::make_shared<mrpt::viz::CFBORender>(p);
 	}
 
 	const size_t nCols = horzNumRays_;
@@ -552,7 +552,7 @@ void Lidar3D::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	mrpt::img::CImage convergenceRgbImage;
 
 	// make owner's own body invisible?
-	auto visVeh = dynamic_cast<VisualObject*>(&vehicle_);
+	auto visVeh = dynamic_cast<CVisualObject*>(&vehicle_);
 	auto veh = dynamic_cast<VehicleBase*>(&vehicle_);
 	bool formerVisVehState = true;
 	if (ignore_parent_body_)

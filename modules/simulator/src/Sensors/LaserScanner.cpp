@@ -8,10 +8,10 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/Scene.h>
+#include <mrpt/viz/stock_objects.h>
 #include <mvsim/Sensors/LaserScanner.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -83,16 +83,16 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void LaserScanner::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::viz::Scene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace std::string_literals;
 
-	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
+	mrpt::viz::CSetOfObjects::Ptr glVizSensors;
 	if (viz)
 	{
-		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+		glVizSensors = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
 		if (!glVizSensors) return;	// may happen during shutdown
 	}
@@ -100,7 +100,7 @@ void LaserScanner::internalGuiUpdate(
 	// 1st time?
 	if (!gl_scan_ && glVizSensors)
 	{
-		gl_scan_ = mrpt::opengl::CPlanarLaserScan::Create();
+		gl_scan_ = mrpt::viz::CPlanarLaserScan::Create();
 
 		gl_scan_->enablePoints(viz_visiblePoints_);
 		gl_scan_->setPointSize(viz_pointSize_);
@@ -120,9 +120,9 @@ void LaserScanner::internalGuiUpdate(
 	}
 	if (!gl_sensor_origin_ && viz)
 	{
-		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_origin_ = mrpt::viz::CSetOfObjects::Create();
 		gl_sensor_origin_->castShadows(false);
-		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::viz::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
@@ -132,10 +132,10 @@ void LaserScanner::internalGuiUpdate(
 	}
 	if (!gl_sensor_fov_ && viz)
 	{
-		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_fov_ = mrpt::viz::CSetOfObjects::Create();
 		gl_sensor_fov_->castShadows(false);
 
-		auto fovScan = mrpt::opengl::CPlanarLaserScan::Create();
+		auto fovScan = mrpt::viz::CPlanarLaserScan::Create();
 		fovScan->enablePoints(false);
 		fovScan->enableSurface(true);
 
@@ -445,7 +445,7 @@ void LaserScanner::freeOpenGLResources()
 	fbo_renderer_depth_.reset();
 }
 
-void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
+void LaserScanner::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 {
 	using namespace mrpt;  // _deg
 
@@ -493,12 +493,12 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 
 	if (!fbo_renderer_depth_)
 	{
-		mrpt::opengl::CFBORender::Parameters p;
+		mrpt::viz::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
-		fbo_renderer_depth_ = std::make_shared<mrpt::opengl::CFBORender>(p);
+		fbo_renderer_depth_ = std::make_shared<mrpt::viz::CFBORender>(p);
 	}
 
 	auto viewport = world3DScene.getViewport();
@@ -568,7 +568,7 @@ void LaserScanner::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
 	mrpt::math::CMatrixFloat depthImage;
 
 	// make owner's own body invisible?
-	auto visVeh = dynamic_cast<VisualObject*>(&vehicle_);
+	auto visVeh = dynamic_cast<CVisualObject*>(&vehicle_);
 	auto veh = dynamic_cast<VehicleBase*>(&vehicle_);
 	bool formerVisVehState = true;
 	if (ignore_parent_body_)

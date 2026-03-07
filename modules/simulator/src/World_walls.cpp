@@ -9,8 +9,8 @@
 
 #include <mrpt/core/exceptions.h>
 #include <mrpt/maps/CSimplePointsMap.h>
-#include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/viz/CAssimpModel.h>
 #include <mvsim/World.h>
 
 #include <rapidxml.hpp>
@@ -184,7 +184,7 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 
 		MRPT_LOG_DEBUG_STREAM("Loading walls definition model from: " << localFileName);
 
-		auto glModel = mrpt::opengl::CAssimpModel::Create();
+		auto glModel = mrpt::viz::CAssimpModel::Create();
 		glModel->loadScene(localFileName);
 
 		const auto& points = glModel->shaderWireframeVertexPointBuffer();

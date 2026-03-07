@@ -11,9 +11,9 @@
 
 #include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/obs/CObservationRotatingScan.h>
-#include <mrpt/opengl/CFBORender.h>
-#include <mrpt/opengl/CPointCloudColoured.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/viz/CFBORender.h>
+#include <mrpt/viz/CPointCloudColoured.h>
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
@@ -39,13 +39,13 @@ class Lidar3D : public SensorBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
+	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 	void freeOpenGLResources() override;
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
@@ -88,14 +88,14 @@ class Lidar3D : public SensorBase
 	 * internalGuiUpdate() from last_scan2gui_ */
 	bool gui_uptodate_ = false;
 
-	mrpt::opengl::CPointCloudColoured::Ptr glPoints_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_;
+	mrpt::viz::CPointCloudColoured::Ptr glPoints_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_;
 
 	std::optional<TSimulContext> has_to_render_;
 	std::mutex has_to_render_mtx_;
 
-	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_depth_;
+	std::shared_ptr<mrpt::viz::CFBORender> fbo_renderer_depth_;
 
 	/** If true, intensity values will be generated from the grayscale of
 	 *  the rendered RGB image for each lidar return. */

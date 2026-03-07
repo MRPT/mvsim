@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/GroundGrid.h>
 
@@ -31,7 +31,7 @@ GroundGrid::GroundGrid(World* parent, const rapidxml::xml_node<char>* root)
 	  line_width_(1.0)
 {
 	// Create opengl object: in this class, we'll store most state data directly
-	// in the mrpt::opengl object.
+	// in the mrpt::viz object.
 	loadConfigFrom(root);
 }
 
@@ -61,8 +61,8 @@ void GroundGrid::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void GroundGrid::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::viz::Scene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
@@ -70,7 +70,7 @@ void GroundGrid::internalGuiUpdate(
 	// 1st call OR gridmap changed?
 	if (!gl_groundgrid_ && viz)
 	{
-		gl_groundgrid_ = mrpt::opengl::CGridPlaneXY::Create();
+		gl_groundgrid_ = mrpt::viz::CGridPlaneXY::Create();
 		gl_groundgrid_->setPlaneLimits(x_min_, x_max_, y_min_, y_max_);
 		gl_groundgrid_->setGridFrequency(interval_);
 		gl_groundgrid_->setColor_u8(color_);

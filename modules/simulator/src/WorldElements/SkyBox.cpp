@@ -11,8 +11,8 @@
 #include <mvsim/WorldElements/SkyBox.h>
 
 //
-#include <mrpt/opengl/CSkyBox.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CSkyBox.h>
 
 #include <rapidxml.hpp>
 
@@ -25,7 +25,7 @@ using namespace std;
 SkyBox::SkyBox(World* parent, const rapidxml::xml_node<char>* root) : WorldElementBase(parent)
 {
 	// Create opengl object: in this class, we'll store most state data directly
-	// in the mrpt::opengl object.
+	// in the mrpt::viz object.
 	loadConfigFrom(root);
 }
 
@@ -53,7 +53,7 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		"Texture pattern URI in <textures>...</textures> must contain one '%s' "
 		"placeholder.");
 
-	using mrpt::opengl::CUBE_TEXTURE_FACE;
+	using mrpt::viz::CUBE_TEXTURE_FACE;
 
 	const std::vector<std::pair<CUBE_TEXTURE_FACE, const char*>> faceImages = {
 		{CUBE_TEXTURE_FACE::FRONT, "Front"}, {CUBE_TEXTURE_FACE::BACK, "Back"},
@@ -61,7 +61,7 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		{CUBE_TEXTURE_FACE::LEFT, "Left"},	 {CUBE_TEXTURE_FACE::RIGHT, "Right"},
 	};
 
-	auto sb = mrpt::opengl::CSkyBox::Create();
+	auto sb = mrpt::viz::CSkyBox::Create();
 
 	for (const auto& p : faceImages)
 	{
@@ -77,9 +77,8 @@ void SkyBox::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void SkyBox::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	[[maybe_unused]] bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	using namespace mrpt::math;
 

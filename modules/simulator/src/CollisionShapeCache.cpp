@@ -10,11 +10,12 @@
 #include <box2d/b2_settings.h>	// b2_maxPolygonVertices
 #include <mrpt/containers/yaml.h>
 #include <mrpt/core/get_env.h>
-#include <mrpt/opengl/CAssimpModel.h>
-#include <mrpt/opengl/CBox.h>
-#include <mrpt/opengl/CCylinder.h>
-#include <mrpt/opengl/CSphere.h>
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CAssimpModel.h>
+#include <mrpt/viz/CBox.h>
+#include <mrpt/viz/CCylinder.h>
+#include <mrpt/viz/CSphere.h>
 #include <mvsim/CollisionShapeCache.h>
 
 using namespace mvsim;
@@ -26,7 +27,7 @@ CollisionShapeCache& CollisionShapeCache::Instance()
 }
 
 Shape2p5 CollisionShapeCache::get(
-	mrpt::opengl::CRenderizable& obj, float zMin, float zMax, const mrpt::poses::CPose3D& modelPose,
+	mrpt::viz::CVisualObject& obj, float zMin, float zMax, const mrpt::poses::CPose3D& modelPose,
 	const float modelScale, const std::optional<std::string>& modelFile)
 {
 	// already cached?
@@ -82,12 +83,12 @@ Shape2p5 CollisionShapeCache::get(
 }
 
 std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
-	const mrpt::opengl::CRenderizable& obj, float zMin, float zMax,
+	const mrpt::viz::CVisualObject& obj, float zMin, float zMax,
 	const mrpt::poses::CPose3D& modelPose, const float modelScale)
 {
 	using mrpt::literals::operator""_deg;
 
-	if (auto oCyl = dynamic_cast<const mrpt::opengl::CCylinder*>(&obj); oCyl)
+	if (auto oCyl = dynamic_cast<const mrpt::viz::CCylinder*>(&obj); oCyl)
 	{
 		// ===============================
 		// Cylinder
@@ -105,7 +106,7 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
 	}
 
-	if (auto oSph = dynamic_cast<const mrpt::opengl::CSphere*>(&obj); oSph)
+	if (auto oSph = dynamic_cast<const mrpt::viz::CSphere*>(&obj); oSph)
 	{
 		// ===============================
 		// Sphere
@@ -118,7 +119,7 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
 	}
 
-	if (auto oBox = dynamic_cast<const mrpt::opengl::CBox*>(&obj); oBox)
+	if (auto oBox = dynamic_cast<const mrpt::viz::CBox*>(&obj); oBox)
 	{
 		// ===============================
 		// Box
@@ -154,34 +155,34 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 }
 
 Shape2p5 CollisionShapeCache::processGenericGeometry(
-	mrpt::opengl::CRenderizable& obj, float zMin, float zMax, const mrpt::poses::CPose3D& modelPose,
+	mrpt::viz::CVisualObject& obj, float zMin, float zMax, const mrpt::poses::CPose3D& modelPose,
 	const float modelScale)
 {
 	Shape2p5 ret;
 
 	// Make sure the points and vertices buffers are up to date, so we can
 	// access them:
-	auto* oAssimp = dynamic_cast<mrpt::opengl::CAssimpModel*>(&obj);
+	auto* oAssimp = dynamic_cast<mrpt::viz::CAssimpModel*>(&obj);
 	if (oAssimp)
 	{
 		oAssimp->onUpdateBuffers_all();
 	}
-	auto* oRSWF = dynamic_cast<mrpt::opengl::CRenderizableShaderWireFrame*>(&obj);
+	auto* oRSWF = dynamic_cast<mrpt::viz::CVisualObjectShaderWireFrame*>(&obj);
 	if (oRSWF)
 	{
 		oRSWF->onUpdateBuffers_Wireframe();
 	}
-	auto* oRST = dynamic_cast<mrpt::opengl::CRenderizableShaderTriangles*>(&obj);
+	auto* oRST = dynamic_cast<mrpt::viz::CVisualObjectShaderTriangles*>(&obj);
 	if (oRST)
 	{
 		oRST->onUpdateBuffers_Triangles();
 	}
-	auto* oRSTT = dynamic_cast<mrpt::opengl::CRenderizableShaderTexturedTriangles*>(&obj);
+	auto* oRSTT = dynamic_cast<mrpt::viz::CVisualObjectShaderTexturedTriangles*>(&obj);
 	if (oRSTT)
 	{
 		oRSTT->onUpdateBuffers_TexturedTriangles();
 	}
-	auto* oRP = dynamic_cast<mrpt::opengl::CRenderizableShaderPoints*>(&obj);
+	auto* oRP = dynamic_cast<mrpt::viz::CVisualObjectShaderPoints*>(&obj);
 	if (oRP)
 	{
 		oRP->onUpdateBuffers_Points();
@@ -210,11 +211,11 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 		ret.buildAddPoint(pt);
 		numPassedPts++;
 	};
-	auto lambdaUpdateTri = [&](const mrpt::opengl::TTriangle& tri)
+	auto lambdaUpdateTri = [&](const mrpt::viz::TTriangle& tri)
 	{
 		numTotalPts += 3;
 		// transform the whole triangle, then compare with [z,z] limits:
-		mrpt::opengl::TTriangle t = tri;
+		mrpt::viz::TTriangle t = tri;
 		for (int i = 0; i < 3; i++) t.vertex(i) = modelPose.composePoint(t.vertex(i) * modelScale);
 
 		// does any of the point lie within the valid Z range, or is the

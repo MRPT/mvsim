@@ -10,7 +10,7 @@
 #pragma once
 
 #include <mrpt/img/CImage.h>
-#include <mrpt/opengl/CMesh.h>
+#include <mrpt/viz/CMesh.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 #include <vector>
@@ -45,12 +45,12 @@ class ElevationMap : public WorldElementBase
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */
-	std::vector<mrpt::opengl::CMesh::Ptr> gl_meshes_;
+	std::vector<mrpt::viz::CMesh::Ptr> gl_meshes_;
 	bool firstSceneRendering_ = true;
 	double resolution_ = 1.0f;
 

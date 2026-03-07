@@ -8,11 +8,11 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/opengl/CFrustum.h>
-#include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/stock_objects.h>
 #include <mrpt/random.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CFrustum.h>
+#include <mrpt/viz/Scene.h>
+#include <mrpt/viz/stock_objects.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -112,14 +112,14 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void DepthCameraSensor::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::viz::Scene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
-	mrpt::opengl::CSetOfObjects::Ptr glVizSensors;
+	mrpt::viz::CSetOfObjects::Ptr glVizSensors;
 	if (viz)
 	{
-		glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+		glVizSensors = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(
 			viz->get().getByName("group_sensors_viz"));
 		if (!glVizSensors) return;	// may happen during shutdown
 	}
@@ -127,7 +127,7 @@ void DepthCameraSensor::internalGuiUpdate(
 	// 1st time?
 	if (!gl_obs_ && glVizSensors)
 	{
-		gl_obs_ = mrpt::opengl::CPointCloudColoured::Create();
+		gl_obs_ = mrpt::viz::CPointCloudColoured::Create();
 		gl_obs_->setPointSize(2.0f);
 		gl_obs_->setLocalRepresentativePoint(sensor_params_.sensorPose.translation());
 		glVizSensors->insert(gl_obs_);
@@ -135,9 +135,9 @@ void DepthCameraSensor::internalGuiUpdate(
 
 	if (!gl_sensor_origin_ && viz)
 	{
-		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_origin_ = mrpt::viz::CSetOfObjects::Create();
 		gl_sensor_origin_->castShadows(false);
-		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::viz::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
@@ -147,7 +147,7 @@ void DepthCameraSensor::internalGuiUpdate(
 	}
 	if (!gl_sensor_fov_ && viz)
 	{
-		gl_sensor_fov_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_fov_ = mrpt::viz::CSetOfObjects::Create();
 		gl_sensor_fov_->setVisibility(false);
 		viz->get().insert(gl_sensor_fov_);
 		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
@@ -171,11 +171,11 @@ void DepthCameraSensor::internalGuiUpdate(
 
 				if (!gl_sensor_frustum_)
 				{
-					gl_sensor_frustum_ = mrpt::opengl::CSetOfObjects::Create();
+					gl_sensor_frustum_ = mrpt::viz::CSetOfObjects::Create();
 
 					const float frustumScale = 0.4e-3;
 					auto frustum =
-						mrpt::opengl::CFrustum::Create(last_obs2gui_->cameraParams, frustumScale);
+						mrpt::viz::CFrustum::Create(last_obs2gui_->cameraParams, frustumScale);
 
 					gl_sensor_frustum_->insert(frustum);
 					gl_sensor_fov_->insert(gl_sensor_frustum_);
@@ -215,7 +215,7 @@ void DepthCameraSensor::internalGuiUpdate(
 
 void DepthCameraSensor::simul_pre_timestep([[maybe_unused]] const TSimulContext& context) {}
 
-void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DScene)
+void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 {
 	using namespace mrpt;  // _deg
 
@@ -251,12 +251,12 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 		auto tle2 =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.createFBO");
 
-		mrpt::opengl::CFBORender::Parameters p;
+		mrpt::viz::CFBORender::Parameters p;
 		p.width = sensor_params_.cameraParamsIntensity.ncols;
 		p.height = sensor_params_.cameraParamsIntensity.nrows;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
-		fbo_renderer_rgb_ = std::make_shared<mrpt::opengl::CFBORender>(p);
+		fbo_renderer_rgb_ = std::make_shared<mrpt::viz::CFBORender>(p);
 	}
 
 	if (!fbo_renderer_depth_ && sense_depth_)
@@ -264,12 +264,12 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::opengl::COpenGLScene& world3DSce
 		auto tle2 =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.createFBO");
 
-		mrpt::opengl::CFBORender::Parameters p;
+		mrpt::viz::CFBORender::Parameters p;
 		p.width = sensor_params_.cameraParams.ncols;
 		p.height = sensor_params_.cameraParams.nrows;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
-		fbo_renderer_depth_ = std::make_shared<mrpt::opengl::CFBORender>(p);
+		fbo_renderer_depth_ = std::make_shared<mrpt::viz::CFBORender>(p);
 	}
 
 	auto viewport = world3DScene.getViewport();
