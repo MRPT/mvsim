@@ -30,7 +30,7 @@ class World;
  *
  *  \ingroup mvsim_simulator_module
  */
-class Wheel : public VisualObject
+class Wheel : public CVisualObject
 {
    public:
 	Wheel(World* world);
@@ -75,12 +75,12 @@ class Wheel : public VisualObject
 
 	// methods ----
 
-	void getAs3DObject(mrpt::opengl::CSetOfObjects& obj, bool isPhysicalScene);
+	void getAs3DObject(mrpt::viz::CSetOfObjects& obj, bool isPhysicalScene);
 	void loadFromXML(const rapidxml::xml_node<char>* xml_node);
 
 	void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	double getPhi() const { return phi; }  //!< Orientation (rad) wrt vehicle local frame
 	void setPhi(double val) { phi = val; }	//!< Orientation (rad) wrt vehicle local frame

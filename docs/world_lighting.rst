@@ -7,7 +7,7 @@ Light and shadows configuration
 At present, the lighting model of ``mrpt-opengl`` defines
 **one directional light source** (i.e. placed at the infinity),
 with one color and three component intensities (ambient, diffuse, and specular).
-See `mrpt::opengl::TLightParameters <https://docs.mrpt.org/reference/latest/struct_mrpt_opengl_TLightParameters.html>`_
+See `mrpt::viz::TLightParameters <https://docs.mrpt.org/reference/latest/struct_mrpt_opengl_TLightParameters.html>`_
 and `mrpt-opengl <https://docs.mrpt.org/reference/latest/group_mrpt_opengl_grp.html>`_ for further details.
 
 MVSim offers a number of parameters under the global ``<light> ... </light>`` tag

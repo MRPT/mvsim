@@ -10,8 +10,8 @@
 #pragma once
 
 #include <mrpt/maps/CPointsMap.h>
-#include <mrpt/opengl/CPointCloud.h>
-#include <mrpt/opengl/CSetOfObjects.h>
+#include <mrpt/viz/CPointCloud.h>
+#include <mrpt/viz/CSetOfObjects.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 #include <mutex>
@@ -43,15 +43,15 @@ class PointCloud : public WorldElementBase
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	mrpt::maps::CPointsMap::Ptr points_;
 
 	/// Whether gl_grid_ has to be updated upon next call of
 	/// internalGuiUpdate()
 	bool gui_uptodate_ = false;
-	mrpt::opengl::CSetOfObjects::Ptr gl_points_;
+	mrpt::viz::CSetOfObjects::Ptr gl_points_;
 
 	double render_points_size_ = 3.0;
 	mrpt::poses::CPose3D pointcloud_pose_ = mrpt::poses::CPose3D::Identity();

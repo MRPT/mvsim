@@ -83,7 +83,7 @@ void World::internal_initialize()
 
 	// Create group for sensor viz:
 	{
-		auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
+		auto glVizSensors = mrpt::viz::CSetOfObjects::Create();
 		glVizSensors->setName("group_sensors_viz");
 		glVizSensors->setVisibility(guiOptions_.show_sensor_points);
 		worldVisual_->insert(glVizSensors);
@@ -205,7 +205,7 @@ void World::free_opengl_resources()
 	worldPhysical_.clear();
 	worldVisual_->clear();
 
-	VisualObject::FreeOpenGLResources();
+	CVisualObject::FreeOpenGLResources();
 }
 
 bool World::sensor_has_to_create_egl_context()

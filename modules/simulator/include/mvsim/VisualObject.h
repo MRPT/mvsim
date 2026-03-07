@@ -11,9 +11,9 @@
 
 #include <mrpt/core/optional_ref.h>
 #include <mrpt/math/TBoundingBox.h>
-#include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/opengl_frwds.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/viz/Scene.h>
+#include <mrpt/viz/viz_frwds.h>
 #include <mvsim/Shape2p5.h>
 #include <mvsim/basic_types.h>
 
@@ -32,26 +32,26 @@ class World;
  * sent out to RViz)
  *  \ingroup virtual_interfaces_module
  */
-class VisualObject
+class CVisualObject
 {
    public:
-	VisualObject(
+	CVisualObject(
 		World* parent, bool insertCustomVizIntoViz = true, bool insertCustomVizIntoPhysical = true);
 
-	virtual ~VisualObject();
+	virtual ~CVisualObject();
 
-	VisualObject(const VisualObject&) = delete;
-	VisualObject& operator=(const VisualObject&) = delete;
-	VisualObject(VisualObject&&) = delete;
-	VisualObject& operator=(VisualObject&&) = delete;
+	CVisualObject(const CVisualObject&) = delete;
+	CVisualObject& operator=(const CVisualObject&) = delete;
+	CVisualObject(CVisualObject&&) = delete;
+	CVisualObject& operator=(CVisualObject&&) = delete;
 
 	/** This creates a new object in the scene and/or update it according to the
 	 * current state of the object. If none of the scenes are passed, the poses
 	 * of existing visual objects are updated, but no new ones are created.
 	 */
 	virtual void guiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical);
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical);
 
 	World* parent() { return world_; }
 	const World* parent() const { return world_; }
@@ -79,20 +79,19 @@ class VisualObject
 
 	/** If not empty, will override the derived-class visualization for this
 	 * object. */
-	std::shared_ptr<mrpt::opengl::CSetOfObjects> glCustomVisual_;
-	std::shared_ptr<mrpt::opengl::CSetOfObjects> glCollision_;
+	std::shared_ptr<mrpt::viz::CSetOfObjects> glCustomVisual_;
+	std::shared_ptr<mrpt::viz::CSetOfObjects> glCollision_;
 	int32_t glCustomVisualId_ = -1;
 
 	const bool insertCustomVizIntoViz_ = true;
 	const bool insertCustomVizIntoPhysical_ = true;
 
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-		bool childrenOnly = false) = 0;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly = false) = 0;
 
 	void addCustomVisualization(
-		const mrpt::opengl::CRenderizable::Ptr& glModel, const mrpt::poses::CPose3D& modelPose = {},
+		const mrpt::viz::CVisualObject::Ptr& glModel, const mrpt::poses::CPose3D& modelPose = {},
 		const float modelScale = 1.0f, const std::string& modelName = "group",
 		const std::optional<std::string>& modelURI = std::nullopt,
 		const bool initialShowBoundingBox = false,

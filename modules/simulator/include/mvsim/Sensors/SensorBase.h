@@ -10,8 +10,8 @@
 #pragma once
 
 #include <mrpt/obs/obs_frwds.h>
-#include <mrpt/opengl/opengl_frwds.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/viz/viz_frwds.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
@@ -31,7 +31,7 @@ class Simulable;
  *
  * \ingroup sensors_module
  */
-class SensorBase : public VisualObject, public Simulable
+class SensorBase : public CVisualObject, public Simulable
 {
    public:
 	using Ptr = std::shared_ptr<SensorBase>;
@@ -50,17 +50,14 @@ class SensorBase : public VisualObject, public Simulable
 
 	void registerOnServer(mvsim::Client& c) override;
 
-	virtual void simulateOn3DScene(	 //
-		[[maybe_unused]] mrpt::opengl::COpenGLScene& gl_scene)
-	{
-	}
+	virtual void simulateOn3DScene([[maybe_unused]] mrpt::viz::Scene& gl_scene) {}
 
 	// Get all sensors visuals API:
-	static std::shared_ptr<mrpt::opengl::CSetOfObjects> GetAllSensorsOriginViz();
+	static std::shared_ptr<mrpt::viz::CSetOfObjects> GetAllSensorsOriginViz();
 
-	static std::shared_ptr<mrpt::opengl::CSetOfObjects> GetAllSensorsFOVViz();
-	static void RegisterSensorFOVViz(const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
-	static void RegisterSensorOriginViz(const std::shared_ptr<mrpt::opengl::CSetOfObjects>& o);
+	static std::shared_ptr<mrpt::viz::CSetOfObjects> GetAllSensorsFOVViz();
+	static void RegisterSensorFOVViz(const std::shared_ptr<mrpt::viz::CSetOfObjects>& o);
+	static void RegisterSensorOriginViz(const std::shared_ptr<mrpt::viz::CSetOfObjects>& o);
 
 	double sensor_period() const { return sensor_period_; }
 

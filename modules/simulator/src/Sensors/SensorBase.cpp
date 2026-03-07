@@ -54,35 +54,35 @@ void register_all_sensors()
 	REGISTER_SENSOR("gnss", GNSS)
 }
 
-static auto gAllSensorsOriginViz = mrpt::opengl::CSetOfObjects::Create();
-static auto gAllSensorsFOVViz = mrpt::opengl::CSetOfObjects::Create();
+static auto gAllSensorsOriginViz = mrpt::viz::CSetOfObjects::Create();
+static auto gAllSensorsFOVViz = mrpt::viz::CSetOfObjects::Create();
 static std::mutex gAllSensorVizMtx;
 
-mrpt::opengl::CSetOfObjects::Ptr SensorBase::GetAllSensorsOriginViz()
+mrpt::viz::CSetOfObjects::Ptr SensorBase::GetAllSensorsOriginViz()
 {
 	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
 	return gAllSensorsOriginViz;
 }
 
-mrpt::opengl::CSetOfObjects::Ptr SensorBase::GetAllSensorsFOVViz()
+mrpt::viz::CSetOfObjects::Ptr SensorBase::GetAllSensorsFOVViz()
 {
 	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
 	return gAllSensorsFOVViz;
 }
 
-void SensorBase::RegisterSensorFOVViz(const mrpt::opengl::CSetOfObjects::Ptr& o)
+void SensorBase::RegisterSensorFOVViz(const mrpt::viz::CSetOfObjects::Ptr& o)
 {
 	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
 	gAllSensorsFOVViz->insert(o);
 }
-void SensorBase::RegisterSensorOriginViz(const mrpt::opengl::CSetOfObjects::Ptr& o)
+void SensorBase::RegisterSensorOriginViz(const mrpt::viz::CSetOfObjects::Ptr& o)
 {
 	auto lck = mrpt::lockHelper(gAllSensorVizMtx);
 	gAllSensorsOriginViz->insert(o);
 }
 
 SensorBase::SensorBase(Simulable& vehicle)
-	: VisualObject(vehicle.getSimulableWorldObject()),
+	: CVisualObject(vehicle.getSimulableWorldObject()),
 	  Simulable(vehicle.getSimulableWorldObject()),
 	  vehicle_(vehicle)
 {

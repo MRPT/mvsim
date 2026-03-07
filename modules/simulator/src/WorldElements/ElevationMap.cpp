@@ -8,8 +8,8 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/maps/CSimplePointsMap.h>
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/ElevationMap.h>
@@ -341,7 +341,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	if (model_split_size_ == 0)
 	{
 		// One single mesh:
-		auto gl_mesh = mrpt::opengl::CMesh::Create();
+		auto gl_mesh = mrpt::viz::CMesh::Create();
 		gl_meshes_.push_back(gl_mesh);
 
 		gl_mesh->enableTransparency(false);
@@ -390,7 +390,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 				const auto subEle = elevation_data.extractMatrix(lenIx, lenIy, startIx, startIy);
 
 				// One sub-mesh:
-				auto gl_mesh = mrpt::opengl::CMesh::Create();
+				auto gl_mesh = mrpt::viz::CMesh::Create();
 				gl_meshes_.push_back(gl_mesh);
 
 				gl_mesh->enableTransparency(false);
@@ -422,9 +422,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void ElevationMap::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	[[maybe_unused]] bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	ASSERTMSG_(
 		!gl_meshes_.empty(),

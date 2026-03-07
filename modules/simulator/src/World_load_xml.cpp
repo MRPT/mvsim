@@ -442,7 +442,7 @@ void World::parse_tag_marker(const XmlParserContext& ctx)
 		ASSERTMSG_(
 			parsedOk, "Error parsing XYZ data within <marker type='line_strip'>: "s + parseError);
 
-		auto glObj = mrpt::opengl::CSetOfLines::Create();
+		auto glObj = mrpt::viz::CSetOfLines::Create();
 		glObj->setColor_u8(color);
 		glObj->setLocation(translation);
 

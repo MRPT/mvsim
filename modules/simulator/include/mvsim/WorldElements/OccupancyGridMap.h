@@ -12,9 +12,9 @@
 #include <mrpt/maps/COccupancyGridMap2D.h>
 #include <mrpt/obs/CObservation2DRangeScan.h>
 #include <mrpt/obs/CSinCosLookUpTableFor2DScans.h>
-#include <mrpt/opengl/CPointCloud.h>
-#include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/viz/CPointCloud.h>
+#include <mrpt/viz/CSetOfObjects.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 #include <mutex>
@@ -46,14 +46,14 @@ class OccupancyGridMap : public WorldElementBase
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	mrpt::maps::COccupancyGridMap2D grid_;
 
 	bool gui_uptodate_;	 //!< Whether gl_grid_ has to be updated upon next
 						 //! call of internalGuiUpdate()
-	mrpt::opengl::CSetOfObjects::Ptr gl_grid_;
+	mrpt::viz::CSetOfObjects::Ptr gl_grid_;
 
 	struct TFixturePtr
 	{
@@ -73,10 +73,10 @@ class OccupancyGridMap : public WorldElementBase
 	};
 
 	std::vector<TInfoPerCollidableobj> obstacles_for_each_obj_;
-	std::vector<mrpt::opengl::CSetOfObjects::Ptr> gl_obs_clouds_;
+	std::vector<mrpt::viz::CSetOfObjects::Ptr> gl_obs_clouds_;
 
 	std::mutex gl_obs_clouds_buffer_cs_;
-	std::vector<mrpt::opengl::CPointCloud::Ptr> gl_obs_clouds_buffer_;
+	std::vector<mrpt::viz::CPointCloud::Ptr> gl_obs_clouds_buffer_;
 
 	mrpt::obs::CSinCosLookUpTableFor2DScans sincos_lut_;
 

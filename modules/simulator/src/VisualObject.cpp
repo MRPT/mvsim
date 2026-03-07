@@ -7,10 +7,10 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/CPolyhedron.h>
-#include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CPolyhedron.h>
+#include <mrpt/viz/CSetOfObjects.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/Block.h>
 #include <mvsim/CollisionShapeCache.h>
 #include <mvsim/Simulable.h>
@@ -27,23 +27,23 @@
 using namespace mvsim;
 
 static std::atomic_int32_t g_uniqueCustomVisualId = 0;
-double VisualObject::GeometryEpsilon = 1e-3;
+double CVisualObject::GeometryEpsilon = 1e-3;
 
-VisualObject::VisualObject(
+CVisualObject::CVisualObject(
 	World* parent, bool insertCustomVizIntoViz, bool insertCustomVizIntoPhysical)
 	: world_(parent),
 	  insertCustomVizIntoViz_(insertCustomVizIntoViz),
 	  insertCustomVizIntoPhysical_(insertCustomVizIntoPhysical)
 {
-	glCollision_ = mrpt::opengl::CSetOfObjects::Create();
+	glCollision_ = mrpt::viz::CSetOfObjects::Create();
 	glCollision_->setName("bbox");
 }
 
-VisualObject::~VisualObject() = default;
+CVisualObject::~CVisualObject() = default;
 
-void VisualObject::guiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical)
+void CVisualObject::guiUpdate(
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical)
 {
 	using namespace std::string_literals;
 
@@ -109,16 +109,16 @@ void VisualObject::guiUpdate(
 			}
 			mrpt::math::setEpsilon(1e-5 * smallestEdge);
 
-			mrpt::opengl::CPolyhedron::Ptr glCS;
+			mrpt::viz::CPolyhedron::Ptr glCS;
 
 			try
 			{
-				glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(c, height);
+				glCS = mrpt::viz::CPolyhedron::CreateCustomPrism(c, height);
 			}
 			catch (const std::exception& e)
 			{
 #if 0
-				std::cerr << "[mvsim::VisualObject] **WARNING**: Ignoring the "
+				std::cerr << "[mvsim::CVisualObject] **WARNING**: Ignoring the "
 							 "following error while building the visualization "
 							 "of the collision shape for object named '"
 						  << meSim->getName()
@@ -135,7 +135,7 @@ void VisualObject::guiUpdate(
 				p.emplace_back(bbMin.x, bbMax.y);
 				p.emplace_back(bbMax.x, bbMax.y);
 				p.emplace_back(bbMax.x, bbMin.y);
-				glCS = mrpt::opengl::CPolyhedron::CreateCustomPrism(p, height);
+				glCS = mrpt::viz::CPolyhedron::CreateCustomPrism(p, height);
 			}
 			glCS->setWireframe(true);
 
@@ -156,9 +156,9 @@ void VisualObject::guiUpdate(
 	internalGuiUpdate(viz, physical, childrenOnly);
 }
 
-void VisualObject::FreeOpenGLResources() { ModelsCache::Instance().clear(); }
+void CVisualObject::FreeOpenGLResources() { ModelsCache::Instance().clear(); }
 
-bool VisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
+bool CVisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
 {
 	MRPT_TRY_START
 
@@ -173,7 +173,7 @@ bool VisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
 	MRPT_TRY_END
 }
 
-bool VisualObject::parseVisual(const JointXMLnode<>& rootNode)
+bool CVisualObject::parseVisual(const JointXMLnode<>& rootNode)
 {
 	MRPT_TRY_START
 
@@ -188,7 +188,7 @@ bool VisualObject::parseVisual(const JointXMLnode<>& rootNode)
 	MRPT_TRY_END
 }
 
-bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
+bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 {
 	MRPT_TRY_START
 
@@ -262,7 +262,7 @@ bool VisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	MRPT_TRY_END
 }
 
-void VisualObject::showCollisionShape(bool show)
+void CVisualObject::showCollisionShape(bool show)
 {
 	if (!glCollision_)
 	{
@@ -271,7 +271,7 @@ void VisualObject::showCollisionShape(bool show)
 	glCollision_->setVisibility(show);
 }
 
-void VisualObject::customVisualVisible(const bool visible)
+void CVisualObject::customVisualVisible(const bool visible)
 {
 	if (!glCustomVisual_)
 	{
@@ -280,13 +280,13 @@ void VisualObject::customVisualVisible(const bool visible)
 	glCustomVisual_->setVisibility(visible);
 }
 
-bool VisualObject::customVisualVisible() const
+bool CVisualObject::customVisualVisible() const
 {
 	return glCustomVisual_ && glCustomVisual_->isVisible();
 }
 
-void VisualObject::addCustomVisualization(
-	const mrpt::opengl::CRenderizable::Ptr& glModel, const mrpt::poses::CPose3D& modelPose,
+void CVisualObject::addCustomVisualization(
+	const mrpt::viz::CVisualObject::Ptr& glModel, const mrpt::poses::CPose3D& modelPose,
 	const float modelScale, const std::string& modelName,
 	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox,
 	const std::optional<double>& scaleOverride)
@@ -319,7 +319,7 @@ void VisualObject::addCustomVisualization(
 	// Calculate its convex hull:
 	const auto shape = chc.get(*glModel, zMin, zMax, modelPose, effectiveScale, modelURI);
 
-	auto glGroup = mrpt::opengl::CSetOfObjects::Create();
+	auto glGroup = mrpt::viz::CSetOfObjects::Create();
 
 	// Note: we cannot apply pose/scale to the original glModel since
 	// it may be shared (many instances of the same object):
@@ -331,7 +331,7 @@ void VisualObject::addCustomVisualization(
 
 	if (!glCustomVisual_)
 	{
-		glCustomVisual_ = mrpt::opengl::CSetOfObjects::Create();
+		glCustomVisual_ = mrpt::viz::CSetOfObjects::Create();
 		glCustomVisual_->setName("glCustomVisual");
 	}
 	glCustomVisual_->insert(glGroup);

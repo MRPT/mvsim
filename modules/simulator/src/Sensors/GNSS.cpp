@@ -8,9 +8,9 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
-#include <mrpt/opengl/stock_objects.h>
 #include <mrpt/topography/conversions.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/stock_objects.h>
 #include <mvsim/Sensors/GNSS.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
@@ -58,16 +58,16 @@ void GNSS::loadConfigFrom(const rapidxml::xml_node<char>* root)
 }
 
 void GNSS::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::viz::Scene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	// 1st time?
 	if (!gl_sensor_origin_ && viz)
 	{
-		gl_sensor_origin_ = mrpt::opengl::CSetOfObjects::Create();
+		gl_sensor_origin_ = mrpt::viz::CSetOfObjects::Create();
 		gl_sensor_origin_->castShadows(false);
-		gl_sensor_origin_corner_ = mrpt::opengl::stock_objects::CornerXYZSimple(0.15f);
+		gl_sensor_origin_corner_ = mrpt::viz::stock_objects::CornerXYZSimple(0.15f);
 
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 

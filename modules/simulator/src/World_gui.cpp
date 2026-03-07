@@ -16,9 +16,9 @@
 #include <mrpt/math/geometry.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/obs/CObservationImage.h>
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/system/thread_name.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/World.h>
 
 #include <cmath>  // cos(), sin()
@@ -138,7 +138,7 @@ void World::GUI::prepare_control_window()
 		 {
 			 std::lock_guard<std::mutex> lck(gui_win->background_scene_mtx);
 
-			 auto glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+			 auto glVizSensors = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(
 				 gui_win->background_scene->getByName("group_sensors_viz"));
 			 ASSERT_(glVizSensors);
 
@@ -171,7 +171,7 @@ void World::GUI::prepare_control_window()
 			 auto lck = mrpt::lockHelper(parent_.simulableObjectsMtx_);
 			 for (auto& s : parent_.simulableObjects_)
 			 {
-				 auto* vis = dynamic_cast<VisualObject*>(s.second.get());
+				 auto* vis = dynamic_cast<CVisualObject*>(s.second.get());
 				 if (!vis) continue;
 				 vis->showCollisionShape(b);
 			 }
@@ -283,24 +283,24 @@ void World::GUI::prepare_editor_window()
 			if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
 			{
 				wrapperIdx = 0;
-				ipo.visual = dynamic_cast<VisualObject*>(v);
+				ipo.visual = dynamic_cast<CVisualObject*>(v);
 			}
 			if (auto v = dynamic_cast<Block*>(o.second.get()); v)
 			{
 				wrapperIdx = 2;
-				ipo.visual = dynamic_cast<VisualObject*>(v);
+				ipo.visual = dynamic_cast<CVisualObject*>(v);
 			}
 			if (auto v = dynamic_cast<SensorBase*>(o.second.get()); v)
 			{
 				wrapperIdx = 1;
-				ipo.visual = dynamic_cast<VisualObject*>(v);
+				ipo.visual = dynamic_cast<CVisualObject*>(v);
 			}
 			// bool isWorldElement = false;
 			if (auto v = dynamic_cast<WorldElementBase*>(o.second.get()); v)
 			{
 				// isWorldElement = true;
 				wrapperIdx = 3;
-				ipo.visual = dynamic_cast<VisualObject*>(v);
+				ipo.visual = dynamic_cast<CVisualObject*>(v);
 			}
 
 			if (wrapperIdx < 0)
@@ -655,7 +655,7 @@ void World::internal_GUI_thread()
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
 
-		auto lambdaSetLightParams = [&lo](const mrpt::opengl::COpenGLViewport::Ptr& v)
+		auto lambdaSetLightParams = [&lo](const mrpt::viz::COpenGLViewport::Ptr& v)
 		{
 			// enable shadows and set the shadow map texture size:
 			const int sms = lo.shadow_map_size;
@@ -792,7 +792,7 @@ void World::internal_GUI_thread()
 
 		lckListObjs.unlock();
 
-		VisualObject::FreeOpenGLResources();
+		CVisualObject::FreeOpenGLResources();
 
 		// Now, destroy window:
 		gui_.gui_win.reset();
@@ -813,7 +813,7 @@ void World::GUI::handle_mouse_operations()
 	{
 		return;
 	}
-	mrpt::opengl::COpenGLViewport::Ptr vp;
+	mrpt::viz::COpenGLViewport::Ptr vp;
 	{
 		auto lck = mrpt::lockHelper(gui_win->background_scene_mtx);
 		if (!gui_win->background_scene)
@@ -898,7 +898,7 @@ void World::internal_process_pending_gui_user_tasks()
 	guiUserPendingTasksMtx_.unlock();
 }
 
-void World::internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObjects)
+void World::internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects)
 {
 	auto tle = mrpt::system::CTimeLoggerEntry(timlogger_, "internalRunSensorsOn3DScene");
 
@@ -910,8 +910,7 @@ void World::internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObje
 	clear_pending_running_sensors_on_3D_scene();
 }
 
-void World::internalUpdate3DSceneObjects(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
+void World::internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene& physical)
 {
 	// Update view of map elements
 	// -----------------------------
@@ -953,10 +952,10 @@ void World::internalUpdate3DSceneObjects(
 	{
 		static const std::string kJointsGlName = "__joint_lines";
 		auto glJoints =
-			std::dynamic_pointer_cast<mrpt::opengl::CSetOfLines>(viz.getByName(kJointsGlName));
+			std::dynamic_pointer_cast<mrpt::viz::CSetOfLines>(viz.getByName(kJointsGlName));
 		if (!glJoints)
 		{
-			glJoints = mrpt::opengl::CSetOfLines::Create();
+			glJoints = mrpt::viz::CSetOfLines::Create();
 			glJoints->setName(kJointsGlName);
 			glJoints->setLineWidth(2.0f);
 			glJoints->setColor_u8(0xff, 0xcc, 0x00, 0xcc);
@@ -1215,7 +1214,7 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 
 		auto lck = mrpt::lockHelper(glControl->scene_mtx);
 
-		glControl->scene = mrpt::opengl::COpenGLScene::Create();
+		glControl->scene = mrpt::viz::Scene::Create();
 		gui_.gui_win->performLayout();
 	}
 

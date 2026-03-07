@@ -14,12 +14,12 @@
 #include <mrpt/math/TLine2D.h>
 #include <mrpt/math/TObject2D.h>
 #include <mrpt/math/geometry.h>
-#include <mrpt/opengl/COpenGLScene.h>
-#include <mrpt/opengl/CPointCloud.h>
-#include <mrpt/opengl/CSetOfLines.h>
-#include <mrpt/opengl/CSetOfTriangles.h>
-#include <mrpt/opengl/CTexturedPlane.h>
-#include <mrpt/opengl/stock_objects.h>
+#include <mrpt/viz/CPointCloud.h>
+#include <mrpt/viz/CSetOfLines.h>
+#include <mrpt/viz/CSetOfTriangles.h>
+#include <mrpt/viz/CTexturedPlane.h>
+#include <mrpt/viz/Scene.h>
+#include <mrpt/viz/stock_objects.h>
 #include <mvsim/Shape2p5.h>
 
 #include <cmath>
@@ -69,7 +69,7 @@ void Shape2p5::mergeWith(const Shape2p5& s)
 		const auto p0 = ca.at(im1);
 		const auto p1 = ca.at(i);
 
-		mrpt::opengl::TTriangle t;
+		mrpt::viz::TTriangle t;
 		t.vertex(0) = TPoint3Df(p0.x, p0.y, bb.min.z);
 		t.vertex(1) = TPoint3Df(p1.x, p1.y, bb.min.z);
 		t.vertex(2) = TPoint3Df(p1.x, p1.y, bb.max.z);
@@ -81,7 +81,7 @@ void Shape2p5::mergeWith(const Shape2p5& s)
 		const auto p0 = cb.at(im1);
 		const auto p1 = cb.at(i);
 
-		mrpt::opengl::TTriangle t;
+		mrpt::viz::TTriangle t;
 		t.vertex(0) = TPoint3Df(p0.x, p0.y, bb.min.z);
 		t.vertex(1) = TPoint3Df(p1.x, p1.y, bb.min.z);
 		t.vertex(2) = TPoint3Df(p1.x, p1.y, bb.max.z);
@@ -100,7 +100,7 @@ const mrpt::math::TPolygon2D& Shape2p5::getContour() const
 
 // For debugging only:
 #ifdef DEBUG_DUMP_TRIANGLES
-static auto glDebugTriangles = mrpt::opengl::CSetOfTriangles::Create();
+static auto glDebugTriangles = mrpt::viz::CSetOfTriangles::Create();
 #endif
 
 void Shape2p5::buildInit(
@@ -132,7 +132,7 @@ void Shape2p5::buildAddPoint(const mrpt::math::TPoint3Df& pt)
 	*c = CELL_OCCUPIED;
 }
 
-void Shape2p5::buildAddTriangle(const mrpt::opengl::TTriangle& t)
+void Shape2p5::buildAddTriangle(const mrpt::viz::TTriangle& t)
 {
 	const float step = grid_->getResolution();
 
@@ -207,7 +207,7 @@ void Shape2p5::computeShape() const
 #ifdef DEBUG_DUMP_TRIANGLES
 	{
 		static int cnt = 0;
-		mrpt::opengl::COpenGLScene scene;
+		mrpt::viz::Scene scene;
 		scene.insert(glDebugTriangles);
 		scene.saveToFile(mrpt::format("debug_shape2p5_triangles_%04i.3Dscene", cnt++));
 	}
@@ -509,9 +509,9 @@ mrpt::math::TPolygon2D Shape2p5::internalGridContour() const
 void Shape2p5::debugSaveGridTo3DSceneFile(
 	const mrpt::math::TPolygon2D& rawGridContour, const std::string& debugStr) const
 {
-	mrpt::opengl::COpenGLScene scene;
+	mrpt::viz::Scene scene;
 
-	auto glGrid = mrpt::opengl::CTexturedPlane::Create();
+	auto glGrid = mrpt::viz::CTexturedPlane::Create();
 	glGrid->setPlaneCorners(grid_->getXMin(), grid_->getXMax(), grid_->getYMin(), grid_->getYMax());
 
 	mrpt::math::CMatrixDouble mat;
@@ -522,14 +522,14 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 
 	glGrid->assignImage(im);
 
-	scene.insert(mrpt::opengl::stock_objects::CornerXYZSimple());
+	scene.insert(mrpt::viz::stock_objects::CornerXYZSimple());
 	scene.insert(glGrid);
 
 	auto lambdaRenderPoly =
 		[&scene](const mrpt::math::TPolygon2D& p, const mrpt::img::TColor& color, double z)
 	{
-		auto glPts = mrpt::opengl::CPointCloud::Create();
-		auto glPoly = mrpt::opengl::CSetOfLines::Create();
+		auto glPts = mrpt::viz::CPointCloud::Create();
+		auto glPoly = mrpt::viz::CSetOfLines::Create();
 		glPoly->setColor_u8(color);
 		glPts->setColor_u8(color);
 		glPts->setPointSize(4.0f);

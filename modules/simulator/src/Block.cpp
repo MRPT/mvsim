@@ -11,13 +11,13 @@
 #include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
-#include <mrpt/opengl/CBox.h>
-#include <mrpt/opengl/CCylinder.h>
-#include <mrpt/opengl/CPolyhedron.h>
-#include <mrpt/opengl/CSetOfTriangles.h>
-#include <mrpt/opengl/CSphere.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CBox.h>
+#include <mrpt/viz/CCylinder.h>
+#include <mrpt/viz/CPolyhedron.h>
+#include <mrpt/viz/CSetOfTriangles.h>
+#include <mrpt/viz/CSphere.h>
 #include <mvsim/Block.h>
 #include <mvsim/World.h>
 
@@ -35,7 +35,7 @@ using namespace std;
 static XmlClassesRegistry block_classes_registry("block:class");
 
 // Protected ctor:
-Block::Block(World* parent) : VisualObject(parent), Simulable(parent)
+Block::Block(World* parent) : CVisualObject(parent), Simulable(parent)
 {
 	// Default shape:
 	block_poly_.emplace_back(-0.5, -0.5);
@@ -233,8 +233,8 @@ void Block::simul_post_timestep(const TSimulContext& context)
 }
 
 void Block::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly)
 {
 	// 1st time call?? -> Create objects
 	// ----------------------------------
@@ -242,17 +242,17 @@ void Block::internalGuiUpdate(
 	{
 		if (!gl_block_ && viz && physical)
 		{
-			gl_block_ = mrpt::opengl::CSetOfObjects::Create();
+			gl_block_ = mrpt::viz::CSetOfObjects::Create();
 			gl_block_->setName(name_);
 
 			// Block shape:
-			auto gl_poly = mrpt::opengl::CPolyhedron::CreateCustomPrism(
-				block_poly_, block_z_max_ - block_z_min_);
+			auto gl_poly =
+				mrpt::viz::CPolyhedron::CreateCustomPrism(block_poly_, block_z_max_ - block_z_min_);
 			gl_poly->setLocation(0, 0, block_z_min_);
 			gl_poly->setColor_u8(block_color_);
 
 			// Hide back faces:
-			// gl_poly->cullFaces(mrpt::opengl::TCullFace::FRONT);
+			// gl_poly->cullFaces(mrpt::viz::TCullFace::FRONT);
 
 			gl_block_->insert(gl_poly);
 
@@ -275,7 +275,7 @@ void Block::internalGuiUpdate(
 	if (!gl_forces_ && viz)
 	{
 		// Visualization of forces:
-		gl_forces_ = mrpt::opengl::CSetOfLines::Create();
+		gl_forces_ = mrpt::viz::CSetOfLines::Create();
 		gl_forces_->setLineWidth(3.0);
 		gl_forces_->setColor_u8(0xff, 0xff, 0xff);
 
@@ -292,7 +292,7 @@ void Block::internalGuiUpdate(
 }
 
 void Block::internal_internalGuiUpdate_forces(	//
-	[[maybe_unused]] mrpt::opengl::COpenGLScene& scene)
+	[[maybe_unused]] mrpt::viz::Scene& scene)
 {
 	if (world_->guiOptions_.show_forces)
 	{
@@ -448,12 +448,13 @@ void Block::setIsStatic(bool b)
 }
 
 // Protected ctor:
-DummyInvisibleBlock::DummyInvisibleBlock(World* parent) : VisualObject(parent), Simulable(parent) {}
+DummyInvisibleBlock::DummyInvisibleBlock(World* parent) : CVisualObject(parent), Simulable(parent)
+{
+}
 
 void DummyInvisibleBlock::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
-	[[maybe_unused]] bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	if (!viz || !physical)
 	{
@@ -490,7 +491,7 @@ void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node
 
 			if (_.vertex_count == 0) _.vertex_count = 10;  // default
 
-			auto glCyl = mrpt::opengl::CCylinder::Create();
+			auto glCyl = mrpt::viz::CCylinder::Create();
 			glCyl->setHeight(_.length);
 			glCyl->setRadius(_.radius);
 			glCyl->setSlicesCount(_.vertex_count);
@@ -505,7 +506,7 @@ void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node
 
 			if (_.vertex_count == 0) _.vertex_count = 10;  // default
 
-			auto glSph = mrpt::opengl::CSphere::Create(_.radius, _.vertex_count);
+			auto glSph = mrpt::viz::CSphere::Create(_.radius, _.vertex_count);
 			glSph->setColor_u8(block_color_);
 			addCustomVisualization(glSph);
 		}
@@ -517,7 +518,7 @@ void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node
 			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for box geometry");
 			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for box geometry");
 
-			auto glBox = mrpt::opengl::CBox::Create();
+			auto glBox = mrpt::viz::CBox::Create();
 			glBox->setBoxCorners({0, 0, 0}, {_.lx, _.ly, _.lz});
 			glBox->setColor_u8(block_color_);
 			addCustomVisualization(glBox);
@@ -532,7 +533,7 @@ void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node
 
 			if (_.vertex_count == 0) _.vertex_count = 10;  // default
 
-			auto glCyl = mrpt::opengl::CCylinder::Create();
+			auto glCyl = mrpt::viz::CCylinder::Create();
 			glCyl->setHeight(_.lx);
 			glCyl->setRadius(_.ly * 0.5);
 			glCyl->setScale(2 * _.lz / _.ly, 1.0, 1.0);
@@ -552,7 +553,7 @@ void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node
 			ASSERTMSG_(_.ly > 0, "Missing 'ly' attribute for ramp geometry");
 			ASSERTMSG_(_.lz > 0, "Missing 'lz' attribute for ramp geometry");
 
-			auto glRamp = mrpt::opengl::CSetOfTriangles::Create();
+			auto glRamp = mrpt::viz::CSetOfTriangles::Create();
 
 			const auto p0 = mrpt::math::TPoint3Df(0, -_.ly * 0.5, 0);
 			const auto p1 = mrpt::math::TPoint3Df(_.lx, -_.ly * 0.5, _.lz);
@@ -561,7 +562,7 @@ void Block::internal_parseGeometry(const rapidxml::xml_node<char>& xml_geom_node
 			const auto p4 = mrpt::math::TPoint3Df(_.lx, -_.ly * 0.5, 0);
 			const auto p5 = mrpt::math::TPoint3Df(_.lx, _.ly * 0.5, 0);
 
-			mrpt::opengl::TTriangle t;
+			mrpt::viz::TTriangle t;
 			t.setColor(block_color_);
 			// T0
 			t.vertex(0) = p0;
