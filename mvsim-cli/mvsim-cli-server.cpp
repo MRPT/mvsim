@@ -28,10 +28,10 @@ void commonLaunchServer()
 	// Start network server:
 	server = std::make_shared<mvsim::Server>();
 
-	if (cli->argPort.isSet()) server->listenningPort(cli->argPort.getValue());
+	if (cli->cmd["--port"]->count() > 0) server->listenningPort(cli->argPort);
 
 	server->setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-		cli->argVerbosity.getValue()));
+		cli->argVerbosity));
 
 	server->start();
 #endif
@@ -40,7 +40,7 @@ void commonLaunchServer()
 int launchStandAloneServer()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	if (cli->argHelp.isSet())
+	if (cli->argHelp)
 	{
 		fprintf(
 			stdout,

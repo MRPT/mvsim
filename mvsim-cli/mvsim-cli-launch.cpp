@@ -168,13 +168,13 @@ int launchSimulation()
 
 	// check args:
 	bool badArgs = false;
-	const auto& unlabeledArgs = cli->argCmd.getValue();
+	const auto& unlabeledArgs = cli->argCmd;
 	if (unlabeledArgs.size() != 2)
 	{
 		badArgs = true;
 	}
 
-	if (cli->argHelp.isSet() || badArgs)
+	if (cli->argHelp || badArgs)
 	{
 		fprintf(
 			stdout,
@@ -193,7 +193,7 @@ Available options:
 	mvsim_install_signal_handler();
 
 	const auto verbosityLevel = mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-		cli->argVerbosity.getValue());
+		cli->argVerbosity);
 
 	if (verbosityLevel <= mrpt::system::LVL_INFO)
 	{
@@ -214,12 +214,12 @@ Available options:
 	app->world.setMinLoggingLevel(verbosityLevel);
 
 	// CLI flags:
-	if (cli->argFullProfiler.isSet())
+	if (cli->argFullProfiler)
 	{
 		app->world.getTimeLogger().enableKeepWholeHistory();
 	}
 
-	if (cli->argHeadless.isSet())
+	if (cli->argHeadless)
 	{
 		app->world.headless(true);
 	}
@@ -246,7 +246,7 @@ Available options:
 	// Launch GUI thread, unless we are in headless mode:
 	app->thread_params.world = &app->world;
 
-	if (!cli->argHeadless.isSet())
+	if (!cli->argHeadless)
 	{
 		// regular GUI:
 		app->thGUI = std::thread(&mvsim_server_thread_update_GUI, std::ref(app->thread_params));
@@ -259,7 +259,7 @@ Available options:
 
 	// Run simulation:
 	const double tAbsInit = mrpt::Clock::nowDouble();
-	const double rtFactor = cli->argRealTimeFactor.getValue();
+	const double rtFactor = cli->argRealTimeFactor;
 	bool doExit = false;
 
 	while (!doExit)
