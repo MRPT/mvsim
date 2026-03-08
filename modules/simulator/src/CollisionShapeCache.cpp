@@ -165,28 +165,15 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	auto* oAssimp = dynamic_cast<mrpt::viz::CAssimpModel*>(&obj);
 	if (oAssimp)
 	{
-		oAssimp->onUpdateBuffers_all();
+		oAssimp->updateBuffers();
 	}
-	auto* oRSWF = dynamic_cast<mrpt::viz::CVisualObjectShaderWireFrame*>(&obj);
-	if (oRSWF)
-	{
-		oRSWF->onUpdateBuffers_Wireframe();
-	}
-	auto* oRST = dynamic_cast<mrpt::viz::CVisualObjectShaderTriangles*>(&obj);
-	if (oRST)
-	{
-		oRST->onUpdateBuffers_Triangles();
-	}
-	auto* oRSTT = dynamic_cast<mrpt::viz::CVisualObjectShaderTexturedTriangles*>(&obj);
-	if (oRSTT)
-	{
-		oRSTT->onUpdateBuffers_TexturedTriangles();
-	}
-	auto* oRP = dynamic_cast<mrpt::viz::CVisualObjectShaderPoints*>(&obj);
-	if (oRP)
-	{
-		oRP->onUpdateBuffers_Points();
-	}
+	auto* oRSWF = dynamic_cast<mrpt::viz::VisualObjectParams_Lines*>(&obj);
+	auto* oRST = dynamic_cast<mrpt::viz::VisualObjectParams_Triangles*>(&obj);
+	auto* oRSTT = dynamic_cast<mrpt::viz::VisualObjectParams_TexturedTriangles*>(&obj);
+	auto* oRP = dynamic_cast<mrpt::viz::VisualObjectParams_Points*>(&obj);
+
+	// Ensure all buffers are up to date:
+	obj.updateBuffers();
 
 	// Slice bbox in z up to a given relevant height:
 	size_t numTotalPts = 0, numPassedPts = 0;
@@ -276,8 +263,8 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	}
 	if (oRSWF)
 	{
-		auto lck = mrpt::lockHelper(oRSWF->shaderWireframeBuffersMutex().data);
-		const auto& pts = oRSWF->shaderWireframeVertexPointBuffer();
+		auto lck = mrpt::lockHelper(oRSWF->shaderLinesBufferMutex().data);
+		const auto& pts = oRSWF->shaderLinesVertexPointBuffer();
 		for (const auto& pt : pts)
 		{
 			lambdaUpdatePt(pt);
@@ -286,16 +273,15 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 
 	if (oAssimp)
 	{
-		const auto& txtrdObjs = oAssimp->texturedObjects();	 // mrpt>=2.6.0
-		for (const auto& o : txtrdObjs)
+		// CAssimpModel is a CSetOfObjects in mrpt3; iterate children for textured meshes:
+		for (const auto& child : *oAssimp)
 		{
-			if (!o)
-			{
-				continue;
-			}
+			if (!child) continue;
+			auto* tt = dynamic_cast<mrpt::viz::VisualObjectParams_TexturedTriangles*>(child.get());
+			if (!tt) continue;
 
-			auto lck = mrpt::lockHelper(o->shaderTexturedTrianglesBufferMutex().data);
-			const auto& tris = o->shaderTexturedTrianglesBuffer();
+			auto lck = mrpt::lockHelper(tt->shaderTexturedTrianglesBufferMutex().data);
+			const auto& tris = tt->shaderTexturedTrianglesBuffer();
 			for (const auto& tri : tris)
 			{
 				lambdaUpdateTri(tri);

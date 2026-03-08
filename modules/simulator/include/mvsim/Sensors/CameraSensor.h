@@ -10,7 +10,7 @@
 #pragma once
 
 #include <mrpt/obs/CObservationImage.h>
-#include <mrpt/viz/CFBORender.h>
+#include <mrpt/opengl/CFBORender.h>
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
@@ -60,7 +60,7 @@ class CameraSensor : public SensorBase
 	mrpt::obs::CObservationImage::Ptr last_obs_;
 	mrpt::obs::CObservationImage::Ptr last_obs2gui_;
 
-	std::shared_ptr<mrpt::viz::CFBORender> fbo_renderer_rgb_;
+	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_rgb_;
 
 	/** Whether gl_* have to be updated upon next call of
 	 * internalGuiUpdate() from last_scan2gui_ */

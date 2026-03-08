@@ -10,7 +10,7 @@
 #pragma once
 
 #include <mrpt/obs/CObservation3DRangeScan.h>
-#include <mrpt/viz/CFBORender.h>
+#include <mrpt/opengl/CFBORender.h>
 #include <mrpt/viz/CPointCloudColoured.h>
 #include <mvsim/Sensors/SensorBase.h>
 
@@ -85,7 +85,7 @@ class DepthCameraSensor : public SensorBase
 	mrpt::obs::CObservation3DRangeScan::Ptr last_obs2gui_;
 
 	// Note: we need 2 to support different resolutions for RGB vs Depth.
-	std::shared_ptr<mrpt::viz::CFBORender> fbo_renderer_rgb_, fbo_renderer_depth_;
+	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_rgb_, fbo_renderer_depth_;
 
 	/** Whether gl_scan_ has to be updated upon next call of
 	 * internalGuiUpdate() from last_scan2gui_ */

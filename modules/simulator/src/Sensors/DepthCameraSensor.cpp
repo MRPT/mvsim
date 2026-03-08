@@ -251,12 +251,12 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		auto tle2 =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.createFBO");
 
-		mrpt::viz::CFBORender::Parameters p;
+		mrpt::opengl::CFBORender::Parameters p;
 		p.width = sensor_params_.cameraParamsIntensity.ncols;
 		p.height = sensor_params_.cameraParamsIntensity.nrows;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
-		fbo_renderer_rgb_ = std::make_shared<mrpt::viz::CFBORender>(p);
+		fbo_renderer_rgb_ = std::make_shared<mrpt::opengl::CFBORender>(p);
 	}
 
 	if (!fbo_renderer_depth_ && sense_depth_)
@@ -264,12 +264,12 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		auto tle2 =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.createFBO");
 
-		mrpt::viz::CFBORender::Parameters p;
+		mrpt::opengl::CFBORender::Parameters p;
 		p.width = sensor_params_.cameraParams.ncols;
 		p.height = sensor_params_.cameraParams.nrows;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
-		fbo_renderer_depth_ = std::make_shared<mrpt::viz::CFBORender>(p);
+		fbo_renderer_depth_ = std::make_shared<mrpt::opengl::CFBORender>(p);
 	}
 
 	auto viewport = world3DScene.getViewport();

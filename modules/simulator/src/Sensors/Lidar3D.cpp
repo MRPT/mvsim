@@ -9,9 +9,9 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/maps/CGenericPointsMap.h>
+#include <mrpt/opengl/OpenGLDepth2LinearLUTs.h>
 #include <mrpt/random.h>
 #include <mrpt/version.h>
-#include <mrpt/viz/OpenGLDepth2LinearLUTs.h>
 #include <mrpt/viz/stock_objects.h>
 #include <mvsim/Sensors/Lidar3D.h>
 #include <mvsim/VehicleBase.h>
@@ -229,7 +229,7 @@ void Lidar3D::freeOpenGLResources()
 // since only a few depth points are actually used:
 // (older mrpt versions already returned the linearized depth)
 constexpr int DEPTH_LOG2LIN_BITS = 20;
-using depth_log2lin_t = mrpt::viz::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
+using depth_log2lin_t = mrpt::opengl::OpenGLDepth2LinearLUTs<DEPTH_LOG2LIN_BITS>;
 
 static float safeInterpolateRangeImage(
 	const mrpt::math::CMatrixFloat& depthImage, const float maxDepthInterpolationStepVert,
@@ -427,7 +427,7 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 
 	if (!fbo_renderer_depth_)
 	{
-		mrpt::viz::CFBORender::Parameters p;
+		mrpt::opengl::CFBORender::Parameters p;
 		p.width = FBO_NCOLS;
 		p.height = FBO_NROWS;
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
@@ -436,7 +436,7 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		// few depth points are actually used.
 		p.raw_depth = true;
 
-		fbo_renderer_depth_ = std::make_shared<mrpt::viz::CFBORender>(p);
+		fbo_renderer_depth_ = std::make_shared<mrpt::opengl::CFBORender>(p);
 	}
 
 	const size_t nCols = horzNumRays_;
@@ -451,7 +451,9 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	const bool wasShadowEnabled = viewport->isShadowCastingEnabled();
 	viewport->enableShadowCasting(false);
 
-	auto& cam = fbo_renderer_depth_->getCamera(world3DScene);
+	if (!fbo_renderer_depth_->hasCameraOverride())
+		fbo_renderer_depth_->setCamera(mrpt::viz::CCamera());
+	auto& cam = fbo_renderer_depth_->getCameraOverride();
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);

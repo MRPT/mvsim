@@ -655,7 +655,7 @@ void World::internal_GUI_thread()
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
 
-		auto lambdaSetLightParams = [&lo](const mrpt::viz::COpenGLViewport::Ptr& v)
+		auto lambdaSetLightParams = [&lo](const mrpt::viz::Viewport::Ptr& v)
 		{
 			// enable shadows and set the shadow map texture size:
 			const int sms = lo.shadow_map_size;
@@ -779,7 +779,8 @@ void World::internal_GUI_thread()
 			auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
 			if (gui_.gui_win->background_scene)
 			{
-				gui_.gui_win->background_scene->freeOpenGLResources();
+				// In mrpt3, OpenGL resources are freed automatically
+				gui_.gui_win->background_scene.reset();
 			}
 		}
 
@@ -792,7 +793,7 @@ void World::internal_GUI_thread()
 
 		lckListObjs.unlock();
 
-		CVisualObject::FreeOpenGLResources();
+		// CVisualObject::FreeOpenGLResources() removed in mrpt3 (automatic)
 
 		// Now, destroy window:
 		gui_.gui_win.reset();
@@ -813,7 +814,7 @@ void World::GUI::handle_mouse_operations()
 	{
 		return;
 	}
-	mrpt::viz::COpenGLViewport::Ptr vp;
+	mrpt::viz::Viewport::Ptr vp;
 	{
 		auto lck = mrpt::lockHelper(gui_win->background_scene_mtx);
 		if (!gui_win->background_scene)
@@ -826,7 +827,10 @@ void World::GUI::handle_mouse_operations()
 
 	const auto mousePt = gui_win->mousePos();
 	mrpt::math::TLine3D ray;
-	vp->get3DRayForPixelCoord(mousePt.x(), mousePt.y(), ray);
+	auto rayOpt =
+		vp->get3DRayForPixelCoord({static_cast<int>(mousePt.x()), static_cast<int>(mousePt.y())});
+	if (!rayOpt.has_value()) return;
+	ray = rayOpt.value();
 
 	// Create a 3D plane, i.e. Z=0
 	const auto ground_plane = mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});

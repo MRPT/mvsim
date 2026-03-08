@@ -11,8 +11,8 @@
 
 #include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/obs/CObservationRotatingScan.h>
+#include <mrpt/opengl/CFBORender.h>
 #include <mrpt/poses/CPose2D.h>
-#include <mrpt/viz/CFBORender.h>
 #include <mrpt/viz/CPointCloudColoured.h>
 #include <mvsim/Sensors/SensorBase.h>
 
@@ -95,7 +95,7 @@ class Lidar3D : public SensorBase
 	std::optional<TSimulContext> has_to_render_;
 	std::mutex has_to_render_mtx_;
 
-	std::shared_ptr<mrpt::viz::CFBORender> fbo_renderer_depth_;
+	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_depth_;
 
 	/** If true, intensity values will be generated from the grayscale of
 	 *  the rendered RGB image for each lidar return. */

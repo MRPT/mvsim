@@ -12,6 +12,7 @@
 #include <mrpt/core/get_env.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CVisualObject.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -56,9 +57,21 @@ mrpt::viz::CAssimpModel::Ptr ModelsCache::get(
 
 	m->loadScene(localFileName, loadFlags);
 
-	m->cullFaces(mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(options.modelCull));
+	{
+		const auto cf =
+			mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(options.modelCull);
+		for (auto& child : *m)
+		{
+			if (!child) continue;
+			if (auto* t = dynamic_cast<mrpt::viz::VisualObjectParams_Triangles*>(child.get()))
+				t->cullFaces(cf);
+			if (auto* tt =
+					dynamic_cast<mrpt::viz::VisualObjectParams_TexturedTriangles*>(child.get()))
+				tt->cullFaces(cf);
+		}
+	}
 
-	m->split_triangles_rendering_bbox(options.splitSize);
+	m->setSplitTrianglesRenderingBBox(options.splitSize);
 
 	return m;
 }

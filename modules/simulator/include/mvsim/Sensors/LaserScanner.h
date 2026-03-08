@@ -10,8 +10,8 @@
 #pragma once
 
 #include <mrpt/obs/CObservation2DRangeScan.h>
+#include <mrpt/opengl/CFBORender.h>
 #include <mrpt/poses/CPose2D.h>
-#include <mrpt/viz/CFBORender.h>
 #include <mrpt/viz/CPlanarLaserScan.h>
 #include <mvsim/Sensors/SensorBase.h>
 
@@ -106,7 +106,7 @@ class LaserScanner : public SensorBase
 	std::optional<TSimulContext> has_to_render_;
 	std::mutex has_to_render_mtx_;
 
-	std::shared_ptr<mrpt::viz::CFBORender> fbo_renderer_depth_;
+	std::shared_ptr<mrpt::opengl::CFBORender> fbo_renderer_depth_;
 
 	std::vector<size_t> angleIdx2pixelIdx_;
 	std::vector<float> angleIdx2secant_;
