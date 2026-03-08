@@ -273,18 +273,28 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 
 	if (oAssimp)
 	{
-		// CAssimpModel is a CSetOfObjects in mrpt3; iterate children for textured meshes:
+		// CAssimpModel is a CSetOfObjects in mrpt3; iterate children for meshes:
 		for (const auto& child : *oAssimp)
 		{
 			if (!child) continue;
-			auto* tt = dynamic_cast<mrpt::viz::VisualObjectParams_TexturedTriangles*>(child.get());
-			if (!tt) continue;
 
-			auto lck = mrpt::lockHelper(tt->shaderTexturedTrianglesBufferMutex().data);
-			const auto& tris = tt->shaderTexturedTrianglesBuffer();
-			for (const auto& tri : tris)
+			// Textured triangles:
+			if (auto* tt =
+					dynamic_cast<mrpt::viz::VisualObjectParams_TexturedTriangles*>(child.get()))
 			{
-				lambdaUpdateTri(tri);
+				auto lck = mrpt::lockHelper(tt->shaderTexturedTrianglesBufferMutex().data);
+				const auto& tris = tt->shaderTexturedTrianglesBuffer();
+				for (const auto& tri : tris)
+					lambdaUpdateTri(tri);
+			}
+
+			// Non-textured triangles:
+			if (auto* st = dynamic_cast<mrpt::viz::VisualObjectParams_Triangles*>(child.get()))
+			{
+				auto lck = mrpt::lockHelper(st->shaderTrianglesBufferMutex().data);
+				const auto& tris = st->shaderTrianglesBuffer();
+				for (const auto& tri : tris)
+					lambdaUpdateTri(tri);
 			}
 		}
 	}
