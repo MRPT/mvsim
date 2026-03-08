@@ -25,7 +25,6 @@ class HorizontalPlane : public WorldElementBase
 	DECLARES_REGISTER_WORLD_ELEMENT(HorizontalPlane)
    public:
 	HorizontalPlane(World* parent, const rapidxml::xml_node<char>* root);
-	virtual ~HorizontalPlane();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
 	// ------- Interface with "World" ------

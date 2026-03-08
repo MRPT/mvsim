@@ -30,8 +30,6 @@ HorizontalPlane::HorizontalPlane(World* parent, const rapidxml::xml_node<char>* 
 	HorizontalPlane::loadConfigFrom(root);
 }
 
-HorizontalPlane::~HorizontalPlane() {}
-
 void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	if (!root) return;	// Assume defaults

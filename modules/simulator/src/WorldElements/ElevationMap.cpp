@@ -138,7 +138,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		sElevationImgFile = world_->local_to_abs_path(sElevationImgFile);
 
 		mrpt::img::CImage imgElev;
-		if (!imgElev.loadFromFile(sElevationImgFile, 0 /*force load grayscale*/))
+		if (!imgElev.loadFromFile(
+				sElevationImgFile, mrpt::img::TImageChannels::CH_GRAY /*force load grayscale*/))
 		{
 			throw std::runtime_error(mrpt::format(
 				"[ElevationMap] ERROR: Cannot read elevation image '%s'",
@@ -272,8 +273,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			{
 				mrpt::img::CImage im;
 				mesh_image->rotateImage(
-					im, mrpt::DEG2RAD(texture_rotate), mesh_image->getWidth() / 2,
-					mesh_image->getHeight() / 2);
+					im, mrpt::DEG2RAD(texture_rotate),
+					{mesh_image->getWidth() / 2, mesh_image->getHeight() / 2});
 				mesh_image = std::move(im);
 			}
 			break;

@@ -274,8 +274,19 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 
 	auto viewport = world3DScene.getViewport();
 
-	auto* camDepth = fbo_renderer_depth_ ? &fbo_renderer_depth_->getCamera(world3DScene) : nullptr;
-	auto* camRGB = fbo_renderer_rgb_ ? &fbo_renderer_rgb_->getCamera(world3DScene) : nullptr;
+	std::optional<mrpt::viz::CCamera> camDepth;
+	std::optional<mrpt::viz::CCamera> camRGB;
+
+	if (fbo_renderer_depth_)
+	{
+		camDepth.emplace();
+		fbo_renderer_depth_->setCamera(*camDepth);
+	}
+	if (fbo_renderer_rgb_)
+	{
+		camRGB.emplace();
+		fbo_renderer_rgb_->setCamera(*camRGB);
+	}
 
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
