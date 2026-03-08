@@ -167,7 +167,8 @@ void World::internal_one_timestep(double dt)
 	{
 		// Use a huge timeout here to avoid timing out in build farms / cloud
 		// containers:
-		for (int i = 0; i < 20000 && pending_running_sensors_on_3D_scene(); i++)
+		for (int i = 0;
+			 i < 20000 && pending_running_sensors_on_3D_scene() && !simulator_must_close(); i++)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}

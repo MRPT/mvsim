@@ -891,15 +891,15 @@ void World::GUI::handle_mouse_operations()
 
 void World::internal_process_pending_gui_user_tasks()
 {
-	guiUserPendingTasksMtx_.lock();
-
-	for (const auto& task : guiUserPendingTasks_)
+	std::vector<std::function<void(void)>> tasks;
 	{
-		task();
+		std::lock_guard<std::mutex> lck(guiUserPendingTasksMtx_);
+		tasks = std::move(guiUserPendingTasks_);
+		guiUserPendingTasks_.clear();
 	}
-	guiUserPendingTasks_.clear();
 
-	guiUserPendingTasksMtx_.unlock();
+	// Execute tasks outside the mutex to avoid holding it during callbacks:
+	for (const auto& task : tasks) task();
 }
 
 void World::internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects)
@@ -1263,6 +1263,8 @@ void World::internalGraphicsLoopTasksForSimulation()
 		// abort. Otherwise, the error may repeat over and over forever
 		// and the main thread will never know about it.
 		MRPT_LOG_ERROR(e.what());
+		// Clear this flag so the simulation thread's busy-wait can exit:
+		clear_pending_running_sensors_on_3D_scene();
 		simulator_must_close(true);
 	}
 }

@@ -278,22 +278,18 @@ class World : public mrpt::system::COutputLogger
 
 	void mark_as_pending_running_sensors_on_3D_scene()
 	{
-		pendingRunSensorsOn3DSceneMtx_.lock();
+		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
 		pendingRunSensorsOn3DScene_ = true;
-		pendingRunSensorsOn3DSceneMtx_.unlock();
 	}
 	void clear_pending_running_sensors_on_3D_scene()
 	{
-		pendingRunSensorsOn3DSceneMtx_.lock();
+		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
 		pendingRunSensorsOn3DScene_ = false;
-		pendingRunSensorsOn3DSceneMtx_.unlock();
 	}
 	bool pending_running_sensors_on_3D_scene()
 	{
-		pendingRunSensorsOn3DSceneMtx_.lock();
-		bool ret = pendingRunSensorsOn3DScene_;
-		pendingRunSensorsOn3DSceneMtx_.unlock();
-		return ret;
+		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
+		return pendingRunSensorsOn3DScene_;
 	}
 
 	std::string guiMsgLines_;
@@ -307,23 +303,19 @@ class World : public mrpt::system::COutputLogger
 
 	bool simulator_must_close() const
 	{
-		gui_thread_start_mtx_.lock();
-		const bool v = simulator_must_close_;
-		gui_thread_start_mtx_.unlock();
-		return v;
+		std::lock_guard<std::mutex> lck(gui_thread_start_mtx_);
+		return simulator_must_close_;
 	}
 	void simulator_must_close(bool value)
 	{
-		gui_thread_start_mtx_.lock();
+		std::lock_guard<std::mutex> lck(gui_thread_start_mtx_);
 		simulator_must_close_ = value;
-		gui_thread_start_mtx_.unlock();
 	}
 
 	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f)
 	{
-		guiUserPendingTasksMtx_.lock();
+		std::lock_guard<std::mutex> lck(guiUserPendingTasksMtx_);
 		guiUserPendingTasks_.emplace_back(f);
-		guiUserPendingTasksMtx_.unlock();
 	}
 
 	std::vector<std::function<void(void)>> guiUserPendingTasks_;
