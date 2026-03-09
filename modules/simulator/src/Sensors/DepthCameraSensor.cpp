@@ -274,18 +274,15 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 
 	auto viewport = world3DScene.getViewport();
 
-	std::optional<mrpt::viz::CCamera> camDepth;
-	std::optional<mrpt::viz::CCamera> camRGB;
-
 	if (fbo_renderer_depth_)
 	{
-		camDepth.emplace();
-		fbo_renderer_depth_->setCamera(*camDepth);
+		if (!fbo_renderer_depth_->hasCameraOverride())
+			fbo_renderer_depth_->setCamera(mrpt::viz::CCamera());
 	}
 	if (fbo_renderer_rgb_)
 	{
-		camRGB.emplace();
-		fbo_renderer_rgb_->setCamera(*camRGB);
+		if (!fbo_renderer_rgb_->hasCameraOverride())
+			fbo_renderer_rgb_->setCamera(mrpt::viz::CCamera());
 	}
 
 	const auto fixedAxisConventionRot =
@@ -313,9 +310,10 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		auto tle2 =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderRGB");
 
-		camRGB->set6DOFMode(true);
-		camRGB->setProjectiveFromPinhole(curObs.cameraParamsIntensity);
-		camRGB->setPose(world()->applyWorldRenderOffset(rgbSensorPose));
+		auto& camRGB = fbo_renderer_rgb_->getCameraOverride();
+		camRGB.set6DOFMode(true);
+		camRGB.setProjectiveFromPinhole(curObs.cameraParamsIntensity);
+		camRGB.setPose(world()->applyWorldRenderOffset(rgbSensorPose));
 
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);
@@ -336,13 +334,14 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	{
 		auto tle2 = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderD");
 
-		camDepth->setProjectiveFromPinhole(curObs.cameraParams);
+		auto& camDepth = fbo_renderer_depth_->getCameraOverride();
+		camDepth.setProjectiveFromPinhole(curObs.cameraParams);
 
 		// Camera pose: vehicle + relativePoseOnVehicle:
 		// Note: relativePoseOnVehicle should be (y,p,r)=(90deg,0,90deg) to make
 		// the camera to look forward:
-		camDepth->set6DOFMode(true);
-		camDepth->setPose(world()->applyWorldRenderOffset(depthSensorPose));
+		camDepth.set6DOFMode(true);
+		camDepth.setPose(world()->applyWorldRenderOffset(depthSensorPose));
 
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(depth_clip_min_, depth_clip_max_);
