@@ -553,47 +553,10 @@ void HumanActor::updateSkeletalAnimation(double dt)
 
 	currentAnimTime_ += dt * animSpeedScale;
 
-#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
-	// Drive the CAnimatedAssimpModel if we have one.
-	// Lazy discovery: walk the visual hierarchy on first use.
-	if (glCustomVisual_ && !glModel_)
-	{
-		// The hierarchy built by CVisualObject::addCustomVisualization is:
-		//   glCustomVisual_ -> CSetOfObjects("group") -> CAssimpModel
-		// We look for a CAnimatedAssimpModel at any depth.
-		for (auto& obj : *glCustomVisual_)
-		{
-			// Direct child?
-			glModel_ = std::dynamic_pointer_cast<mrpt::viz::CAnimatedAssimpModel>(obj);
-			if (glModel_)
-			{
-				break;
-			}
-			// Inside a CSetOfObjects wrapper?
-			if (auto grp = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(obj); grp)
-			{
-				for (auto& inner : *grp)
-				{
-					glModel_ = std::dynamic_pointer_cast<mrpt::viz::CAnimatedAssimpModel>(inner);
-					if (glModel_)
-					{
-						break;
-					}
-				}
-			}
-			if (glModel_)
-			{
-				break;
-			}
-		}
-	}
-
-	if (glModel_)
-	{
-		glModel_->setActiveAnimation(animName);
-		glModel_->setAnimationTime(currentAnimTime_);
-	}
-#endif
+	// Store current animation name for the GUI thread to apply.
+	// Do NOT call setAnimationTime() here — that triggers rebuildSkinnedGeometry()
+	// which modifies CSetOfObjects children. That must only happen on the GUI thread.
+	currentAnimName_ = animName;
 }
 
 // ============================================================================
@@ -636,6 +599,38 @@ void HumanActor::internalGuiUpdate(
 	(void)viz;
 	(void)physical;
 	(void)childrenOnly;
+
+#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
+	// Apply animation state to the model on the GUI thread.
+	// This MUST happen here (GUI thread), not in the simulation thread, because
+	// setAnimationTime() calls rebuildSkinnedGeometry() which modifies CSetOfObjects
+	// children — a data race if done from the sim thread while the GUI thread iterates.
+
+	// Lazy discovery of the CAnimatedAssimpModel in the visual hierarchy.
+	if (glCustomVisual_ && !glModel_)
+	{
+		for (auto& obj : *glCustomVisual_)
+		{
+			glModel_ = std::dynamic_pointer_cast<mrpt::viz::CAnimatedAssimpModel>(obj);
+			if (glModel_) break;
+			if (auto grp = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(obj); grp)
+			{
+				for (auto& inner : *grp)
+				{
+					glModel_ = std::dynamic_pointer_cast<mrpt::viz::CAnimatedAssimpModel>(inner);
+					if (glModel_) break;
+				}
+			}
+			if (glModel_) break;
+		}
+	}
+
+	if (glModel_ && !currentAnimName_.empty())
+	{
+		glModel_->setActiveAnimation(currentAnimName_);
+		glModel_->setAnimationTime(currentAnimTime_);
+	}
+#endif
 }
 
 // ============================================================================

@@ -208,6 +208,7 @@ class HumanActor : public CVisualObject, public Simulable
 	std::string manualAnimationName_;
 
 	double currentAnimTime_ = 0.0;
+	std::string currentAnimName_;  //!< current anim clip name (updated by sim thread, read by GUI thread)
 	double currentMovementSpeed_ = 0.0;	 //!< actual speed for anim sync
 
 	// ==================== Rendering ====================
