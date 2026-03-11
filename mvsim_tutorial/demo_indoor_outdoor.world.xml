@@ -19,7 +19,8 @@
 	
 	<simul_timestep>0</simul_timestep>
 	<joystick_enabled>true</joystick_enabled>
-	
+	<save_to_rawlog>$env{MVSIM_SAVE_RAWLOG_FILENAME|}</save_to_rawlog>
+
 	<!-- Georeference for GNSS simulation -->
 	<georeference>
 		<latitude>40.1234</latitude>

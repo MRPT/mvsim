@@ -1,8 +1,9 @@
 <mvsim_world version="1.0">
 	<!-- General simulation options -->
 	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
-	
+
 	<joystick_enabled>true</joystick_enabled>
+	<save_to_rawlog>$env{MVSIM_SAVE_RAWLOG_FILENAME|}</save_to_rawlog>
 
 	<!-- Optional: save all sensor data into an MRPT .rawlog dataset file: -->
 	<!-- <save_to_rawlog>warehouse_dataset.rawlog</save_to_rawlog> -->

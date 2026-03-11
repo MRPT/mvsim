@@ -4,6 +4,7 @@
 	     to improve the physics simulation and achieve more realistic frictions/sliding
 		 when on ramps -->
 	<simul_timestep>2e-3</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
+	<save_to_rawlog>$env{MVSIM_SAVE_RAWLOG_FILENAME|}</save_to_rawlog>
 
 	<!-- Define georeferenced coordinates to the world so GNSS/GPS sensors can be properly simulated -->
 	<georeference>

@@ -4,7 +4,7 @@
 	<!-- All walls and ground use textures from the mvsim-models repository -->
 	
 	<simul_timestep>0</simul_timestep>
-	<save_to_rawlog>$env{MVSIM_SAVE_TO_RAWLOG|false}</save_to_rawlog>
+	<save_to_rawlog>$env{MVSIM_SAVE_RAWLOG_FILENAME|}</save_to_rawlog>
 	
 	<gui>
 		<ortho>false</ortho>
@@ -21,7 +21,7 @@
 		<light_elevation_deg>75.0</light_elevation_deg>
 	</lights>
 
-	<variable name="WALL_THICKNESS" value="0.2"></variable>
+	<variable name="WALL_THICKNESS" value="0.02"></variable>
 
 	<!-- Ground plane with concrete texture -->
 	<element class="horizontal_plane">
