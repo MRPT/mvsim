@@ -18,7 +18,6 @@
 #include <mrpt/gui/CDisplayWindowGUI.h>
 #include <mrpt/img/CImage.h>
 #include <mrpt/img/TColor.h>
-#include <mrpt/io/CFileGZOutputStream.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/obs/CObservationImage.h>
@@ -34,6 +33,14 @@
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
+
+//
+#include <mrpt/version.h>
+#if MRPT_VERSION >= 0x020f07
+#include <mrpt/io/CCompressedOutputStream.h>
+#else
+#include <mrpt/io/CFileGZOutputStream.h>
+#endif
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/Comms/Client.h>
@@ -950,7 +957,11 @@ class World : public mrpt::system::COutputLogger
 	void internalPostSimulStepForTrajectory();
 
 	std::mutex rawlog_io_mtx_;
+#if MRPT_VERSION >= 0x020f07
+	std::map<std::string, std::shared_ptr<mrpt::io::CCompressedOutputStream>> rawlog_io_per_veh_;
+#else
 	std::map<std::string, std::shared_ptr<mrpt::io::CFileGZOutputStream>> rawlog_io_per_veh_;
+#endif
 	std::optional<double> rawlog_last_odom_time_;
 
 	std::mutex gt_io_mtx_;
