@@ -34,7 +34,10 @@ std::string parseEnvVars(const std::string& text)
 	MRPT_TRY_START
 
 	const auto start = text.find("$env{");
-	if (start == std::string::npos) return text;
+	if (start == std::string::npos)
+	{
+		return text;
+	}
 
 	const std::string pre = text.substr(0, start);
 	const std::string post = text.substr(start + 5);
@@ -47,11 +50,33 @@ std::string parseEnvVars(const std::string& text)
 			static_cast<unsigned int>(start), text.c_str());
 	}
 
-	const auto varname = post.substr(0, post_end);
+	const auto varExpr = post.substr(0, post_end);
+
+	// Check for optional default value via '|' separator
+	std::string varname, defaultValue;
+	bool hasDefault = false;
+	const auto pipe = varExpr.find('|');
+	if (pipe != std::string::npos)
+	{
+		varname = varExpr.substr(0, pipe);
+		defaultValue = varExpr.substr(pipe + 1);
+		hasDefault = true;
+	}
+	else
+	{
+		varname = varExpr;
+	}
+
 	std::string varvalue;
 	const char* v = ::getenv(varname.c_str());
 	if (v != nullptr)
+	{
 		varvalue = std::string(v);
+	}
+	else if (hasDefault)
+	{
+		varvalue = defaultValue;
+	}
 	else
 	{
 		THROW_EXCEPTION_FMT(
@@ -68,7 +93,10 @@ std::string parseVars(
 	MRPT_TRY_START
 
 	const auto start = text.find("${");
-	if (start == std::string::npos) return text;
+	if (start == std::string::npos)
+	{
+		return text;
+	}
 
 	const std::string pre = text.substr(0, start);
 	const std::string post = text.substr(start + 2);
@@ -110,7 +138,10 @@ std::string parseCmdRuns(const std::string& text)
 	MRPT_TRY_START
 
 	const auto start = text.find("$(");
-	if (start == std::string::npos) return text;
+	if (start == std::string::npos)
+	{
+		return text;
+	}
 
 	const std::string pre = text.substr(0, start);
 	const std::string post = text.substr(start + 2);
@@ -160,7 +191,7 @@ double randn()
 double randomize(double seed)
 {
 	auto& rng = mrpt::random::getRandomGenerator();
-	rng.randomize(seed);
+	rng.randomize(static_cast<uint32_t>(seed));
 	return 0;
 }
 
@@ -171,7 +202,10 @@ std::string parseMathExpr(
 	MRPT_TRY_START
 
 	const auto start = text.find("$f{");
-	if (start == std::string::npos) return text;
+	if (start == std::string::npos)
+	{
+		return text;
+	}
 
 	const std::string pre = text.substr(0, start);
 	const std::string post = text.substr(start + 3);
@@ -199,7 +233,10 @@ std::string parseMathExpr(
 		std::stringstream ss(kv.second);
 
 		double val = 0;
-		if (!(ss >> val)) continue;
+		if (!(ss >> val))
+		{
+			continue;
+		}
 
 		numericVars[kv.first] = val;
 	}
@@ -221,7 +258,10 @@ std::string mvsim::parse(
 	{
 		std::cout << "[mvsim::parse] Input : '" << input << "' "
 				  << "with these variables: ";
-		for (const auto& kv : variableNamesValues) std::cout << kv.first << ", ";
+		for (const auto& kv : variableNamesValues)
+		{
+			std::cout << kv.first << ", ";
+		}
 		std::cout << "\n";
 	}
 
@@ -236,7 +276,10 @@ std::string mvsim::parse(
 		s = parseMathExpr(s, variableNamesValues);
 		// We may need to iterate since, in general, each expression generator
 		// might generate another kind of expression:
-		if (s == prevValue) break;
+		if (s == prevValue)
+		{
+			break;
+		}
 		prevValue = s;
 	}
 
@@ -251,6 +294,9 @@ std::string mvsim::parse(
 std::string mvsim::trim(const std::string& s)
 {
 	auto out = mrpt::system::trim(s);
-	while (!out.empty() && (out[0] == '\r' || out[0] == '\n')) out.erase(0, 1);
+	while (!out.empty() && (out[0] == '\r' || out[0] == '\n'))
+	{
+		out.erase(0, 1);
+	}
 	return out;
 }

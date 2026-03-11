@@ -32,14 +32,18 @@ Special variables
 Environment variables
 ========================
 
-Environment variables can be read with the notation ``$env{VAR_NAME}``.
-Using undefined environment variables is an error.
+Environment variables can be dereferenced with the notation ``$env{var_name}``.
+Using undefined variables is an error.
+
+A default value can be provided using a pipe separator: ``$env{var_name|default_value}``.
+If the variable is undefined and a default is supplied, the default is used instead of raising an error.
 
 Example:
 
 .. code-block:: xml
 
-    <variable name="PAYLOAD" value="$f{$env{PAYLOAD_MASS}}"/>
+    <variable name="PAYLOAD" value="$env{PAYLOAD_MASS}"/>
+    <variable name="BLOCK_COUNT" value="$env{BLOCK_COUNT|10}"/>
 
 
 Output of an external program

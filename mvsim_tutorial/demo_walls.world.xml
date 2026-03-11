@@ -4,6 +4,7 @@
 	<!-- All walls and ground use textures from the mvsim-models repository -->
 	
 	<simul_timestep>0</simul_timestep>
+	<save_to_rawlog>$env{MVSIM_SAVE_TO_RAWLOG|false}</save_to_rawlog>
 	
 	<gui>
 		<ortho>false</ortho>
