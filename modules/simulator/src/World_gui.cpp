@@ -87,7 +87,7 @@ void World::GUI::prepare_control_window()
 		});
 
 	w->add<nanogui::CheckBox>(
-		 "Orthogonal view", [&](bool b) { gui_win->camera().setCameraProjective(!b); })
+		 "Orthogonal view", [&](bool b) { gui_win->camera().setProjectiveModel(!b); })
 		->setChecked(parent_.guiOptions_.ortho);
 
 	w->add<nanogui::CheckBox>(
@@ -639,11 +639,11 @@ void World::internal_GUI_thread()
 		gui_.gui_win->performLayout();
 		auto& cam = gui_.gui_win->camera();
 
-		cam.setCameraProjective(!guiOptions_.ortho);
+		cam.setProjectiveModel(!guiOptions_.ortho);
 		cam.setZoomDistance(guiOptions_.camera_distance);
 		cam.setAzimuthDegrees(guiOptions_.camera_azimuth_deg);
 		cam.setElevationDegrees(guiOptions_.camera_elevation_deg);
-		cam.setCameraFOV(guiOptions_.fov_deg);
+		cam.setFOVdeg(guiOptions_.fov_deg);
 
 		const auto p = this->worldRenderOffset() + guiOptions_.camera_point_to;
 		cam.setCameraPointing(p.x, p.y, p.z);
@@ -666,7 +666,19 @@ void World::internal_GUI_thread()
 
 			auto& vlp = v->lightParameters();
 
-			vlp.color = colf;
+			if (!vlp.lights.empty())
+				vlp.lights[0].color = colf;
+
+			// Add a second directional light (fill light from opposite-ish direction)
+			if (vlp.lights.size() < 2)
+			{
+				vlp.lights.push_back(mrpt::viz::TLight::Directional(
+					{0.4f, 0.4f, -0.3f},   // direction: from the other side, slightly above
+					{0.9f, 0.9f, 1.0f},    // slightly cool color
+					0.35f,                  // diffuse (weaker than primary)
+					0.2f                    // specular
+				));
+			}
 
 			vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
 
@@ -1281,6 +1293,8 @@ void World::setLightDirectionFromAzimuthElevation(const float azimuth, const flo
 	auto vv = worldVisual_->getViewport();
 	auto vp = worldPhysical_.getViewport();
 
-	vv->lightParameters().direction = dir;
-	vp->lightParameters().direction = dir;
+	if (!vv->lightParameters().lights.empty())
+		vv->lightParameters().lights[0].direction = dir;
+	if (!vp->lightParameters().lights.empty())
+		vp->lightParameters().lights[0].direction = dir;
 }
