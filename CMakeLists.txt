@@ -307,29 +307,6 @@ if (BUILD_FOR_ROS)
     ${CMAKE_CURRENT_SOURCE_DIR}/mvsim_node_src/include
   )
 
-  # ** TEMPORARY** !!!
-  target_include_directories(mvsim_node PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/modules/simulator/src
-    ${rclcpp_INCLUDE_DIRS}
-    ${geometry_msgs_INCLUDE_DIRS}
-    ${nav_msgs_INCLUDE_DIRS}
-    ${sensor_msgs_INCLUDE_DIRS}
-    ${visualization_msgs_INCLUDE_DIRS}
-    ${tf2_geometry_msgs_INCLUDE_DIRS}
-  )
-
-  ament_target_dependencies(mvsim_node
-    rclcpp
-    geometry_msgs
-    nav_msgs
-    sensor_msgs
-    visualization_msgs
-    tf2_geometry_msgs
-    std_msgs
-    tf2
-    tf2_ros
-  )
-  
   if (catkin_INCLUDE_DIRS)
     # Specify additional locations of header files
     # Your package locations should be listed before other locations
