@@ -1,6 +1,7 @@
 /*+-------------------------------------------------------------------------+
   |                       MultiVehicle simulator (libmvsim)                 |
   |                                                                         |
+  | Copyright (C) 2025-2026 Fernando Cañadas Aránega                        |
   | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
   | Copyright (C) 2017  Borys Tymchenko (Odessa Polytechnic University)     |
   | Distributed under 3-clause BSD License                                  |
@@ -33,8 +34,8 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	// For each wheel:
 	// 1) Compute desired velocity set-point (in m/s)
 	// 2) Run the PI/PID for that wheel independently (in newtons)
-	const double spVelL = sp.vx - 0.5 * sp.omega * distWheels_;
-	const double spVelR = sp.vx + 0.5 * sp.omega * distWheels_;
+	double spVelL = sp.vx - 0.5 * sp.omega * distWheels_;
+	double spVelR = sp.vx + 0.5 * sp.omega * distWheels_;
 
 	// Compute each wheel actual velocity (from an "odometry" estimation of
 	// velocity, not ground-truth!):
@@ -42,13 +43,33 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	const double actVelL = vehVelOdo.vx - 0.5 * vehVelOdo.omega * distWheels_;
 	const double actVelR = vehVelOdo.vx + 0.5 * vehVelOdo.omega * distWheels_;
 
-	// Apply controller:
+	// Configure PID controllers:
 	for (auto& pid : PIDs_)
 	{
 		pid.KP = KP;
 		pid.KI = KI;
 		pid.KD = KD;
+		pid.N = N;
 		pid.max_out = max_torque;
+		pid.enable_antiwindup = enable_antiwindup;
+		pid.enable_reference_filter = enable_reference_filter;
+		pid.reference_filter_tau = reference_filter_tau;
+		pid.reference_filter_order = reference_filter_order;
+	}
+
+	// Optional: filter reference setpoints
+	if (enable_reference_filter)
+	{
+		spVelL = PIDs_[0].filterReference(spVelL, ci.context.dt);
+		spVelR = PIDs_[1].filterReference(spVelR, ci.context.dt);
+	}
+
+	// Compute feedforward term for slope compensation:
+	double ff = 0;
+	if (enable_feedforward)
+	{
+		// nDrivenWheels=2 for differential drive
+		ff = feedforward_gain * veh_.estimateSlopeTorquePerWheel(2);
 	}
 
 	// "-" because \tau<0 makes robot moves forwards.
@@ -73,8 +94,8 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	}
 	else
 	{
-		co.wheel_torque_l = -PIDs_[0].compute(followErrorL, ci.context.dt);
-		co.wheel_torque_r = -PIDs_[1].compute(followErrorR, ci.context.dt);
+		co.wheel_torque_l = -PIDs_[0].compute(followErrorL, ci.context.dt, ff);
+		co.wheel_torque_r = -PIDs_[1].compute(followErrorR, ci.context.dt, ff);
 
 		if (setpointIsZero)
 		{
@@ -100,6 +121,23 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 			}
 		}
 	}
+
+	// Log controller stats via CsvLogger (LOGGER_IDX_WHEELS = 1):
+	if (auto logger = veh_.getLoggerPtr(VehicleBase::LOGGER_IDX_WHEELS))
+	{
+		if (logger->isActive())
+		{
+			logger->updateColumn("pid_sp_vel_l", spVelL);
+			logger->updateColumn("pid_sp_vel_r", spVelR);
+			logger->updateColumn("pid_act_vel_l", actVelL);
+			logger->updateColumn("pid_act_vel_r", actVelR);
+			logger->updateColumn("pid_error_l", followErrorL);
+			logger->updateColumn("pid_error_r", followErrorR);
+			logger->updateColumn("pid_torque_l", co.wheel_torque_l);
+			logger->updateColumn("pid_torque_r", co.wheel_torque_r);
+			logger->updateColumn("pid_feedforward", ff);
+		}
+	}
 }
 
 void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_node<char>& node)
@@ -108,7 +146,14 @@ void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_n
 	params["KP"] = TParamEntry("%lf", &KP);
 	params["KI"] = TParamEntry("%lf", &KI);
 	params["KD"] = TParamEntry("%lf", &KD);
+	params["N"] = TParamEntry("%lf", &N);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
+	params["enable_antiwindup"] = TParamEntry("%bool", &enable_antiwindup);
+	params["enable_feedforward"] = TParamEntry("%bool", &enable_feedforward);
+	params["feedforward_gain"] = TParamEntry("%lf", &feedforward_gain);
+	params["enable_reference_filter"] = TParamEntry("%bool", &enable_reference_filter);
+	params["reference_filter_tau"] = TParamEntry("%lf", &reference_filter_tau);
+	params["reference_filter_order"] = TParamEntry("%d", &reference_filter_order);
 
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &setpoint_.vx);

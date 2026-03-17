@@ -32,6 +32,8 @@ project = 'mvsim'
 author = u'Jose Luis Blanco Claraco'
 copyright = datetime.date.today().strftime("%Y") + u', ' + author
 
+html_logo = 'https://mrpt.github.io/imgs/mvsim_logo-bg-150px.png'
+
 html_theme_options = {
     # 'canonical_url': '',
     'analytics_id': 'UA-21128561-9',  # Provided by Google in your dashboard

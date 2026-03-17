@@ -4,6 +4,7 @@
 	<!-- All walls and ground use textures from the mvsim-models repository -->
 	
 	<simul_timestep>0</simul_timestep>
+	<save_to_rawlog>$env{MVSIM_SAVE_RAWLOG_FILENAME|}</save_to_rawlog>
 	
 	<gui>
 		<ortho>false</ortho>
@@ -20,7 +21,7 @@
 		<light_elevation_deg>75.0</light_elevation_deg>
 	</lights>
 
-	<variable name="WALL_THICKNESS" value="0.2"></variable>
+	<variable name="WALL_THICKNESS" value="$env{MVSIM_WALL_THICKNESS|0.30}"></variable>
 
 	<!-- Ground plane with concrete texture -->
 	<element class="horizontal_plane">
@@ -123,7 +124,7 @@
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-concrete-01.jpg</texture>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
-		<thickness>0.3</thickness>  <!-- Wall thickness in meters -->
+		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
 
 		<!-- Door at 30% position from start -->
 		<door>
@@ -155,7 +156,7 @@
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WoodenPlanks01_1K_BaseColor.png</texture>
 		<texture_size_x>1.5</texture_size_x>
 		<texture_size_y>1.5</texture_size_y>
-		<thickness>0.3</thickness>  <!-- Wall thickness in meters -->
+		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
 		
 		<!-- Left door of double door -->
 		<door position="0.4" width="0.9" z_min="0.0" z_max="2.1" name="double_door_left" />

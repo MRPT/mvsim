@@ -32,8 +32,19 @@ Special variables
 Environment variables
 ========================
 
-Environment variables can be dereferenced with the notation ``${var_name}``.
+Environment variables can be dereferenced with the notation ``$env{var_name}``.
 Using undefined variables is an error.
+
+A default value can be provided using a pipe separator: ``$env{var_name|default_value}``.
+If the variable is undefined and a default is supplied, the default is used instead of raising an error.
+
+Example:
+
+.. code-block:: xml
+
+    <variable name="PAYLOAD" value="$env{PAYLOAD_MASS}"/>
+    <variable name="BLOCK_COUNT" value="$env{BLOCK_COUNT|10}"/>
+
 
 Output of an external program
 ===============================

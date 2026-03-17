@@ -2,6 +2,30 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.0 (2026-03-17)
+------------------
+* docs: add logo to web
+* Modernize README
+* Clean up leftovers from temporary benchmark code
+* Creation of .rawlog files use ZStd if available
+* walls demo world: make all walls same thickness, and expose optional env var
+* Add MVSIM_SAVE_RAWLOG_FILENAME env var to some demo worlds
+* XML parser: env vars now can have a default value
+* docs: fix wrong referenc for {} usage
+* remove leftover dep
+* Merge pull request `#95 <https://github.com/MRPT/mvsim/issues/95>`_ from MRPT/nav-benchmark-greenhouse
+  Nav benchmark greenhouse
+* Merge branch 'develop' into nav-benchmark-greenhouse
+* Add auto_start_recording property to vehicles
+* logistic center demo: add lidar sensors
+* Remove temporary adaptative friction class
+* remove temporary deps
+* Refactoring to use CsvLogger (by Claude Opus)
+* Refactor torque calculation by removing comments and logger
+  Removed logging and comments related to torque calculation.
+* Changes for control benchmark paper
+* Contributors: Fernando Cañadas Aránega, Jose Luis Blanco-Claraco
+
 1.2.0 (2026-02-24)
 ------------------
 * Merge pull request `#94 <https://github.com/MRPT/mvsim/issues/94>`_ from MRPT/feat/tune-pid

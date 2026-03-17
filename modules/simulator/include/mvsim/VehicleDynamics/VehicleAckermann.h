@@ -89,11 +89,19 @@ class DynamicsAckermann : public VehicleBase
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		double KP, KI, KD;	//!< PID controller parameters
+		double N = 0;  //!< Derivative filter coefficient
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 		/// setpoint magnitude below which it is treated as zero [m/s]
 		double zero_threshold = 0.001;
 		/// velocity magnitude below which vehicle is considered stopped [m/s]
 		double stop_threshold = 0.05;
+
+		bool enable_antiwindup = false;
+		bool enable_feedforward = false;
+		double feedforward_gain = 1.0;
+		bool enable_reference_filter = false;
+		double reference_filter_tau = 0.1;
+		int reference_filter_order = 1;
 
 		// See base docs.
 		virtual bool setTwistCommand(const mrpt::math::TTwist2D& t) override

@@ -291,7 +291,12 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 
 			MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
 
+#if MRPT_VERSION >= 0x020f07
+			rawlog_io_per_veh_[v.first] =
+				std::make_shared<mrpt::io::CCompressedOutputStream>(fileName);
+#else
 			rawlog_io_per_veh_[v.first] = std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
+#endif
 		}
 	}
 
