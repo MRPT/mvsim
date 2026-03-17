@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.3.0 (2026-03-17)
+------------------
 * docs: add logo to web
 * Modernize README
 * Clean up leftovers from temporary benchmark code
