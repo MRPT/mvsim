@@ -26,6 +26,7 @@
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/topography/data_types.h>
+#include <mrpt/viz/TLightParameters.h>
 #include <mvsim/Block.h>
 #include <mvsim/HumanActor.h>
 #include <mvsim/Joystick.h>
@@ -626,10 +627,20 @@ class World : public mrpt::system::COutputLogger
 		float shadow_bias_normal = 1e-4;
 
 		mrpt::img::TColor light_color = {0xff, 0xff, 0xff, 0xff};
-		float light_ambient = 0.5f;
+		float light_ambient = 0.4f;
+		float light_diffuse = 0.8f;
+		float light_specular = 0.6f;
+
+		/// Hemisphere ambient sky color (surfaces facing up)
+		mrpt::img::TColor ambient_sky_color = {0xe0, 0xe8, 0xff, 0xff};
+		/// Hemisphere ambient ground color (surfaces facing down)
+		mrpt::img::TColor ambient_ground_color = {0x40, 0x3a, 0x30, 0xff};
 
 		float eye_distance_to_shadow_map_extension = 2.0f;	//!< [m/m]
 		float minimum_shadow_map_extension_ratio = 0.005f;	//!< [0,1]
+
+		/** Additional light sources (point and spot) parsed from XML */
+		std::vector<mrpt::viz::TLight> extra_lights;
 
 		const TParameterDefinitions params = {
 			{"enable_shadows", {"%bool", &enable_shadows}},
@@ -639,10 +650,14 @@ class World : public mrpt::system::COutputLogger
 			{"light_clip_plane_min", {"%f", &light_clip_plane_min}},
 			{"light_clip_plane_max", {"%f", &light_clip_plane_max}},
 			{"light_color", {"%color", &light_color}},
+			{"light_diffuse", {"%f", &light_diffuse}},
+			{"light_specular", {"%f", &light_specular}},
 			{"shadow_bias", {"%f", &shadow_bias}},
 			{"shadow_bias_cam2frag", {"%f", &shadow_bias_cam2frag}},
 			{"shadow_bias_normal", {"%f", &shadow_bias_normal}},
 			{"light_ambient", {"%f", &light_ambient}},
+			{"ambient_sky_color", {"%color", &ambient_sky_color}},
+			{"ambient_ground_color", {"%color", &ambient_ground_color}},
 			{"eye_distance_to_shadow_map_extension", {"%f", &eye_distance_to_shadow_map_extension}},
 			{"minimum_shadow_map_extension_ratio", {"%f", &minimum_shadow_map_extension_ratio}},
 		};

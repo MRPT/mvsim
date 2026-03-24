@@ -35,10 +35,106 @@ void World::TGUI_Options::parse_from(
 	parse_xmlnode_children_as_param(node, params, {}, "[World::TGUI_Options]", &logger);
 }
 
+// Helper: read an XML child's text as float, return default if missing.
+static float xmlChildFloat(const rapidxml::xml_node<char>& parent, const char* name, float def)
+{
+	auto* n = parent.first_node(name);
+	return n ? std::stof(std::string(n->value(), n->value_size())) : def;
+}
+
+// Helper: read an XML child's text as "x y z" into TPoint3Df/TVector3Df.
+static mrpt::math::TPoint3Df xmlChildPoint3f(
+	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::math::TPoint3Df& def)
+{
+	auto* n = parent.first_node(name);
+	if (!n) return def;
+	float x = 0, y = 0, z = 0;
+	if (3 != std::sscanf(n->value(), "%f %f %f", &x, &y, &z))
+		throw std::runtime_error(
+			mrpt::format("[World::LightOptions] Error parsing '<%s>': expected 'X Y Z'", name));
+	return {x, y, z};
+}
+
+// Helper: read an XML child's text as #RRGGBB[AA] into TColorf.
+static mrpt::img::TColorf xmlChildColorf(
+	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::img::TColorf& def)
+{
+	auto* n = parent.first_node(name);
+	if (!n) return def;
+	std::string str(n->value(), n->value_size());
+	if (str.size() < 2 || str[0] != '#')
+		throw std::runtime_error(mrpt::format(
+			"[World::LightOptions] Error parsing '<%s>': expected "
+			"'#RRGGBB[AA]'",
+			name));
+	unsigned int r, g, b, a = 0xff;
+	int ret = std::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
+	if (ret != 3 && ret != 4)
+		throw std::runtime_error(mrpt::format(
+			"[World::LightOptions] Error parsing '<%s>': expected "
+			"'#RRGGBB[AA]'",
+			name));
+	return mrpt::img::TColorf(mrpt::img::TColor(r, g, b, a));
+}
+
 void World::LightOptions::parse_from(
 	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
-	parse_xmlnode_children_as_param(node, params, {}, "[World::LightOptions]", &logger);
+	// Parse scalar parameters, skipping point_light/spot_light child nodes:
+	for (auto* child = node.first_node(); child; child = child->next_sibling(nullptr))
+	{
+		const std::string name(child->name(), child->name_size());
+		if (name == "point_light" || name == "spot_light") continue;
+
+		if (!parse_xmlnode_as_param(*child, params, {}, "[World::LightOptions]"))
+		{
+			logger.logFmt(
+				mrpt::system::LVL_WARN, "Unrecognized tag '<%s>' in [World::LightOptions]",
+				name.c_str());
+		}
+	}
+
+	// Parse <point_light> children:
+	for (auto* n = node.first_node("point_light"); n; n = n->next_sibling("point_light"))
+	{
+		const auto pos = xmlChildPoint3f(*n, "position", {0, 0, 3});
+		const auto color = xmlChildColorf(*n, "color", {1.0f, 1.0f, 1.0f});
+		const float diffuse = xmlChildFloat(*n, "diffuse", 0.8f);
+		const float specular = xmlChildFloat(*n, "specular", 0.5f);
+		const float att_const = xmlChildFloat(*n, "attenuation_constant", 1.0f);
+		const float att_lin = xmlChildFloat(*n, "attenuation_linear", 0.09f);
+		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
+
+		extra_lights.push_back(mrpt::viz::TLight::PointLight(
+			pos, color, diffuse, specular, att_const, att_lin, att_quad));
+
+		logger.logFmt(
+			mrpt::system::LVL_INFO, "[LightOptions] Parsed point_light at (%.1f, %.1f, %.1f)",
+			pos.x, pos.y, pos.z);
+	}
+
+	// Parse <spot_light> children:
+	for (auto* n = node.first_node("spot_light"); n; n = n->next_sibling("spot_light"))
+	{
+		const auto pos = xmlChildPoint3f(*n, "position", {0, 0, 3});
+		const auto dir = xmlChildPoint3f(*n, "direction", {0, 0, -1});
+		const auto color = xmlChildColorf(*n, "color", {1.0f, 1.0f, 1.0f});
+		const float diffuse = xmlChildFloat(*n, "diffuse", 0.8f);
+		const float specular = xmlChildFloat(*n, "specular", 0.5f);
+		const float inner_deg = xmlChildFloat(*n, "inner_cutoff_deg", 12.5f);
+		const float outer_deg = xmlChildFloat(*n, "outer_cutoff_deg", 17.5f);
+		const float att_const = xmlChildFloat(*n, "attenuation_constant", 1.0f);
+		const float att_lin = xmlChildFloat(*n, "attenuation_linear", 0.09f);
+		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
+
+		extra_lights.push_back(mrpt::viz::TLight::SpotLight(
+			pos, dir, inner_deg, outer_deg, color, diffuse, specular, att_const, att_lin,
+			att_quad));
+
+		logger.logFmt(
+			mrpt::system::LVL_INFO, "[LightOptions] Parsed spot_light at (%.1f, %.1f, %.1f)", pos.x,
+			pos.y, pos.z);
+	}
 }
 
 //!< Return true if the GUI window is open, after a previous call to
@@ -661,24 +757,25 @@ void World::internal_GUI_thread()
 			const int sms = lo.shadow_map_size;
 			v->enableShadowCasting(lo.enable_shadows, sms, sms);
 
-			// light color:
+			// light color and intensities:
 			const auto colf = mrpt::img::TColorf(lo.light_color);
 
 			auto& vlp = v->lightParameters();
 
 			if (!vlp.lights.empty())
-				vlp.lights[0].color = colf;
-
-			// Add a second directional light (fill light from opposite-ish direction)
-			if (vlp.lights.size() < 2)
 			{
-				vlp.lights.push_back(mrpt::viz::TLight::Directional(
-					{0.4f, 0.4f, -0.3f},   // direction: from the other side, slightly above
-					{0.9f, 0.9f, 1.0f},    // slightly cool color
-					0.35f,                  // diffuse (weaker than primary)
-					0.2f                    // specular
-				));
+				vlp.lights[0].color = colf;
+				vlp.lights[0].diffuse = lo.light_diffuse;
+				vlp.lights[0].specular = lo.light_specular;
 			}
+
+			// Hemisphere ambient lighting (replaces fill light):
+			vlp.ambient = lo.light_ambient;
+			vlp.ambientSkyColor = mrpt::img::TColorf(lo.ambient_sky_color);
+			vlp.ambientGroundColor = mrpt::img::TColorf(lo.ambient_ground_color);
+
+			// Add extra lights (point and spot) from XML:
+			for (const auto& el : lo.extra_lights) vlp.lights.push_back(el);
 
 			vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
 

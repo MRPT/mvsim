@@ -75,7 +75,12 @@ void World::internal_initialize()
 	ASSERT_(!initialized_);
 	ASSERT_(worldVisual_);
 
-	worldVisual_->getViewport()->lightParameters().ambient = lightOptions_.light_ambient;
+	{
+		auto& vlp = worldVisual_->getViewport()->lightParameters();
+		vlp.ambient = lightOptions_.light_ambient;
+		vlp.ambientSkyColor = mrpt::img::TColorf(lightOptions_.ambient_sky_color);
+		vlp.ambientGroundColor = mrpt::img::TColorf(lightOptions_.ambient_ground_color);
+	}
 
 	// Physical world light = visual world lights:
 	worldPhysical_.getViewport()->lightParameters() =
