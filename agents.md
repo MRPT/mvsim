@@ -204,6 +204,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 
 - **clang-format**: Google base style, Allman brace wrapping, 4-space indent width, **tabs for indentation**, column limit 100, `SortIncludes: true`. Run via `formatter.sh` or `.circleci/clang_format_codebase.sh`.
 - **clang-tidy**: `bugprone-*`, selected `cppcoreguidelines-*`, `readability-braces-around-statements`, `readability-else-after-return`. Configured in `.clang-tidy`.
+- **Always use braces** for all control-flow statements (`if`, `else`, `for`, `while`, `do`), even single-statement bodies. No brace-less single-line statements. This is enforced by `readability-braces-around-statements` in `.clang-tidy`.
 - CI enforces clang-format via the `check-clang-format` GitHub Actions workflow.
 - No trailing comments alignment (disabled in `.clang-format`).
 - All new C++ code must pass both clang-format and clang-tidy without warnings.
