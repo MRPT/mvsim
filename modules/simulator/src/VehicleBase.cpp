@@ -868,7 +868,20 @@ void VehicleBase::internalGuiUpdate(
 		{
 			glWheelsViz_[i] = mrpt::opengl::CSetOfObjects::Create();
 			this->getWheelInfo(i).getAs3DObject(*glWheelsViz_[i], false);
-			glChassisViz_->insert(glWheelsViz_[i]);
+			// When a custom visual exists the wheel viz objects are parented
+			// under glCustomVisual_ instead of glChassisViz_.  This way the
+			// single glCustomVisual_->setPose() call in VisualObject::guiUpdate
+			// moves chassis body and all wheels atomically, eliminating the
+			// GUI-thread race that caused wheels to visually jump ahead/behind
+			// the chassis at high speed.
+			if (childrenOnly)
+			{
+				glCustomVisual_->insert(glWheelsViz_[i]);
+			}
+			else
+			{
+				glChassisViz_->insert(glWheelsViz_[i]);
+			}
 
 			glWheelsPhysical_[i] = mrpt::opengl::CSetOfObjects::Create();
 			this->getWheelInfo(i).getAs3DObject(*glWheelsPhysical_[i], true);
@@ -886,7 +899,13 @@ void VehicleBase::internalGuiUpdate(
 			glChassisPhysical_->insert(gl_poly);
 		}
 
-		viz->get().insert(glChassisViz_);
+		// Only add glChassisViz_ to the scene when it actually has content
+		// (i.e. no custom visual).  When childrenOnly=true, glChassisViz_
+		// would be an empty, unused container.
+		if (!childrenOnly)
+		{
+			viz->get().insert(glChassisViz_);
+		}
 		physical->get().insert(glChassisPhysical_);
 
 		glInit_ = true;
@@ -902,7 +921,13 @@ void VehicleBase::internalGuiUpdate(
 
 	if (glInit_)
 	{
-		glChassisViz_->setPose(pp);
+		// When a custom visual exists, glCustomVisual_ is already updated by
+		// VisualObject::guiUpdate() and the wheels are children of it, so no
+		// separate chassis viz pose update is needed.
+		if (!childrenOnly)
+		{
+			glChassisViz_->setPose(pp);
+		}
 		glChassisPhysical_->setPose(pp);
 		for (size_t i = 0; i < nWs; i++)
 		{

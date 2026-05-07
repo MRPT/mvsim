@@ -69,6 +69,9 @@ void DynamicsAckermann::ControllerFrontSteerPID::load_config(const rapidxml::xml
 	params["KD"] = TParamEntry("%lf", &KD);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
 
+	params["joyMaxLinSpeed"] = TParamEntry("%lf", &joyMaxLinSpeed);
+	params["joyMaxSteerAng"] = TParamEntry("%lf_deg", &joyMaxSteerAng);
+
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
 	params["STEER_ANG"] = TParamEntry("%lf_deg", &this->setpoint_steer_ang);

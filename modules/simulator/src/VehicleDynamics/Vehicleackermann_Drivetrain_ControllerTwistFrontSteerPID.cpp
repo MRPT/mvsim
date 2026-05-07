@@ -122,6 +122,9 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::load_config(
 	params["reference_filter_tau"] = TParamEntry("%lf", &reference_filter_tau);
 	params["reference_filter_order"] = TParamEntry("%d", &reference_filter_order);
 
+	params["joyMaxLinSpeed"] = TParamEntry("%lf", &joyMaxLinSpeed);
+	params["joyMaxAngSpeed"] = TParamEntry("%lf", &joyMaxAngSpeed);
+
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &this->setpoint_lin_speed);
 	params["W"] = TParamEntry("%lf_deg", &this->setpoint_ang_speed);

@@ -181,6 +181,7 @@ class DynamicsAckermann : public VehicleBase
 
 		virtual void on_post_step(const TSimulContext& context) override;
 
+		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		// Accept Twist commands from ROS / mvsim-server

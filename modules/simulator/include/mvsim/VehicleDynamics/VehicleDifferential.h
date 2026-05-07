@@ -189,6 +189,7 @@ class DynamicsDifferential : public VehicleBase
 			DynamicsDifferential::TControllerOutput& co) override;
 		void on_post_step(const TSimulContext& context) override;
 
+		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		// See base docs.

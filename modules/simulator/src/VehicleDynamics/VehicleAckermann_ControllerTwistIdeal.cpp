@@ -9,6 +9,8 @@
 
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
 
+#include "xml_utils.h"
+
 using namespace mvsim;
 
 DynamicsAckermann::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsAckermann& veh)
@@ -65,6 +67,15 @@ void DynamicsAckermann::ControllerTwistIdeal::on_post_step(
 	// setpoint. Box2D integration will propagate this to the pose.
 	const auto sp = setpoint();
 	veh_.setRefVelocityLocal(sp);
+}
+
+void DynamicsAckermann::ControllerTwistIdeal::load_config(const rapidxml::xml_node<char>& node)
+{
+	TParameterDefinitions params;
+	params["joyMaxLinSpeed"] = TParamEntry("%lf", &joyMaxLinSpeed);
+	params["joyMaxAngSpeed"] = TParamEntry("%lf", &joyMaxAngSpeed);
+
+	parse_xmlnode_children_as_param(node, params);
 }
 
 void DynamicsAckermann::ControllerTwistIdeal::teleop_interface(

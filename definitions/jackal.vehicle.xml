@@ -34,6 +34,9 @@
           <KI>10</KI>
           <KD>0.0000</KD>
           <max_torque>100</max_torque>
+          <!-- Joystick teleop maximum speeds (overridable via include variables) -->
+          <joyMaxLinSpeed>${joyMaxLinSpeed|1.0}</joyMaxLinSpeed>
+          <joyMaxAngSpeed>${joyMaxAngSpeed|0.5}</joyMaxAngSpeed>
         </controller>
     </dynamics>
 
