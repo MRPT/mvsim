@@ -61,6 +61,12 @@ void register_all_veh_dynamics()
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	: VisualObject(parent), Simulable(parent), fixture_wheels_(nWheels, nullptr)
 {
+	// VehicleBase manages its own physical-scene representation via
+	// glChassisPhysical_, so the custom visual (which carries wheel viz
+	// objects with XYZ-corner markers) must NOT be inserted into the physical
+	// scene, otherwise camera/lidar sensors would see the XYZ corners.
+	insertCustomVizIntoPhysical_ = false;
+
 	// Create wheels:
 	for (size_t i = 0; i < nWheels; i++)
 	{
