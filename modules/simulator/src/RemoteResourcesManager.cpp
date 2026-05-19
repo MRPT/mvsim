@@ -12,6 +12,10 @@
 
 #include <cstdlib>
 #include <cstring>
+#ifndef _WIN32
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 using namespace mvsim;
 
@@ -102,7 +106,10 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 	MRPT_LOG_ONCE_INFO(
 		"Using local storage directory: '"s + localDir + "' (Usage: "s + cacheUsageStats + ")"s);
 
-	const auto [isZipPkg, zipOrFileURI, internalURI] = zip_uri_split(uri);
+	const auto splitResult = zip_uri_split(uri);
+	const bool isZipPkg = std::get<0>(splitResult);
+	const std::string zipOrFileURI = std::get<1>(splitResult);
+	const std::string internalURI = std::get<2>(splitResult);
 
 	MRPT_LOG_DEBUG_STREAM(
 		"Split URI: isZipPkg=" << isZipPkg << " zipOrFileURI=" << zipOrFileURI
@@ -112,28 +119,70 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 						  mrpt::system::extractFileExtension(zipOrFileURI);
 	const auto localFil = localDir + fileName;
 
+	auto doDownload = [&]()
+	{
+		MRPT_LOG_INFO_STREAM("Downloading remote resources from: '" << uri << "'");
+
+		int ret = -1;
+#ifndef _WIN32
+		// Use execvp so the URI is passed as a literal argument — no shell, no injection risk.
+		const pid_t pid = ::fork();
+		if (pid == 0)
+		{
+			::execlp(
+				"wget", "wget", "-q", "-O", localFil.c_str(), zipOrFileURI.c_str(),
+				static_cast<char*>(nullptr));
+			::_exit(127);
+		}
+		int status = 0;
+		::waitpid(pid, &status, 0);
+		ret = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+#else
+		const auto cmd =
+			mrpt::format("wget -q -O \"%s\" \"%s\"", localFil.c_str(), zipOrFileURI.c_str());
+		ret = ::system(cmd.c_str());
+#endif
+		if (ret != 0)
+		{
+			THROW_EXCEPTION_FMT(
+				"[mvsim] Error (code=%i) running wget to acquire remote resource: %s", ret,
+				zipOrFileURI.c_str());
+		}
+	};
+
 	// Download if it does not exist already from a past download:
 	if (!mrpt::system::fileExists(localFil))
 	{
-		const auto cmd =
-			mrpt::format("wget -q -O \"%s\" %s", localFil.c_str(), zipOrFileURI.c_str());
-
-		MRPT_LOG_INFO_STREAM("Downloading remote resources from: '" << uri << "'");
-
-		if (int ret = ::system(cmd.c_str()); ret != 0)
-		{
-			THROW_EXCEPTION_FMT(
-				"[mvsim] Error (code=%i)  executing the following command "
-				"trying to acquire a remote resource:\n%s",
-				ret, cmd.c_str());
-		}
+		doDownload();
 	}
 
 	// Is it a simple model file, or a zip?
 	if (isZipPkg)
 	{
-		// process the ZIP package:
-		return handle_local_zip_package(localFil, internalURI);
+		// process the ZIP package, retrying once on failure (handles corrupt/partial downloads):
+		for (int attempt = 0; attempt < 2; attempt++)
+		{
+			try
+			{
+				return handle_local_zip_package(localFil, internalURI);
+			}
+			catch (const std::exception& e)
+			{
+				if (attempt == 0)
+				{
+					MRPT_LOG_WARN_STREAM(
+						"Failed to use cached zip (possibly corrupted), re-downloading '"
+						<< zipOrFileURI << "': " << e.what());
+					// handle_local_zip_package already deleted the corrupt zip and output dir
+					doDownload();
+				}
+				else
+				{
+					throw;
+				}
+			}
+		}
+		THROW_EXCEPTION("unreachable");
 	}
 	else
 	{
@@ -164,6 +213,10 @@ std::string RemoteResourcesManager::handle_local_zip_package(
 
 		if (int ret = ::system(cmd.c_str()); ret != 0)
 		{
+			// Clean up partial output dir and corrupt zip so the caller can retry the download
+			mrpt::system::deleteFilesInDirectory(zipOutDir, /*deleteDirectoryAsWell=*/true);
+			mrpt::system::deleteFile(localZipFil);
+
 			THROW_EXCEPTION_FMT(
 				"[mvsim] Error (code=%i) executing the following command "
 				"trying to unzip a remote resource:\n%s",
