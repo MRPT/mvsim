@@ -83,8 +83,8 @@ class VisualObject
 	std::shared_ptr<mrpt::opengl::CSetOfObjects> glCollision_;
 	int32_t glCustomVisualId_ = -1;
 
-	const bool insertCustomVizIntoViz_ = true;
-	const bool insertCustomVizIntoPhysical_ = true;
+	bool insertCustomVizIntoViz_ = true;
+	bool insertCustomVizIntoPhysical_ = true;
 
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
