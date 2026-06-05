@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <any>
+#include <optional>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
