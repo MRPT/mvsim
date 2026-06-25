@@ -17,11 +17,18 @@
 #include <unistd.h>
 #endif
 
+#include "xml_utils.h"
+
 using namespace mvsim;
 
 RemoteResourcesManager::RemoteResourcesManager()
 	: mrpt::system::COutputLogger("mvsim::RemoteResourcesManager")
 {
+}
+
+void RemoteResourcesManager::parse_from(const rapidxml::xml_node<char>& node)
+{
+	parse_xmlnode_attribs(node, params_, {}, "[RemoteResourcesManager]");
 }
 
 bool RemoteResourcesManager::is_remote(const std::string& url)
@@ -123,25 +130,57 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 	{
 		MRPT_LOG_INFO_STREAM("Downloading remote resources from: '" << uri << "'");
 
+		// Retry the wget call itself, regardless of file type, in case of transient
+		// network errors leaving behind a truncated/partial file. This allows for
+		// an initial attempt plus two retries:
+		constexpr int maxDownloadAttempts = 3;
 		int ret = -1;
-#ifndef _WIN32
-		// Use execvp so the URI is passed as a literal argument — no shell, no injection risk.
-		const pid_t pid = ::fork();
-		if (pid == 0)
+		for (int attempt = 0; attempt < maxDownloadAttempts; attempt++)
 		{
-			::execlp(
-				"wget", "wget", "-q", "-O", localFil.c_str(), zipOrFileURI.c_str(),
-				static_cast<char*>(nullptr));
-			::_exit(127);
-		}
-		int status = 0;
-		::waitpid(pid, &status, 0);
-		ret = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+#ifndef _WIN32
+			// Use execvp so the URI is passed as a literal argument — no shell, no injection risk.
+			const pid_t pid = ::fork();
+			if (pid < 0)
+			{
+				ret = -1;
+			}
+			else if (pid == 0)
+			{
+				if (insecure_skip_tls_verify)
+				{
+					::execlp(
+						"wget", "wget", "-q", "--no-check-certificate", "-O", localFil.c_str(),
+						zipOrFileURI.c_str(), static_cast<char*>(nullptr));
+				}
+				else
+				{
+					::execlp(
+						"wget", "wget", "-q", "-O", localFil.c_str(), zipOrFileURI.c_str(),
+						static_cast<char*>(nullptr));
+				}
+				::_exit(127);
+			}
+			else
+			{
+				int status = 0;
+				::waitpid(pid, &status, 0);
+				ret = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+			}
 #else
-		const auto cmd =
-			mrpt::format("wget -q -O \"%s\" \"%s\"", localFil.c_str(), zipOrFileURI.c_str());
-		ret = ::system(cmd.c_str());
+			const auto cmd = mrpt::format(
+				"wget -q %s-O \"%s\" \"%s\"",
+				insecure_skip_tls_verify ? "--no-check-certificate " : "", localFil.c_str(),
+				zipOrFileURI.c_str());
+			ret = ::system(cmd.c_str());
 #endif
+			if (ret == 0) break;
+
+			MRPT_LOG_WARN_STREAM(
+				"Attempt " << (attempt + 1) << "/" << maxDownloadAttempts << " failed (code=" << ret
+						   << ") running wget to acquire remote "
+							  "resource: "
+						   << zipOrFileURI);
+		}
 		if (ret != 0)
 		{
 			THROW_EXCEPTION_FMT(
@@ -150,8 +189,9 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 		}
 	};
 
-	// Download if it does not exist already from a past download:
-	if (!mrpt::system::fileExists(localFil))
+	// Download if it does not exist already from a past download, or if a previous
+	// download was interrupted leaving behind a truncated (zero-size) cached file:
+	if (!mrpt::system::fileExists(localFil) || mrpt::system::getFileSize(localFil) == 0)
 	{
 		doDownload();
 	}

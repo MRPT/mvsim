@@ -6,6 +6,8 @@
 
 	<!-- <save_to_rawlog>my_dataset.rawlog</save_to_rawlog> --> <!-- If present, all sensor observations are saved to a rawlog file -->
 
+	<!-- <remote_resources insecure_skip_tls_verify="true"/> -->
+
 	<!-- Define georeferenced coordinates to the world so GNSS/GPS sensors can be properly simulated -->
 	<georeference>
 		<latitude>36.863636</latitude>
