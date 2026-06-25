@@ -946,6 +946,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_joint(const XmlParserContext& ctx);	//!< `<joint>`
 	void parse_tag_actor(const XmlParserContext& ctx);
 	void parse_tag_actor_class(const XmlParserContext& ctx);
+	void parse_tag_remote_resources(const XmlParserContext& ctx);  //!< `<remote_resources>`
 
 	// ======== end of XML parser tags ========
 

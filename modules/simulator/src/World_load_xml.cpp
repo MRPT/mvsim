@@ -136,6 +136,8 @@ void World::register_standard_xml_tag_parsers()
 
 	register_tag_parser("actor", &World::parse_tag_actor);
 	register_tag_parser("actor:class", &World::parse_tag_actor_class);
+
+	register_tag_parser("remote_resources", &World::parse_tag_remote_resources);
 }
 
 void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
@@ -250,6 +252,11 @@ void World::parse_tag_gui(const XmlParserContext& ctx)
 void World::parse_tag_lights(const XmlParserContext& ctx)
 {
 	lightOptions_.parse_from(*ctx.node, *this);
+}
+
+void World::parse_tag_remote_resources(const XmlParserContext& ctx)
+{
+	remoteResources_.parse_from(*ctx.node);
 }
 
 void World::parse_tag_georeference(const XmlParserContext& ctx)
