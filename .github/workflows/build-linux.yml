@@ -57,6 +57,18 @@ jobs:
           git submodule sync
           git submodule update --init --recursive
 
+      - name: Install ccache
+        run: sudo apt-get install -y ccache
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ matrix.name }}-${{ matrix.build_type }}-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.name }}-${{ matrix.build_type }}-${{ github.ref }}-
+            ccache-${{ matrix.name }}-${{ matrix.build_type }}-
+
       - name: Install Dependencies
         run: |
           # See bug/issue: https://github.com/orgs/community/discussions/47863
