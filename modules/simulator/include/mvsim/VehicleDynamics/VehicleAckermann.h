@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/img/TColor.h>
 #include <mvsim/PID_Controller.h>
 #include <mvsim/VehicleBase.h>

@@ -33,8 +33,8 @@ const std::map<std::string, cmd_t> cliTopicCommands = {
 
 int commandTopic()
 {
-	const auto& lstCmds = cli->argCmd.getValue();
-	if (cli->argHelp.isSet()) return printCommandsTopic(false);
+	const auto& lstCmds = cli->argCmd;
+	if (cli->argHelp) return printCommandsTopic(false);
 	if (lstCmds.size() != 2 && lstCmds.size() != 3) return printCommandsTopic(true);
 
 	// Take second unlabeled argument:
@@ -55,7 +55,7 @@ int topicList()
 	mvsim::Client client;
 
 	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-		cli->argVerbosity.getValue()));
+		cli->argVerbosity));
 
 	std::cout << "# Connecting to server...\n";
 	client.connect();
@@ -67,7 +67,7 @@ int topicList()
 
 	for (const auto& n : lstTopics)
 	{
-		if (cli->argDetails.isSet())
+		if (cli->argDetails)
 		{
 			std::cout << "- name: \"" << n.name << "\"\n"
 					  << "  type: \"" << n.type << "\"\n"
@@ -139,9 +139,9 @@ int topicEcho()
 	mvsim::Client client;
 
 	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-		cli->argVerbosity.getValue()));
+		cli->argVerbosity));
 
-	const auto& lstCmds = cli->argCmd.getValue();
+	const auto& lstCmds = cli->argCmd;
 	if (lstCmds.size() != 3) return printCommandsTopic(true);
 
 	const auto& topicName = lstCmds.at(2);
@@ -168,9 +168,9 @@ int topicHz()
 	mvsim::Client client;
 
 	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-		cli->argVerbosity.getValue()));
+		cli->argVerbosity));
 
-	const auto& lstCmds = cli->argCmd.getValue();
+	const auto& lstCmds = cli->argCmd;
 	if (lstCmds.size() != 3) return printCommandsTopic(true);
 
 	const auto& topicName = lstCmds.at(2);

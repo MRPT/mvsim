@@ -14,9 +14,9 @@
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_world.h>
 #include <mrpt/img/TColor.h>
-#include <mrpt/opengl/CSetOfLines.h>
-#include <mrpt/opengl/CSetOfObjects.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/viz/CSetOfLines.h>
+#include <mrpt/viz/CSetOfObjects.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/ControllerBase.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
@@ -40,7 +40,7 @@ namespace mvsim
  *
  *  \ingroup virtual_interfaces_module
  */
-class VehicleBase : public VisualObject, public Simulable
+class VehicleBase : public CVisualObject, public Simulable
 {
    public:
 	using Ptr = std::shared_ptr<VehicleBase>;
@@ -186,8 +186,8 @@ class VehicleBase : public VisualObject, public Simulable
 	virtual void initLoggers();
 	virtual void writeLogStrings();
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
    protected:
 	// Protected ctor for class factory
@@ -204,7 +204,7 @@ class VehicleBase : public VisualObject, public Simulable
 	{
 	}
 
-	VisualObject* meAsVisualObject() override { return this; }
+	CVisualObject* meAsCVisualObject() override { return this; }
 
 	/** When true, friction forces are computed (for wheel spin updates and
 	 *  logging) but NOT applied to the Box2D chassis body. This is set by
@@ -285,15 +285,15 @@ class VehicleBase : public VisualObject, public Simulable
    private:
 	// Called from internalGuiUpdate()
 	void internal_internalGuiUpdate_sensors(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical);
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical);
 	// Called from internalGuiUpdate()
-	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
+	void internal_internalGuiUpdate_forces(mrpt::viz::Scene& scene);
 
-	mrpt::opengl::CSetOfObjects::Ptr glChassisViz_, glChassisPhysical_;
-	std::vector<mrpt::opengl::CSetOfObjects::Ptr> glWheelsViz_, glWheelsPhysical_;
-	mrpt::opengl::CSetOfLines::Ptr glForces_;
-	mrpt::opengl::CSetOfLines::Ptr glMotorTorques_;
+	mrpt::viz::CSetOfObjects::Ptr glChassisViz_, glChassisPhysical_;
+	std::vector<mrpt::viz::CSetOfObjects::Ptr> glWheelsViz_, glWheelsPhysical_;
+	mrpt::viz::CSetOfLines::Ptr glForces_;
+	mrpt::viz::CSetOfLines::Ptr glMotorTorques_;
 	std::atomic_bool glInit_ = false;
 
 	std::vector<mrpt::math::TSegment3D> forceSegmentsForRendering_;

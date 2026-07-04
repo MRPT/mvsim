@@ -150,11 +150,11 @@ target_link_libraries(${PROJECT_NAME}
 PRIVATE
 	${DEP_MVSIM_MSGS_TRG}
 PUBLIC
-	mrpt::obs
-	mrpt::opengl
-	mrpt::maps
-	mrpt::gui
-	mrpt::topography
+	mrpt::mrpt_obs
+	mrpt::mrpt_opengl
+	mrpt::mrpt_maps
+	mrpt::mrpt_gui
+	mrpt::mrpt_topography
 	${DEP_MVSIM_COMMS_TRG}
 	${BOX2D_LIBRARIES}
 )

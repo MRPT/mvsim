@@ -1441,8 +1441,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	lck.unlock();
 
 	// Send TF:
-	mrpt::poses::CPose3D sensorPose;
-	obs.getSensorPose(sensorPose);
+	mrpt::poses::CPose3D sensorPose = obs.getSensorPose();
 	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 	Msg_TransformStamped tfStmp;

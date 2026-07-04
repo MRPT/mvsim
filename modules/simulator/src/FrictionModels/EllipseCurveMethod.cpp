@@ -10,9 +10,9 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
-#include <mrpt/opengl/CPolyhedron.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/viz/CPolyhedron.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
 #include <mvsim/FrictionModels/EllipseCurveMethod.h>
 #include <mvsim/FrictionModels/FrictionBase.h>

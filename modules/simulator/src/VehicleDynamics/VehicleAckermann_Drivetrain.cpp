@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include <mvsim/World.h>
 

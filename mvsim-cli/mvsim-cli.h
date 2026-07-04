@@ -9,55 +9,59 @@
 
 #pragma once
 
-#include <mrpt/3rdparty/tclap/CmdLine.h>
+#include <CLI/CLI.hpp>
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 #include <mvsim/Comms/ports.h>
 #endif
 
 #include <functional>
 #include <memory>
+#include <string>
+#include <vector>
 
-// We need all TCLAP objects to be initialized in order for all translation
-// units, that is why we use this holder structure:
 struct cli_flags
 {
-	TCLAP::CmdLine cmd{"mvsim", ' ', "version", false /* no --help */};
+	CLI::App cmd{"mvsim", "mvsim"};
 
-	TCLAP::UnlabeledMultiArg<std::string> argCmd{
-		"command", "Command to run. Run 'mvsim help' to list commands.", false, "", cmd};
+	std::vector<std::string> argCmd;
+	std::string argVerbosity = "INFO";
+	bool argFullProfiler = false;
+	bool argHeadless = false;
+	bool argDetails = false;
+	bool argVersion = false;
+	bool argHelp = false;
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
+	int argPort = mvsim::MVSIM_PORTNO_MAIN_REP;
+#endif
+	double argRealTimeFactor = 1.0;
 
-	TCLAP::ValueArg<std::string> argVerbosity{
-		"v", "verbose", "Verbosity level", false, "INFO", "ERROR|WARN|INFO|DEBUG", cmd};
+	cli_flags()
+	{
+		cmd.set_help_flag();  // disable built-in --help/-h
+		cmd.allow_extras(true);
 
-	TCLAP::SwitchArg argFullProfiler{
-		"", "full-profiler",
-		"Enable saving *all* timing data, dumping it to a file at the end of "
-		"the "
-		"program.",
-		cmd};
+		cmd.add_option("commands", argCmd, "Command to run. Run 'mvsim help' to list commands.");
 
-	TCLAP::SwitchArg argHeadless{"", "headless", "Runs the simulator without any GUI window.", cmd};
+		cmd.add_option("-v,--verbose", argVerbosity, "Verbosity level");
 
-	TCLAP::SwitchArg argDetails{"", "details", "Shows details in the specified subcommand", cmd};
+		cmd.add_flag("--full-profiler", argFullProfiler,
+			"Enable saving *all* timing data, dumping it to a file at the end of the program.");
 
-	TCLAP::SwitchArg argVersion{"", "version", "Shows program version and exits", cmd};
+		cmd.add_flag("--headless", argHeadless, "Runs the simulator without any GUI window.");
 
-	TCLAP::SwitchArg argHelp{"h", "help", "Shows more detailed help for command", cmd};
+		cmd.add_flag("--details", argDetails, "Shows details in the specified subcommand");
+
+		cmd.add_flag("--version", argVersion, "Shows program version and exits");
+
+		cmd.add_flag("-h,--help", argHelp, "Shows more detailed help for command");
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
-	TCLAP::ValueArg<int> argPort{
-		"p", "port", "TCP port to listen at", false, mvsim::MVSIM_PORTNO_MAIN_REP, "TCP port", cmd};
+		cmd.add_option("-p,--port", argPort, "TCP port to listen at");
 #endif
 
-	TCLAP::ValueArg<double> argRealTimeFactor{
-		"",
-		"realtime-factor",
-		"Realtime modification factor: <1 slower than real-time, >1 faster "
-		"than real-time",
-		false,
-		1.0,
-		"1.0",
-		cmd};
+		cmd.add_option("--realtime-factor", argRealTimeFactor,
+			"Realtime modification factor: <1 slower than real-time, >1 faster than real-time");
+	}
 };
 
 extern std::unique_ptr<cli_flags> cli;

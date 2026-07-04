@@ -75,7 +75,12 @@ void World::internal_initialize()
 	ASSERT_(!initialized_);
 	ASSERT_(worldVisual_);
 
-	worldVisual_->getViewport()->lightParameters().ambient = lightOptions_.light_ambient;
+	{
+		auto& vlp = worldVisual_->getViewport()->lightParameters();
+		vlp.ambient = lightOptions_.light_ambient;
+		vlp.ambientSkyColor = mrpt::img::TColorf(lightOptions_.ambient_sky_color);
+		vlp.ambientGroundColor = mrpt::img::TColorf(lightOptions_.ambient_ground_color);
+	}
 
 	// Physical world light = visual world lights:
 	worldPhysical_.getViewport()->lightParameters() =
@@ -83,7 +88,7 @@ void World::internal_initialize()
 
 	// Create group for sensor viz:
 	{
-		auto glVizSensors = mrpt::opengl::CSetOfObjects::Create();
+		auto glVizSensors = mrpt::viz::CSetOfObjects::Create();
 		glVizSensors->setName("group_sensors_viz");
 		glVizSensors->setVisibility(guiOptions_.show_sensor_points);
 		worldVisual_->insert(glVizSensors);
@@ -205,7 +210,7 @@ void World::free_opengl_resources()
 	worldPhysical_.clear();
 	worldVisual_->clear();
 
-	VisualObject::FreeOpenGLResources();
+	CVisualObject::FreeOpenGLResources();
 }
 
 bool World::sensor_has_to_create_egl_context()

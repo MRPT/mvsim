@@ -26,6 +26,7 @@
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/topography/data_types.h>
+#include <mrpt/viz/TLightParameters.h>
 #include <mvsim/Block.h>
 #include <mvsim/HumanActor.h>
 #include <mvsim/Joystick.h>
@@ -259,7 +260,7 @@ class World : public mrpt::system::COutputLogger
 	 * There are two sets of objects: "viz" for visualization only, "physical"
 	 * for objects which should be detected by sensors.
 	 */
-	mrpt::opengl::CSetOfObjects::Ptr guiUserObjectsPhysical_, guiUserObjectsViz_;
+	mrpt::viz::CSetOfObjects::Ptr guiUserObjectsPhysical_, guiUserObjectsViz_;
 	std::mutex guiUserObjectsMtx_;
 
 	/// Update 3D vehicles, sensors, run render-based sensors, etc:
@@ -267,10 +268,9 @@ class World : public mrpt::system::COutputLogger
 	/// mode.
 	void internalGraphicsLoopTasksForSimulation();
 
-	void internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObjects);
+	void internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects);
 
-	void internalUpdate3DSceneObjects(
-		mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical);
+	void internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene& physical);
 	void internal_GUI_thread();
 	void internal_process_pending_gui_user_tasks();
 
@@ -279,22 +279,18 @@ class World : public mrpt::system::COutputLogger
 
 	void mark_as_pending_running_sensors_on_3D_scene()
 	{
-		pendingRunSensorsOn3DSceneMtx_.lock();
+		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
 		pendingRunSensorsOn3DScene_ = true;
-		pendingRunSensorsOn3DSceneMtx_.unlock();
 	}
 	void clear_pending_running_sensors_on_3D_scene()
 	{
-		pendingRunSensorsOn3DSceneMtx_.lock();
+		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
 		pendingRunSensorsOn3DScene_ = false;
-		pendingRunSensorsOn3DSceneMtx_.unlock();
 	}
 	bool pending_running_sensors_on_3D_scene()
 	{
-		pendingRunSensorsOn3DSceneMtx_.lock();
-		bool ret = pendingRunSensorsOn3DScene_;
-		pendingRunSensorsOn3DSceneMtx_.unlock();
-		return ret;
+		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
+		return pendingRunSensorsOn3DScene_;
 	}
 
 	std::string guiMsgLines_;
@@ -308,23 +304,19 @@ class World : public mrpt::system::COutputLogger
 
 	bool simulator_must_close() const
 	{
-		gui_thread_start_mtx_.lock();
-		const bool v = simulator_must_close_;
-		gui_thread_start_mtx_.unlock();
-		return v;
+		std::lock_guard<std::mutex> lck(gui_thread_start_mtx_);
+		return simulator_must_close_;
 	}
 	void simulator_must_close(bool value)
 	{
-		gui_thread_start_mtx_.lock();
+		std::lock_guard<std::mutex> lck(gui_thread_start_mtx_);
 		simulator_must_close_ = value;
-		gui_thread_start_mtx_.unlock();
 	}
 
 	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f)
 	{
-		guiUserPendingTasksMtx_.lock();
+		std::lock_guard<std::mutex> lck(guiUserPendingTasksMtx_);
 		guiUserPendingTasks_.emplace_back(f);
-		guiUserPendingTasksMtx_.unlock();
 	}
 
 	std::vector<std::function<void(void)>> guiUserPendingTasks_;
@@ -564,8 +556,8 @@ class World : public mrpt::system::COutputLogger
 
 	/// This private container will be filled with objects in the public
 	/// gui_user_objects_
-	mrpt::opengl::CSetOfObjects::Ptr glUserObjsPhysical_ = mrpt::opengl::CSetOfObjects::Create();
-	mrpt::opengl::CSetOfObjects::Ptr glUserObjsViz_ = mrpt::opengl::CSetOfObjects::Create();
+	mrpt::viz::CSetOfObjects::Ptr glUserObjsPhysical_ = mrpt::viz::CSetOfObjects::Create();
+	mrpt::viz::CSetOfObjects::Ptr glUserObjsViz_ = mrpt::viz::CSetOfObjects::Create();
 
 	// ------- GUI options -----
 	struct TGUI_Options
@@ -635,10 +627,20 @@ class World : public mrpt::system::COutputLogger
 		float shadow_bias_normal = 1e-4;
 
 		mrpt::img::TColor light_color = {0xff, 0xff, 0xff, 0xff};
-		float light_ambient = 0.5f;
+		float light_ambient = 0.4f;
+		float light_diffuse = 0.8f;
+		float light_specular = 0.6f;
+
+		/// Hemisphere ambient sky color (surfaces facing up)
+		mrpt::img::TColor ambient_sky_color = {0xe0, 0xe8, 0xff, 0xff};
+		/// Hemisphere ambient ground color (surfaces facing down)
+		mrpt::img::TColor ambient_ground_color = {0x40, 0x3a, 0x30, 0xff};
 
 		float eye_distance_to_shadow_map_extension = 2.0f;	//!< [m/m]
 		float minimum_shadow_map_extension_ratio = 0.005f;	//!< [0,1]
+
+		/** Additional light sources (point and spot) parsed from XML */
+		std::vector<mrpt::viz::TLight> extra_lights;
 
 		const TParameterDefinitions params = {
 			{"enable_shadows", {"%bool", &enable_shadows}},
@@ -648,10 +650,14 @@ class World : public mrpt::system::COutputLogger
 			{"light_clip_plane_min", {"%f", &light_clip_plane_min}},
 			{"light_clip_plane_max", {"%f", &light_clip_plane_max}},
 			{"light_color", {"%color", &light_color}},
+			{"light_diffuse", {"%f", &light_diffuse}},
+			{"light_specular", {"%f", &light_specular}},
 			{"shadow_bias", {"%f", &shadow_bias}},
 			{"shadow_bias_cam2frag", {"%f", &shadow_bias_cam2frag}},
 			{"shadow_bias_normal", {"%f", &shadow_bias_normal}},
 			{"light_ambient", {"%f", &light_ambient}},
+			{"ambient_sky_color", {"%color", &ambient_sky_color}},
+			{"ambient_ground_color", {"%color", &ambient_ground_color}},
 			{"eye_distance_to_shadow_map_extension", {"%f", &eye_distance_to_shadow_map_extension}},
 			{"minimum_shadow_map_extension_ratio", {"%f", &minimum_shadow_map_extension_ratio}},
 		};
@@ -822,7 +828,7 @@ class World : public mrpt::system::COutputLogger
 		{
 			nanogui::CheckBox* cb = nullptr;
 			Simulable::Ptr simulable;
-			VisualObject* visual = nullptr;
+			CVisualObject* visual = nullptr;
 		};
 
 		// Buttons that must be {dis,en}abled when there is a selected object:
@@ -846,14 +852,14 @@ class World : public mrpt::system::COutputLogger
 	/** 3D scene with all visual objects (vehicles, obstacles, markers, etc.)
 	 *  \sa worldPhysical_
 	 */
-	mrpt::opengl::COpenGLScene::Ptr worldVisual_ = mrpt::opengl::COpenGLScene::Create();
+	mrpt::viz::Scene::Ptr worldVisual_ = mrpt::viz::Scene::Create();
 
 	/** 3D scene with all physically observable objects: we will use this
 	 * scene as input to simulated sensors like cameras, where we don't wont
 	 * to see visualization marks, etc.
 	 * \sa world_visual_
 	 */
-	mrpt::opengl::COpenGLScene worldPhysical_;
+	mrpt::viz::Scene worldPhysical_;
 	std::recursive_mutex worldPhysicalMtx_;
 
 	/// World coordinates offset for rendering. Useful mainly to keep numerical accuracy
