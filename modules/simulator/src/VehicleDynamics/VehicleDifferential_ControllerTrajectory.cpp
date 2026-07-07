@@ -39,44 +39,22 @@ void DynamicsDifferential::ControllerTrajectory::on_post_step(const TSimulContex
 void DynamicsDifferential::ControllerTrajectory::load_config(const rapidxml::xml_node<char>& node)
 {
 	const auto& vars = veh_.getSimulableWorldObject()->user_defined_variables();
+	parse_trajectory_controller_config(
+		node, vars, "[DynamicsDifferential::ControllerTrajectory]", follower_, vizHeight_);
+}
 
-	bool loop = true;
-	double lookAheadDistance = 0.5;
-	double maxAngularSpeed = 2.0;
-
-	TParameterDefinitions params;
-	params["loop"] = TParamEntry("%bool", &loop);
-	params["lookahead_distance"] = TParamEntry("%lf", &lookAheadDistance);
-	params["max_angular_speed"] = TParamEntry("%lf", &maxAngularSpeed);
-
-	parse_xmlnode_attribs(node, params, vars, "[DynamicsDifferential::ControllerTrajectory]");
-	parse_xmlnode_children_as_param(
-		node, params, vars, "[DynamicsDifferential::ControllerTrajectory]");
-
-	std::vector<PoseTrajectoryFollower::Waypoint> waypoints;
-	for (auto n = node.first_node("waypoint"); n; n = n->next_sibling("waypoint"))
+bool DynamicsDifferential::ControllerTrajectory::getTrajectoryPlotPoints(
+	std::vector<mrpt::math::TPoint2D>& pts, double& height) const
+{
+	if (follower_.empty())
 	{
-		double t = 0, x = 0, y = 0;
-		TParameterDefinitions wpParams;
-		wpParams["t"] = TParamEntry("%lf", &t);
-		wpParams["x"] = TParamEntry("%lf", &x);
-		wpParams["y"] = TParamEntry("%lf", &y);
-
-		parse_xmlnode_attribs(*n, wpParams, vars, "[DynamicsDifferential::ControllerTrajectory]");
-
-		waypoints.emplace_back(t, x, y);
+		return false;
 	}
-
-	if (waypoints.size() < 2)
+	pts.clear();
+	for (const auto& wp : follower_.waypoints())
 	{
-		THROW_EXCEPTION(
-			"[DynamicsDifferential::ControllerTrajectory] At least 2 "
-			"<waypoint t=\"..\" x=\"..\" y=\"..\"/> entries are required inside "
-			"<controller class=\"trajectory\">");
+		pts.push_back(wp.xy);
 	}
-
-	follower_.setWaypoints(std::move(waypoints));
-	follower_.setLoop(loop);
-	follower_.setLookAheadDistance(lookAheadDistance);
-	follower_.setMaxAngularSpeed(maxAngularSpeed);
+	height = vizHeight_;
+	return true;
 }

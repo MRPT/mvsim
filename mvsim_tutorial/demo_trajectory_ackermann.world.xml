@@ -31,6 +31,7 @@
 	<gui>
 		<ortho>true</ortho>
 		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
+		<show_trajectories>true</show_trajectories>
 		<cam_distance>25</cam_distance>
 		<fov_deg>60</fov_deg>
 		<refresh_fps>20</refresh_fps>
@@ -102,7 +103,7 @@
 
 		<!-- Sensors -->
 		<include file="../definitions/velodyne-vlp16.sensor.xml"
-		  sensor_x="1.3" sensor_y="0" sensor_z="0.6" sensor_yaw="0"
+		  sensor_x="1.3" sensor_y="0" sensor_z="1.45" sensor_yaw="0"
 		  sensor_name="lidar1"
 		  sensor_rpm="600"
 		/>

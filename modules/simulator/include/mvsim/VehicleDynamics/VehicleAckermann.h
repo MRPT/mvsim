@@ -236,11 +236,15 @@ class DynamicsAckermann : public VehicleBase
 
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 
+		bool getTrajectoryPlotPoints(
+			std::vector<mrpt::math::TPoint2D>& pts, double& height) const override;
+
 	   private:
 		PoseTrajectoryFollower follower_;
 		mrpt::math::TTwist2D lastTwist_{0, 0, 0};
 
 		double r2f_L_ = 1.0;  //!< Wheelbase (rear-to-front axle distance) [m]
+		double vizHeight_ = 0.5;  //!< [m] height for the GUI trajectory line viz
 	};
 
 	const ControllerBase::Ptr& getController() const { return controller_; }

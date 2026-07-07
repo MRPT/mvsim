@@ -74,6 +74,10 @@ class PoseTrajectoryFollower
 	/** true if setWaypoints() has not been called with >=2 waypoints yet */
 	bool empty() const { return waypoints_.size() < 2; }
 
+	/** Read-only access to the defined waypoints (e.g. for GUI
+	 * visualization purposes). */
+	const std::vector<Waypoint>& waypoints() const { return waypoints_; }
+
 	/** Time of the first waypoint [s]. Requires !empty() */
 	double startTime() const { return waypoints_.front().t; }
 

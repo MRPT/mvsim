@@ -391,6 +391,7 @@ vehicle's actual position), tracking remains stable even for self-intersecting p
    <controller class="trajectory" loop="true">
        <lookahead_distance>0.6</lookahead_distance>  <!-- [m], default 0.5 -->
        <max_angular_speed>1.5</max_angular_speed>    <!-- [rad/s], default 2.0. 0 = unlimited -->
+       <viz_height>0.5</viz_height>                  <!-- [m], default 0.5 -->
 
        <!-- At least 2 waypoints are required. Times must be strictly increasing,
             but need not start at 0 nor be given in order. -->
@@ -414,6 +415,18 @@ vehicle's actual position), tracking remains stable even for self-intersecting p
 * **waypoint** (one or more) - ``t`` [s], ``x``/``y`` [m] in global coordinates. A segment
   with two waypoints at the same ``(x,y)`` makes the vehicle pause there for the elapsed
   ``t`` difference.
+* **viz_height** - Height [m] above ground (default 0.5) at which the trajectory polyline
+  is drawn in the 3D view (see below). Purely cosmetic, does not affect tracking.
+
+The full path polyline can be shown in the GUI as a 3D line (a ``mrpt::opengl`` line set),
+toggled with the **"View trajectories"** checkbox next to "View forces" in the control
+window. Whether it starts shown or hidden is controlled per-world via the ``<gui>`` block:
+
+.. code-block:: xml
+
+   <gui>
+       <show_trajectories>true</show_trajectories>  <!-- default: false -->
+   </gui>
 
 .. tip::
    Since trajectories are plain XML, a set of predefined ones can be kept as separate

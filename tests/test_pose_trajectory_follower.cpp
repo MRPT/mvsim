@@ -11,6 +11,7 @@
 
 #include <mvsim/PoseTrajectoryFollower.h>
 
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 
@@ -134,6 +135,27 @@ void test_paused_segment_holds_position()
 	EXPECT_NEAR(twist.omega, 0.0, 1e-9);
 }
 
+void test_reference_pose_heading_at_end_of_path()
+{
+	std::cout << "[TEST] reference_pose_heading_at_end_of_path\n";
+
+	PoseTrajectoryFollower f;
+	f.setLoop(false);
+	// A diagonal straight line: heading should be atan2(10,10) = 45 deg
+	// everywhere along it, including exactly at (and past) the last waypoint.
+	f.setWaypoints({Waypoint(0.0, 0.0, 0.0), Waypoint(10.0, 10.0, 10.0)});
+
+	const double expectedYaw = std::atan2(1.0, 1.0);  // 45 deg
+
+	const auto poseAtEnd = f.referencePose(10.0);
+	EXPECT_NEAR(poseAtEnd.phi, expectedYaw, 1e-6);
+
+	// Past the end, wrapTime() clamps to the same terminal point, so the
+	// heading must still reflect the incoming direction, not fall back to 0.
+	const auto poseAfterEnd = f.referencePose(50.0);
+	EXPECT_NEAR(poseAfterEnd.phi, expectedYaw, 1e-6);
+}
+
 void test_waypoint_validation()
 {
 	std::cout << "[TEST] waypoint_validation\n";
@@ -185,6 +207,7 @@ int main()
 	test_lateral_offset_correction();
 	test_loop_wraps_time();
 	test_paused_segment_holds_position();
+	test_reference_pose_heading_at_end_of_path();
 	test_waypoint_validation();
 
 	if (g_failures == 0)

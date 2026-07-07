@@ -41,16 +41,13 @@ void DynamicsAckermann::ControllerTrajectory::control_step(
 	lastTwist_ = follower_.computeTwist(ci.context.simul_time, mrpt::math::TPose2D(veh_.getPose()));
 
 	// Kinematic relation:  omega = vx * tan(delta) / L  =>  delta = atan(omega * L / vx)
-	// When vx == 0 we fall back to a direct omega-based clamped angle.
-	if (std::abs(lastTwist_.vx) > 1e-3)
-	{
-		co.steer_ang = std::atan(lastTwist_.omega * r2f_L_ / lastTwist_.vx);
-	}
-	else
-	{
-		co.steer_ang = (lastTwist_.omega >= 0 ? 1.0 : -1.0) *
-					   std::min(std::abs(lastTwist_.omega * r2f_L_), veh_.getMaxSteeringAngle());
-	}
+	// Floor |vx| to a small positive minimum (keeping its sign, or assuming
+	// forward motion when exactly zero) instead of switching to a different
+	// approximation near vx==0, so steer_ang stays continuous through it.
+	constexpr double kMinAbsVx = 1e-3;
+	const double vxSign = (lastTwist_.vx >= 0) ? 1.0 : -1.0;
+	const double vxForSteer = vxSign * std::max(std::abs(lastTwist_.vx), kMinAbsVx);
+	co.steer_ang = std::atan(lastTwist_.omega * r2f_L_ / vxForSteer);
 
 	co.steer_ang =
 		std::clamp(co.steer_ang, -veh_.getMaxSteeringAngle(), veh_.getMaxSteeringAngle());
@@ -68,44 +65,22 @@ void DynamicsAckermann::ControllerTrajectory::on_post_step(
 void DynamicsAckermann::ControllerTrajectory::load_config(const rapidxml::xml_node<char>& node)
 {
 	const auto& vars = veh_.getSimulableWorldObject()->user_defined_variables();
+	parse_trajectory_controller_config(
+		node, vars, "[DynamicsAckermann::ControllerTrajectory]", follower_, vizHeight_);
+}
 
-	bool loop = true;
-	double lookAheadDistance = 0.5;
-	double maxAngularSpeed = 2.0;
-
-	TParameterDefinitions params;
-	params["loop"] = TParamEntry("%bool", &loop);
-	params["lookahead_distance"] = TParamEntry("%lf", &lookAheadDistance);
-	params["max_angular_speed"] = TParamEntry("%lf", &maxAngularSpeed);
-
-	parse_xmlnode_attribs(node, params, vars, "[DynamicsAckermann::ControllerTrajectory]");
-	parse_xmlnode_children_as_param(
-		node, params, vars, "[DynamicsAckermann::ControllerTrajectory]");
-
-	std::vector<PoseTrajectoryFollower::Waypoint> waypoints;
-	for (auto n = node.first_node("waypoint"); n; n = n->next_sibling("waypoint"))
+bool DynamicsAckermann::ControllerTrajectory::getTrajectoryPlotPoints(
+	std::vector<mrpt::math::TPoint2D>& pts, double& height) const
+{
+	if (follower_.empty())
 	{
-		double t = 0, x = 0, y = 0;
-		TParameterDefinitions wpParams;
-		wpParams["t"] = TParamEntry("%lf", &t);
-		wpParams["x"] = TParamEntry("%lf", &x);
-		wpParams["y"] = TParamEntry("%lf", &y);
-
-		parse_xmlnode_attribs(*n, wpParams, vars, "[DynamicsAckermann::ControllerTrajectory]");
-
-		waypoints.emplace_back(t, x, y);
+		return false;
 	}
-
-	if (waypoints.size() < 2)
+	pts.clear();
+	for (const auto& wp : follower_.waypoints())
 	{
-		THROW_EXCEPTION(
-			"[DynamicsAckermann::ControllerTrajectory] At least 2 "
-			"<waypoint t=\"..\" x=\"..\" y=\"..\"/> entries are required inside "
-			"<controller class=\"trajectory\">");
+		pts.push_back(wp.xy);
 	}
-
-	follower_.setWaypoints(std::move(waypoints));
-	follower_.setLoop(loop);
-	follower_.setLookAheadDistance(lookAheadDistance);
-	follower_.setMaxAngularSpeed(maxAngularSpeed);
+	height = vizHeight_;
+	return true;
 }

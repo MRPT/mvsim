@@ -122,15 +122,30 @@ mrpt::math::TPose2D PoseTrajectoryFollower::referencePose(double simTime) const
 		return {};
 	}
 
-	const auto rp = referenceAtTime(simTime);
+	// Resolve simTime to its actual (clamped/wrapped) reference time once, so
+	// the forward/backward probes below step from *that* point rather than
+	// from the raw (possibly far out-of-range) simTime -- otherwise, for a
+	// non-looping trajectory queried well past its end, both simTime+dtProbe
+	// and simTime-dtProbe would clamp right back to the same terminal time.
+	const double tRef = wrapTime(simTime);
+	const auto rp = referenceAtTime(tRef);
 
-	// Estimate heading from a small time step ahead, so it also works when
-	// standing still at the very last waypoint of a non-looping trajectory.
+	// Estimate heading from a small time step ahead. At the very last
+	// waypoint of a non-looping trajectory, wrapTime() clamps tRef+dtProbe
+	// right back to the same point, so the forward probe collapses to zero
+	// displacement; fall back to a backward probe in that case so the final
+	// heading still reflects the incoming direction of travel instead of 0.
 	const double dtProbe = 1e-3;
-	const auto rpAhead = referenceAtTime(simTime + dtProbe);
+	const auto rpAhead = referenceAtTime(tRef + dtProbe);
+
+	auto d = rpAhead.xy - rp.xy;
+	if (d.norm() <= 1e-9)
+	{
+		const auto rpBehind = referenceAtTime(tRef - dtProbe);
+		d = rp.xy - rpBehind.xy;
+	}
 
 	double yaw = 0;
-	const auto d = rpAhead.xy - rp.xy;
 	if (d.norm() > 1e-9)
 	{
 		yaw = std::atan2(d.y, d.x);

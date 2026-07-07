@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 #pragma once
 
+#include <mvsim/PoseTrajectoryFollower.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/basic_types.h>
 
@@ -85,6 +86,20 @@ void parse_xmlnodelist_children_as_param(
 	for (auto& node : lst_nodes)
 		parse_xmlnode_children_as_param(*node, params, functionNameContext);
 }
+
+/** Parses the `<controller class="trajectory">` XML config -- `loop`,
+ * `lookahead_distance`, `max_angular_speed`, `viz_height` attributes/children,
+ * plus one-or-more `<waypoint t=".." x=".." y=".."/>` children -- shared
+ * identically by DynamicsDifferential::ControllerTrajectory and
+ * DynamicsAckermann::ControllerTrajectory, and configures `follower` and
+ * `vizHeight` accordingly.
+ * \param errorContext Used to prefix error messages, e.g.
+ * "[DynamicsDifferential::ControllerTrajectory]".
+ * \exception std::exception If fewer than 2 `<waypoint>` entries are found.
+ */
+void parse_trajectory_controller_config(
+	const rapidxml::xml_node<char>& node, const std::map<std::string, std::string>& vars,
+	const char* errorContext, PoseTrajectoryFollower& follower, double& vizHeight);
 
 /** Convert an XML node into a string, solving in the way,
  all found "include"s. For this later task, we need a reference

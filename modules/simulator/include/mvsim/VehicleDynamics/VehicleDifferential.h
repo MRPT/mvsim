@@ -253,8 +253,12 @@ class DynamicsDifferential : public VehicleBase
 
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 
+		bool getTrajectoryPlotPoints(
+			std::vector<mrpt::math::TPoint2D>& pts, double& height) const override;
+
 	   private:
 		PoseTrajectoryFollower follower_;
+		double vizHeight_ = 0.5;  //!< [m] height for the GUI trajectory line viz
 	};
 
 	const ControllerBase::Ptr& getController() const { return controller_; }

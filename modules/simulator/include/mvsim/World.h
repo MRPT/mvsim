@@ -576,6 +576,7 @@ class World : public mrpt::system::COutputLogger
 		bool ortho = false;
 		bool show_forces = false;
 		bool show_sensor_points = true;
+		bool show_trajectories = false;
 		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
 		double camera_azimuth_deg = 45.0;
@@ -593,6 +594,7 @@ class World : public mrpt::system::COutputLogger
 			{"ortho", {"%bool", &ortho}},
 			{"show_forces", {"%bool", &show_forces}},
 			{"show_sensor_points", {"%bool", &show_sensor_points}},
+			{"show_trajectories", {"%bool", &show_trajectories}},
 			{"force_scale", {"%lf", &force_scale}},
 			{"fov_deg", {"%lf", &fov_deg}},
 			{"follow_vehicle", {"%s", &follow_vehicle}},

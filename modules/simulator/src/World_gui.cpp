@@ -133,6 +133,10 @@ void World::GUI::prepare_control_window()
 		->setChecked(parent_.guiOptions_.show_forces);
 
 	w->add<nanogui::CheckBox>(
+		 "View trajectories", [&](bool b) { parent_.guiOptions_.show_trajectories = b; })
+		->setChecked(parent_.guiOptions_.show_trajectories);
+
+	w->add<nanogui::CheckBox>(
 		 "View sensor pointclouds",
 		 [&](bool b)
 		 {
