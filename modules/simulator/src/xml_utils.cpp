@@ -486,6 +486,28 @@ std::string mvsim::parse_variables(
 	return ret;
 }
 
+/** true if `n`, or any of its descendants, is an `<include>` or `<if>` tag
+ * that still needs resolving. Nodes without one can be serialized verbatim
+ * (fast path, identical to the long-standing behavior); nodes that do have
+ * one must be walked recursively instead (see recursive_xml_to_str_solving_includes),
+ * since e.g. rapidxml_print's `operator<<` has no notion of includes and
+ * would just print them as literal, unresolved `<include>` tags. */
+static bool xml_subtree_has_pending_include(const rapidxml::xml_node<char>* n)
+{
+	for (auto c = n->first_node(); c; c = c->next_sibling())
+	{
+		if (strcmp(c->name(), "include") == 0 || strcmp(c->name(), "if") == 0)
+		{
+			return true;
+		}
+		if (xml_subtree_has_pending_include(c))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 static void recursive_xml_to_str_solving_includes(
 	const World& parent, const rapidxml::xml_node<char>* n, const std::set<std::string>& varsRetain,
 	std::stringstream& ss)
@@ -535,10 +557,33 @@ static void recursive_xml_to_str_solving_includes(
 			recursive_xml_to_str_solving_includes(parent, childNode, varsRetain, ss);
 		}
 	}
+	else if (!xml_subtree_has_pending_include(n))
+	{
+		// Fast path (long-standing behavior): no <include>/<if> anywhere
+		// underneath, so it is safe to print this whole subtree verbatim.
+		ss << *n;
+	}
 	else
 	{
-		// anything else: just print as is:
-		ss << *n;
+		// This subtree has a nested <include>/<if> at some depth (e.g. a
+		// <controller> node several levels below <vehicle:class>), so it
+		// cannot be printed verbatim: rebuild the tag and recurse into its
+		// children to resolve them.
+		ss << "<" << n->name();
+		for (auto a = n->first_attribute(); a; a = a->next_attribute())
+		{
+			ss << " " << a->name() << "=\"" << a->value() << "\"";
+		}
+		ss << ">";
+		if (n->value_size() > 0)
+		{
+			ss << n->value();
+		}
+		for (auto c = n->first_node(); c; c = c->next_sibling())
+		{
+			recursive_xml_to_str_solving_includes(parent, c, varsRetain, ss);
+		}
+		ss << "</" << n->name() << ">\n";
 	}
 }
 

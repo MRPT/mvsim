@@ -1,0 +1,48 @@
+<!--
+  Exactly-reproducible-trajectory snippet: a smooth figure-eight (lemniscate),
+  4m half-width, one full loop every 40s. Being a smooth curve (no sharp
+  corners), it is the easiest of the three demo trajectories to track tightly.
+  Intended to be <include>d inside a <controller class="trajectory"> node
+  which should set loop="true" (see demo_trajectory.world.xml).
+-->
+<waypoint t="0.000"  x="0.000"  y="0.000" />
+<waypoint t="1.000"  x="0.626"  y="0.618" />
+<waypoint t="2.000"  x="1.236"  y="1.176" />
+<waypoint t="3.000"  x="1.816"  y="1.618" />
+<waypoint t="4.000"  x="2.351"  y="1.902" />
+<waypoint t="5.000"  x="2.828"  y="2.000" />
+<waypoint t="6.000"  x="3.236"  y="1.902" />
+<waypoint t="7.000"  x="3.564"  y="1.618" />
+<waypoint t="8.000"  x="3.804"  y="1.176" />
+<waypoint t="9.000"  x="3.951"  y="0.618" />
+<waypoint t="10.000" x="4.000"  y="0.000" />
+<waypoint t="11.000" x="3.951"  y="-0.618" />
+<waypoint t="12.000" x="3.804"  y="-1.176" />
+<waypoint t="13.000" x="3.564"  y="-1.618" />
+<waypoint t="14.000" x="3.236"  y="-1.902" />
+<waypoint t="15.000" x="2.828"  y="-2.000" />
+<waypoint t="16.000" x="2.351"  y="-1.902" />
+<waypoint t="17.000" x="1.816"  y="-1.618" />
+<waypoint t="18.000" x="1.236"  y="-1.176" />
+<waypoint t="19.000" x="0.626"  y="-0.618" />
+<waypoint t="20.000" x="0.000"  y="-0.000" />
+<waypoint t="21.000" x="-0.626" y="0.618" />
+<waypoint t="22.000" x="-1.236" y="1.176" />
+<waypoint t="23.000" x="-1.816" y="1.618" />
+<waypoint t="24.000" x="-2.351" y="1.902" />
+<waypoint t="25.000" x="-2.828" y="2.000" />
+<waypoint t="26.000" x="-3.236" y="1.902" />
+<waypoint t="27.000" x="-3.564" y="1.618" />
+<waypoint t="28.000" x="-3.804" y="1.176" />
+<waypoint t="29.000" x="-3.951" y="0.618" />
+<waypoint t="30.000" x="-4.000" y="0.000" />
+<waypoint t="31.000" x="-3.951" y="-0.618" />
+<waypoint t="32.000" x="-3.804" y="-1.176" />
+<waypoint t="33.000" x="-3.564" y="-1.618" />
+<waypoint t="34.000" x="-3.236" y="-1.902" />
+<waypoint t="35.000" x="-2.828" y="-2.000" />
+<waypoint t="36.000" x="-2.351" y="-1.902" />
+<waypoint t="37.000" x="-1.816" y="-1.618" />
+<waypoint t="38.000" x="-1.236" y="-1.176" />
+<waypoint t="39.000" x="-0.626" y="-0.618" />
+<waypoint t="40.000" x="-0.000" y="-0.000" />

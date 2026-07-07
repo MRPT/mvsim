@@ -347,6 +347,82 @@ Useful for testing high-level algorithms without worrying about low-level contro
 
    <controller class="twist_ideal" />
 
+.. _exactly-reproducible-trajectories:
+
+Exactly Reproducible Trajectories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Class:** ``trajectory``
+
+Drives the vehicle along an EXACT, closed-form ``(t, x, y)`` polyline given directly in
+the XML, instead of being teleoperated or controlled by a planner. This is useful for
+offline experiments that need repetitive or predefined motion: benchmarking a
+perception/SLAM pipeline against the very same path run after run, regression-testing
+sensor data, or reproducing a reference trajectory from a dataset.
+
+Like ``twist_ideal``, the controller works for any non-holonomic vehicle type
+(``differential``, ``differential_3_wheels``, ``differential_4_wheels`` and ``ackermann``)
+and imposes the resulting twist directly on the vehicle state, bypassing the physical
+wheel torque model.
+
+Internally, ``mvsim::PoseTrajectoryFollower`` implements the algorithm and has no
+dependency on the rest of the simulator, so it can be tested standalone (see
+``tests/test_pose_trajectory_follower.cpp``). At each simulation step it:
+
+1. Evaluates the waypoint list at the current simulation time to get the *reference*
+   position and a feedforward *speed* (computed automatically as the distance between
+   consecutive waypoints divided by their time difference -- so you never specify speed
+   directly, only where the vehicle should be and when).
+2. Looks ahead ``lookahead_distance`` further along the path geometry from that reference
+   position, and computes the local-frame ``(vx, omega)`` twist that steers the vehicle
+   towards that lookahead point using the classic pure-pursuit curvature formula
+   :math:`\kappa = 2y/L^2`.
+3. Optionally clamps ``|omega|`` to ``max_angular_speed``, slowing ``vx`` down (instead of
+   just capping the turn rate) so the *curvature* actually driven matches what pure-pursuit
+   asked for -- this is what makes the vehicle round off sharp polyline corners realistically
+   rather than either teleporting or cutting them short.
+
+Because the pure-pursuit lookahead search is anchored on the time schedule (not on the
+vehicle's actual position), tracking remains stable even for self-intersecting paths
+(e.g. a figure-eight) and even if the vehicle temporarily lags behind schedule.
+
+.. code-block:: xml
+
+   <controller class="trajectory" loop="true">
+       <lookahead_distance>0.6</lookahead_distance>  <!-- [m], default 0.5 -->
+       <max_angular_speed>1.5</max_angular_speed>    <!-- [rad/s], default 2.0. 0 = unlimited -->
+
+       <!-- At least 2 waypoints are required. Times must be strictly increasing,
+            but need not start at 0 nor be given in order. -->
+       <waypoint t="0.0"  x="0.0" y="0.0" />
+       <waypoint t="4.0"  x="4.0" y="0.0" />
+       <waypoint t="8.0"  x="4.0" y="4.0" />
+       <waypoint t="12.0" x="0.0" y="4.0" />
+       <waypoint t="16.0" x="0.0" y="0.0" />
+   </controller>
+
+**Parameters:**
+
+* **loop** (attribute, ``<controller>`` tag) - ``true`` (default) to repeat the trajectory
+  forever, wrapping the simulation time back to the first waypoint's time each period.
+  ``false`` to run it once and then stop (hold the last waypoint's position) -- a "play once"
+  trajectory.
+* **lookahead_distance** - Pure-pursuit lookahead distance [m] (default 0.5). Larger values
+  round off sharp corners more gently but track the geometric path less tightly.
+* **max_angular_speed** - Maximum ``|omega|`` [rad/s] the controller will ever command
+  (default 2.0). Set to 0 to disable the clamp.
+* **waypoint** (one or more) - ``t`` [s], ``x``/``y`` [m] in global coordinates. A segment
+  with two waypoints at the same ``(x,y)`` makes the vehicle pause there for the elapsed
+  ``t`` difference.
+
+.. tip::
+   Since trajectories are plain XML, a set of predefined ones can be kept as separate
+   files (e.g. under ``definitions/trajectories/``) and swapped in via ``<include>`` and a
+   ``<variable>``, without touching the rest of the world file. See the
+   ``demo_trajectory.world.xml`` and ``demo_trajectory_ackermann.world.xml`` demos in
+   :doc:`demo_worlds` for a complete example (square loop, figure-eight, and
+   point-to-point presets, selectable from a single ``TRAJECTORY`` variable).
+
 5. Friction Models
 -------------------
 

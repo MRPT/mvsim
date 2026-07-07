@@ -1039,7 +1039,7 @@ void World::internalUpdate3DSceneObjects(
 
 	// Camera follow modes:
 	// -----------------------
-	if (!guiOptions_.follow_vehicle.empty())
+	if (gui_.gui_win && !guiOptions_.follow_vehicle.empty())
 	{
 		if (auto it = vehicles_.find(guiOptions_.follow_vehicle); it != vehicles_.end())
 		{
