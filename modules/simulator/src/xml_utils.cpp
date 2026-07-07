@@ -609,8 +609,14 @@ static void recursive_xml_to_str_solving_includes(
 			ss << "\"";
 		}
 		ss << ">";
-		if (n->value_size() > 0)
+		if (!n->first_node() && n->value_size() > 0)
 		{
+			// rapidxml (parsed with the default flags) represents leading
+			// text of a node with *only* text content as n->value(), but for
+			// mixed content (text interleaved with child elements) it instead
+			// creates separate node_data children carrying that same text --
+			// so n->value() must only be emitted here when there are no
+			// children at all, or that text would be printed twice.
 			xmlEscapeAppend(ss, n->value(), /*isAttribute*/ false);
 		}
 		for (auto c = n->first_node(); c; c = c->next_sibling())
