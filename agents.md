@@ -63,6 +63,7 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 | `CsvLogger` | `CsvLogger.h` | Per-vehicle time-series logging to CSV. |
 | `PID_Controller` | `PID_Controller.h` | Generic discrete PID used by controllers. |
 | `CollisionShapeCache` | `CollisionShapeCache.h` | Caches Box2D collision shapes for mesh reuse. |
+| `PoseTrajectoryFollower` | `PoseTrajectoryFollower.h` | Standalone (no World/Box2D dependency) pure-pursuit tracker for the "exactly reproducible trajectories" feature: evaluates a time-parameterized `(t,x,y)` polyline and computes the `(vx,omega)` twist to follow it. Used by the `trajectory` controller class (differential and Ackermann). |
 
 ### Vehicle dynamics (`src/VehicleDynamics/`)
 
@@ -72,7 +73,7 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 | `VehicleAckermann.cpp` | Ackermann (car-like) with kinematic/dynamic control |
 | `VehicleAckermann_Drivetrain.cpp` | Ackermann + realistic mechanical differentials (open/Torsen, 2WD/4WD) |
 
-Each vehicle type has companion `*_Controller*.cpp` files for its controllers (Raw torque, Twist PID, Ideal twist, Front-steer PID).
+Each vehicle type has companion `*_Controller*.cpp` files for its controllers (Raw torque, Twist PID, Ideal twist, Front-steer PID, and — for `differential`/`ackermann` only — `trajectory`, the exactly-reproducible-trajectory controller built on `PoseTrajectoryFollower`).
 
 ### Sensors (`src/Sensors/`)
 
@@ -151,6 +152,8 @@ Worlds are XML files. Root element: `<mvsim_world>`. Key child elements:
 
 Sensor and vehicle definitions can be split into reusable files under `definitions/`.
 
+`<include>` resolution (`xml_to_str_solving_includes()` in `xml_utils.cpp`) is recursive at any nesting depth: nodes with no nested `<include>`/`<if>` are serialized verbatim (fast path), but a subtree containing one anywhere underneath (e.g. inside `<vehicle:class><dynamics><controller>`) is rebuilt node-by-node so the nested tag gets resolved too. This is what lets the `trajectory` controller pull in a waypoint list via a nested `<include>`.
+
 ---
 
 ## Reusable XML definitions (`definitions/`)
@@ -159,12 +162,15 @@ Ready-to-include vehicle and sensor snippets:
 
 - Vehicles: `jackal.vehicle.xml`, `turtlebot3_burger.vehicle.xml`, `ackermann.vehicle.xml`, `small_robot.vehicle.xml`, `pickup.vehicle.xml`, `scania_truck.vehicle.xml`, `agricobiot2.vehicle.xml`, `jackal-ellipse.vehicle.xml`
 - Sensors: `velodyne-vlp16.sensor.xml`, `ouster-os1.sensor.xml`, `helios-32-FOV-{26,31,70}.sensor.xml`, `rplidar-a2.sensor.xml`, `camera.sensor.xml`, `rgbd_camera.sensor.xml`, `imu.sensor.xml`, `gnss.sensor.xml`
+- Trajectories (`trajectories/` subdir, included inside a `<controller class="trajectory">` node): `square_loop.trajectory.xml`, `figure_eight.trajectory.xml`, `point_to_point.trajectory.xml`
 
 ---
 
 ## Demo worlds (`mvsim_tutorial/`)
 
-`demo_warehouse.world.xml`, `demo_2robots.world.xml`, `demo_greenhouse.world.xml`, `demo_elevation_map.world.xml`, `demo_road_circuit1.world.xml`, `demo_multistorey.world.xml`, `demo_logistics_center.world.xml`, `demo_articulated_vehicle.world.xml`, `demo_friction_zones.world.xml`, `demo_camera.world.xml`, `demo_depth_camera.world.xml`, `demo_jackal.world.xml`, `demo_many_robots.world.xml`, `demo_indoor_outdoor.world.xml`, `demo_outdoor.world.xml`, `demo_walls.world.xml`, `demo_turtlebot_world.world.xml`, `mvsim_slam.world.xml`.
+`demo_warehouse.world.xml`, `demo_2robots.world.xml`, `demo_greenhouse.world.xml`, `demo_elevation_map.world.xml`, `demo_road_circuit1.world.xml`, `demo_multistorey.world.xml`, `demo_logistics_center.world.xml`, `demo_articulated_vehicle.world.xml`, `demo_friction_zones.world.xml`, `demo_camera.world.xml`, `demo_depth_camera.world.xml`, `demo_jackal.world.xml`, `demo_many_robots.world.xml`, `demo_indoor_outdoor.world.xml`, `demo_outdoor.world.xml`, `demo_walls.world.xml`, `demo_turtlebot_world.world.xml`, `mvsim_slam.world.xml`, `demo_trajectory.world.xml`, `demo_trajectory_ackermann.world.xml`.
+
+**Exactly reproducible trajectories** (`trajectory` controller class, `PoseTrajectoryFollower`): drives a `differential`/`ackermann` vehicle along a closed-form, time-parameterized `(t,x,y)` polyline given directly in `<waypoint>` XML tags, using a pure-pursuit strategy (speed from waypoint distance/time, heading from a lookahead point, with `max_angular_speed` slowing `vx` down — not just capping `omega` — to round sharp corners realistically). Supports `loop="true"` (repeats forever) and `loop="false"` (runs once and stops). `demo_trajectory.world.xml`/`demo_trajectory_ackermann.world.xml` select between the 3 predefined `definitions/trajectories/*.trajectory.xml` presets via a top-level `TRAJECTORY` `<variable>` and `<include>`; both carry a 3D LiDAR + GNSS sensor. Tested in `tests/test_pose_trajectory_follower.cpp` (pure algorithm, no World) and `tests/test_trajectory_controller.cpp` (full World + Box2D). The path polyline can also be drawn in the 3D GUI (a `mrpt::opengl::CSetOfLines` at a configurable `viz_height`, default 0.5m) via `ControllerBaseInterface::getTrajectoryPlotPoints()`, toggled by the "View trajectories" checkbox / `<gui><show_trajectories>` option; both demo worlds enable it by default.
 
 ---
 

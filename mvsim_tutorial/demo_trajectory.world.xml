@@ -1,0 +1,120 @@
+<mvsim_world version="1.0">
+	<!--
+	  Demo of the "exactly reproducible trajectories" feature: a vehicle can
+	  be driven along an EXACT, closed-form (t, x, y) polyline given directly
+	  in the XML, instead of being teleoperated or controlled by a planner.
+	  This is useful for offline experiments that need repetitive or
+	  predefined motion (e.g. benchmarking a perception/SLAM pipeline against
+	  the very same path run after run, or regression-testing sensor data).
+
+	  A "trajectory" controller (see <mvsim/PoseTrajectoryFollower.h>) reads
+	  the waypoint list and drives the (non-holonomic) vehicle along it using
+	  a pure-pursuit strategy: the cruise *speed* is derived automatically
+	  from the distance and time between consecutive waypoints, while the
+	  *heading* is servoed towards a lookahead point on the path, so sharp
+	  corners are rounded off realistically instead of teleporting the pose.
+
+	  Pick which of the 3 predefined demo trajectories to run by changing
+	  TRAJECTORY below (this selects which file gets pulled in via
+	  <include>), and whether it should loop forever or run once and stop:
+	    - square_loop     (loop="true")  8x8m square, repeats forever.
+	    - figure_eight    (loop="true")  smooth lemniscate, repeats forever.
+	    - point_to_point  (loop="false") single S-curve run, then stops.
+	-->
+	<variable name="TRAJECTORY" value="square_loop" /> <!-- square_loop | figure_eight | point_to_point -->
+	<variable name="TRAJ_LOOP" value="true" /> <!-- true for square_loop/figure_eight, false for point_to_point -->
+
+	<!-- General simulation options -->
+	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
+
+	<!-- Define georeferenced coordinates so the GNSS/GPS sensor can be simulated -->
+	<georeference>
+		<latitude>36.894718</latitude>
+		<longitude>-2.316988</longitude>
+		<height>200.0</height>
+		<world_to_enu_rotation_deg>0.0</world_to_enu_rotation_deg>
+	</georeference>
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>true</ortho>
+		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
+		<show_trajectories>true</show_trajectories>
+		<cam_distance>25</cam_distance>
+		<fov_deg>60</fov_deg>
+		<refresh_fps>20</refresh_fps>
+		<follow_vehicle>r1</follow_vehicle>
+	</gui>
+
+	<!-- Light parameters -->
+	<lights>
+	</lights>
+
+	<!-- ========================
+		   Scenario definition
+	     ======================== -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-15</x_min>
+		<y_min>-15</y_min>
+		<x_max> 15</x_max>
+		<y_max> 15</y_max>
+		<z>0.0</z>
+	</element>
+
+	<!-- ground grid (for visual reference) -->
+	<element class="ground_grid">
+		<floating>true</floating>
+	</element>
+
+	<!-- =============================
+		   Vehicle class definition
+	     ============================= -->
+	<vehicle:class name="trajectory_bot">
+		<dynamics class="differential">
+			<l_wheel pos="0.0  0.5" mass="4.0" width="0.20" diameter="0.40" />
+			<r_wheel pos="0.0 -0.5" mass="4.0" width="0.20" diameter="0.40" />
+			<chassis mass="15.0" zmin="0.05" zmax="0.6">
+			</chassis>
+
+			<!-- The "trajectory" controller: drives the vehicle along the
+			     EXACT (t,x,y) polyline pulled in below via <include>. -->
+			<controller class="trajectory" loop="${TRAJ_LOOP}">
+				<lookahead_distance>0.6</lookahead_distance>
+				<max_angular_speed>1.5</max_angular_speed>
+
+				<include file="../definitions/trajectories/${TRAJECTORY}.trajectory.xml" />
+			</controller>
+		</dynamics>
+
+		<!-- Friction force simulation -->
+		<friction class="default">
+			<mu>0.8</mu>
+			<C_damping>0.05</C_damping>
+			<C_rr>0.01</C_rr>
+		</friction>
+	</vehicle:class>
+
+	<!-- ========================
+		   Vehicle(s) definition
+	     ======================== -->
+	<vehicle name="r1" class="trajectory_bot">
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg). Must match the 1st waypoint of the selected trajectory. -->
+
+		<!-- Sensors -->
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+		  sensor_x="0.0" sensor_y="0" sensor_z="0.75" sensor_yaw="0"
+		  sensor_name="lidar1"
+		  sensor_rpm="600"
+		/>
+
+		<include file="../definitions/gnss.sensor.xml"
+		  sensor_x="0.0" sensor_y="0.0" sensor_z="0.3"
+		  sensor_period_sec="1.0"
+		  sensor_name="gps1"
+		  sensor_horizontal_std_noise="0.5"
+		  sensor_vertical_std_noise="1.0"
+		/>
+	</vehicle>
+
+</mvsim_world>

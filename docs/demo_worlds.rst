@@ -538,3 +538,63 @@ external ``.dae`` or ``.stl`` files.
       :language: xml
 
 
+demo_trajectory
+---------------------
+
+Demonstrates the :ref:`exactly reproducible trajectories <exactly-reproducible-trajectories>`
+feature: a differential-drive robot is driven along a closed-form, time-parameterized
+``(t, x, y)`` polyline given directly in the XML, instead of being teleoperated or
+controlled by a planner. A ``<controller class="trajectory">`` reads the waypoint list
+and drives the vehicle with a pure-pursuit strategy, so the same path is reproduced
+exactly every run -- useful for offline experiments that need repetitive or predefined
+motion (e.g. benchmarking a perception/SLAM pipeline, or regression-testing sensor data).
+
+The world file uses an ``<include>`` to select, at the top via a ``TRAJECTORY`` variable,
+between three predefined trajectory snippets under ``definitions/trajectories/``:
+
+- ``square_loop`` (default): an 8x8m square, repeating forever.
+- ``figure_eight``: a smooth lemniscate, repeating forever.
+- ``point_to_point``: a single S-curve run, then the vehicle stops.
+
+The vehicle carries a 3D LiDAR (Velodyne VLP-16) and a GNSS/GPS sensor.
+
+.. tab-set::
+    .. tab-item:: Standalone MVSim build
+
+        .. code-block:: bash
+
+            mvsim launch mvsim_tutorial/demo_trajectory.world.xml
+
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_trajectory.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_trajectory.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_trajectory.world.xml
+      :language: xml
+
+
+demo_trajectory_ackermann
+---------------------------
+
+Same :ref:`exactly reproducible trajectories <exactly-reproducible-trajectories>` demo as
+``demo_trajectory``, but for a car-like (Ackermann) vehicle instead of a differential-drive
+one, showing that the ``<controller class="trajectory">`` pure-pursuit driver works for any
+non-holonomic vehicle type in MVSim.
+
+.. tab-set::
+    .. tab-item:: Standalone MVSim build
+
+        .. code-block:: bash
+
+            mvsim launch mvsim_tutorial/demo_trajectory_ackermann.world.xml
+
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_trajectory_ackermann.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_trajectory_ackermann.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_trajectory_ackermann.world.xml
+      :language: xml
+
+

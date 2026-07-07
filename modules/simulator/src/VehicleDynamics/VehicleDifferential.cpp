@@ -101,6 +101,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			{
 				controller_ = std::make_shared<ControllerTwistIdeal>(*this);
 			}
+			else if (sCtrlClass == ControllerTrajectory::class_name())
+			{
+				controller_ = std::make_shared<ControllerTrajectory>(*this);
+			}
 			else
 			{
 				THROW_EXCEPTION_FMT(

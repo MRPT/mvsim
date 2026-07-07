@@ -133,6 +133,10 @@ void World::GUI::prepare_control_window()
 		->setChecked(parent_.guiOptions_.show_forces);
 
 	w->add<nanogui::CheckBox>(
+		 "View trajectories", [&](bool b) { parent_.guiOptions_.show_trajectories = b; })
+		->setChecked(parent_.guiOptions_.show_trajectories);
+
+	w->add<nanogui::CheckBox>(
 		 "View sensor pointclouds",
 		 [&](bool b)
 		 {
@@ -1039,7 +1043,7 @@ void World::internalUpdate3DSceneObjects(
 
 	// Camera follow modes:
 	// -----------------------
-	if (!guiOptions_.follow_vehicle.empty())
+	if (gui_.gui_win && !guiOptions_.follow_vehicle.empty())
 	{
 		if (auto it = vehicles_.find(guiOptions_.follow_vehicle); it != vehicles_.end())
 		{

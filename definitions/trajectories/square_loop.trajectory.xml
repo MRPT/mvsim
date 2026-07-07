@@ -1,0 +1,11 @@
+<!--
+  Exactly-reproducible-trajectory snippet: an 8x8m square, driven at a
+  gentle ~0.67 m/s so the pure-pursuit corners round off smoothly.
+  Intended to be <include>d inside a <controller class="trajectory"> node
+  which should set loop="true" (see demo_trajectory.world.xml).
+-->
+<waypoint t="0.0"  x="0.0" y="0.0" />
+<waypoint t="12.0" x="8.0" y="0.0" />
+<waypoint t="24.0" x="8.0" y="8.0" />
+<waypoint t="36.0" x="0.0" y="8.0" />
+<waypoint t="48.0" x="0.0" y="0.0" />

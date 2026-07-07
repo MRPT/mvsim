@@ -486,6 +486,60 @@ std::string mvsim::parse_variables(
 	return ret;
 }
 
+/** true if `n`, or any of its descendants, is an `<include>` or `<if>` tag
+ * that still needs resolving. Nodes without one can be serialized verbatim
+ * (fast path, identical to the long-standing behavior); nodes that do have
+ * one must be walked recursively instead (see recursive_xml_to_str_solving_includes),
+ * since e.g. rapidxml_print's `operator<<` has no notion of includes and
+ * would just print them as literal, unresolved `<include>` tags. */
+static bool xml_subtree_has_pending_include(const rapidxml::xml_node<char>* n)
+{
+	for (auto c = n->first_node(); c; c = c->next_sibling())
+	{
+		if (strcmp(c->name(), "include") == 0 || strcmp(c->name(), "if") == 0)
+		{
+			return true;
+		}
+		if (xml_subtree_has_pending_include(c))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/** Appends `s` to `ss`, escaping the XML special characters so the rebuilt
+ * tags emitted by the "has pending include" branch below remain valid XML
+ * (rapidxml's own `operator<<`, used by the fast path, already does this;
+ * this manual rebuild path must match it). */
+static void xmlEscapeAppend(std::stringstream& ss, const char* s, bool isAttribute)
+{
+	for (; *s; ++s)
+	{
+		switch (*s)
+		{
+			case '&':
+				ss << "&amp;";
+				break;
+			case '<':
+				ss << "&lt;";
+				break;
+			case '>':
+				ss << "&gt;";
+				break;
+			case '"':
+				if (isAttribute)
+				{
+					ss << "&quot;";
+					break;
+				}
+				[[fallthrough]];
+			default:
+				ss << *s;
+		}
+	}
+}
+
 static void recursive_xml_to_str_solving_includes(
 	const World& parent, const rapidxml::xml_node<char>* n, const std::set<std::string>& varsRetain,
 	std::stringstream& ss)
@@ -535,10 +589,41 @@ static void recursive_xml_to_str_solving_includes(
 			recursive_xml_to_str_solving_includes(parent, childNode, varsRetain, ss);
 		}
 	}
+	else if (!xml_subtree_has_pending_include(n))
+	{
+		// Fast path (long-standing behavior): no <include>/<if> anywhere
+		// underneath, so it is safe to print this whole subtree verbatim.
+		ss << *n;
+	}
 	else
 	{
-		// anything else: just print as is:
-		ss << *n;
+		// This subtree has a nested <include>/<if> at some depth (e.g. a
+		// <controller> node several levels below <vehicle:class>), so it
+		// cannot be printed verbatim: rebuild the tag and recurse into its
+		// children to resolve them.
+		ss << "<" << n->name();
+		for (auto a = n->first_attribute(); a; a = a->next_attribute())
+		{
+			ss << " " << a->name() << "=\"";
+			xmlEscapeAppend(ss, a->value(), /*isAttribute*/ true);
+			ss << "\"";
+		}
+		ss << ">";
+		if (!n->first_node() && n->value_size() > 0)
+		{
+			// rapidxml (parsed with the default flags) represents leading
+			// text of a node with *only* text content as n->value(), but for
+			// mixed content (text interleaved with child elements) it instead
+			// creates separate node_data children carrying that same text --
+			// so n->value() must only be emitted here when there are no
+			// children at all, or that text would be printed twice.
+			xmlEscapeAppend(ss, n->value(), /*isAttribute*/ false);
+		}
+		for (auto c = n->first_node(); c; c = c->next_sibling())
+		{
+			recursive_xml_to_str_solving_includes(parent, c, varsRetain, ss);
+		}
+		ss << "</" << n->name() << ">\n";
 	}
 }
 
@@ -568,4 +653,49 @@ std::string mvsim::xml_to_str_solving_includes(
 	ss << "</" << xml_node->name() << ">\n";
 
 	return ss.str();
+}
+
+void mvsim::parse_trajectory_controller_config(
+	const rapidxml::xml_node<char>& node, const std::map<std::string, std::string>& vars,
+	const char* errorContext, PoseTrajectoryFollower& follower, double& vizHeight)
+{
+	bool loop = true;
+	double lookAheadDistance = 0.5;
+	double maxAngularSpeed = 2.0;
+
+	TParameterDefinitions params;
+	params["loop"] = TParamEntry("%bool", &loop);
+	params["lookahead_distance"] = TParamEntry("%lf", &lookAheadDistance);
+	params["max_angular_speed"] = TParamEntry("%lf", &maxAngularSpeed);
+	params["viz_height"] = TParamEntry("%lf", &vizHeight);
+
+	parse_xmlnode_attribs(node, params, vars, errorContext);
+	parse_xmlnode_children_as_param(node, params, vars, errorContext);
+
+	std::vector<PoseTrajectoryFollower::Waypoint> waypoints;
+	for (auto n = node.first_node("waypoint"); n; n = n->next_sibling("waypoint"))
+	{
+		double t = 0, x = 0, y = 0;
+		TParameterDefinitions wpParams;
+		wpParams["t"] = TParamEntry("%lf", &t);
+		wpParams["x"] = TParamEntry("%lf", &x);
+		wpParams["y"] = TParamEntry("%lf", &y);
+
+		parse_xmlnode_attribs(*n, wpParams, vars, errorContext);
+
+		waypoints.emplace_back(t, x, y);
+	}
+
+	if (waypoints.size() < 2)
+	{
+		THROW_EXCEPTION_FMT(
+			"%s At least 2 <waypoint t=\"..\" x=\"..\" y=\"..\"/> entries are "
+			"required inside <controller class=\"trajectory\">",
+			errorContext);
+	}
+
+	follower.setWaypoints(std::move(waypoints));
+	follower.setLoop(loop);
+	follower.setLookAheadDistance(lookAheadDistance);
+	follower.setMaxAngularSpeed(maxAngularSpeed);
 }

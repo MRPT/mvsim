@@ -717,6 +717,14 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 	}
 }
 
+void VehicleBase::internal_internalGuiUpdate_trajectory()
+{
+	if (glTrajectory_)
+	{
+		glTrajectory_->setVisibility(world_->guiOptions_.show_trajectories);
+	}
+}
+
 double mvsim::VehicleBase::estimateSlopeTorquePerWheel(size_t nDrivenWheels) const
 {
 	if (nDrivenWheels == 0)
@@ -983,11 +991,36 @@ void VehicleBase::internalGuiUpdate(
 		viz->get().insert(glMotorTorques_);	 // torques are in global coords
 	}
 
+	if (!glTrajectory_ && viz)
+	{
+		// Visualization of the exact reproducible trajectory (if any):
+		std::vector<mrpt::math::TPoint2D> trajPts;
+		double trajHeight = 0.5;
+		if (auto* ctrl = getControllerInterface();
+			ctrl && ctrl->getTrajectoryPlotPoints(trajPts, trajHeight) && trajPts.size() >= 2)
+		{
+			glTrajectory_ = mrpt::opengl::CSetOfLines::Create();
+			glTrajectory_->setLineWidth(2.5);
+			glTrajectory_->setColor_u8(0x00, 0xff, 0xff);
+			glTrajectory_->setPose(
+				parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
+			for (size_t i = 0; i + 1 < trajPts.size(); i++)
+			{
+				glTrajectory_->appendLine(
+					trajPts[i].x, trajPts[i].y, trajHeight, trajPts[i + 1].x, trajPts[i + 1].y,
+					trajHeight);
+			}
+			glTrajectory_->setVisibility(world_->guiOptions_.show_trajectories);
+			viz->get().insert(glTrajectory_);  // trajectory is in global coords
+		}
+	}
+
 	// Other common stuff:
 	if (viz && physical)
 	{
 		internal_internalGuiUpdate_sensors(viz->get(), physical->get());
 		internal_internalGuiUpdate_forces(viz->get());
+		internal_internalGuiUpdate_trajectory();
 	}
 }
 
