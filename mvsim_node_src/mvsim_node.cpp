@@ -28,6 +28,7 @@
 // ===========================================
 //                    ROS 1
 // ===========================================
+#include <mrpt/ros1bridge/gps.h>
 #include <mrpt/ros1bridge/image.h>
 #include <mrpt/ros1bridge/imu.h>
 #include <mrpt/ros1bridge/laser_scan.h>
@@ -60,6 +61,7 @@ using Msg_Marker = visualization_msgs::Marker;
 // ===========================================
 //                    ROS 2
 // ===========================================
+#include <mrpt/ros2bridge/gps.h>
 #include <mrpt/ros2bridge/image.h>
 #include <mrpt/ros2bridge/imu.h>
 #include <mrpt/ros2bridge/laser_scan.h>
@@ -1291,31 +1293,21 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	// Send observation:
 	{
-		// Convert observation MRPT -> ROS
+		// Convert observation MRPT -> ROS. Delegate to the library conversion
+		// (as the IMU handler above already does) instead of reimplementing it
+		// field-by-field: the hand-rolled version here never set
+		// msg->status.status, which ROS leaves at NavSatStatus::STATUS_UNKNOWN
+		// (-2) by IDL default; consumers that treat anything other than a
+		// definite fix as invalid (e.g. mola_state_estimation_smoother's GNSS
+		// fusion) would then silently reject every single reading, even
+		// though the simulated fix quality (mrpt::obs::gnss::Message_NMEA_GGA
+		// ::fields::fix_quality) was perfectly valid.
+		Msg_Header msg_header;
+		msg_header.stamp = myNow();
+		msg_header.frame_id = obs.sensorLabel;
+
 		auto msg = mvsim_node::make_shared<Msg_GPS>();
-		msg->header.stamp = myNow();
-		msg->header.frame_id = obs.sensorLabel;
-
-		const auto& o = obs.getMsgByClass<mrpt::obs::gnss::Message_NMEA_GGA>();
-
-		msg->latitude = o.fields.latitude_degrees;
-		msg->longitude = o.fields.longitude_degrees;
-		msg->altitude = o.fields.altitude_meters;
-
-		if (auto& c = obs.covariance_enu; c.has_value())
-		{
-#if PACKAGE_ROS_VERSION == 1
-			msg->position_covariance_type = sensor_msgs::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
-#else
-			msg->position_covariance_type =
-				sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
-#endif
-
-			msg->position_covariance.fill(0.0);
-			msg->position_covariance[0] = (*c)(0, 0);
-			msg->position_covariance[4] = (*c)(1, 1);
-			msg->position_covariance[8] = (*c)(2, 2);
-		}
+		mrpt2ros::toROS(obs, msg_header, *msg);
 
 		pub->publish(msg);
 	}
