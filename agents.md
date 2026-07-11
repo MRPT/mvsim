@@ -86,6 +86,8 @@ Each vehicle type has companion `*_Controller*.cpp` files for its controllers (R
 | `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model |
 | `GNSS.cpp` | GPS/GNSS with configurable noise |
 
+Cameras (`CameraSensor`, `DepthCameraSensor`) open a GUI preview subwindow showing their live image(s). The common `SensorBase` XML tag `<preview_win_visible>` (default `true`) controls whether that subwindow starts opened or minimized, without affecting the simulated sensor data itself.
+
 ### World elements (`src/WorldElements/`)
 
 `OccupancyGridMap`, `ElevationMap`, `HorizontalPlane`, `VerticalPlane`, `GroundGrid`, `PointCloud`, `SkyBox`, `PropertyRegion` (friction zones).
