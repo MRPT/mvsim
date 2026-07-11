@@ -19,6 +19,7 @@
 #include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/system/thread_name.h>
 #include <mrpt/version.h>
+#include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
 #include <cmath>  // cos(), sin()
@@ -1142,6 +1143,24 @@ void World::internal_gui_on_observation(
 	}
 }
 
+bool World::internal_gui_sensor_preview_visible(
+	const Simulable& veh, const std::string& sensorLabel)
+{
+	const auto* vehPtr = dynamic_cast<const VehicleBase*>(&veh);
+	if (!vehPtr)
+	{
+		return true;
+	}
+	for (const auto& s : vehPtr->getSensors())
+	{
+		if (s && s->getName() == sensorLabel)
+		{
+			return s->previewWinVisible();
+		}
+	}
+	return true;
+}
+
 void World::internal_gui_on_observation_3Dscan(
 	const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservation3DRangeScan>& obs)
 {
@@ -1153,10 +1172,13 @@ void World::internal_gui_on_observation_3Dscan(
 	}
 	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
 
+	const bool startVisible = internal_gui_sensor_preview_visible(veh, obs->sensorLabel);
+
 	if (obs->hasIntensityImage)
 	{
 		rgbImageWinSize = internal_gui_on_image(
-			veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->intensityImage, 5);
+			veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->intensityImage, 5,
+			startVisible);
 	}
 	if (obs->hasRangeImage)
 	{
@@ -1167,8 +1189,8 @@ void World::internal_gui_on_observation_3Dscan(
 		imDepth.setFromMatrix(d, true /* in range [0,1] */);
 
 		internal_gui_on_image(
-			veh.getName() + "/"s + obs->sensorLabel + "_depth"s, imDepth,
-			5 + 5 + rgbImageWinSize.x);
+			veh.getName() + "/"s + obs->sensorLabel + "_depth"s, imDepth, 5 + 5 + rgbImageWinSize.x,
+			startVisible);
 	}
 }
 
@@ -1183,12 +1205,14 @@ void World::internal_gui_on_observation_image(
 	}
 	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
 
-	rgbImageWinSize =
-		internal_gui_on_image(veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->image, 5);
+	const bool startVisible = internal_gui_sensor_preview_visible(veh, obs->sensorLabel);
+
+	rgbImageWinSize = internal_gui_on_image(
+		veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->image, 5, startVisible);
 }
 
 mrpt::math::TPoint2D World::internal_gui_on_image(
-	const std::string& label, const mrpt::img::CImage& im, int winPosX)
+	const std::string& label, const mrpt::img::CImage& im, int winPosX, bool startVisible)
 {
 	mrpt::gui::MRPT2NanoguiGLCanvas* glControl;
 
@@ -1221,6 +1245,11 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 
 		glControl->scene = mrpt::opengl::COpenGLScene::Create();
 		gui_.gui_win->performLayout();
+
+		if (!startVisible)
+		{
+			gui_.gui_win->subwindowMinimize(gui_.gui_win->getSubwindowCount() - 1);
+		}
 	}
 
 	// Update from sensor data:

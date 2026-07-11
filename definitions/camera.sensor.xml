@@ -16,6 +16,9 @@
     <clip_min>${clip_min|1e-2}</clip_min>
     <clip_max>${clip_max|1e+4}</clip_max>
 
+    <!-- Whether the GUI preview subwindow for this sensor starts opened (true, default) or minimized (false) -->
+    <preview_win_visible>${preview_win_visible|true}</preview_win_visible>
+
     <visual>
       <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_camera.dae</model_uri>
       <model_scale>${sensor_visual_scale|1.0}</model_scale>

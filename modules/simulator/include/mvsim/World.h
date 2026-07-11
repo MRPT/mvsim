@@ -881,7 +881,13 @@ class World : public mrpt::system::COutputLogger
 		const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
 
 	mrpt::math::TPoint2D internal_gui_on_image(
-		const std::string& label, const mrpt::img::CImage& im, int winPosX);
+		const std::string& label, const mrpt::img::CImage& im, int winPosX, bool startVisible);
+
+	/** Looks up, among veh's sensors, the one with the given sensorLabel and
+	 * returns its previewWinVisible() flag (true if not found, for backwards
+	 * compatibility). */
+	static bool internal_gui_sensor_preview_visible(
+		const Simulable& veh, const std::string& sensorLabel);
 
 	std::map<std::string, nanogui::Window*> guiObsViz_;	 //!< by sensorLabel
 

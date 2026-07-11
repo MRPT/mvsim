@@ -16,6 +16,9 @@
     
     <show_3d_pointcloud>${show_3d_pointcloud|false}</show_3d_pointcloud>
 
+    <!-- Whether the GUI preview subwindow(s) for this sensor start opened (true, default) or minimized (false) -->
+    <preview_win_visible>${preview_win_visible|true}</preview_win_visible>
+
     <!-- ROS publishing options for depth image & colored pointcloud -->
     <publish_ros_depth_image>${publish_ros_depth_image|true}</publish_ros_depth_image>
     <publish_ros_colored_pointcloud>${publish_ros_colored_pointcloud|false}</publish_ros_colored_pointcloud>
