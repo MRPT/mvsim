@@ -1108,9 +1108,14 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 	timlogger_.enter("update_GUI");	 // Don't count initialization, since that
 									 // is a total outlier and lacks interest!
 
-	guiMsgLinesMtx_.lock();
-	guiMsgLines_ = guiparams->msg_lines;
-	guiMsgLinesMtx_.unlock();
+	// guiparams is optional (defaults to nullptr): only copy the caller's
+	// message lines when they actually passed a params struct.
+	if (guiparams)
+	{
+		guiMsgLinesMtx_.lock();
+		guiMsgLines_ = guiparams->msg_lines;
+		guiMsgLinesMtx_.unlock();
+	}
 
 	timlogger_.leave("update_GUI");
 
