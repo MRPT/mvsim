@@ -163,6 +163,15 @@ class MVSimNode
 
 	/// (Defaul=1.0) >1: speed-up, <1: slow-down
 	double realtime_factor_ = 1.0;
+
+	/// [s] Max wall-time worth of simulation integrated in a single spin()
+	/// catch-up. Bounds the fixed-timestep "spiral of death": if a spin blocks
+	/// (e.g. waiting for OpenGL sensor rendering) the next one would otherwise
+	/// integrate a huge chunk of many sub-steps at once, delaying the following
+	/// spin further. Capping lets the sim fall slightly behind wall-clock under
+	/// load and recover smoothly instead of stalling in bursts. <=0 disables.
+	double max_simul_catchup_time_ = 0.25;
+
 	int gui_refresh_period_ms_ = 50;
 	bool headless_ = false;
 

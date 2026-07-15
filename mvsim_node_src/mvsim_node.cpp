@@ -171,6 +171,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	realtime_factor_ = n_->declare_parameter<double>("realtime_factor", realtime_factor_);
 
+	max_simul_catchup_time_ =
+		n_->declare_parameter<double>("max_simul_catchup_time", max_simul_catchup_time_);
+
 	gui_refresh_period_ms_ = static_cast<int>(
 		n_->declare_parameter<double>("gui_refresh_period", gui_refresh_period_ms_));
 
@@ -351,15 +354,48 @@ void MVSimNode::spin()
 	}
 	// Compute how much time has passed to simulate in real-time:
 	const double t_new = realtime_tictac_.Tac();
-	const double incr_time = realtime_factor_ * (t_new - t_old_);
+	const double wall_gap = t_new - t_old_;
+	double incr_time = realtime_factor_ * wall_gap;
 
 	// Just in case the computer is *really fast*...
 	if (incr_time < mvsim_world_->get_simul_timestep())
 	{
 		return;
 	}
+
+	// Bound the per-iteration catch-up to avoid the fixed-timestep "spiral of
+	// death": if a previous spin blocked (e.g. waiting for OpenGL sensor
+	// rendering, a slow subscription callback, or the machine being starved),
+	// this spin fires late and incr_time balloons; run_simulation() would then
+	// integrate that whole span as many blocking sub-steps in one call, making
+	// the *next* spin even later -> the simulation publishes odometry/TF/sensors
+	// in multi-hundred-ms bursts instead of smoothly. Capping lets sim time fall
+	// slightly behind wall-clock under load and recover, rather than cascading.
+	if (max_simul_catchup_time_ > 0 && incr_time > max_simul_catchup_time_)
+	{
+		ROS12_WARN_THROTTLE(
+			10000,
+			"Simulation slower than real time: capping catch-up %.3f s -> %.3f "
+			"s (this spin fired %.3f s late). Reduce sensor/GUI load or raise "
+			"'max_simul_catchup_time' if this persists.",
+			incr_time, max_simul_catchup_time_, wall_gap);
+		incr_time = max_simul_catchup_time_;
+	}
+
 	// Simulate:
+	const double t_cpu_0 = realtime_tictac_.Tac();
 	mvsim_world_->run_simulation(incr_time);
+	const double sim_cpu = realtime_tictac_.Tac() - t_cpu_0;
+
+	// Instrumentation: warn (throttled) when a single simulation call itself
+	// took longer in wall time than the sim time it advanced -- i.e. this spin
+	// ran slower than real time, the root symptom of the burst stalls above.
+	if (sim_cpu > incr_time && incr_time >= mvsim_world_->get_simul_timestep())
+	{
+		ROS12_WARN_THROTTLE(
+			2000, "run_simulation() took %.3f s CPU to advance %.3f s of sim time.", sim_cpu,
+			incr_time);
+	}
 
 	// t_old_simul = world.get_simul_time();
 	t_old_ = t_new;
