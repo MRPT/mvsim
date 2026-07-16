@@ -154,7 +154,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	// outgoing messages with simulation time. The mvsim node itself therefore
 	// normally runs with use_sim_time:=false (it drives the clock); it is the
 	// downstream nodes that should set use_sim_time:=true.
-	if (true == localn_.param("use_sim_time", false))
+	if (true == n_.param("use_sim_time", false))
 	{
 		ROS_WARN(
 			"use_sim_time=true was set on the mvsim node itself. mvsim is the "
@@ -1615,7 +1615,7 @@ void MVSimNode::internalOn(
 
 	// Stamp with the observation's own simulation timestamp (see note in the
 	// 2D LiDAR handler).
-	const auto now = mrpt2ros::toROS(obs.timestamp);
+	const auto obsStamp = mrpt2ros::toROS(obs.timestamp);
 
 	// ----------------------------------------------------------------
 	// RGB IMAGE
@@ -1630,14 +1630,14 @@ void MVSimNode::internalOn(
 		tfStmp.transform = tf2::toMsg(transform);
 		tfStmp.header.frame_id = "base_link";
 		tfStmp.child_frame_id = lbImage;
-		tfStmp.header.stamp = now;
+		tfStmp.header.stamp = obsStamp;
 
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
 
 		Msg_Header msg_header;
-		msg_header.stamp = now;
+		msg_header.stamp = obsStamp;
 		msg_header.frame_id = lbImage;
 
 		// Send observation:
@@ -1669,7 +1669,7 @@ void MVSimNode::internalOn(
 			tfStmp.transform = tf2::toMsg(transform);
 			tfStmp.header.frame_id = "base_link";
 			tfStmp.child_frame_id = obs.sensorLabel + "_depth";
-			tfStmp.header.stamp = now;
+			tfStmp.header.stamp = obsStamp;
 
 			Msg_TFMessage tfMsg;
 			tfMsg.transforms.push_back(tfStmp);
@@ -1677,7 +1677,7 @@ void MVSimNode::internalOn(
 		}
 
 		Msg_Header msg_header;
-		msg_header.stamp = now;
+		msg_header.stamp = obsStamp;
 		msg_header.frame_id = obs.sensorLabel + "_depth";
 
 		// Build 16UC1 depth image from rangeImage (uint16_t matrix).
@@ -1727,7 +1727,7 @@ void MVSimNode::internalOn(
 		tfStmp.transform = tf2::toMsg(transform);
 		tfStmp.header.frame_id = "base_link";
 		tfStmp.child_frame_id = lbPoints;
-		tfStmp.header.stamp = now;
+		tfStmp.header.stamp = obsStamp;
 
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
@@ -1737,7 +1737,7 @@ void MVSimNode::internalOn(
 		{
 			Msg_PointCloud2 msg_pts;
 			Msg_Header msg_header;
-			msg_header.stamp = now;
+			msg_header.stamp = obsStamp;
 			msg_header.frame_id = lbPoints;
 
 			mrpt::obs::T3DPointsProjectionParams pp;
@@ -1795,7 +1795,7 @@ void MVSimNode::internalOn(
 
 	// Stamp with the observation's own simulation timestamp (see note in the
 	// 2D LiDAR handler).
-	const auto now = mrpt2ros::toROS(obs.timestamp);
+	const auto obsStamp = mrpt2ros::toROS(obs.timestamp);
 
 	// POINTS
 	// --------
@@ -1808,7 +1808,7 @@ void MVSimNode::internalOn(
 	tfStmp.transform = tf2::toMsg(transform);
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = lbPoints;
-	tfStmp.header.stamp = now;
+	tfStmp.header.stamp = obsStamp;
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
@@ -1819,7 +1819,7 @@ void MVSimNode::internalOn(
 		// Convert observation MRPT -> ROS
 		auto msg_pts = mvsim_node::make_shared<Msg_PointCloud2>();
 		Msg_Header msg_header;
-		msg_header.stamp = now;
+		msg_header.stamp = obsStamp;
 		msg_header.frame_id = lbPoints;
 
 #if MRPT_VERSION < 0x020f00	 // 2.15.0 support legacy classes
