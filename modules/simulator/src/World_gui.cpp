@@ -1029,6 +1029,12 @@ void World::internalUpdate3DSceneObjects(
 		guiMsgLinesMtx_.unlock();
 
 		int nextStatusLine = 0;
+
+		// Achieved real-time simulation speed (1.0 = real time):
+		gui_.lbStatuses.at(nextStatusLine++)
+			->setCaption(
+				mrpt::format("Sim speed: %.03fx real time", get_realtime_factor_achieved()));
+
 		if (!msg_lines.empty())
 		{
 			// split lines:

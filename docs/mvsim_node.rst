@@ -160,3 +160,28 @@ You can use this code to bootstrap your own launch files:
 
 
 |
+
+Simulation time and the ``/clock`` topic
+-----------------------------------------
+
+The ``mvsim_node`` acts as the ROS **time source** for the whole system:
+
+* It publishes the global ``/clock`` topic (``rosgraph_msgs/Clock``) with the
+  current simulation time (the wall-clock time at simulation start plus the
+  elapsed simulated seconds).
+* Every message header it publishes (``/odom``, ``/base_pose_ground_truth``,
+  ``/tf``, and all sensor topics) is stamped with that same **simulation time**.
+  Sensor messages in particular are stamped with the exact instant the
+  observation was generated inside the simulation, so their timestamps are
+  unaffected by any latency in the asynchronous ROS publisher threads.
+
+Because header stamps track *simulation* time rather than wall-clock time, they
+stay coherent even when the simulation cannot keep up with real time (real-time
+factor below 1.0 due to heavy sensor/GUI load).
+
+.. note::
+   Run your **downstream** nodes with ``use_sim_time:=true`` so they consume
+   ``/clock``. The ``mvsim_node`` itself *drives* the clock and normally runs
+   with ``use_sim_time:=false``; setting ``use_sim_time:=true`` on the mvsim
+   node is discouraged (a warning is printed) since it would make the node
+   depend on the very clock it publishes.

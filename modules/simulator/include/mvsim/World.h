@@ -47,6 +47,7 @@
 #endif
 
 #include <any>
+#include <atomic>
 #include <functional>
 #include <list>
 #include <map>
@@ -195,6 +196,20 @@ class World : public mrpt::system::COutputLogger
 		ASSERT_(simul_start_wallclock_time_.has_value());
 		return mrpt::Clock::fromDouble(simulTime_ + simul_start_wallclock_time_.value());
 	}
+
+	/** Returns true once the simulation has an established wall-clock time
+	 *  origin (i.e. run_simulation() has been called at least once), so that
+	 *  get_simul_timestamp() can be safely queried. */
+	bool has_simul_timestamp() const
+	{
+		auto lck = mrpt::lockHelper(simul_time_mtx_);
+		return simul_start_wallclock_time_.has_value();
+	}
+
+	/** Achieved real-time factor: smoothed ratio of simulated time advanced to
+	 *  wall-clock time elapsed. 1.0 means real time; below 1.0 means the
+	 *  simulation is running slower than real time. \sa run_simulation() */
+	double get_realtime_factor_achieved() const { return achievedRealtimeFactor_.load(); }
 
 	/// Simulation fixed-time interval for numerical integration
 	double get_simul_timestep() const;
@@ -558,6 +573,12 @@ class World : public mrpt::system::COutputLogger
 	double simulTime_ = 0;
 	std::optional<double> simul_start_wallclock_time_;
 	std::mutex simul_time_mtx_;
+
+	/** Achieved real-time factor (simulated seconds advanced per wall-clock
+	 * second), exponentially smoothed. 1.0 = real time; below 1.0 = running
+	 * slower than real time (e.g. CPU-bound). Updated by run_simulation(). */
+	std::atomic<double> achievedRealtimeFactor_{1.0};
+	std::optional<double> lastRunSimulWallclock_;
 
 	/** Path from which to take relative directories. */
 	std::string basePath_{"."};
