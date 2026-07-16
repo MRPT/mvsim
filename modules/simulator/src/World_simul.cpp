@@ -36,6 +36,22 @@ void World::run_simulation(double dt)
 
 	timlogger_.registerUserMeasure("run_simulation.dt", dt);
 
+	// Track the achieved real-time factor: simulated time advanced (dt) per
+	// wall-clock second elapsed between successive run_simulation() calls,
+	// exponentially smoothed. Dips below 1.0 when the machine cannot keep up.
+	if (lastRunSimulWallclock_.has_value())
+	{
+		const double wallGap = t0 - lastRunSimulWallclock_.value();
+		if (wallGap > 1e-6)
+		{
+			const double instFactor = dt / wallGap;
+			const double alpha = 0.1;  // EMA smoothing factor
+			achievedRealtimeFactor_ =
+				(1.0 - alpha) * achievedRealtimeFactor_.load() + alpha * instFactor;
+		}
+	}
+	lastRunSimulWallclock_ = t0;
+
 	const double simulTimestep = get_simul_timestep();
 
 	// sanity checks:

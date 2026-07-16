@@ -794,6 +794,20 @@ This creates CSV files:
 
 MVSim publishes the following ROS 2 topics for each vehicle. Topic names are prefixed with the vehicle name when multiple vehicles exist in the simulation, or published directly when only one vehicle is present.
 
+.. note::
+   **Simulation time.** MVSim is the ROS *time source*: it publishes the global
+   ``/clock`` topic and stamps every outgoing message header with **simulation
+   time** (the wall-clock time at simulation start plus the elapsed simulated
+   seconds). This keeps all stamps coherent regardless of the real-time factor
+   or transient CPU load. Run your downstream nodes with ``use_sim_time:=true``
+   so they consume ``/clock``; the ``mvsim_node`` itself drives the clock and
+   normally runs with ``use_sim_time:=false``.
+
+Global Topics
+~~~~~~~~~~~~~
+
+* ``/clock`` (rosgraph_msgs/Clock) - Simulation time, for nodes running with ``use_sim_time:=true``
+
 Standard Vehicle Topics
 ~~~~~~~~~~~~~~~~~~~~~~~
 
