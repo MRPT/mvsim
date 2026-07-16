@@ -8,6 +8,7 @@
     <arg name="do_fake_localization" default="True" />
     <arg name="publish_tf_odom2baselink" default="True" />
     <arg name="force_publish_vehicle_namespace" default="False" />
+    <arg name="disable_sim_time_clock" default="False" />
     <arg name="use_rviz" default="True" />
     <arg name="rviz_config_file" default="$(find mvsim)/mvsim_tutorial/demo_depth_camera.rviz" />
 
@@ -18,6 +19,7 @@
         <param name="do_fake_localization" value="$(arg do_fake_localization)"/>
         <param name="publish_tf_odom2baselink" value="$(arg publish_tf_odom2baselink)"/>
         <param name="force_publish_vehicle_namespace" value="$(arg force_publish_vehicle_namespace)"/>
+        <param name="disable_sim_time_clock" value="$(arg disable_sim_time_clock)"/>
     </node>
 
     <!-- RViz Node (conditional launch based on use_rviz argument) -->

@@ -149,12 +149,15 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	localn_.param(
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_,
 		force_publish_vehicle_namespace_);
+	localn_.param("disable_sim_time_clock", disable_sim_time_clock_, disable_sim_time_clock_);
 
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
 	// normally runs with use_sim_time:=false (it drives the clock); it is the
-	// downstream nodes that should set use_sim_time:=true.
-	if (true == n_.param("use_sim_time", false))
+	// downstream nodes that should set use_sim_time:=true. This does not apply
+	// when disable_sim_time_clock_ is set, since the node no longer drives the
+	// clock in that case.
+	if (!disable_sim_time_clock_ && true == n_.param("use_sim_time", false))
 	{
 		ROS_WARN(
 			"use_sim_time=true was set on the mvsim node itself. mvsim is the "
@@ -202,14 +205,19 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	publish_log_topics_ = n_->declare_parameter<bool>("publish_log_topics", publish_log_topics_);
 
+	disable_sim_time_clock_ =
+		n_->declare_parameter<bool>("disable_sim_time_clock", disable_sim_time_clock_);
+
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
 	// normally runs with use_sim_time:=false (it drives the clock); it is the
-	// downstream nodes that should set use_sim_time:=true.
+	// downstream nodes that should set use_sim_time:=true. This does not apply
+	// when disable_sim_time_clock_ is set, since the node no longer drives the
+	// clock in that case.
 	{
 		bool use_sim_time = false;
 		n_->get_parameter_or("use_sim_time", use_sim_time, false);
-		if (use_sim_time)
+		if (!disable_sim_time_clock_ && use_sim_time)
 		{
 			RCLCPP_WARN(
 				n_->get_logger(),
@@ -396,19 +404,7 @@ void MVSimNode::spin()
 	}
 
 	// Simulate:
-	const double t_cpu_0 = realtime_tictac_.Tac();
 	mvsim_world_->run_simulation(incr_time);
-	const double sim_cpu = realtime_tictac_.Tac() - t_cpu_0;
-
-	// Instrumentation: warn (throttled) when a single simulation call itself
-	// took longer in wall time than the sim time it advanced -- i.e. this spin
-	// ran slower than real time, the root symptom of the burst stalls above.
-	if (sim_cpu > incr_time && incr_time >= mvsim_world_->get_simul_timestep())
-	{
-		ROS12_WARN_THROTTLE(
-			2000, "run_simulation() took %.3f s CPU to advance %.3f s of sim time.", sim_cpu,
-			incr_time);
-	}
 
 	// t_old_simul = world.get_simul_time();
 	t_old_ = t_new;
@@ -636,8 +632,9 @@ ros_Time MVSimNode::myNow() const
 	// coherent regardless of the real-time factor or transient CPU load, and
 	// match the "/clock" topic consumed by downstream nodes running with
 	// use_sim_time:=true. Fall back to wall-clock only before the first
-	// simulation step, when no sim timestamp exists yet.
-	if (mvsim_world_ && mvsim_world_->has_simul_timestamp())
+	// simulation step, when no sim timestamp exists yet, or when the user
+	// explicitly opted out via disable_sim_time_clock_.
+	if (!disable_sim_time_clock_ && mvsim_world_ && mvsim_world_->has_simul_timestamp())
 	{
 		return mrpt2ros::toROS(mvsim_world_->get_simul_timestamp());
 	}
@@ -650,7 +647,7 @@ ros_Time MVSimNode::myNow() const
 
 double MVSimNode::myNowSec() const
 {
-	if (mvsim_world_ && mvsim_world_->has_simul_timestamp())
+	if (!disable_sim_time_clock_ && mvsim_world_ && mvsim_world_->has_simul_timestamp())
 	{
 		return mrpt::Clock::toDouble(mvsim_world_->get_simul_timestamp());
 	}
@@ -659,6 +656,20 @@ double MVSimNode::myNowSec() const
 #else
 	return static_cast<double>(clock_->now().nanoseconds()) * 1e-9;
 #endif
+}
+
+ros_Time MVSimNode::myObsStamp(const mrpt::system::TTimeStamp& obsTimestamp) const
+{
+	// Normally, stamp with the observation's own simulation timestamp (set
+	// when the sensor was sampled) so the stamp is unaffected by any latency
+	// in the asynchronous publisher worker thread. When the sim clock is
+	// disabled, fall back to wall-clock time instead, as done before
+	// simulation time support was added.
+	if (disable_sim_time_clock_)
+	{
+		return myNow();
+	}
+	return mrpt2ros::toROS(obsTimestamp);
 }
 
 /** Initialize all pub/subs required for each vehicle, for the specific vehicle
@@ -901,9 +912,10 @@ void MVSimNode::spinNotifyROS()
 	}
 	// Publish "/clock" so downstream nodes can run with use_sim_time:=true.
 	// mvsim is the simulation time authority; all header stamps below use the
-	// same simulation time base (see myNow()).
+	// same simulation time base (see myNow()). Skipped entirely when
+	// disable_sim_time_clock_ is set, restoring pre-sim-clock behavior.
 	// ----------------------------------------------------------------
-	if (pub_clock_ && mvsim_world_->has_simul_timestamp())
+	if (!disable_sim_time_clock_ && pub_clock_ && mvsim_world_->has_simul_timestamp())
 	{
 		Msg_Clock clockMsg;
 		clockMsg.clock = mrpt2ros::toROS(mvsim_world_->get_simul_timestamp());
@@ -1240,8 +1252,8 @@ void MVSimNode::internalOn(
 
 	// Stamp with the observation's own simulation timestamp (set when the
 	// sensor was sampled), not "now", so the stamp is unaffected by any latency
-	// in the asynchronous publisher worker thread.
-	const auto obsStamp = mrpt2ros::toROS(obs.timestamp);
+	// in the asynchronous publisher worker thread (see myObsStamp()).
+	const auto obsStamp = myObsStamp(obs.timestamp);
 
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
@@ -1292,7 +1304,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	// Stamp with the observation's own simulation timestamp (see note in the
 	// 2D LiDAR handler).
-	const auto obsStamp = mrpt2ros::toROS(obs.timestamp);
+	const auto obsStamp = myObsStamp(obs.timestamp);
 
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
@@ -1349,7 +1361,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	// Stamp with the observation's own simulation timestamp (see note in the
 	// 2D LiDAR handler).
-	const auto obsStamp = mrpt2ros::toROS(obs.timestamp);
+	const auto obsStamp = myObsStamp(obs.timestamp);
 
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
@@ -1508,7 +1520,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	// Stamp with the observation's own simulation timestamp (see note in the
 	// 2D LiDAR handler).
-	const auto obsStamp = mrpt2ros::toROS(obs.timestamp);
+	const auto obsStamp = myObsStamp(obs.timestamp);
 
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose;
@@ -1615,7 +1627,7 @@ void MVSimNode::internalOn(
 
 	// Stamp with the observation's own simulation timestamp (see note in the
 	// 2D LiDAR handler).
-	const auto obsStamp = mrpt2ros::toROS(obs.timestamp);
+	const auto obsStamp = myObsStamp(obs.timestamp);
 
 	// ----------------------------------------------------------------
 	// RGB IMAGE
@@ -1795,7 +1807,7 @@ void MVSimNode::internalOn(
 
 	// Stamp with the observation's own simulation timestamp (see note in the
 	// 2D LiDAR handler).
-	const auto obsStamp = mrpt2ros::toROS(obs.timestamp);
+	const auto obsStamp = myObsStamp(obs.timestamp);
 
 	// POINTS
 	// --------

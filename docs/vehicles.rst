@@ -801,7 +801,9 @@ MVSim publishes the following ROS 2 topics for each vehicle. Topic names are pre
    seconds). This keeps all stamps coherent regardless of the real-time factor
    or transient CPU load. Run your downstream nodes with ``use_sim_time:=true``
    so they consume ``/clock``; the ``mvsim_node`` itself drives the clock and
-   normally runs with ``use_sim_time:=false``.
+   normally runs with ``use_sim_time:=false``. Set the ``disable_sim_time_clock``
+   parameter to ``true`` to opt out and revert to plain wall-clock stamps (no
+   ``/clock`` publication), as done before simulation time support was added.
 
 Global Topics
 ~~~~~~~~~~~~~

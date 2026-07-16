@@ -33,6 +33,12 @@ def generate_launch_description():
         description='Publish every CSV-logger column as a std_msgs/Float64 topic per vehicle. '
                     'High-rate, disabled by default.')
 
+    disable_sim_time_clock_arg = DeclareLaunchArgument(
+        "disable_sim_time_clock", default_value='False',
+        description='Do not use mvsim internal simulation clock: do not publish "/clock" and '
+                    'stamp all messages with wall-clock time instead, as done before simulation '
+                    'time support was added.')
+
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz', default_value='True',
         description='Whether to launch RViz2'
@@ -56,6 +62,7 @@ def generate_launch_description():
                 "publish_tf_odom2baselink": LaunchConfiguration('publish_tf_odom2baselink'),
                 "force_publish_vehicle_namespace": LaunchConfiguration('force_publish_vehicle_namespace'),
                 "publish_log_topics": LaunchConfiguration('publish_log_topics'),
+                "disable_sim_time_clock": LaunchConfiguration('disable_sim_time_clock'),
             }]
     )
 
@@ -75,6 +82,7 @@ def generate_launch_description():
         publish_tf_odom2baselink_arg,
         force_publish_vehicle_namespace_arg,
         publish_log_topics_arg,
+        disable_sim_time_clock_arg,
         use_rviz_arg,
         rviz_config_file_arg,
         mvsim_node,
