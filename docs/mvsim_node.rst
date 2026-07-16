@@ -67,6 +67,12 @@ All these parameters apply to both, ROS 1 and ROS 2 launch files above:
          Use vehicle name namespace even if there is only one vehicle
          (default: 'False')
 
+      'disable_sim_time_clock':
+         Do not use the internal simulation clock: do not publish '/clock' and
+         stamp all messages with wall-clock time instead, as done before
+         simulation time support was added
+         (default: 'False')
+
       'use_rviz':
          Whether to launch RViz2
          (default: 'True')
@@ -94,6 +100,7 @@ You can use this code to bootstrap your own launch files:
                <arg name="do_fake_localization" default="True" />
                <arg name="publish_tf_odom2baselink" default="True" />
                <arg name="force_publish_vehicle_namespace" default="False" />
+               <arg name="disable_sim_time_clock" default="False" />
                <arg name="use_rviz" default="True" />
                <arg name="rviz_config_file" default="$(find mvsim)/mvsim_tutorial/demo_depth_camera.rviz" />
 
@@ -104,6 +111,7 @@ You can use this code to bootstrap your own launch files:
                   <arg name="do_fake_localization" value="$(arg do_fake_localization)" />
                   <arg name="publish_tf_odom2baselink" value="$(arg publish_tf_odom2baselink)" />
                   <arg name="force_publish_vehicle_namespace" value="$(arg force_publish_vehicle_namespace)" />
+                  <arg name="disable_sim_time_clock" value="$(arg disable_sim_time_clock)" />
                   <arg name="use_rviz" value="$(arg use_rviz)" />
                   <arg name="rviz_config_file" value="$(arg rviz_config_file)" />
                </include>
@@ -134,6 +142,7 @@ You can use this code to bootstrap your own launch files:
                do_fake_localization = 'True'
                publish_tf_odom2baselink = 'True'
                force_publish_vehicle_namespace = 'False'
+               disable_sim_time_clock = 'False'
                use_rviz = 'True'
 
 
@@ -151,6 +160,7 @@ You can use this code to bootstrap your own launch files:
                         'do_fake_localization': do_fake_localization,
                         'publish_tf_odom2baselink': publish_tf_odom2baselink,
                         'force_publish_vehicle_namespace': force_publish_vehicle_namespace,
+                        'disable_sim_time_clock': disable_sim_time_clock,
                         'use_rviz': use_rviz,
                         'rviz_config_file': rviz_config_file
                   }.items()
@@ -185,3 +195,19 @@ factor below 1.0 due to heavy sensor/GUI load).
    with ``use_sim_time:=false``; setting ``use_sim_time:=true`` on the mvsim
    node is discouraged (a warning is printed) since it would make the node
    depend on the very clock it publishes.
+
+Disabling the simulation clock
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you prefer the previous behavior, set the ``disable_sim_time_clock``
+parameter (ROS launch argument) to ``true``. In that case:
+
+* ``mvsim_node`` does not publish ``/clock``.
+* All header stamps, including sensor observations, use plain wall-clock time
+  (as reported by the ROS clock), regardless of the real-time factor.
+
+.. code-block:: bash
+
+   ros2 launch mvsim launch_world.launch.py \
+     world_file:=/path/to/your/my.world.xml \
+     disable_sim_time_clock:=True

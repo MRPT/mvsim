@@ -128,7 +128,7 @@ Key headers in `modules/comms/include/mvsim/Comms/`:
 - `mvsim_node.cpp` — `MvSimNode` class wrapping `World`, publishing sensor observations as ROS topics, subscribing to `cmd_vel`, advertising TF transforms and ROS 2 parameters.
 - `mvsim_node_src/include/` — node header
 
-**Simulation time:** the node is the ROS time source. It publishes `/clock` and stamps every header with *simulation* time (`World::get_simul_timestamp()`); sensor messages use the observation's own `obs.timestamp` so stamps are immune to publisher-thread latency. `myNow()`/`myNowSec()` return sim time (wall-clock fallback before the first step). Downstream nodes should set `use_sim_time:=true`; the node itself runs with `use_sim_time:=false` (only warns if set true).
+**Simulation time:** the node is the ROS time source. It publishes `/clock` and stamps every header with *simulation* time (`World::get_simul_timestamp()`); sensor messages use the observation's own `obs.timestamp` so stamps are immune to publisher-thread latency. `myNow()`/`myNowSec()` return sim time (wall-clock fallback before the first step). Downstream nodes should set `use_sim_time:=true`; the node itself runs with `use_sim_time:=false` (only warns if set true). The `disable_sim_time_clock` parameter (default `false`) opts out of all of the above: no `/clock` publication, and every header stamp (via `myNow()`/`myObsStamp()`) uses wall-clock time instead, matching pre-simulation-clock behavior.
 
 ---
 

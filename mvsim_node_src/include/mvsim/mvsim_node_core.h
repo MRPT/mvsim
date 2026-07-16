@@ -190,6 +190,12 @@ class MVSimNode
 	/// vehicle at every simulation timestep. Disabled by default.
 	bool publish_log_topics_ = false;
 
+	/// Default=false. If true, do NOT use mvsim's internal simulation clock:
+	/// the "/clock" topic is not published, and all header stamps (including
+	/// sensor observations) use wall-clock time instead, as done before
+	/// simulation time support was added.
+	bool disable_sim_time_clock_ = false;
+
    protected:
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim_node::shared_ptr<mvsim::Server> mvsim_server_;
@@ -369,6 +375,11 @@ class MVSimNode
 
 	ros_Time myNow() const;
 	double myNowSec() const;
+
+	/// Stamp to use for a sensor observation: the observation's own
+	/// simulation timestamp, unless disable_sim_time_clock_ is set, in which
+	/// case myNow() (wall-clock) is used instead.
+	ros_Time myObsStamp(const mrpt::system::TTimeStamp& obsTimestamp) const;
 
 	mrpt::system::CTimeLogger profiler_{true /*enabled*/, "mvsim_node"};
 
