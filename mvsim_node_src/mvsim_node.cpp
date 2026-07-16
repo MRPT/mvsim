@@ -1043,6 +1043,14 @@ void MVSimNode::spinNotifyROS()
 					Msg_Odometry odoMsg;
 					odoMsg.pose.pose = mrpt2ros::toROS_Pose(veh_odom_pose);
 
+					// twist is given in the child_frame_id (base_link) frame, as
+					// reconstructed from wheels spinning velocities and geometry:
+					const auto veh_odo_vel = veh->getVelocityLocalOdoEstimate();
+					odoMsg.twist.twist.linear.x = veh_odo_vel.vx;
+					odoMsg.twist.twist.linear.y = veh_odo_vel.vy;
+					odoMsg.twist.twist.linear.z = 0;
+					odoMsg.twist.twist.angular.z = veh_odo_vel.omega;
+
 					// first, we'll populate the header for the odometry msg
 					odoMsg.header.stamp = myNow();
 					odoMsg.header.frame_id = "odom";
