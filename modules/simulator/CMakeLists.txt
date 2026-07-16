@@ -53,6 +53,9 @@ add_library(${PROJECT_NAME}
 	include/mvsim/Wheel.h
 	include/mvsim/World.h
 
+	# Assets:
+	include/mvsim/assets/mvsim_icon_64x64.h
+
 	# FrictionModels:
 	src/FrictionModels/DefaultFriction.cpp
 	src/FrictionModels/FrictionBase.cpp

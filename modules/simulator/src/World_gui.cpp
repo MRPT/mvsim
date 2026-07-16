@@ -21,6 +21,7 @@
 #include <mrpt/version.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
+#include <mvsim/assets/mvsim_icon_64x64.h>
 
 #include <cmath>  // cos(), sin()
 #include <rapidxml.hpp>
@@ -609,6 +610,8 @@ void World::internal_GUI_thread()
 
 		gui_.gui_win =
 			mrpt::gui::CDisplayWindowGUI::Create("mvsim", guiOptions_.win_w, guiOptions_.win_h, cp);
+
+		gui_.gui_win->setIconFromData(mvsim_icon_data, mvsim_icon_width, mvsim_icon_height, 0xff);
 
 		// zmin / zmax of opengl viewport:
 		worldVisual_->getViewport()->setViewportClipDistances(
