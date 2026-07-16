@@ -149,8 +149,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	localn_.param(
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_,
 		force_publish_vehicle_namespace_);
-	localn_.param(
-		"disable_sim_time_clock", disable_sim_time_clock_, disable_sim_time_clock_);
+	localn_.param("disable_sim_time_clock", disable_sim_time_clock_, disable_sim_time_clock_);
 
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
