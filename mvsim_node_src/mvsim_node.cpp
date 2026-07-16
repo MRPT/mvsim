@@ -154,8 +154,10 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
 	// normally runs with use_sim_time:=false (it drives the clock); it is the
-	// downstream nodes that should set use_sim_time:=true.
-	if (true == n_.param("use_sim_time", false))
+	// downstream nodes that should set use_sim_time:=true. This does not apply
+	// when disable_sim_time_clock_ is set, since the node no longer drives the
+	// clock in that case.
+	if (!disable_sim_time_clock_ && true == n_.param("use_sim_time", false))
 	{
 		ROS_WARN(
 			"use_sim_time=true was set on the mvsim node itself. mvsim is the "
@@ -209,11 +211,13 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
 	// normally runs with use_sim_time:=false (it drives the clock); it is the
-	// downstream nodes that should set use_sim_time:=true.
+	// downstream nodes that should set use_sim_time:=true. This does not apply
+	// when disable_sim_time_clock_ is set, since the node no longer drives the
+	// clock in that case.
 	{
 		bool use_sim_time = false;
 		n_->get_parameter_or("use_sim_time", use_sim_time, false);
-		if (use_sim_time)
+		if (!disable_sim_time_clock_ && use_sim_time)
 		{
 			RCLCPP_WARN(
 				n_->get_logger(),
@@ -400,19 +404,7 @@ void MVSimNode::spin()
 	}
 
 	// Simulate:
-	const double t_cpu_0 = realtime_tictac_.Tac();
 	mvsim_world_->run_simulation(incr_time);
-	const double sim_cpu = realtime_tictac_.Tac() - t_cpu_0;
-
-	// Instrumentation: warn (throttled) when a single simulation call itself
-	// took longer in wall time than the sim time it advanced -- i.e. this spin
-	// ran slower than real time, the root symptom of the burst stalls above.
-	if (sim_cpu > incr_time && incr_time >= mvsim_world_->get_simul_timestep())
-	{
-		ROS12_WARN_THROTTLE(
-			2000, "run_simulation() took %.3f s CPU to advance %.3f s of sim time.", sim_cpu,
-			incr_time);
-	}
 
 	// t_old_simul = world.get_simul_time();
 	t_old_ = t_new;
