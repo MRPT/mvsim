@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.4.0 (2026-07-17)
+------------------
 * fix(ros): populate twist in /odom topic
 * add custom icon
 * feat(ros): add disable_sim_time_clock param to opt out of sim clock
