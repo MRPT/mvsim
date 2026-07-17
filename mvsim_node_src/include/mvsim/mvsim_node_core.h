@@ -62,6 +62,7 @@ using Msg_Bool = std_msgs::Bool;
 using Msg_TFMessage = tf2_msgs::TFMessage;
 using Msg_MarkerArray = visualization_msgs::MarkerArray;
 using Msg_CameraInfo = sensor_msgs::CameraInfo;
+using Msg_Clock = rosgraph_msgs::Clock;
 #else
 #include <geometry_msgs/msg/polygon.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
@@ -73,6 +74,7 @@ using Msg_CameraInfo = sensor_msgs::CameraInfo;
 #include <rclcpp/clock.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/time_source.hpp>
+#include <rosgraph_msgs/msg/clock.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float64.hpp>
@@ -99,6 +101,7 @@ using Msg_Float64 = std_msgs::msg::Float64;
 using Msg_TFMessage = tf2_msgs::msg::TFMessage;
 using Msg_MarkerArray = visualization_msgs::msg::MarkerArray;
 using Msg_CameraInfo = sensor_msgs::msg::CameraInfo;
+using Msg_Clock = rosgraph_msgs::msg::Clock;
 #endif
 
 namespace mvsim_node
@@ -163,6 +166,15 @@ class MVSimNode
 
 	/// (Defaul=1.0) >1: speed-up, <1: slow-down
 	double realtime_factor_ = 1.0;
+
+	/// [s] Max wall-time worth of simulation integrated in a single spin()
+	/// catch-up. Bounds the fixed-timestep "spiral of death": if a spin blocks
+	/// (e.g. waiting for OpenGL sensor rendering) the next one would otherwise
+	/// integrate a huge chunk of many sub-steps at once, delaying the following
+	/// spin further. Capping lets the sim fall slightly behind wall-clock under
+	/// load and recover smoothly instead of stalling in bursts. <=0 disables.
+	double max_simul_catchup_time_ = 0.25;
+
 	int gui_refresh_period_ms_ = 50;
 	bool headless_ = false;
 
@@ -178,6 +190,12 @@ class MVSimNode
 	/// vehicle at every simulation timestep. Disabled by default.
 	bool publish_log_topics_ = false;
 
+	/// Default=false. If true, do NOT use mvsim's internal simulation clock:
+	/// the "/clock" topic is not published, and all header stamps (including
+	/// sensor observations) use wall-clock time instead, as done before
+	/// simulation time support was added.
+	bool disable_sim_time_clock_ = false;
+
    protected:
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim_node::shared_ptr<mvsim::Server> mvsim_server_;
@@ -192,10 +210,14 @@ class MVSimNode
 
 	// === ROS Publishers ====
 #if PACKAGE_ROS_VERSION == 1
-	// mvsim_node::shared_ptr<ros::Publisher> pub_clock_;
+	/// Publisher of the "/clock" topic (simulation time source).
+	mvsim_node::shared_ptr<ros::Publisher> pub_clock_;
 #else
 	rclcpp::TimeSource ts_{n_};
 	rclcpp::Clock::SharedPtr clock_;
+
+	/// Publisher of the "/clock" topic (simulation time source).
+	rclcpp::Publisher<Msg_Clock>::SharedPtr pub_clock_;
 #endif
 
 	struct WorldPubs
@@ -295,10 +317,6 @@ class MVSimNode
 	void onROSMsgCmdVel(Msg_Twist_CSPtr cmd, mvsim::VehicleBase* veh);
 	// === End ROS Hooks====
 
-#if PACKAGE_ROS_VERSION == 1
-	// rosgraph_msgs::Clock clockMsg_;
-#endif
-	// ros_Time sim_time_;	 //!< Current simulation time
 	ros_Time base_last_cmd_;  //!< received a vel_cmd (for watchdog)
 	ros_Duration base_watchdog_timeout_ = ros_Duration(1, 0);
 
@@ -357,6 +375,11 @@ class MVSimNode
 
 	ros_Time myNow() const;
 	double myNowSec() const;
+
+	/// Stamp to use for a sensor observation: the observation's own
+	/// simulation timestamp, unless disable_sim_time_clock_ is set, in which
+	/// case myNow() (wall-clock) is used instead.
+	ros_Time myObsStamp(const mrpt::system::TTimeStamp& obsTimestamp) const;
 
 	mrpt::system::CTimeLogger profiler_{true /*enabled*/, "mvsim_node"};
 

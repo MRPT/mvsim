@@ -9,6 +9,8 @@
 
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 
+#include "xml_utils.h"
+
 using namespace mvsim;
 
 DynamicsDifferential::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsDifferential& veh)
@@ -39,6 +41,15 @@ void DynamicsDifferential::ControllerTwistIdeal::on_post_step(
 	// Fake controller: just set the setpoint as state and we are done.
 	const auto sp = setpoint();
 	this->veh_.setRefVelocityLocal(sp);
+}
+
+void DynamicsDifferential::ControllerTwistIdeal::load_config(const rapidxml::xml_node<char>& node)
+{
+	TParameterDefinitions params;
+	params["joyMaxLinSpeed"] = TParamEntry("%lf", &joyMaxLinSpeed);
+	params["joyMaxAngSpeed"] = TParamEntry("%lf", &joyMaxAngSpeed);
+
+	parse_xmlnode_children_as_param(node, params);
 }
 
 void DynamicsDifferential::ControllerTwistIdeal::teleop_interface(

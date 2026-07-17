@@ -2,6 +2,29 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.0 (2026-07-17)
+------------------
+* fix(ros): populate twist in /odom topic
+* add custom icon
+* feat(ros): add disable_sim_time_clock param to opt out of sim clock
+* ci: add ubuntu-26.04 build matrix jobs (gcc, clang)
+* feat(ros): use simulation time for stamps and publish /clock; show achieved real-time factor in GUI
+* feat: allow sensors' GUI preview subwindow to start minimized
+* fix: GNSS ROS publisher never set NavSatFix.status.status
+* feat: add exactly reproducible trajectories controller for offline experiments
+* feat: visualize trajectory paths in 3D GUI
+* fix: avoid duplicated text when rebuilding mixed-content XML nodes
+* build: auto-enable ccache when available
+* fix: improve robustness of remote resource downloads
+* docs: fix Lyrical arm64 binary badge URL; update ROS 2 build status and EOL distro info
+* fix: XYZ wheel-corner markers must not be visible to camera/lidar sensors
+* fix: robust against corrupted downloads
+* fix: visual artifacts in wheel positions with custom viz
+* cmake minimum version: bump to 3.22 in examples
+* Add configurable maximum joystick speed via XML params
+* Add agents.md file
+* Contributors: Jose Luis Blanco-Claraco
+
 1.3.0 (2026-03-17)
 ------------------
 * docs: add logo to web

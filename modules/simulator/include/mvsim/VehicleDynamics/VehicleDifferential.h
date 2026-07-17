@@ -11,6 +11,7 @@
 
 #include <mrpt/math/TPoint2D.h>
 #include <mvsim/PID_Controller.h>
+#include <mvsim/PoseTrajectoryFollower.h>
 #include <mvsim/VehicleBase.h>
 
 namespace mvsim
@@ -189,6 +190,7 @@ class DynamicsDifferential : public VehicleBase
 			DynamicsDifferential::TControllerOutput& co) override;
 		void on_post_step(const TSimulContext& context) override;
 
+		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
 		// See base docs.
@@ -216,6 +218,47 @@ class DynamicsDifferential : public VehicleBase
 
 		double joyMaxLinSpeed = 1.0;
 		double joyMaxAngSpeed = 0.5;
+	};
+
+	/** Exactly-reproducible-trajectory controller: drives the vehicle along
+	 *  a closed-form, time-parameterized `(t, x, y)` polyline given in the
+	 *  `<controller>` XML node, using a pure-pursuit strategy (see
+	 *  PoseTrajectoryFollower). Like ControllerTwistIdeal, the resulting
+	 *  twist is imposed directly on the vehicle state, bypassing the
+	 *  physical wheel torque model, so the same trajectory is reproduced
+	 *  exactly run after run: useful for offline experiments that need
+	 *  repetitive or predefined motion (benchmarking perception/planning
+	 *  pipelines, regression tests, etc.).
+	 *
+	 *  XML usage example:
+	 *  \code{.xml}
+	 *  <controller class="trajectory" loop="true">
+	 *      <lookahead_distance>0.75</lookahead_distance>
+	 *      <waypoint t="0.0" x="0.0" y="0.0" />
+	 *      <waypoint t="4.0" x="4.0" y="0.0" />
+	 *      <waypoint t="8.0" x="4.0" y="4.0" />
+	 *  </controller>
+	 *  \endcode
+	 */
+	class ControllerTrajectory : public ControllerBase
+	{
+	   public:
+		ControllerTrajectory(DynamicsDifferential& veh);
+		static const char* class_name() { return "trajectory"; }
+
+		void control_step(
+			const DynamicsDifferential::TControllerInput& ci,
+			DynamicsDifferential::TControllerOutput& co) override;
+		void on_post_step(const TSimulContext& context) override;
+
+		virtual void load_config(const rapidxml::xml_node<char>& node) override;
+
+		bool getTrajectoryPlotPoints(
+			std::vector<mrpt::math::TPoint2D>& pts, double& height) const override;
+
+	   private:
+		PoseTrajectoryFollower follower_;
+		double vizHeight_ = 0.5;  //!< [m] height for the GUI trajectory line viz
 	};
 
 	const ControllerBase::Ptr& getController() const { return controller_; }

@@ -15,6 +15,7 @@ add_library(${PROJECT_NAME}
 	src/parse_utils.cpp
 	src/parse_utils.h
 	src/PID_Controller.cpp
+	src/PoseTrajectoryFollower.cpp
 	src/RemoteResourcesManager.cpp
 	src/Shape2p5.cpp
 	src/Simulable.cpp
@@ -42,6 +43,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/mvsim_version.h
 	include/mvsim/mvsim.h
 	include/mvsim/PID_Controller.h
+	include/mvsim/PoseTrajectoryFollower.h
 	include/mvsim/RemoteResourcesManager.h
 	include/mvsim/Shape2p5.h
 	include/mvsim/Simulable.h
@@ -50,6 +52,9 @@ add_library(${PROJECT_NAME}
 	include/mvsim/VisualObject.h
 	include/mvsim/Wheel.h
 	include/mvsim/World.h
+
+	# Assets:
+	include/mvsim/assets/mvsim_icon_64x64.h
 
 	# FrictionModels:
 	src/FrictionModels/DefaultFriction.cpp
@@ -82,6 +87,7 @@ add_library(${PROJECT_NAME}
 	# VehicleDynamics:
 	src/VehicleDynamics/VehicleAckermann_ControllerFrontSteerPID.cpp
 	src/VehicleDynamics/VehicleAckermann_ControllerRaw.cpp
+	src/VehicleDynamics/VehicleAckermann_ControllerTrajectory.cpp
 	src/VehicleDynamics/VehicleAckermann_ControllerTwistIdeal.cpp
 	src/VehicleDynamics/VehicleAckermann_ControllerTwistFrontSteerPID.cpp
 	src/VehicleDynamics/VehicleAckermann.cpp
@@ -90,6 +96,7 @@ add_library(${PROJECT_NAME}
 	src/VehicleDynamics/Vehicleackermann_Drivetrain_ControllerTwistFrontSteerPID.cpp
 	src/VehicleDynamics/VehicleAckermann_Drivetrain.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerRaw.cpp
+	src/VehicleDynamics/VehicleDifferential_ControllerTrajectory.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerTwistIdeal.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerTwistPID.cpp
 	src/VehicleDynamics/VehicleDifferential.cpp

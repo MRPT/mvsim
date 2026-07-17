@@ -52,6 +52,23 @@ class ControllerBaseInterface
 	{
 		return false; /* default: no */
 	}
+
+	/** Override in controllers that follow a predefined path (e.g. the
+	 * "trajectory" controller) to expose the path polyline for GUI
+	 * visualization.
+	 * \param[out] pts The (x,y) points of the path, in the vehicle's parent
+	 * coordinate frame.
+	 * \param[out] height The desired rendering height (Z coordinate, in
+	 * meters) for the visualized line.
+	 * \return true if trajectory data is available (and pts/height filled
+	 * in), false otherwise (default).
+	 */
+	virtual bool getTrajectoryPlotPoints(
+		[[maybe_unused]] std::vector<mrpt::math::TPoint2D>& pts,
+		[[maybe_unused]] double& height) const
+	{
+		return false; /* default: no trajectory data */
+	}
 };
 
 /** Virtual base for controllers of vehicles of any type (template) */

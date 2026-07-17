@@ -28,12 +28,14 @@
 // ===========================================
 //                    ROS 1
 // ===========================================
+#include <mrpt/ros1bridge/gps.h>
 #include <mrpt/ros1bridge/image.h>
 #include <mrpt/ros1bridge/imu.h>
 #include <mrpt/ros1bridge/laser_scan.h>
 #include <mrpt/ros1bridge/map.h>
 #include <mrpt/ros1bridge/point_cloud2.h>
 #include <mrpt/ros1bridge/pose.h>
+#include <mrpt/ros1bridge/time.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
@@ -60,12 +62,14 @@ using Msg_Marker = visualization_msgs::Marker;
 // ===========================================
 //                    ROS 2
 // ===========================================
+#include <mrpt/ros2bridge/gps.h>
 #include <mrpt/ros2bridge/image.h>
 #include <mrpt/ros2bridge/imu.h>
 #include <mrpt/ros2bridge/laser_scan.h>
 #include <mrpt/ros2bridge/map.h>
 #include <mrpt/ros2bridge/point_cloud2.h>
 #include <mrpt/ros2bridge/pose.h>
+#include <mrpt/ros2bridge/time.h>
 
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -145,13 +149,20 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	localn_.param(
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_,
 		force_publish_vehicle_namespace_);
+	localn_.param("disable_sim_time_clock", disable_sim_time_clock_, disable_sim_time_clock_);
 
-	// JLBC: At present, mvsim does not use sim_time for neither ROS 1 nor
-	// ROS 2.
-	// n_.setParam("use_sim_time", false);
-	if (true == localn_.param("use_sim_time", false))
+	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
+	// outgoing messages with simulation time. The mvsim node itself therefore
+	// normally runs with use_sim_time:=false (it drives the clock); it is the
+	// downstream nodes that should set use_sim_time:=true. This does not apply
+	// when disable_sim_time_clock_ is set, since the node no longer drives the
+	// clock in that case.
+	if (!disable_sim_time_clock_ && true == n_.param("use_sim_time", false))
 	{
-		THROW_EXCEPTION("At present, MVSIM can only work with use_sim_time=false");
+		ROS_WARN(
+			"use_sim_time=true was set on the mvsim node itself. mvsim is the "
+			"/clock time source and normally runs with use_sim_time:=false; set "
+			"use_sim_time:=true on downstream nodes instead.");
 	}
 #else
 	clock_ = n_->get_clock();
@@ -168,6 +179,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	}
 
 	realtime_factor_ = n_->declare_parameter<double>("realtime_factor", realtime_factor_);
+
+	max_simul_catchup_time_ =
+		n_->declare_parameter<double>("max_simul_catchup_time", max_simul_catchup_time_);
 
 	gui_refresh_period_ms_ = static_cast<int>(
 		n_->declare_parameter<double>("gui_refresh_period", gui_refresh_period_ms_));
@@ -191,13 +205,26 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	publish_log_topics_ = n_->declare_parameter<bool>("publish_log_topics", publish_log_topics_);
 
-	// n_->declare_parameter("use_sim_time"); // already declared error?
+	disable_sim_time_clock_ =
+		n_->declare_parameter<bool>("disable_sim_time_clock", disable_sim_time_clock_);
+
+	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
+	// outgoing messages with simulation time. The mvsim node itself therefore
+	// normally runs with use_sim_time:=false (it drives the clock); it is the
+	// downstream nodes that should set use_sim_time:=true. This does not apply
+	// when disable_sim_time_clock_ is set, since the node no longer drives the
+	// clock in that case.
 	{
 		bool use_sim_time = false;
 		n_->get_parameter_or("use_sim_time", use_sim_time, false);
-		if (use_sim_time)
+		if (!disable_sim_time_clock_ && use_sim_time)
 		{
-			THROW_EXCEPTION("At present, MVSIM can only work with use_sim_time=false");
+			RCLCPP_WARN(
+				n_->get_logger(),
+				"use_sim_time=true was set on the mvsim node itself. mvsim is "
+				"the /clock time source and normally runs with "
+				"use_sim_time:=false; set use_sim_time:=true on downstream nodes "
+				"instead.");
 		}
 	}
 #endif
@@ -208,16 +235,15 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	// Init ROS publishers:
 #if PACKAGE_ROS_VERSION == 1
-	// pub_clock_ =
-	// mvsim_node::make_shared<ros::Publisher>(n_.advertise<rosgraph_msgs::Clock>("/clock",
-	// 10));
+	pub_clock_ = mvsim_node::make_shared<ros::Publisher>(
+		n_.advertise<Msg_Clock>("/clock", publisher_history_len_));
+#else
+	pub_clock_ = n_->create_publisher<Msg_Clock>("/clock", rclcpp::ClockQoS());
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
-	// sim_time_.fromSec(0.0);
 	base_last_cmd_.fromSec(0.0);
 #else
-	// sim_time_ = rclcpp::Time(0);
 	base_last_cmd_ = rclcpp::Time(0);
 #endif
 
@@ -349,13 +375,34 @@ void MVSimNode::spin()
 	}
 	// Compute how much time has passed to simulate in real-time:
 	const double t_new = realtime_tictac_.Tac();
-	const double incr_time = realtime_factor_ * (t_new - t_old_);
+	const double wall_gap = t_new - t_old_;
+	double incr_time = realtime_factor_ * wall_gap;
 
 	// Just in case the computer is *really fast*...
 	if (incr_time < mvsim_world_->get_simul_timestep())
 	{
 		return;
 	}
+
+	// Bound the per-iteration catch-up to avoid the fixed-timestep "spiral of
+	// death": if a previous spin blocked (e.g. waiting for OpenGL sensor
+	// rendering, a slow subscription callback, or the machine being starved),
+	// this spin fires late and incr_time balloons; run_simulation() would then
+	// integrate that whole span as many blocking sub-steps in one call, making
+	// the *next* spin even later -> the simulation publishes odometry/TF/sensors
+	// in multi-hundred-ms bursts instead of smoothly. Capping lets sim time fall
+	// slightly behind wall-clock under load and recover, rather than cascading.
+	if (max_simul_catchup_time_ > 0 && incr_time > max_simul_catchup_time_)
+	{
+		ROS12_WARN_THROTTLE(
+			10000,
+			"Simulation slower than real time: capping catch-up %.3f s -> %.3f "
+			"s (this spin fired %.3f s late). Reduce sensor/GUI load or raise "
+			"'max_simul_catchup_time' if this persists.",
+			incr_time, max_simul_catchup_time_, wall_gap);
+		incr_time = max_simul_catchup_time_;
+	}
+
 	// Simulate:
 	mvsim_world_->run_simulation(incr_time);
 
@@ -580,6 +627,17 @@ void MVSimNode::notifyROSWorldIsUpdated()
 
 ros_Time MVSimNode::myNow() const
 {
+	// mvsim is the ROS time authority: header stamps use *simulation* time
+	// (wall-clock at sim start + elapsed simulated seconds) so they stay
+	// coherent regardless of the real-time factor or transient CPU load, and
+	// match the "/clock" topic consumed by downstream nodes running with
+	// use_sim_time:=true. Fall back to wall-clock only before the first
+	// simulation step, when no sim timestamp exists yet, or when the user
+	// explicitly opted out via disable_sim_time_clock_.
+	if (!disable_sim_time_clock_ && mvsim_world_ && mvsim_world_->has_simul_timestamp())
+	{
+		return mrpt2ros::toROS(mvsim_world_->get_simul_timestamp());
+	}
 #if PACKAGE_ROS_VERSION == 1
 	return ros::Time::now();
 #else
@@ -589,11 +647,29 @@ ros_Time MVSimNode::myNow() const
 
 double MVSimNode::myNowSec() const
 {
+	if (!disable_sim_time_clock_ && mvsim_world_ && mvsim_world_->has_simul_timestamp())
+	{
+		return mrpt::Clock::toDouble(mvsim_world_->get_simul_timestamp());
+	}
 #if PACKAGE_ROS_VERSION == 1
 	return ros::Time::now().toSec();
 #else
 	return static_cast<double>(clock_->now().nanoseconds()) * 1e-9;
 #endif
+}
+
+ros_Time MVSimNode::myObsStamp(const mrpt::system::TTimeStamp& obsTimestamp) const
+{
+	// Normally, stamp with the observation's own simulation timestamp (set
+	// when the sensor was sampled) so the stamp is unaffected by any latency
+	// in the asynchronous publisher worker thread. When the sim clock is
+	// disabled, fall back to wall-clock time instead, as done before
+	// simulation time support was added.
+	if (disable_sim_time_clock_)
+	{
+		return myNow();
+	}
+	return mrpt2ros::toROS(obsTimestamp);
 }
 
 /** Initialize all pub/subs required for each vehicle, for the specific vehicle
@@ -834,16 +910,17 @@ void MVSimNode::spinNotifyROS()
 	{
 		return;
 	}
-	// Get current simulation time (for messages) and publish "/clock"
+	// Publish "/clock" so downstream nodes can run with use_sim_time:=true.
+	// mvsim is the simulation time authority; all header stamps below use the
+	// same simulation time base (see myNow()). Skipped entirely when
+	// disable_sim_time_clock_ is set, restoring pre-sim-clock behavior.
 	// ----------------------------------------------------------------
-#if PACKAGE_ROS_VERSION == 1
-	// sim_time_.fromSec(mvsim_world_->get_simul_time());
-	// clockMsg_.clock = sim_time_;
-	// pub_clock_->publish(clockMsg_);
-#else
-	// sim_time_ = myNow();
-	// MRPT_TODO("Publish /clock for ROS2 too?");
-#endif
+	if (!disable_sim_time_clock_ && pub_clock_ && mvsim_world_->has_simul_timestamp())
+	{
+		Msg_Clock clockMsg;
+		clockMsg.clock = mrpt2ros::toROS(mvsim_world_->get_simul_timestamp());
+		pub_clock_->publish(clockMsg);
+	}
 
 	// Publish all TFs for each vehicle:
 	// ---------------------------------------------------------------------
@@ -965,6 +1042,14 @@ void MVSimNode::spinNotifyROS()
 				{
 					Msg_Odometry odoMsg;
 					odoMsg.pose.pose = mrpt2ros::toROS_Pose(veh_odom_pose);
+
+					// twist is given in the child_frame_id (base_link) frame, as
+					// reconstructed from wheels spinning velocities and geometry:
+					const auto veh_odo_vel = veh->getVelocityLocalOdoEstimate();
+					odoMsg.twist.twist.linear.x = veh_odo_vel.vx;
+					odoMsg.twist.twist.linear.y = veh_odo_vel.vy;
+					odoMsg.twist.twist.linear.z = 0;
+					odoMsg.twist.twist.angular.z = veh_odo_vel.omega;
 
 					// first, we'll populate the header for the odometry msg
 					odoMsg.header.stamp = myNow();
@@ -1173,6 +1258,11 @@ void MVSimNode::internalOn(
 	}
 	lck.unlock();
 
+	// Stamp with the observation's own simulation timestamp (set when the
+	// sensor was sampled), not "now", so the stamp is unaffected by any latency
+	// in the asynchronous publisher worker thread (see myObsStamp()).
+	const auto obsStamp = myObsStamp(obs.timestamp);
+
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
 	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
@@ -1181,7 +1271,7 @@ void MVSimNode::internalOn(
 	tfStmp.transform = tf2::toMsg(transform);
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
-	tfStmp.header.stamp = myNow();
+	tfStmp.header.stamp = obsStamp;
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
@@ -1192,8 +1282,7 @@ void MVSimNode::internalOn(
 		// Convert observation MRPT -> ROS
 		Msg_Pose msg_pose_laser;
 		Msg_LaserScan msg_laser;
-		// Force usage of simulation time:
-		msg_laser.header.stamp = myNow();
+		msg_laser.header.stamp = obsStamp;
 		msg_laser.header.frame_id = obs.sensorLabel;
 		mrpt2ros::toROS(obs, msg_laser, msg_pose_laser);
 		pub->publish(mvsim_node::make_shared<Msg_LaserScan>(msg_laser));
@@ -1221,6 +1310,10 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	}
 	lck.unlock();
 
+	// Stamp with the observation's own simulation timestamp (see note in the
+	// 2D LiDAR handler).
+	const auto obsStamp = myObsStamp(obs.timestamp);
+
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
 	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
@@ -1229,7 +1322,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	tfStmp.transform = tf2::toMsg(transform);
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
-	tfStmp.header.stamp = myNow();
+	tfStmp.header.stamp = obsStamp;
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
@@ -1240,8 +1333,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 		// Convert observation MRPT -> ROS
 		Msg_Imu msg_imu;
 		Msg_Header msg_header;
-		// Force usage of simulation time:
-		msg_header.stamp = myNow();
+		msg_header.stamp = obsStamp;
 		msg_header.frame_id = obs.sensorLabel;
 		mrpt2ros::toROS(obs, msg_header, msg_imu);
 		pub->publish(mvsim_node::make_shared<Msg_Imu>(msg_imu));
@@ -1275,6 +1367,10 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	}
 	lck.unlock();
 
+	// Stamp with the observation's own simulation timestamp (see note in the
+	// 2D LiDAR handler).
+	const auto obsStamp = myObsStamp(obs.timestamp);
+
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose = obs.sensorPose;
 	auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
@@ -1283,7 +1379,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	tfStmp.transform = tf2::toMsg(transform);
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
-	tfStmp.header.stamp = myNow();
+	tfStmp.header.stamp = obsStamp;
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
@@ -1291,31 +1387,21 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	// Send observation:
 	{
-		// Convert observation MRPT -> ROS
+		// Convert observation MRPT -> ROS. Delegate to the library conversion
+		// (as the IMU handler above already does) instead of reimplementing it
+		// field-by-field: the hand-rolled version here never set
+		// msg->status.status, which ROS leaves at NavSatStatus::STATUS_UNKNOWN
+		// (-2) by IDL default; consumers that treat anything other than a
+		// definite fix as invalid (e.g. mola_state_estimation_smoother's GNSS
+		// fusion) would then silently reject every single reading, even
+		// though the simulated fix quality (mrpt::obs::gnss::Message_NMEA_GGA
+		// ::fields::fix_quality) was perfectly valid.
+		Msg_Header msg_header;
+		msg_header.stamp = obsStamp;
+		msg_header.frame_id = obs.sensorLabel;
+
 		auto msg = mvsim_node::make_shared<Msg_GPS>();
-		msg->header.stamp = myNow();
-		msg->header.frame_id = obs.sensorLabel;
-
-		const auto& o = obs.getMsgByClass<mrpt::obs::gnss::Message_NMEA_GGA>();
-
-		msg->latitude = o.fields.latitude_degrees;
-		msg->longitude = o.fields.longitude_degrees;
-		msg->altitude = o.fields.altitude_meters;
-
-		if (auto& c = obs.covariance_enu; c.has_value())
-		{
-#if PACKAGE_ROS_VERSION == 1
-			msg->position_covariance_type = sensor_msgs::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
-#else
-			msg->position_covariance_type =
-				sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
-#endif
-
-			msg->position_covariance.fill(0.0);
-			msg->position_covariance[0] = (*c)(0, 0);
-			msg->position_covariance[4] = (*c)(1, 1);
-			msg->position_covariance[8] = (*c)(2, 2);
-		}
+		mrpt2ros::toROS(obs, msg_header, *msg);
 
 		pub->publish(msg);
 	}
@@ -1440,6 +1526,10 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	}
 	lck.unlock();
 
+	// Stamp with the observation's own simulation timestamp (see note in the
+	// 2D LiDAR handler).
+	const auto obsStamp = myObsStamp(obs.timestamp);
+
 	// Send TF:
 	mrpt::poses::CPose3D sensorPose;
 	obs.getSensorPose(sensorPose);
@@ -1449,7 +1539,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	tfStmp.transform = tf2::toMsg(transform);
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = obs.sensorLabel;
-	tfStmp.header.stamp = myNow();
+	tfStmp.header.stamp = obsStamp;
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
@@ -1457,7 +1547,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	// Send observation:
 	Msg_Header msg_header;
-	msg_header.stamp = myNow();
+	msg_header.stamp = obsStamp;
 	msg_header.frame_id = obs.sensorLabel;
 
 	{
@@ -1543,7 +1633,9 @@ void MVSimNode::internalOn(
 
 	lck.unlock();
 
-	const auto now = myNow();
+	// Stamp with the observation's own simulation timestamp (see note in the
+	// 2D LiDAR handler).
+	const auto obsStamp = myObsStamp(obs.timestamp);
 
 	// ----------------------------------------------------------------
 	// RGB IMAGE
@@ -1558,14 +1650,14 @@ void MVSimNode::internalOn(
 		tfStmp.transform = tf2::toMsg(transform);
 		tfStmp.header.frame_id = "base_link";
 		tfStmp.child_frame_id = lbImage;
-		tfStmp.header.stamp = now;
+		tfStmp.header.stamp = obsStamp;
 
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
 		pubs.pub_tf->publish(tfMsg);
 
 		Msg_Header msg_header;
-		msg_header.stamp = now;
+		msg_header.stamp = obsStamp;
 		msg_header.frame_id = lbImage;
 
 		// Send observation:
@@ -1597,7 +1689,7 @@ void MVSimNode::internalOn(
 			tfStmp.transform = tf2::toMsg(transform);
 			tfStmp.header.frame_id = "base_link";
 			tfStmp.child_frame_id = obs.sensorLabel + "_depth";
-			tfStmp.header.stamp = now;
+			tfStmp.header.stamp = obsStamp;
 
 			Msg_TFMessage tfMsg;
 			tfMsg.transforms.push_back(tfStmp);
@@ -1605,7 +1697,7 @@ void MVSimNode::internalOn(
 		}
 
 		Msg_Header msg_header;
-		msg_header.stamp = now;
+		msg_header.stamp = obsStamp;
 		msg_header.frame_id = obs.sensorLabel + "_depth";
 
 		// Build 16UC1 depth image from rangeImage (uint16_t matrix).
@@ -1655,7 +1747,7 @@ void MVSimNode::internalOn(
 		tfStmp.transform = tf2::toMsg(transform);
 		tfStmp.header.frame_id = "base_link";
 		tfStmp.child_frame_id = lbPoints;
-		tfStmp.header.stamp = now;
+		tfStmp.header.stamp = obsStamp;
 
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
@@ -1665,7 +1757,7 @@ void MVSimNode::internalOn(
 		{
 			Msg_PointCloud2 msg_pts;
 			Msg_Header msg_header;
-			msg_header.stamp = now;
+			msg_header.stamp = obsStamp;
 			msg_header.frame_id = lbPoints;
 
 			mrpt::obs::T3DPointsProjectionParams pp;
@@ -1721,7 +1813,9 @@ void MVSimNode::internalOn(
 	}
 	lck.unlock();
 
-	const auto now = myNow();
+	// Stamp with the observation's own simulation timestamp (see note in the
+	// 2D LiDAR handler).
+	const auto obsStamp = myObsStamp(obs.timestamp);
 
 	// POINTS
 	// --------
@@ -1734,7 +1828,7 @@ void MVSimNode::internalOn(
 	tfStmp.transform = tf2::toMsg(transform);
 	tfStmp.header.frame_id = "base_link";
 	tfStmp.child_frame_id = lbPoints;
-	tfStmp.header.stamp = now;
+	tfStmp.header.stamp = obsStamp;
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
@@ -1745,7 +1839,7 @@ void MVSimNode::internalOn(
 		// Convert observation MRPT -> ROS
 		auto msg_pts = mvsim_node::make_shared<Msg_PointCloud2>();
 		Msg_Header msg_header;
-		msg_header.stamp = now;
+		msg_header.stamp = obsStamp;
 		msg_header.frame_id = lbPoints;
 
 #if MRPT_VERSION < 0x020f00	 // 2.15.0 support legacy classes

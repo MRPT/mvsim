@@ -289,11 +289,17 @@ class VehicleBase : public VisualObject, public Simulable
 		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical);
 	// Called from internalGuiUpdate()
 	void internal_internalGuiUpdate_forces(mrpt::opengl::COpenGLScene& scene);
+	// Called from internalGuiUpdate()
+	void internal_internalGuiUpdate_trajectory();
 
 	mrpt::opengl::CSetOfObjects::Ptr glChassisViz_, glChassisPhysical_;
 	std::vector<mrpt::opengl::CSetOfObjects::Ptr> glWheelsViz_, glWheelsPhysical_;
 	mrpt::opengl::CSetOfLines::Ptr glForces_;
 	mrpt::opengl::CSetOfLines::Ptr glMotorTorques_;
+	/** Static polyline of the "trajectory" controller path, if any (see
+	 * ControllerBaseInterface::getTrajectoryPlotPoints()). Built once, lazily,
+	 * and only ever toggled visible/invisible afterwards. */
+	mrpt::opengl::CSetOfLines::Ptr glTrajectory_;
 	std::atomic_bool glInit_ = false;
 
 	std::vector<mrpt::math::TSegment3D> forceSegmentsForRendering_;

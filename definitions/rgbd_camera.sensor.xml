@@ -2,7 +2,7 @@
     <!--
         * pose_3d: Pose of the depth sensor on the robot (+X forward)
         * relativePoseIntensityWRTDepth: RGB camera wrt depth sensor (+Z forward, and possibly an offset)
-        See: https://docs.mrpt.org/reference/latest/class_mrpt_obs_CObservation3DRangeScan.html
+        See: https://docs.mrpt.org/reference/stable/class_mrpt_obs_CObservation3DRangeScan.html
     -->
     <pose_3d> ${sensor_x|0.65}  ${sensor_y|0.0}  ${sensor_z|1.0}  ${sensor_yaw|0.0} ${sensor_pitch|0.0} ${sensor_roll|0.0}</pose_3d>
     
@@ -15,6 +15,9 @@
     <sense_rgb>${sense_rgb|true}</sense_rgb>
     
     <show_3d_pointcloud>${show_3d_pointcloud|false}</show_3d_pointcloud>
+
+    <!-- Whether the GUI preview subwindow(s) for this sensor start opened (true, default) or minimized (false) -->
+    <preview_win_visible>${preview_win_visible|true}</preview_win_visible>
 
     <!-- ROS publishing options for depth image & colored pointcloud -->
     <publish_ros_depth_image>${publish_ros_depth_image|true}</publish_ros_depth_image>

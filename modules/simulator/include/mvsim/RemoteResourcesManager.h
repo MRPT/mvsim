@@ -10,9 +10,16 @@
 #pragma once
 
 #include <mrpt/system/COutputLogger.h>
+#include <mvsim/TParameterDefinitions.h>
 
 #include <string>
 #include <tuple>
+
+namespace rapidxml
+{
+template <class Ch>
+class xml_node;
+}
 
 namespace mvsim
 {
@@ -55,7 +62,25 @@ class RemoteResourcesManager : public mrpt::system::COutputLogger
 
 	static std::string cache_directory();
 
+	/** If set to true, downloads will be done with wget's
+	 * `--no-check-certificate`, disabling TLS certificate verification.
+	 * Defaults to false. Only enable this if you understand the security
+	 * implications (e.g. for trusted intranets with self-signed certificates).
+	 * Can be set via the `<remote_resources insecure_skip_tls_verify="true"/>`
+	 * world XML tag.
+	 */
+	bool insecure_skip_tls_verify = false;
+
+	/** Parses the contents of a `<remote_resources>` XML tag, if present in
+	 * the world file, to set the options above.
+	 */
+	void parse_from(const rapidxml::xml_node<char>& node);
+
    private:
+	const TParameterDefinitions params_ = {
+		{"insecure_skip_tls_verify", {"%bool", &insecure_skip_tls_verify}},
+	};
+
 	std::string handle_remote_uri(const std::string& uri);
 
 	/// Returns the local file that internalURI refers to, possibly

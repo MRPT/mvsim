@@ -155,6 +155,9 @@ void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_n
 	params["reference_filter_tau"] = TParamEntry("%lf", &reference_filter_tau);
 	params["reference_filter_order"] = TParamEntry("%d", &reference_filter_order);
 
+	params["joyMaxLinSpeed"] = TParamEntry("%lf", &joyMaxLinSpeed);
+	params["joyMaxAngSpeed"] = TParamEntry("%lf", &joyMaxAngSpeed);
+
 	// Initial speed.
 	params["V"] = TParamEntry("%lf", &setpoint_.vx);
 	params["W"] = TParamEntry("%lf_deg", &setpoint_.omega);

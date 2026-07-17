@@ -494,6 +494,7 @@
 		default_sensors="true"
 		lidar2d_raytrace="true"
 		lidar2d_fov_degrees="360"
+		joyMaxLinSpeed="3.0"
 		/>
 	
 	<!-- Robot starting position at outdoor area -->

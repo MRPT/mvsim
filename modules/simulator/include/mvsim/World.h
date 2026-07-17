@@ -47,6 +47,7 @@
 #endif
 
 #include <any>
+#include <atomic>
 #include <functional>
 #include <list>
 #include <map>
@@ -195,6 +196,20 @@ class World : public mrpt::system::COutputLogger
 		ASSERT_(simul_start_wallclock_time_.has_value());
 		return mrpt::Clock::fromDouble(simulTime_ + simul_start_wallclock_time_.value());
 	}
+
+	/** Returns true once the simulation has an established wall-clock time
+	 *  origin (i.e. run_simulation() has been called at least once), so that
+	 *  get_simul_timestamp() can be safely queried. */
+	bool has_simul_timestamp() const
+	{
+		auto lck = mrpt::lockHelper(simul_time_mtx_);
+		return simul_start_wallclock_time_.has_value();
+	}
+
+	/** Achieved real-time factor: smoothed ratio of simulated time advanced to
+	 *  wall-clock time elapsed. 1.0 means real time; below 1.0 means the
+	 *  simulation is running slower than real time. \sa run_simulation() */
+	double get_realtime_factor_achieved() const { return achievedRealtimeFactor_.load(); }
 
 	/// Simulation fixed-time interval for numerical integration
 	double get_simul_timestep() const;
@@ -559,6 +574,12 @@ class World : public mrpt::system::COutputLogger
 	std::optional<double> simul_start_wallclock_time_;
 	std::mutex simul_time_mtx_;
 
+	/** Achieved real-time factor (simulated seconds advanced per wall-clock
+	 * second), exponentially smoothed. 1.0 = real time; below 1.0 = running
+	 * slower than real time (e.g. CPU-bound). Updated by run_simulation(). */
+	std::atomic<double> achievedRealtimeFactor_{1.0};
+	std::optional<double> lastRunSimulWallclock_;
+
 	/** Path from which to take relative directories. */
 	std::string basePath_{"."};
 
@@ -576,6 +597,7 @@ class World : public mrpt::system::COutputLogger
 		bool ortho = false;
 		bool show_forces = false;
 		bool show_sensor_points = true;
+		bool show_trajectories = false;
 		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
 		double camera_azimuth_deg = 45.0;
@@ -593,6 +615,7 @@ class World : public mrpt::system::COutputLogger
 			{"ortho", {"%bool", &ortho}},
 			{"show_forces", {"%bool", &show_forces}},
 			{"show_sensor_points", {"%bool", &show_sensor_points}},
+			{"show_trajectories", {"%bool", &show_trajectories}},
 			{"force_scale", {"%lf", &force_scale}},
 			{"fov_deg", {"%lf", &fov_deg}},
 			{"follow_vehicle", {"%s", &follow_vehicle}},
@@ -879,7 +902,13 @@ class World : public mrpt::system::COutputLogger
 		const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
 
 	mrpt::math::TPoint2D internal_gui_on_image(
-		const std::string& label, const mrpt::img::CImage& im, int winPosX);
+		const std::string& label, const mrpt::img::CImage& im, int winPosX, bool startVisible);
+
+	/** Looks up, among veh's sensors, the one with the given sensorLabel and
+	 * returns its previewWinVisible() flag (true if not found, for backwards
+	 * compatibility). */
+	static bool internal_gui_sensor_preview_visible(
+		const Simulable& veh, const std::string& sensorLabel);
 
 	std::map<std::string, nanogui::Window*> guiObsViz_;	 //!< by sensorLabel
 
@@ -946,6 +975,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_joint(const XmlParserContext& ctx);	//!< `<joint>`
 	void parse_tag_actor(const XmlParserContext& ctx);
 	void parse_tag_actor_class(const XmlParserContext& ctx);
+	void parse_tag_remote_resources(const XmlParserContext& ctx);  //!< `<remote_resources>`
 
 	// ======== end of XML parser tags ========
 

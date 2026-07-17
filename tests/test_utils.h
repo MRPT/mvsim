@@ -71,3 +71,23 @@ extern int g_failures;
 			++g_failures;                                                                  \
 		}                                                                                  \
 	} while (false)
+
+#define EXPECT_TRUE(cond)                                                                       \
+	do                                                                                          \
+	{                                                                                           \
+		if (!(cond))                                                                            \
+		{                                                                                       \
+			std::fprintf(stderr, "FAIL %s:%d  expected true: %s\n", __FILE__, __LINE__, #cond); \
+			++g_failures;                                                                       \
+		}                                                                                       \
+	} while (false)
+
+#define EXPECT_FALSE(cond)                                                                       \
+	do                                                                                           \
+	{                                                                                            \
+		if (cond)                                                                                \
+		{                                                                                        \
+			std::fprintf(stderr, "FAIL %s:%d  expected false: %s\n", __FILE__, __LINE__, #cond); \
+			++g_failures;                                                                        \
+		}                                                                                        \
+	} while (false)

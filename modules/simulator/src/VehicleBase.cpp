@@ -61,6 +61,12 @@ void register_all_veh_dynamics()
 VehicleBase::VehicleBase(World* parent, size_t nWheels)
 	: VisualObject(parent), Simulable(parent), fixture_wheels_(nWheels, nullptr)
 {
+	// VehicleBase manages its own physical-scene representation via
+	// glChassisPhysical_, so the custom visual (which carries wheel viz
+	// objects with XYZ-corner markers) must NOT be inserted into the physical
+	// scene, otherwise camera/lidar sensors would see the XYZ corners.
+	insertCustomVizIntoPhysical_ = false;
+
 	// Create wheels:
 	for (size_t i = 0; i < nWheels; i++)
 	{
@@ -711,6 +717,14 @@ void VehicleBase::internal_internalGuiUpdate_forces(  //
 	}
 }
 
+void VehicleBase::internal_internalGuiUpdate_trajectory()
+{
+	if (glTrajectory_)
+	{
+		glTrajectory_->setVisibility(world_->guiOptions_.show_trajectories);
+	}
+}
+
 double mvsim::VehicleBase::estimateSlopeTorquePerWheel(size_t nDrivenWheels) const
 {
 	if (nDrivenWheels == 0)
@@ -868,7 +882,20 @@ void VehicleBase::internalGuiUpdate(
 		{
 			glWheelsViz_[i] = mrpt::opengl::CSetOfObjects::Create();
 			this->getWheelInfo(i).getAs3DObject(*glWheelsViz_[i], false);
-			glChassisViz_->insert(glWheelsViz_[i]);
+			// When a custom visual exists the wheel viz objects are parented
+			// under glCustomVisual_ instead of glChassisViz_.  This way the
+			// single glCustomVisual_->setPose() call in VisualObject::guiUpdate
+			// moves chassis body and all wheels atomically, eliminating the
+			// GUI-thread race that caused wheels to visually jump ahead/behind
+			// the chassis at high speed.
+			if (childrenOnly)
+			{
+				glCustomVisual_->insert(glWheelsViz_[i]);
+			}
+			else
+			{
+				glChassisViz_->insert(glWheelsViz_[i]);
+			}
 
 			glWheelsPhysical_[i] = mrpt::opengl::CSetOfObjects::Create();
 			this->getWheelInfo(i).getAs3DObject(*glWheelsPhysical_[i], true);
@@ -886,7 +913,13 @@ void VehicleBase::internalGuiUpdate(
 			glChassisPhysical_->insert(gl_poly);
 		}
 
-		viz->get().insert(glChassisViz_);
+		// Only add glChassisViz_ to the scene when it actually has content
+		// (i.e. no custom visual).  When childrenOnly=true, glChassisViz_
+		// would be an empty, unused container.
+		if (!childrenOnly)
+		{
+			viz->get().insert(glChassisViz_);
+		}
 		physical->get().insert(glChassisPhysical_);
 
 		glInit_ = true;
@@ -902,7 +935,13 @@ void VehicleBase::internalGuiUpdate(
 
 	if (glInit_)
 	{
-		glChassisViz_->setPose(pp);
+		// When a custom visual exists, glCustomVisual_ is already updated by
+		// VisualObject::guiUpdate() and the wheels are children of it, so no
+		// separate chassis viz pose update is needed.
+		if (!childrenOnly)
+		{
+			glChassisViz_->setPose(pp);
+		}
 		glChassisPhysical_->setPose(pp);
 		for (size_t i = 0; i < nWs; i++)
 		{
@@ -952,11 +991,36 @@ void VehicleBase::internalGuiUpdate(
 		viz->get().insert(glMotorTorques_);	 // torques are in global coords
 	}
 
+	if (!glTrajectory_ && viz)
+	{
+		// Visualization of the exact reproducible trajectory (if any):
+		std::vector<mrpt::math::TPoint2D> trajPts;
+		double trajHeight = 0.5;
+		if (auto* ctrl = getControllerInterface();
+			ctrl && ctrl->getTrajectoryPlotPoints(trajPts, trajHeight) && trajPts.size() >= 2)
+		{
+			glTrajectory_ = mrpt::opengl::CSetOfLines::Create();
+			glTrajectory_->setLineWidth(2.5);
+			glTrajectory_->setColor_u8(0x00, 0xff, 0xff);
+			glTrajectory_->setPose(
+				parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
+			for (size_t i = 0; i + 1 < trajPts.size(); i++)
+			{
+				glTrajectory_->appendLine(
+					trajPts[i].x, trajPts[i].y, trajHeight, trajPts[i + 1].x, trajPts[i + 1].y,
+					trajHeight);
+			}
+			glTrajectory_->setVisibility(world_->guiOptions_.show_trajectories);
+			viz->get().insert(glTrajectory_);  // trajectory is in global coords
+		}
+	}
+
 	// Other common stuff:
 	if (viz && physical)
 	{
 		internal_internalGuiUpdate_sensors(viz->get(), physical->get());
 		internal_internalGuiUpdate_forces(viz->get());
+		internal_internalGuiUpdate_trajectory();
 	}
 }
 

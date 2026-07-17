@@ -64,6 +64,11 @@ class SensorBase : public VisualObject, public Simulable
 
 	double sensor_period() const { return sensor_period_; }
 
+	/** Whether the sensor preview subwindow (for sensors with a GUI
+	 * image/point-cloud preview, e.g. cameras) should start opened (true,
+	 * default) or minimized (false). See XML tag "preview_win_visible". */
+	bool previewWinVisible() const { return previewWinVisible_; }
+
 	/** The vehicle this sensor is attached to */
 	Simulable& vehicle() { return vehicle_; }
 	const Simulable& vehicle() const { return vehicle_; }
@@ -95,6 +100,10 @@ class SensorBase : public VisualObject, public Simulable
 
 	/// Filled in by SensorBase::loadConfigFrom()
 	std::map<std::string, std::string> varValues_;
+
+	/** Whether the sensor GUI preview subwindow starts opened or minimized.
+	 * See previewWinVisible() */
+	bool previewWinVisible_ = true;
 
 	bool parseSensorPublish(
 		const rapidxml::xml_node<char>* node, const std::map<std::string, std::string>& varValues);

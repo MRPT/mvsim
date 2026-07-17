@@ -55,7 +55,7 @@ Mathematical expressions
 ===============================
 
 Using the notation ``$f{...}``, arbitrary expressions can be evaluated using 
-`MRPT-wrapped version <https://docs.mrpt.org/reference/latest/class_mrpt_expr_CRuntimeCompiledExpression.html>`_ of ``ExprTk``, 
+`MRPT-wrapped version <https://docs.mrpt.org/reference/stable/class_mrpt_expr_CRuntimeCompiledExpression.html>`_ of ``ExprTk``, 
 which provide much more than just mathematical operations, but also ``if`` structures, etc.
 
 .. code-block:: xml
