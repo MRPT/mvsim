@@ -38,11 +38,10 @@ struct cli_flags
 	cli_flags()
 	{
 		cmd.set_help_flag();  // disable built-in --help/-h
-		cmd.allow_extras(true);
 
 		cmd.add_option("commands", argCmd, "Command to run. Run 'mvsim help' to list commands.");
 
-		cmd.add_option("-v,--verbose", argVerbosity, "Verbosity level");
+		cmd.add_option("-v,--verbose,--verbosity", argVerbosity, "Verbosity level");
 
 		cmd.add_flag("--full-profiler", argFullProfiler,
 			"Enable saving *all* timing data, dumping it to a file at the end of the program.");

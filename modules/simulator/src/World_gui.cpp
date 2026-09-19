@@ -21,6 +21,7 @@
 #include <mrpt/viz/Scene.h>
 #include <mvsim/World.h>
 
+#include <cctype>  // isspace()
 #include <cmath>  // cos(), sin()
 #include <rapidxml.hpp>
 
@@ -36,40 +37,65 @@ void World::TGUI_Options::parse_from(
 }
 
 // Helper: read an XML child's text as float, return default if missing.
+// Rejects trailing garbage after the number (e.g. "1.0junk").
 static float xmlChildFloat(const rapidxml::xml_node<char>& parent, const char* name, float def)
 {
 	auto* n = parent.first_node(name);
-	return n ? std::stof(std::string(n->value(), n->value_size())) : def;
+	if (!n) return def;
+	const std::string s(n->value(), n->value_size());
+	size_t pos = 0;
+	float v = 0;
+	try
+	{
+		v = std::stof(s, &pos);
+	}
+	catch (const std::exception&)
+	{
+		pos = 0;
+	}
+	while (pos < s.size() && std::isspace(static_cast<unsigned char>(s[pos]))) pos++;
+	if (pos == 0 || pos != s.size())
+		throw std::runtime_error(
+			mrpt::format("[World::LightOptions] Error parsing '<%s>': expected a number", name));
+	return v;
 }
 
 // Helper: read an XML child's text as "x y z" into TPoint3Df/TVector3Df.
+// Rejects trailing garbage after the three numbers.
 static mrpt::math::TPoint3Df xmlChildPoint3f(
 	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::math::TPoint3Df& def)
 {
 	auto* n = parent.first_node(name);
 	if (!n) return def;
+	const std::string s(n->value(), n->value_size());
 	float x = 0, y = 0, z = 0;
-	if (3 != std::sscanf(n->value(), "%f %f %f", &x, &y, &z))
+	int consumed = 0;
+	const int nMatched = std::sscanf(s.c_str(), "%f %f %f %n", &x, &y, &z, &consumed);
+	size_t pos = static_cast<size_t>(consumed);
+	while (pos < s.size() && std::isspace(static_cast<unsigned char>(s[pos]))) pos++;
+	if (nMatched != 3 || pos != s.size())
 		throw std::runtime_error(
 			mrpt::format("[World::LightOptions] Error parsing '<%s>': expected 'X Y Z'", name));
 	return {x, y, z};
 }
 
 // Helper: read an XML child's text as #RRGGBB[AA] into TColorf.
+// Requires the string to be exactly 7 ('#RRGGBB') or 9 ('#RRGGBBAA') chars.
 static mrpt::img::TColorf xmlChildColorf(
 	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::img::TColorf& def)
 {
 	auto* n = parent.first_node(name);
 	if (!n) return def;
-	std::string str(n->value(), n->value_size());
-	if (str.size() < 2 || str[0] != '#')
+	const std::string str(n->value(), n->value_size());
+	if ((str.size() != 7 && str.size() != 9) || str[0] != '#')
 		throw std::runtime_error(mrpt::format(
 			"[World::LightOptions] Error parsing '<%s>': expected "
 			"'#RRGGBB[AA]'",
 			name));
 	unsigned int r, g, b, a = 0xff;
-	int ret = std::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
-	if (ret != 3 && ret != 4)
+	const int nExpected = str.size() == 9 ? 4 : 3;
+	const int ret = std::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
+	if (ret != nExpected)
 		throw std::runtime_error(mrpt::format(
 			"[World::LightOptions] Error parsing '<%s>': expected "
 			"'#RRGGBB[AA]'",

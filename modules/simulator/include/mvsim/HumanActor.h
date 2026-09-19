@@ -18,6 +18,8 @@
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VisualObject.h>
 
+#include <mutex>
+
 #define MIN_MRPT_VERSION_ANIMATED_ASSIMP 0x020f08
 
 #if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
@@ -207,8 +209,11 @@ class HumanActor : public CVisualObject, public Simulable
 	bool manualAnimationOverride_ = false;
 	std::string manualAnimationName_;
 
+	// Guards currentAnimTime_/currentAnimName_: written by the sim thread,
+	// read by the GUI thread.
+	mutable std::mutex animStateMtx_;
 	double currentAnimTime_ = 0.0;
-	std::string currentAnimName_;  //!< current anim clip name (updated by sim thread, read by GUI thread)
+	std::string currentAnimName_;
 	double currentMovementSpeed_ = 0.0;	 //!< actual speed for anim sync
 
 	// ==================== Rendering ====================

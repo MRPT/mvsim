@@ -551,12 +551,14 @@ void HumanActor::updateSkeletalAnimation(double dt)
 		animSpeedScale = currentMovementSpeed_ / runningSpeed_;
 	}
 
-	currentAnimTime_ += dt * animSpeedScale;
-
-	// Store current animation name for the GUI thread to apply.
+	// Store current animation name/time for the GUI thread to apply.
 	// Do NOT call setAnimationTime() here — that triggers rebuildSkinnedGeometry()
 	// which modifies CSetOfObjects children. That must only happen on the GUI thread.
-	currentAnimName_ = animName;
+	{
+		std::lock_guard<std::mutex> lck(animStateMtx_);
+		currentAnimTime_ += dt * animSpeedScale;
+		currentAnimName_ = animName;
+	}
 }
 
 // ============================================================================
@@ -625,10 +627,18 @@ void HumanActor::internalGuiUpdate(
 		}
 	}
 
-	if (glModel_ && !currentAnimName_.empty())
+	std::string animNameSnapshot;
+	double animTimeSnapshot = 0.0;
 	{
-		glModel_->setActiveAnimation(currentAnimName_);
-		glModel_->setAnimationTime(currentAnimTime_);
+		std::lock_guard<std::mutex> lck(animStateMtx_);
+		animNameSnapshot = currentAnimName_;
+		animTimeSnapshot = currentAnimTime_;
+	}
+
+	if (glModel_ && !animNameSnapshot.empty())
+	{
+		glModel_->setActiveAnimation(animNameSnapshot);
+		glModel_->setAnimationTime(animTimeSnapshot);
 	}
 #endif
 }

@@ -7,8 +7,8 @@ Light and shadows configuration
 The lighting model uses MRPT's multi-light rendering pipeline with
 **hemisphere ambient lighting**, a **directional light source** (placed at infinity)
 that casts shadows, and optional **point** and **spot** light sources.
-See `mrpt::viz::TLightParameters <https://docs.mrpt.org/reference/latest/struct_mrpt_opengl_TLightParameters.html>`_
-and `mrpt-opengl <https://docs.mrpt.org/reference/latest/group_mrpt_opengl_grp.html>`_ for further details.
+See `mrpt::viz::TLightParameters <https://docs.mrpt.org/reference/latest/struct_mrpt_viz_TLightParameters.html>`_
+and `mrpt-viz <https://docs.mrpt.org/reference/latest/group_mrpt_viz_grp.html>`_ for further details.
 
 MVSim offers a number of parameters under the global ``<lights> ... </lights>`` tag
 to tune the performance and appearance of lights and shadows (all are optional).

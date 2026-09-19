@@ -173,7 +173,7 @@ void World::internal_one_timestep(double dt)
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 
-		if (pending_running_sensors_on_3D_scene())
+		if (pending_running_sensors_on_3D_scene() && !simulator_must_close())
 		{
 			MRPT_LOG_WARN(
 				"Timeout waiting for async sensors to be simulated in opengl "
