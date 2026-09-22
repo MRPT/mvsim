@@ -737,8 +737,7 @@ double mvsim::VehicleBase::estimateSlopeTorquePerWheel(size_t nDrivenWheels) con
 	}
 
 	// Vehicle pitch from 3D pose:
-	double yaw, pitch, roll;
-	getCPose3D().getYawPitchRoll(yaw, pitch, roll);
+	const auto [yaw, pitch, roll] = getCPose3D().getYawPitchRoll();
 
 	const double g = parent()->get_gravity();
 	const double m = getChassisMass();

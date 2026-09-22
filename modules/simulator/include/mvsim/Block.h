@@ -98,6 +98,16 @@ class Block : public CVisualObject, public Simulable
 
 	/** Set the block index in the World */
 	void setBlockIndex(size_t idx) { blockIndex_ = idx; }
+
+	/** Type of the `<geometry>` tag, if any (GeometryType::Invalid
+	 * otherwise). \sa geometryRadius(), geometryLength(), geometryLx(),
+	 * geometryLy(), geometryLz() */
+	GeometryType geometryType() const { return geomParams_.type; }
+	float geometryRadius() const { return geomParams_.radius; }
+	float geometryLength() const { return geomParams_.length; }
+	float geometryLx() const { return geomParams_.lx; }
+	float geometryLy() const { return geomParams_.ly; }
+	float geometryLz() const { return geomParams_.lz; }
 	/** Get the block index in the World */
 	size_t getBlockIndex() const { return blockIndex_; }
 
@@ -146,6 +156,10 @@ class Block : public CVisualObject, public Simulable
 	CVisualObject* meAsCVisualObject() override { return this; }
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
+
+	/** If true, this block is rendered visually but is neither detected by
+	 * sensors nor collides with anything. */
+	bool isIntangible() const { return intangible_; }
 
    protected:
 	virtual void internalGuiUpdate(

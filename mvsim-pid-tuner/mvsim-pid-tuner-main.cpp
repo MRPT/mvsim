@@ -40,7 +40,7 @@ struct TimeVelSample
 
 struct PlantModel
 {
-	double K = 0;	// steady-state gain
+	double K = 0;  // steady-state gain
 	double tau = 0;	 // time constant (s)
 	double v_ss = 0;  // steady-state value
 	double torque_applied = 0;	// torque used for identification
@@ -103,8 +103,7 @@ static VehicleParams get_vehicle_params(const mvsim::VehicleBase& veh)
 	VehicleParams p;
 	p.nWheels = veh.getNumWheels();
 	p.total_mass = veh.getChassisMass();
-	for (size_t i = 0; i < p.nWheels; i++)
-		p.total_mass += veh.getWheelInfo(i).mass;
+	for (size_t i = 0; i < p.nWheels; i++) p.total_mass += veh.getWheelInfo(i).mass;
 
 	p.partial_mass = p.total_mass / static_cast<double>(p.nWheels);
 	p.R = veh.getWheelInfo(0).diameter * 0.5;
@@ -113,8 +112,7 @@ static VehicleParams get_vehicle_params(const mvsim::VehicleBase& veh)
 	p.max_friction_torque = mu * p.partial_mass * 9.81 * p.R;
 
 	// Wheel track (for differential drive)
-	if (p.nWheels >= 2)
-		p.distWheels = std::abs(veh.getWheelInfo(0).y - veh.getWheelInfo(1).y);
+	if (p.nWheels >= 2) p.distWheels = std::abs(veh.getWheelInfo(0).y - veh.getWheelInfo(1).y);
 
 	return p;
 }
@@ -131,15 +129,15 @@ static PlantModel identify_plant(
 
 	if (samples.size() < 10)
 	{
-		std::fprintf(stderr, "Error: Too few samples recorded (%zu) for %s\n", samples.size(), label);
+		std::fprintf(
+			stderr, "Error: Too few samples recorded (%zu) for %s\n", samples.size(), label);
 		return plant;
 	}
 
 	// Steady-state value (average of last 20%)
 	const size_t ss_start = samples.size() * 80 / 100;
 	double ss_sum = 0;
-	for (size_t i = ss_start; i < samples.size(); i++)
-		ss_sum += samples[i].value;
+	for (size_t i = ss_start; i < samples.size(); i++) ss_sum += samples[i].value;
 
 	plant.v_ss = ss_sum / static_cast<double>(samples.size() - ss_start);
 	plant.K = plant.v_ss / test_input;
@@ -210,8 +208,8 @@ static PlantModel run_open_loop_step(
 		{
 			const auto& w = veh->getWheelInfo(i);
 			std::printf(
-				"  Wheel %zu: pos=(%.3f, %.3f) R=%.3f mass=%.2f\n", i, w.x, w.y,
-				w.diameter * 0.5, w.mass);
+				"  Wheel %zu: pos=(%.3f, %.3f) R=%.3f mass=%.2f\n", i, w.x, w.y, w.diameter * 0.5,
+				w.mass);
 		}
 		std::printf("  Chassis mass: %.1f kg\n", veh->getChassisMass());
 		std::printf("  Wheel track: %.3f m\n", params.distWheels);
@@ -222,10 +220,10 @@ static PlantModel run_open_loop_step(
 	}
 
 	// Choose test torque
-	if (test_torque <= 0)
-		test_torque = params.max_friction_torque * 0.5;
+	if (test_torque <= 0) test_torque = params.max_friction_torque * 0.5;
 
-	std::printf("  Test torque: %.2f Nm (%s)\n\n", test_torque, rotation_mode ? "rotation" : "linear");
+	std::printf(
+		"  Test torque: %.2f Nm (%s)\n\n", test_torque, rotation_mode ? "rotation" : "linear");
 
 	// Setup data recording
 	std::vector<TimeVelSample> samples;
@@ -442,8 +440,7 @@ static ValidationResult validate_pid(
 
 	for (int i = 0; i < total_steps; i++)
 	{
-		if (i == step_down_at)
-			veh->getControllerInterface()->setTwistCommand(cmd_stop);
+		if (i == step_down_at) veh->getControllerInterface()->setTwistCommand(cmd_stop);
 
 		world->run_simulation(sim_step);
 
@@ -457,8 +454,7 @@ static ValidationResult validate_pid(
 		double measured = rotation_mode ? vel.omega : vel.vx;
 		samples.push_back({i * sim_step, measured});
 
-		if (i < step_down_at)
-			max_val = std::max(max_val, measured);
+		if (i < step_down_at) max_val = std::max(max_val, measured);
 	}
 
 	// Rise time: time to reach 90% of setpoint
@@ -486,8 +482,7 @@ static ValidationResult validate_pid(
 			ss_sum += samples[i].value;
 			ss_count++;
 		}
-		if (ss_count > 0)
-			result.steady_state_error = std::abs(setpoint - ss_sum / ss_count);
+		if (ss_count > 0) result.steady_state_error = std::abs(setpoint - ss_sum / ss_count);
 	}
 
 	// Settling time
@@ -498,8 +493,7 @@ static ValidationResult validate_pid(
 		{
 			if (std::abs(samples[i].value - setpoint) > band)
 			{
-				if (i + 1 < step_down_at)
-					result.settling_time = samples[i + 1].time;
+				if (i + 1 < step_down_at) result.settling_time = samples[i + 1].time;
 				break;
 			}
 		}
@@ -566,8 +560,7 @@ static bool print_validation(
 	}
 	if (val.stop_overshoot > 0.01)
 	{
-		std::printf(
-			"WARNING [%s]: Vehicle rebounds when stopping. KI may be too high.\n", label);
+		std::printf("WARNING [%s]: Vehicle rebounds when stopping. KI may be too high.\n", label);
 		good = false;
 	}
 	if (val.rise_time > 2.0)
@@ -598,7 +591,8 @@ int main(int argc, char** argv)
 			->required();
 
 		double test_torque = -1.0;
-		app.add_option("-t,--torque", test_torque,
+		app.add_option(
+			"-t,--torque", test_torque,
 			"Test torque (Nm) for open-loop identification. "
 			"Default: 50% of estimated friction limit.");
 
@@ -609,7 +603,8 @@ int main(int argc, char** argv)
 		app.add_option("-s,--sim-step", sim_step, "Simulation time step (s).");
 
 		double aggressiveness = 0.25;
-		app.add_option("-a,--aggressiveness", aggressiveness,
+		app.add_option(
+			"-a,--aggressiveness", aggressiveness,
 			"Closed-loop aggressiveness factor (0.1=very aggressive, 1.0=conservative).");
 
 		CLI11_PARSE(app, argc, argv);
@@ -648,8 +643,7 @@ int main(int argc, char** argv)
 		}
 
 		// Get vehicle params for max_torque computation
-		auto [tmpWorld, tmpVeh] =
-			create_world_and_vehicle(vehicle_xml, vehicle_class, sim_step);
+		auto [tmpWorld, tmpVeh] = create_world_and_vehicle(vehicle_xml, vehicle_class, sim_step);
 		auto vehParams = get_vehicle_params(*tmpVeh);
 
 		// Phase 2: Compute PID parameters

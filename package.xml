@@ -37,6 +37,7 @@
   <depend>python3-venv</depend>
   <depend>sensor_msgs</depend>
   <depend>stereo_msgs</depend>
+  <depend>tbb</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2</depend>
   <depend>unzip</depend>

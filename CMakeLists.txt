@@ -66,6 +66,16 @@ else()
 endif()
 
 find_package(Threads)
+
+# Optional: used by mvsim-dataset-gen to parallelize ray casting; falls back
+# to a serial loop when not found.
+find_package(TBB QUIET)
+if(TBB_FOUND)
+  message(STATUS "TBB found: mvsim-dataset-gen will ray-cast in parallel.")
+else()
+  message(STATUS "TBB not found: mvsim-dataset-gen will ray-cast serially.")
+endif()
+
 include(GNUInstallDirs)
 include(cmake/mvsim_cmake_functions.cmake REQUIRED)
 
@@ -292,6 +302,7 @@ add_subdirectory(modules)
 # --------------------------
 add_subdirectory(mvsim-cli)
 add_subdirectory(mvsim-pid-tuner)
+add_subdirectory(mvsim-dataset-gen)
 
 # ================================================================
 #                  ROS NODES (BUILD_FOR_ROS)

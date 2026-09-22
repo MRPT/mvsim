@@ -33,6 +33,14 @@ class HorizontalPlane : public WorldElementBase
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
+	/** Read-only access to the plane's finite extent, for exact
+	 * (non-visual) consumers such as the offline ray tracer. */
+	float xMin() const { return x_min_; }
+	float xMax() const { return x_max_; }
+	float yMin() const { return y_min_; }
+	float yMax() const { return y_max_; }
+	float z() const { return z_; }
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,

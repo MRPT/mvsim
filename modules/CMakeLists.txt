@@ -206,6 +206,7 @@ if (MVSIM_WITH_PROTOBUF)
   add_subdirectory(msgs)
 endif()
 
+add_subdirectory(raytracer)
 add_subdirectory(simulator)
 
 

@@ -21,10 +21,12 @@ mvsim/
 ├── modules/               # Core C++ library
 │   ├── simulator/         # Main simulation engine (libmvsim)
 │   ├── comms/             # ZMQ/Protobuf pub-sub communications layer
-│   └── msgs/              # Protobuf message definitions (.proto files)
+│   ├── msgs/              # Protobuf message definitions (.proto files)
+│   └── raytracer/         # Exact analytic ray casting (no Box2D/GUI/ZMQ)
 ├── mvsim_node_src/        # ROS 2 node wrapper
 ├── mvsim-cli/             # Command-line tool (mvsim launch/topic/node/server)
 ├── mvsim-pid-tuner/       # GUI tool for tuning PID controllers
+├── mvsim-dataset-gen/     # Offline ray-traced LiDAR/IMU/odometry dataset generator
 ├── mvsim_tutorial/        # Demo world XML files + launch files + RViz configs
 ├── definitions/           # Reusable vehicle and sensor XML definitions
 ├── examples_cpp/          # C++ subscriber and service-caller examples
@@ -122,6 +124,16 @@ Key headers in `modules/comms/include/mvsim/Comms/`:
 
 ---
 
+## Module: `modules/raytracer` — `mvsim::rt`
+
+Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt-poses`), used by `mvsim-dataset-gen/`:
+
+- `Primitive.h` — 6 primitives as a `std::variant`: `Plane` (finite rectangle), `Prism` (2D polygon extruded along world Z, possibly non-convex), `Cylinder` (exact quadric), `Sphere`, `Triangle`, `HeightField` (regular grid; `z(row,col)` with row along X, col along Y, mirroring `ElevationMap::meshCacheZ_`'s own indexing).
+- `BVH.h` / `RayScene.h` — median-split BVH over primitive AABBs; `RayScene::castRay()` is the single entry point.
+- `Lidar3DModel.h` — ring/column ray-generation math for a rotating 3D LiDAR, mirroring `Lidar3D`'s own conventions (ascending ring order, `vertical_ray_angles` re-sorted the same way) so the same sensor XML describes both the interactive simulator and this ray tracer.
+
+---
+
 ## ROS 2 node (`mvsim_node_src/`)
 
 - `mvsim_node_main.cpp` — entry point
@@ -139,6 +151,17 @@ Key headers in `modules/comms/include/mvsim/Comms/`:
 - `server` — start headless server
 - `topic list/echo/pub` — inspect/inject ZMQ topics
 - `node list` — list connected nodes
+
+---
+
+## Dataset generator (`mvsim-dataset-gen/`)
+
+`mvsim-dataset-gen` binary (CLI11): offline, ray-traced (no OpenGL) simulated dataset generator. Given a world XML restricted to analytic geometry and a prescribed ground-truth trajectory (`.tum` SE(3), or 2D `(t,x,y)` waypoints with terrain-following; no controller, no physics stepping — the trajectory *is* the pose), it writes an MRPT `.rawlog` with 3D LiDAR (global or rolling shutter), IMU, and wheel-odometry observations, plus companion `.gt.tum` ground-truth files. See `docs/mvsim-dataset-gen.rst` and `~/plans/mvsim-lidar-simulator.md` for the full design.
+
+- `SceneBuilder.h/.cpp` — converts a headless-loaded `World` into a `mvsim::rt::RayScene`.
+- `TrajectorySource.h/.cpp` — `.tum` and 2D-waypoints-with-terrain-following loading via `CPose3DInterpolator`.
+- `LidarSimulator.h/.cpp`, `ImuSimulator.h/.cpp`, `OdometrySimulator.h/.cpp` — per-sensor observation generators. `LidarSimulator` ray-casts each sweep's columns in parallel with TBB (`tbb::parallel_for`) when available, falling back to a serial `for` loop otherwise (`MVSIM_HAS_TBB` compile-time define); each column gets its own RNG stream, seeded up front from the caller's `std::mt19937`, so a given `--seed` produces a byte-identical `.rawlog` regardless of thread scheduling or TBB availability.
+- `main.cpp` — CLI11 wiring and a min-heap scheduler merging all sensor streams into strict chronological order; prints a live progress bar with ETA (`mrpt::system::progress()` / `formatTimeInterval()`) while the merge loop runs.
 
 ---
 
@@ -195,7 +218,8 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 | **pybind11** (optional) | Python bindings |
 | **ROS 2** (optional) | ROS node wrapper |
 | **rapidxml** | XML parsing (header-only, bundled) |
-| **CLI11** | Command-line parsing in `mvsim-cli/` |
+| **CLI11** | Command-line parsing in `mvsim-cli/` and `mvsim-dataset-gen/` |
+| **TBB** (oneTBB, optional) | Parallel `for` loops (e.g. per-column LiDAR ray casting in `mvsim-dataset-gen/LidarSimulator.cpp`); if not found, `mvsim-dataset-gen` builds with a serial fallback instead |
 
 ---
 
