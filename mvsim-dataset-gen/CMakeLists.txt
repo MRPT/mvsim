@@ -10,6 +10,10 @@ add_executable(${PROJECT_NAME}
 	TrajectorySource.cpp
 	LidarSimulator.h
 	LidarSimulator.cpp
+	ImuSimulator.h
+	ImuSimulator.cpp
+	OdometrySimulator.h
+	OdometrySimulator.cpp
 )
 target_link_libraries(
 	${PROJECT_NAME}

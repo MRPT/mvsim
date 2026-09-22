@@ -60,6 +60,11 @@
 		  sensor_name="lidar1"
 		  sensor_rpm="600"
 		/>
+
+		<include file="../definitions/imu.sensor.xml"
+		  sensor_x="0.0" sensor_y="0" sensor_z="0.3"
+		  sensor_name="imu1"
+		/>
 	</vehicle>
 
 </mvsim_world>

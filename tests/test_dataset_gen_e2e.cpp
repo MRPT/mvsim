@@ -13,7 +13,10 @@
 
 #include <mrpt/io/CFileGZInputStream.h>
 #include <mrpt/maps/CGenericPointsMap.h>
+#include <mrpt/obs/CObservationIMU.h>
+#include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/obs/CObservationPointCloud.h>
+#include <mrpt/poses/CPose2D.h>
 #include <mrpt/serialization/CArchive.h>
 #include <mrpt/system/filesystem.h>
 
@@ -43,6 +46,15 @@ struct SweepStats
 	double maxRange = 0;
 	float tMin = std::numeric_limits<float>::max();
 	float tMax = -1;
+
+	int nImu = 0;
+	double maxAbsAngVel = 0;  //!< Max over samples of |w| [rad/s]
+	double lastAccZ = 0;  //!< Z-accel of the last IMU sample seen
+
+	int nOdom = 0;
+	mrpt::poses::CPose2D lastOdom;
+
+	bool chronological = true;
 };
 
 SweepStats loadAndInspect(const std::string& rawlogPath)
@@ -50,6 +62,8 @@ SweepStats loadAndInspect(const std::string& rawlogPath)
 	SweepStats st;
 	mrpt::io::CFileGZInputStream f(rawlogPath);
 	auto arch = mrpt::serialization::archiveFrom(f);
+
+	double lastT = -std::numeric_limits<double>::max();
 
 	for (;;)
 	{
@@ -66,29 +80,63 @@ SweepStats loadAndInspect(const std::string& rawlogPath)
 		{
 			break;
 		}
-		auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(obj);
-		if (!obs)
+
+		if (auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(obj))
 		{
-			continue;
+			st.nObs++;
+			const double t = mrpt::Clock::toDouble(obs->timestamp);
+			if (t < lastT - 1e-9)
+			{
+				st.chronological = false;
+			}
+			lastT = t;
+
+			auto pts = std::dynamic_pointer_cast<mrpt::maps::CGenericPointsMap>(obs->pointcloud);
+			if (!pts)
+			{
+				continue;
+			}
+			const size_t n = pts->size();
+			st.totalPoints += n;
+			for (size_t i = 0; i < n; i++)
+			{
+				float x, y, z;
+				pts->getPoint(i, x, y, z);
+				const double r = std::sqrt(double(x) * x + double(y) * y + double(z) * z);
+				st.minRange = std::min(st.minRange, r);
+				st.maxRange = std::max(st.maxRange, r);
+				const float tv = pts->getPointField_float(i, "t");
+				st.tMin = std::min(st.tMin, tv);
+				st.tMax = std::max(st.tMax, tv);
+			}
 		}
-		st.nObs++;
-		auto pts = std::dynamic_pointer_cast<mrpt::maps::CGenericPointsMap>(obs->pointcloud);
-		if (!pts)
+		else if (auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(obj))
 		{
-			continue;
+			st.nImu++;
+			const double t = mrpt::Clock::toDouble(obs->timestamp);
+			if (t < lastT - 1e-9)
+			{
+				st.chronological = false;
+			}
+			lastT = t;
+
+			const double wx = obs->get(mrpt::obs::IMU_WX);
+			const double wy = obs->get(mrpt::obs::IMU_WY);
+			const double wz = obs->get(mrpt::obs::IMU_WZ);
+			const double wNorm = std::sqrt(wx * wx + wy * wy + wz * wz);
+			st.maxAbsAngVel = std::max(st.maxAbsAngVel, wNorm);
+			st.lastAccZ = obs->get(mrpt::obs::IMU_Z_ACC);
 		}
-		const size_t n = pts->size();
-		st.totalPoints += n;
-		for (size_t i = 0; i < n; i++)
+		else if (auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(obj))
 		{
-			float x, y, z;
-			pts->getPoint(i, x, y, z);
-			const double r = std::sqrt(double(x) * x + double(y) * y + double(z) * z);
-			st.minRange = std::min(st.minRange, r);
-			st.maxRange = std::max(st.maxRange, r);
-			const float tv = pts->getPointField_float(i, "t");
-			st.tMin = std::min(st.tMin, tv);
-			st.tMax = std::max(st.tMax, tv);
+			st.nOdom++;
+			const double t = mrpt::Clock::toDouble(obs->timestamp);
+			if (t < lastT - 1e-9)
+			{
+				st.chronological = false;
+			}
+			lastT = t;
+			st.lastOdom = obs->odometry;
 		}
 	}
 	return st;
@@ -136,6 +184,23 @@ void test_global_shutter_basic()
 	// Sanity range bounds (VLP16 default min/max range: 0.01 / 80.0 m):
 	EXPECT_GT(st.minRange, 0.005);
 	EXPECT_LT(st.maxRange, 80.0);
+
+	// The demo world's straight, constant-velocity, level trajectory: the
+	// IMU must read ~zero angular velocity and ~gravity on Z (regression
+	// test for a real bug: a naive central difference at the trajectory's
+	// own time boundary previously produced a huge spurious acceleration
+	// spike on the very first sample).
+	EXPECT_TRUE(st.nImu > 0);
+	EXPECT_LT(st.maxAbsAngVel, 1e-6);
+	EXPECT_NEAR(st.lastAccZ, 9.81, 0.05);
+
+	// Odometry: noiseless dead reckoning must match the ground truth
+	// x-displacement (straight line along +X) closely.
+	EXPECT_TRUE(st.nOdom > 0);
+	EXPECT_NEAR(st.lastOdom.x(), 0.5 /*duration*/ * 1.0 /*m/s*/, 0.05);
+
+	// All 3 sensor streams must be interleaved in one global time order.
+	EXPECT_TRUE(st.chronological);
 
 	std::remove(out.c_str());
 	std::remove((out + ".gt.tum").c_str());
