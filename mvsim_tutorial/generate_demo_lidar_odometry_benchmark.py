@@ -224,8 +224,8 @@ WORLD_TEMPLATE = """<mvsim_world version="1.0">
 \t  2D trajectory + terrain-following input mode.
 
 \t  Usage:
-\t    mvsim-dataset-gen mvsim_tutorial/demo_lidar_odometry_benchmark.world.xml \\\\
-\t        --trajectory mvsim_tutorial/demo_lidar_odometry_benchmark.trajectory.txt \\\\
+\t    mvsim-dataset-gen mvsim_tutorial/demo_lidar_odometry_benchmark.world.xml \\
+\t        --trajectory mvsim_tutorial/demo_lidar_odometry_benchmark.trajectory.txt \\
 \t        -o /tmp/lidar_odom_benchmark.rawlog --noiseless
 \t-->
 
@@ -277,15 +277,26 @@ WORLD_TEMPLATE = """<mvsim_world version="1.0">
 """
 
 
+def positive_float(value):
+	f = float(value)
+	if f <= 0:
+		raise argparse.ArgumentTypeError(f"must be > 0, got {value}")
+	return f
+
+
 def main():
 	ap = argparse.ArgumentParser(description=__doc__)
 	ap.add_argument("--seed", type=int, default=42)
-	ap.add_argument("--map-half", type=float, default=140.0, help="Terrain half-extent [m]")
-	ap.add_argument("--resolution", type=float, default=2.5, help="Elevation grid resolution [m]")
+	ap.add_argument("--map-half", type=positive_float, default=140.0, help="Terrain half-extent [m]")
+	ap.add_argument(
+		"--resolution", type=positive_float, default=2.5, help="Elevation grid resolution [m]"
+	)
 	ap.add_argument("--x0", type=float, default=-110.0)
 	ap.add_argument("--x1", type=float, default=110.0)
-	ap.add_argument("--waypoint-step", type=float, default=0.5, help="Arc-length spacing [m]")
-	ap.add_argument("--speed", type=float, default=1.5, help="Nominal path speed [m/s]")
+	ap.add_argument(
+		"--waypoint-step", type=positive_float, default=0.5, help="Arc-length spacing [m]"
+	)
+	ap.add_argument("--speed", type=positive_float, default=1.5, help="Nominal path speed [m/s]")
 	ap.add_argument("--n-blocks", type=int, default=55)
 	ap.add_argument("--max-range", type=float, default=60.0)
 	args = ap.parse_args()

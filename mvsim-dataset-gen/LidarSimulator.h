@@ -47,6 +47,11 @@ struct LidarSimOptions
  * Points are expressed in the sensor frame *at the sweep-start pose*
  * (the usual convention for de-skewing consumers): `t` tells them how much
  * ego-motion to undo. In `ShutterMode::Global`, every point's `t` is 0.
+ *
+ * Columns are ray-cast in parallel with TBB (`RayScene::castRay()` is
+ * const/thread-safe), each with its own RNG stream seeded up front from
+ * `rng`, and merged into the output in column order afterwards -- so the
+ * result depends only on `rng`'s state on entry, never on thread scheduling.
  */
 mrpt::obs::CObservationPointCloud::Ptr simulateLidarSweep(
 	const mvsim::rt::RayScene& scene, const mvsim::rt::Lidar3DModel& model,

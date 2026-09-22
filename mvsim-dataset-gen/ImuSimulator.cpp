@@ -10,7 +10,6 @@
 
 #include <mrpt/math/CQuaternion.h>
 #include <mrpt/poses/Lie/SO.h>
-#include <mrpt/random.h>
 #include <mvsim/World.h>
 
 #include <algorithm>
@@ -23,7 +22,8 @@ using mrpt::poses::CPose3D;
 mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 	const mvsim::World& world, const TrajectorySource& traj, const CPose3D& sensorPoseOnVehicle,
 	double tEpochSeconds, double diffStep, double sampleDt, const std::string& sensorLabel,
-	bool measureOrientation, double orientationStdNoise, mvsim::ImuNoiseModel& noiseModel)
+	bool measureOrientation, double orientationStdNoise, mvsim::ImuNoiseModel& noiseModel,
+	std::mt19937& rng)
 {
 	const double h = diffStep;
 
@@ -92,8 +92,10 @@ mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 		mrpt::math::CVectorFixed<double, 3> oriNoiseVec;
 		if (orientationStdNoise > 0)
 		{
-			mrpt::random::getRandomGenerator().drawGaussian1DVector(
-				oriNoiseVec, 0.0, orientationStdNoise);
+			std::normal_distribution<double> noiseDist(0.0, orientationStdNoise);
+			oriNoiseVec[0] = noiseDist(rng);
+			oriNoiseVec[1] = noiseDist(rng);
+			oriNoiseVec[2] = noiseDist(rng);
 		}
 		else
 		{

@@ -12,6 +12,7 @@
 #include <mrpt/poses/CPose3D.h>
 #include <mvsim/Sensors/ImuNoiseModel.h>
 
+#include <random>
 #include <string>
 
 #include "TrajectorySource.h"
@@ -45,6 +46,6 @@ mrpt::obs::CObservationIMU::Ptr simulateImuSample(
 	const mvsim::World& world, const TrajectorySource& traj,
 	const mrpt::poses::CPose3D& sensorPoseOnVehicle, double tEpochSeconds, double diffStep,
 	double sampleDt, const std::string& sensorLabel, bool measureOrientation,
-	double orientationStdNoise, mvsim::ImuNoiseModel& noiseModel);
+	double orientationStdNoise, mvsim::ImuNoiseModel& noiseModel, std::mt19937& rng);
 
 }  // namespace mvsim_dataset_gen

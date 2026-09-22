@@ -116,7 +116,8 @@ int main(int argc, char** argv)
 	cli.add_flag(
 		"--allow-unsupported", allowUnsupported,
 		"Skip unsupported world geometry with a warning instead of aborting");
-	cli.add_option("--odom-rate", odomRateHz, "Wheel-odometry sample rate [Hz] (default: 10)");
+	cli.add_option("--odom-rate", odomRateHz, "Wheel-odometry sample rate [Hz] (default: 10)")
+		->check(CLI::PositiveNumber);
 	cli.add_option(
 		"--odom-trans-noise-rel", odomTransNoiseRel,
 		"Odometry translation noise std.dev., as a fraction of distance traveled per step");
@@ -252,7 +253,8 @@ int main(int argc, char** argv)
 						 scene, *model, traj, sensorPoseOnVeh, t, label, *opts, rng);
 					 nSweeps++;
 					 gtVehicle.insert(mrpt::Clock::fromDouble(t), traj.poseAt(t).asTPose());
-					 gtSensors[label].insert(mrpt::Clock::fromDouble(t), obs->sensorPose.asTPose());
+					 gtSensors[label].insert(
+						 mrpt::Clock::fromDouble(t), (traj.poseAt(t) + sensorPoseOnVeh).asTPose());
 					 return obs;
 				 }});
 		}
@@ -291,7 +293,7 @@ int main(int argc, char** argv)
 				 {
 					 auto obs = simulateImuSample(
 						 world, traj, sensorPoseOnVeh, t, diffStep, t - *prevT, label, measureOri,
-						 orientationNoise, *noiseModel);
+						 orientationNoise, *noiseModel, rng);
 					 nImuSamples++;
 					 *prevT = t;
 					 return obs;

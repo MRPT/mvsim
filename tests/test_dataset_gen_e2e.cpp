@@ -169,7 +169,7 @@ bool filesEqual(const std::string& a, const std::string& b)
 	}
 	return std::equal(
 		std::istreambuf_iterator<char>(fa), std::istreambuf_iterator<char>(),
-		std::istreambuf_iterator<char>(fb));
+		std::istreambuf_iterator<char>(fb), std::istreambuf_iterator<char>());
 }
 
 std::string tempPath(const std::string& suffix)

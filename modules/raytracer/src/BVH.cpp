@@ -127,8 +127,35 @@ bool BVH::traverse(
 			continue;
 		}
 
-		stack.push_back(node.leftChild);
-		stack.push_back(node.rightChild);
+		// Visit the nearer child first: push the farther one first so the
+		// LIFO stack pops the nearer one next.
+		const Node& left = nodes_[node.leftChild];
+		const Node& right = nodes_[node.rightChild];
+		double lNear, lFar, rNear, rFar;
+		const bool lHit = left.bounds.intersect(ray, lNear, lFar) && lNear <= ray.tMax;
+		const bool rHit = right.bounds.intersect(ray, rNear, rFar) && rNear <= ray.tMax;
+
+		if (lHit && rHit)
+		{
+			if (lNear <= rNear)
+			{
+				stack.push_back(node.rightChild);
+				stack.push_back(node.leftChild);
+			}
+			else
+			{
+				stack.push_back(node.leftChild);
+				stack.push_back(node.rightChild);
+			}
+		}
+		else if (lHit)
+		{
+			stack.push_back(node.leftChild);
+		}
+		else if (rHit)
+		{
+			stack.push_back(node.rightChild);
+		}
 	}
 
 	return found;

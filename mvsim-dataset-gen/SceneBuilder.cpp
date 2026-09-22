@@ -286,7 +286,7 @@ mvsim::rt::RayScene SceneBuilder::build(
 
 	for (const auto& [name, block] : world.getListOfBlocks())
 	{
-		if (!block)
+		if (!block || block->isIntangible())
 		{
 			continue;
 		}

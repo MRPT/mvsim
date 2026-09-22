@@ -16,8 +16,9 @@ using namespace mvsim::rt;
 
 namespace
 {
-constexpr double kDeg2Rad = M_PI / 180.0;
-}
+constexpr double kPi = 3.14159265358979323846;
+constexpr double kDeg2Rad = kPi / 180.0;
+}  // namespace
 
 Lidar3DModel::Lidar3DModel(Params params) : params_(std::move(params))
 {
@@ -66,7 +67,7 @@ Lidar3DModel::Lidar3DModel(Params params) : params_(std::move(params))
 
 double Lidar3DModel::columnAzimuthRad(int col) const
 {
-	return -M_PI + col * (2.0 * M_PI / params_.horzNumRays);
+	return -kPi + col * (2.0 * kPi / params_.horzNumRays);
 }
 
 double Lidar3DModel::columnFireTime(int col) const

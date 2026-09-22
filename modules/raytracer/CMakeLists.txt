@@ -7,7 +7,7 @@ file(GLOB RayTracer_SRCS
 )
 
 # Declare the target (a library). No Box2D, no GUI, no ZMQ, no Protobuf:
-# this module only depends on MRPT math/poses/maps so it can be unit-tested
+# this module only depends on MRPT math/poses so it can be unit-tested
 # in isolation and reused from contexts that don't want the full simulator.
 add_library(${PROJECT_NAME}
 	${RayTracer_SRCS}
@@ -19,7 +19,6 @@ source_group(RayTracer FILES ${RayTracer_SRCS})
 set(PACKAGE_DEPENDENCIES
   mrpt-math
   mrpt-poses
-  mrpt-maps
   )
 mvsim_common_target_settings(${MODULE_NAME})
 
@@ -27,5 +26,4 @@ target_link_libraries(${PROJECT_NAME}
  PUBLIC
 	mrpt::mrpt_math
 	mrpt::mrpt_poses
-	mrpt::mrpt_maps
 )

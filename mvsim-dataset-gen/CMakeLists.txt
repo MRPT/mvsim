@@ -20,6 +20,7 @@ target_link_libraries(
 	mvsim::simulator
 	mvsim::raytracer
 	CLI11::CLI11
+	TBB::tbb
 	${CMAKE_THREAD_LIBS_INIT}
 )
 

@@ -57,13 +57,25 @@ std::vector<Waypoint2D> parseWaypoints2D(const std::string& path)
 		for (auto it = std::sregex_iterator(content.begin(), content.end(), tagRe);
 			 it != std::sregex_iterator(); ++it)
 		{
+			const std::string tagText = (*it)[0].str();
 			const std::string attrs = (*it)[1].str();
 			std::optional<double> t, x, y;
 			for (auto ait = std::sregex_iterator(attrs.begin(), attrs.end(), attrRe);
 				 ait != std::sregex_iterator(); ++ait)
 			{
 				const std::string name = (*ait)[1].str();
-				const double val = std::stod((*ait)[2].str());
+				const std::string valStr = (*ait)[2].str();
+				double val;
+				try
+				{
+					val = std::stod(valStr);
+				}
+				catch (const std::exception&)
+				{
+					THROW_EXCEPTION(
+						"Malformed waypoint tag (non-numeric '" + name +
+						"' attribute): " + tagText);
+				}
 				if (name == "t")
 				{
 					t = val;
@@ -77,29 +89,35 @@ std::vector<Waypoint2D> parseWaypoints2D(const std::string& path)
 					y = val;
 				}
 			}
-			if (t && x && y)
+			if (!t || !x || !y)
 			{
-				wps.push_back({*t, *x, *y});
+				THROW_EXCEPTION("Malformed waypoint tag (missing t/x/y attribute): " + tagText);
 			}
+			wps.push_back({*t, *x, *y});
 		}
 	}
 	else
 	{
 		std::istringstream is(content);
 		std::string line;
+		size_t lineNo = 0;
 		while (std::getline(is, line))
 		{
+			lineNo++;
 			const size_t h = line.find('#');
-			if (h != std::string::npos)
+			const std::string dataPart = h != std::string::npos ? line.substr(0, h) : line;
+			if (dataPart.find_first_not_of(" \t\r\n") == std::string::npos)
 			{
-				line = line.substr(0, h);
+				continue;  // Blank or comment-only line.
 			}
-			std::istringstream ls(line);
+			std::istringstream ls(dataPart);
 			double t, x, y;
-			if (ls >> t >> x >> y)
+			if (!(ls >> t >> x >> y))
 			{
-				wps.push_back({t, x, y});
+				THROW_EXCEPTION_FMT(
+					"Malformed waypoint at %s:%zu: '%s'", path.c_str(), lineNo, line.c_str());
 			}
+			wps.push_back({t, x, y});
 		}
 	}
 

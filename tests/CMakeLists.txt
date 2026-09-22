@@ -92,3 +92,4 @@ target_compile_definitions(test_dataset_gen_e2e PRIVATE
 	MVSIM_DATASET_GEN_EXE_PATH="$<TARGET_FILE:mvsim-dataset-gen>"
 	MVSIM_TUTORIAL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mvsim_tutorial"
 	)
+add_dependencies(test_dataset_gen_e2e mvsim-dataset-gen)

@@ -7,8 +7,8 @@
 	  2D trajectory + terrain-following input mode.
 
 	  Usage:
-	    mvsim-dataset-gen mvsim_tutorial/demo_lidar_odometry_benchmark.world.xml \\
-	        --trajectory mvsim_tutorial/demo_lidar_odometry_benchmark.trajectory.txt \\
+	    mvsim-dataset-gen mvsim_tutorial/demo_lidar_odometry_benchmark.world.xml \
+	        --trajectory mvsim_tutorial/demo_lidar_odometry_benchmark.trajectory.txt \
 	        -o /tmp/lidar_odom_benchmark.rawlog --noiseless
 	-->
 

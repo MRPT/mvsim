@@ -66,6 +66,7 @@ else()
 endif()
 
 find_package(Threads)
+find_package(TBB REQUIRED)
 include(GNUInstallDirs)
 include(cmake/mvsim_cmake_functions.cmake REQUIRED)
 

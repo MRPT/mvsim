@@ -12,6 +12,7 @@
 #include <mvsim/raytracer/Ray.h>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 
 namespace mvsim::rt
@@ -75,25 +76,25 @@ struct AABB
 		tNear = ray.tMin;
 		tFar = ray.tMax;
 
-		const double* rayOrg = &ray.org.x;
-		const double* rayDir = &ray.dir.x;
-		const double* boxMin = &min.x;
-		const double* boxMax = &max.x;
-
 		for (int axis = 0; axis < 3; axis++)
 		{
-			if (std::abs(rayDir[axis]) < 1e-12)
+			const double rayOrgA = ray.org[axis];
+			const double rayDirA = ray.dir[axis];
+			const double boxMinA = min[axis];
+			const double boxMaxA = max[axis];
+
+			if (std::abs(rayDirA) < 1e-12)
 			{
-				if (rayOrg[axis] < boxMin[axis] || rayOrg[axis] > boxMax[axis])
+				if (rayOrgA < boxMinA || rayOrgA > boxMaxA)
 				{
 					return false;
 				}
 				continue;
 			}
 
-			const double invD = 1.0 / rayDir[axis];
-			double t0 = (boxMin[axis] - rayOrg[axis]) * invD;
-			double t1 = (boxMax[axis] - rayOrg[axis]) * invD;
+			const double invD = 1.0 / rayDirA;
+			double t0 = (boxMinA - rayOrgA) * invD;
+			double t1 = (boxMaxA - rayOrgA) * invD;
 			if (t0 > t1)
 			{
 				std::swap(t0, t1);

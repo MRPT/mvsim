@@ -45,15 +45,22 @@ warning instead.
 Trajectory input
 -----------------
 
-A `TUM-format <https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats>`_
-text file (``--trajectory``): one ``timestamp tx ty tz qx qy qz qw`` line
-per pose, full SE(3), epoch-seconds timestamps. Poses in between are
-interpolated (linear position + SLERP orientation by default).
+``--trajectory`` accepts two formats, selected automatically from the file
+extension (``--trajectory-format`` overrides the guess):
 
-.. note::
-   2D ``(x, y, phi)`` trajectory input with terrain-following (deriving
-   ``z``/roll/pitch from the world's ground surface) is planned but not yet
-   implemented; only ``.tum`` files are accepted for now.
+- **tum**: a `TUM-format
+  <https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats>`_ text
+  file, one ``timestamp tx ty tz qx qy qz qw`` line per pose, full SE(3),
+  epoch-seconds timestamps. Poses in between are interpolated (linear
+  position + SLERP orientation by default).
+
+- **waypoints2d**: a 2D ``(t, x, y)`` waypoint list, either a plain-text
+  file (one ``t x y`` line per waypoint, ``#`` comments and blank lines
+  ignored) or an XML file with one ``<waypoint t="" x="" y=""/>`` tag per
+  waypoint (attribute order does not matter). Heading is derived from the
+  path tangent, and ``z``/pitch/roll are derived from the world's ground
+  surface at 4 probe points under the vehicle footprint
+  (``--footprint-lx``/``--footprint-ly``), i.e. terrain-following.
 
 Sensors
 -------

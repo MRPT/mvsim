@@ -157,6 +157,10 @@ class Block : public CVisualObject, public Simulable
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
+	/** If true, this block is rendered visually but is neither detected by
+	 * sensors nor collides with anything. */
+	bool isIntangible() const { return intangible_; }
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
