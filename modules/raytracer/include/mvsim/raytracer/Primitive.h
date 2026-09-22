@@ -70,14 +70,18 @@ struct Triangle
 };
 
 /** A regular-grid heightfield, from `<element class="elevation_map">`.
- * `z(row,col)` gives the elevation at world point
- * `(minX + col*resolution, minY + row*resolution)`. */
+ * Mirrors `ElevationMap::meshCacheZ_`'s own indexing exactly: `z(row, col)`
+ * gives the elevation at world point
+ * `(minX + row*(maxX-minX)/(rows-1), minY + col*(maxY-minY)/(cols-1))`, i.e.
+ * matrix *rows* run along world X and *columns* along world Y. Row/column
+ * spacing need not be equal. */
 struct HeightField
 {
 	mrpt::math::CMatrixDouble z;
 	double minX = 0.0;
+	double maxX = 0.0;
 	double minY = 0.0;
-	double resolution = 1.0;
+	double maxY = 0.0;
 };
 
 using PrimitiveGeometry = std::variant<Plane, Prism, Cylinder, Sphere, Triangle, HeightField>;

@@ -279,8 +279,9 @@ void test_heightfield_flat_matches_plane()
 	hf.z.setSize(5, 5);
 	hf.z.fill(2.0);
 	hf.minX = 0.0;
+	hf.maxX = 4.0;
 	hf.minY = 0.0;
-	hf.resolution = 1.0;
+	hf.maxY = 4.0;
 	Primitive prim{hf, "terrain"};
 
 	const Ray r = makeRay({2, 2, 10}, {0, 0, -1});
@@ -294,18 +295,21 @@ void test_heightfield_flat_matches_plane()
 void test_heightfield_slope()
 {
 	// A ramp: z = x, over a 5x5 grid, resolution 1, x,y in [0,4].
+	// Rows index X (matches ElevationMap's own convention), so z must vary
+	// with the row index, not the column index.
 	HeightField hf;
 	hf.z.setSize(5, 5);
 	for (int r = 0; r < 5; r++)
 	{
 		for (int c = 0; c < 5; c++)
 		{
-			hf.z(r, c) = static_cast<double>(c);
+			hf.z(r, c) = static_cast<double>(r);
 		}
 	}
 	hf.minX = 0.0;
+	hf.maxX = 4.0;
 	hf.minY = 0.0;
-	hf.resolution = 1.0;
+	hf.maxY = 4.0;
 	Primitive prim{hf, "ramp"};
 
 	// Straight down at x=2 should hit at z=2:
@@ -314,6 +318,38 @@ void test_heightfield_slope()
 	EXPECT_TRUE(intersectPrimitive(prim, r, h));
 	const auto p = r.at(h.t);
 	EXPECT_NEAR(p.z, 2.0, 1e-6);
+}
+
+// ---------------------------------------------------------------
+void test_heightfield_row_is_x_col_is_y()
+{
+	// A ramp along Y only: z = y (constant per row). If row/col were
+	// swapped, this would instead read as z = x and the assertion below
+	// would fail.
+	HeightField hf;
+	hf.z.setSize(3, 5);	 // 3 rows (X), 5 cols (Y)
+	for (int r = 0; r < 3; r++)
+	{
+		for (int c = 0; c < 5; c++)
+		{
+			hf.z(r, c) = static_cast<double>(c);
+		}
+	}
+	hf.minX = 0.0;
+	hf.maxX = 2.0;
+	hf.minY = 0.0;
+	hf.maxY = 4.0;
+	Primitive prim{hf, "yramp"};
+
+	const Ray r1 = makeRay({0.5, 3.0, 10}, {0, 0, -1});
+	Hit h1;
+	EXPECT_TRUE(intersectPrimitive(prim, r1, h1));
+	EXPECT_NEAR(r1.at(h1.t).z, 3.0, 1e-6);	// z should follow Y, not X
+
+	const Ray r2 = makeRay({1.9, 3.0, 10}, {0, 0, -1});
+	Hit h2;
+	EXPECT_TRUE(intersectPrimitive(prim, r2, h2));
+	EXPECT_NEAR(r2.at(h2.t).z, 3.0, 1e-6);	// Same Y, different X -> same z
 }
 
 // ---------------------------------------------------------------
@@ -343,6 +379,7 @@ int main()
 	test_triangle();
 	test_heightfield_flat_matches_plane();
 	test_heightfield_slope();
+	test_heightfield_row_is_x_col_is_y();
 	test_aabb();
 
 	if (g_failures == 0)

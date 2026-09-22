@@ -363,20 +363,26 @@ bool intersectPrism(const Prism& prism, const Ray& ray, Hit& out)
 
 bool intersectHeightField(const HeightField& hf, const Ray& ray, Hit& out)
 {
-	const auto rows = hf.z.rows();
-	const auto cols = hf.z.cols();
-	if (rows < 2 || cols < 2)
+	// Matrix rows run along world X, columns along world Y (matches
+	// ElevationMap::meshCacheZ_ / getElevationAt() exactly).
+	const auto nRows = hf.z.rows();
+	const auto nCols = hf.z.cols();
+	if (nRows < 2 || nCols < 2)
 	{
 		return false;
 	}
-	const double maxX = hf.minX + (cols - 1) * hf.resolution;
-	const double maxY = hf.minY + (rows - 1) * hf.resolution;
+	const double resX = (hf.maxX - hf.minX) / (nRows - 1);
+	const double resY = (hf.maxY - hf.minY) / (nCols - 1);
+	if (resX <= 0 || resY <= 0)
+	{
+		return false;
+	}
 	const double zMin = hf.z.minCoeff();
 	const double zMax = hf.z.maxCoeff();
 
 	AABB box;
 	box.grow({hf.minX, hf.minY, zMin});
-	box.grow({maxX, maxY, zMax});
+	box.grow({hf.maxX, hf.maxY, zMax});
 
 	double tNear, tFar;
 	if (!box.intersect(ray, tNear, tFar))
@@ -392,45 +398,43 @@ bool intersectHeightField(const HeightField& hf, const Ray& ray, Hit& out)
 
 	const double startX = ray.org.x + tNear * ray.dir.x;
 	const double startY = ray.org.y + tNear * ray.dir.y;
-	int col = static_cast<int>(std::floor((startX - hf.minX) / hf.resolution));
-	int row = static_cast<int>(std::floor((startY - hf.minY) / hf.resolution));
-	col = std::clamp(col, 0, static_cast<int>(cols) - 2);
-	row = std::clamp(row, 0, static_cast<int>(rows) - 2);
+	// "row" indexes X, "col" indexes Y.
+	int row = static_cast<int>(std::floor((startX - hf.minX) / resX));
+	int col = static_cast<int>(std::floor((startY - hf.minY) / resY));
+	row = std::clamp(row, 0, static_cast<int>(nRows) - 2);
+	col = std::clamp(col, 0, static_cast<int>(nCols) - 2);
 
-	const int stepCol = ray.dir.x > 1e-12 ? 1 : (ray.dir.x < -1e-12 ? -1 : 0);
-	const int stepRow = ray.dir.y > 1e-12 ? 1 : (ray.dir.y < -1e-12 ? -1 : 0);
+	const int stepRow = ray.dir.x > 1e-12 ? 1 : (ray.dir.x < -1e-12 ? -1 : 0);
+	const int stepCol = ray.dir.y > 1e-12 ? 1 : (ray.dir.y < -1e-12 ? -1 : 0);
 
 	const double tDeltaX =
-		stepCol != 0 ? hf.resolution / std::abs(ray.dir.x) : std::numeric_limits<double>::max();
+		stepRow != 0 ? resX / std::abs(ray.dir.x) : std::numeric_limits<double>::max();
 	const double tDeltaY =
-		stepRow != 0 ? hf.resolution / std::abs(ray.dir.y) : std::numeric_limits<double>::max();
+		stepCol != 0 ? resY / std::abs(ray.dir.y) : std::numeric_limits<double>::max();
 
-	auto nextBoundaryT = [&](int idx, int step, double minCoord, double org, double dir) -> double
+	auto nextBoundaryT = [&](int idx, int step, double minCoord, double res, double org,
+							 double dir) -> double
 	{
 		if (step == 0)
 		{
 			return std::numeric_limits<double>::max();
 		}
-		const double bound = minCoord + (idx + (step > 0 ? 1 : 0)) * hf.resolution;
+		const double bound = minCoord + (idx + (step > 0 ? 1 : 0)) * res;
 		return (bound - org) / dir;
 	};
 
-	double tMaxX = nextBoundaryT(col, stepCol, hf.minX, ray.org.x, ray.dir.x);
-	double tMaxY = nextBoundaryT(row, stepRow, hf.minY, ray.org.y, ray.dir.y);
+	double tMaxX = nextBoundaryT(row, stepRow, hf.minX, resX, ray.org.x, ray.dir.x);
+	double tMaxY = nextBoundaryT(col, stepCol, hf.minY, resY, ray.org.y, ray.dir.y);
 
 	double t = tNear;
-	while (t <= tFar + 1e-9 && col >= 0 && col < static_cast<int>(cols) - 1 && row >= 0 &&
-		   row < static_cast<int>(rows) - 1)
+	while (t <= tFar + 1e-9 && row >= 0 && row < static_cast<int>(nRows) - 1 && col >= 0 &&
+		   col < static_cast<int>(nCols) - 1)
 	{
-		const TPoint3D p00{
-			hf.minX + col * hf.resolution, hf.minY + row * hf.resolution, hf.z(row, col)};
-		const TPoint3D p10{
-			hf.minX + (col + 1) * hf.resolution, hf.minY + row * hf.resolution, hf.z(row, col + 1)};
-		const TPoint3D p01{
-			hf.minX + col * hf.resolution, hf.minY + (row + 1) * hf.resolution, hf.z(row + 1, col)};
+		const TPoint3D p00{hf.minX + row * resX, hf.minY + col * resY, hf.z(row, col)};
+		const TPoint3D p10{hf.minX + (row + 1) * resX, hf.minY + col * resY, hf.z(row + 1, col)};
+		const TPoint3D p01{hf.minX + row * resX, hf.minY + (col + 1) * resY, hf.z(row, col + 1)};
 		const TPoint3D p11{
-			hf.minX + (col + 1) * hf.resolution, hf.minY + (row + 1) * hf.resolution,
-			hf.z(row + 1, col + 1)};
+			hf.minX + (row + 1) * resX, hf.minY + (col + 1) * resY, hf.z(row + 1, col + 1)};
 
 		Hit h1, h2;
 		const bool got1 = intersectTriangleRaw(p00, p10, p11, ray, h1);
@@ -450,13 +454,13 @@ bool intersectHeightField(const HeightField& hf, const Ray& ray, Hit& out)
 		{
 			t = tMaxX;
 			tMaxX += tDeltaX;
-			col += stepCol;
+			row += stepRow;
 		}
 		else
 		{
 			t = tMaxY;
 			tMaxY += tDeltaY;
-			row += stepRow;
+			col += stepCol;
 		}
 	}
 	return false;
@@ -512,10 +516,8 @@ AABB mvsim::rt::primitiveAABB(const Primitive& prim)
 			}
 			else if constexpr (std::is_same_v<T, HeightField>)
 			{
-				const double maxX = g.minX + (g.z.cols() - 1) * g.resolution;
-				const double maxY = g.minY + (g.z.rows() - 1) * g.resolution;
 				box.grow({g.minX, g.minY, g.z.minCoeff()});
-				box.grow({maxX, maxY, g.z.maxCoeff()});
+				box.grow({g.maxX, g.maxY, g.z.maxCoeff()});
 			}
 			return box;
 		},
