@@ -76,3 +76,9 @@ mvsim_add_test(
 	SOURCES test_raytracer_bvh.cpp
 	LINK_LIBRARIES mvsim::raytracer
 	)
+
+mvsim_add_test(
+	TARGET test_lidar3d_model
+	SOURCES test_lidar3d_model.cpp
+	LINK_LIBRARIES mvsim::raytracer
+	)
