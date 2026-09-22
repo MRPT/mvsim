@@ -42,6 +42,20 @@ class Lidar3D : public SensorBase
 	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 	void freeOpenGLResources() override;
 
+	/** Read-only access to the raw XML-configured parameters, for exact
+	 * (non-visual, non-rendering) consumers such as the offline ray
+	 * tracer's Lidar3DModel. Mirrors exactly what simulateOn3DScene() uses
+	 * to build its own (lazy, GUI-only) `vertical_ray_angles_`, so a
+	 * caller can reproduce the same ray set without ever rendering. */
+	int vertNumRays() const { return vertNumRays_; }
+	int horzNumRays() const { return horzNumRays_; }
+	double verticalFovDegrees() const { return vertical_fov_; }
+	const std::string& verticalRayAnglesStr() const { return vertical_ray_angles_str_; }
+	float minRange() const { return minRange_; }
+	float maxRange() const { return maxRange_; }
+	double rangeStdNoise() const { return rangeStdNoise_; }
+	bool generateIntensityFromRGB() const { return generateIntensityFromRGB_; }
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,

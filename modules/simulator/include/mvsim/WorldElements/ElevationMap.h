@@ -43,6 +43,17 @@ class ElevationMap : public WorldElementBase
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& pt) const override;
 
+	/** Read-only access to the elevation grid, for exact (non-visual)
+	 * consumers such as the offline ray tracer. `meshZ()(row,col)` gives
+	 * the elevation at world point `(minX() + row*(maxX()-minX())/(rows-1),
+	 * minY() + col*(maxY()-minY())/(cols-1))`, i.e. rows run along world X
+	 * and columns along world Y; matches getElevationAt()'s own indexing. */
+	const mrpt::math::CMatrixDouble& meshZ() const { return meshCacheZ_; }
+	double meshMinX() const { return meshMinX_; }
+	double meshMaxX() const { return meshMaxX_; }
+	double meshMinY() const { return meshMinY_; }
+	double meshMaxY() const { return meshMaxY_; }
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,

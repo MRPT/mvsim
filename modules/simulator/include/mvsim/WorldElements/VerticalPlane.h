@@ -53,6 +53,17 @@ class VerticalPlane : public WorldElementBase
 		bool overlaps(float pos_start, float pos_end) const;
 	};
 
+	/** Read-only access to the wall geometry, for exact (non-visual)
+	 * consumers such as the offline ray tracer. */
+	float x0() const { return x0_; }
+	float x1() const { return x1_; }
+	float y0() const { return y0_; }
+	float y1() const { return y1_; }
+	float z() const { return z_; }
+	float height() const { return height_; }
+	float thickness() const { return thickness_; }
+	const std::vector<Opening>& openings() const { return openings_; }
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
