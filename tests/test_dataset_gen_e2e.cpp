@@ -81,17 +81,17 @@ SweepStats loadAndInspect(const std::string& rawlogPath)
 			break;
 		}
 
-		if (auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(obj))
+		if (auto obsPts = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(obj))
 		{
 			st.nObs++;
-			const double t = mrpt::Clock::toDouble(obs->timestamp);
+			const double t = mrpt::Clock::toDouble(obsPts->timestamp);
 			if (t < lastT - 1e-9)
 			{
 				st.chronological = false;
 			}
 			lastT = t;
 
-			auto pts = std::dynamic_pointer_cast<mrpt::maps::CGenericPointsMap>(obs->pointcloud);
+			auto pts = std::dynamic_pointer_cast<mrpt::maps::CGenericPointsMap>(obsPts->pointcloud);
 			if (!pts)
 			{
 				continue;
@@ -110,33 +110,33 @@ SweepStats loadAndInspect(const std::string& rawlogPath)
 				st.tMax = std::max(st.tMax, tv);
 			}
 		}
-		else if (auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(obj))
+		else if (auto obsImu = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(obj))
 		{
 			st.nImu++;
-			const double t = mrpt::Clock::toDouble(obs->timestamp);
+			const double t = mrpt::Clock::toDouble(obsImu->timestamp);
 			if (t < lastT - 1e-9)
 			{
 				st.chronological = false;
 			}
 			lastT = t;
 
-			const double wx = obs->get(mrpt::obs::IMU_WX);
-			const double wy = obs->get(mrpt::obs::IMU_WY);
-			const double wz = obs->get(mrpt::obs::IMU_WZ);
+			const double wx = obsImu->get(mrpt::obs::IMU_WX);
+			const double wy = obsImu->get(mrpt::obs::IMU_WY);
+			const double wz = obsImu->get(mrpt::obs::IMU_WZ);
 			const double wNorm = std::sqrt(wx * wx + wy * wy + wz * wz);
 			st.maxAbsAngVel = std::max(st.maxAbsAngVel, wNorm);
-			st.lastAccZ = obs->get(mrpt::obs::IMU_Z_ACC);
+			st.lastAccZ = obsImu->get(mrpt::obs::IMU_Z_ACC);
 		}
-		else if (auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(obj))
+		else if (auto obsOdom = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(obj))
 		{
 			st.nOdom++;
-			const double t = mrpt::Clock::toDouble(obs->timestamp);
+			const double t = mrpt::Clock::toDouble(obsOdom->timestamp);
 			if (t < lastT - 1e-9)
 			{
 				st.chronological = false;
 			}
 			lastT = t;
-			st.lastOdom = obs->odometry;
+			st.lastOdom = obsOdom->odometry;
 		}
 	}
 	return st;
