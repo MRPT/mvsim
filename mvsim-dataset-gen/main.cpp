@@ -15,7 +15,10 @@
 #include <mrpt/io/CFileGZOutputStream.h>
 #include <mrpt/poses/CPose3DInterpolator.h>
 #include <mrpt/serialization/CArchive.h>
+#include <mrpt/system/CTicTac.h>
+#include <mrpt/system/datetime.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/system/progress.h>
 #include <mrpt/system/string_utils.h>
 #include <mvsim/Sensors/IMU.h>
 #include <mvsim/Sensors/Lidar3D.h>
@@ -24,6 +27,7 @@
 #include <mvsim/raytracer/Lidar3DModel.h>
 
 #include <CLI/CLI.hpp>
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <queue>
@@ -334,6 +338,8 @@ int main(int argc, char** argv)
 				pq.push({gens[i].nextTime, i});
 			}
 		}
+		mrpt::system::CTicTac progressTimer;
+		double lastProgressPrintTime = 0.0;
 		while (!pq.empty())
 		{
 			const auto [t, idx] = pq.top();
@@ -345,7 +351,21 @@ int main(int argc, char** argv)
 			{
 				pq.push({g.nextTime, idx});
 			}
+
+			const double elapsed = progressTimer.Tac();
+			if (elapsed - lastProgressPrintTime >= 0.2 || pq.empty())
+			{
+				lastProgressPrintTime = elapsed;
+				const double ratio =
+					pq.empty() ? 1.0
+							   : (simDuration > 0 ? std::min(1.0, (t - t0) / simDuration) : 1.0);
+				const double eta = ratio > 1e-6 ? elapsed * (1.0 - ratio) / ratio : 0.0;
+				std::cout << "\r[mvsim-dataset-gen] " << mrpt::system::progress(ratio, 30) << " "
+						  << static_cast<int>(100 * ratio) << "% ETA "
+						  << mrpt::system::formatTimeInterval(eta) << "   " << std::flush;
+			}
 		}
+		std::cout << "\n";
 
 		std::cout << "[mvsim-dataset-gen] Wrote " << nSweeps << " lidar sweep(s) from "
 				  << lidars.size() << " sensor(s), " << nImuSamples << " IMU sample(s) from "

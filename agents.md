@@ -161,7 +161,7 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 - `SceneBuilder.h/.cpp` — converts a headless-loaded `World` into a `mvsim::rt::RayScene`.
 - `TrajectorySource.h/.cpp` — `.tum` and 2D-waypoints-with-terrain-following loading via `CPose3DInterpolator`.
 - `LidarSimulator.h/.cpp`, `ImuSimulator.h/.cpp`, `OdometrySimulator.h/.cpp` — per-sensor observation generators. `LidarSimulator` ray-casts each sweep's columns in parallel with TBB (`tbb::parallel_for`); each column gets its own RNG stream, seeded up front from the caller's `std::mt19937`, so a given `--seed` produces a byte-identical `.rawlog` regardless of thread scheduling.
-- `main.cpp` — CLI11 wiring and a min-heap scheduler merging all sensor streams into strict chronological order.
+- `main.cpp` — CLI11 wiring and a min-heap scheduler merging all sensor streams into strict chronological order; prints a live progress bar with ETA (`mrpt::system::progress()` / `formatTimeInterval()`) while the merge loop runs.
 
 ---
 
