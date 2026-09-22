@@ -28,9 +28,9 @@ target_link_libraries(${PROJECT_NAME}
 	${ZeroMQ_LIBRARY}
  PUBLIC
 	${Protobuf_LIBRARIES}
-	mrpt::system
-	mrpt::io
-	mrpt::serialization
+	mrpt::mrpt_system
+	mrpt::mrpt_io
+	mrpt::mrpt_serialization
 	mvsim::msgs
 )
 

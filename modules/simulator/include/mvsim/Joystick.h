@@ -19,7 +19,7 @@
    +------------------------------------------------------------------------+ */
 #pragma once
 
-#include <mrpt/config.h>
+#include <mrpt/core/config.h>
 
 #include <vector>
 
@@ -78,7 +78,7 @@ class Joystick
 	/** Gets joystick information.
 	 *
 	 *   This method will try first to open the joystick, so you can safely call
-	 * it while the joystick is plugged and removed arbitrarly.
+	 * it while the joystick is plugged and removed arbitrarily.
 	 *
 	 * \param nJoy The index of the joystick to query: The first one is 0, the
 	 * second 1, etc... See CJoystick::getJoysticksCount to discover the number

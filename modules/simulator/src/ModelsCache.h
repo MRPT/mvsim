@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/CAssimpModel.h>
+#include <mrpt/viz/CAssimpModel.h>
 
 #include <map>
 
@@ -23,14 +23,14 @@ class ModelsCache
 		mrpt::img::TColor modelColor = mrpt::img::TColor::white();
 		std::string modelCull = "NONE";
 
-		/** See mrpt::opengl::CAssimpModel::split_triangles_rendering_bbox().
+		/** See mrpt::viz::CAssimpModel::split_triangles_rendering_bbox().
 		 *  Default (0)=disabled. Any other value, split the model into voxels of this size
 		 *  to help sorting triangles by depth so semitransparent meshes are rendered correctly.
 		 */
 		float splitSize = .0f;
 	};
 
-	mrpt::opengl::CAssimpModel::Ptr get(const std::string& url, const Options& options);
+	mrpt::viz::CAssimpModel::Ptr get(const std::string& url, const Options& options);
 
 	void clear() { cache.clear(); }
 
@@ -38,7 +38,12 @@ class ModelsCache
 	ModelsCache() = default;
 	~ModelsCache() = default;
 
-	std::map<std::string, mrpt::opengl::CAssimpModel::Ptr> cache;
+	ModelsCache(const ModelsCache&) = default;
+	ModelsCache& operator=(const ModelsCache&) = default;
+	ModelsCache(ModelsCache&&) = default;
+	ModelsCache& operator=(ModelsCache&&) = default;
+
+	std::map<std::string, mrpt::viz::CAssimpModel::Ptr> cache;
 };
 
 }  // namespace mvsim

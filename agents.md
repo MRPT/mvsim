@@ -6,7 +6,7 @@
 
 ## Project overview
 
-**MultiVehicle Simulator (MVSim)** is a lightweight, realistic 2.5D dynamics simulator for mobile robots and multi-agent research. It runs standalone, as a ROS 2 node, or embedded in C++/Python applications. Worlds are fully configured via XML files. Current version: 1.3.0.
+**MultiVehicle Simulator (MVSim)** is a lightweight, realistic 2.5D dynamics simulator for mobile robots and multi-agent research. It runs standalone, as a ROS 2 node, or embedded in C++/Python applications. Worlds are fully configured via XML files. Current version: 1.4.0.
 
 - License: BSD 3-Clause
 - Language: C++17 (minimum CMake 3.9)
@@ -174,7 +174,7 @@ Ready-to-include vehicle and sensor snippets:
 
 `demo_warehouse.world.xml`, `demo_2robots.world.xml`, `demo_greenhouse.world.xml`, `demo_elevation_map.world.xml`, `demo_road_circuit1.world.xml`, `demo_multistorey.world.xml`, `demo_logistics_center.world.xml`, `demo_articulated_vehicle.world.xml`, `demo_friction_zones.world.xml`, `demo_camera.world.xml`, `demo_depth_camera.world.xml`, `demo_jackal.world.xml`, `demo_many_robots.world.xml`, `demo_indoor_outdoor.world.xml`, `demo_outdoor.world.xml`, `demo_walls.world.xml`, `demo_turtlebot_world.world.xml`, `mvsim_slam.world.xml`, `demo_trajectory.world.xml`, `demo_trajectory_ackermann.world.xml`.
 
-**Exactly reproducible trajectories** (`trajectory` controller class, `PoseTrajectoryFollower`): drives a `differential`/`ackermann` vehicle along a closed-form, time-parameterized `(t,x,y)` polyline given directly in `<waypoint>` XML tags, using a pure-pursuit strategy (speed from waypoint distance/time, heading from a lookahead point, with `max_angular_speed` slowing `vx` down — not just capping `omega` — to round sharp corners realistically). Supports `loop="true"` (repeats forever) and `loop="false"` (runs once and stops). `demo_trajectory.world.xml`/`demo_trajectory_ackermann.world.xml` select between the 3 predefined `definitions/trajectories/*.trajectory.xml` presets via a top-level `TRAJECTORY` `<variable>` and `<include>`; both carry a 3D LiDAR + GNSS sensor. Tested in `tests/test_pose_trajectory_follower.cpp` (pure algorithm, no World) and `tests/test_trajectory_controller.cpp` (full World + Box2D). The path polyline can also be drawn in the 3D GUI (a `mrpt::opengl::CSetOfLines` at a configurable `viz_height`, default 0.5m) via `ControllerBaseInterface::getTrajectoryPlotPoints()`, toggled by the "View trajectories" checkbox / `<gui><show_trajectories>` option; both demo worlds enable it by default.
+**Exactly reproducible trajectories** (`trajectory` controller class, `PoseTrajectoryFollower`): drives a `differential`/`ackermann` vehicle along a closed-form, time-parameterized `(t,x,y)` polyline given directly in `<waypoint>` XML tags, using a pure-pursuit strategy (speed from waypoint distance/time, heading from a lookahead point, with `max_angular_speed` slowing `vx` down — not just capping `omega` — to round sharp corners realistically). Supports `loop="true"` (repeats forever) and `loop="false"` (runs once and stops). `demo_trajectory.world.xml`/`demo_trajectory_ackermann.world.xml` select between the 3 predefined `definitions/trajectories/*.trajectory.xml` presets via a top-level `TRAJECTORY` `<variable>` and `<include>`; both carry a 3D LiDAR + GNSS sensor. Tested in `tests/test_pose_trajectory_follower.cpp` (pure algorithm, no World) and `tests/test_trajectory_controller.cpp` (full World + Box2D). The path polyline can also be drawn in the 3D GUI (a `mrpt::viz::CSetOfLines` at a configurable `viz_height`, default 0.5m) via `ControllerBaseInterface::getTrajectoryPlotPoints()`, toggled by the "View trajectories" checkbox / `<gui><show_trajectories>` option; both demo worlds enable it by default.
 
 ---
 
@@ -188,13 +188,14 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 
 | Library | Role |
 |---|---|
-| **MRPT** | Math, poses, observations, OpenGL GUI (`mrpt/gui`, `mrpt/obs`, `mrpt/poses`, `mrpt/opengl`) |
+| **MRPT** (>= 3.0) | Math, poses, observations, GUI. 3D scene graph lives in `mrpt/viz` (`mrpt::viz::Scene`, `CSetOfObjects`, ...); `mrpt/opengl` is only used for offscreen FBO rendering (`CFBORender`) in sensors. |
 | **Box2D** | 2D rigid-body physics engine |
 | **ZeroMQ** (optional) | Pub-sub communications |
 | **Protobuf** (optional) | Message serialization |
 | **pybind11** (optional) | Python bindings |
 | **ROS 2** (optional) | ROS node wrapper |
 | **rapidxml** | XML parsing (header-only, bundled) |
+| **CLI11** | Command-line parsing in `mvsim-cli/` |
 
 ---
 

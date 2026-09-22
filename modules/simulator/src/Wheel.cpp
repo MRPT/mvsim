@@ -8,10 +8,10 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/img/TColor.h>
-#include <mrpt/opengl/CCylinder.h>
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/opengl/stock_objects.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CCylinder.h>
+#include <mrpt/viz/CSetOfObjects.h>
+#include <mrpt/viz/stock_objects.h>
 #include <mvsim/Wheel.h>
 #include <mvsim/World.h>
 
@@ -22,9 +22,9 @@
 using namespace mvsim;
 using namespace std;
 
-Wheel::Wheel(World* world) : VisualObject(world) { recalcInertia(); }
+Wheel::Wheel(World* world) : CVisualObject(world) { recalcInertia(); }
 
-void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj, bool isPhysicalScene)
+void Wheel::getAs3DObject(mrpt::viz::CSetOfObjects& obj, bool isPhysicalScene)
 {
 	obj.clear();
 
@@ -35,18 +35,18 @@ void Wheel::getAs3DObject(mrpt::opengl::CSetOfObjects& obj, bool isPhysicalScene
 	else
 	{
 		auto gl_wheel =
-			mrpt::opengl::CCylinder::Create(0.5 * diameter, 0.5 * diameter, this->width, 15);
+			mrpt::viz::CCylinder::Create(0.5 * diameter, 0.5 * diameter, this->width, 15);
 		gl_wheel->setColor_u8(color);
 		gl_wheel->setPose(mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
 
 		if (!isPhysicalScene)
 		{
-			auto gl_wheel_frame = mrpt::opengl::CSetOfObjects::Create();
+			auto gl_wheel_frame = mrpt::viz::CSetOfObjects::Create();
 			gl_wheel_frame->setName("gl_wheel_frame");
 			gl_wheel_frame->insert(gl_wheel);
 			{
-				mrpt::opengl::CSetOfObjects::Ptr gl_xyz =
-					mrpt::opengl::stock_objects::CornerXYZSimple(0.9 * diameter, 2.0);
+				mrpt::viz::CSetOfObjects::Ptr gl_xyz =
+					mrpt::viz::stock_objects::CornerXYZSimple(0.9 * diameter, 2.0);
 				gl_xyz->castShadows(false);
 				gl_wheel_frame->insert(gl_xyz);
 			}
@@ -97,8 +97,8 @@ void Wheel::recalcInertia()
 }
 
 void Wheel::internalGuiUpdate(
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	[[maybe_unused]] const mrpt::optional_ref<mrpt::viz::Scene>& physical,
 	[[maybe_unused]] bool childrenOnly)
 {
 	// nothing to do, already done in getAs3DObject()

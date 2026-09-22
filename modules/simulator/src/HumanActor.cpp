@@ -29,7 +29,7 @@ static XmlClassesRegistry actor_classes_registry("actor:class");
 // Constructor
 // ============================================================================
 
-HumanActor::HumanActor(World* parent) : VisualObject(parent), Simulable(parent) {}
+HumanActor::HumanActor(World* parent) : CVisualObject(parent), Simulable(parent) {}
 
 // ============================================================================
 // Class Registration
@@ -551,49 +551,14 @@ void HumanActor::updateSkeletalAnimation(double dt)
 		animSpeedScale = currentMovementSpeed_ / runningSpeed_;
 	}
 
-	currentAnimTime_ += dt * animSpeedScale;
-
-#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
-	// Drive the CAnimatedAssimpModel if we have one.
-	// Lazy discovery: walk the visual hierarchy on first use.
-	if (glCustomVisual_ && !glModel_)
+	// Store current animation name/time for the GUI thread to apply.
+	// Do NOT call setAnimationTime() here — that triggers rebuildSkinnedGeometry()
+	// which modifies CSetOfObjects children. That must only happen on the GUI thread.
 	{
-		// The hierarchy built by VisualObject::addCustomVisualization is:
-		//   glCustomVisual_ -> CSetOfObjects("group") -> CAssimpModel
-		// We look for a CAnimatedAssimpModel at any depth.
-		for (auto& obj : *glCustomVisual_)
-		{
-			// Direct child?
-			glModel_ = std::dynamic_pointer_cast<mrpt::opengl::CAnimatedAssimpModel>(obj);
-			if (glModel_)
-			{
-				break;
-			}
-			// Inside a CSetOfObjects wrapper?
-			if (auto grp = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(obj); grp)
-			{
-				for (auto& inner : *grp)
-				{
-					glModel_ = std::dynamic_pointer_cast<mrpt::opengl::CAnimatedAssimpModel>(inner);
-					if (glModel_)
-					{
-						break;
-					}
-				}
-			}
-			if (glModel_)
-			{
-				break;
-			}
-		}
+		std::lock_guard<std::mutex> lck(animStateMtx_);
+		currentAnimTime_ += dt * animSpeedScale;
+		currentAnimName_ = animName;
 	}
-
-	if (glModel_)
-	{
-		glModel_->setActiveAnimation(animName);
-		glModel_->setAnimationTime(currentAnimTime_);
-	}
-#endif
 }
 
 // ============================================================================
@@ -601,8 +566,8 @@ void HumanActor::updateSkeletalAnimation(double dt)
 // ============================================================================
 
 void HumanActor::internalGuiUpdate(
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-	const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly)
+	const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+	const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly)
 {
 	// On first call, if no <visual> was defined, create a simple
 	// placeholder capsule so the actor is visible.
@@ -610,17 +575,17 @@ void HumanActor::internalGuiUpdate(
 	{
 		if (!glCustomVisual_)
 		{
-			auto cylinder = mrpt::opengl::CCylinder::Create(
+			auto cylinder = mrpt::viz::CCylinder::Create(
 				static_cast<float>(collisionRadius_), static_cast<float>(collisionRadius_),
 				static_cast<float>(collisionHeight_));
 			cylinder->setColor_u8(mrpt::img::TColor(100, 150, 200, 200));
 			cylinder->setLocation(0, 0, 0);
 
-			auto head = mrpt::opengl::CSphere::Create(static_cast<float>(collisionRadius_ * 0.8));
+			auto head = mrpt::viz::CSphere::Create(static_cast<float>(collisionRadius_ * 0.8));
 			head->setColor_u8(mrpt::img::TColor(220, 180, 150));
 			head->setLocation(0, 0, static_cast<float>(collisionHeight_));
 
-			auto placeholder = mrpt::opengl::CSetOfObjects::Create();
+			auto placeholder = mrpt::viz::CSetOfObjects::Create();
 			placeholder->insert(cylinder);
 			placeholder->insert(head);
 
@@ -631,11 +596,51 @@ void HumanActor::internalGuiUpdate(
 	}
 
 	// Everything else (scene insertion, pose update) is handled by the
-	// base class VisualObject::guiUpdate(), which calls us here.
+	// base class CVisualObject::guiUpdate(), which calls us here.
 	// We deliberately do NOT duplicate pose-update logic.
 	(void)viz;
 	(void)physical;
 	(void)childrenOnly;
+
+#if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
+	// Apply animation state to the model on the GUI thread.
+	// This MUST happen here (GUI thread), not in the simulation thread, because
+	// setAnimationTime() calls rebuildSkinnedGeometry() which modifies CSetOfObjects
+	// children — a data race if done from the sim thread while the GUI thread iterates.
+
+	// Lazy discovery of the CAnimatedAssimpModel in the visual hierarchy.
+	if (glCustomVisual_ && !glModel_)
+	{
+		for (auto& obj : *glCustomVisual_)
+		{
+			glModel_ = std::dynamic_pointer_cast<mrpt::viz::CAnimatedAssimpModel>(obj);
+			if (glModel_) break;
+			if (auto grp = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(obj); grp)
+			{
+				for (auto& inner : *grp)
+				{
+					glModel_ = std::dynamic_pointer_cast<mrpt::viz::CAnimatedAssimpModel>(inner);
+					if (glModel_) break;
+				}
+			}
+			if (glModel_) break;
+		}
+	}
+
+	std::string animNameSnapshot;
+	double animTimeSnapshot = 0.0;
+	{
+		std::lock_guard<std::mutex> lck(animStateMtx_);
+		animNameSnapshot = currentAnimName_;
+		animTimeSnapshot = currentAnimTime_;
+	}
+
+	if (glModel_ && !animNameSnapshot.empty())
+	{
+		glModel_->setActiveAnimation(animNameSnapshot);
+		glModel_->setAnimationTime(animTimeSnapshot);
+	}
+#endif
 }
 
 // ============================================================================
@@ -657,19 +662,19 @@ void HumanActor::upgradeToAnimatedModel()
 	}
 
 	// Walk the visual hierarchy to find the CAssimpModel and its wrapper.
-	mrpt::opengl::CAssimpModel::Ptr foundModel;
-	mrpt::opengl::CSetOfObjects::Ptr containingGroup;
+	mrpt::viz::CAssimpModel::Ptr foundModel;
+	mrpt::viz::CSetOfObjects::Ptr containingGroup;
 
 	for (auto& obj : *glCustomVisual_)
 	{
-		auto grp = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(obj);
+		auto grp = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(obj);
 		if (!grp)
 		{
 			continue;
 		}
 		for (auto& inner : *grp)
 		{
-			auto model = std::dynamic_pointer_cast<mrpt::opengl::CAssimpModel>(inner);
+			auto model = std::dynamic_pointer_cast<mrpt::viz::CAssimpModel>(inner);
 			if (model)
 			{
 				foundModel = model;
@@ -690,12 +695,12 @@ void HumanActor::upgradeToAnimatedModel()
 
 	// Create a dedicated CAnimatedAssimpModel and load from file.
 #if MRPT_VERSION >= MIN_MRPT_VERSION_ANIMATED_ASSIMP
-	auto animModel = mrpt::opengl::CAnimatedAssimpModel::Create();
+	auto animModel = mrpt::viz::CAnimatedAssimpModel::Create();
 #else
-	auto animModel = mrpt::opengl::CAssimpModel::Create();
+	auto animModel = mrpt::viz::CAssimpModel::Create();
 #endif
-	const int loadFlags = mrpt::opengl::CAssimpModel::LoadFlags::RealTimeMaxQuality |
-						  mrpt::opengl::CAssimpModel::LoadFlags::FlipUVs;
+	const int loadFlags = mrpt::viz::CAssimpModel::LoadFlags::RealTimeMaxQuality |
+						  mrpt::viz::CAssimpModel::LoadFlags::FlipUVs;
 
 	try
 	{

@@ -42,8 +42,8 @@ class PropertyRegion : public WorldElementBase
 	virtual void simul_pre_timestep(const TSimulContext&) override {}
 	virtual void simul_post_timestep(const TSimulContext&) override {}
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>&, bool) override
+		const mrpt::optional_ref<mrpt::viz::Scene>&, const mrpt::optional_ref<mrpt::viz::Scene>&,
+		bool) override
 	{
 	}
 

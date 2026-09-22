@@ -9,8 +9,9 @@
 
 #include <mrpt/core/exceptions.h>
 #include <mrpt/maps/CSimplePointsMap.h>
-#include <mrpt/opengl/CAssimpModel.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/viz/CAssimpModel.h>
+#include <mrpt/viz/CVisualObject.h>
 #include <mvsim/World.h>
 
 #include <rapidxml.hpp>
@@ -184,10 +185,20 @@ void World::process_load_walls(const rapidxml::xml_node<char>& node)
 
 		MRPT_LOG_DEBUG_STREAM("Loading walls definition model from: " << localFileName);
 
-		auto glModel = mrpt::opengl::CAssimpModel::Create();
+		auto glModel = mrpt::viz::CAssimpModel::Create();
 		glModel->loadScene(localFileName);
 
-		const auto& points = glModel->shaderWireframeVertexPointBuffer();
+		// In mrpt3, CAssimpModel is a CSetOfObjects; collect line vertices from children:
+		glModel->updateBuffers();
+		std::vector<mrpt::math::TPoint3Df> points;
+		for (const auto& child : *glModel)
+		{
+			if (!child) continue;
+			auto* lp = dynamic_cast<mrpt::viz::VisualObjectParams_Lines*>(child.get());
+			if (!lp) continue;
+			const auto& buf = lp->shaderLinesVertexPointBuffer();
+			points.insert(points.end(), buf.begin(), buf.end());
+		}
 		MRPT_LOG_DEBUG_STREAM("Walls loaded from model file, " << points.size() << " segments.");
 
 		// Transform them:
