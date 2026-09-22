@@ -8,7 +8,6 @@
 
 #include <mvsim/raytracer/Lidar3DModel.h>
 
-#include <algorithm>
 #include <cmath>
 #include <set>
 #include <stdexcept>
