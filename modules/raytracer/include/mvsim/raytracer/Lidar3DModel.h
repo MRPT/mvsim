@@ -15,7 +15,7 @@
 namespace mvsim::rt
 {
 /** Ray-generation model for a rotating 3D LiDAR, mirroring the parameters
- * of mvsim's `Lidar3D` sensor (see `definitions/*.sensor.xml`) so the same
+ * of mvsim's `Lidar3D` sensor (see `definitions/`-folder sensor XML files) so the same
  * world/vehicle files describe both the interactive simulator and this
  * offline ray tracer.
  *

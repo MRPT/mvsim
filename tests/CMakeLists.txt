@@ -82,3 +82,13 @@ mvsim_add_test(
 	SOURCES test_lidar3d_model.cpp
 	LINK_LIBRARIES mvsim::raytracer
 	)
+
+mvsim_add_test(
+	TARGET test_dataset_gen_e2e
+	SOURCES test_dataset_gen_e2e.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+target_compile_definitions(test_dataset_gen_e2e PRIVATE
+	MVSIM_DATASET_GEN_EXE_PATH="$<TARGET_FILE:mvsim-dataset-gen>"
+	MVSIM_TUTORIAL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mvsim_tutorial"
+	)

@@ -1,0 +1,65 @@
+<mvsim_world version="1.0">
+	<!--
+	  Demo world for `mvsim-dataset-gen`: exact ray-traced (no OpenGL) LiDAR
+	  dataset generation from a prescribed trajectory. Restricted to analytic
+	  geometry only (planes, boxes, cylinders), as required by the tool.
+
+	  Usage:
+	    mvsim-dataset-gen mvsim_tutorial/demo_dataset_gen.world.xml \
+	        --trajectory mvsim_tutorial/demo_dataset_gen.trajectory.tum \
+	        -o /tmp/demo_dataset.rawlog
+	-->
+
+	<simul_timestep>0</simul_timestep>
+
+	<!-- Ground plane -->
+	<element class="horizontal_plane">
+		<x_min>-15</x_min>
+		<y_min>-15</y_min>
+		<x_max> 15</x_max>
+		<y_max> 15</y_max>
+		<z>0.0</z>
+	</element>
+
+	<!-- A row of cylindrical pillars -->
+	<block:class name="pillar">
+		<geometry type="cylinder" radius="0.4" length="3.0" vertex_count="16" />
+	</block:class>
+
+	<block name="pillar1" class="pillar"> <init_pose>5 -3 0</init_pose> </block>
+	<block name="pillar2" class="pillar"> <init_pose>6  1 0</init_pose> </block>
+	<block name="pillar3" class="pillar"> <init_pose>5  3 0</init_pose> </block>
+
+	<!-- A couple of box obstacles -->
+	<block:class name="crate">
+		<geometry type="box" lx="1.5" ly="1.0" lz="1.2" />
+	</block:class>
+
+	<block name="crate1" class="crate"> <init_pose>2 2 30</init_pose> </block>
+	<block name="crate2" class="crate"> <init_pose>-3 -2 -15</init_pose> </block>
+
+	<!-- ============================= Vehicle ============================= -->
+	<vehicle:class name="sensor_platform">
+		<dynamics class="differential">
+			<l_wheel pos="0.0  0.5" mass="4.0" width="0.20" diameter="0.40" />
+			<r_wheel pos="0.0 -0.5" mass="4.0" width="0.20" diameter="0.40" />
+			<chassis mass="15.0" zmin="0.05" zmax="0.6"> </chassis>
+			<!-- Kinematics/controller are irrelevant: mvsim-dataset-gen never
+			     steps physics, it only reads the sensor XML parameters and
+			     the vehicle's <pose_3d> sensor mount offsets. -->
+			<controller class="twist_ideal"> </controller>
+		</dynamics>
+		<friction class="default"> <mu>0.8</mu> </friction>
+	</vehicle:class>
+
+	<vehicle name="r1" class="sensor_platform">
+		<init_pose>0 0 0</init_pose>
+
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+		  sensor_x="0.0" sensor_y="0" sensor_z="0.75" sensor_yaw="0"
+		  sensor_name="lidar1"
+		  sensor_rpm="600"
+		/>
+	</vehicle>
+
+</mvsim_world>

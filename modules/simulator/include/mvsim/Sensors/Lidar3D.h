@@ -56,6 +56,13 @@ class Lidar3D : public SensorBase
 	double rangeStdNoise() const { return rangeStdNoise_; }
 	bool generateIntensityFromRGB() const { return generateIntensityFromRGB_; }
 
+	/** The sensor's pose on the vehicle. Equivalent to getRelativePose(),
+	 * exposed under a public, non-overridden name: Lidar3D re-declares
+	 * getRelativePose() as protected (overriding Simulable's public one),
+	 * which makes it inaccessible through a `Lidar3D*`/`Lidar3D&` (C++
+	 * access control follows the static type, not virtual dispatch). */
+	mrpt::poses::CPose3D sensorPoseOnVehicle() const { return sensorPoseOnVeh_; }
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
