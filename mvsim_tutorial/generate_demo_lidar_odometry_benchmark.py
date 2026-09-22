@@ -264,10 +264,11 @@ WORLD_TEMPLATE = """<mvsim_world version="1.0">
 \t<vehicle name="r1" class="sensor_platform">
 \t\t<init_pose>{veh_x:.2f} {veh_y:.2f} 0</init_pose>
 
-\t\t<include file="../definitions/velodyne-vlp16.sensor.xml"
+\t\t<include file="../definitions/ouster-os1.sensor.xml"
 \t\t  sensor_x="0.0" sensor_y="0" sensor_z="0.75" sensor_yaw="0"
 \t\t  sensor_name="lidar1"
 \t\t  sensor_rpm="600"
+\t\t  vert_nrays="32"
 \t\t  max_range="{max_range}"
 \t\t/>
 \t</vehicle>
