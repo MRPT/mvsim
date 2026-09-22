@@ -22,6 +22,7 @@ MVSim: a lightweight MultiVehicle Simulator
    mvsim-cli
    mvsim_node
    mvsim-pid-tuner
+   mvsim-dataset-gen
    physics
    extending
    bibliography
