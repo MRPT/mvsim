@@ -95,10 +95,11 @@ void VehicleBase::register_vehicle_class(
 	}
 	if (0 != strcmp(xml_node->name(), "vehicle:class"))
 	{
-		throw runtime_error(mrpt::format(
-			"[VehicleBase::register_vehicle_class] XML element is '%s' "
-			"('vehicle:class' expected)",
-			xml_node->name()));
+		throw runtime_error(
+			mrpt::format(
+				"[VehicleBase::register_vehicle_class] XML element is '%s' "
+				"('vehicle:class' expected)",
+				xml_node->name()));
 	}
 
 	// Delay the replacement of this variable (used in Sensors) until
@@ -125,10 +126,11 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	}
 	if (0 != strcmp(root->name(), "vehicle"))
 	{
-		throw runtime_error(mrpt::format(
-			"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
-			"expected)",
-			root->name()));
+		throw runtime_error(
+			mrpt::format(
+				"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
+				"expected)",
+				root->name()));
 	}
 
 	// "class": When a vehicle has a 'class="XXX"' attribute, look for each
@@ -193,8 +195,9 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		const rapidxml::xml_node<char>* class_root = veh_classes_registry.get(sClassName);
 		if (!class_root)
 		{
-			throw runtime_error(mrpt::format(
-				"[VehicleBase::factory] Vehicle class '%s' undefined", sClassName.c_str()));
+			throw runtime_error(
+				mrpt::format(
+					"[VehicleBase::factory] Vehicle class '%s' undefined", sClassName.c_str()));
 		}
 
 		nodes.add(class_root);
@@ -220,8 +223,9 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	VehicleBase::Ptr veh = classFactory_vehicleDynamics.create(dyn_class->value(), parent);
 	if (!veh)
 	{
-		throw runtime_error(mrpt::format(
-			"[VehicleBase::factory] Unknown vehicle dynamics class '%s'", dyn_class->value()));
+		throw runtime_error(
+			mrpt::format(
+				"[VehicleBase::factory] Unknown vehicle dynamics class '%s'", dyn_class->value()));
 	}
 
 	// Initialize here all common params shared by any polymorphic class:
@@ -430,9 +434,10 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const std::string& xml_text
 	catch (rapidxml::parse_error& e)
 	{
 		unsigned int line = static_cast<long>(std::count(input_str, e.where<char>(), '\n') + 1);
-		throw std::runtime_error(mrpt::format(
-			"[VehicleBase::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line),
-			e.what()));
+		throw std::runtime_error(
+			mrpt::format(
+				"[VehicleBase::factory] XML parse error (Line %u): %s", static_cast<unsigned>(line),
+				e.what()));
 	}
 	return VehicleBase::factory(parent, xml.first_node());
 }
@@ -737,8 +742,7 @@ double mvsim::VehicleBase::estimateSlopeTorquePerWheel(size_t nDrivenWheels) con
 	}
 
 	// Vehicle pitch from 3D pose:
-	double yaw, pitch, roll;
-	getCPose3D().getYawPitchRoll(yaw, pitch, roll);
+	const auto [yaw, pitch, roll] = getCPose3D().getYawPitchRoll();
 
 	const double g = parent()->get_gravity();
 	const double m = getChassisMass();
