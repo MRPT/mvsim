@@ -37,6 +37,8 @@ namespace
 {
 const std::string kWorld = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen.world.xml";
 const std::string kTraj = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen.trajectory.tum";
+const std::string kWorld2D = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen_2d.world.xml";
+const std::string kTraj2D = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen_2d.trajectory.txt";
 
 struct SweepStats
 {
@@ -142,12 +144,19 @@ SweepStats loadAndInspect(const std::string& rawlogPath)
 	return st;
 }
 
-int runDatasetGen(const std::string& outFile, const std::string& extraArgs)
+int runDatasetGen(
+	const std::string& world, const std::string& traj, const std::string& outFile,
+	const std::string& extraArgs)
 {
 	std::ostringstream cmd;
-	cmd << "\"" << MVSIM_DATASET_GEN_EXE_PATH << "\" \"" << kWorld << "\" --trajectory \"" << kTraj
+	cmd << "\"" << MVSIM_DATASET_GEN_EXE_PATH << "\" \"" << world << "\" --trajectory \"" << traj
 		<< "\" -o \"" << outFile << "\" " << extraArgs << " > /dev/null 2>&1";
 	return std::system(cmd.str().c_str());
+}
+
+int runDatasetGen(const std::string& outFile, const std::string& extraArgs)
+{
+	return runDatasetGen(kWorld, kTraj, outFile, extraArgs);
 }
 
 bool filesEqual(const std::string& a, const std::string& b)
@@ -166,6 +175,14 @@ bool filesEqual(const std::string& a, const std::string& b)
 std::string tempPath(const std::string& suffix)
 {
 	return mrpt::system::getTempFileName() + "_" + suffix;
+}
+
+/** Mirrors mrpt::system::fileNameChangeExtension(), which mvsim-dataset-gen
+ * uses to derive its .gt.tum companion paths: it *replaces* the rawlog's
+ * extension, it does not append. */
+std::string gtPath(const std::string& rawlogPath, const std::string& newExt)
+{
+	return mrpt::system::fileNameChangeExtension(rawlogPath, newExt);
 }
 
 // ---------------------------------------------------------------
@@ -203,8 +220,8 @@ void test_global_shutter_basic()
 	EXPECT_TRUE(st.chronological);
 
 	std::remove(out.c_str());
-	std::remove((out + ".gt.tum").c_str());
-	std::remove((out + ".lidar1.gt.tum").c_str());
+	std::remove(gtPath(out, "gt.tum").c_str());
+	std::remove(gtPath(out, "lidar1.gt.tum").c_str());
 }
 
 // ---------------------------------------------------------------
@@ -223,8 +240,8 @@ void test_rolling_shutter_skew()
 	EXPECT_LT(st.tMax, 0.1);
 
 	std::remove(out.c_str());
-	std::remove((out + ".gt.tum").c_str());
-	std::remove((out + ".lidar1.gt.tum").c_str());
+	std::remove(gtPath(out, "gt.tum").c_str());
+	std::remove(gtPath(out, "lidar1.gt.tum").c_str());
 }
 
 // ---------------------------------------------------------------
@@ -239,10 +256,10 @@ void test_determinism_same_seed()
 
 	std::remove(outA.c_str());
 	std::remove(outB.c_str());
-	std::remove((outA + ".gt.tum").c_str());
-	std::remove((outB + ".gt.tum").c_str());
-	std::remove((outA + ".lidar1.gt.tum").c_str());
-	std::remove((outB + ".lidar1.gt.tum").c_str());
+	std::remove(gtPath(outA, "gt.tum").c_str());
+	std::remove(gtPath(outB, "gt.tum").c_str());
+	std::remove(gtPath(outA, "lidar1.gt.tum").c_str());
+	std::remove(gtPath(outB, "lidar1.gt.tum").c_str());
 }
 
 // ---------------------------------------------------------------
@@ -257,10 +274,51 @@ void test_noiseless_differs_from_noisy()
 
 	std::remove(outIdeal.c_str());
 	std::remove(outNoisy.c_str());
-	std::remove((outIdeal + ".gt.tum").c_str());
-	std::remove((outNoisy + ".gt.tum").c_str());
-	std::remove((outIdeal + ".lidar1.gt.tum").c_str());
-	std::remove((outNoisy + ".lidar1.gt.tum").c_str());
+	std::remove(gtPath(outIdeal, "gt.tum").c_str());
+	std::remove(gtPath(outNoisy, "gt.tum").c_str());
+	std::remove(gtPath(outIdeal, "lidar1.gt.tum").c_str());
+	std::remove(gtPath(outNoisy, "lidar1.gt.tum").c_str());
+}
+
+// ---------------------------------------------------------------
+// demo_dataset_gen_2d.world.xml is a linear ramp, z = 0.1*x exactly;
+// demo_dataset_gen_2d.trajectory.txt drives straight along +X, so the
+// terrain-following ground truth is trivial to check by hand.
+void test_2d_trajectory_terrain_following()
+{
+	const std::string out = tempPath("2d.rawlog");
+	const int rc = runDatasetGen(kWorld2D, kTraj2D, out, "--noiseless");
+	EXPECT_TRUE(rc == 0);
+
+	std::ifstream gt(gtPath(out, "gt.tum"));
+	EXPECT_TRUE(bool(gt));
+	std::string line;
+	int nLines = 0;
+	double maxZErr = 0;
+	while (std::getline(gt, line))
+	{
+		if (line.empty())
+		{
+			continue;
+		}
+		std::istringstream ls(line);
+		double t, x, y, z, qx, qy, qz, qw;
+		if (!(ls >> t >> x >> y >> z >> qx >> qy >> qz >> qw))
+		{
+			continue;
+		}
+		nLines++;
+		maxZErr = std::max(maxZErr, std::abs(z - 0.1 * x));
+		// Flat in Y, pure roll-free pitch: no lateral tilt expected on a
+		// ramp with no Y-slope.
+		EXPECT_NEAR(qx, 0.0, 1e-6);
+	}
+	EXPECT_TRUE(nLines > 5);
+	EXPECT_LT(maxZErr, 1e-3);
+
+	std::remove(out.c_str());
+	std::remove(gtPath(out, "gt.tum").c_str());
+	std::remove(gtPath(out, "lidar1.gt.tum").c_str());
 }
 
 }  // namespace
@@ -272,6 +330,7 @@ int main()
 	test_rolling_shutter_skew();
 	test_determinism_same_seed();
 	test_noiseless_differs_from_noisy();
+	test_2d_trajectory_terrain_following();
 
 	if (g_failures == 0)
 	{

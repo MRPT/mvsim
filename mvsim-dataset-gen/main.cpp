@@ -16,6 +16,7 @@
 #include <mrpt/poses/CPose3DInterpolator.h>
 #include <mrpt/serialization/CArchive.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/system/string_utils.h>
 #include <mvsim/Sensors/IMU.h>
 #include <mvsim/Sensors/Lidar3D.h>
 #include <mvsim/VehicleBase.h>
@@ -77,13 +78,33 @@ int main(int argc, char** argv)
 	double odomRateHz = 10.0;
 	double odomTransNoiseRel = 0.01;  //!< Std.dev. as a fraction of distance traveled per step.
 	double odomRotNoiseRel = 0.01;	//!< Std.dev. as a fraction of |motion| (m + rad) per step.
+	std::string trajectoryFormat = "auto";	// auto | tum | waypoints2d
+	double footprintLx = 0.6;
+	double footprintLy = 0.4;
 
 	cli.add_option("world_xml", worldXmlPath, "World XML file (analytic geometry only)")
 		->required()
 		->check(CLI::ExistingFile);
-	cli.add_option("--trajectory", trajectoryPath, "Ground-truth trajectory, .tum format (SE3)")
+	cli.add_option(
+		   "--trajectory", trajectoryPath,
+		   "Ground-truth trajectory: .tum (SE3), or 2D waypoints (XML <waypoint> block or plain "
+		   "'t x y' text) with terrain-following")
 		->required()
 		->check(CLI::ExistingFile);
+	cli.add_option(
+		   "--trajectory-format", trajectoryFormat,
+		   "Trajectory format: auto (default, by extension: .tum -> tum, else -> waypoints2d) | "
+		   "tum | "
+		   "waypoints2d")
+		->check(CLI::IsMember({"auto", "tum", "waypoints2d"}));
+	cli.add_option(
+		"--footprint-lx", footprintLx,
+		"Vehicle footprint length [m], for terrain-following probes (waypoints2d only, default "
+		"0.6)");
+	cli.add_option(
+		"--footprint-ly", footprintLy,
+		"Vehicle footprint width [m], for terrain-following probes (waypoints2d only, default "
+		"0.4)");
 	cli.add_option("-o,--output", outputPath, "Output .rawlog file")->required();
 	cli.add_option("--vehicle", vehicleName, "Name of the vehicle carrying the sensors");
 	cli.add_option("--duration", duration, "Simulation duration [s] (default: trajectory span)");
@@ -168,7 +189,20 @@ int main(int argc, char** argv)
 
 		// Load the prescribed ground-truth trajectory:
 		TrajectorySource traj;
-		traj.loadTum(trajectoryPath);
+		std::string fmt = trajectoryFormat;
+		if (fmt == "auto")
+		{
+			const std::string ext = mrpt::system::extractFileExtension(trajectoryPath, true);
+			fmt = mrpt::system::lowerCase(ext) == "tum" ? "tum" : "waypoints2d";
+		}
+		if (fmt == "tum")
+		{
+			traj.loadTum(trajectoryPath);
+		}
+		else
+		{
+			traj.load2DWithTerrain(trajectoryPath, world, footprintLx, footprintLy);
+		}
 		const double t0 = traj.startTime();
 		const double simDuration = duration > 0 ? duration : (traj.endTime() - traj.startTime());
 		const double t1 = t0 + simDuration;
