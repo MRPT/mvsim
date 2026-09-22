@@ -20,9 +20,13 @@ target_link_libraries(
 	mvsim::simulator
 	mvsim::raytracer
 	CLI11::CLI11
-	TBB::tbb
 	${CMAKE_THREAD_LIBS_INIT}
 )
+
+if(TBB_FOUND)
+	target_link_libraries(${PROJECT_NAME} TBB::tbb)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE MVSIM_HAS_TBB)
+endif()
 
 mvsim_set_target_build_options(${PROJECT_NAME})
 

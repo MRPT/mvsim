@@ -9,7 +9,9 @@
 #include "LidarSimulator.h"
 
 #include <mrpt/maps/CGenericPointsMap.h>
+#ifdef MVSIM_HAS_TBB
 #include <tbb/parallel_for.h>
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -80,80 +82,87 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	// scheduling either.
 	std::vector<std::vector<ColumnPoint>> perColumn(nCols);
 
-	tbb::parallel_for(
-		0, nCols,
-		[&](int col)
+	auto processColumn = [&](int col)
+	{
+		std::mt19937 colRng(colSeeds[col]);
+		std::normal_distribution<double> noiseDist(0.0, std::max(0.0, opts.rangeStdNoise));
+
+		CPose3D sensorPoseThisColumn = sensorPoseAtStart;
+		if (opts.shutter == ShutterMode::Rolling)
 		{
-			std::mt19937 colRng(colSeeds[col]);
-			std::normal_distribution<double> noiseDist(0.0, std::max(0.0, opts.rangeStdNoise));
+			const double tCol = sweepStartEpochSeconds + model.columnFireTime(col);
+			const CPose3D vehiclePoseAtCol = traj.poseAt(tCol);
+			sensorPoseThisColumn = vehiclePoseAtCol + sensorPoseOnVehicle;
+		}
 
-			CPose3D sensorPoseThisColumn = sensorPoseAtStart;
-			if (opts.shutter == ShutterMode::Rolling)
+		const float tField = opts.shutter == ShutterMode::Rolling
+								 ? static_cast<float>(model.columnFireTime(col))
+								 : 0.0f;
+
+		std::vector<ColumnPoint>& out = perColumn[col];
+		for (int ring = 0; ring < nRings; ring++)
+		{
+			const TPoint3D localDir = model.rayDirection(ring, col);
+
+			mvsim::rt::Ray ray;
+			ray.org = sensorPoseThisColumn.composePoint(TPoint3D(0, 0, 0));
+			ray.dir = rotateOnly(sensorPoseThisColumn, localDir);
+			ray.tMin = std::max(1e-6, static_cast<double>(model.params().minRange));
+			ray.tMax = model.params().maxRange;
+
+			const auto hit = scene.castRay(ray);
+			if (!hit)
 			{
-				const double tCol = sweepStartEpochSeconds + model.columnFireTime(col);
-				const CPose3D vehiclePoseAtCol = traj.poseAt(tCol);
-				sensorPoseThisColumn = vehiclePoseAtCol + sensorPoseOnVehicle;
+				continue;
 			}
 
-			const float tField = opts.shutter == ShutterMode::Rolling
-									 ? static_cast<float>(model.columnFireTime(col))
-									 : 0.0f;
-
-			std::vector<ColumnPoint>& out = perColumn[col];
-			for (int ring = 0; ring < nRings; ring++)
+			double range = hit->t;
+			if (opts.rangeStdNoise > 0)
 			{
-				const TPoint3D localDir = model.rayDirection(ring, col);
-
-				mvsim::rt::Ray ray;
-				ray.org = sensorPoseThisColumn.composePoint(TPoint3D(0, 0, 0));
-				ray.dir = rotateOnly(sensorPoseThisColumn, localDir);
-				ray.tMin = std::max(1e-6, static_cast<double>(model.params().minRange));
-				ray.tMax = model.params().maxRange;
-
-				const auto hit = scene.castRay(ray);
-				if (!hit)
-				{
-					continue;
-				}
-
-				double range = hit->t;
-				if (opts.rangeStdNoise > 0)
-				{
-					range += noiseDist(colRng);
-				}
-				if (range < model.params().minRange || range > model.params().maxRange)
-				{
-					continue;
-				}
-
-				const TPoint3D worldPt = ray.at(range);
-				// Express the point in the sensor frame *at the sweep-start
-				// pose*, regardless of shutter mode (the de-skewing
-				// convention: `t` tells a consumer how much motion to undo).
-				const TPoint3D localPt = sensorPoseAtStart.inverseComposePoint(worldPt);
-
-				ColumnPoint cp;
-				cp.x = static_cast<float>(localPt.x);
-				cp.y = static_cast<float>(localPt.y);
-				cp.z = static_cast<float>(localPt.z);
-				cp.t = tField;
-				cp.ring = static_cast<uint16_t>(ring);
-
-				if (opts.generateIntensity)
-				{
-					// Purely geometric Lambertian cos(incidence)/r^2
-					// stand-in; mvsim's world XML carries no material model.
-					const double cosIncidence = std::max(
-						0.0, -(ray.dir.x * hit->normal.x + ray.dir.y * hit->normal.y +
-							   ray.dir.z * hit->normal.z));
-					const double falloff = 1.0 / std::max(1.0, range * range);
-					cp.intensity =
-						static_cast<float>(std::clamp(cosIncidence * falloff * 4.0, 0.0, 1.0));
-				}
-
-				out.push_back(cp);
+				range += noiseDist(colRng);
 			}
-		});
+			if (range < model.params().minRange || range > model.params().maxRange)
+			{
+				continue;
+			}
+
+			const TPoint3D worldPt = ray.at(range);
+			// Express the point in the sensor frame *at the sweep-start
+			// pose*, regardless of shutter mode (the de-skewing
+			// convention: `t` tells a consumer how much motion to undo).
+			const TPoint3D localPt = sensorPoseAtStart.inverseComposePoint(worldPt);
+
+			ColumnPoint cp;
+			cp.x = static_cast<float>(localPt.x);
+			cp.y = static_cast<float>(localPt.y);
+			cp.z = static_cast<float>(localPt.z);
+			cp.t = tField;
+			cp.ring = static_cast<uint16_t>(ring);
+
+			if (opts.generateIntensity)
+			{
+				// Purely geometric Lambertian cos(incidence)/r^2
+				// stand-in; mvsim's world XML carries no material model.
+				const double cosIncidence = std::max(
+					0.0, -(ray.dir.x * hit->normal.x + ray.dir.y * hit->normal.y +
+						   ray.dir.z * hit->normal.z));
+				const double falloff = 1.0 / std::max(1.0, range * range);
+				cp.intensity =
+					static_cast<float>(std::clamp(cosIncidence * falloff * 4.0, 0.0, 1.0));
+			}
+
+			out.push_back(cp);
+		}
+	};
+
+#ifdef MVSIM_HAS_TBB
+	tbb::parallel_for(0, nCols, processColumn);
+#else
+	for (int col = 0; col < nCols; col++)
+	{
+		processColumn(col);
+	}
+#endif
 
 	for (const auto& colPts : perColumn)
 	{
