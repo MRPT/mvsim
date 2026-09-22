@@ -64,3 +64,15 @@ mvsim_add_test(
 	SOURCES test_drift_on_elevation.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
+
+mvsim_add_test(
+	TARGET test_raytracer_primitives
+	SOURCES test_raytracer_primitives.cpp
+	LINK_LIBRARIES mvsim::raytracer
+	)
+
+mvsim_add_test(
+	TARGET test_raytracer_bvh
+	SOURCES test_raytracer_bvh.cpp
+	LINK_LIBRARIES mvsim::raytracer
+	)
