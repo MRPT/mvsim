@@ -133,7 +133,8 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	auto obs = mrpt::obs::CObservationPointCloud::Create();
 	obs->pointcloud = pts;
 	obs->sensorLabel = sensorLabel;
-	obs->sensorPose = sensorPoseAtStart;
+	// "sensorPose" field means the base_link => lidar transformation:
+	obs->sensorPose = sensorPoseOnVehicle;
 	obs->timestamp = mrpt::Clock::fromDouble(sweepStartEpochSeconds);
 	return obs;
 }
