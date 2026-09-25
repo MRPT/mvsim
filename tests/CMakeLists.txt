@@ -22,6 +22,8 @@ if(MVSIM_WITH_PYTHON AND MVSIM_WITH_ZMQ)
           MVSIM_CLI_EXE_PATH=${MVSIM_CLI_EXE_PATH}
           ${PYTHON_EXECUTABLE} ${TESTS_DIR}/test-still-lidar2d.py
   )
+  # Fail instead of hanging forever if the server never comes up:
+  set_tests_properties(Still2DLidarRanges PROPERTIES TIMEOUT 300)
   # Not needed?
   #    LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/modules/comms/lib/:${CMAKE_BINARY_DIR}/modules/simulator/lib/:${CMAKE_BINARY_DIR}/modules/msgs/lib/:$ENV{LD_LIBRARY_PATH}
 endif()
