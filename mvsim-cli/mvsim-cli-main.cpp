@@ -7,7 +7,6 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/3rdparty/tclap/CmdLine.h>
 #include <mrpt/core/exceptions.h>
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/os.h>	 // kbhit()
@@ -45,13 +44,21 @@ int main(int argc, char** argv)
 	{
 		cli = std::make_unique<cli_flags>();
 
-		if (!cli->cmd.parse(argc, argv))
+		try
 		{
-			printListCommands();
-			return 1;
+			cli->cmd.parse(argc, argv);
+		}
+		catch (const CLI::ParseError& e)
+		{
+			// Don't exit on parse errors — we handle unknown commands ourselves
+			if (e.get_exit_code() != 0)
+			{
+				printListCommands();
+				return 1;
+			}
 		}
 
-		if (cli->argVersion.isSet())
+		if (cli->argVersion)
 		{
 			printVersion();
 			return 0;
@@ -59,17 +66,17 @@ int main(int argc, char** argv)
 
 		// Take first unlabeled argument:
 		std::string command;
-		if (const auto& lst = cli->argCmd.getValue(); !lst.empty())
+		if (!cli->argCmd.empty())
 		{
-			command = lst.at(0);
+			command = cli->argCmd.at(0);
 		}
 
 		// Look up command in table:
 		auto itCmd = cliCommands.find(command);
 
-		if (!cli->argCmd.isSet() || itCmd == cliCommands.end())
+		if (cli->argCmd.empty() || itCmd == cliCommands.end())
 		{
-			if (!cli->argHelp.isSet())
+			if (!cli->argHelp)
 			{
 				setConsoleErrorColor();
 				std::cerr << "Error: missing or unknown command.\n";

@@ -66,6 +66,16 @@ else()
 endif()
 
 find_package(Threads)
+
+# Optional: used by mvsim-dataset-gen to parallelize ray casting; falls back
+# to a serial loop when not found.
+find_package(TBB QUIET)
+if(TBB_FOUND)
+  message(STATUS "TBB found: mvsim-dataset-gen will ray-cast in parallel.")
+else()
+  message(STATUS "TBB not found: mvsim-dataset-gen will ray-cast serially.")
+endif()
+
 include(GNUInstallDirs)
 include(cmake/mvsim_cmake_functions.cmake REQUIRED)
 
@@ -108,7 +118,6 @@ if (DETECTED_ROS2)
 
   find_package(rclcpp REQUIRED)
 
-  # *** TEMPORARY ***!!!
   find_package(ament_cmake REQUIRED)
   find_package(geometry_msgs REQUIRED)
   find_package(nav_msgs REQUIRED)
@@ -203,15 +212,10 @@ endif()
 # Dependency: MRPT
 # Use the first cmd to set the minimum required version
 # ----------------------------------------------------------
-find_package(mrpt-maps  REQUIRED)
-find_package(mrpt-tclap  REQUIRED)
-find_package(mrpt-gui  REQUIRED)
-find_package(mrpt-tfest  REQUIRED)
-find_package(mrpt-topography REQUIRED)
-
-if (mrpt-maps_VERSION VERSION_LESS "2.14.1")
-    message(FATAL_ERROR "MRPT version 2.14.1 or newer is required, but found ${mrpt-maps_VERSION}")
-endif()
+find_package(mrpt_maps  REQUIRED)
+find_package(mrpt_gui  REQUIRED)
+find_package(mrpt_tfest  REQUIRED)
+find_package(mrpt_topography REQUIRED)
 
 # --------------------------
 # Dependency: Box2D
@@ -298,6 +302,7 @@ add_subdirectory(modules)
 # --------------------------
 add_subdirectory(mvsim-cli)
 add_subdirectory(mvsim-pid-tuner)
+add_subdirectory(mvsim-dataset-gen)
 
 # ================================================================
 #                  ROS NODES (BUILD_FOR_ROS)

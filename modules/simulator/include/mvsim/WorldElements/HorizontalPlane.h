@@ -10,9 +10,9 @@
 #pragma once
 
 #include <mrpt/img/TColor.h>
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/opengl/CSetOfTexturedTriangles.h>
-#include <mrpt/opengl/CTexturedPlane.h>
+#include <mrpt/viz/CSetOfObjects.h>
+#include <mrpt/viz/CSetOfTexturedTriangles.h>
+#include <mrpt/viz/CTexturedPlane.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 namespace mvsim
@@ -25,7 +25,6 @@ class HorizontalPlane : public WorldElementBase
 	DECLARES_REGISTER_WORLD_ELEMENT(HorizontalPlane)
    public:
 	HorizontalPlane(World* parent, const rapidxml::xml_node<char>* root);
-	virtual ~HorizontalPlane();
 
 	virtual void loadConfigFrom(const rapidxml::xml_node<char>* root) override;
 	// ------- Interface with "World" ------
@@ -34,10 +33,18 @@ class HorizontalPlane : public WorldElementBase
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
+	/** Read-only access to the plane's finite extent, for exact
+	 * (non-visual) consumers such as the offline ray tracer. */
+	float xMin() const { return x_min_; }
+	float xMax() const { return x_max_; }
+	float yMin() const { return y_min_; }
+	float yMax() const { return y_max_; }
+	float z() const { return z_; }
+
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	float x_min_ = -10, x_max_ = 10, y_min_ = -10, y_max_ = 10;
 	mrpt::img::TColor color_ = {0xa0, 0xa0, 0xa0, 0xff};
@@ -51,8 +58,8 @@ class HorizontalPlane : public WorldElementBase
 	float z_ = .0f;
 	std::string cull_faces_ = "NONE";
 
-	mrpt::opengl::CTexturedPlane::Ptr gl_plane_;
-	mrpt::opengl::CSetOfTexturedTriangles::Ptr gl_plane_text_;
-	mrpt::opengl::CSetOfObjects::Ptr glGroup_;
+	mrpt::viz::CTexturedPlane::Ptr gl_plane_;
+	mrpt::viz::CSetOfTexturedTriangles::Ptr gl_plane_text_;
+	mrpt::viz::CSetOfObjects::Ptr glGroup_;
 };
 }  // namespace mvsim

@@ -13,6 +13,9 @@
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
 
+#include <any>
+#include <optional>
+
 namespace mvsim
 {
 /** @addtogroup world_elements_module  Simulated world elements
@@ -24,12 +27,12 @@ namespace mvsim
  * \ingroup world_elements_module
  *
  */
-class WorldElementBase : public VisualObject, public Simulable
+class WorldElementBase : public CVisualObject, public Simulable
 {
    public:
 	using Ptr = std::shared_ptr<WorldElementBase>;
 
-	WorldElementBase(World* parent) : VisualObject(parent), Simulable(parent) {}
+	WorldElementBase(World* parent) : CVisualObject(parent), Simulable(parent) {}
 	virtual ~WorldElementBase() {}
 
 	WorldElementBase(const WorldElementBase&) = delete;

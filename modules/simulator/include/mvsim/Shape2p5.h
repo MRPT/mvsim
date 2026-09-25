@@ -12,7 +12,7 @@
 #include <mrpt/containers/CDynamicGrid.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/math/TPolygon2D.h>
-#include <mrpt/opengl/TTriangle.h>
+#include <mrpt/viz/TTriangle.h>
 
 #include <cstdint>
 #include <optional>
@@ -35,7 +35,7 @@ class Shape2p5
 	void buildInit(
 		const mrpt::math::TPoint2Df& bbMin, const mrpt::math::TPoint2Df& bbMax, int numCells = 100);
 	void buildAddPoint(const mrpt::math::TPoint3Df& pt);
-	void buildAddTriangle(const mrpt::opengl::TTriangle& t);
+	void buildAddTriangle(const mrpt::viz::TTriangle& t);
 
 	const mrpt::math::TPolygon2D& getContour() const;
 

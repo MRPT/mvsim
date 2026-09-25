@@ -34,14 +34,14 @@ class CameraSensor : public SensorBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
+	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 
 	void freeOpenGLResources() override;
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
@@ -71,7 +71,7 @@ class CameraSensor : public SensorBase
 
 	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
 
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
 };
 }  // namespace mvsim

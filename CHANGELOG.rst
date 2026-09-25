@@ -2,6 +2,46 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.0 (2026-09-25)
+------------------
+* Fix walls loaded from model files having no segments
+* Fix Still2DLidarRanges test hanging forever
+* Merge pull request `#112 <https://github.com/MRPT/mvsim/issues/112>`_ from MRPT/feature/lidar-raytracer-dataset-gen: LiDAR raytracer dataset generator CLI
+* Make TBB an optional dependency of mvsim-dataset-gen
+* fix formatting
+* mvsim-dataset-gen: show progress bar with ETA during simulation
+* address review comments; add TBB parallelization
+* redone generator for ouster-64 as default
+* fix sensorPose
+* remove unused headers
+* fix mrpt3 deprecated API
+* demo lidar odom benchmark
+* mvsim-dataset-gen: implement 2D+terrain-following trajectory input
+* tests: fix -Wshadow warnings in dataset-gen e2e test
+* docs: add mvsim-dataset-gen page, sync agents.md
+* mvsim-dataset-gen: add IMU and wheel-odometry generation
+* mvsim-dataset-gen: new CLI tool for ray-traced LiDAR dataset generation
+* simulator: expose read-only geometry accessors for SceneBuilder
+* raytracer: fix HeightField to match ElevationMap's row=X/col=Y convention
+* raytracer: Lidar3DModel ray-generation model (Phase 2)
+* raytracer: exact analytic ray casting library (Phase 1)
+* Merge branch 'mrpt3' into develop: port the whole codebase to MRPT 3.x
+* Address CodeRabbit review findings (thread safety, XML validation, mrpt-viz docs)
+* Update version.h
+* Port to mrpt3: fix getSensorPose() and WorldElementBase includes
+* Support for multiple lights of the different types
+* Fix build with mrpt_viz API changes
+* tune jackal PID for better rotations
+* FIX: race in actors
+* Fix camera sensor pose bug
+* Safer multhreads
+* Fix bug in collision shape port to mrpt3
+* port tclap ->cli11; pid tuner for rotations too
+* All lib port done
+* Progress porting opengl to mrpt3
+* Port code to mrpt3
+* Contributors: Jose Luis Blanco-Claraco
+
 1.4.0 (2026-07-17)
 ------------------
 * fix(ros): populate twist in /odom topic

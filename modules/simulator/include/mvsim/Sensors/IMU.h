@@ -41,10 +41,24 @@ class IMU : public SensorBase
 
 	void registerOnServer(mvsim::Client& c) override;
 
+	/** Read-only access to the raw XML-configured parameters, for exact
+	 * (non-simulation) consumers such as the offline ray tracer's IMU
+	 * generator. \sa noiseModel() */
+	bool measureOrientation() const { return measure_orientation_; }
+	double orientationStdNoise() const { return orientationStdNoise_; }
+	const ImuNoiseModel& noiseModel() const { return noiseModel_; }
+
+	/** The sensor's pose on the vehicle. Equivalent to getRelativePose(),
+	 * exposed under a public, non-overridden name: IMU re-declares
+	 * getRelativePose() as protected (overriding Simulable's public one),
+	 * which makes it inaccessible through an `IMU*`/`IMU&` (C++ access
+	 * control follows the static type, not virtual dispatch). */
+	mrpt::poses::CPose3D sensorPoseOnVehicle() const { return obs_model_.sensorPose; }
+
    protected:
 	void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		[[maybe_unused]] const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical,
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		[[maybe_unused]] const mrpt::optional_ref<mrpt::viz::Scene>& physical,
 		[[maybe_unused]] bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
@@ -73,7 +87,7 @@ class IMU : public SensorBase
 	/** Last simulated obs */
 	mrpt::obs::CObservationIMU::Ptr last_obs_;
 
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 
 	mrpt::random::CRandomGenerator rng_;
 };

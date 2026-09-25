@@ -24,8 +24,8 @@ const std::map<std::string, cmd_t> cliNodeCommands = {
 
 int commandNode()
 {
-	const auto& lstCmds = cli->argCmd.getValue();
-	if (cli->argHelp.isSet()) return printCommandsNode(false);
+	const auto& lstCmds = cli->argCmd;
+	if (cli->argHelp) return printCommandsNode(false);
 	if (lstCmds.size() != 2) return printCommandsNode(true);
 
 	// Take second unlabeled argument:
@@ -43,8 +43,8 @@ int nodeList()
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client;
 
-	client.setMinLoggingLevel(mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(
-		cli->argVerbosity.getValue()));
+	client.setMinLoggingLevel(
+		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(cli->argVerbosity));
 
 	std::cout << "# Connecting to server...\n";
 	client.connect();

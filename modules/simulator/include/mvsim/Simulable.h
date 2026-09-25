@@ -22,7 +22,7 @@ namespace mvsim
 {
 class Client;
 class World;
-class VisualObject;
+class CVisualObject;
 
 /** \ingroup mvsim_simulator_module */
 struct ParseSimulableParams
@@ -61,7 +61,7 @@ class Simulable
 		const mrpt::math::TVector2D& force,
 		const mrpt::math::TPoint2D& applyPoint = mrpt::math::TPoint2D(0, 0));
 
-	virtual VisualObject* meAsVisualObject() { return nullptr; }
+	virtual CVisualObject* meAsCVisualObject() { return nullptr; }
 
 	/** Last time-step velocity (of the reference point, in local coords)
 	 * Note this is converted from Box2D center of mass velocity into our own reference point.

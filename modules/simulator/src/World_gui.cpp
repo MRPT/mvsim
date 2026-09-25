@@ -16,13 +16,14 @@
 #include <mrpt/math/geometry.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/obs/CObservationImage.h>
-#include <mrpt/opengl/COpenGLScene.h>
 #include <mrpt/system/thread_name.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 #include <mvsim/assets/mvsim_icon_64x64.h>
 
+#include <cctype>  // isspace()
 #include <cmath>  // cos(), sin()
 #include <rapidxml.hpp>
 
@@ -37,10 +38,131 @@ void World::TGUI_Options::parse_from(
 	parse_xmlnode_children_as_param(node, params, {}, "[World::TGUI_Options]", &logger);
 }
 
+// Helper: read an XML child's text as float, return default if missing.
+// Rejects trailing garbage after the number (e.g. "1.0junk").
+static float xmlChildFloat(const rapidxml::xml_node<char>& parent, const char* name, float def)
+{
+	auto* n = parent.first_node(name);
+	if (!n) return def;
+	const std::string s(n->value(), n->value_size());
+	size_t pos = 0;
+	float v = 0;
+	try
+	{
+		v = std::stof(s, &pos);
+	}
+	catch (const std::exception&)
+	{
+		pos = 0;
+	}
+	while (pos < s.size() && std::isspace(static_cast<unsigned char>(s[pos]))) pos++;
+	if (pos == 0 || pos != s.size())
+		throw std::runtime_error(
+			mrpt::format("[World::LightOptions] Error parsing '<%s>': expected a number", name));
+	return v;
+}
+
+// Helper: read an XML child's text as "x y z" into TPoint3Df/TVector3Df.
+// Rejects trailing garbage after the three numbers.
+static mrpt::math::TPoint3Df xmlChildPoint3f(
+	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::math::TPoint3Df& def)
+{
+	auto* n = parent.first_node(name);
+	if (!n) return def;
+	const std::string s(n->value(), n->value_size());
+	float x = 0, y = 0, z = 0;
+	int consumed = 0;
+	const int nMatched = std::sscanf(s.c_str(), "%f %f %f %n", &x, &y, &z, &consumed);
+	size_t pos = static_cast<size_t>(consumed);
+	while (pos < s.size() && std::isspace(static_cast<unsigned char>(s[pos]))) pos++;
+	if (nMatched != 3 || pos != s.size())
+		throw std::runtime_error(
+			mrpt::format("[World::LightOptions] Error parsing '<%s>': expected 'X Y Z'", name));
+	return {x, y, z};
+}
+
+// Helper: read an XML child's text as #RRGGBB[AA] into TColorf.
+// Requires the string to be exactly 7 ('#RRGGBB') or 9 ('#RRGGBBAA') chars.
+static mrpt::img::TColorf xmlChildColorf(
+	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::img::TColorf& def)
+{
+	auto* n = parent.first_node(name);
+	if (!n) return def;
+	const std::string str(n->value(), n->value_size());
+	if ((str.size() != 7 && str.size() != 9) || str[0] != '#')
+		throw std::runtime_error(mrpt::format(
+			"[World::LightOptions] Error parsing '<%s>': expected "
+			"'#RRGGBB[AA]'",
+			name));
+	unsigned int r, g, b, a = 0xff;
+	const int nExpected = str.size() == 9 ? 4 : 3;
+	const int ret = std::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
+	if (ret != nExpected)
+		throw std::runtime_error(mrpt::format(
+			"[World::LightOptions] Error parsing '<%s>': expected "
+			"'#RRGGBB[AA]'",
+			name));
+	return mrpt::img::TColorf(mrpt::img::TColor(r, g, b, a));
+}
+
 void World::LightOptions::parse_from(
 	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
-	parse_xmlnode_children_as_param(node, params, {}, "[World::LightOptions]", &logger);
+	// Parse scalar parameters, skipping point_light/spot_light child nodes:
+	for (auto* child = node.first_node(); child; child = child->next_sibling(nullptr))
+	{
+		const std::string name(child->name(), child->name_size());
+		if (name == "point_light" || name == "spot_light") continue;
+
+		if (!parse_xmlnode_as_param(*child, params, {}, "[World::LightOptions]"))
+		{
+			logger.logFmt(
+				mrpt::system::LVL_WARN, "Unrecognized tag '<%s>' in [World::LightOptions]",
+				name.c_str());
+		}
+	}
+
+	// Parse <point_light> children:
+	for (auto* n = node.first_node("point_light"); n; n = n->next_sibling("point_light"))
+	{
+		const auto pos = xmlChildPoint3f(*n, "position", {0, 0, 3});
+		const auto color = xmlChildColorf(*n, "color", {1.0f, 1.0f, 1.0f});
+		const float diffuse = xmlChildFloat(*n, "diffuse", 0.8f);
+		const float specular = xmlChildFloat(*n, "specular", 0.5f);
+		const float att_const = xmlChildFloat(*n, "attenuation_constant", 1.0f);
+		const float att_lin = xmlChildFloat(*n, "attenuation_linear", 0.09f);
+		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
+
+		extra_lights.push_back(mrpt::viz::TLight::PointLight(
+			pos, color, diffuse, specular, att_const, att_lin, att_quad));
+
+		logger.logFmt(
+			mrpt::system::LVL_INFO, "[LightOptions] Parsed point_light at (%.1f, %.1f, %.1f)",
+			pos.x, pos.y, pos.z);
+	}
+
+	// Parse <spot_light> children:
+	for (auto* n = node.first_node("spot_light"); n; n = n->next_sibling("spot_light"))
+	{
+		const auto pos = xmlChildPoint3f(*n, "position", {0, 0, 3});
+		const auto dir = xmlChildPoint3f(*n, "direction", {0, 0, -1});
+		const auto color = xmlChildColorf(*n, "color", {1.0f, 1.0f, 1.0f});
+		const float diffuse = xmlChildFloat(*n, "diffuse", 0.8f);
+		const float specular = xmlChildFloat(*n, "specular", 0.5f);
+		const float inner_deg = xmlChildFloat(*n, "inner_cutoff_deg", 12.5f);
+		const float outer_deg = xmlChildFloat(*n, "outer_cutoff_deg", 17.5f);
+		const float att_const = xmlChildFloat(*n, "attenuation_constant", 1.0f);
+		const float att_lin = xmlChildFloat(*n, "attenuation_linear", 0.09f);
+		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
+
+		extra_lights.push_back(mrpt::viz::TLight::SpotLight(
+			pos, dir, inner_deg, outer_deg, color, diffuse, specular, att_const, att_lin,
+			att_quad));
+
+		logger.logFmt(
+			mrpt::system::LVL_INFO, "[LightOptions] Parsed spot_light at (%.1f, %.1f, %.1f)", pos.x,
+			pos.y, pos.z);
+	}
 }
 
 //!< Return true if the GUI window is open, after a previous call to
@@ -89,7 +211,7 @@ void World::GUI::prepare_control_window()
 		});
 
 	w->add<nanogui::CheckBox>(
-		 "Orthogonal view", [&](bool b) { gui_win->camera().setCameraProjective(!b); })
+		 "Orthogonal view", [&](bool b) { gui_win->camera().setProjectiveModel(!b); })
 		->setChecked(parent_.guiOptions_.ortho);
 
 	w->add<nanogui::CheckBox>(
@@ -144,7 +266,7 @@ void World::GUI::prepare_control_window()
 		 {
 			 std::lock_guard<std::mutex> lck(gui_win->background_scene_mtx);
 
-			 auto glVizSensors = std::dynamic_pointer_cast<mrpt::opengl::CSetOfObjects>(
+			 auto glVizSensors = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(
 				 gui_win->background_scene->getByName("group_sensors_viz"));
 			 ASSERT_(glVizSensors);
 
@@ -177,7 +299,7 @@ void World::GUI::prepare_control_window()
 			 auto lck = mrpt::lockHelper(parent_.simulableObjectsMtx_);
 			 for (auto& s : parent_.simulableObjects_)
 			 {
-				 auto* vis = dynamic_cast<VisualObject*>(s.second.get());
+				 auto* vis = dynamic_cast<CVisualObject*>(s.second.get());
 				 if (!vis) continue;
 				 vis->showCollisionShape(b);
 			 }
@@ -289,24 +411,24 @@ void World::GUI::prepare_editor_window()
 			if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
 			{
 				wrapperIdx = 0;
-				ipo.visual = dynamic_cast<VisualObject*>(v);
+				ipo.visual = dynamic_cast<CVisualObject*>(v);
 			}
 			if (auto v = dynamic_cast<Block*>(o.second.get()); v)
 			{
 				wrapperIdx = 2;
-				ipo.visual = dynamic_cast<VisualObject*>(v);
+				ipo.visual = dynamic_cast<CVisualObject*>(v);
 			}
 			if (auto v = dynamic_cast<SensorBase*>(o.second.get()); v)
 			{
 				wrapperIdx = 1;
-				ipo.visual = dynamic_cast<VisualObject*>(v);
+				ipo.visual = dynamic_cast<CVisualObject*>(v);
 			}
 			// bool isWorldElement = false;
 			if (auto v = dynamic_cast<WorldElementBase*>(o.second.get()); v)
 			{
 				// isWorldElement = true;
 				wrapperIdx = 3;
-				ipo.visual = dynamic_cast<VisualObject*>(v);
+				ipo.visual = dynamic_cast<CVisualObject*>(v);
 			}
 
 			if (wrapperIdx < 0)
@@ -647,11 +769,11 @@ void World::internal_GUI_thread()
 		gui_.gui_win->performLayout();
 		auto& cam = gui_.gui_win->camera();
 
-		cam.setCameraProjective(!guiOptions_.ortho);
+		cam.setProjectiveModel(!guiOptions_.ortho);
 		cam.setZoomDistance(guiOptions_.camera_distance);
 		cam.setAzimuthDegrees(guiOptions_.camera_azimuth_deg);
 		cam.setElevationDegrees(guiOptions_.camera_elevation_deg);
-		cam.setCameraFOV(guiOptions_.fov_deg);
+		cam.setFOVdeg(guiOptions_.fov_deg);
 
 		const auto p = this->worldRenderOffset() + guiOptions_.camera_point_to;
 		cam.setCameraPointing(p.x, p.y, p.z);
@@ -663,18 +785,31 @@ void World::internal_GUI_thread()
 		auto vv = worldVisual_->getViewport();
 		auto vp = worldPhysical_.getViewport();
 
-		auto lambdaSetLightParams = [&lo](const mrpt::opengl::COpenGLViewport::Ptr& v)
+		auto lambdaSetLightParams = [&lo](const mrpt::viz::Viewport::Ptr& v)
 		{
 			// enable shadows and set the shadow map texture size:
 			const int sms = lo.shadow_map_size;
 			v->enableShadowCasting(lo.enable_shadows, sms, sms);
 
-			// light color:
+			// light color and intensities:
 			const auto colf = mrpt::img::TColorf(lo.light_color);
 
 			auto& vlp = v->lightParameters();
 
-			vlp.color = colf;
+			if (!vlp.lights.empty())
+			{
+				vlp.lights[0].color = colf;
+				vlp.lights[0].diffuse = lo.light_diffuse;
+				vlp.lights[0].specular = lo.light_specular;
+			}
+
+			// Hemisphere ambient lighting (replaces fill light):
+			vlp.ambient = lo.light_ambient;
+			vlp.ambientSkyColor = mrpt::img::TColorf(lo.ambient_sky_color);
+			vlp.ambientGroundColor = mrpt::img::TColorf(lo.ambient_ground_color);
+
+			// Add extra lights (point and spot) from XML:
+			for (const auto& el : lo.extra_lights) vlp.lights.push_back(el);
 
 			vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
 
@@ -787,7 +922,8 @@ void World::internal_GUI_thread()
 			auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
 			if (gui_.gui_win->background_scene)
 			{
-				gui_.gui_win->background_scene->freeOpenGLResources();
+				// In mrpt3, OpenGL resources are freed automatically
+				gui_.gui_win->background_scene.reset();
 			}
 		}
 
@@ -800,7 +936,7 @@ void World::internal_GUI_thread()
 
 		lckListObjs.unlock();
 
-		VisualObject::FreeOpenGLResources();
+		// CVisualObject::FreeOpenGLResources() removed in mrpt3 (automatic)
 
 		// Now, destroy window:
 		gui_.gui_win.reset();
@@ -821,7 +957,7 @@ void World::GUI::handle_mouse_operations()
 	{
 		return;
 	}
-	mrpt::opengl::COpenGLViewport::Ptr vp;
+	mrpt::viz::Viewport::Ptr vp;
 	{
 		auto lck = mrpt::lockHelper(gui_win->background_scene_mtx);
 		if (!gui_win->background_scene)
@@ -834,7 +970,10 @@ void World::GUI::handle_mouse_operations()
 
 	const auto mousePt = gui_win->mousePos();
 	mrpt::math::TLine3D ray;
-	vp->get3DRayForPixelCoord(mousePt.x(), mousePt.y(), ray);
+	auto rayOpt =
+		vp->get3DRayForPixelCoord({static_cast<int>(mousePt.x()), static_cast<int>(mousePt.y())});
+	if (!rayOpt.has_value()) return;
+	ray = rayOpt.value();
 
 	// Create a 3D plane, i.e. Z=0
 	const auto ground_plane = mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
@@ -895,18 +1034,18 @@ void World::GUI::handle_mouse_operations()
 
 void World::internal_process_pending_gui_user_tasks()
 {
-	guiUserPendingTasksMtx_.lock();
-
-	for (const auto& task : guiUserPendingTasks_)
+	std::vector<std::function<void(void)>> tasks;
 	{
-		task();
+		std::lock_guard<std::mutex> lck(guiUserPendingTasksMtx_);
+		tasks = std::move(guiUserPendingTasks_);
+		guiUserPendingTasks_.clear();
 	}
-	guiUserPendingTasks_.clear();
 
-	guiUserPendingTasksMtx_.unlock();
+	// Execute tasks outside the mutex to avoid holding it during callbacks:
+	for (const auto& task : tasks) task();
 }
 
-void World::internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObjects)
+void World::internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects)
 {
 	auto tle = mrpt::system::CTimeLoggerEntry(timlogger_, "internalRunSensorsOn3DScene");
 
@@ -918,8 +1057,7 @@ void World::internalRunSensorsOn3DScene(mrpt::opengl::COpenGLScene& physicalObje
 	clear_pending_running_sensors_on_3D_scene();
 }
 
-void World::internalUpdate3DSceneObjects(
-	mrpt::opengl::COpenGLScene& viz, mrpt::opengl::COpenGLScene& physical)
+void World::internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene& physical)
 {
 	// Update view of map elements
 	// -----------------------------
@@ -961,10 +1099,10 @@ void World::internalUpdate3DSceneObjects(
 	{
 		static const std::string kJointsGlName = "__joint_lines";
 		auto glJoints =
-			std::dynamic_pointer_cast<mrpt::opengl::CSetOfLines>(viz.getByName(kJointsGlName));
+			std::dynamic_pointer_cast<mrpt::viz::CSetOfLines>(viz.getByName(kJointsGlName));
 		if (!glJoints)
 		{
-			glJoints = mrpt::opengl::CSetOfLines::Create();
+			glJoints = mrpt::viz::CSetOfLines::Create();
 			glJoints->setName(kJointsGlName);
 			glJoints->setLineWidth(2.0f);
 			glJoints->setColor_u8(0xff, 0xcc, 0x00, 0xcc);
@@ -1257,7 +1395,7 @@ mrpt::math::TPoint2D World::internal_gui_on_image(
 
 		auto lck = mrpt::lockHelper(glControl->scene_mtx);
 
-		glControl->scene = mrpt::opengl::COpenGLScene::Create();
+		glControl->scene = mrpt::viz::Scene::Create();
 		gui_.gui_win->performLayout();
 
 		if (!startVisible)
@@ -1307,6 +1445,8 @@ void World::internalGraphicsLoopTasksForSimulation()
 		// abort. Otherwise, the error may repeat over and over forever
 		// and the main thread will never know about it.
 		MRPT_LOG_ERROR(e.what());
+		// Clear this flag so the simulation thread's busy-wait can exit:
+		clear_pending_running_sensors_on_3D_scene();
 		simulator_must_close(true);
 	}
 }
@@ -1323,6 +1463,6 @@ void World::setLightDirectionFromAzimuthElevation(const float azimuth, const flo
 	auto vv = worldVisual_->getViewport();
 	auto vp = worldPhysical_.getViewport();
 
-	vv->lightParameters().direction = dir;
-	vp->lightParameters().direction = dir;
+	if (!vv->lightParameters().lights.empty()) vv->lightParameters().lights[0].direction = dir;
+	if (!vp->lightParameters().lights.empty()) vp->lightParameters().lights[0].direction = dir;
 }

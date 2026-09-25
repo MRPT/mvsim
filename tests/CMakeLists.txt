@@ -22,6 +22,8 @@ if(MVSIM_WITH_PYTHON AND MVSIM_WITH_ZMQ)
           MVSIM_CLI_EXE_PATH=${MVSIM_CLI_EXE_PATH}
           ${PYTHON_EXECUTABLE} ${TESTS_DIR}/test-still-lidar2d.py
   )
+  # Fail instead of hanging forever if the server never comes up:
+  set_tests_properties(Still2DLidarRanges PROPERTIES TIMEOUT 300)
   # Not needed?
   #    LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/modules/comms/lib/:${CMAKE_BINARY_DIR}/modules/simulator/lib/:${CMAKE_BINARY_DIR}/modules/msgs/lib/:$ENV{LD_LIBRARY_PATH}
 endif()
@@ -64,3 +66,32 @@ mvsim_add_test(
 	SOURCES test_drift_on_elevation.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
+
+mvsim_add_test(
+	TARGET test_raytracer_primitives
+	SOURCES test_raytracer_primitives.cpp
+	LINK_LIBRARIES mvsim::raytracer
+	)
+
+mvsim_add_test(
+	TARGET test_raytracer_bvh
+	SOURCES test_raytracer_bvh.cpp
+	LINK_LIBRARIES mvsim::raytracer
+	)
+
+mvsim_add_test(
+	TARGET test_lidar3d_model
+	SOURCES test_lidar3d_model.cpp
+	LINK_LIBRARIES mvsim::raytracer
+	)
+
+mvsim_add_test(
+	TARGET test_dataset_gen_e2e
+	SOURCES test_dataset_gen_e2e.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+target_compile_definitions(test_dataset_gen_e2e PRIVATE
+	MVSIM_DATASET_GEN_EXE_PATH="$<TARGET_FILE:mvsim-dataset-gen>"
+	MVSIM_TUTORIAL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mvsim_tutorial"
+	)
+add_dependencies(test_dataset_gen_e2e mvsim-dataset-gen)

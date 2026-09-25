@@ -10,9 +10,9 @@
 #pragma once
 
 #include <mrpt/img/TColor.h>
-#include <mrpt/opengl/CSetOfObjects.h>
-#include <mrpt/opengl/CSetOfTexturedTriangles.h>
-#include <mrpt/opengl/CTexturedPlane.h>
+#include <mrpt/viz/CSetOfObjects.h>
+#include <mrpt/viz/CSetOfTexturedTriangles.h>
+#include <mrpt/viz/CTexturedPlane.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 namespace mvsim
@@ -53,18 +53,29 @@ class VerticalPlane : public WorldElementBase
 		bool overlaps(float pos_start, float pos_end) const;
 	};
 
+	/** Read-only access to the wall geometry, for exact (non-visual)
+	 * consumers such as the offline ray tracer. */
+	float x0() const { return x0_; }
+	float x1() const { return x1_; }
+	float y0() const { return y0_; }
+	float y1() const { return y1_; }
+	float z() const { return z_; }
+	float height() const { return height_; }
+	float thickness() const { return thickness_; }
+	const std::vector<Opening>& openings() const { return openings_; }
+
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	/** Create Box2D physics bodies for the wall segments */
 	void createPhysicsBodies();
 
 	/** Create visual representation with proper segmentation for openings */
 	void createVisualRepresentation(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical);
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical);
 
 	/** Render a front/back face of the wall */
 	void renderWallFace(
@@ -100,9 +111,9 @@ class VerticalPlane : public WorldElementBase
 	float z_ = .0f, height_ = 3.0f;
 	std::string cull_faces_ = "NONE";
 
-	mrpt::opengl::CTexturedPlane::Ptr gl_plane_;
-	mrpt::opengl::CSetOfTexturedTriangles::Ptr gl_plane_text_;
-	mrpt::opengl::CSetOfObjects::Ptr glGroup_;
+	mrpt::viz::CTexturedPlane::Ptr gl_plane_;
+	mrpt::viz::CSetOfTexturedTriangles::Ptr gl_plane_text_;
+	mrpt::viz::CSetOfObjects::Ptr glGroup_;
 
 	/** Box2D body for the wall (may be split into multiple fixtures) */
 	b2Body* b2dBody_ = nullptr;

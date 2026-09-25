@@ -7,7 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/COpenGLScene.h>
+#include <mrpt/viz/Scene.h>
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 

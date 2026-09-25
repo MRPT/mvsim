@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/core/lock_helper.h>
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 
 #include "xml_utils.h"

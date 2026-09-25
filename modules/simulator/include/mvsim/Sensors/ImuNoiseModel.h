@@ -71,6 +71,12 @@ class ImuNoiseModel
 	/** \brief Reset the internal bias states to zero. */
 	void reset();
 
+	/** \brief Seed the internal RNG for reproducible noise sequences.
+	 * Without calling this, the RNG self-seeds from the system clock (via
+	 * mrpt::random::CRandomGenerator's default constructor), so results
+	 * differ run to run. */
+	void seed(uint32_t s) { rng_.randomize(s); }
+
 	/**
 	 * \brief Corrupt a true gyroscope reading with noise.
 	 *

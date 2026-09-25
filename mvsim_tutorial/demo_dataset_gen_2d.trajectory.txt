@@ -1,0 +1,11 @@
+# Straight run along +X, crossing the linear ramp (z = 0.1*x) defined in
+# demo_dataset_gen_2d.world.xml. t x y
+0.0 -8.0 0.0
+1.0 -6.0 0.0
+2.0 -4.0 0.0
+3.0 -2.0 0.0
+4.0  0.0 0.0
+5.0  2.0 0.0
+6.0  4.0 0.0
+7.0  6.0 0.0
+8.0  8.0 0.0

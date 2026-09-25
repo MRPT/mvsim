@@ -1,0 +1,55 @@
+<mvsim_world version="1.0">
+	<!--
+	  Test/demo world for mvsim-dataset-gen's 2D-trajectory-with-terrain-
+	  following input mode. A simple linear ramp, z = 0.1*x (~5.7deg slope),
+	  so the resulting ground truth is trivial to predict by hand.
+
+	  Usage:
+	    mvsim-dataset-gen mvsim_tutorial/demo_dataset_gen_2d.world.xml \
+	        --trajectory mvsim_tutorial/demo_dataset_gen_2d.trajectory.txt \
+	        -o /tmp/demo_2d.rawlog
+	-->
+
+	<simul_timestep>0</simul_timestep>
+
+	<element class="elevation_map">
+		<resolution>2.0</resolution>
+		<elevation_data_matrix>[
+			-1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000;
+			-0.800 -0.800 -0.800 -0.800 -0.800 -0.800 -0.800 -0.800 -0.800 -0.800 -0.800;
+			-0.600 -0.600 -0.600 -0.600 -0.600 -0.600 -0.600 -0.600 -0.600 -0.600 -0.600;
+			-0.400 -0.400 -0.400 -0.400 -0.400 -0.400 -0.400 -0.400 -0.400 -0.400 -0.400;
+			-0.200 -0.200 -0.200 -0.200 -0.200 -0.200 -0.200 -0.200 -0.200 -0.200 -0.200;
+			0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000;
+			0.200 0.200 0.200 0.200 0.200 0.200 0.200 0.200 0.200 0.200 0.200;
+			0.400 0.400 0.400 0.400 0.400 0.400 0.400 0.400 0.400 0.400 0.400;
+			0.600 0.600 0.600 0.600 0.600 0.600 0.600 0.600 0.600 0.600 0.600;
+			0.800 0.800 0.800 0.800 0.800 0.800 0.800 0.800 0.800 0.800 0.800;
+			1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000
+		]</elevation_data_matrix>
+		<mesh_color>#a0e0a0</mesh_color>
+	</element>
+
+	<!-- ============================= Vehicle ============================= -->
+	<vehicle:class name="sensor_platform">
+		<dynamics class="differential">
+			<l_wheel pos="0.0  0.5" mass="4.0" width="0.20" diameter="0.40" />
+			<r_wheel pos="0.0 -0.5" mass="4.0" width="0.20" diameter="0.40" />
+			<chassis mass="15.0" zmin="0.05" zmax="0.6"> </chassis>
+			<controller class="twist_ideal"> </controller>
+		</dynamics>
+		<friction class="default"> <mu>0.8</mu> </friction>
+	</vehicle:class>
+
+	<vehicle name="r1" class="sensor_platform">
+		<init_pose>0 0 0</init_pose>
+
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+		  sensor_x="0.0" sensor_y="0" sensor_z="0.75" sensor_yaw="0"
+		  sensor_name="lidar1"
+		  sensor_rpm="600"
+		  max_range="60"
+		/>
+	</vehicle>
+
+</mvsim_world>

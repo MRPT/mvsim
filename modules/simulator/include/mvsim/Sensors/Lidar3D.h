@@ -12,8 +12,8 @@
 #include <mrpt/obs/CObservationPointCloud.h>
 #include <mrpt/obs/CObservationRotatingScan.h>
 #include <mrpt/opengl/CFBORender.h>
-#include <mrpt/opengl/CPointCloudColoured.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/viz/CPointCloudColoured.h>
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
@@ -39,13 +39,34 @@ class Lidar3D : public SensorBase
 	virtual void simul_pre_timestep(const TSimulContext& context) override;
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
-	void simulateOn3DScene(mrpt::opengl::COpenGLScene& gl_scene) override;
+	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 	void freeOpenGLResources() override;
+
+	/** Read-only access to the raw XML-configured parameters, for exact
+	 * (non-visual, non-rendering) consumers such as the offline ray
+	 * tracer's Lidar3DModel. Mirrors exactly what simulateOn3DScene() uses
+	 * to build its own (lazy, GUI-only) `vertical_ray_angles_`, so a
+	 * caller can reproduce the same ray set without ever rendering. */
+	int vertNumRays() const { return vertNumRays_; }
+	int horzNumRays() const { return horzNumRays_; }
+	double verticalFovDegrees() const { return vertical_fov_; }
+	const std::string& verticalRayAnglesStr() const { return vertical_ray_angles_str_; }
+	float minRange() const { return minRange_; }
+	float maxRange() const { return maxRange_; }
+	double rangeStdNoise() const { return rangeStdNoise_; }
+	bool generateIntensityFromRGB() const { return generateIntensityFromRGB_; }
+
+	/** The sensor's pose on the vehicle. Equivalent to getRelativePose(),
+	 * exposed under a public, non-overridden name: Lidar3D re-declares
+	 * getRelativePose() as protected (overriding Simulable's public one),
+	 * which makes it inaccessible through a `Lidar3D*`/`Lidar3D&` (C++
+	 * access control follows the static type, not virtual dispatch). */
+	mrpt::poses::CPose3D sensorPoseOnVehicle() const { return sensorPoseOnVeh_; }
 
    protected:
 	virtual void internalGuiUpdate(
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& viz,
-		const mrpt::optional_ref<mrpt::opengl::COpenGLScene>& physical, bool childrenOnly) override;
+		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
+		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 
@@ -88,9 +109,9 @@ class Lidar3D : public SensorBase
 	 * internalGuiUpdate() from last_scan2gui_ */
 	bool gui_uptodate_ = false;
 
-	mrpt::opengl::CPointCloudColoured::Ptr glPoints_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
-	mrpt::opengl::CSetOfObjects::Ptr gl_sensor_fov_;
+	mrpt::viz::CPointCloudColoured::Ptr glPoints_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
+	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_;
 
 	std::optional<TSimulContext> has_to_render_;
 	std::mutex has_to_render_mtx_;

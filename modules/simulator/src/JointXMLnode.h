@@ -33,7 +33,10 @@ class JointXMLnode
 		for (const auto& node : nodes_)
 		{
 			ret = node->first_node(name);
-			if (ret != nullptr) return ret;
+			if (ret != nullptr)
+			{
+				return ret;
+			}
 		}
 		return ret;
 	}
@@ -51,29 +54,42 @@ class JointXMLnode
 		// ++it
 		iterator& operator++()
 		{
-			if (!current) throw std::runtime_error("++ called on end() iterator!?");
+			if (!current)
+			{
+				throw std::runtime_error("++ called on end() iterator!?");
+			}
 			current = current->next_sibling();
 			JointXMLnode<Ch>::TListNodes& lst = parent.getListOfNodes();
 			while (!current && lst_idx < lst.size())
 			{
 				lst_idx++;
 				if (lst_idx < lst.size())
+				{
 					current = lst[lst_idx]->first_node();
+				}
 				else
+				{
 					current = nullptr;
+				}
 			}
 			return *this;
 		}
 
 		rapidxml::xml_node<Ch>* operator->() const
 		{
-			if (!current) throw std::runtime_error("-> called on end() iterator!?");
+			if (!current)
+			{
+				throw std::runtime_error("-> called on end() iterator!?");
+			}
 			return current;
 		}
 
 		rapidxml::xml_node<Ch>* operator*() const
 		{
-			if (!current) throw std::runtime_error("* called on end() iterator!?");
+			if (!current)
+			{
+				throw std::runtime_error("* called on end() iterator!?");
+			}
 			return current;
 		}
 
@@ -92,7 +108,10 @@ class JointXMLnode
 			while (!current && lst_idx < lst.size())
 			{
 				current = lst[lst_idx]->first_node();
-				if (!current) lst_idx++;
+				if (!current)
+				{
+					lst_idx++;
+				}
 			}
 		}
 		// end()

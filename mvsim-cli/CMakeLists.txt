@@ -7,6 +7,8 @@ if (TARGET mvsim::msgs)
     set(DEP_MVSIM_MSGS_TRG mvsim::msgs)
 endif()
 
+find_package(CLI11 REQUIRED)
+
 
 # === Define executable ===
 add_executable(${PROJECT_NAME} 
@@ -22,7 +24,7 @@ target_link_libraries(
 	mvsim::simulator
 	${DEP_MVSIM_MSGS_TRG}
 	${DEP_MVSIM_COMMS_TRG}
-	mrpt::tclap
+	CLI11::CLI11
 	${BOX2D_LIBRARIES}  # Box2D libs
 	${CMAKE_THREAD_LIBS_INIT}
 	)

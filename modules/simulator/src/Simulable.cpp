@@ -87,7 +87,7 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		// world-element modifies them! (e.g. elevation map)
 
 		// Update the GUI element **poses** only:
-		if (auto* vo = meAsVisualObject(); vo)
+		if (auto* vo = meAsCVisualObject(); vo)
 		{
 			vo->guiUpdate(std::nullopt, std::nullopt);
 		}
@@ -560,7 +560,7 @@ void Simulable::setPose(const mrpt::math::TPose3D& p, bool notifyChange) const
 		me.q_ = p;
 
 		// Update the GUI element poses only:
-		if (auto* vo = me.meAsVisualObject(); vo)
+		if (auto* vo = me.meAsCVisualObject(); vo)
 		{
 			vo->guiUpdate(std::nullopt, std::nullopt);
 		}

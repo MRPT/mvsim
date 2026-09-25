@@ -7,11 +7,11 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-#include <mrpt/opengl/CAssimpModel.h>
-#include <mrpt/opengl/CCylinder.h>
-#include <mrpt/opengl/CSphere.h>
 #include <mrpt/system/filesystem.h>	 // mrpt::system::pathJoin()
 #include <mrpt/system/os.h>
+#include <mrpt/viz/CAssimpModel.h>
+#include <mrpt/viz/CCylinder.h>
+#include <mrpt/viz/CSphere.h>
 #include <mvsim/CollisionShapeCache.h>
 
 #include <functional>
@@ -26,7 +26,7 @@ void shape_test_sphere()
 {
 	auto& csc = CollisionShapeCache::Instance();
 	const float radius = 0.5f;
-	auto glSphere = mrpt::opengl::CSphere::Create(radius);
+	auto glSphere = mrpt::viz::CSphere::Create(radius);
 
 	const Shape2p5 shape = csc.get(*glSphere, -radius, +radius, {}, 1.0f);
 
@@ -38,7 +38,7 @@ void shape_test_cylinder()
 	auto& csc = CollisionShapeCache::Instance();
 
 	const float radius = 0.5f, L = 2.0f;
-	auto glCyl = mrpt::opengl::CCylinder::Create(radius, radius, L);
+	auto glCyl = mrpt::viz::CCylinder::Create(radius, radius, L);
 
 	const Shape2p5 shape = csc.get(*glCyl, 0, L, {}, 1.0f);
 
@@ -50,7 +50,7 @@ void shape_test_merge()
 	auto& csc = CollisionShapeCache::Instance();
 
 	const float radius = 0.5f, L = 2.0f;
-	auto glCyl = mrpt::opengl::CCylinder::Create(radius, radius, L);
+	auto glCyl = mrpt::viz::CCylinder::Create(radius, radius, L);
 
 	const Shape2p5 s1 =
 		csc.get(*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(-0.15, 0, 0), 1.0f);
@@ -70,7 +70,7 @@ void shape_test_simplecamera()
 {
 	auto& csc = CollisionShapeCache::Instance();
 
-	auto glModel = mrpt::opengl::CAssimpModel::Create();
+	auto glModel = mrpt::viz::CAssimpModel::Create();
 	glModel->loadScene(mrpt::system::pathJoin({MVSIM_TEST_DIR, "../models/simple_camera.dae"}));
 
 	const Shape2p5 shape = csc.get(*glModel, 0, 1.0, {}, 1.0f);
