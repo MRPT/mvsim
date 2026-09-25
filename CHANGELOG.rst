@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.5.0 (2026-09-25)
+------------------
 * Fix walls loaded from model files having no segments
 * Fix Still2DLidarRanges test hanging forever
 * Merge pull request `#112 <https://github.com/MRPT/mvsim/issues/112>`_ from MRPT/feature/lidar-raytracer-dataset-gen: LiDAR raytracer dataset generator CLI
