@@ -108,6 +108,7 @@ jobs:
             cmake build-essential cmake \
             libbox2d-dev \
             libcli11-dev \
+            libnanoflann-dev \
             libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev \
             libmrpt-topography-dev \
             libmrpt-gui-dev libmrpt-tfest-dev \
