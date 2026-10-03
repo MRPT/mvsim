@@ -249,6 +249,7 @@ void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	TParameterDefinitions params;
 	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
 	params["preview_win_visible"] = TParamEntry("%bool", &previewWinVisible_);
+	params["preview_depth"] = TParamEntry("%bool", &previewDepth_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);

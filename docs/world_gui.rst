@@ -21,7 +21,12 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
 
 - ``<show_sensor_previews>true</show_sensor_previews>``. If enabled (default),
   camera images (RGB and depth) are shown in small preview windows within the GUI.
-  Each sensor can also start with its preview minimized with ``<preview_win_visible>``.
+  Each sensor can also start with its preview minimized with ``<preview_win_visible>``,
+  and RGBD cameras can hide their depth image preview with ``<preview_depth>false</preview_depth>``.
+
+- ``<show_gui_panels>true</show_gui_panels>``. If disabled, the GUI starts with
+  only the 3D view and the sensor previews, without the control, status and editor
+  panels. Useful to record videos.
 
 - ``<headless>false</headless>``. If enabled, MVSim will run without
   any interactive GUI. Useful to save some CPU/GPU usage or to run 
