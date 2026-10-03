@@ -78,9 +78,13 @@ If you use MVSim in your work, feel free of citing
     All the details about how to design simulated worlds and robots
 
 
-.. figure:: https://mrpt.github.io/mvsim-models/anims/warehouse-demo-mvsim.gif
-  :alt: MVSIM Simulating Jackal Robot in ROS2
-  :target: first-steps.html
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim-montage_v2.mp4" type="video/mp4">
+     </video>
+   </div>
 
 
 Documentation credits:
