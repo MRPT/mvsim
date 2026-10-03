@@ -1281,7 +1281,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 void World::internal_gui_on_observation(
 	const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
-	if (!obs)
+	if (!obs || !guiOptions_.show_sensor_previews)
 	{
 		return;
 	}

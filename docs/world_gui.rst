@@ -19,6 +19,10 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
 
    <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-gui-view-pointclouds.mp4" type="video/mp4"> </video>
 
+- ``<show_sensor_previews>true</show_sensor_previews>``. If enabled (default),
+  camera images (RGB and depth) are shown in small preview windows within the GUI.
+  Each sensor can also start with its preview minimized with ``<preview_win_visible>``.
+
 - ``<headless>false</headless>``. If enabled, MVSim will run without
   any interactive GUI. Useful to save some CPU/GPU usage or to run 
   MVSim inside docker containers.
