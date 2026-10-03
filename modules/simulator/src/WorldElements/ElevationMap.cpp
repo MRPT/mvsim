@@ -495,6 +495,11 @@ double calcz(
 }
 }  // namespace
 
+std::optional<mrpt::math::TBoundingBox> ElevationMap::elevationBoundingBox() const
+{
+	return mrpt::math::TBoundingBox({meshMinX_, meshMinY_, .0}, {meshMaxX_, meshMaxY_, .0});
+}
+
 std::optional<float> ElevationMap::getElevationAt(const mrpt::math::TPoint2D& pt) const
 {
 	// mesh->getxMin();

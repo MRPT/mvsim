@@ -62,6 +62,9 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["normal_map"] = TParamEntry("%s", &normalMapFileName_);
 
 	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
+
+	// The world z also depends on the plane z, parsed after the pose:
+	updateCachedPose(getPose());
 }
 
 void HorizontalPlane::internalGuiUpdate(
@@ -182,17 +185,44 @@ void HorizontalPlane::simul_post_timestep(const TSimulContext& context)
 
 std::optional<float> HorizontalPlane::getElevationAt(const mrpt::math::TPoint2D& worldXY) const
 {
-	const auto& myPose = getCPose3D();
+	std::shared_lock lck(cacheMtx_);
 
 	const auto localPt =
-		getCPose3D().inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
+		cachedPose_.inverseComposePoint(mrpt::math::TPoint3D(worldXY.x, worldXY.y, .0));
 
 	if (localPt.x < x_min_ || localPt.x > x_max_ || localPt.y < y_min_ || localPt.y > y_max_)
 	{
 		// Out of the plane:
 		return {};
 	}
+	return cachedWorldZ_;
+}
 
-	auto p = myPose + mrpt::poses::CPose3D::FromTranslation(0, 0, z_);
-	return p.z();
+std::optional<mrpt::math::TBoundingBox> HorizontalPlane::elevationBoundingBox() const
+{
+	std::shared_lock lck(cacheMtx_);
+
+	auto bb = mrpt::math::TBoundingBox::PlusMinusInfinity();
+	for (const double x : {x_min_, x_max_})
+	{
+		for (const double y : {y_min_, y_max_})
+		{
+			bb.updateWithPoint(cachedPose_.composePoint(mrpt::math::TPoint3D(x, y, z_)));
+		}
+	}
+	return bb;
+}
+
+void HorizontalPlane::updateCachedPose(const mrpt::math::TPose3D& pose)
+{
+	std::unique_lock lck(cacheMtx_);
+	cachedPose_ = mrpt::poses::CPose3D(pose);
+	cachedWorldZ_ =
+		static_cast<float>((cachedPose_ + mrpt::poses::CPose3D::FromTranslation(0, 0, z_)).z());
+}
+
+void HorizontalPlane::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
+{
+	updateCachedPose(newPose);
+	WorldElementBase::notifySimulableSetPose(newPose);
 }

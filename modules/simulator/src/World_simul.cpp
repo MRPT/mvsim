@@ -711,7 +711,7 @@ const World::LUTCache& World::getLUTCacheOfObjects() const
 
 World::lut_2d_coordinates_t World::xy_to_lut_coords(const mrpt::math::TPoint2Df& p)
 {
-	constexpr float LUT_GRID_SIZE = 4.0;
+	constexpr float LUT_GRID_SIZE = 2.0;
 	World::lut_2d_coordinates_t c;
 	c.x = static_cast<int32_t>(p.x / LUT_GRID_SIZE);
 	c.y = static_cast<int32_t>(p.y / LUT_GRID_SIZE);
@@ -723,19 +723,37 @@ void World::internal_update_lut_cache() const
 	lut2d_objects_is_up_to_date_ = true;
 
 	lut2d_objects_.clear();
+	lut2d_oversized_objects_.clear();
 	for (const auto& [name, obj] : blocks_)
 	{
-		std::set<lut_2d_coordinates_t, LutIndexHash> affected_coords;
+		// All the cells under the block bounding box (not only those of its
+		// vertices, which would miss the inner cells of large blocks):
 		const auto p = obj->getCPose3D();
+		auto bb = mrpt::math::TBoundingBoxf::PlusMinusInfinity();
 		for (const auto& vertex : obj->blockShape())
 		{
 			const auto pt = p.composePoint({vertex.x, vertex.y, .0});
-			const auto c = xy_to_lut_coords(mrpt::math::TPoint2Df(pt.x, pt.y));
-			affected_coords.insert(c);
+			bb.updateWithPoint({static_cast<float>(pt.x), static_cast<float>(pt.y), .0f});
 		}
-		for (const auto& c : affected_coords)
+		if (bb.min.x > bb.max.x)
 		{
-			lut2d_objects_[c].push_back(obj);
+			continue;  // empty shape
+		}
+		const auto c0 = xy_to_lut_coords(mrpt::math::TPoint2Df(bb.min.x, bb.min.y));
+		const auto c1 = xy_to_lut_coords(mrpt::math::TPoint2Df(bb.max.x, bb.max.y));
+		const auto nCells =
+			static_cast<std::size_t>(c1.x - c0.x + 1) * static_cast<std::size_t>(c1.y - c0.y + 1);
+		if (nCells > MAX_LUT_CELLS_PER_OBJECT)
+		{
+			lut2d_oversized_objects_.push_back(obj);
+			continue;
+		}
+		for (int32_t cx = c0.x; cx <= c1.x; cx++)
+		{
+			for (int32_t cy = c0.y; cy <= c1.y; cy++)
+			{
+				lut2d_objects_[{cx, cy}].push_back(obj);
+			}
 		}
 	}
 }

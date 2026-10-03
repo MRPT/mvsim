@@ -310,47 +310,109 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 	arch << *obs;
 }
 
-std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) const
+void World::internal_update_elevation_index() const
 {
-	// Assumption: getListOfSimulableObjectsMtx() is already acquired by all possible call paths?
-	std::set<float> ret;
+	// Marked first, so a change during the rebuild invalidates it again:
+	elevationIndexIsUpToDate_ = true;
 
-	// Optimized search for potential objects that influence this query:
-	// 1) world elements: assuming they are few, visit them all.
+	elevationIndex_.clear();
+	elevationIndexUnbounded_.clear();
 	for (const auto& obj : worldElements_)
 	{
-		const auto optZ = obj->getElevationAt(worldXY);
-		if (optZ)
+		const auto bb = obj->elevationBoundingBox();
+		if (!bb)
 		{
-			ret.insert(*optZ);
+			elevationIndexUnbounded_.push_back(obj.get());
+			continue;
+		}
+		const auto c0 = xy_to_lut_coords(mrpt::math::TPoint2Df(bb->min.x, bb->min.y));
+		const auto c1 = xy_to_lut_coords(mrpt::math::TPoint2Df(bb->max.x, bb->max.y));
+		const auto nCells =
+			static_cast<std::size_t>(c1.x - c0.x + 1) * static_cast<std::size_t>(c1.y - c0.y + 1);
+		if (nCells > MAX_LUT_CELLS_PER_OBJECT)
+		{
+			elevationIndexUnbounded_.push_back(obj.get());
+			continue;
+		}
+		for (int32_t cx = c0.x; cx <= c1.x; cx++)
+		{
+			for (int32_t cy = c0.y; cy <= c1.y; cy++)
+			{
+				elevationIndex_[{cx, cy}].push_back(obj.get());
+			}
+		}
+	}
+}
+
+template <typename Functor>
+void World::forEachElevationAt(const mrpt::math::TPoint2D& worldXY, const Functor& f) const
+{
+	// Assumption: getListOfSimulableObjectsMtx() is already acquired by all possible call paths?
+	const auto lutCoord = xy_to_lut_coords(mrpt::math::TPoint2Df(worldXY.x, worldXY.y));
+
+	// 1) world elements: by their 2D spatial index.
+	if (!elevationIndexIsUpToDate_)
+	{
+		std::unique_lock lck(elevationIndexMtx_);
+		if (!elevationIndexIsUpToDate_)
+		{
+			internal_update_elevation_index();
+		}
+	}
+	{
+		std::shared_lock lck(elevationIndexMtx_);
+		for (const auto* obj : elevationIndexUnbounded_)
+		{
+			if (const auto optZ = obj->getElevationAt(worldXY); optZ)
+			{
+				f(*optZ);
+			}
+		}
+		if (auto it = elevationIndex_.find(lutCoord); it != elevationIndex_.end())
+		{
+			for (const auto* obj : it->second)
+			{
+				if (const auto optZ = obj->getElevationAt(worldXY); optZ)
+				{
+					f(*optZ);
+				}
+			}
 		}
 	}
 
-	// 2) blocks: by hashed 2D LUT.
-	const World::LUTCache& lut = getLUTCacheOfObjects();
-	const auto lutCoord = xy_to_lut_coords(worldXY);
-	if (auto it = lut.find(lutCoord); it != lut.end())
+	// 2) blocks: by hashed 2D LUT, plus those too large for it.
+	const auto visitBlocks = [&](const std::vector<Simulable::Ptr>& objs)
 	{
-		for (const auto& obj : it->second)
+		for (const auto& obj : objs)
 		{
 			if (!obj)
 			{
 				continue;
 			}
-			const auto optZ = obj->getElevationAt(worldXY);
-			if (optZ)
+			if (const auto optZ = obj->getElevationAt(worldXY); optZ)
 			{
-				ret.insert(*optZ);
+				f(*optZ);
 			}
 		}
+	};
+	const World::LUTCache& lut = getLUTCacheOfObjects();
+	visitBlocks(lut2d_oversized_objects_);
+	if (auto it = lut.find(lutCoord); it != lut.end())
+	{
+		visitBlocks(it->second);
 	}
+}
+
+std::set<float> World::getElevationsAt(const mrpt::math::TPoint2D& worldXY) const
+{
+	std::set<float> ret;
+	forEachElevationAt(worldXY, [&ret](float z) { ret.insert(z); });
 
 	// if none:
 	if (ret.empty())
 	{
 		ret.insert(.0f);
 	}
-
 	return ret;
 }
 
@@ -371,16 +433,16 @@ std::optional<std::any> World::getPropertyAt(
 
 float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
 {
-	const auto zs = getElevationsAt({pt.x, pt.y});
-
-	float prevZ = .0f;
-	for (float z : zs)
-	{
-		if (z > pt.z)
+	// The highest elevation not above the query point, or 0 if none:
+	std::optional<float> highest;
+	forEachElevationAt(
+		{pt.x, pt.y},
+		[&](float z)
 		{
-			break;
-		}
-		prevZ = z;
-	}
-	return prevZ;
+			if (z <= pt.z && (!highest || z > *highest))
+			{
+				highest = z;
+			}
+		});
+	return highest.value_or(.0f);
 }
