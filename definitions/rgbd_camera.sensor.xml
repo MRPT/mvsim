@@ -18,6 +18,8 @@
 
     <!-- Whether the GUI preview subwindow(s) for this sensor start opened (true, default) or minimized (false) -->
     <preview_win_visible>${preview_win_visible|true}</preview_win_visible>
+    <!-- Whether to show the depth image preview too -->
+    <preview_depth>${preview_depth|true}</preview_depth>
 
     <!-- ROS publishing options for depth image & colored pointcloud -->
     <publish_ros_depth_image>${publish_ros_depth_image|true}</publish_ros_depth_image>
