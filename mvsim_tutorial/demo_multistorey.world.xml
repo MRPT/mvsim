@@ -26,6 +26,7 @@
 		<x_max> 20</x_max> <y_max> 13</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1_normal.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -35,6 +36,7 @@
 		<x_max>10</x_max> <y_max> 10</y_max>
 		<z>3.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1_normal.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>

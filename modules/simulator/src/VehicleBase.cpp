@@ -903,10 +903,23 @@ void VehicleBase::internalGuiUpdate(
 
 		if (!childrenOnly)
 		{
-			// Robot shape:
-			auto gl_poly = mrpt::viz::CPolyhedron::CreateCustomPrism(
-				chassis_poly_, chassis_z_max_ - chassis_z_min_);
-			gl_poly->setLocation(0, 0, chassis_z_min_);
+			// Robot shape: the chassis prism, with a darker band at its bottom
+			// (like a bumper) to give it some depth:
+			const double chassisH = chassis_z_max_ - chassis_z_min_;
+			const double bumperH = 0.2 * chassisH;
+
+			auto gl_bumper = mrpt::viz::CPolyhedron::CreateCustomPrism(chassis_poly_, bumperH);
+			gl_bumper->setLocation(0, 0, chassis_z_min_);
+			gl_bumper->setColor_u8(mrpt::img::TColor(
+				static_cast<uint8_t>(chassis_color_.R * 0.55),
+				static_cast<uint8_t>(chassis_color_.G * 0.55),
+				static_cast<uint8_t>(chassis_color_.B * 0.55), chassis_color_.A));
+			glChassisViz_->insert(gl_bumper);
+			glChassisPhysical_->insert(gl_bumper);
+
+			auto gl_poly =
+				mrpt::viz::CPolyhedron::CreateCustomPrism(chassis_poly_, chassisH - bumperH);
+			gl_poly->setLocation(0, 0, chassis_z_min_ + bumperH);
 			gl_poly->setColor_u8(chassis_color_);
 			glChassisViz_->insert(gl_poly);
 			glChassisPhysical_->insert(gl_poly);

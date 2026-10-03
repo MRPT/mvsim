@@ -26,6 +26,45 @@ using namespace std;
 
 namespace
 {
+/** Rotates an image by a multiple of 90 degrees (clockwise for positive
+ * angles), swapping width and height when needed so no pixel is lost. */
+mrpt::img::CImage rotateImageRightAngle(const mrpt::img::CImage& src, int angle_deg)
+{
+	const int w = static_cast<int>(src.getWidth());
+	const int h = static_cast<int>(src.getHeight());
+	const int nCh = static_cast<int>(src.channels());
+	const bool swapDims = (angle_deg == 90 || angle_deg == -90);
+	mrpt::img::CImage dst(swapDims ? h : w, swapDims ? w : h, src.channels());
+	for (int y = 0; y < h; y++)
+	{
+		for (int x = 0; x < w; x++)
+		{
+			int dx = x;
+			int dy = y;
+			if (angle_deg == 90)
+			{
+				dx = h - 1 - y;
+				dy = x;
+			}
+			else if (angle_deg == -90)
+			{
+				dx = y;
+				dy = w - 1 - x;
+			}
+			else
+			{
+				dx = w - 1 - x;
+				dy = h - 1 - y;
+			}
+			for (int c = 0; c < nCh; c++)
+			{
+				dst.at<uint8_t>(dx, dy, c) = src.at<uint8_t>(x, y, c);
+			}
+		}
+	}
+	return dst;
+}
+
 mrpt::math::CMatrixFloat applyConvolution(
 	const mrpt::math::CMatrixFloat& data, const mrpt::math::CMatrixDouble& kernel)
 {
@@ -91,6 +130,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_image"] = TParamEntry("%s", &sTextureImgFile);
 	int texture_rotate = 0;
 	params["texture_image_rotate"] = TParamEntry("%i", &texture_rotate);
+	std::string sNormalMapImgFile;
+	params["normal_map_image"] = TParamEntry("%s", &sNormalMapImgFile);
 
 	std::string sElevationMatrixData;
 	params["elevation_data_matrix"] = TParamEntry("%s", &sElevationMatrixData);
@@ -132,6 +173,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Load elevation data & (optional) image data:
 	mrpt::math::CMatrixFloat elevation_data;
 	std::optional<mrpt::img::CImage> mesh_image;
+	std::optional<mrpt::img::CImage> normal_map_image;
 
 	if (!sElevationImgFile.empty())
 	{
@@ -270,16 +312,58 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			case -90:
 			case 180:
 			case -180:
-			{
-				mrpt::img::CImage im;
-				mesh_image->rotateImage(
-					im, mrpt::DEG2RAD(texture_rotate),
-					{mesh_image->getWidth() / 2, mesh_image->getHeight() / 2});
-				mesh_image = std::move(im);
-			}
-			break;
+				mesh_image = rotateImageRightAngle(*mesh_image, texture_rotate);
+				break;
 			default:
 				THROW_EXCEPTION("texture_image_rotate can only be: 0, 90, -90, 180");
+		}
+	}
+
+	// Optional normal map for the texture image:
+	if (mesh_image && !sTextureImgFile.empty() && !sNormalMapImgFile.empty())
+	{
+		sNormalMapImgFile = world_->xmlPathToActualPath(sNormalMapImgFile);
+		normal_map_image.emplace();
+		if (!normal_map_image->loadFromFile(sNormalMapImgFile))
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read normal map image '%s'",
+				sNormalMapImgFile.c_str()));
+		if (normal_map_image->isColor() == false)
+			throw std::runtime_error("[ElevationMap] ERROR: normal map image must be RGB");
+
+		if (texture_rotate != 0)
+		{
+			// Rotate the image as the texture, then the normals encoded in it:
+			mrpt::img::CImage im = rotateImageRightAngle(*normal_map_image, texture_rotate);
+			const bool isBGR = im.getChannelsOrder() == std::string("BGR");
+			const int chR = isBGR ? 2 : 0;
+			const int chG = 1;
+			for (int row = 0; row < static_cast<int>(im.getHeight()); row++)
+			{
+				for (int col = 0; col < static_cast<int>(im.getWidth()); col++)
+				{
+					uint8_t& r = im.at<uint8_t>(col, row, chR);
+					uint8_t& g = im.at<uint8_t>(col, row, chG);
+					const uint8_t r0 = r;
+					const uint8_t g0 = g;
+					if (texture_rotate == 90)
+					{
+						r = g0;
+						g = 255 - r0;
+					}
+					else if (texture_rotate == -90)
+					{
+						r = 255 - g0;
+						g = r0;
+					}
+					else
+					{
+						r = 255 - r0;
+						g = 255 - g0;
+					}
+				}
+			}
+			normal_map_image = std::move(im);
 		}
 	}
 
@@ -351,6 +435,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		{
 			gl_mesh->assignImageAndZ(*mesh_image, elevation_data);
 			gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+			if (normal_map_image)
+			{
+				gl_mesh->assignNormalMap(*normal_map_image);
+			}
 		}
 		else
 		{
@@ -400,6 +488,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 				{
 					gl_mesh->assignImageAndZ(*mesh_image, subEle);
 					gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+					if (normal_map_image)
+					{
+						gl_mesh->assignNormalMap(*normal_map_image);
+					}
 				}
 				else
 				{

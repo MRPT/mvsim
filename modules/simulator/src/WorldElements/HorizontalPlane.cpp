@@ -59,6 +59,7 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture"] = TParamEntry("%s", &textureFileName_);
 	params["texture_size_x"] = TParamEntry("%lf", &textureSizeX_);
 	params["texture_size_y"] = TParamEntry("%lf", &textureSizeY_);
+	params["normal_map"] = TParamEntry("%s", &normalMapFileName_);
 
 	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
 }
@@ -143,6 +144,13 @@ void HorizontalPlane::internalGuiUpdate(
 		}
 
 		gl_plane_text_->assignImage(texture);
+
+		if (!normalMapFileName_.empty())
+		{
+			const std::string localNormalFile = world_->xmlPathToActualPath(normalMapFileName_);
+			ASSERT_FILE_EXISTS_(localNormalFile);
+			gl_plane_text_->assignNormalMap(mrpt::img::CImage::LoadFromFile(localNormalFile));
+		}
 
 		gl_plane_text_->cullFaces(
 			mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(cull_faces_));
