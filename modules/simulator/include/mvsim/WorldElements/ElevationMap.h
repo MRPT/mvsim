@@ -62,7 +62,7 @@ class ElevationMap : public WorldElementBase
 
 	/** This object holds both, the mesh data, and is in charge of 3D rendering.
 	 */
-	std::vector<mrpt::viz::CMesh::Ptr> gl_meshes_;
+	mrpt::viz::CMesh::Ptr gl_mesh_;
 	bool firstSceneRendering_ = true;
 	double resolution_ = 1.0f;
 
@@ -72,9 +72,5 @@ class ElevationMap : public WorldElementBase
 	/** A copy of elevation data in gl_mesh_. Coordinate order is (x,y) */
 	mrpt::math::CMatrixDouble meshCacheZ_;
 	double meshMinX_ = 0, meshMaxX_ = 0, meshMinY_ = 0, meshMaxY_ = 0;
-
-	/// If enabled (>0), the mesh will be split into NxM smaller meshes with a max size of this
-	/// value, to help correctly render semitransparent objects (e.g. trees).
-	double model_split_size_ = .0f;
 };
 }  // namespace mvsim
