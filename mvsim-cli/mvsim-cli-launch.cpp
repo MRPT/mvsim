@@ -243,10 +243,11 @@ Available options:
 	// Attach world as a mvsim communications node:
 	app->world.connectToServer();
 
-	// Launch GUI thread, unless we are in headless mode:
+	// Launch GUI thread, unless we are in headless mode (from the command line
+	// or the world file):
 	app->thread_params.world = &app->world;
 
-	if (!cli->argHeadless)
+	if (!app->world.headless())
 	{
 		// regular GUI:
 		app->thGUI = std::thread(&mvsim_server_thread_update_GUI, std::ref(app->thread_params));

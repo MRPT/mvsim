@@ -21,7 +21,8 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
 
 - ``<headless>false</headless>``. If enabled, MVSim will run without
   any interactive GUI. Useful to save some CPU/GPU usage or to run 
-  MVSim inside docker containers.
+  MVSim inside docker containers. Equivalent to ``mvsim launch --headless``
+  or the ``headless`` ROS node parameter.
 
 - ``<cam_point_to>0  0  0</cam_point_to>``. Defines the (x,y,z) coordinates
   of the point the camera should look at upon start.
