@@ -842,6 +842,13 @@ class World : public mrpt::system::COutputLogger
 	mutable LUTCache lut2d_objects_;
 	mutable bool lut2d_objects_is_up_to_date_ = false;
 
+	/** Objects covering more cells than this are not indexed by cell, but
+	 * queried everywhere, to keep the indices small. */
+	static constexpr std::size_t MAX_LUT_CELLS_PER_OBJECT = 4096;
+
+	/** Blocks too large to be indexed by cell */
+	mutable std::vector<Simulable::Ptr> lut2d_oversized_objects_;
+
 	void internal_update_lut_cache() const;
 
 	/** Spatial index of the world elements, for elevation queries: elements

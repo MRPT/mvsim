@@ -33,6 +33,15 @@ const char* WORLD_XML = R"(
     <init_pose>20 0 45</init_pose>
     <x_min>-1</x_min> <x_max>1</x_max> <y_min>-1</y_min> <y_max>1</y_max> <z>0.5</z>
   </element>
+  <element class="horizontal_plane">
+    <x_min>2000</x_min> <x_max>4000</x_max> <y_min>2000</y_min> <y_max>4000</y_max> <z>-1</z>
+  </element>
+  <block>
+    <static>true</static>
+    <init_pose>500 500 0</init_pose>
+    <shape> <pt>-150 -150</pt> <pt>150 -150</pt> <pt>150 150</pt> <pt>-150 150</pt> </shape>
+    <zmin>0</zmin> <zmax>0.2</zmax>
+  </block>
   <block>
     <static>true</static>
     <init_pose>0 -20 0</init_pose>
@@ -66,6 +75,13 @@ int main()
 
 	// Nothing there:
 	EXPECT_NEAR(elev(world, 50, 50), 0.0, 1e-4);
+
+	// A very large plane (too large to be indexed by cell):
+	EXPECT_NEAR(elev(world, 3000, 3000), -1.0, 1e-4);
+
+	// A very large block (too large to be indexed by cell):
+	EXPECT_NEAR(elev(world, 500, 500), 0.2, 1e-4);
+	EXPECT_NEAR(elev(world, 620, 380), 0.2, 1e-4);
 
 	// The middle of a large block, far from its vertices:
 	EXPECT_NEAR(elev(world, 0, -20), 0.3, 1e-4);

@@ -723,6 +723,7 @@ void World::internal_update_lut_cache() const
 	lut2d_objects_is_up_to_date_ = true;
 
 	lut2d_objects_.clear();
+	lut2d_oversized_objects_.clear();
 	for (const auto& [name, obj] : blocks_)
 	{
 		// All the cells under the block bounding box (not only those of its
@@ -740,6 +741,13 @@ void World::internal_update_lut_cache() const
 		}
 		const auto c0 = xy_to_lut_coords(mrpt::math::TPoint2Df(bb.min.x, bb.min.y));
 		const auto c1 = xy_to_lut_coords(mrpt::math::TPoint2Df(bb.max.x, bb.max.y));
+		const auto nCells =
+			static_cast<std::size_t>(c1.x - c0.x + 1) * static_cast<std::size_t>(c1.y - c0.y + 1);
+		if (nCells > MAX_LUT_CELLS_PER_OBJECT)
+		{
+			lut2d_oversized_objects_.push_back(obj);
+			continue;
+		}
 		for (int32_t cx = c0.x; cx <= c1.x; cx++)
 		{
 			for (int32_t cy = c0.y; cy <= c1.y; cy++)

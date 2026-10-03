@@ -312,6 +312,9 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 
 void World::internal_update_elevation_index() const
 {
+	// Marked first, so a change during the rebuild invalidates it again:
+	elevationIndexIsUpToDate_ = true;
+
 	elevationIndex_.clear();
 	elevationIndexUnbounded_.clear();
 	for (const auto& obj : worldElements_)
@@ -324,6 +327,13 @@ void World::internal_update_elevation_index() const
 		}
 		const auto c0 = xy_to_lut_coords(mrpt::math::TPoint2Df(bb->min.x, bb->min.y));
 		const auto c1 = xy_to_lut_coords(mrpt::math::TPoint2Df(bb->max.x, bb->max.y));
+		const auto nCells =
+			static_cast<std::size_t>(c1.x - c0.x + 1) * static_cast<std::size_t>(c1.y - c0.y + 1);
+		if (nCells > MAX_LUT_CELLS_PER_OBJECT)
+		{
+			elevationIndexUnbounded_.push_back(obj.get());
+			continue;
+		}
 		for (int32_t cx = c0.x; cx <= c1.x; cx++)
 		{
 			for (int32_t cy = c0.y; cy <= c1.y; cy++)
@@ -332,7 +342,6 @@ void World::internal_update_elevation_index() const
 			}
 		}
 	}
-	elevationIndexIsUpToDate_ = true;
 }
 
 template <typename Functor>
@@ -371,11 +380,10 @@ void World::forEachElevationAt(const mrpt::math::TPoint2D& worldXY, const Functo
 		}
 	}
 
-	// 2) blocks: by hashed 2D LUT.
-	const World::LUTCache& lut = getLUTCacheOfObjects();
-	if (auto it = lut.find(lutCoord); it != lut.end())
+	// 2) blocks: by hashed 2D LUT, plus those too large for it.
+	const auto visitBlocks = [&](const std::vector<Simulable::Ptr>& objs)
 	{
-		for (const auto& obj : it->second)
+		for (const auto& obj : objs)
 		{
 			if (!obj)
 			{
@@ -386,6 +394,12 @@ void World::forEachElevationAt(const mrpt::math::TPoint2D& worldXY, const Functo
 				f(*optZ);
 			}
 		}
+	};
+	const World::LUTCache& lut = getLUTCacheOfObjects();
+	visitBlocks(lut2d_oversized_objects_);
+	if (auto it = lut.find(lutCoord); it != lut.end())
+	{
+		visitBlocks(it->second);
 	}
 }
 
