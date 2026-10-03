@@ -228,7 +228,14 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	params["name"] = TParamEntry("%s", &objectName);
 
 	// Parse XML params:
-	parse_xmlnode_children_as_param(visNode, params);
+	if (world_)
+	{
+		parse_xmlnode_children_as_param(visNode, params, world_->user_defined_variables());
+	}
+	else
+	{
+		parse_xmlnode_children_as_param(visNode, params);
+	}
 
 	if (modelURI.empty())
 	{
