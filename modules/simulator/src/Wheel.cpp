@@ -9,6 +9,7 @@
 
 #include <mrpt/img/TColor.h>
 #include <mrpt/version.h>
+#include <mrpt/viz/CBox.h>
 #include <mrpt/viz/CCylinder.h>
 #include <mrpt/viz/CSetOfObjects.h>
 #include <mrpt/viz/stock_objects.h>
@@ -24,7 +25,7 @@ using namespace std;
 
 Wheel::Wheel(World* world) : CVisualObject(world) { recalcInertia(); }
 
-void Wheel::getAs3DObject(mrpt::viz::CSetOfObjects& obj, bool isPhysicalScene)
+void Wheel::getAs3DObject(mrpt::viz::CSetOfObjects& obj, [[maybe_unused]] bool isPhysicalScene)
 {
 	obj.clear();
 
@@ -34,23 +35,43 @@ void Wheel::getAs3DObject(mrpt::viz::CSetOfObjects& obj, bool isPhysicalScene)
 	}
 	else
 	{
-		auto gl_wheel =
-			mrpt::viz::CCylinder::Create(0.5 * diameter, 0.5 * diameter, this->width, 15);
-		gl_wheel->setColor_u8(color);
-		gl_wheel->setPose(mrpt::poses::CPose3D(0, 0.5 * width, 0, 0, 0, mrpt::DEG2RAD(90)));
+		const float wheelR = static_cast<float>(0.5 * diameter);
+		const float wheelW = static_cast<float>(width);
 
-		if (!isPhysicalScene)
+		// Tire:
+		auto gl_wheel = mrpt::viz::CCylinder::Create(wheelR, wheelR, wheelW, 32);
+		gl_wheel->setColor_u8(color);
+		gl_wheel->setPose(mrpt::poses::CPose3D(0, 0.5 * wheelW, 0, 0, 0, mrpt::DEG2RAD(90)));
+		obj.insert(gl_wheel);
+
+		// Hub caps on both sides, with a cross of spokes so rotation is visible:
+		const auto hubColor = mrpt::img::TColor(
+			static_cast<uint8_t>((color.R + 0xc0) / 2), static_cast<uint8_t>((color.G + 0xc0) / 2),
+			static_cast<uint8_t>((color.B + 0xc0) / 2), color.A);
+		const float hubR = 0.6f * wheelR;
+		const float hubT = 0.02f * wheelW + 0.002f;
+		const float spokeL = 0.9f * hubR;
+		const float spokeW = 0.12f * hubR;
+		for (const float side : {1.0f, -1.0f})
 		{
-			auto gl_wheel_frame = mrpt::viz::CSetOfObjects::Create();
-			gl_wheel_frame->setName("gl_wheel_frame");
-			gl_wheel_frame->insert(gl_wheel);
+			const float y0 = side * 0.5f * wheelW;
+			auto gl_hub = mrpt::viz::CCylinder::Create(hubR, hubR, hubT, 32);
+			gl_hub->setColor_u8(hubColor);
+			gl_hub->setPose(
+				mrpt::poses::CPose3D(0, side > 0 ? y0 + hubT : y0, 0, 0, 0, mrpt::DEG2RAD(90)));
+			obj.insert(gl_hub);
+
+			const float ys = y0 + side * hubT;
+			for (int k = 0; k < 2; k++)
 			{
-				mrpt::viz::CSetOfObjects::Ptr gl_xyz =
-					mrpt::viz::stock_objects::CornerXYZSimple(0.9 * diameter, 2.0);
-				gl_xyz->castShadows(false);
-				gl_wheel_frame->insert(gl_xyz);
+				const float ax = k == 0 ? spokeL : spokeW;
+				const float az = k == 0 ? spokeW : spokeL;
+				auto gl_spoke = mrpt::viz::CBox::Create(
+					mrpt::math::TPoint3D(-ax, ys - 0.5f * hubT, -az),
+					mrpt::math::TPoint3D(ax, ys + 0.5f * hubT, az));
+				gl_spoke->setColor_u8(color);
+				obj.insert(gl_spoke);
 			}
-			obj.insert(gl_wheel_frame);
 		}
 	}
 
