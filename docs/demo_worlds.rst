@@ -174,6 +174,46 @@ Example of a 3D Lidar Jackal robot in a world mixing indoor and outdoor scenario
    .. literalinclude:: ../mvsim_tutorial/demo_indoor_outdoor.world.xml
       :language: xml
 
+demo_home
+---------------------
+
+A single-storey home with five rooms (living room, kitchen with a dining area,
+hallway, bedroom and bathroom) connected in two loops, with photorealistic
+furniture and textures with normal maps. A ceiling blocks the sun, so daylight
+only enters through windows, and each room has its own lamps. The robot is a
+Jackal with a 3D lidar, an RGB-D camera and an IMU.
+
+.. tab-set::
+    .. tab-item:: ROS 2
+        :selected:
+
+        .. code-block:: bash
+
+            ros2 launch mvsim demo_home.launch.py
+
+    .. tab-item:: Standalone MVSim build
+
+        Assuming you compiled MVSim in the directory ``MVSIM_ROOT``,
+        with cmake build directory ``build-Release``, run:
+
+        .. code-block:: bash
+
+            cd MVSIM_ROOT
+            build-Release/bin/mvsim launch mvsim_tutorial/demo_home.world.xml
+
+
+.. image:: https://mrpt.github.io/mvsim-models/screenshots/mvsim-screenshot-demo-home.jpg
+   :width: 100%
+
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_home.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_home.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_home.world.xml
+      :language: xml
+
+
 demo_walls
 ---------------------
 
