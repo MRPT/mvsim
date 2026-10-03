@@ -47,8 +47,11 @@ the patches to observe the effects.
 demo_warehouse
 ---------------------
 
-Example of a 3D Lidar Jackal robot in a warehouse. The XML illustrates how to animate an object to make it to follow a given trajectory
-in a loop.
+Example of a 3D Lidar Jackal robot in a warehouse with several spaces: a storage hall with racks and a
+pallet staging area, a loading dock with two dock doors (a truck parked at one of them), a robot charging
+and maintenance bay, and an office. Floors have markings (aisle lines, a walkway, pallet bays, hazard
+stripes), and the hall is lit by hanging lamps. The XML also illustrates how to animate an object to make it
+follow a given trajectory in a loop, and a walking person.
 
 .. tab-set::
     .. tab-item:: ROS 1
