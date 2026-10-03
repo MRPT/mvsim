@@ -26,6 +26,45 @@ using namespace std;
 
 namespace
 {
+/** Rotates an image by a multiple of 90 degrees (clockwise for positive
+ * angles), swapping width and height when needed so no pixel is lost. */
+mrpt::img::CImage rotateImageRightAngle(const mrpt::img::CImage& src, int angle_deg)
+{
+	const int w = static_cast<int>(src.getWidth());
+	const int h = static_cast<int>(src.getHeight());
+	const int nCh = static_cast<int>(src.channels());
+	const bool swapDims = (angle_deg == 90 || angle_deg == -90);
+	mrpt::img::CImage dst(swapDims ? h : w, swapDims ? w : h, src.channels());
+	for (int y = 0; y < h; y++)
+	{
+		for (int x = 0; x < w; x++)
+		{
+			int dx = x;
+			int dy = y;
+			if (angle_deg == 90)
+			{
+				dx = h - 1 - y;
+				dy = x;
+			}
+			else if (angle_deg == -90)
+			{
+				dx = y;
+				dy = w - 1 - x;
+			}
+			else
+			{
+				dx = w - 1 - x;
+				dy = h - 1 - y;
+			}
+			for (int c = 0; c < nCh; c++)
+			{
+				dst.at<uint8_t>(dx, dy, c) = src.at<uint8_t>(x, y, c);
+			}
+		}
+	}
+	return dst;
+}
+
 mrpt::math::CMatrixFloat applyConvolution(
 	const mrpt::math::CMatrixFloat& data, const mrpt::math::CMatrixDouble& kernel)
 {
@@ -270,14 +309,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			case -90:
 			case 180:
 			case -180:
-			{
-				mrpt::img::CImage im;
-				mesh_image->rotateImage(
-					im, mrpt::DEG2RAD(texture_rotate),
-					{mesh_image->getWidth() / 2, mesh_image->getHeight() / 2});
-				mesh_image = std::move(im);
-			}
-			break;
+				mesh_image = rotateImageRightAngle(*mesh_image, texture_rotate);
+				break;
 			default:
 				THROW_EXCEPTION("texture_image_rotate can only be: 0, 90, -90, 180");
 		}
