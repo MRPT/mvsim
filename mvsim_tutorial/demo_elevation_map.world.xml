@@ -44,6 +44,7 @@
 		<elevation_image_max_z>2.0</elevation_image_max_z>
 		
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_Normal.png</normal_map_image>
 
 		<texture_extension_x>1.5</texture_extension_x>
 		<texture_extension_y>1.5</texture_extension_y>
