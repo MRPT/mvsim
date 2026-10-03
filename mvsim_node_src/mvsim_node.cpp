@@ -302,6 +302,12 @@ void MVSimNode::loadWorldModel(const std::string& world_xml_file)
 	rapidxml::file<> fil_xml(world_xml_file.c_str());
 	mvsim_world_->load_from_XML(fil_xml.data(), world_xml_file);
 
+	// Headless mode can be requested from the ROS parameter or the world file:
+	if (mvsim_world_->headless())
+	{
+		headless_ = true;
+	}
+
 	ROS12_INFO("[MVSimNode] World file load done.");
 	world_init_ok_ = true;
 
