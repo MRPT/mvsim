@@ -25,7 +25,7 @@
 		<x_max>30</x_max> <y_max>30</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_BaseColor.png</texture>
-		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_Normal.png</normal_map>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_NormalGL.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
