@@ -152,6 +152,9 @@
 	<!-- ========================
 		Obstacle blocks
 	     ======================== -->
+	<!-- ensure reproducible randomized numbers from the same seed -->
+	<variable name="dummy" value="$f{randomize(3)}"></variable>
+
 	<variable name="ROCKS_SPREAD_X" value="35.0"></variable>
 	<variable name="ROCKS_SPREAD_Y" value="35.0"></variable>
 	<variable name="ROCKS_SPREAD_Z" value="1.0"></variable>
