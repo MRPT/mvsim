@@ -130,6 +130,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_image"] = TParamEntry("%s", &sTextureImgFile);
 	int texture_rotate = 0;
 	params["texture_image_rotate"] = TParamEntry("%i", &texture_rotate);
+	std::string sNormalMapImgFile;
+	params["normal_map_image"] = TParamEntry("%s", &sNormalMapImgFile);
 
 	std::string sElevationMatrixData;
 	params["elevation_data_matrix"] = TParamEntry("%s", &sElevationMatrixData);
@@ -171,6 +173,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Load elevation data & (optional) image data:
 	mrpt::math::CMatrixFloat elevation_data;
 	std::optional<mrpt::img::CImage> mesh_image;
+	std::optional<mrpt::img::CImage> normal_map_image;
 
 	if (!sElevationImgFile.empty())
 	{
@@ -316,6 +319,54 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		}
 	}
 
+	// Optional normal map for the texture image:
+	if (mesh_image && !sTextureImgFile.empty() && !sNormalMapImgFile.empty())
+	{
+		sNormalMapImgFile = world_->xmlPathToActualPath(sNormalMapImgFile);
+		normal_map_image.emplace();
+		if (!normal_map_image->loadFromFile(sNormalMapImgFile))
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read normal map image '%s'",
+				sNormalMapImgFile.c_str()));
+		if (normal_map_image->isColor() == false)
+			throw std::runtime_error("[ElevationMap] ERROR: normal map image must be RGB");
+
+		if (texture_rotate != 0)
+		{
+			// Rotate the image as the texture, then the normals encoded in it:
+			mrpt::img::CImage im = rotateImageRightAngle(*normal_map_image, texture_rotate);
+			const bool isBGR = im.getChannelsOrder() == std::string("BGR");
+			const int chR = isBGR ? 2 : 0;
+			const int chG = 1;
+			for (int row = 0; row < static_cast<int>(im.getHeight()); row++)
+			{
+				for (int col = 0; col < static_cast<int>(im.getWidth()); col++)
+				{
+					uint8_t& r = im.at<uint8_t>(col, row, chR);
+					uint8_t& g = im.at<uint8_t>(col, row, chG);
+					const uint8_t r0 = r;
+					const uint8_t g0 = g;
+					if (texture_rotate == 90)
+					{
+						r = g0;
+						g = 255 - r0;
+					}
+					else if (texture_rotate == -90)
+					{
+						r = 255 - g0;
+						g = r0;
+					}
+					else
+					{
+						r = 255 - r0;
+						g = 255 - g0;
+					}
+				}
+			}
+			normal_map_image = std::move(im);
+		}
+	}
+
 	// Optional height filtering:
 	if (!convolution_kernel_str.empty())
 	{
@@ -384,6 +435,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		{
 			gl_mesh->assignImageAndZ(*mesh_image, elevation_data);
 			gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+			if (normal_map_image)
+			{
+				gl_mesh->assignNormalMap(*normal_map_image);
+			}
 		}
 		else
 		{
@@ -433,6 +488,10 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 				{
 					gl_mesh->assignImageAndZ(*mesh_image, subEle);
 					gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+					if (normal_map_image)
+					{
+						gl_mesh->assignNormalMap(*normal_map_image);
+					}
 				}
 				else
 				{
