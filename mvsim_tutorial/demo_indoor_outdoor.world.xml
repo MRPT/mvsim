@@ -82,7 +82,6 @@
 		<texture_size_y>1.5</texture_size_y>
 		<corner_min_x>-37.5</corner_min_x>
 		<corner_min_y>-37.5</corner_min_y>
-		<model_split_size>3.0</model_split_size>
 	</element>
 	
 	<block:class name="radio_tower">

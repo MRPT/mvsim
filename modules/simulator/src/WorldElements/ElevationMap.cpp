@@ -163,8 +163,6 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_extension_x"] = TParamEntry("%lf", &textureExtensionX_);
 	params["texture_extension_y"] = TParamEntry("%lf", &textureExtensionY_);
 
-	params["model_split_size"] = TParamEntry("%lf", &model_split_size_);
-
 	std::string convolution_kernel_str;
 	params["apply_kernel"] = TParamEntry("%s", &convolution_kernel_str);
 
@@ -422,96 +420,25 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	meshMaxY_ = corner_min_y + LY;
 
 	// Build mesh:
-	ASSERT_GE_(model_split_size_, .0f);
-	if (model_split_size_ == 0)
+	gl_mesh_ = mrpt::viz::CMesh::Create();
+	gl_mesh_->enableTransparency(false);
+
+	if (mesh_image)
 	{
-		// One single mesh:
-		auto gl_mesh = mrpt::viz::CMesh::Create();
-		gl_meshes_.push_back(gl_mesh);
-
-		gl_mesh->enableTransparency(false);
-
-		if (mesh_image)
+		gl_mesh_->assignImageAndZ(*mesh_image, elevation_data);
+		gl_mesh_->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+		if (normal_map_image)
 		{
-			gl_mesh->assignImageAndZ(*mesh_image, elevation_data);
-			gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
-			if (normal_map_image)
-			{
-				gl_mesh->assignNormalMap(*normal_map_image);
-			}
+			gl_mesh_->assignNormalMap(*normal_map_image);
 		}
-		else
-		{
-			gl_mesh->setZ(elevation_data);
-			gl_mesh->setColor_u8(mesh_color);
-		}
-
-		gl_mesh->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
-
-		// hint for rendering z-order:
-		gl_mesh->setLocalRepresentativePoint(
-			mrpt::math::TPoint3Df(corner_min_x + 0.5 * LX, corner_min_y + 0.5 * LY, .0f));
 	}
 	else
 	{
-		// Split in smaller meshes:
-		const int M = static_cast<int>(std::ceil(model_split_size_ / resolution_));
-		const double subSize = M * resolution_;
-		const size_t NX = static_cast<size_t>(std::ceil(LX / subSize));
-		const size_t NY = static_cast<size_t>(std::ceil(LY / subSize));
-		for (size_t iX = 0; iX < NX; iX++)
-		{
-			// (recall: rows=X, cols=Y)
-			// M+1: we need to duplicate the elevation data from border cells to neighboring
-			// blocks to ensure continuity.
-
-			const size_t startIx = iX * M;
-			const size_t lenIx_p = std::min<size_t>(M, elevation_data.rows() - startIx);
-			const size_t lenIx = std::min<size_t>(M + 1, elevation_data.rows() - startIx);
-
-			for (size_t iY = 0; iY < NY; iY++)
-			{
-				const size_t startIy = iY * M;
-				const size_t lenIy_p = std::min<size_t>(M, elevation_data.cols() - startIy);
-				const size_t lenIy = std::min<size_t>(M + 1, elevation_data.cols() - startIy);
-
-				// Extract sub-matrix for elevation data:
-				const auto subEle = elevation_data.extractMatrix(lenIx, lenIy, startIx, startIy);
-
-				// One sub-mesh:
-				auto gl_mesh = mrpt::viz::CMesh::Create();
-				gl_meshes_.push_back(gl_mesh);
-
-				gl_mesh->enableTransparency(false);
-
-				if (mesh_image)
-				{
-					gl_mesh->assignImageAndZ(*mesh_image, subEle);
-					gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
-					if (normal_map_image)
-					{
-						gl_mesh->assignNormalMap(*normal_map_image);
-					}
-				}
-				else
-				{
-					gl_mesh->setZ(subEle);
-					gl_mesh->setColor_u8(mesh_color);
-				}
-
-				gl_mesh->setGridLimits(
-					corner_min_x + iX * subSize,
-					corner_min_x + iX * subSize + lenIx_p * resolution_,
-					corner_min_y + iY * subSize,
-					corner_min_y + iY * subSize + lenIy_p * resolution_);
-
-				// hint for rendering z-order:
-				gl_mesh->setLocalRepresentativePoint(mrpt::math::TPoint3Df(
-					corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
-					subEle(0, 0)));
-			}
-		}
+		gl_mesh_->setZ(elevation_data);
+		gl_mesh_->setColor_u8(mesh_color);
 	}
+
+	gl_mesh_->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
 }
 
 void ElevationMap::internalGuiUpdate(
@@ -519,7 +446,7 @@ void ElevationMap::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	ASSERTMSG_(
-		!gl_meshes_.empty(),
+		gl_mesh_,
 		"ERROR: Can't render Mesh before loading it! Have you called "
 		"loadConfigFrom() first?");
 
@@ -527,13 +454,10 @@ void ElevationMap::internalGuiUpdate(
 	if (firstSceneRendering_ && viz && physical)
 	{
 		firstSceneRendering_ = false;
-		for (const auto& glMesh : gl_meshes_)
-		{
-			glMesh->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
+		gl_mesh_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
-			viz->get().insert(glMesh);
-			physical->get().insert(glMesh);
-		}
+		viz->get().insert(gl_mesh_);
+		physical->get().insert(gl_mesh_);
 	}
 }
 
