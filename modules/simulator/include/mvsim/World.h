@@ -53,6 +53,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <shared_mutex>
 #include <unordered_map>
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
@@ -485,6 +486,10 @@ class World : public mrpt::system::COutputLogger
 	/// if nothing found.
 	float getHighestElevationUnder(const mrpt::math::TPoint3Df& queryPt) const;
 
+	/** Must be called when world elements are added or moved, so the spatial
+	 * index used by elevation queries is rebuilt. */
+	void invalidateElevationIndex() { elevationIndexIsUpToDate_ = false; }
+
 	void internal_simul_pre_step_terrain_elevation();
 
 	/** Query all mvsim::WorldElementBase objects for a given custom property at the specific 3D
@@ -838,6 +843,20 @@ class World : public mrpt::system::COutputLogger
 	mutable bool lut2d_objects_is_up_to_date_ = false;
 
 	void internal_update_lut_cache() const;
+
+	/** Spatial index of the world elements, for elevation queries: elements
+	 * by 2D cell, plus those without a known bounding box. */
+	mutable std::unordered_map<lut_2d_coordinates_t, std::vector<WorldElementBase*>, LutIndexHash>
+		elevationIndex_;
+	mutable std::vector<WorldElementBase*> elevationIndexUnbounded_;
+	mutable std::atomic_bool elevationIndexIsUpToDate_ = false;
+	mutable std::shared_mutex elevationIndexMtx_;
+
+	void internal_update_elevation_index() const;
+
+	/** Calls f(z) for each elevation at the given point. */
+	template <typename Functor>
+	void forEachElevationAt(const mrpt::math::TPoint2D& worldXY, const Functor& f) const;
 
 	/** GUI stuff  */
 	struct GUI

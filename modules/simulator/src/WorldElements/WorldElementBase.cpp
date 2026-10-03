@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/format.h>
+#include <mvsim/World.h>
 #include <mvsim/WorldElements/ElevationMap.h>
 #include <mvsim/WorldElements/GroundGrid.h>
 #include <mvsim/WorldElements/HorizontalPlane.h>
@@ -92,4 +93,12 @@ WorldElementBase::Ptr WorldElementBase::factory(
 	}
 
 	return we;
+}
+
+void WorldElementBase::notifySimulableSetPose([[maybe_unused]] const mrpt::math::TPose3D& newPose)
+{
+	if (auto* w = getSimulableWorldObject(); w)
+	{
+		w->invalidateElevationIndex();
+	}
 }

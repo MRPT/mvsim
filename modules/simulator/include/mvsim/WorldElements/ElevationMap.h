@@ -42,6 +42,7 @@ class ElevationMap : public WorldElementBase
 	virtual void simul_post_timestep(const TSimulContext& context) override;
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& pt) const override;
+	std::optional<mrpt::math::TBoundingBox> elevationBoundingBox() const override;
 
 	/** Read-only access to the elevation grid, for exact (non-visual)
 	 * consumers such as the offline ray tracer. `meshZ()(row,col)` gives

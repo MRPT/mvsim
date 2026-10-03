@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <mrpt/math/TBoundingBox.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
@@ -57,7 +58,14 @@ class WorldElementBase : public CVisualObject, public Simulable
 		return {};
 	}
 
+	/** The 2D bounding box (world coordinates, z is ignored) of the area where
+	 * getElevationAt() may return a value, used to index world elements for
+	 * fast elevation queries. Default: none, meaning unknown (the element is
+	 * queried everywhere). */
+	virtual std::optional<mrpt::math::TBoundingBox> elevationBoundingBox() const { return {}; }
+
    protected:
+	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 };
 
 // Class factory:
