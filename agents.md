@@ -94,6 +94,8 @@ Cameras (`CameraSensor`, `DepthCameraSensor`) open a GUI preview subwindow showi
 
 `OccupancyGridMap`, `ElevationMap`, `HorizontalPlane`, `VerticalPlane`, `GroundGrid`, `PointCloud`, `SkyBox`, `PropertyRegion` (friction zones).
 
+Elevation queries (`World::getHighestElevationUnder()`, run for every wheel and chassis contour point each step) use a 2D grid index: world elements providing elevation must override `elevationBoundingBox()` to be indexed (otherwise they are queried everywhere), and the index is rebuilt when elements are added or moved (`World::invalidateElevationIndex()`).
+
 ### Friction models (`src/FrictionModels/`)
 
 Default Coulomb, Ward-Iagnemma (off-road), Ellipse (slip angle + slip ratio).

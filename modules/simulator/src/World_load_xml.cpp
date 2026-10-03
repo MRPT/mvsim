@@ -181,6 +181,7 @@ void World::parse_tag_element(const XmlParserContext& ctx)
 	// <element class='*'> entries:
 	WorldElementBase::Ptr e = WorldElementBase::factory(this, ctx.node);
 	worldElements_.emplace_back(e);
+	invalidateElevationIndex();
 
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 	simulableObjects_.emplace(e->getName(), std::dynamic_pointer_cast<Simulable>(e));

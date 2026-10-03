@@ -758,6 +758,7 @@ void World::internal_GUI_thread()
 		{
 			auto we = WorldElementBase::factory(this, nullptr, "ground_grid");
 			worldElements_.push_back(we);
+			invalidateElevationIndex();
 		}
 
 		// Windows:
