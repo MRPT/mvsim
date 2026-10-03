@@ -43,7 +43,6 @@
 		<texture_extension_y>4.0</texture_extension_y>
 		<corner_min_x>-24</corner_min_x>
 		<corner_min_y>-2</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 	<element class='elevation_map'>
 		<resolution>4.0</resolution>
@@ -66,7 +65,6 @@
 		<texture_extension_y>8.0</texture_extension_y>
 		<corner_min_x>24</corner_min_x>
 		<corner_min_y>2</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 	<element class='elevation_map'>
 		<resolution>4.0</resolution>
@@ -89,7 +87,6 @@
 		<texture_extension_y>4.0</texture_extension_y>
 		<corner_min_x>-24</corner_min_x>
 		<corner_min_y>34</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 	<element class='elevation_map'>
 		<resolution>4.0</resolution>
@@ -101,7 +98,6 @@
 		<texture_extension_y>8.0</texture_extension_y>
 		<corner_min_x>-28</corner_min_x>
 		<corner_min_y>2</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 
 	<element class='elevation_map'>
@@ -178,7 +174,6 @@
 		<texture_extension_y>3.0</texture_extension_y>
 		<corner_min_x>-24</corner_min_x>
 		<corner_min_y>2</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 
 	<element class='elevation_map'>
@@ -217,7 +212,6 @@
 		<texture_extension_y>3.0</texture_extension_y>
 		<corner_min_x>-44</corner_min_x>
 		<corner_min_y>-36</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 
 
@@ -245,7 +239,6 @@
 		<texture_extension_y>3.0</texture_extension_y>
 		<corner_min_x>-44</corner_min_x>
 		<corner_min_y>38</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 
 	<block:class name="support_column">
@@ -375,7 +368,6 @@
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/TropicPalmTree.zip/TropicPalmTree/free_palm.dae</model_uri>
 			<model_roll>90</model_roll>
-			<model_split_size>1.50</model_split_size> <!-- See docs. Required for transparent leaves -->
 		</visual>
 	</block:class>
 	

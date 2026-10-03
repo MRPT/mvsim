@@ -161,7 +161,6 @@ lighter pixels represent higher elevations and darker pixels represent lower ele
        <corner_min_y>-2</corner_min_y>
        <texture_extension_x>8.0</texture_extension_x>
        <texture_extension_y>4.0</texture_extension_y>
-       <model_split_size>3.0</model_split_size>
    </element>
 
 **Subtags:**
@@ -177,7 +176,6 @@ lighter pixels represent higher elevations and darker pixels represent lower ele
 * **<corner_min_x>, <corner_min_y>** - World coordinates of the map corner
 * **<texture_extension_x>, <texture_extension_y>** - Texture size in world units (0=auto)
 * **<texture_image_rotate>** - Rotation angle for texture in degrees: 0, 90, -90 or 180 (clockwise for positive values)
-* **<model_split_size>** - Split mesh into smaller chunks for correct rendering of transparent objects
 
 .. warning::
    Do not use both **<texture_image>** and **<mesh_color>** simultaneously. Choose one method
