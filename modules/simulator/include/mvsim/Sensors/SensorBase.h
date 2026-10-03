@@ -66,6 +66,10 @@ class SensorBase : public CVisualObject, public Simulable
 	 * default) or minimized (false). See XML tag "preview_win_visible". */
 	bool previewWinVisible() const { return previewWinVisible_; }
 
+	/** Whether to show the depth image preview of RGBD sensors (default: true).
+	 * See XML tag "preview_depth". */
+	bool previewDepth() const { return previewDepth_; }
+
 	/** The vehicle this sensor is attached to */
 	Simulable& vehicle() { return vehicle_; }
 	const Simulable& vehicle() const { return vehicle_; }
@@ -101,6 +105,9 @@ class SensorBase : public CVisualObject, public Simulable
 	/** Whether the sensor GUI preview subwindow starts opened or minimized.
 	 * See previewWinVisible() */
 	bool previewWinVisible_ = true;
+
+	/** See previewDepth() */
+	bool previewDepth_ = true;
 
 	bool parseSensorPublish(
 		const rapidxml::xml_node<char>* node, const std::map<std::string, std::string>& varValues);

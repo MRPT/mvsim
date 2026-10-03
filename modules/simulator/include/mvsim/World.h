@@ -590,6 +590,7 @@ class World : public mrpt::system::COutputLogger
 		bool show_forces = false;
 		bool show_sensor_points = true;
 		bool show_sensor_previews = true;
+		bool show_gui_panels = true;
 		bool show_trajectories = false;
 		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
@@ -609,6 +610,7 @@ class World : public mrpt::system::COutputLogger
 			{"show_forces", {"%bool", &show_forces}},
 			{"show_sensor_points", {"%bool", &show_sensor_points}},
 			{"show_sensor_previews", {"%bool", &show_sensor_previews}},
+			{"show_gui_panels", {"%bool", &show_gui_panels}},
 			{"show_trajectories", {"%bool", &show_trajectories}},
 			{"force_scale", {"%lf", &force_scale}},
 			{"fov_deg", {"%lf", &fov_deg}},
@@ -912,10 +914,9 @@ class World : public mrpt::system::COutputLogger
 	mrpt::math::TPoint2D internal_gui_on_image(
 		const std::string& label, const mrpt::img::CImage& im, int winPosX, bool startVisible);
 
-	/** Looks up, among veh's sensors, the one with the given sensorLabel and
-	 * returns its previewWinVisible() flag (true if not found, for backwards
-	 * compatibility). */
-	static bool internal_gui_sensor_preview_visible(
+	/** Looks up, among veh's sensors, the one with the given sensorLabel
+	 * (nullptr if not found). */
+	static const SensorBase* internal_gui_find_sensor(
 		const Simulable& veh, const std::string& sensorLabel);
 
 	std::map<std::string, nanogui::Window*> guiObsViz_;	 //!< by sensorLabel
