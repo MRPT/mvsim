@@ -460,6 +460,9 @@ class World : public mrpt::system::COutputLogger
 
 	bool sensor_has_to_create_egl_context();
 
+	/** Number of shadow map cascades used while rendering camera sensors. */
+	int sensor_shadow_cascades() const { return lightOptions_.sensor_shadow_cascades; }
+
 	const std::map<std::string, std::string>& user_defined_variables() const
 	{
 		return userDefinedVariables_;
@@ -648,6 +651,13 @@ class World : public mrpt::system::COutputLogger
 		bool enable_shadows = true;
 		int shadow_map_size = 2048;
 
+		/// Cascaded shadow map splits (1-4) for the GUI view.
+		int shadow_cascades = 4;
+
+		/// Cascaded shadow map splits (1-4) for camera sensors. Each one
+		/// costs a full shadow map pass per rendered image.
+		int sensor_shadow_cascades = 1;
+
 		double light_azimuth = mrpt::DEG2RAD(45.0);
 		double light_elevation = mrpt::DEG2RAD(70.0);
 
@@ -677,6 +687,8 @@ class World : public mrpt::system::COutputLogger
 		const TParameterDefinitions params = {
 			{"enable_shadows", {"%bool", &enable_shadows}},
 			{"shadow_map_size", {"%i", &shadow_map_size}},
+			{"shadow_cascades", {"%i", &shadow_cascades}},
+			{"sensor_shadow_cascades", {"%i", &sensor_shadow_cascades}},
 			{"light_azimuth_deg", {"%lf_deg", &light_azimuth}},
 			{"light_elevation_deg", {"%lf_deg", &light_elevation}},
 			{"light_clip_plane_min", {"%f", &light_clip_plane_min}},
