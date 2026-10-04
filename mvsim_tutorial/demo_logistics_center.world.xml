@@ -35,7 +35,7 @@
 		<z>0</z> <height>3.5</height>
 		<thickness>0.4</thickness>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
-		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_Normal.png</normal_map>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_NormalGL.png</normal_map>
 	</element>
 	<element class="vertical_plane">
 		<x0>30</x0> <y0>-30</y0> <x1>30</x1> <y1>30</y1>

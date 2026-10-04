@@ -115,7 +115,7 @@
 		<x_max>72</x_max> <y_max>69</y_max>
 		<z>-0.005</z>
 		<texture>${CGB}/Grass01_1K_BaseColor.png</texture>
-		<normal_map>${CGB}/Grass01_1K_Normal.png</normal_map>
+		<normal_map>${CGB}/Grass01_1K_NormalGL.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>

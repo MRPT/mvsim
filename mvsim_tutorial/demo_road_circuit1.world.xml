@@ -37,7 +37,7 @@
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
-		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Normal.png</normal_map_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>-90</texture_image_rotate>
 		<texture_extension_x>8.0</texture_extension_x>
 		<texture_extension_y>4.0</texture_extension_y>
@@ -59,7 +59,7 @@
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[1e-2 1e-2 2e-2 1e-2 1e-2 1e-2 4e-2 4e-2 1e-2; 1e-2 3e-2 2e-2 1e-2 4e-2 1e-2 1e-2 1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
-		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Normal.png</normal_map_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>4.0</texture_extension_x>
 		<texture_extension_y>8.0</texture_extension_y>
@@ -81,7 +81,7 @@
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
-		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Normal.png</normal_map_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>-90</texture_image_rotate>
 		<texture_extension_x>8.0</texture_extension_x>
 		<texture_extension_y>4.0</texture_extension_y>
@@ -92,7 +92,7 @@
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[1e-2 1e-2 2e-2 1e-2 1e-2 1e-2 4e-2 4e-2 1e-2; 1e-2 3e-2 2e-2 1e-2 4e-2 1e-2 1e-2 1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
-		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Normal.png</normal_map_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>4.0</texture_extension_x>
 		<texture_extension_y>8.0</texture_extension_y>
@@ -129,7 +129,7 @@
 		<x_max>6</x_max> <y_max>46</y_max>
 		<z>4.02</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/PavingStone11_1K_BaseColor.png</texture>
-		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/PavingStone11_1K_Normal.png</normal_map>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/PavingStone11_1K_NormalGL.png</normal_map>
 		<texture_size_x>1.0</texture_size_x>
 		<texture_size_y>1.0</texture_size_y>
 	</element>
@@ -168,7 +168,7 @@
 			 0  0.02  0    0.05   0
 			]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_BaseColor.png</texture_image>
-		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_Normal.png</normal_map_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>3.0</texture_extension_x>
 		<texture_extension_y>3.0</texture_extension_y>
@@ -206,7 +206,7 @@
 			 3 4.3 4.7 5 3.4 4.8 4.9 5.5 4.2 4.4 3.8 5.8 5.4 4.5 3.9 4.3 4.1 5.2 0  1
 			]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
-		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_Normal.png</normal_map_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>3.0</texture_extension_x>
 		<texture_extension_y>3.0</texture_extension_y>
@@ -233,7 +233,7 @@
 			 1  1  5.8   25
 			]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_BaseColor.png</texture_image>
-		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_Normal.png</normal_map_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>3.0</texture_extension_x>
 		<texture_extension_y>3.0</texture_extension_y>
