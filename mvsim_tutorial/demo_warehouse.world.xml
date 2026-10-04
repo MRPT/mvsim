@@ -126,7 +126,7 @@
 	<element class="horizontal_plane">
 		<x_min>-60</x_min> <y_min>-60</y_min> <x_max>80</x_max> <y_max>60</y_max> <z>-0.01</z>
 		<texture>${CGB}/Grass01_1K_BaseColor.png</texture>
-		<normal_map>${CGB}/Grass01_1K_Normal.png</normal_map>
+		<normal_map>${CGB}/Grass01_1K_NormalGL.png</normal_map>
 		<texture_size_x>3.0</texture_size_x> <texture_size_y>3.0</texture_size_y>
 	</element>
 	<!-- Truck yard -->
@@ -493,7 +493,7 @@
 	<block:class name="boxes_on_pallet">
 		<intangible>true</intangible>
 		<visual> <model_uri>${MODELS}/cardboard_box_01.zip/cardboard_box_01/cardboard_box_01.gltf</model_uri> <model_roll>90.0</model_roll>
-			<model_scale>2.0</model_scale> <model_offset_z>0.14</model_offset_z> </visual>
+			<model_scale>2.0</model_scale> </visual>
 	</block:class>
 	<block:class name="plastic_crate">
 		<mass>2</mass> <ground_friction>0.4</ground_friction> <shape_from_visual/>
