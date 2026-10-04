@@ -47,6 +47,10 @@ int nodeList()
 		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(cli->argVerbosity));
 
 	std::cout << "# Connecting to server...\n";
+	if (cli->cmd["--port"]->count() > 0)
+	{
+		client.serverPort(cli->argPort);
+	}
 	client.connect();
 	std::cout << "# Connected.\n";
 	std::cout << "# Querying list of nodes to server...\n";

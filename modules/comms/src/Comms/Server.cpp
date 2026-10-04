@@ -42,9 +42,28 @@ void Server::start()
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	requestMainThreadTermination();
-	mainThread_ = std::thread(&Server::internalServerThread, this);
+
+	auto bindResult = std::make_shared<std::promise<void>>();
+	auto bindFuture = bindResult->get_future();
+
+	mainThread_ = std::thread(&Server::internalServerThread, this, bindResult);
 
 	mrpt::system::thread_name("serverMain", mainThread_);
+
+	// Drop our copy, so the future reports an error if the thread exits
+	// before binding the port:
+	bindResult.reset();
+
+	// Wait until the port is bound, or fail if it was not possible:
+	try
+	{
+		bindFuture.get();
+	}
+	catch (...)
+	{
+		mainThread_.join();
+		throw;
+	}
 
 #else
 	THROW_EXCEPTION("MVSIM needs building with ZMQ and PROTOBUF to enable client/server");
@@ -68,7 +87,7 @@ void Server::shutdown() noexcept
 	}
 }
 
-void Server::internalServerThread()
+void Server::internalServerThread(std::shared_ptr<std::promise<void>> bindResult)
 {
 	using namespace std::string_literals;
 
@@ -81,7 +100,18 @@ void Server::internalServerThread()
 		mainThreadZMQcontext_ = &context;
 
 		zmq::socket_t mainRepSocket(context, ZMQ_REP);
-		mainRepSocket.bind("tcp://*:"s + std::to_string(serverPortNo_));
+		try
+		{
+			mainRepSocket.bind("tcp://*:"s + std::to_string(serverPortNo_));
+		}
+		catch (const zmq::error_t& e)
+		{
+			mainThreadZMQcontext_ = nullptr;
+			bindResult->set_exception(std::make_exception_ptr(std::runtime_error(
+				mrpt::format("Server cannot listen on TCP port %u: %s", serverPortNo_, e.what()))));
+			return;
+		}
+		bindResult->set_value();
 
 		for (;;)
 		{

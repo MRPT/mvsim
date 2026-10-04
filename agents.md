@@ -109,7 +109,9 @@ Provides a language-agnostic pub-sub and service-call layer using ZeroMQ + Proto
 Key headers in `modules/comms/include/mvsim/Comms/`:
 - `Server.h` — runs inside `World`, accepts registrations and forwards messages.
 - `Client.h` — used by external processes (Python, C++ tools, ROS node) to connect.
-- `common.h`, `ports.h` — shared constants and port numbers.
+- `common.h`, `ports.h` — shared constants and port numbers. Default server port is 23700, overridable with the `MVSIM_SERVER_PORT` env var (honored by `Server` and `Client`; `Client::serverPort()` sets it per instance).
+
+`Server::start()` blocks until the port is bound and throws if it cannot be. `mvsim launch` (via `commonLaunchServer()`) falls back to the next free port (23701..23709) when the default is busy and no port was forced with `--port`/`MVSIM_SERVER_PORT`.
 
 ---
 
