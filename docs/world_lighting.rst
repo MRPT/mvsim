@@ -130,6 +130,15 @@ Shadows control
 |
 
 
+- ``<shadow_cascades>4</shadow_cascades>``. Number of `cascaded shadow maps <https://en.wikipedia.org/wiki/Shadow_mapping#Cascaded_shadow_maps>`_ (1 to 4)
+  for the GUI view. More cascades give sharper shadows near the camera, but each one is an additional shadow map rendering pass.
+
+- ``<sensor_shadow_cascades>1</sensor_shadow_cascades>``. Like ``shadow_cascades``, but for camera sensors (RGB cameras and the RGB
+  part of RGBD cameras). The default of one cascade makes camera images several times faster to render. Increase it if
+  sharp shadows close to the cameras are important. Depth images and LiDARs never render shadows.
+
+
+
 - ``<light_clip_plane_min>0.1</light_clip_plane_min>`` and ``<light_clip_plane_max>900</light_clip_plane_max>``.
   The unidirectional light source is not actually placed at the infinity, but at a **large-enough distance**, defined by the ``light_clip_plane_max``
   parameter (in meters), measured from the camera look-at point. There is also a minimum distance from the light source from which to start computing
@@ -172,6 +181,7 @@ Shadows control
       <!-- Shadow settings -->
       <enable_shadows>true</enable_shadows>
       <!-- <shadow_map_size>4096</shadow_map_size> -->
+      <!-- <sensor_shadow_cascades>2</sensor_shadow_cascades> -->
 
       <!-- Point light: overhead lamp -->
       <point_light>
