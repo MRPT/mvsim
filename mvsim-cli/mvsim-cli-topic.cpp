@@ -58,6 +58,10 @@ int topicList()
 		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(cli->argVerbosity));
 
 	std::cout << "# Connecting to server...\n";
+	if (cli->cmd["--port"]->count() > 0)
+	{
+		client.serverPort(cli->argPort);
+	}
 	client.connect();
 	std::cout << "# Connected.\n";
 	std::cout << "# Querying list of topics to server...\n";
@@ -147,6 +151,10 @@ int topicEcho()
 	const auto& topicName = lstCmds.at(2);
 
 	std::cout << "# Connecting to server...\n";
+	if (cli->cmd["--port"]->count() > 0)
+	{
+		client.serverPort(cli->argPort);
+	}
 	client.connect();
 	std::cout << "# Connected.\n";
 
@@ -176,6 +184,10 @@ int topicHz()
 	const auto& topicName = lstCmds.at(2);
 
 	std::cout << "# Connecting to server...\n";
+	if (cli->cmd["--port"]->count() > 0)
+	{
+		client.serverPort(cli->argPort);
+	}
 	client.connect();
 	std::cout << "# Connected.\n";
 

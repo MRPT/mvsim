@@ -12,6 +12,7 @@
 #include <mrpt/system/COutputLogger.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mvsim/Comms/common.h>
+#include <mvsim/Comms/ports.h>
 #include <mvsim/Comms/zmq_fwrds.h>
 
 #include <atomic>
@@ -64,9 +65,18 @@ class Client : public mrpt::system::COutputLogger
 		serverHostAddress_ = serverIpOrAddressName;
 	}
 
+	unsigned int serverPort() const { return serverPort_; }
+	void serverPort(unsigned int port)
+	{
+		ASSERT_(!connected());
+		serverPort_ = port;
+	}
+
 	/** Connects to the server in a parallel thread.
 	 *  Default server address is `localhost`, can be changed with
-	 * serverHostAddress().
+	 * serverHostAddress(). The default port is 23700, or the value of the
+	 * environment variable MVSIM_SERVER_PORT if set; it can be changed with
+	 * serverPort().
 	 */
 	void connect();
 
@@ -134,6 +144,7 @@ class Client : public mrpt::system::COutputLogger
 	std::unique_ptr<ZMQImpl> zmq_;
 
 	std::string serverHostAddress_ = "localhost";
+	unsigned int serverPort_ = defaultServerPort();
 	std::string nodeName_ = "anonymous";
 
 	std::thread serviceInvokerThread_;

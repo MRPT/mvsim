@@ -50,6 +50,9 @@ Command ``mvsim launch``
 
    Available options:
    --headless              Launch without GUI (e.g. suitable for dockerized envs.)
+   -p, --port <23700>      TCP port of the communications server. If not given and the
+                           default port is in use, the next free one is used. The
+                           environment variable MVSIM_SERVER_PORT also sets it.
    --full-profiler         Enable full profiling (generates file with all timings)
    --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0
    -v, --verbosity         Set verbosity level: DEBUG, INFO (default), WARN, ERROR
@@ -58,6 +61,12 @@ Command ``mvsim launch``
 This can be used to launch the simulation of a world given the path to its XML definition file. Then you can interact with the robot(s) via keyboard, mouse, or joystick, or via the Python API.
 
 If you want the simulator to communicate via ROS, you must launch the `ROS node <mvsim_node.html>`_ instead.
+
+The communications server listens at TCP port 23700 by default. If that port is used by another
+program, ``mvsim launch`` picks the next free port (up to 23709) and prints a warning with its number.
+Set the environment variable ``MVSIM_SERVER_PORT`` to that number (or pass ``--port`` to ``mvsim topic``
+and ``mvsim node``) so other tools and the Python clients connect to the right server. If ``--port``
+or ``MVSIM_SERVER_PORT`` is given, that exact port is required and an error is reported if it is not available.
 
 
 Command ``mvsim server``

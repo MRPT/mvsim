@@ -79,4 +79,8 @@ int commandTopic();	 // "topic"
 void setConsoleErrorColor();
 void setConsoleNormalColor();
 
-void commonLaunchServer();
+/** Starts the communications server and returns the TCP port it listens at.
+ * Unless the port was forced (--port or MVSIM_SERVER_PORT), a free alternative
+ * port is used if the default one is not available.
+ * \exception std::exception If no port could be bound. */
+unsigned int commonLaunchServer();
