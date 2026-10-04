@@ -1,4 +1,26 @@
 <mvsim_world version="1.0">
+	<!--
+	  A warehouse (35 x 26 m) with a storage hall with racks and a pallet staging
+	  area, a loading dock with two dock doors (a truck at one of them), a robot
+	  charging and maintenance bay, and an office. The bay and the office open to
+	  the hall and to each other, so there is a loop.
+
+	  Floor plan (x to the right, y up, meters):
+
+	   y=13 +==========================+=======+
+	        D  staging area            D office|
+	   y=8  |                          +===D===+
+	        |==walkway=================D  bay  |
+	   y=3  |  racks                   +=======+
+	        |  racks          cross    |  dock D (truck)
+	        |  racks          aisle    |       D
+	   y=-13+==========================+=======+
+	      x=-15                       x=12    x=20
+
+	  Textures and models: Poly Haven (CC0), cgbookcase (CC0) and existing
+	  mvsim-models assets; see the license files in the mvsim-models repository.
+	-->
+
 	<!-- General simulation options -->
 	<simul_timestep>0</simul_timestep> <!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
 
@@ -15,91 +37,399 @@
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>15</cam_distance>
+		<cam_distance>34</cam_distance>
+		<cam_azimuth>-115</cam_azimuth>
+		<cam_elevation>55</cam_elevation>
+		<cam_point_to>3 0 0</cam_point_to>
 		<fov_deg>60</fov_deg>
 		<refresh_fps>40</refresh_fps>
-		<cam_azimuth>170</cam_azimuth>
-		<cam_elevation>30</cam_elevation>
 		<!-- <follow_vehicle>r1</follow_vehicle> -->
-
 	</gui>
 
 	<!-- Light parameters -->
 	<lights>
 		<enable_shadows>true</enable_shadows>
-		<light_azimuth_deg>60.0</light_azimuth_deg>
-		<light_elevation_deg>75.0</light_elevation_deg>
-		<!-- <eye_distance_to_shadow_map_extension>2</eye_distance_to_shadow_map_extension> -->
-		<!-- <minimum_shadow_map_extension_ratio>0.005</minimum_shadow_map_extension_ratio> -->
+		<!-- Sun: the roof blocks it, so it only enters through windows and the open dock door -->
+		<light_azimuth_deg>-75.0</light_azimuth_deg>
+		<light_elevation_deg>35.0</light_elevation_deg>
+		<light_ambient>0.60</light_ambient>
+		<ambient_ground_color>#9a958c</ambient_ground_color>
+
+		<point_light> <!-- High bay lamp, south aisle -->
+			<position>-4.5 -8.0 6.2</position> <color>#fff4e0</color>
+			<diffuse>1.2</diffuse> <specular>0.3</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.02</attenuation_linear>
+			<attenuation_quadratic>0.006</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- High bay lamp, middle aisle -->
+			<position>-4.5 -0.6 6.2</position> <color>#fff4e0</color>
+			<diffuse>1.2</diffuse> <specular>0.3</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.02</attenuation_linear>
+			<attenuation_quadratic>0.006</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- High bay lamp, staging area west -->
+			<position>-9.0 9.5 6.2</position> <color>#fff4e0</color>
+			<diffuse>1.2</diffuse> <specular>0.3</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.02</attenuation_linear>
+			<attenuation_quadratic>0.006</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- High bay lamp, staging area east -->
+			<position>3.0 9.5 6.2</position> <color>#fff4e0</color>
+			<diffuse>1.2</diffuse> <specular>0.3</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.02</attenuation_linear>
+			<attenuation_quadratic>0.006</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- High bay lamp, loading dock -->
+			<position>14.0 -5.0 6.2</position> <color>#fff4e0</color>
+			<diffuse>1.2</diffuse> <specular>0.3</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.02</attenuation_linear>
+			<attenuation_quadratic>0.006</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- Office ceiling lamp -->
+			<position>16.0 10.5 2.85</position> <color>#fff8f0</color>
+			<diffuse>0.9</diffuse> <specular>0.3</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.15</attenuation_linear>
+			<attenuation_quadratic>0.1</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- Charging bay ceiling lamp -->
+			<position>16.0 5.5 2.85</position> <color>#f0f6ff</color>
+			<diffuse>0.9</diffuse> <specular>0.3</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.15</attenuation_linear>
+			<attenuation_quadratic>0.1</attenuation_quadratic>
+		</point_light>
 	</lights>
 
-	<variable name="CEILING_HEIGHT" value="6.0"></variable>
+	<variable name="PH" value="https://mrpt.github.io/mvsim-models/textures-polyhaven"></variable>
+	<variable name="CGB" value="https://mrpt.github.io/mvsim-models/textures-cgbookcase"></variable>
+	<variable name="MODELS" value="https://mrpt.github.io/mvsim-models"></variable>
+	<variable name="CEILING_HEIGHT" value="7.5"></variable>
+	<variable name="ROOM_H" value="3.0"></variable>
+	<variable name="WALL_T" value="0.25"></variable>
+	<variable name="PARTITION_T" value="0.12"></variable>
+
+	<!-- Sky -->
+	<element class="skybox">
+		<textures>${MODELS}/skyboxes/TropicalSunnyDay.zip/TropicalSunnyDay/TropicalSunnyDay%s.jpg</textures>
+	</element>
 
 	<!-- ========================
-		   Scenario definition
+	       Ground and floors
 	     ======================== -->
-	<!-- ground -->
+	<!-- Grass around the building -->
 	<element class="horizontal_plane">
-		<cull_face>BACK</cull_face>
-		<x_min>-15</x_min> <y_min>-13</y_min>
-		<x_max> 20</x_max> <y_max> 13</y_max>
-		<z>0.0</z>
-		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
-		<texture_size_x>2.0</texture_size_x>
-		<texture_size_y>2.0</texture_size_y>
+		<x_min>-60</x_min> <y_min>-60</y_min> <x_max>80</x_max> <y_max>60</y_max> <z>-0.01</z>
+		<texture>${CGB}/Grass01_1K_BaseColor.png</texture>
+		<normal_map>${CGB}/Grass01_1K_NormalGL.png</normal_map>
+		<texture_size_x>3.0</texture_size_x> <texture_size_y>3.0</texture_size_y>
+	</element>
+	<!-- Truck yard -->
+	<element class="horizontal_plane">
+		<x_min>20</x_min> <y_min>-20</y_min> <x_max>45</x_max> <y_max>10</y_max> <z>-0.005</z>
+		<texture>${CGB}/Asphalt01_1K_BaseColor.png</texture>
+		<normal_map>${CGB}/Asphalt01_1K_NormalGL.png</normal_map>
+		<texture_size_x>4.0</texture_size_x> <texture_size_y>4.0</texture_size_y>
+	</element>
+	<!-- Storage hall -->
+	<element class="horizontal_plane">
+		<x_min>-15</x_min> <y_min>-13</y_min> <x_max>8</x_max> <y_max>13</y_max> <z>0.0</z>
+		<texture>${PH}/hangar_concrete_floor_diff_1k.jpg</texture>
+		<normal_map>${PH}/hangar_concrete_floor_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
+	</element>
+	<element class="horizontal_plane">
+		<x_min>8</x_min> <y_min>3</y_min> <x_max>12</x_max> <y_max>13</y_max> <z>0.0</z>
+		<texture>${PH}/hangar_concrete_floor_diff_1k.jpg</texture>
+		<normal_map>${PH}/hangar_concrete_floor_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
+	</element>
+	<!-- Loading dock -->
+	<element class="horizontal_plane">
+		<x_min>8</x_min> <y_min>-13</y_min> <x_max>20</x_max> <y_max>3</y_max> <z>0.0</z>
+		<texture>${PH}/garage_floor_diff_1k.jpg</texture>
+		<normal_map>${PH}/garage_floor_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.89</texture_size_x> <texture_size_y>1.89</texture_size_y>
+	</element>
+	<!-- Charging and maintenance bay -->
+	<element class="horizontal_plane">
+		<x_min>12</x_min> <y_min>3</y_min> <x_max>20</x_max> <y_max>8</y_max> <z>0.0</z>
+		<texture>${PH}/painted_concrete_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/painted_concrete_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>4.0</texture_size_x> <texture_size_y>4.0</texture_size_y>
+	</element>
+	<!-- Office -->
+	<element class="horizontal_plane">
+		<x_min>12</x_min> <y_min>8</y_min> <x_max>20</x_max> <y_max>13</y_max> <z>0.0</z>
+		<texture>${PH}/floor_tiles_06_diff_1k.jpg</texture>
+		<normal_map>${PH}/floor_tiles_06_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.0</texture_size_x> <texture_size_y>3.0</texture_size_y>
+	</element>
+	<!-- Roof: culled from above, so the GUI camera sees inside, while it still blocks the sun -->
+	<element class="horizontal_plane">
+		<x_min>-15</x_min> <y_min>-13</y_min> <x_max>20</x_max> <y_max>13</y_max> <z>${CEILING_HEIGHT}</z>
+		<cull_face>FRONT</cull_face>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
+	</element>
+	<!-- Ceiling of the office and the bay -->
+	<element class="horizontal_plane">
+		<x_min>12</x_min> <y_min>3</y_min> <x_max>20</x_max> <y_max>13</y_max> <z>${ROOM_H}</z>
+		<cull_face>FRONT</cull_face>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
 	</element>
 
-	<!-- ceiling -->
+	<!-- ========================
+	       Floor markings
+	     ======================== -->
+	<!-- Yellow lines along the rack faces -->
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>-12.07</y_min> <x_max>4.53</x_max> <y_max>-11.97</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>-9.43</y_min> <x_max>4.53</x_max> <y_max>-9.33</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>-6.77</y_min> <x_max>4.53</x_max> <y_max>-6.67</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>-4.13</y_min> <x_max>4.53</x_max> <y_max>-4.03</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>-4.63</y_min> <x_max>4.53</x_max> <y_max>-4.53</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>-1.99</y_min> <x_max>4.53</x_max> <y_max>-1.89</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>0.71</y_min> <x_max>4.53</x_max> <y_max>0.81</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>3.35</y_min> <x_max>4.53</x_max> <y_max>3.45</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>2.85</y_min> <x_max>4.53</x_max> <y_max>2.95</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.53</x_min> <y_min>5.49</y_min> <x_max>4.53</x_max> <y_max>5.59</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<!-- Cross aisle edges -->
+	<element class="horizontal_plane"> <x_min>4.85</x_min> <y_min>-12.60</y_min> <x_max>4.95</x_max> <y_max>5.40</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>7.75</x_min> <y_min>-12.60</y_min> <x_max>7.85</x_max> <y_max>5.40</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<!-- Green pedestrian walkway, from the west door to the charging bay -->
+	<element class="horizontal_plane"> <x_min>-14.90</x_min> <y_min>5.60</y_min> <x_max>12.00</x_max> <y_max>6.90</y_max> <z>0.003</z> <color>#1e5a2b</color> </element>
+	<element class="horizontal_plane"> <x_min>-14.90</x_min> <y_min>5.50</y_min> <x_max>12.00</x_max> <y_max>5.60</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-14.90</x_min> <y_min>6.90</y_min> <x_max>12.00</x_max> <y_max>7.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<!-- Pallet jack lane in the staging area -->
+	<element class="horizontal_plane"> <x_min>-10.50</x_min> <y_min>11.25</y_min> <x_max>6.50</x_max> <y_max>11.35</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>-10.50</x_min> <y_min>12.65</y_min> <x_max>6.50</x_max> <y_max>12.75</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<!-- Pallet bays in the staging area -->
+	<element class="horizontal_plane"> <x_min>-13.00</x_min> <y_min>7.70</y_min> <x_max>-11.40</x_max> <y_max>7.78</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.00</x_min> <y_min>8.92</y_min> <x_max>-11.40</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.00</x_min> <y_min>7.70</y_min> <x_max>-12.92</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-11.48</x_min> <y_min>7.70</y_min> <x_max>-11.40</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.00</x_min> <y_min>9.40</y_min> <x_max>-11.40</x_max> <y_max>9.48</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.00</x_min> <y_min>10.62</y_min> <x_max>-11.40</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-13.00</x_min> <y_min>9.40</y_min> <x_max>-12.92</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-11.48</x_min> <y_min>9.40</y_min> <x_max>-11.40</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-10.80</x_min> <y_min>7.70</y_min> <x_max>-9.20</x_max> <y_max>7.78</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-10.80</x_min> <y_min>8.92</y_min> <x_max>-9.20</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-10.80</x_min> <y_min>7.70</y_min> <x_max>-10.72</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-9.28</x_min> <y_min>7.70</y_min> <x_max>-9.20</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-10.80</x_min> <y_min>9.40</y_min> <x_max>-9.20</x_max> <y_max>9.48</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-10.80</x_min> <y_min>10.62</y_min> <x_max>-9.20</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-10.80</x_min> <y_min>9.40</y_min> <x_max>-10.72</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-9.28</x_min> <y_min>9.40</y_min> <x_max>-9.20</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-8.60</x_min> <y_min>7.70</y_min> <x_max>-7.00</x_max> <y_max>7.78</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-8.60</x_min> <y_min>8.92</y_min> <x_max>-7.00</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-8.60</x_min> <y_min>7.70</y_min> <x_max>-8.52</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-7.08</x_min> <y_min>7.70</y_min> <x_max>-7.00</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-8.60</x_min> <y_min>9.40</y_min> <x_max>-7.00</x_max> <y_max>9.48</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-8.60</x_min> <y_min>10.62</y_min> <x_max>-7.00</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-8.60</x_min> <y_min>9.40</y_min> <x_max>-8.52</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-7.08</x_min> <y_min>9.40</y_min> <x_max>-7.00</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-6.40</x_min> <y_min>7.70</y_min> <x_max>-4.80</x_max> <y_max>7.78</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-6.40</x_min> <y_min>8.92</y_min> <x_max>-4.80</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-6.40</x_min> <y_min>7.70</y_min> <x_max>-6.32</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-4.88</x_min> <y_min>7.70</y_min> <x_max>-4.80</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-6.40</x_min> <y_min>9.40</y_min> <x_max>-4.80</x_max> <y_max>9.48</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-6.40</x_min> <y_min>10.62</y_min> <x_max>-4.80</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-6.40</x_min> <y_min>9.40</y_min> <x_max>-6.32</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-4.88</x_min> <y_min>9.40</y_min> <x_max>-4.80</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-4.20</x_min> <y_min>7.70</y_min> <x_max>-2.60</x_max> <y_max>7.78</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-4.20</x_min> <y_min>8.92</y_min> <x_max>-2.60</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-4.20</x_min> <y_min>7.70</y_min> <x_max>-4.12</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-2.68</x_min> <y_min>7.70</y_min> <x_max>-2.60</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-4.20</x_min> <y_min>9.40</y_min> <x_max>-2.60</x_max> <y_max>9.48</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-4.20</x_min> <y_min>10.62</y_min> <x_max>-2.60</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-4.20</x_min> <y_min>9.40</y_min> <x_max>-4.12</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-2.68</x_min> <y_min>9.40</y_min> <x_max>-2.60</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-2.00</x_min> <y_min>7.70</y_min> <x_max>-0.40</x_max> <y_max>7.78</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-2.00</x_min> <y_min>8.92</y_min> <x_max>-0.40</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-2.00</x_min> <y_min>7.70</y_min> <x_max>-1.92</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-0.48</x_min> <y_min>7.70</y_min> <x_max>-0.40</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-2.00</x_min> <y_min>9.40</y_min> <x_max>-0.40</x_max> <y_max>9.48</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-2.00</x_min> <y_min>10.62</y_min> <x_max>-0.40</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-2.00</x_min> <y_min>9.40</y_min> <x_max>-1.92</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>-0.48</x_min> <y_min>9.40</y_min> <x_max>-0.40</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>0.20</x_min> <y_min>7.70</y_min> <x_max>1.80</x_max> <y_max>7.78</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>0.20</x_min> <y_min>8.92</y_min> <x_max>1.80</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>0.20</x_min> <y_min>7.70</y_min> <x_max>0.28</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>1.72</x_min> <y_min>7.70</y_min> <x_max>1.80</x_max> <y_max>9.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>0.20</x_min> <y_min>9.40</y_min> <x_max>1.80</x_max> <y_max>9.48</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>0.20</x_min> <y_min>10.62</y_min> <x_max>1.80</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>0.20</x_min> <y_min>9.40</y_min> <x_max>0.28</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>1.72</x_min> <y_min>9.40</y_min> <x_max>1.80</x_max> <y_max>10.70</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<!-- Staging lanes at the dock door with the truck -->
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-12.40</y_min> <x_max>17.50</x_max> <y_max>-12.32</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-11.08</y_min> <x_max>17.50</x_max> <y_max>-11.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-12.40</y_min> <x_max>9.08</x_max> <y_max>-11.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>17.42</x_min> <y_min>-12.40</y_min> <x_max>17.50</x_max> <y_max>-11.00</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-10.80</y_min> <x_max>17.50</x_max> <y_max>-10.72</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-9.48</y_min> <x_max>17.50</x_max> <y_max>-9.40</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-10.80</y_min> <x_max>9.08</x_max> <y_max>-9.40</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>17.42</x_min> <y_min>-10.80</y_min> <x_max>17.50</x_max> <y_max>-9.40</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-9.20</y_min> <x_max>17.50</x_max> <y_max>-9.12</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-7.88</y_min> <x_max>17.50</x_max> <y_max>-7.80</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>9.00</x_min> <y_min>-9.20</y_min> <x_max>9.08</x_max> <y_max>-7.80</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<element class="horizontal_plane"> <x_min>17.42</x_min> <y_min>-9.20</y_min> <x_max>17.50</x_max> <y_max>-7.80</y_max> <z>0.003</z> <color>#e8e8e8</color> </element>
+	<!-- Hazard stripes in front of the dock doors -->
 	<element class="horizontal_plane">
-		<cull_face>FRONT</cull_face>
-		<x_min>-15</x_min> <y_min>-13</y_min>
-		<x_max> 20</x_max> <y_max> 13</y_max>
-		<z>$f{CEILING_HEIGHT}</z>
-		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
-		<texture_size_x>3.0</texture_size_x>
-		<texture_size_y>3.0</texture_size_y>
+		<x_min>18.2</x_min> <y_min>-11.25</y_min> <x_max>20.0</x_max> <y_max>-7.75</y_max> <z>0.004</z>
+		<texture>${MODELS}/textures-misc/hazard_stripes.png</texture>
+		<texture_size_x>0.9</texture_size_x> <texture_size_y>0.9</texture_size_y>
 	</element>
+	<element class="horizontal_plane">
+		<x_min>18.2</x_min> <y_min>-5.75</y_min> <x_max>20.0</x_max> <y_max>-2.25</y_max> <z>0.004</z>
+		<texture>${MODELS}/textures-misc/hazard_stripes.png</texture>
+		<texture_size_x>0.9</texture_size_x> <texture_size_y>0.9</texture_size_y>
+	</element>
+	<!-- Robot charging pads -->
+	<element class="horizontal_plane"> <x_min>17.60</x_min> <y_min>3.60</y_min> <x_max>19.40</x_max> <y_max>4.90</y_max> <z>0.004</z> <color>#2f5fb3</color> </element>
+	<element class="horizontal_plane"> <x_min>17.60</x_min> <y_min>5.30</y_min> <x_max>19.40</x_max> <y_max>6.60</y_max> <z>0.004</z> <color>#2f5fb3</color> </element>
+	<element class="horizontal_plane"> <x_min>17.50</x_min> <y_min>3.50</y_min> <x_max>19.50</x_max> <y_max>3.58</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>17.50</x_min> <y_min>4.92</y_min> <x_max>19.50</x_max> <y_max>5.00</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>17.50</x_min> <y_min>3.50</y_min> <x_max>17.58</x_max> <y_max>5.00</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>19.42</x_min> <y_min>3.50</y_min> <x_max>19.50</x_max> <y_max>5.00</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>17.50</x_min> <y_min>5.20</y_min> <x_max>19.50</x_max> <y_max>5.28</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>17.50</x_min> <y_min>6.62</y_min> <x_max>19.50</x_max> <y_max>6.70</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>17.50</x_min> <y_min>5.20</y_min> <x_max>17.58</x_max> <y_max>6.70</y_max> <z>0.003</z> <color>#e8b923</color> </element>
+	<element class="horizontal_plane"> <x_min>19.42</x_min> <y_min>5.20</y_min> <x_max>19.50</x_max> <y_max>6.70</y_max> <z>0.003</z> <color>#e8b923</color> </element>
 
-	<!-- perimeter walls: -->
+	<!-- ========================
+	       Walls
+	     ======================== -->
+	<!-- South facade, with high windows -->
 	<element class="vertical_plane">
-		<cull_face>FRONT</cull_face>
-		<x0>-15</x0> <y0>13</y0>
-		<x1>-15</x1> <y1>-13</y1>
-		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
-		<texture_size_x>3.0</texture_size_x>
-		<texture_size_y>3.0</texture_size_y>
+		<x0>-15</x0> <y0>-13</y0> <x1>20</x1> <y1>-13</y1>
+		<height>${CEILING_HEIGHT}</height> <thickness>${WALL_T}</thickness>
+		<texture>${PH}/corrugated_iron_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/corrugated_iron_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.7</texture_size_x> <texture_size_y>2.7</texture_size_y>
+		<window> <position>0.1500</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+		<window> <position>0.3500</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+		<window> <position>0.5500</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+	</element>
+	<!-- East facade: two dock doors and an office window -->
+	<element class="vertical_plane">
+		<x0>20</x0> <y0>-13</y0> <x1>20</x1> <y1>13</y1>
+		<height>${CEILING_HEIGHT}</height> <thickness>${WALL_T}</thickness>
+		<texture>${PH}/corrugated_iron_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/corrugated_iron_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.7</texture_size_x> <texture_size_y>2.7</texture_size_y>
+		<door> <position>0.1346</position> <width>3.5</width> <z_min>0.0</z_min> <z_max>4.2</z_max> </door>
+		<door> <position>0.3462</position> <width>3.5</width> <z_min>0.0</z_min> <z_max>4.2</z_max> </door>
+		<window> <position>0.9038</position> <width>2.0</width> <z_min>1.0</z_min> <z_max>2.2</z_max> </window>
+	</element>
+	<!-- North facade: office window and high windows -->
+	<element class="vertical_plane">
+		<x0>20</x0> <y0>13</y0> <x1>-15</x1> <y1>13</y1>
+		<height>${CEILING_HEIGHT}</height> <thickness>${WALL_T}</thickness>
+		<texture>${PH}/corrugated_iron_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/corrugated_iron_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.7</texture_size_x> <texture_size_y>2.7</texture_size_y>
+		<window> <position>0.1143</position> <width>2.0</width> <z_min>1.0</z_min> <z_max>2.2</z_max> </window>
+		<window> <position>0.4500</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+		<window> <position>0.6500</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+		<window> <position>0.8500</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+	</element>
+	<!-- West facade, with a door to the walkway -->
+	<element class="vertical_plane">
+		<x0>-15</x0> <y0>13</y0> <x1>-15</x1> <y1>-13</y1>
+		<height>${CEILING_HEIGHT}</height> <thickness>${WALL_T}</thickness>
+		<texture>${PH}/corrugated_iron_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/corrugated_iron_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.7</texture_size_x> <texture_size_y>2.7</texture_size_y>
+		<door> <position>0.2596</position> <width>1.2</width> <z_min>0.0</z_min> <z_max>2.2</z_max> </door>
+	</element>
+	<!-- Interior lining of the facades (light panels) -->
+	<element class="vertical_plane">
+		<x0>-14.86</x0> <y0>-12.86</y0> <x1>19.86</x1> <y1>-12.86</y1>
+		<height>${CEILING_HEIGHT}</height> <thickness>0.01</thickness>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
+		<window> <position>0.1472</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+		<window> <position>0.3488</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+		<window> <position>0.5504</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
 	</element>
 	<element class="vertical_plane">
-		<cull_face>FRONT</cull_face>
-		<x0> 20</x0> <y0>13</y0>
-		<x1>-15</x1> <y1>13</y1>
-		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
-		<texture_size_x>3.0</texture_size_x>
-		<texture_size_y>3.0</texture_size_y>
+		<x0>19.86</x0> <y0>-12.86</y0> <x1>19.86</x1> <y1>12.86</y1>
+		<height>${CEILING_HEIGHT}</height> <thickness>0.01</thickness>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
+		<door> <position>0.1306</position> <width>3.5</width> <z_min>0.0</z_min> <z_max>4.2</z_max> </door>
+		<door> <position>0.3445</position> <width>3.5</width> <z_min>0.0</z_min> <z_max>4.2</z_max> </door>
+		<window> <position>0.9082</position> <width>2.0</width> <z_min>1.0</z_min> <z_max>2.2</z_max> </window>
 	</element>
 	<element class="vertical_plane">
-		<cull_face>FRONT</cull_face>
-		<x0> 20</x0> <y0>-13</y0>
-		<x1> 20</x1> <y1>13</y1>
-		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
-		<texture_size_x>3.0</texture_size_x>
-		<texture_size_y>3.0</texture_size_y>
+		<x0>19.86</x0> <y0>12.86</y0> <x1>-14.86</x1> <y1>12.86</y1>
+		<height>${CEILING_HEIGHT}</height> <thickness>0.01</thickness>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
+		<window> <position>0.1112</position> <width>2.0</width> <z_min>1.0</z_min> <z_max>2.2</z_max> </window>
+		<window> <position>0.4496</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+		<window> <position>0.6512</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
+		<window> <position>0.8528</position> <width>3.0</width> <z_min>5.0</z_min> <z_max>6.6</z_max> </window>
 	</element>
 	<element class="vertical_plane">
-		<cull_face>FRONT</cull_face>
-		<x0>-15</x0> <y0>-13</y0>
-		<x1> 20</x1> <y1>-13</y1>
-		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
-		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
-		<texture_size_x>3.0</texture_size_x>
-		<texture_size_y>3.0</texture_size_y>
+		<x0>-14.86</x0> <y0>12.86</y0> <x1>-14.86</x1> <y1>-12.86</y1>
+		<height>${CEILING_HEIGHT}</height> <thickness>0.01</thickness>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
+		<door> <position>0.2570</position> <width>1.2</width> <z_min>0.0</z_min> <z_max>2.2</z_max> </door>
+	</element>
+	<!-- Closed dock door (metal shutter) -->
+	<element class="vertical_plane">
+		<x0>19.95</x0> <y0>-5.75</y0> <x1>19.95</x1> <y1>-2.25</y1>
+		<height>4.2</height> <thickness>0.05</thickness>
+		<texture>${PH}/painted_metal_shutter_diff_1k.jpg</texture>
+		<normal_map>${PH}/painted_metal_shutter_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
+	</element>
+	<!-- Partition to the hall: wide bay door, office door and office windows -->
+	<element class="vertical_plane">
+		<x0>12</x0> <y0>3</y0> <x1>12</x1> <y1>13</y1>
+		<height>${ROOM_H}</height> <thickness>${PARTITION_T}</thickness>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
+		<door> <position>0.2500</position> <width>2.6</width> <z_min>0.0</z_min> <z_max>2.6</z_max> </door>
+		<window> <position>0.6000</position> <width>1.6</width> <z_min>1.0</z_min> <z_max>2.1</z_max> </window>
+		<door> <position>0.7500</position> <width>1.0</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+		<window> <position>0.9000</position> <width>1.4</width> <z_min>1.0</z_min> <z_max>2.1</z_max> </window>
+	</element>
+	<!-- Office / bay -->
+	<element class="vertical_plane">
+		<x0>12</x0> <y0>8</y0> <x1>20</x1> <y1>8</y1>
+		<height>${ROOM_H}</height> <thickness>${PARTITION_T}</thickness>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
+		<door> <position>0.8125</position> <width>0.9</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+	</element>
+	<!-- Bay / dock -->
+	<element class="vertical_plane">
+		<x0>12</x0> <y0>3</y0> <x1>20</x1> <y1>3</y1>
+		<height>${ROOM_H}</height> <thickness>${PARTITION_T}</thickness>
+		<texture>${PH}/plastered_wall_04_diff_1k.jpg</texture>
+		<normal_map>${PH}/plastered_wall_04_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.2</texture_size_x> <texture_size_y>3.2</texture_size_y>
 	</element>
 
 	<!-- =============================
-		   Vehicle classes definition
+	       Vehicle classes definition
 	     ============================= -->
 	<include file="../definitions/jackal.vehicle.xml"
 		default_sensors="true"
@@ -108,165 +438,226 @@
 	<!-- lidar2d_raytrace: Use accurate 3D raytrace mode for the 2D lidar sensor too -->
 
 	<!-- ========================
-		   Vehicle(s) definition
+	       Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="jackal">
-		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>6.3 -1 90</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 	</vehicle>
 
 	<!-- ======================================
 	      Object types
 	     ====================================== -->
+
 	<block:class name="shelf">
-		<static>true</static> <!-- Does not move -->
-		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
-		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/shelf_big_moveai.zip/shelf_big_moveai/shelf_big_movai.dae</model_uri>
-			<model_roll>90.0</model_roll>
-		</visual>
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/shelf_big_moveai.zip/shelf_big_moveai/shelf_big_movai.dae</model_uri> <model_roll>90.0</model_roll> </visual>
 	</block:class>
-
-	<block:class name="stairs">
-		<static>true</static> <!-- Does not move -->
-		<zmin>0.0</zmin> <zmax>0.5</zmax>
-		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
-		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/metal-stairs.dae</model_uri>
-			<model_offset_z>4.31</model_offset_z>
-			<model_roll>90.0</model_roll>
-		</visual>
-	</block:class>
-
 	<block:class name="tote">
-		<mass>6</mass> <ground_friction>0.1</ground_friction>
-		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
-		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/tote.dae</model_uri>
-			<model_roll>90.0</model_roll>
-		</visual>
+		<mass>6</mass> <ground_friction>0.1</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/tote.dae</model_uri> <model_roll>90.0</model_roll> </visual>
 	</block:class>
-
 	<block:class name="pallet">
-		<mass>2</mass> <ground_friction>0.1</ground_friction>
-		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
-		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/pallet.zip/pallet/pallet.dae</model_uri>
-			<model_roll>90.0</model_roll>
-		</visual>
+		<mass>2</mass> <ground_friction>0.1</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/pallet.zip/pallet/pallet.dae</model_uri> <model_roll>90.0</model_roll> </visual>
 	</block:class>
-
 	<block:class name="pallet_jack">
-		<mass>20</mass> <ground_friction>1.0</ground_friction>
-		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
-		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/pallet_jack.zip/pallet_jack/pallet_jack.dae</model_uri>
-			<model_roll>90.0</model_roll>
-		</visual>
+		<mass>20</mass> <ground_friction>1.0</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/pallet_jack.zip/pallet_jack/pallet_jack.dae</model_uri> <model_roll>90.0</model_roll> </visual>
 	</block:class>
-
 	<block:class name="chair_x3">
-		<mass>6</mass> <ground_friction>0.1</ground_friction>
-		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
-		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/chair_x3.dae</model_uri>
-			<model_roll>90.0</model_roll>
-		</visual>
+		<mass>6</mass> <ground_friction>0.1</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/chair_x3.dae</model_uri> <model_roll>90.0</model_roll> </visual>
 	</block:class>
-
 	<block:class name="extinguisher">
-		<static>true</static> <!-- Does not move -->
-		<mass>2</mass> <ground_friction>1</ground_friction>
-		<shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
-		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/extinguisher.zip/extinguisher/extinguisher.dae</model_uri>
-			<model_roll>90.0</model_roll>
-		</visual>
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/extinguisher.zip/extinguisher/extinguisher.dae</model_uri> <model_roll>90.0</model_roll> </visual>
 	</block:class>
-
-	<block:class name="my_ramp">
-		<static>true</static> <!-- Does not move -->
-		<intangible>true</intangible> <!-- Does not generate collisions -->
-		<color>#707070</color>
-		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
-		<geometry type="ramp" lx="2.0" ly="1.0" lz="0.25" />
+	<block:class name="office_chair">
+		<mass>8</mass> <ground_friction>0.3</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/OfficeChair.zip/OfficeChair/officechair.dae</model_uri> <model_roll>90.0</model_roll> </visual>
 	</block:class>
-	
-	<block:class name="my_bump">
-		<static>true</static> <!-- Does not move -->
-		<intangible>true</intangible> <!-- Does not generate collisions -->
-		<color>#707070</color>
-		<zmin>0</zmin> <zmax>0.02</zmax>
-		<shape_from_visual/> <!-- automatic collision shape from 3D model -->
-		<geometry type="semi_cylinder_bump" lx="1.0" ly="0.20" lz="0.02" />
+	<block:class name="cone">
+		<mass>1</mass> <ground_friction>0.5</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/ConstructionCone.zip/ConstructionCone/construction_cone.dae</model_uri> <model_roll>90</model_roll> <model_scale>5</model_scale> </visual>
 	</block:class>
-	
+	<block:class name="trash_can">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/trash-can-01.zip/trash-can-01/trash_can_01.dae</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<!-- Poly Haven models (glTF, Y-up) -->
+	<block:class name="cardboard_box">
+		<mass>3</mass> <ground_friction>0.4</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/cardboard_box_01.zip/cardboard_box_01/cardboard_box_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<!-- Boxes standing on a pallet (static, decorative) -->
+	<block:class name="boxes_on_pallet">
+		<intangible>true</intangible>
+		<visual> <model_uri>${MODELS}/cardboard_box_01.zip/cardboard_box_01/cardboard_box_01.gltf</model_uri> <model_roll>90.0</model_roll>
+			<model_scale>2.0</model_scale> </visual>
+	</block:class>
+	<block:class name="plastic_crate">
+		<mass>2</mass> <ground_friction>0.4</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/plastic_crate_02.zip/plastic_crate_02/plastic_crate_02.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="wooden_crate">
+		<mass>10</mass> <ground_friction>0.5</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/wooden_crate_01.zip/wooden_crate_01/wooden_crate_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="barrel">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/barrel_03.zip/barrel_03/barrel_03.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="steel_shelves">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/steel_frame_shelves_02.zip/steel_frame_shelves_02/steel_frame_shelves_02.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="tool_cart">
+		<mass>40</mass> <ground_friction>0.5</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/tool_cart.zip/tool_cart/tool_cart.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="hand_truck">
+		<mass>12</mass> <ground_friction>0.5</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/hand_truck.zip/hand_truck/hand_truck.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="storage_cart">
+		<mass>60</mass> <ground_friction>0.5</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/industrial_storage_cart.zip/industrial_storage_cart/industrial_storage_cart.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="desk">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/metal_office_desk.zip/metal_office_desk/metal_office_desk.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="stool">
+		<mass>4</mass> <ground_friction>0.4</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/metal_stool_02.zip/metal_stool_02/metal_stool_02.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="utility_box">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/utility_box_01.zip/utility_box_01/utility_box_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="potted_plant">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/potted_plant_02.zip/potted_plant_02/potted_plant_02.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<!-- Mounted on walls or hanging from the roof: decorative only -->
+	<block:class name="security_camera">
+		<intangible>true</intangible>
+		<visual> <model_uri>${MODELS}/security_camera_01.zip/security_camera_01/security_camera_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="hanging_lamp">
+		<intangible>true</intangible>
+		<visual> <model_uri>${MODELS}/hanging_industrial_lamp.zip/hanging_industrial_lamp/hanging_industrial_lamp.gltf</model_uri> <model_roll>90.0</model_roll>
+			<model_offset_z>${CEILING_HEIGHT}</model_offset_z> </visual>
+	</block:class>
+	<!-- A truck with its trailer, parked at a dock door -->
+	<block:class name="truck">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/scania-trucktrailer.zip/scania-trucktrailer/scania_trucktrailer.glb</model_uri>
+			<model_roll>90.0</model_roll> <model_scale>2.3</model_scale>
+			<model_offset_y>-7.1</model_offset_y> <model_offset_z>0.37</model_offset_z> </visual>
+	</block:class>
 
 	<!-- ======================================
 	      Object instances
 	     ====================================== -->
-	<!-- You can assign an optional custom name to each object, as an attribute to block, like name="shelf_001", etc. -->
-
-	<!-- All coordinates are global coords: 
+	<!-- All coordinates are global coords:
 	     SE(2) <init_pose>x y yaw(deg)</init_pose> or
-	     SE(3) <init_pose3d>x y z yaw(deg) pitch(deg) roll(deg)</init_pose3d> 
+	     SE(3) <init_pose3d>x y z yaw(deg) pitch(deg) roll(deg)</init_pose3d>
 	-->
-
-	<block class="shelf"> <init_pose>0 5 0</init_pose> </block>
-	<block class="shelf"> <init_pose>0 9 180</init_pose> </block>
-
-	<block class="shelf"> <init_pose>0 -5 0</init_pose> </block>
-	<block class="shelf"> <init_pose>0 -9 180</init_pose> </block>
-
-	<block class="shelf"> <init_pose>12 0 90</init_pose> </block>
-	<block class="shelf"> <init_pose>17 0 -90</init_pose> </block>
-
-	<block class="pallet_jack"> <init_pose>3 3 0</init_pose> </block>
-	<block class="pallet_jack"> <init_pose>-12.5 11.5 -10</init_pose> </block>
-	<block class="pallet_jack"> <init_pose>-11 12 80</init_pose> </block>
-
-
-<!--	<block class="my_ramp"> <init_pose>2 2 0</init_pose> </block>
-	<block class="my_ramp"> <init_pose>6 2 180</init_pose> </block> -->
-	
-<!--	<block class="my_bump"> <init_pose>4 0 90</init_pose> </block> -->
-
-	<block class="stairs"> <init_pose>-12 -11.5 -90</init_pose> </block>
-	<block class="stairs"> <init_pose> 15  11.5 90</init_pose> </block>
-
-	<block class="tote"> <init_pose>-2 3 -40</init_pose> </block>
-	<block class="tote"> <init_pose> 2 3 10</init_pose> </block>
-
-	<block class="pallet"> <init_pose>10.4 -1.1 85</init_pose> </block>
-	<block class="pallet"> <init_pose>10.3 -2.3 91</init_pose> </block>
-	<block class="pallet"> <init_pose>10.5 1.15 80</init_pose> </block>
-	<block class="pallet"> <init_pose>10.2 0.1 86</init_pose> </block>
-
-	<for var="iX" from="0" to="2">
-		<for var="iY" from="0" to="1">
-			<block class="pallet">
-				<init_pose>$f{-7.9+iX*1.3} $f{0.9*iY+2} 0</init_pose>
-			</block>
-		</for>
-	</for>
-
-
-	<block class="chair_x3"> <init_pose>-14.5 1 90</init_pose> </block>
-	<block class="chair_x3"> <init_pose>-14.5 3 90</init_pose> </block>
-
+	<!-- Racks -->
+	<block class="shelf"> <init_pose>-4.5 -10.7 0</init_pose> </block>
+	<block class="shelf"> <init_pose>-4.5 -5.4 180</init_pose> </block>
+	<block class="shelf"> <init_pose>-4.5 -3.26 0</init_pose> </block>
+	<block class="shelf"> <init_pose>-4.5 2.08 180</init_pose> </block>
+	<block class="shelf"> <init_pose>-4.5 4.22 0</init_pose> </block>
+	<!-- Hanging lamps (the ones over the high bay lights, plus a few more) -->
+	<block class="hanging_lamp"> <init_pose>-4.5 -8 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>-4.5 -0.6 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>-9 9.5 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>3 9.5 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>14 -5 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>-11 -8 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>2 -8 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>-11 -0.6 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>2 -0.6 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>14 -10 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>6.4 -6 0</init_pose> </block>
+	<block class="hanging_lamp"> <init_pose>6.4 2 0</init_pose> </block>
+	<!-- Staging area: pallets with boxes in the marked bays -->
+	<block class="pallet"> <init_pose>-12.2 8.35 90</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>-12.2 8.35 90</init_pose> </block>
+	<block class="pallet"> <init_pose>-12.2 10.05 90</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>-12.2 10.05 90</init_pose> </block>
+	<block class="pallet"> <init_pose>-10 8.35 90</init_pose> </block>
+	<block class="pallet"> <init_pose>-7.8 10.05 90</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>-7.8 10.05 90</init_pose> </block>
+	<block class="pallet"> <init_pose>-5.6 8.35 90</init_pose> </block>
+	<block class="pallet"> <init_pose>-5.6 10.05 90</init_pose> </block>
+	<block class="pallet"> <init_pose>-3.4 8.35 90</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>-3.4 8.35 90</init_pose> </block>
+	<block class="pallet"> <init_pose>-1.2 10.05 90</init_pose> </block>
+	<block class="pallet"> <init_pose>1 8.35 90</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>1 8.35 90</init_pose> </block>
+	<block class="pallet"> <init_pose>1 10.05 90</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>1 10.05 90</init_pose> </block>
+	<block class="pallet_jack"> <init_pose>4.2 8.4 180</init_pose> </block>
+	<block class="pallet_jack"> <init_pose>-14 10 80</init_pose> </block>
+	<block class="tote"> <init_pose>6.4 10.4 20</init_pose> </block>
+	<block class="tote"> <init_pose>7 9.6 -15</init_pose> </block>
+	<block class="wooden_crate"> <init_pose>7.3 8 0</init_pose> </block>
+	<block class="hand_truck"> <init_pose>9 12.4 200</init_pose> </block>
+	<!-- Loading dock -->
+	<block class="truck" name="truck"> <init_pose>25.8 -9.5 90</init_pose> </block>
+	<block class="pallet"> <init_pose>11 -11.7 0</init_pose> </block>
+	<block class="pallet"> <init_pose>13.4 -11.7 0</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>11 -11.7 0</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>13.4 -11.7 0</init_pose> </block>
+	<block class="pallet"> <init_pose>11 -10.1 0</init_pose> </block>
+	<block class="pallet"> <init_pose>13.4 -10.1 0</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>11 -10.1 0</init_pose> </block>
+	<block class="pallet"> <init_pose>11 -8.5 0</init_pose> </block>
+	<block class="pallet"> <init_pose>13.4 -8.5 0</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>11 -8.5 0</init_pose> </block>
+	<block class="boxes_on_pallet"> <init_pose>13.4 -8.5 0</init_pose> </block>
+	<block class="storage_cart"> <init_pose>10.2 1.5 0</init_pose> </block>
+	<block class="plastic_crate"> <init_pose>8.8 -1 0</init_pose> </block>
+	<block class="plastic_crate"> <init_pose>8.8 -1.5 5</init_pose> </block>
+	<block class="plastic_crate"> <init_pose>9.4 -1.2 80</init_pose> </block>
+	<block class="barrel"> <init_pose>19.4 -12.4 0</init_pose> </block>
+	<block class="barrel"> <init_pose>18.7 -12.5 0</init_pose> </block>
+	<block class="barrel"> <init_pose>19.4 1 0</init_pose> </block>
+	<block class="trash_can"> <init_pose>21.2 6 90</init_pose> </block>
+	<block class="cone"> <init_pose>17.8 -4.6 0</init_pose> </block>
+	<block class="cone"> <init_pose>17.8 -3.4 0</init_pose> </block>
+	<block class="pallet_jack"> <init_pose>16 -1 135</init_pose> </block>
+	<!-- Charging and maintenance bay -->
+	<block class="steel_shelves"> <init_pose>12.6 7.35 180</init_pose> </block>
+	<block class="steel_shelves"> <init_pose>13.3 7.35 180</init_pose> </block>
+	<block class="tool_cart"> <init_pose>14.8 3.7 0</init_pose> </block>
+	<block class="utility_box"> <init_pose>19.7 4.2 90</init_pose> </block>
+	<block class="utility_box"> <init_pose>19.7 5.9 90</init_pose> </block>
+	<block class="stool"> <init_pose>15.2 5.2 0</init_pose> </block>
+	<block class="cardboard_box"> <init_pose>12.6 3.5 10</init_pose> </block>
+	<block class="wooden_crate"> <init_pose>13.7 3.5 0</init_pose> </block>
+	<!-- Office -->
+	<block class="desk"> <init_pose>15 12.3 180</init_pose> </block>
+	<block class="desk"> <init_pose>18.6 11 90</init_pose> </block>
+	<block class="office_chair"> <init_pose>15 11.4 0</init_pose> </block>
+	<block class="office_chair"> <init_pose>17.8 11 -90</init_pose> </block>
+	<block class="chair_x3"> <init_pose>13 8.6 0</init_pose> </block>
+	<block class="potted_plant"> <init_pose>19.5 8.5 0</init_pose> </block>
+	<!-- Safety equipment and cameras -->
 	<block class="extinguisher"> <init_pose3d>-14.8 12 1.1 90 0 0</init_pose3d> </block>
-	<block class="extinguisher"> <init_pose3d> 6.5 12.9 1.1 0 0 0</init_pose3d> </block>
-	<block class="extinguisher"> <init_pose3d> 2.5 -12.9 1.1 180 0 0</init_pose3d> </block>
+	<block class="extinguisher"> <init_pose3d>6.5 12.85 1.1 0 0 0</init_pose3d> </block>
+	<block class="extinguisher"> <init_pose3d>2.5 -12.85 1.1 180 0 0</init_pose3d> </block>
+	<block class="extinguisher"> <init_pose3d>19.85 -0.5 1.1 -90 0 0</init_pose3d> </block>
+	<block class="extinguisher"> <init_pose3d>12.1 9.4 1.1 90 0 0</init_pose3d> </block>
+	<block class="security_camera"> <init_pose3d>-14.7 -12.7 5 45 0 0</init_pose3d> </block>
+	<block class="security_camera"> <init_pose3d>19.7 12.7 5 -135 0 0</init_pose3d> </block>
+	<block class="security_camera"> <init_pose3d>19.7 -12.7 5 135 0 0</init_pose3d> </block>
 
-
-	<!-- A Pallet that moves on its own on a corridor -->
-	<block class="pallet_jack"> 
+	<!-- A pallet jack that moves on its own along the staging area lane -->
+	<block class="pallet_jack">
 		<init_pose>0 0 0</init_pose>
 		<animation type="keyframes">
 			<time_pose>0.0  -9.4 12  0</time_pose>
@@ -280,7 +671,6 @@
 	</block>
 
 	<!-- A human actor moving around in the scene, demonstrating animation features -->
-
 	<actor:class name="pedestrian">
 		<walking_speed>1.4</walking_speed>
 		<running_speed>3.5</running_speed>
@@ -290,7 +680,7 @@
 		<animation_walk>HumanArmature|Man_Walk</animation_walk>
 		<animation_run>HumanArmature|Man_Run</animation_run>
 		<visual>
-			<model_uri>https://mrpt.github.io/mvsim-models/AnimatedMenCharacters.zip/FBX/Male_Shirt.fbx</model_uri>
+			<model_uri>${MODELS}/AnimatedMenCharacters.zip/FBX/Male_Shirt.fbx</model_uri>
 			<model_scale>0.0027</model_scale>
 			<model_roll>90.0</model_roll>
 			<model_yaw>90.0</model_yaw>
@@ -298,16 +688,16 @@
 	</actor:class>
 
 	<actor name="person1" class="pedestrian">
-		<init_pose>-7.8 -3.3 90</init_pose>
+		<init_pose>-12 -8 0</init_pose>
 		<path loop="true">
-			<!-- x y yaw_deg -->
-			<waypoint pause="2.0">-7.8 -3.3 -90</waypoint>
-			<waypoint pause="3.0" animation="run">-3.1 -3.2 -90</waypoint>
-			<waypoint pause="3.0">3.8 -3.3 -90</waypoint>
-			<waypoint pause="2.0" animation="run">6.7 3.6 90</waypoint>
-			<waypoint pause="3.0">1.1 -3.2 -90</waypoint>
+			<!-- x y yaw_deg: along the south aisle, the cross aisle and the middle aisle -->
+			<waypoint pause="2.0">-12 -8 0</waypoint>
+			<waypoint pause="1.0" animation="run">3 -8 0</waypoint>
+			<waypoint pause="2.0">6.3 -4 90</waypoint>
+			<waypoint pause="1.0">3 -0.6 180</waypoint>
+			<waypoint pause="2.0" animation="run">-12 -0.6 180</waypoint>
+			<waypoint pause="1.0">-14.2 -4 -90</waypoint>
 		</path>
 	</actor>
-
 
 </mvsim_world>

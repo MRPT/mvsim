@@ -107,6 +107,8 @@ class VerticalPlane : public WorldElementBase
 	std::string textureFileName_;
 	double textureSizeX_ = 1.0;
 	double textureSizeY_ = 1.0;
+	/** Optional normal map for the texture (OpenGL convention: green = up) */
+	std::string normalMapFileName_;
 
 	float z_ = .0f, height_ = 3.0f;
 	std::string cull_faces_ = "NONE";

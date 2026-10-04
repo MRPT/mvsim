@@ -26,6 +26,7 @@
 		<!--<cull_face>BACK</cull_face>-->
 		<x_min>-100</x_min><y_min>$f{LANE_WIDTH*(-0.5-0.25)}</y_min><x_max>100</x_max><y_max>$f{LANE_WIDTH*(0.5-0.25)}</y_max> <z>0.01</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneSolidLineRoadClean01_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneSolidLineRoadClean01_1K_NormalGL.png</normal_map>
 		<texture_size_x>$f{2*LANE_WIDTH}</texture_size_x>
 		<texture_size_y>$f{LANE_WIDTH}</texture_size_y>
 	</element>
@@ -33,6 +34,7 @@
 	<element class="horizontal_plane">
 		<x_min>-100</x_min><y_min>-100</y_min><x_max>100</x_max><y_max>100</y_max> <z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt01_512_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt01_512_NormalGL.png</normal_map>
 		<texture_size_x>1.5</texture_size_x>
 		<texture_size_y>1.5</texture_size_y>
 	</element>

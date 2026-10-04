@@ -20,21 +20,52 @@
 std::shared_ptr<mvsim::Server> server;
 #endif
 
-void commonLaunchServer()
+unsigned int commonLaunchServer()
 {
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	ASSERT_(!server);
 
-	// Start network server:
-	server = std::make_shared<mvsim::Server>();
+	const bool portFromCli = cli->cmd["--port"]->count() > 0;
+	const bool portIsForced = portFromCli || mvsim::serverPortFromEnvironment().has_value();
+	const unsigned int firstPort = portFromCli ? cli->argPort : mvsim::defaultServerPort();
+	const unsigned int numCandidates =
+		portIsForced ? 1 : mvsim::MVSIM_PORTNO_MAIN_REP_NUM_CANDIDATES;
 
-	if (cli->cmd["--port"]->count() > 0) server->listenningPort(cli->argPort);
+	// Start network server, looking for a free port if allowed:
+	for (unsigned int i = 0; i < numCandidates; i++)
+	{
+		auto s = std::make_shared<mvsim::Server>();
+		s->listenningPort(firstPort + i);
+		s->setMinLoggingLevel(
+			mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(cli->argVerbosity));
 
-	server->setMinLoggingLevel(
-		mrpt::typemeta::TEnumType<mrpt::system::VerbosityLevel>::name2value(cli->argVerbosity));
+		try
+		{
+			s->start();
+		}
+		catch (const std::exception&)
+		{
+			if (i + 1 == numCandidates)
+			{
+				throw;
+			}
+			continue;
+		}
 
-	server->start();
+		server = s;
+		if (i > 0)
+		{
+			std::cerr << "WARNING: TCP port " << firstPort
+					  << " is in use by another process, listening at port " << firstPort + i
+					  << " instead.\nSet the environment variable MVSIM_SERVER_PORT="
+					  << firstPort + i
+					  << " (or use --port) for other MVSim tools and clients to find this "
+						 "server.\n";
+		}
+		return firstPort + i;
+	}
 #endif
+	return 0;
 }
 
 int launchStandAloneServer()
@@ -55,6 +86,14 @@ Available options:
 	}
 #endif
 
-	commonLaunchServer();
+	try
+	{
+		commonLaunchServer();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Error: " << e.what() << std::endl;
+		return 1;
+	}
 	return 0;
 }

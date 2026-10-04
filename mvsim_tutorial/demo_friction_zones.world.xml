@@ -49,6 +49,7 @@
 		<y_max>25</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_NormalGL.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -97,6 +98,7 @@
 		<y_max>2</y_max>
 		<z>0.01</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WhiteGravel02_512_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WhiteGravel02_512_NormalGL.png</normal_map>
 		<texture_size_x>1.0</texture_size_x>
 		<texture_size_y>1.0</texture_size_y>
 	</element>

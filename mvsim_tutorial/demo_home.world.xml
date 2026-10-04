@@ -1,0 +1,611 @@
+<mvsim_world version="1.0">
+	<!--
+	  A single-storey home (12 x 9 m) with a living room, a kitchen with dining
+	  area, a hallway, a bedroom and a bathroom. There are two loops: living
+	  room, kitchen and hallway; and hallway, bedroom and bathroom.
+
+	  Floor plan (x to the right, y up, meters):
+
+	   y=9 +===========+==+========+
+	       |  Kitchen  |  |  Bath  |
+	   y=6 |           D  D=D======+
+	   y=5 +=======D===+  |        |
+	       |  Living   D  D Bedroom|
+	       |           |  |        |
+	   y=0 +===========+DD+========+
+	      x=0         x=6 x=8     x=12
+
+	  Textures and furniture models: Poly Haven (CC0), cgbookcase (CC0) and
+	  Gazebo models; see the license files in the mvsim-models repository.
+	-->
+
+	<!-- General simulation options -->
+	<simul_timestep>0</simul_timestep>
+	<joystick_enabled>true</joystick_enabled>
+	<save_to_rawlog>$env{MVSIM_SAVE_RAWLOG_FILENAME|}</save_to_rawlog>
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>17</cam_distance>
+		<cam_azimuth>-105</cam_azimuth>
+		<cam_elevation>50</cam_elevation>
+		<cam_point_to>5 3 0</cam_point_to>
+		<fov_deg>60</fov_deg>
+		<refresh_fps>40</refresh_fps>
+		<show_sensor_previews>false</show_sensor_previews>
+	</gui>
+
+	<!-- Light parameters -->
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<!-- Sun: the ceiling blocks it, so it only enters through windows -->
+		<light_azimuth_deg>-60.0</light_azimuth_deg>
+		<light_elevation_deg>40.0</light_elevation_deg>
+		<light_ambient>0.45</light_ambient>
+		<ambient_ground_color>#a8a090</ambient_ground_color>
+
+		<!-- Ceiling lamps (warm white). These do not cast shadows, so their
+		     reach is kept to about one room. -->
+		<point_light> <!-- Living room -->
+			<position>3.0 2.5 2.45</position> <color>#ffe2b8</color>
+			<diffuse>0.9</diffuse> <specular>0.3</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.15</attenuation_linear>
+			<attenuation_quadratic>0.12</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- Kitchen -->
+			<position>4.2 7.6 2.45</position> <color>#fff1dc</color>
+			<diffuse>0.9</diffuse> <specular>0.4</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.15</attenuation_linear>
+			<attenuation_quadratic>0.15</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- Hallway -->
+			<position>7.0 4.5 2.45</position> <color>#ffe2b8</color>
+			<diffuse>0.7</diffuse> <specular>0.2</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.2</attenuation_linear>
+			<attenuation_quadratic>0.25</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- Bedroom -->
+			<position>10.0 3.0 2.45</position> <color>#ffd9a8</color>
+			<diffuse>0.8</diffuse> <specular>0.2</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.15</attenuation_linear>
+			<attenuation_quadratic>0.15</attenuation_quadratic>
+		</point_light>
+		<point_light> <!-- Bathroom -->
+			<position>10.0 7.5 2.45</position> <color>#f4f8ff</color>
+			<diffuse>0.9</diffuse> <specular>0.5</specular>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.2</attenuation_linear>
+			<attenuation_quadratic>0.25</attenuation_quadratic>
+		</point_light>
+		<spot_light> <!-- Pendant lamp over the dining table -->
+			<position>2.4 6.3 2.0</position> <direction>0 0 -1</direction>
+			<color>#ffd29a</color> <diffuse>1.0</diffuse> <specular>0.4</specular>
+			<inner_cutoff_deg>30</inner_cutoff_deg> <outer_cutoff_deg>50</outer_cutoff_deg>
+			<attenuation_constant>1.0</attenuation_constant>
+			<attenuation_linear>0.1</attenuation_linear>
+			<attenuation_quadratic>0.1</attenuation_quadratic>
+		</spot_light>
+	</lights>
+
+	<variable name="PH" value="https://mrpt.github.io/mvsim-models/textures-polyhaven"></variable>
+	<variable name="CGB" value="https://mrpt.github.io/mvsim-models/textures-cgbookcase"></variable>
+	<variable name="MODELS" value="https://mrpt.github.io/mvsim-models"></variable>
+	<variable name="KENNEY" value="https://mrpt.github.io/mvsim-models/kenney_furniture_kit.zip/kenney_furniture_kit"></variable>
+	<variable name="WALL_H" value="2.6"></variable>
+	<variable name="EXT_WALL_T" value="0.25"></variable>
+	<variable name="INT_WALL_T" value="0.12"></variable>
+
+	<!-- Sky -->
+	<element class="skybox">
+		<textures>${MODELS}/skyboxes/TropicalSunnyDay.zip/TropicalSunnyDay/TropicalSunnyDay%s.jpg</textures>
+	</element>
+
+	<!-- ========================
+	       Ground and floors
+	     ======================== -->
+	<!-- Garden around the house -->
+	<element class="horizontal_plane">
+		<x_min>-60</x_min> <y_min>-60</y_min>
+		<x_max>72</x_max> <y_max>69</y_max>
+		<z>-0.005</z>
+		<texture>${CGB}/Grass01_1K_BaseColor.png</texture>
+		<normal_map>${CGB}/Grass01_1K_NormalGL.png</normal_map>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
+	</element>
+
+	<!-- Living room -->
+	<element class="horizontal_plane">
+		<x_min>0</x_min> <y_min>0</y_min>
+		<x_max>6</x_max> <y_max>5</y_max>
+		<texture>${PH}/herringbone_parquet_diff_1k.jpg</texture>
+		<normal_map>${PH}/herringbone_parquet_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.4</texture_size_x>
+		<texture_size_y>3.4</texture_size_y>
+	</element>
+
+	<!-- Kitchen and dining area -->
+	<element class="horizontal_plane">
+		<x_min>0</x_min> <y_min>5</y_min>
+		<x_max>6</x_max> <y_max>9</y_max>
+		<texture>${PH}/large_grey_tiles_diff_1k.jpg</texture>
+		<normal_map>${PH}/large_grey_tiles_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.0</texture_size_x>
+		<texture_size_y>3.0</texture_size_y>
+	</element>
+
+	<!-- Hallway -->
+	<element class="horizontal_plane">
+		<x_min>6</x_min> <y_min>0</y_min>
+		<x_max>8</x_max> <y_max>9</y_max>
+		<texture>${PH}/rectangular_parquet_diff_1k.jpg</texture>
+		<normal_map>${PH}/rectangular_parquet_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.25</texture_size_x>
+		<texture_size_y>2.25</texture_size_y>
+	</element>
+
+	<!-- Bedroom -->
+	<element class="horizontal_plane">
+		<x_min>8</x_min> <y_min>0</y_min>
+		<x_max>12</x_max> <y_max>6</y_max>
+		<texture>${PH}/laminate_floor_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/laminate_floor_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.7</texture_size_x>
+		<texture_size_y>1.7</texture_size_y>
+	</element>
+
+	<!-- Bathroom -->
+	<element class="horizontal_plane">
+		<x_min>8</x_min> <y_min>6</y_min>
+		<x_max>12</x_max> <y_max>9</y_max>
+		<texture>${PH}/marble_tiles_diff_1k.jpg</texture>
+		<normal_map>${PH}/marble_tiles_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- Ceiling: culled from above, so the GUI camera sees into the rooms,
+	     while it still blocks the sun and is seen by cameras inside the house -->
+	<element class="horizontal_plane">
+		<x_min>0</x_min> <y_min>0</y_min>
+		<x_max>12</x_max> <y_max>9</y_max>
+		<z>${WALL_H}</z>
+		<cull_face>FRONT</cull_face>
+		<texture>${PH}/white_plaster_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/white_plaster_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.0</texture_size_x>
+		<texture_size_y>1.0</texture_size_y>
+	</element>
+
+	<!-- ========================
+	       Exterior walls
+	     ======================== -->
+	<!-- South facade, with the front door into the hallway -->
+	<element class="vertical_plane">
+		<x0>0</x0> <y0>0</y0> <x1>12</x1> <y1>0</y1>
+		<height>${WALL_H}</height> <thickness>${EXT_WALL_T}</thickness>
+		<texture>${PH}/painted_plaster_wall_diff_1k.jpg</texture>
+		<normal_map>${PH}/painted_plaster_wall_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
+		<window> <position>0.25</position> <width>1.6</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
+		<door> <position>0.5833</position> <width>1.0</width> <z_min>0.0</z_min> <z_max>2.1</z_max> <name>front_door</name> </door>
+		<window> <position>0.8333</position> <width>1.4</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
+	</element>
+
+	<!-- East facade -->
+	<element class="vertical_plane">
+		<x0>12</x0> <y0>0</y0> <x1>12</x1> <y1>9</y1>
+		<height>${WALL_H}</height> <thickness>${EXT_WALL_T}</thickness>
+		<texture>${PH}/painted_plaster_wall_diff_1k.jpg</texture>
+		<normal_map>${PH}/painted_plaster_wall_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
+		<window> <position>0.3333</position> <width>1.4</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
+		<window> <position>0.8333</position> <width>0.8</width> <z_min>1.4</z_min> <z_max>2.1</z_max> </window>
+	</element>
+
+	<!-- North facade -->
+	<element class="vertical_plane">
+		<x0>12</x0> <y0>9</y0> <x1>0</x1> <y1>9</y1>
+		<height>${WALL_H}</height> <thickness>${EXT_WALL_T}</thickness>
+		<texture>${PH}/painted_plaster_wall_diff_1k.jpg</texture>
+		<normal_map>${PH}/painted_plaster_wall_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
+		<window> <position>0.75</position> <width>1.6</width> <z_min>1.1</z_min> <z_max>2.2</z_max> </window>
+	</element>
+
+	<!-- West facade -->
+	<element class="vertical_plane">
+		<x0>0</x0> <y0>9</y0> <x1>0</x1> <y1>0</y1>
+		<height>${WALL_H}</height> <thickness>${EXT_WALL_T}</thickness>
+		<texture>${PH}/painted_plaster_wall_diff_1k.jpg</texture>
+		<normal_map>${PH}/painted_plaster_wall_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
+		<window> <position>0.2222</position> <width>1.4</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
+		<window> <position>0.7222</position> <width>2.0</width> <z_min>0.6</z_min> <z_max>2.2</z_max> </window>
+	</element>
+
+	<!-- ========================
+	       Interior walls
+	     ======================== -->
+	<!-- Living room / kitchen -->
+	<element class="vertical_plane">
+		<x0>0</x0> <y0>5</y0> <x1>6</x1> <y1>5</y1>
+		<height>${WALL_H}</height> <thickness>${INT_WALL_T}</thickness>
+		<texture>${PH}/white_plaster_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/white_plaster_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.0</texture_size_x> <texture_size_y>1.0</texture_size_y>
+		<door> <position>0.75</position> <width>1.2</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+	</element>
+
+	<!-- Living room / hallway -->
+	<element class="vertical_plane">
+		<x0>6</x0> <y0>0</y0> <x1>6</x1> <y1>5</y1>
+		<height>${WALL_H}</height> <thickness>${INT_WALL_T}</thickness>
+		<texture>${PH}/white_plaster_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/white_plaster_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.0</texture_size_x> <texture_size_y>1.0</texture_size_y>
+		<door> <position>0.7</position> <width>1.0</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+	</element>
+
+	<!-- Kitchen / hallway -->
+	<element class="vertical_plane">
+		<x0>6</x0> <y0>5</y0> <x1>6</x1> <y1>9</y1>
+		<height>${WALL_H}</height> <thickness>${INT_WALL_T}</thickness>
+		<texture>${PH}/white_plaster_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/white_plaster_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.0</texture_size_x> <texture_size_y>1.0</texture_size_y>
+		<door> <position>0.375</position> <width>1.0</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+	</element>
+
+	<!-- Hallway / bedroom -->
+	<element class="vertical_plane">
+		<x0>8</x0> <y0>0</y0> <x1>8</x1> <y1>6</y1>
+		<height>${WALL_H}</height> <thickness>${INT_WALL_T}</thickness>
+		<texture>${PH}/beige_wall_001_diff_1k.jpg</texture>
+		<normal_map>${PH}/beige_wall_001_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.0</texture_size_x> <texture_size_y>3.0</texture_size_y>
+		<door> <position>0.75</position> <width>0.9</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+	</element>
+
+	<!-- Hallway / bathroom -->
+	<element class="vertical_plane">
+		<x0>8</x0> <y0>6</y0> <x1>8</x1> <y1>9</y1>
+		<height>${WALL_H}</height> <thickness>${INT_WALL_T}</thickness>
+		<texture>${PH}/white_plaster_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/white_plaster_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.0</texture_size_x> <texture_size_y>1.0</texture_size_y>
+		<door> <position>0.3333</position> <width>0.8</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+	</element>
+
+	<!-- Bedroom / bathroom -->
+	<element class="vertical_plane">
+		<x0>8</x0> <y0>6</y0> <x1>12</x1> <y1>6</y1>
+		<height>${WALL_H}</height> <thickness>${INT_WALL_T}</thickness>
+		<texture>${PH}/beige_wall_001_diff_1k.jpg</texture>
+		<normal_map>${PH}/beige_wall_001_nor_gl_1k.png</normal_map>
+		<texture_size_x>3.0</texture_size_x> <texture_size_y>3.0</texture_size_y>
+		<door> <position>0.1375</position> <width>0.7</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+	</element>
+
+	<!-- Bathroom wall tiles (2 m high), just inside the bathroom walls -->
+	<element class="vertical_plane">
+		<x0>8.07</x0> <y0>6.07</y0> <x1>8.07</x1> <y1>8.87</y1>
+		<height>2.0</height> <thickness>0.01</thickness>
+		<texture>${PH}/long_white_tiles_diff_1k.jpg</texture>
+		<normal_map>${PH}/long_white_tiles_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.27</texture_size_x> <texture_size_y>1.27</texture_size_y>
+		<door> <position>0.3321</position> <width>0.8</width> <z_min>0.0</z_min> <z_max>2.0</z_max> </door>
+	</element>
+	<element class="vertical_plane">
+		<x0>8.07</x0> <y0>8.87</y0> <x1>11.87</x1> <y1>8.87</y1>
+		<height>2.0</height> <thickness>0.01</thickness>
+		<texture>${PH}/long_white_tiles_diff_1k.jpg</texture>
+		<normal_map>${PH}/long_white_tiles_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.27</texture_size_x> <texture_size_y>1.27</texture_size_y>
+	</element>
+	<element class="vertical_plane">
+		<x0>11.87</x0> <y0>8.87</y0> <x1>11.87</x1> <y1>6.07</y1>
+		<height>2.0</height> <thickness>0.01</thickness>
+		<texture>${PH}/long_white_tiles_diff_1k.jpg</texture>
+		<normal_map>${PH}/long_white_tiles_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.27</texture_size_x> <texture_size_y>1.27</texture_size_y>
+		<window> <position>0.4964</position> <width>0.8</width> <z_min>1.4</z_min> <z_max>2.0</z_max> </window>
+	</element>
+	<element class="vertical_plane">
+		<x0>11.87</x0> <y0>6.07</y0> <x1>8.07</x1> <y1>6.07</y1>
+		<height>2.0</height> <thickness>0.01</thickness>
+		<texture>${PH}/long_white_tiles_diff_1k.jpg</texture>
+		<normal_map>${PH}/long_white_tiles_nor_gl_1k.png</normal_map>
+		<texture_size_x>1.27</texture_size_x> <texture_size_y>1.27</texture_size_y>
+		<door> <position>0.8737</position> <width>0.7</width> <z_min>0.0</z_min> <z_max>2.0</z_max> </door>
+	</element>
+
+	<!-- Living room rug -->
+	<element class="horizontal_plane">
+		<x_min>1.5</x_min> <y_min>1.25</y_min>
+		<x_max>3.7</x_max> <y_max>2.75</y_max>
+		<z>0.006</z>
+		<texture>${PH}/fabric_pattern_07_col_1_1k.jpg</texture>
+		<normal_map>${PH}/fabric_pattern_07_nor_gl_1k.png</normal_map>
+		<texture_size_x>0.55</texture_size_x>
+		<texture_size_y>0.55</texture_size_y>
+	</element>
+
+	<!-- ========================
+	       Garden
+	     ======================== -->
+	<!-- Path to the front door -->
+	<element class="horizontal_plane">
+		<x_min>6.4</x_min> <y_min>-6.0</y_min>
+		<x_max>7.6</x_max> <y_max>-0.12</y_max>
+		<z>0.003</z>
+		<texture>${PH}/concrete_pavers_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/concrete_pavers_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+	<!-- Terrace -->
+	<element class="horizontal_plane">
+		<x_min>0.4</x_min> <y_min>-3.2</y_min>
+		<x_max>5.6</x_max> <y_max>-0.12</y_max>
+		<z>0.003</z>
+		<texture>${PH}/concrete_pavers_02_diff_1k.jpg</texture>
+		<normal_map>${PH}/concrete_pavers_02_nor_gl_1k.png</normal_map>
+		<texture_size_x>2.0</texture_size_x>
+		<texture_size_y>2.0</texture_size_y>
+	</element>
+
+	<!-- ========================
+	       Furniture classes
+	     ======================== -->
+	<!-- Poly Haven models (glTF, Y-up) -->
+	<block:class name="sofa">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/sofa_02.zip/sofa_02/sofa_02.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="coffee_table">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/modern_coffee_table_01.zip/modern_coffee_table_01/modern_coffee_table_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="armchair">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/modern_arm_chair_01.zip/modern_arm_chair_01/modern_arm_chair_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="bookshelf">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/wooden_bookshelf_worn.zip/wooden_bookshelf_worn/wooden_bookshelf_worn.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="potted_plant">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/potted_plant_02.zip/potted_plant_02/potted_plant_02.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="side_table">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/side_table_01.zip/side_table_01/side_table_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="tv_stand">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/modern_wooden_cabinet.zip/modern_wooden_cabinet/modern_wooden_cabinet.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="dining_table">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/dining_table.zip/dining_table/dining_table.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="dining_chair">
+		<mass>5</mass> <ground_friction>0.5</ground_friction> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/dining_chair_02.zip/dining_chair_02/dining_chair_02.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="nightstand">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/ClassicNightstand_01.zip/ClassicNightstand_01/ClassicNightstand_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="wardrobe">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/drawer_cabinet.zip/drawer_cabinet/drawer_cabinet.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="microwave">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/vintage_microwave.zip/vintage_microwave/vintage_microwave.gltf</model_uri> <model_roll>90.0</model_roll> <model_scale>0.45</model_scale> <model_offset_z>0.9</model_offset_z> </visual>
+	</block:class>
+	<block:class name="outdoor_table_set">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/outdoor_table_chair_set_01.zip/outdoor_table_chair_set_01/outdoor_table_chair_set_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="planter_box">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/planter_box_01.zip/planter_box_01/planter_box_01.gltf</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<!-- Hanging from the ceiling -->
+	<block:class name="ceiling_lamp">
+		<intangible>true</intangible>
+		<visual> <model_uri>${MODELS}/modern_ceiling_lamp_01.zip/modern_ceiling_lamp_01/modern_ceiling_lamp_01.gltf</model_uri> <model_roll>90.0</model_roll> <model_offset_z>1.43</model_offset_z> </visual>
+	</block:class>
+	<!-- Kenney Furniture Kit models (glTF, Y-up, about half real size, corner at the origin) -->
+	<block:class name="kitchen_cabinet">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/kitchenCabinet.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.43</model_offset_x> <model_offset_y>-0.45</model_offset_y> </visual>
+	</block:class>
+	<block:class name="kitchen_drawers">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/kitchenCabinetDrawer.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.43</model_offset_x> <model_offset_y>-0.45</model_offset_y> </visual>
+	</block:class>
+	<block:class name="kitchen_sink">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/kitchenSink.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.43</model_offset_x> <model_offset_y>-0.45</model_offset_y> </visual>
+	</block:class>
+	<block:class name="kitchen_stove">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/kitchenStoveElectric.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.43</model_offset_x> <model_offset_y>-0.45</model_offset_y> </visual>
+	</block:class>
+	<block:class name="fridge">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/kitchenFridgeLarge.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.52</model_offset_x> <model_offset_y>-0.278</model_offset_y> </visual>
+	</block:class>
+	<block:class name="wall_cabinet">
+		<intangible>true</intangible>
+		<visual> <model_uri>${KENNEY}/kitchenCabinetUpper.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.43</model_offset_x> <model_offset_y>-0.2</model_offset_y> <model_offset_z>1.45</model_offset_z> </visual>
+	</block:class>
+	<block:class name="coffee_machine">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/kitchenCoffeeMachine.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.19</model_offset_x> <model_offset_y>-0.24</model_offset_y> <model_offset_z>0.9</model_offset_z> </visual>
+	</block:class>
+	<block:class name="tv">
+		<intangible>true</intangible>
+		<visual> <model_uri>${KENNEY}/televisionModern.glb</model_uri> <model_scale>1.6</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>0.0</model_offset_x> <model_offset_y>0.0</model_offset_y> <model_offset_z>0.68</model_offset_z> </visual>
+	</block:class>
+	<block:class name="floor_lamp">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/lampRoundFloor.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.12</model_offset_x> <model_offset_y>-0.12</model_offset_y> </visual>
+	</block:class>
+	<block:class name="toilet">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/toilet.glb</model_uri> <model_scale>1.8</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.281</model_offset_x> <model_offset_y>0.429</model_offset_y> </visual>
+	</block:class>
+	<block:class name="washbasin">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/bathroomSinkSquare.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.43</model_offset_x> <model_offset_y>-0.6</model_offset_y> <model_offset_z>-0.114</model_offset_z> </visual>
+	</block:class>
+	<block:class name="bathroom_mirror">
+		<intangible>true</intangible>
+		<visual> <model_uri>${KENNEY}/bathroomMirror.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.301</model_offset_x> <model_offset_y>0.047</model_offset_y> <model_offset_z>1.1</model_offset_z> </visual>
+	</block:class>
+	<block:class name="washer">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${KENNEY}/washer.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.39</model_offset_x> <model_offset_y>-0.31</model_offset_y> </visual>
+	</block:class>
+	<block:class name="doormat">
+		<intangible>true</intangible>
+		<visual> <model_uri>${KENNEY}/rugDoormat.glb</model_uri> <model_scale>2.0</model_scale> <model_roll>90.0</model_roll>
+			<model_offset_x>-0.429</model_offset_x> <model_offset_y>-0.237</model_offset_y> </visual>
+	</block:class>
+	<!-- Gazebo models -->
+	<block:class name="bed">
+		<static>true</static> <shape_from_visual/>
+		<!-- This mesh is Z-up and scaled down -->
+		<visual> <model_uri>${MODELS}/Bed.zip/Bed/bed.dae</model_uri> <model_scale>13.8</model_scale> </visual>
+	</block:class>
+	<block:class name="bathtub">
+		<static>true</static> <shape_from_visual/>
+		<visual> <model_uri>${MODELS}/Bathtub.zip/Bathtub/bathtub.dae</model_uri> <model_roll>90.0</model_roll> </visual>
+	</block:class>
+	<block:class name="oak_tree">
+		<static>true</static> <shape_from_visual/>
+		<zmin>0.0</zmin> <zmax>0.5</zmax>
+		<visual>
+			<model_uri>${MODELS}/OakTree.zip/OakTree/Oak_tree_2.dae</model_uri>
+		</visual>
+	</block:class>
+
+	<!-- ========================
+	       Furniture
+	     ======================== -->
+	<!-- Living room -->
+	<block class="sofa"> <init_pose>2.6 0.65 180</init_pose> </block>
+	<block class="coffee_table"> <init_pose>2.6 2.0 90</init_pose> </block>
+	<block class="armchair"> <init_pose>4.7 2.0 90</init_pose> </block>
+	<block class="side_table"> <init_pose>1.2 0.5 0</init_pose> </block>
+	<block class="floor_lamp"> <init_pose>0.4 0.4 0</init_pose> </block>
+	<block class="bookshelf"> <init_pose>0.45 3.0 -90</init_pose> </block>
+	<block class="potted_plant"> <init_pose>5.45 0.5 0</init_pose> </block>
+	<block class="tv_stand"> <init_pose>2.6 4.67 0</init_pose> </block>
+	<block class="tv"> <init_pose>2.6 4.72 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>3.0 2.5 0</init_pose> </block>
+
+	<!-- Kitchen: counters along the north wall, sink under the window -->
+	<block class="kitchen_drawers"> <init_pose>0.555 8.425 0</init_pose> </block>
+	<block class="coffee_machine"> <init_pose>0.555 8.55 0</init_pose> </block>
+	<block class="kitchen_stove"> <init_pose>1.415 8.425 0</init_pose> </block>
+	<block class="kitchen_cabinet"> <init_pose>2.275 8.425 0</init_pose> </block>
+	<block class="microwave"> <init_pose>2.275 8.6 0</init_pose> </block>
+	<block class="kitchen_sink"> <init_pose>3.135 8.425 0</init_pose> </block>
+	<block class="kitchen_drawers"> <init_pose>3.995 8.425 0</init_pose> </block>
+	<block class="fridge"> <init_pose>4.97 8.47 0</init_pose> </block>
+	<block class="wall_cabinet"> <init_pose>0.555 8.655 0</init_pose> </block>
+	<block class="wall_cabinet"> <init_pose>1.415 8.655 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>4.2 7.6 0</init_pose> </block>
+
+	<!-- Dining area -->
+	<block class="dining_table"> <init_pose>2.4 6.3 0</init_pose> </block>
+	<block class="dining_chair"> <init_pose>1.8 5.55 0</init_pose> </block>
+	<block class="dining_chair"> <init_pose>3.0 5.55 0</init_pose> </block>
+	<block class="dining_chair"> <init_pose>1.8 7.05 180</init_pose> </block>
+	<block class="dining_chair"> <init_pose>3.0 7.05 180</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>2.4 6.3 0</init_pose> </block>
+
+	<!-- Hallway -->
+	<block class="doormat"> <init_pose>7.0 0.45 0</init_pose> </block>
+	<block class="potted_plant"> <init_pose>7.45 8.45 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>7.0 4.5 0</init_pose> </block>
+
+	<!-- Bedroom -->
+	<block class="bed"> <init_pose>10.65 4.9 90</init_pose> </block>
+	<block class="nightstand"> <init_pose>9.45 5.65 180</init_pose> </block>
+	<block class="wardrobe"> <init_pose>11.25 0.4 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>10.0 3.0 0</init_pose> </block>
+
+	<!-- Bathroom -->
+	<block class="bathtub"> <init_pose>10.9 8.3 0</init_pose> </block>
+	<block class="washbasin"> <init_pose>9.6 6.37 180</init_pose> </block>
+	<block class="bathroom_mirror"> <init_pose>9.6 6.1 180</init_pose> </block>
+	<block class="toilet"> <init_pose>10.7 6.5 180</init_pose> </block>
+	<block class="washer"> <init_pose>8.5 8.45 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>10.0 7.5 0</init_pose> </block>
+
+	<!-- Garden -->
+	<block class="outdoor_table_set"> <init_pose>2.8 -1.7 90</init_pose> </block>
+	<block class="planter_box"> <init_pose>9.0 -0.45 0</init_pose> </block>
+	<block class="planter_box"> <init_pose>10.5 -0.45 0</init_pose> </block>
+	<!-- A single tree: each one adds about 1.7 ms to every sensor render -->
+	<block class="oak_tree"> <init_pose>-4.0 -3.5 0</init_pose> </block>
+
+	<!-- ========================
+	       Robot
+	     ======================== -->
+	<!-- A Jackal robot (0.51 x 0.43 m, fits through all doors) with a 3D lidar,
+	     an RGB-D camera and an IMU -->
+	<include file="../definitions/jackal.vehicle.xml"
+		default_sensors="false"
+	/>
+	<vehicle name="r1" class="jackal">
+		<init_pose>4.0 3.4 180</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
+
+		<!-- Sensor tower: the RGB-D camera on the deck, and the 3D lidar on top of
+		     it, so the camera does not occlude the lidar -->
+		<include file="../definitions/velodyne-vlp16.sensor.xml"
+			sensor_x="0.10" sensor_z="0.40"
+			sensor_name="lidar1"
+			sensor_std_noise="0.005"
+			max_range="30.0"
+		/>
+		<include file="../definitions/rgbd_camera.sensor.xml"
+			sensor_x="0.10" sensor_z="0.30"
+			sensor_name="camera1"
+			sensor_period_sec="0.10"
+			show_3d_pointcloud="false"
+		/>
+		<include file="../definitions/imu.sensor.xml"
+			sensor_x="0.0" sensor_z="0.20"
+			sensor_period_sec="$f{1/100.0}"
+		/>
+	</vehicle>
+</mvsim_world>

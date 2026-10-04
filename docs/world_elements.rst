@@ -93,6 +93,7 @@ ground floor or ceiling. Supports textures, collision detection, and shadow rend
 * **<z>** - Height of the plane (world units)
 * **<cull_face>** - Face culling mode: NONE, FRONT, or BACK
 * **<texture>** - Optional texture image path (local or remote URL)
+* **<normal_map>** - Optional normal map for the texture (OpenGL convention: green points to the image top)
 * **<texture_size_x>, <texture_size_y>** - Texture tiling size in world units
 
 -------
@@ -130,6 +131,7 @@ for perimeter walls, barriers, and indoor partitions.
 * **<height>** - Wall height above the base
 * **<cull_face>** - Face culling mode: NONE, FRONT, or BACK
 * **<texture>** - Optional texture image path
+* **<normal_map>** - Optional normal map for the texture (OpenGL convention: green points to the image top)
 * **<texture_size_x>, <texture_size_y>** - Texture tiling size
 
 -------
@@ -159,7 +161,6 @@ lighter pixels represent higher elevations and darker pixels represent lower ele
        <corner_min_y>-2</corner_min_y>
        <texture_extension_x>8.0</texture_extension_x>
        <texture_extension_y>4.0</texture_extension_y>
-       <model_split_size>3.0</model_split_size>
    </element>
 
 **Subtags:**
@@ -169,12 +170,12 @@ lighter pixels represent higher elevations and darker pixels represent lower ele
 * **<elevation_image_min_z>** - Minimum height in world units (darkest pixels)
 * **<elevation_image_max_z>** - Maximum height in world units (lightest pixels)
 * **<texture_image>** - Path to texture image for the elevation mesh
+* **<normal_map_image>** - Optional normal map for the texture image (rotated together with it)
 * **<mesh_color>** - Mesh color in HEX RGB format (e.g., #FF0000)
 * **<resolution>** - Mesh XY resolution/scale in world units
 * **<corner_min_x>, <corner_min_y>** - World coordinates of the map corner
 * **<texture_extension_x>, <texture_extension_y>** - Texture size in world units (0=auto)
-* **<texture_image_rotate>** - Rotation angle for texture in degrees
-* **<model_split_size>** - Split mesh into smaller chunks for correct rendering of transparent objects
+* **<texture_image_rotate>** - Rotation angle for texture in degrees: 0, 90, -90 or 180 (clockwise for positive values)
 
 .. warning::
    Do not use both **<texture_image>** and **<mesh_color>** simultaneously. Choose one method

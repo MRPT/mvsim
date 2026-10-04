@@ -32,6 +32,7 @@ class HorizontalPlane : public WorldElementBase
 	void simul_post_timestep(const TSimulContext& context) override;
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
+	std::optional<mrpt::math::TBoundingBox> elevationBoundingBox() const override;
 
 	/** Read-only access to the plane's finite extent, for exact
 	 * (non-visual) consumers such as the offline ray tracer. */
@@ -54,9 +55,20 @@ class HorizontalPlane : public WorldElementBase
 	std::string textureFileName_;
 	double textureSizeX_ = 1.0;
 	double textureSizeY_ = 1.0;
+	/** Optional normal map for the texture (OpenGL convention: green = up) */
+	std::string normalMapFileName_;
 
 	float z_ = .0f;
 	std::string cull_faces_ = "NONE";
+
+	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
+
+	/** The plane pose and the world z of the plane, kept up to date with the
+	 * object pose so elevation queries do not recompute them. */
+	mrpt::poses::CPose3D cachedPose_;
+	float cachedWorldZ_ = .0f;
+	mutable std::shared_mutex cacheMtx_;
+	void updateCachedPose(const mrpt::math::TPose3D& pose);
 
 	mrpt::viz::CTexturedPlane::Ptr gl_plane_;
 	mrpt::viz::CSetOfTexturedTriangles::Ptr gl_plane_text_;

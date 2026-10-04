@@ -53,6 +53,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <shared_mutex>
 #include <unordered_map>
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
@@ -459,6 +460,9 @@ class World : public mrpt::system::COutputLogger
 
 	bool sensor_has_to_create_egl_context();
 
+	/** Number of shadow map cascades used while rendering camera sensors. */
+	int sensor_shadow_cascades() const { return lightOptions_.sensor_shadow_cascades; }
+
 	const std::map<std::string, std::string>& user_defined_variables() const
 	{
 		return userDefinedVariables_;
@@ -484,6 +488,10 @@ class World : public mrpt::system::COutputLogger
 	/// with query points the center of a wheel, this returns the highest "ground" under it, or .0
 	/// if nothing found.
 	float getHighestElevationUnder(const mrpt::math::TPoint3Df& queryPt) const;
+
+	/** Must be called when world elements are added or moved, so the spatial
+	 * index used by elevation queries is rebuilt. */
+	void invalidateElevationIndex() { elevationIndexIsUpToDate_ = false; }
 
 	void internal_simul_pre_step_terrain_elevation();
 
@@ -589,6 +597,8 @@ class World : public mrpt::system::COutputLogger
 		bool ortho = false;
 		bool show_forces = false;
 		bool show_sensor_points = true;
+		bool show_sensor_previews = true;
+		bool show_gui_panels = true;
 		bool show_trajectories = false;
 		double force_scale = 0.01;	//!< In meters/Newton
 		double camera_distance = 80.0;
@@ -607,6 +617,8 @@ class World : public mrpt::system::COutputLogger
 			{"ortho", {"%bool", &ortho}},
 			{"show_forces", {"%bool", &show_forces}},
 			{"show_sensor_points", {"%bool", &show_sensor_points}},
+			{"show_sensor_previews", {"%bool", &show_sensor_previews}},
+			{"show_gui_panels", {"%bool", &show_gui_panels}},
 			{"show_trajectories", {"%bool", &show_trajectories}},
 			{"force_scale", {"%lf", &force_scale}},
 			{"fov_deg", {"%lf", &fov_deg}},
@@ -639,6 +651,13 @@ class World : public mrpt::system::COutputLogger
 		bool enable_shadows = true;
 		int shadow_map_size = 2048;
 
+		/// Cascaded shadow map splits (1-4) for the GUI view.
+		int shadow_cascades = 4;
+
+		/// Cascaded shadow map splits (1-4) for camera sensors. Each one
+		/// costs a full shadow map pass per rendered image.
+		int sensor_shadow_cascades = 1;
+
 		double light_azimuth = mrpt::DEG2RAD(45.0);
 		double light_elevation = mrpt::DEG2RAD(70.0);
 
@@ -668,6 +687,8 @@ class World : public mrpt::system::COutputLogger
 		const TParameterDefinitions params = {
 			{"enable_shadows", {"%bool", &enable_shadows}},
 			{"shadow_map_size", {"%i", &shadow_map_size}},
+			{"shadow_cascades", {"%i", &shadow_cascades}},
+			{"sensor_shadow_cascades", {"%i", &sensor_shadow_cascades}},
 			{"light_azimuth_deg", {"%lf_deg", &light_azimuth}},
 			{"light_elevation_deg", {"%lf_deg", &light_elevation}},
 			{"light_clip_plane_min", {"%f", &light_clip_plane_min}},
@@ -835,7 +856,28 @@ class World : public mrpt::system::COutputLogger
 	mutable LUTCache lut2d_objects_;
 	mutable bool lut2d_objects_is_up_to_date_ = false;
 
+	/** Objects covering more cells than this are not indexed by cell, but
+	 * queried everywhere, to keep the indices small. */
+	static constexpr std::size_t MAX_LUT_CELLS_PER_OBJECT = 4096;
+
+	/** Blocks too large to be indexed by cell */
+	mutable std::vector<Simulable::Ptr> lut2d_oversized_objects_;
+
 	void internal_update_lut_cache() const;
+
+	/** Spatial index of the world elements, for elevation queries: elements
+	 * by 2D cell, plus those without a known bounding box. */
+	mutable std::unordered_map<lut_2d_coordinates_t, std::vector<WorldElementBase*>, LutIndexHash>
+		elevationIndex_;
+	mutable std::vector<WorldElementBase*> elevationIndexUnbounded_;
+	mutable std::atomic_bool elevationIndexIsUpToDate_ = false;
+	mutable std::shared_mutex elevationIndexMtx_;
+
+	void internal_update_elevation_index() const;
+
+	/** Calls f(z) for each elevation at the given point. */
+	template <typename Functor>
+	void forEachElevationAt(const mrpt::math::TPoint2D& worldXY, const Functor& f) const;
 
 	/** GUI stuff  */
 	struct GUI
@@ -910,10 +952,9 @@ class World : public mrpt::system::COutputLogger
 	mrpt::math::TPoint2D internal_gui_on_image(
 		const std::string& label, const mrpt::img::CImage& im, int winPosX, bool startVisible);
 
-	/** Looks up, among veh's sensors, the one with the given sensorLabel and
-	 * returns its previewWinVisible() flag (true if not found, for backwards
-	 * compatibility). */
-	static bool internal_gui_sensor_preview_visible(
+	/** Looks up, among veh's sensors, the one with the given sensorLabel
+	 * (nullptr if not found). */
+	static const SensorBase* internal_gui_find_sensor(
 		const Simulable& veh, const std::string& sensorLabel);
 
 	std::map<std::string, nanogui::Window*> guiObsViz_;	 //!< by sensorLabel

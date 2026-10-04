@@ -318,7 +318,14 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);
 
-		fbo_renderer_rgb_->render_RGB(world3DScene, curObs.intensityImage);
+		{
+			// Fewer shadow cascades than the GUI view, for speed:
+			const ViewportShadowSettingsGuard shadowGuard(*viewport);
+			viewport->lightParameters().shadow_cascades =
+				static_cast<uint8_t>(world()->sensor_shadow_cascades());
+
+			fbo_renderer_rgb_->render_RGB(world3DScene, curObs.intensityImage);
+		}
 
 		curObs.hasIntensityImage = true;
 	}
@@ -349,7 +356,13 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		auto tle2c =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderD_core");
 
-		fbo_renderer_depth_->render_depth(world3DScene, depthImage_);
+		{
+			// Shadows do not affect depth images:
+			const ViewportShadowSettingsGuard shadowGuard(*viewport);
+			viewport->enableShadowCasting(false);
+
+			fbo_renderer_depth_->render_depth(world3DScene, depthImage_);
+		}
 
 		tle2c.stop();
 

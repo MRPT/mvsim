@@ -20,45 +20,57 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-26.04-clang-ppa-mrpt,
-          ubuntu-26.04-gcc-ppa-mrpt,
-          ubuntu-24.04-clang-ppa-mrpt,
-          ubuntu-24.04-gcc-ppa-mrpt,
-          ubuntu-22.04-gcc-ppa-mrpt,
-          ubuntu-22.04-clang-ppa-mrpt,
+          ubuntu-26.04-clang-mrpt3-stable,
+          ubuntu-26.04-clang-mrpt3-develop,
+          ubuntu-26.04-gcc-mrpt3-stable,
+          ubuntu-26.04-gcc-mrpt3-develop,
+          ubuntu-24.04-clang-mrpt3-stable,
+          ubuntu-24.04-clang-mrpt3-develop,
+          ubuntu-24.04-gcc-mrpt3-stable,
+          ubuntu-24.04-gcc-mrpt3-develop,
         ]
 
         build_type: [ Release ]
         include:
-          - name: ubuntu-26.04-clang-ppa-mrpt
+          - name: ubuntu-26.04-clang-mrpt3-stable
             os: ubuntu-26.04
             compiler: clang
-            install_mrpt_ppa: ON
+            mrpt_ppa: mrpt3-stable
 
-          - name: ubuntu-26.04-gcc-ppa-mrpt
+          - name: ubuntu-26.04-clang-mrpt3-develop
+            os: ubuntu-26.04
+            compiler: clang
+            mrpt_ppa: mrpt3-develop
+
+          - name: ubuntu-26.04-gcc-mrpt3-stable
             os: ubuntu-26.04
             compiler: gcc
-            install_mrpt_ppa: ON
+            mrpt_ppa: mrpt3-stable
 
-          - name: ubuntu-24.04-clang-ppa-mrpt
+          - name: ubuntu-26.04-gcc-mrpt3-develop
+            os: ubuntu-26.04
+            compiler: gcc
+            mrpt_ppa: mrpt3-develop
+
+          - name: ubuntu-24.04-clang-mrpt3-stable
             os: ubuntu-24.04
             compiler: clang
-            install_mrpt_ppa: ON
+            mrpt_ppa: mrpt3-stable
 
-          - name: ubuntu-24.04-gcc-ppa-mrpt
+          - name: ubuntu-24.04-clang-mrpt3-develop
+            os: ubuntu-24.04
+            compiler: clang
+            mrpt_ppa: mrpt3-develop
+
+          - name: ubuntu-24.04-gcc-mrpt3-stable
             os: ubuntu-24.04
             compiler: gcc
-            install_mrpt_ppa: ON
+            mrpt_ppa: mrpt3-stable
 
-          - name: ubuntu-22.04-gcc-ppa-mrpt
-            os: ubuntu-22.04
+          - name: ubuntu-24.04-gcc-mrpt3-develop
+            os: ubuntu-24.04
             compiler: gcc
-            install_mrpt_ppa: ON
-
-          - name: ubuntu-22.04-clang-ppa-mrpt
-            os: ubuntu-22.04
-            compiler: clang
-            install_mrpt_ppa: ON
+            mrpt_ppa: mrpt3-develop
 
     steps:
       - name: Checkout
@@ -89,17 +101,17 @@ jobs:
           sudo apt-get -y update
           sudo apt-get -y upgrade
 
-          if [ "${{ matrix.install_mrpt_ppa }}" = "ON" ]; then
-            sudo apt install software-properties-common -yq
-            sudo add-apt-repository ppa:joseluisblancoc/mrpt -y
-          fi
+          sudo apt install software-properties-common -yq
+          sudo add-apt-repository ppa:joseluisblancoc/${{ matrix.mrpt_ppa }} -y
 
           sudo apt install -y \
             cmake build-essential cmake \
             libbox2d-dev \
-            libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev libmrpt-tclap-dev \
+            libcli11-dev \
+            libnanoflann-dev \
+            libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev \
             libmrpt-topography-dev \
-            libmrpt-gui-dev libmrpt-tfest-dev \
+            libmrpt-gui-dev libmrpt-nanogui-dev libmrpt-tfest-dev \
             protobuf-compiler \
             libzmq3-dev \
             pybind11-dev \

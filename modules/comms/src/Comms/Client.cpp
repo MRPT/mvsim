@@ -157,7 +157,7 @@ void Client::connect()
 	zmq_->mainReqSocketMonitor.monitor(zmq_->mainReqSocket.value());
 
 	zmq_->mainReqSocket->connect(
-		"tcp://"s + serverHostAddress_ + ":"s + std::to_string(MVSIM_PORTNO_MAIN_REP));
+		"tcp://"s + serverHostAddress_ + ":"s + std::to_string(serverPort_));
 
 	// Let the server know about this new node:
 	doRegisterClient();

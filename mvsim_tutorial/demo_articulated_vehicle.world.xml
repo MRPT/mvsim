@@ -28,17 +28,18 @@
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>-90</texture_image_rotate>
 		<texture_extension_x>8.0</texture_extension_x>
 		<texture_extension_y>4.0</texture_extension_y>
 		<corner_min_x>-24</corner_min_x>
 		<corner_min_y>-2</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 	<element class='elevation_map'>
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_Normal.png</normal_map_image>
 		<texture_image_rotate>-90</texture_image_rotate>
 		<texture_extension_x>4.0</texture_extension_x>
 		<texture_extension_y>4.0</texture_extension_y>
@@ -49,17 +50,18 @@
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[1e-2 1e-2 2e-2 1e-2 1e-2 1e-2 4e-2 4e-2 1e-2; 1e-2 3e-2 2e-2 1e-2 4e-2 1e-2 1e-2 1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>4.0</texture_extension_x>
 		<texture_extension_y>8.0</texture_extension_y>
 		<corner_min_x>24</corner_min_x>
 		<corner_min_y>2</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 	<element class='elevation_map'>
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_Normal.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>4.0</texture_extension_x>
 		<texture_extension_y>4.0</texture_extension_y>
@@ -70,29 +72,30 @@
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>-90</texture_image_rotate>
 		<texture_extension_x>8.0</texture_extension_x>
 		<texture_extension_y>4.0</texture_extension_y>
 		<corner_min_x>-24</corner_min_x>
 		<corner_min_y>34</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 	<element class='elevation_map'>
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[1e-2 1e-2 2e-2 1e-2 1e-2 1e-2 4e-2 4e-2 1e-2; 1e-2 3e-2 2e-2 1e-2 4e-2 1e-2 1e-2 1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>4.0</texture_extension_x>
 		<texture_extension_y>8.0</texture_extension_y>
 		<corner_min_x>-28</corner_min_x>
 		<corner_min_y>2</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 
 	<element class='elevation_map'>
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_Normal.png</normal_map_image>
 		<texture_image_rotate>180</texture_image_rotate>
 		<texture_extension_x>4.0</texture_extension_x>
 		<texture_extension_y>4.0</texture_extension_y>
@@ -103,6 +106,7 @@
 		<resolution>4.0</resolution>
 		<elevation_data_matrix>[1e-2 1e-2; 1e-2 1e-2]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/TwoLaneRoadCracks01_1K_Turn90_Normal.png</normal_map_image>
 		<texture_image_rotate>90</texture_image_rotate>
 		<texture_extension_x>4.0</texture_extension_x>
 		<texture_extension_y>4.0</texture_extension_y>
@@ -124,12 +128,12 @@
 			 0  0.02  0    0.05   0
 			]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>3.0</texture_extension_x>
 		<texture_extension_y>3.0</texture_extension_y>
 		<corner_min_x>-24</corner_min_x>
 		<corner_min_y>2</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 
 	<element class='elevation_map'>
@@ -162,12 +166,12 @@
 			 3 4.3 4.7 5 3.4 4.8 4.9 5.5 4.2 4.4 3.8 5.8 5.4 4.5 3.9 4.3 4.1 5.2 0  1
 			]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>3.0</texture_extension_x>
 		<texture_extension_y>3.0</texture_extension_y>
 		<corner_min_x>-44</corner_min_x>
 		<corner_min_y>-36</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 
 
@@ -189,12 +193,12 @@
 			 1  1  5.8   25
 			]</elevation_data_matrix>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt02_1K_NormalGL.png</normal_map_image>
 		<texture_image_rotate>0</texture_image_rotate>
 		<texture_extension_x>3.0</texture_extension_x>
 		<texture_extension_y>3.0</texture_extension_y>
 		<corner_min_x>-44</corner_min_x>
 		<corner_min_y>38</corner_min_y>
-		<model_split_size>3.0</model_split_size> <!-- See docs. Required for correct z-order rendering if there are transparent objects in the world (e.g. trees with leaves) -->
 	</element>
 
 

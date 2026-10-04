@@ -6,7 +6,7 @@
 
 ## Project overview
 
-**MultiVehicle Simulator (MVSim)** is a lightweight, realistic 2.5D dynamics simulator for mobile robots and multi-agent research. It runs standalone, as a ROS 2 node, or embedded in C++/Python applications. Worlds are fully configured via XML files. Current version: 1.4.0.
+**MultiVehicle Simulator (MVSim)** is a lightweight, realistic 2.5D dynamics simulator for mobile robots and multi-agent research. It runs standalone, as a ROS 2 node, or embedded in C++/Python applications. Worlds are fully configured via XML files. Current version: 1.6.0.
 
 - License: BSD 3-Clause
 - Language: C++17 (minimum CMake 3.9)
@@ -94,6 +94,8 @@ Cameras (`CameraSensor`, `DepthCameraSensor`) open a GUI preview subwindow showi
 
 `OccupancyGridMap`, `ElevationMap`, `HorizontalPlane`, `VerticalPlane`, `GroundGrid`, `PointCloud`, `SkyBox`, `PropertyRegion` (friction zones).
 
+Elevation queries (`World::getHighestElevationUnder()`, run for every wheel and chassis contour point each step) use a 2D grid index: world elements providing elevation must override `elevationBoundingBox()` to be indexed (otherwise they are queried everywhere), and the index is rebuilt when elements are added or moved (`World::invalidateElevationIndex()`).
+
 ### Friction models (`src/FrictionModels/`)
 
 Default Coulomb, Ward-Iagnemma (off-road), Ellipse (slip angle + slip ratio).
@@ -107,7 +109,9 @@ Provides a language-agnostic pub-sub and service-call layer using ZeroMQ + Proto
 Key headers in `modules/comms/include/mvsim/Comms/`:
 - `Server.h` — runs inside `World`, accepts registrations and forwards messages.
 - `Client.h` — used by external processes (Python, C++ tools, ROS node) to connect.
-- `common.h`, `ports.h` — shared constants and port numbers.
+- `common.h`, `ports.h` — shared constants and port numbers. Default server port is 23700, overridable with the `MVSIM_SERVER_PORT` env var (honored by `Server` and `Client`; `Client::serverPort()` sets it per instance).
+
+`Server::start()` blocks until the port is bound and throws if it cannot be. `mvsim launch` (via `commonLaunchServer()`) falls back to the next free port (23701..23709) when the default is busy and no port was forced with `--port`/`MVSIM_SERVER_PORT`.
 
 ---
 
@@ -232,6 +236,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 - Version is read from `package.xml` and injected into `modules/simulator/include/mvsim/mvsim_version.h` at configure time.
 - `cmake/mvsim_cmake_functions.cmake` contains helpers used across targets.
 - Optional features guarded by `MVSIM_HAS_ZMQ` and `MVSIM_HAS_PROTOBUF` compile-time defines.
+- Linux CI (`.github/workflows/build-linux.yml`, `.circleci/config.yml`) installs MRPT 3.x from `ppa:joseluisblancoc/mrpt3-stable` (releases) and `ppa:joseluisblancoc/mrpt3-develop` (nightlies). Both PPAs only cover Ubuntu 24.04 and 26.04. GitHub runs both PPAs; CircleCI runs stable only.
 
 ---
 

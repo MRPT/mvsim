@@ -23,6 +23,7 @@
 #include <mvsim/World.h>
 #include <mvsim/assets/mvsim_icon_64x64.h>
 
+#include <algorithm>
 #include <cctype>  // isspace()
 #include <cmath>  // cos(), sin()
 #include <rapidxml.hpp>
@@ -121,6 +122,8 @@ void World::LightOptions::parse_from(
 				name.c_str());
 		}
 	}
+	shadow_cascades = std::clamp(shadow_cascades, 1, 4);
+	sensor_shadow_cascades = std::clamp(sensor_shadow_cascades, 1, 4);
 
 	// Parse <point_light> children:
 	for (auto* n = node.first_node("point_light"); n; n = n->next_sibling("point_light"))
@@ -758,12 +761,23 @@ void World::internal_GUI_thread()
 		{
 			auto we = WorldElementBase::factory(this, nullptr, "ground_grid");
 			worldElements_.push_back(we);
+			invalidateElevationIndex();
 		}
 
 		// Windows:
 		gui_.prepare_control_window();
 		gui_.prepare_status_window();
 		gui_.prepare_editor_window();
+
+		// Optionally, start with only the 3D view (and sensor previews), e.g. to record videos:
+		if (!guiOptions_.show_gui_panels)
+		{
+			gui_.gui_win->getSubWindowsUI()->setVisible(false);
+			for (size_t i = 0; i < gui_.gui_win->getSubwindowCount(); i++)
+			{
+				gui_.gui_win->subwindowMinimize(i);
+			}
+		}
 
 		// Finish GUI setup:
 		gui_.gui_win->performLayout();
@@ -814,6 +828,7 @@ void World::internal_GUI_thread()
 			vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
 
 			vlp.minimum_shadow_map_extension_ratio = lo.minimum_shadow_map_extension_ratio;
+			vlp.shadow_cascades = static_cast<uint8_t>(lo.shadow_cascades);
 			// light view frustrum near/far planes:
 			v->setLightShadowClipDistances(lo.light_clip_plane_min, lo.light_clip_plane_max);
 
@@ -1281,7 +1296,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 void World::internal_gui_on_observation(
 	const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
-	if (!obs)
+	if (!obs || !guiOptions_.show_sensor_previews)
 	{
 		return;
 	}
@@ -1295,22 +1310,22 @@ void World::internal_gui_on_observation(
 	}
 }
 
-bool World::internal_gui_sensor_preview_visible(
+const SensorBase* World::internal_gui_find_sensor(
 	const Simulable& veh, const std::string& sensorLabel)
 {
 	const auto* vehPtr = dynamic_cast<const VehicleBase*>(&veh);
 	if (!vehPtr)
 	{
-		return true;
+		return nullptr;
 	}
 	for (const auto& s : vehPtr->getSensors())
 	{
 		if (s && s->getName() == sensorLabel)
 		{
-			return s->previewWinVisible();
+			return s.get();
 		}
 	}
-	return true;
+	return nullptr;
 }
 
 void World::internal_gui_on_observation_3Dscan(
@@ -1324,7 +1339,8 @@ void World::internal_gui_on_observation_3Dscan(
 	}
 	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
 
-	const bool startVisible = internal_gui_sensor_preview_visible(veh, obs->sensorLabel);
+	const auto* sensor = internal_gui_find_sensor(veh, obs->sensorLabel);
+	const bool startVisible = !sensor || sensor->previewWinVisible();
 
 	if (obs->hasIntensityImage)
 	{
@@ -1332,7 +1348,7 @@ void World::internal_gui_on_observation_3Dscan(
 			veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->intensityImage, 5,
 			startVisible);
 	}
-	if (obs->hasRangeImage)
+	if (obs->hasRangeImage && (!sensor || sensor->previewDepth()))
 	{
 		mrpt::math::CMatrixFloat d;
 		d = obs->rangeImage.asEigen().cast<float>() * (obs->rangeUnits / obs->maxRange);
@@ -1357,7 +1373,8 @@ void World::internal_gui_on_observation_image(
 	}
 	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
 
-	const bool startVisible = internal_gui_sensor_preview_visible(veh, obs->sensorLabel);
+	const auto* sensor = internal_gui_find_sensor(veh, obs->sensorLabel);
+	const bool startVisible = !sensor || sensor->previewWinVisible();
 
 	rgbImageWinSize = internal_gui_on_image(
 		veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->image, 5, startVisible);

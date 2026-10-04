@@ -64,6 +64,7 @@
 		<x_max>46</x_max> <y_max>28.6</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt01_512_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt01_512_NormalGL.png</normal_map>
 		<texture_size_x>1.5</texture_size_x>
 		<texture_size_y>1.5</texture_size_y>
 	</element>
@@ -75,6 +76,7 @@
 		<x_max>46</x_max> <y_max>28.6</y_max>
 		<z>$f{CEILING_HEIGHT}</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_NormalGL.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
@@ -86,6 +88,7 @@
 		<x1>-15</x1> <y1>-13</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
@@ -95,6 +98,7 @@
 		<x1>-15</x1> <y1>13</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
@@ -104,6 +108,7 @@
 		<x1> 20</x1> <y1>13</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
@@ -113,6 +118,7 @@
 		<x1> 20</x1> <y1>-13</y1>
 		<z>0.0</z> <height>$f{CEILING_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>

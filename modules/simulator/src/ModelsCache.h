@@ -22,12 +22,6 @@ class ModelsCache
 	{
 		mrpt::img::TColor modelColor = mrpt::img::TColor::white();
 		std::string modelCull = "NONE";
-
-		/** See mrpt::viz::CAssimpModel::split_triangles_rendering_bbox().
-		 *  Default (0)=disabled. Any other value, split the model into voxels of this size
-		 *  to help sorting triangles by depth so semitransparent meshes are rendered correctly.
-		 */
-		float splitSize = .0f;
 	};
 
 	mrpt::viz::CAssimpModel::Ptr get(const std::string& url, const Options& options);

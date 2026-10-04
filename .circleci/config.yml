@@ -1,8 +1,8 @@
 version: 2.1
 jobs:
-  gcc_u22_04:
+  gcc_u24_04:
     docker:
-      - image: ubuntu:jammy
+      - image: ubuntu:noble
     steps:
       - run:
           name: "Install dependencies"
@@ -10,8 +10,8 @@ jobs:
             apt update
             export DEBIAN_FRONTEND=noninteractive
             apt install software-properties-common -yq
-            add-apt-repository ppa:joseluisblancoc/mrpt -y
-            apt install build-essential g++ cmake libbox2d-dev libmrpt-dev -yq
+            add-apt-repository ppa:joseluisblancoc/mrpt3-stable -y
+            apt install build-essential g++ cmake libbox2d-dev libmrpt-dev libcli11-dev libnanoflann-dev libmrpt-nanogui-dev -yq
             apt install protobuf-compiler libprotobuf-dev libzmq3-dev -yq
             apt install git -yq
       - checkout
@@ -23,9 +23,9 @@ jobs:
             cmake -S . -B build
       - run: make -C build
       # - run: CTEST_OUTPUT_ON_FAILURE=1 make test -C build
-  clang_u22_04:
+  clang_u24_04:
     docker:
-      - image: ubuntu:jammy
+      - image: ubuntu:noble
     steps:
       - run:
           name: "Install dependencies"
@@ -33,8 +33,8 @@ jobs:
             apt update
             export DEBIAN_FRONTEND=noninteractive
             apt install software-properties-common -yq
-            add-apt-repository ppa:joseluisblancoc/mrpt -y
-            apt install build-essential clang cmake libbox2d-dev libmrpt-dev -yq
+            add-apt-repository ppa:joseluisblancoc/mrpt3-stable -y
+            apt install build-essential clang cmake libbox2d-dev libmrpt-dev libcli11-dev libnanoflann-dev libmrpt-nanogui-dev -yq
             apt install protobuf-compiler libprotobuf-dev libzmq3-dev -yq
             apt install git -yq
       - checkout
@@ -53,5 +53,5 @@ workflows:
   version: 2
   build:
     jobs:
-      - gcc_u22_04
-      - clang_u22_04
+      - gcc_u24_04
+      - clang_u24_04

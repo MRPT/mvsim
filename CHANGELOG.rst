@@ -2,6 +2,27 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.6.0 (2026-10-04)
+------------------
+* Demo worlds:
+  - New ``demo_home`` world, and a much richer ``demo_warehouse`` (rooms, dock doors, floor markings, lamps and new props).
+  - Normal maps for textured planes (``<normal_map>``) and elevation maps (``<normal_map_image>``). Demo worlds use official cgbookcase and Poly Haven normal maps.
+  - Nicer default wheel and chassis visuals.
+  - ``demo_elevation_map``: seeded random placement of trees and rocks.
+  - New demo videos for all worlds in the docs and README.
+* GUI:
+  - New ``<gui>`` options ``show_gui_panels``, ``show_sensor_previews`` and ``shadow_cascades``, and per-sensor ``preview_depth``.
+  - Honor ``<gui><headless>`` from the world file in ``mvsim launch`` and the ROS node.
+* Performance:
+  - Faster elevation queries, using a 2D spatial index of world elements.
+  - Faster camera sensors: fewer shadow cascades (new ``<sensor_shadow_cascades>``, default 1), and no shadow pass for depth images.
+  - Remove ``model_split_size``, no longer needed with alpha cutout rendering. Elevation maps are now a single mesh.
+* Communications: fail fast if the ZMQ port is busy. ``mvsim launch`` falls back to a free port, the port can be set with the new ``MVSIM_SERVER_PORT`` env var, and ``mvsim topic``/``mvsim node`` honor ``--port``.
+* World variables are now expanded in ``<visual>`` parameters.
+* Fixes: texture rotation of elevation maps, ``Block::getElevationAt()`` quick discard of far points, camera viewport shadow settings restored if rendering throws, RViz camera image topics, floating boxes in the warehouse demo, and mismatched XML tags.
+* CI: Linux jobs moved to MRPT 3.x PPAs (Ubuntu 24.04 and 26.04).
+* Contributors: Jose Luis Blanco-Claraco
+
 1.5.0 (2026-09-25)
 ------------------
 * Fix walls loaded from model files having no segments

@@ -77,11 +77,11 @@
 		<elevation_image_min_z>0.0</elevation_image_min_z>
 		<elevation_image_max_z>4.0</elevation_image_max_z>
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_NormalGL.png</normal_map_image>
 		<texture_size_x>1.5</texture_size_x>
 		<texture_size_y>1.5</texture_size_y>
 		<corner_min_x>-37.5</corner_min_x>
 		<corner_min_y>-37.5</corner_min_y>
-		<model_split_size>3.0</model_split_size>
 	</element>
 	
 	<block:class name="radio_tower">
@@ -138,6 +138,7 @@
 		<y_max>$f{0.5*INDOOR_ROOM_SIZE}</y_max>
 		<z>0.02</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_NormalGL.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -165,6 +166,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -181,6 +183,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -197,6 +200,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_NormalGL.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -214,6 +218,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-concrete-01.jpg</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-concrete-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -271,6 +276,7 @@
 		<y_max>$f{0.5*CORRIDOR_WIDTH}</y_max>
 		<z>0.02</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1_normal.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -284,6 +290,7 @@
 		<y_max>$f{0.5*CORRIDOR_WIDTH}</y_max>
 		<z>$f{WALL_HEIGHT}</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_NormalGL.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -297,6 +304,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -311,6 +319,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -331,6 +340,7 @@
 		<y_max>$f{0.5*CORRIDOR_WIDTH}</y_max>
 		<z>0.02</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1_normal.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -344,6 +354,7 @@
 		<y_max>$f{0.5*CORRIDOR_WIDTH}</y_max>
 		<z>$f{WALL_HEIGHT}</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_NormalGL.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -357,6 +368,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -371,6 +383,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -387,6 +400,7 @@
 		<y_max>$f{0.8+CORRIDOR_STRAIGHT_LENGTH}</y_max>
 		<z>0.02</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1_normal.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -400,6 +414,7 @@
 		<y_max>$f{0.8+CORRIDOR_STRAIGHT_LENGTH}</y_max>
 		<z>$f{WALL_HEIGHT}</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/BathroomTiles03_1K_NormalGL.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -413,6 +428,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>
@@ -427,6 +443,7 @@
 		<z>0.0</z>
 		<height>$f{WALL_HEIGHT}</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>

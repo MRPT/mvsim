@@ -16,6 +16,7 @@
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
 
+#include <cstdint>
 #include <memory>
 
 namespace mvsim
@@ -66,6 +67,10 @@ class SensorBase : public CVisualObject, public Simulable
 	 * default) or minimized (false). See XML tag "preview_win_visible". */
 	bool previewWinVisible() const { return previewWinVisible_; }
 
+	/** Whether to show the depth image preview of RGBD sensors (default: true).
+	 * See XML tag "preview_depth". */
+	bool previewDepth() const { return previewDepth_; }
+
 	/** The vehicle this sensor is attached to */
 	Simulable& vehicle() { return vehicle_; }
 	const Simulable& vehicle() const { return vehicle_; }
@@ -102,6 +107,9 @@ class SensorBase : public CVisualObject, public Simulable
 	 * See previewWinVisible() */
 	bool previewWinVisible_ = true;
 
+	/** See previewDepth() */
+	bool previewDepth_ = true;
+
 	bool parseSensorPublish(
 		const rapidxml::xml_node<char>* node, const std::map<std::string, std::string>& varValues);
 
@@ -114,6 +122,24 @@ class SensorBase : public CVisualObject, public Simulable
 
 	/// Assign a sensible default name/sensor label if none is provided:
 	void make_sure_we_have_a_name(const std::string& prefix);
+};
+
+/** Restores the viewport shadow settings (enabled, number of cascades) on
+ * scope exit, so temporary per-sensor changes never leak to other views.
+ */
+class ViewportShadowSettingsGuard
+{
+   public:
+	explicit ViewportShadowSettingsGuard(mrpt::viz::Viewport& viewport);
+	~ViewportShadowSettingsGuard();
+
+	ViewportShadowSettingsGuard(const ViewportShadowSettingsGuard&) = delete;
+	ViewportShadowSettingsGuard& operator=(const ViewportShadowSettingsGuard&) = delete;
+
+   private:
+	mrpt::viz::Viewport& viewport_;
+	bool shadowsEnabled_;
+	uint8_t shadowCascades_;
 };
 
 using TListSensors = std::vector<SensorBase::Ptr>;

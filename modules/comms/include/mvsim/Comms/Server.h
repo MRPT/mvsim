@@ -15,6 +15,8 @@
 #include <mvsim/Comms/zmq_fwrds.h>
 
 #include <atomic>
+#include <future>
+#include <memory>
 #include <set>
 #include <shared_mutex>	 // read/write mutex
 #include <thread>
@@ -65,7 +67,10 @@ class Server : public mrpt::system::COutputLogger
 
 	/** @name Main mvsim Server API
 	 * @{ */
-	/** Launches the server in a parallel thread and returns immediately. */
+	/** Launches the server in a parallel thread. It returns as soon as the
+	 * server is listening on its port.
+	 * \exception std::exception If the port cannot be bound (e.g. already in
+	 * use by another process). */
 	void start();
 
 	/** Shutdowns the server. Blocks until the thread is stopped. There is no
@@ -81,7 +86,7 @@ class Server : public mrpt::system::COutputLogger
 	std::atomic<zmq::context_t*> mainThreadZMQcontext_ = nullptr;
 	void requestMainThreadTermination();
 
-	void internalServerThread();
+	void internalServerThread(std::shared_ptr<std::promise<void>> bindResult);
 
 	// ========= Message handlers ========
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -211,7 +216,7 @@ class Server : public mrpt::system::COutputLogger
 
 	/** @} */
 
-	unsigned int serverPortNo_ = MVSIM_PORTNO_MAIN_REP;
+	unsigned int serverPortNo_ = defaultServerPort();
 };
 /** @} */
 

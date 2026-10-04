@@ -26,6 +26,45 @@ using namespace std;
 
 namespace
 {
+/** Rotates an image by a multiple of 90 degrees (clockwise for positive
+ * angles), swapping width and height when needed so no pixel is lost. */
+mrpt::img::CImage rotateImageRightAngle(const mrpt::img::CImage& src, int angle_deg)
+{
+	const int w = static_cast<int>(src.getWidth());
+	const int h = static_cast<int>(src.getHeight());
+	const int nCh = static_cast<int>(src.channels());
+	const bool swapDims = (angle_deg == 90 || angle_deg == -90);
+	mrpt::img::CImage dst(swapDims ? h : w, swapDims ? w : h, src.channels());
+	for (int y = 0; y < h; y++)
+	{
+		for (int x = 0; x < w; x++)
+		{
+			int dx = x;
+			int dy = y;
+			if (angle_deg == 90)
+			{
+				dx = h - 1 - y;
+				dy = x;
+			}
+			else if (angle_deg == -90)
+			{
+				dx = y;
+				dy = w - 1 - x;
+			}
+			else
+			{
+				dx = w - 1 - x;
+				dy = h - 1 - y;
+			}
+			for (int c = 0; c < nCh; c++)
+			{
+				dst.at<uint8_t>(dx, dy, c) = src.at<uint8_t>(x, y, c);
+			}
+		}
+	}
+	return dst;
+}
+
 mrpt::math::CMatrixFloat applyConvolution(
 	const mrpt::math::CMatrixFloat& data, const mrpt::math::CMatrixDouble& kernel)
 {
@@ -91,6 +130,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_image"] = TParamEntry("%s", &sTextureImgFile);
 	int texture_rotate = 0;
 	params["texture_image_rotate"] = TParamEntry("%i", &texture_rotate);
+	std::string sNormalMapImgFile;
+	params["normal_map_image"] = TParamEntry("%s", &sNormalMapImgFile);
 
 	std::string sElevationMatrixData;
 	params["elevation_data_matrix"] = TParamEntry("%s", &sElevationMatrixData);
@@ -122,8 +163,6 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_extension_x"] = TParamEntry("%lf", &textureExtensionX_);
 	params["texture_extension_y"] = TParamEntry("%lf", &textureExtensionY_);
 
-	params["model_split_size"] = TParamEntry("%lf", &model_split_size_);
-
 	std::string convolution_kernel_str;
 	params["apply_kernel"] = TParamEntry("%s", &convolution_kernel_str);
 
@@ -132,6 +171,7 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Load elevation data & (optional) image data:
 	mrpt::math::CMatrixFloat elevation_data;
 	std::optional<mrpt::img::CImage> mesh_image;
+	std::optional<mrpt::img::CImage> normal_map_image;
 
 	if (!sElevationImgFile.empty())
 	{
@@ -270,16 +310,58 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			case -90:
 			case 180:
 			case -180:
-			{
-				mrpt::img::CImage im;
-				mesh_image->rotateImage(
-					im, mrpt::DEG2RAD(texture_rotate),
-					{mesh_image->getWidth() / 2, mesh_image->getHeight() / 2});
-				mesh_image = std::move(im);
-			}
-			break;
+				mesh_image = rotateImageRightAngle(*mesh_image, texture_rotate);
+				break;
 			default:
 				THROW_EXCEPTION("texture_image_rotate can only be: 0, 90, -90, 180");
+		}
+	}
+
+	// Optional normal map for the texture image:
+	if (mesh_image && !sTextureImgFile.empty() && !sNormalMapImgFile.empty())
+	{
+		sNormalMapImgFile = world_->xmlPathToActualPath(sNormalMapImgFile);
+		normal_map_image.emplace();
+		if (!normal_map_image->loadFromFile(sNormalMapImgFile))
+			throw std::runtime_error(mrpt::format(
+				"[ElevationMap] ERROR: Cannot read normal map image '%s'",
+				sNormalMapImgFile.c_str()));
+		if (normal_map_image->isColor() == false)
+			throw std::runtime_error("[ElevationMap] ERROR: normal map image must be RGB");
+
+		if (texture_rotate != 0)
+		{
+			// Rotate the image as the texture, then the normals encoded in it:
+			mrpt::img::CImage im = rotateImageRightAngle(*normal_map_image, texture_rotate);
+			const bool isBGR = im.getChannelsOrder() == std::string("BGR");
+			const int chR = isBGR ? 2 : 0;
+			const int chG = 1;
+			for (int row = 0; row < static_cast<int>(im.getHeight()); row++)
+			{
+				for (int col = 0; col < static_cast<int>(im.getWidth()); col++)
+				{
+					uint8_t& r = im.at<uint8_t>(col, row, chR);
+					uint8_t& g = im.at<uint8_t>(col, row, chG);
+					const uint8_t r0 = r;
+					const uint8_t g0 = g;
+					if (texture_rotate == 90)
+					{
+						r = g0;
+						g = 255 - r0;
+					}
+					else if (texture_rotate == -90)
+					{
+						r = 255 - g0;
+						g = r0;
+					}
+					else
+					{
+						r = 255 - r0;
+						g = 255 - g0;
+					}
+				}
+			}
+			normal_map_image = std::move(im);
 		}
 	}
 
@@ -338,88 +420,25 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	meshMaxY_ = corner_min_y + LY;
 
 	// Build mesh:
-	ASSERT_GE_(model_split_size_, .0f);
-	if (model_split_size_ == 0)
+	gl_mesh_ = mrpt::viz::CMesh::Create();
+	gl_mesh_->enableTransparency(false);
+
+	if (mesh_image)
 	{
-		// One single mesh:
-		auto gl_mesh = mrpt::viz::CMesh::Create();
-		gl_meshes_.push_back(gl_mesh);
-
-		gl_mesh->enableTransparency(false);
-
-		if (mesh_image)
+		gl_mesh_->assignImageAndZ(*mesh_image, elevation_data);
+		gl_mesh_->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+		if (normal_map_image)
 		{
-			gl_mesh->assignImageAndZ(*mesh_image, elevation_data);
-			gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
+			gl_mesh_->assignNormalMap(*normal_map_image);
 		}
-		else
-		{
-			gl_mesh->setZ(elevation_data);
-			gl_mesh->setColor_u8(mesh_color);
-		}
-
-		gl_mesh->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
-
-		// hint for rendering z-order:
-		gl_mesh->setLocalRepresentativePoint(
-			mrpt::math::TPoint3Df(corner_min_x + 0.5 * LX, corner_min_y + 0.5 * LY, .0f));
 	}
 	else
 	{
-		// Split in smaller meshes:
-		const int M = static_cast<int>(std::ceil(model_split_size_ / resolution_));
-		const double subSize = M * resolution_;
-		const size_t NX = static_cast<size_t>(std::ceil(LX / subSize));
-		const size_t NY = static_cast<size_t>(std::ceil(LY / subSize));
-		for (size_t iX = 0; iX < NX; iX++)
-		{
-			// (recall: rows=X, cols=Y)
-			// M+1: we need to duplicate the elevation data from border cells to neighboring
-			// blocks to ensure continuity.
-
-			const size_t startIx = iX * M;
-			const size_t lenIx_p = std::min<size_t>(M, elevation_data.rows() - startIx);
-			const size_t lenIx = std::min<size_t>(M + 1, elevation_data.rows() - startIx);
-
-			for (size_t iY = 0; iY < NY; iY++)
-			{
-				const size_t startIy = iY * M;
-				const size_t lenIy_p = std::min<size_t>(M, elevation_data.cols() - startIy);
-				const size_t lenIy = std::min<size_t>(M + 1, elevation_data.cols() - startIy);
-
-				// Extract sub-matrix for elevation data:
-				const auto subEle = elevation_data.extractMatrix(lenIx, lenIy, startIx, startIy);
-
-				// One sub-mesh:
-				auto gl_mesh = mrpt::viz::CMesh::Create();
-				gl_meshes_.push_back(gl_mesh);
-
-				gl_mesh->enableTransparency(false);
-
-				if (mesh_image)
-				{
-					gl_mesh->assignImageAndZ(*mesh_image, subEle);
-					gl_mesh->setMeshTextureExtension(textureExtensionX_, textureExtensionY_);
-				}
-				else
-				{
-					gl_mesh->setZ(subEle);
-					gl_mesh->setColor_u8(mesh_color);
-				}
-
-				gl_mesh->setGridLimits(
-					corner_min_x + iX * subSize,
-					corner_min_x + iX * subSize + lenIx_p * resolution_,
-					corner_min_y + iY * subSize,
-					corner_min_y + iY * subSize + lenIy_p * resolution_);
-
-				// hint for rendering z-order:
-				gl_mesh->setLocalRepresentativePoint(mrpt::math::TPoint3Df(
-					corner_min_x + (iX + 0.5) * subSize, corner_min_y + (iY + 0.5) * subSize,
-					subEle(0, 0)));
-			}
-		}
+		gl_mesh_->setZ(elevation_data);
+		gl_mesh_->setColor_u8(mesh_color);
 	}
+
+	gl_mesh_->setGridLimits(corner_min_x, corner_min_x + LX, corner_min_y, corner_min_y + LY);
 }
 
 void ElevationMap::internalGuiUpdate(
@@ -427,7 +446,7 @@ void ElevationMap::internalGuiUpdate(
 	const mrpt::optional_ref<mrpt::viz::Scene>& physical, [[maybe_unused]] bool childrenOnly)
 {
 	ASSERTMSG_(
-		!gl_meshes_.empty(),
+		gl_mesh_,
 		"ERROR: Can't render Mesh before loading it! Have you called "
 		"loadConfigFrom() first?");
 
@@ -435,13 +454,10 @@ void ElevationMap::internalGuiUpdate(
 	if (firstSceneRendering_ && viz && physical)
 	{
 		firstSceneRendering_ = false;
-		for (const auto& glMesh : gl_meshes_)
-		{
-			glMesh->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
+		gl_mesh_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
-			viz->get().insert(glMesh);
-			physical->get().insert(glMesh);
-		}
+		viz->get().insert(gl_mesh_);
+		physical->get().insert(gl_mesh_);
 	}
 }
 
@@ -478,6 +494,11 @@ double calcz(
 	return l1 * p1.z + l2 * p2.z + l3 * p3.z;
 }
 }  // namespace
+
+std::optional<mrpt::math::TBoundingBox> ElevationMap::elevationBoundingBox() const
+{
+	return mrpt::math::TBoundingBox({meshMinX_, meshMinY_, .0}, {meshMaxX_, meshMaxY_, .0});
+}
 
 std::optional<float> ElevationMap::getElevationAt(const mrpt::math::TPoint2D& pt) const
 {

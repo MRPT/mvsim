@@ -182,6 +182,9 @@ int launchSimulation()
 
 Available options:
  --headless              Launch without GUI (e.g. suitable for dockerized envs.)
+ -p, --port <23700>      TCP port of the communications server. If not given and the
+                         default port is in use, the next free one is used. The
+                         environment variable MVSIM_SERVER_PORT also sets it.
  --full-profiler         Enable full profiling (generates file with all timings)
  --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0
  -v, --verbosity         Set verbosity level: DEBUG, INFO (default), WARN, ERROR
@@ -238,15 +241,30 @@ Available options:
 	}
 
 	// Start network server:
-	commonLaunchServer();
+	unsigned int serverPort = 0;
+	try
+	{
+		serverPort = commonLaunchServer();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Error: " << e.what() << std::endl;
+		mvsim_launch_shutdown();
+		return 1;
+	}
 
 	// Attach world as a mvsim communications node:
+	if (serverPort != 0)
+	{
+		app->world.commsClient().serverPort(serverPort);
+	}
 	app->world.connectToServer();
 
-	// Launch GUI thread, unless we are in headless mode:
+	// Launch GUI thread, unless we are in headless mode (from the command line
+	// or the world file):
 	app->thread_params.world = &app->world;
 
-	if (!cli->argHeadless)
+	if (!app->world.headless())
 	{
 		// regular GUI:
 		app->thGUI = std::thread(&mvsim_server_thread_update_GUI, std::ref(app->thread_params));

@@ -71,7 +71,5 @@ mrpt::viz::CAssimpModel::Ptr ModelsCache::get(
 		}
 	}
 
-	m->setSplitTrianglesRenderingBBox(options.splitSize);
-
 	return m;
 }

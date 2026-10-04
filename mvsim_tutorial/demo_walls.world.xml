@@ -30,6 +30,7 @@
 		<x_max> 15</x_max> <y_max> 15</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1.jpg</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/concrete-ground-1_normal.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 	</element>
@@ -44,6 +45,7 @@
 		<z>0.0</z> <height>3.0</height>
 		<cull_face>NONE</cull_face>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
@@ -68,6 +70,7 @@
 		<z>0.0</z> <height>3.0</height>
 		<cull_face>NONE</cull_face>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-02.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-02_normal.png</normal_map>
 		<texture_size_x>2.5</texture_size_x>
 		<texture_size_y>2.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
@@ -100,6 +103,7 @@
 		<x1>10</x1> <y1>10</y1>
 		<z>0.0</z> <height>3.0</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_NormalGL.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
 		<texture_size_y>3.0</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
@@ -122,6 +126,7 @@
 		<x1>10</x1> <y1>-10</y1>
 		<z>0.0</z> <height>3.0</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-concrete-01.jpg</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-concrete-01_normal.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->
@@ -154,6 +159,7 @@
 		<x1>0</x1> <y1>5</y1>
 		<z>0.0</z> <height>2.5</height>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WoodenPlanks01_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WoodenPlanks01_1K_NormalGL.png</normal_map>
 		<texture_size_x>1.5</texture_size_x>
 		<texture_size_y>1.5</texture_size_y>
 		<thickness>${WALL_THICKNESS}</thickness>  <!-- Wall thickness in meters -->

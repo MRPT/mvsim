@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/format.h>
+#include <mrpt/viz/Viewport.h>
 #include <mvsim/Sensors/CameraSensor.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/Sensors/GNSS.h>
@@ -249,6 +250,7 @@ void SensorBase::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	TParameterDefinitions params;
 	params["sensor_period"] = TParamEntry("%lf", &sensor_period_);
 	params["preview_win_visible"] = TParamEntry("%bool", &previewWinVisible_);
+	params["preview_depth"] = TParamEntry("%bool", &previewDepth_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
@@ -285,4 +287,17 @@ bool SensorBase::should_simulate_sensor(const TSimulContext& context)
 	sensor_last_timestamp_ = context.simul_time;
 
 	return true;
+}
+
+ViewportShadowSettingsGuard::ViewportShadowSettingsGuard(mrpt::viz::Viewport& viewport)
+	: viewport_(viewport),
+	  shadowsEnabled_(viewport.isShadowCastingEnabled()),
+	  shadowCascades_(viewport.lightParameters().shadow_cascades)
+{
+}
+
+ViewportShadowSettingsGuard::~ViewportShadowSettingsGuard()
+{
+	viewport_.enableShadowCasting(shadowsEnabled_);
+	viewport_.lightParameters().shadow_cascades = shadowCascades_;
 }

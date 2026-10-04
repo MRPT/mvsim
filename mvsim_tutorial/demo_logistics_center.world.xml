@@ -25,6 +25,7 @@
 		<x_max>30</x_max> <y_max>30</y_max>
 		<z>0.0</z>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_NormalGL.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
 		<texture_size_y>2.0</texture_size_y>
 	</element>
@@ -34,6 +35,7 @@
 		<z>0</z> <height>3.5</height>
 		<thickness>0.4</thickness>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ConcreteWall02_1K_NormalGL.png</normal_map>
 	</element>
 	<element class="vertical_plane">
 		<x0>30</x0> <y0>-30</y0> <x1>30</x1> <y1>30</y1>
@@ -46,6 +48,7 @@
 		<z>0</z> <height>10</height>
 		<thickness>0.5</thickness>
 		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/wall-bricks-01_normal.png</normal_map>
 		<door position="0.2" width="4.0" z_min="0" z_max="4.5" />
 		<door position="0.5" width="4.0" z_min="0" z_max="4.5" />
 		<door position="0.8" width="4.0" z_min="0" z_max="4.5" />
