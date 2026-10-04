@@ -23,6 +23,7 @@
 #include <mvsim/World.h>
 #include <mvsim/assets/mvsim_icon_64x64.h>
 
+#include <algorithm>
 #include <cctype>  // isspace()
 #include <cmath>  // cos(), sin()
 #include <rapidxml.hpp>
@@ -121,6 +122,8 @@ void World::LightOptions::parse_from(
 				name.c_str());
 		}
 	}
+	shadow_cascades = std::clamp(shadow_cascades, 1, 4);
+	sensor_shadow_cascades = std::clamp(sensor_shadow_cascades, 1, 4);
 
 	// Parse <point_light> children:
 	for (auto* n = node.first_node("point_light"); n; n = n->next_sibling("point_light"))
@@ -825,6 +828,7 @@ void World::internal_GUI_thread()
 			vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
 
 			vlp.minimum_shadow_map_extension_ratio = lo.minimum_shadow_map_extension_ratio;
+			vlp.shadow_cascades = static_cast<uint8_t>(lo.shadow_cascades);
 			// light view frustrum near/far planes:
 			v->setLightShadowClipDistances(lo.light_clip_plane_min, lo.light_clip_plane_max);
 
