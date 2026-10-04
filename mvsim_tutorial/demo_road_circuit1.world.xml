@@ -280,7 +280,7 @@
 
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/mast.dae</model_uri>
-			<model_offset_x>0</model_offset_z>
+			<model_offset_x>0</model_offset_x>
 			<model_offset_y>0</model_offset_y>
 			<model_offset_z>0.10</model_offset_z>
 			<model_yaw>180.0</model_yaw>
@@ -311,7 +311,7 @@
 
 		<visual>
 			<model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/mast.dae</model_uri>
-			<model_offset_x>0</model_offset_z>
+			<model_offset_x>0</model_offset_x>
 			<model_offset_y>0</model_offset_y>
 			<model_offset_z>0.10</model_offset_z>
 			<model_yaw>180.0</model_yaw>
