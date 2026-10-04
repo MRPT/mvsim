@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.6.0 (2026-10-04)
+------------------
 * Demo worlds:
   - New ``demo_home`` world, and a much richer ``demo_warehouse`` (rooms, dock doors, floor markings, lamps and new props).
   - Normal maps for textured planes (``<normal_map>``) and elevation maps (``<normal_map_image>``). Demo worlds use official cgbookcase and Poly Haven normal maps.
