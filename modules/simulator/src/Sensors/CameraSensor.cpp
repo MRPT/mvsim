@@ -221,14 +221,14 @@ void CameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 	viewport->setViewportClipDistances(rgbClipMin_, rgbClipMax_);
 
-	// Fewer shadow cascades than the GUI view, for speed:
-	auto& lp = viewport->lightParameters();
-	const auto guiCascades = lp.shadow_cascades;
-	lp.shadow_cascades = static_cast<uint8_t>(world()->sensor_shadow_cascades());
+	{
+		// Fewer shadow cascades than the GUI view, for speed:
+		const ViewportShadowSettingsGuard shadowGuard(*viewport);
+		viewport->lightParameters().shadow_cascades =
+			static_cast<uint8_t>(world()->sensor_shadow_cascades());
 
-	fbo_renderer_rgb_->render_RGB(world3DScene, curObs->image);
-
-	lp.shadow_cascades = guiCascades;
+		fbo_renderer_rgb_->render_RGB(world3DScene, curObs->image);
+	}
 
 	tle2.stop();
 
