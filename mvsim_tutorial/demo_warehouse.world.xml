@@ -55,6 +55,8 @@
 		<light_ambient>0.60</light_ambient>
 		<ambient_ground_color>#9a958c</ambient_ground_color>
 
+		<!-- Up to 4 point/spot lights can cast shadows: the high bay lamps over
+		     the racks and the staging area -->
 		<point_light> <!-- High bay lamp, south aisle -->
 			<position>-4.5 -8.0 6.2</position> <color>#fff4e0</color>
 			<diffuse>1.2</diffuse> <specular>0.3</specular>
@@ -62,6 +64,7 @@
 			<attenuation_linear>0.02</attenuation_linear>
 			<attenuation_quadratic>0.006</attenuation_quadratic>
 			<range>14.0</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- High bay lamp, middle aisle -->
 			<position>-4.5 -0.6 6.2</position> <color>#fff4e0</color>
@@ -70,6 +73,7 @@
 			<attenuation_linear>0.02</attenuation_linear>
 			<attenuation_quadratic>0.006</attenuation_quadratic>
 			<range>14.0</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- High bay lamp, staging area west -->
 			<position>-9.0 9.5 6.2</position> <color>#fff4e0</color>
@@ -78,6 +82,7 @@
 			<attenuation_linear>0.02</attenuation_linear>
 			<attenuation_quadratic>0.006</attenuation_quadratic>
 			<range>14.0</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- High bay lamp, staging area east -->
 			<position>3.0 9.5 6.2</position> <color>#fff4e0</color>
@@ -86,6 +91,7 @@
 			<attenuation_linear>0.02</attenuation_linear>
 			<attenuation_quadratic>0.006</attenuation_quadratic>
 			<range>14.0</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- High bay lamp, loading dock -->
 			<position>14.0 -5.0 6.2</position> <color>#fff4e0</color>
@@ -555,7 +561,9 @@
 		<intangible>true</intangible>
 		<visual> <model_uri>${MODELS}/hanging_industrial_lamp.zip/hanging_industrial_lamp/hanging_industrial_lamp.gltf</model_uri> <model_roll>90.0</model_roll>
 			<model_offset_z>${CEILING_HEIGHT}</model_offset_z>
-			<model_emissive>#fff4e0</model_emissive> </visual>
+			<model_emissive>#fff4e0</model_emissive>
+			<!-- The lamp light is inside it -->
+			<cast_shadows>false</cast_shadows> </visual>
 	</block:class>
 	<!-- A truck with its trailer, parked at a dock door -->
 	<block:class name="truck">
