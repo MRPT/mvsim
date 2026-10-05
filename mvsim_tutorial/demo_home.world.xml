@@ -1,14 +1,16 @@
 <mvsim_world version="1.0">
 	<!--
-	  A single-storey home (12 x 9 m) with a living room, a kitchen with dining
+	  A single-storey home (12 x 11 m) with a living room, a kitchen with dining
 	  area, a hallway, a bedroom and a bathroom. There are two loops: living
 	  room, kitchen and hallway; and hallway, bedroom and bathroom.
 
 	  Floor plan (x to the right, y up, meters):
 
-	   y=9 +===========+==+========+
+	  y=11 +===========+==+========+
 	       |  Kitchen  |  |  Bath  |
-	   y=6 |           D  D=D======+
+	       |           |  |        |
+	       |           D  D        |
+	   y=6 |           |  |==D=====+
 	   y=5 +=======D===+  |        |
 	       |  Living   D  D Bedroom|
 	       |           |  |        |
@@ -28,10 +30,10 @@
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>false</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>17</cam_distance>
+		<cam_distance>19</cam_distance>
 		<cam_azimuth>-105</cam_azimuth>
 		<cam_elevation>50</cam_elevation>
-		<cam_point_to>5 3 0</cam_point_to>
+		<cam_point_to>5 4 0</cam_point_to>
 		<fov_deg>60</fov_deg>
 		<refresh_fps>40</refresh_fps>
 		<show_sensor_previews>false</show_sensor_previews>
@@ -58,21 +60,21 @@
 			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Kitchen -->
-			<position>4.2 7.6 2.45</position> <color>#fff1dc</color>
+			<position>4.2 9.2 2.45</position> <color>#fff1dc</color>
 			<diffuse>1.3</diffuse> <specular>0.4</specular>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.15</attenuation_quadratic>
-			<range>4.0</range>
+			<range>4.5</range>
 			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Hallway -->
-			<position>7.0 4.5 2.45</position> <color>#ffe2b8</color>
+			<position>7.0 5.5 2.45</position> <color>#ffe2b8</color>
 			<diffuse>1.0</diffuse> <specular>0.2</specular>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.2</attenuation_linear>
 			<attenuation_quadratic>0.25</attenuation_quadratic>
-			<range>4.0</range>
+			<range>5.0</range>
 			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Bedroom -->
@@ -85,15 +87,15 @@
 			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Bathroom -->
-			<position>10.0 7.5 2.45</position> <color>#f4f8ff</color>
+			<position>10.0 8.5 2.45</position> <color>#f4f8ff</color>
 			<diffuse>1.3</diffuse> <specular>0.5</specular>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.2</attenuation_linear>
 			<attenuation_quadratic>0.25</attenuation_quadratic>
-			<range>3.5</range>
+			<range>4.0</range>
 		</point_light>
 		<spot_light> <!-- Pendant lamp over the dining table -->
-			<position>2.4 6.3 2.0</position> <direction>0 0 -1</direction>
+			<position>2.4 7.3 2.0</position> <direction>0 0 -1</direction>
 			<color>#ffd29a</color> <diffuse>1.4</diffuse> <specular>0.4</specular>
 			<inner_cutoff_deg>30</inner_cutoff_deg> <outer_cutoff_deg>50</outer_cutoff_deg>
 			<attenuation_constant>1.0</attenuation_constant>
@@ -143,7 +145,7 @@
 	<!-- Kitchen and dining area -->
 	<element class="horizontal_plane">
 		<x_min>0</x_min> <y_min>5</y_min>
-		<x_max>6</x_max> <y_max>9</y_max>
+		<x_max>6</x_max> <y_max>11</y_max>
 		<texture>${PH}/large_grey_tiles_diff_1k.jpg</texture>
 		<normal_map>${PH}/large_grey_tiles_nor_gl_1k.png</normal_map>
 		<texture_size_x>3.0</texture_size_x>
@@ -153,7 +155,7 @@
 	<!-- Hallway -->
 	<element class="horizontal_plane">
 		<x_min>6</x_min> <y_min>0</y_min>
-		<x_max>8</x_max> <y_max>9</y_max>
+		<x_max>8</x_max> <y_max>11</y_max>
 		<texture>${PH}/rectangular_parquet_diff_1k.jpg</texture>
 		<normal_map>${PH}/rectangular_parquet_nor_gl_1k.png</normal_map>
 		<texture_size_x>2.25</texture_size_x>
@@ -173,7 +175,7 @@
 	<!-- Bathroom -->
 	<element class="horizontal_plane">
 		<x_min>8</x_min> <y_min>6</y_min>
-		<x_max>12</x_max> <y_max>9</y_max>
+		<x_max>12</x_max> <y_max>11</y_max>
 		<texture>${PH}/marble_tiles_diff_1k.jpg</texture>
 		<normal_map>${PH}/marble_tiles_nor_gl_1k.png</normal_map>
 		<texture_size_x>2.0</texture_size_x>
@@ -184,7 +186,7 @@
 	     while it still blocks the sun and is seen by cameras inside the house -->
 	<element class="horizontal_plane">
 		<x_min>0</x_min> <y_min>0</y_min>
-		<x_max>12</x_max> <y_max>9</y_max>
+		<x_max>12</x_max> <y_max>11</y_max>
 		<z>${WALL_H}</z>
 		<cull_face>FRONT</cull_face>
 		<texture>${PH}/white_plaster_02_diff_1k.jpg</texture>
@@ -210,18 +212,18 @@
 
 	<!-- East facade -->
 	<element class="vertical_plane">
-		<x0>12</x0> <y0>0</y0> <x1>12</x1> <y1>9</y1>
+		<x0>12</x0> <y0>0</y0> <x1>12</x1> <y1>11</y1>
 		<height>${WALL_H}</height> <thickness>${EXT_WALL_T}</thickness>
 		<texture>${PH}/painted_plaster_wall_diff_1k.jpg</texture>
 		<normal_map>${PH}/painted_plaster_wall_nor_gl_1k.png</normal_map>
 		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
-		<window> <position>0.3333</position> <width>1.4</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
-		<window> <position>0.8333</position> <width>0.8</width> <z_min>1.4</z_min> <z_max>2.1</z_max> </window>
+		<window> <position>0.2727</position> <width>1.4</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
+		<window> <position>0.7727</position> <width>0.8</width> <z_min>1.4</z_min> <z_max>2.1</z_max> </window>
 	</element>
 
 	<!-- North facade -->
 	<element class="vertical_plane">
-		<x0>12</x0> <y0>9</y0> <x1>0</x1> <y1>9</y1>
+		<x0>12</x0> <y0>11</y0> <x1>0</x1> <y1>11</y1>
 		<height>${WALL_H}</height> <thickness>${EXT_WALL_T}</thickness>
 		<texture>${PH}/painted_plaster_wall_diff_1k.jpg</texture>
 		<normal_map>${PH}/painted_plaster_wall_nor_gl_1k.png</normal_map>
@@ -231,13 +233,13 @@
 
 	<!-- West facade -->
 	<element class="vertical_plane">
-		<x0>0</x0> <y0>9</y0> <x1>0</x1> <y1>0</y1>
+		<x0>0</x0> <y0>11</y0> <x1>0</x1> <y1>0</y1>
 		<height>${WALL_H}</height> <thickness>${EXT_WALL_T}</thickness>
 		<texture>${PH}/painted_plaster_wall_diff_1k.jpg</texture>
 		<normal_map>${PH}/painted_plaster_wall_nor_gl_1k.png</normal_map>
 		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
-		<window> <position>0.2222</position> <width>1.4</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
-		<window> <position>0.7222</position> <width>2.0</width> <z_min>0.6</z_min> <z_max>2.2</z_max> </window>
+		<window> <position>0.2727</position> <width>1.4</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
+		<window> <position>0.7727</position> <width>2.0</width> <z_min>0.6</z_min> <z_max>2.2</z_max> </window>
 	</element>
 
 	<!-- ========================
@@ -265,12 +267,12 @@
 
 	<!-- Kitchen / hallway -->
 	<element class="vertical_plane">
-		<x0>6</x0> <y0>5</y0> <x1>6</x1> <y1>9</y1>
+		<x0>6</x0> <y0>5</y0> <x1>6</x1> <y1>11</y1>
 		<height>${WALL_H}</height> <thickness>${INT_WALL_T}</thickness>
 		<texture>${PH}/white_plaster_02_diff_1k.jpg</texture>
 		<normal_map>${PH}/white_plaster_02_nor_gl_1k.png</normal_map>
 		<texture_size_x>1.0</texture_size_x> <texture_size_y>1.0</texture_size_y>
-		<door> <position>0.375</position> <width>1.0</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+		<door> <position>0.25</position> <width>1.0</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
 	</element>
 
 	<!-- Hallway / bedroom -->
@@ -285,12 +287,12 @@
 
 	<!-- Hallway / bathroom -->
 	<element class="vertical_plane">
-		<x0>8</x0> <y0>6</y0> <x1>8</x1> <y1>9</y1>
+		<x0>8</x0> <y0>6</y0> <x1>8</x1> <y1>11</y1>
 		<height>${WALL_H}</height> <thickness>${INT_WALL_T}</thickness>
 		<texture>${PH}/white_plaster_02_diff_1k.jpg</texture>
 		<normal_map>${PH}/white_plaster_02_nor_gl_1k.png</normal_map>
 		<texture_size_x>1.0</texture_size_x> <texture_size_y>1.0</texture_size_y>
-		<door> <position>0.3333</position> <width>0.8</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
+		<door> <position>0.2</position> <width>0.8</width> <z_min>0.0</z_min> <z_max>2.1</z_max> </door>
 	</element>
 
 	<!-- Bedroom / bathroom -->
@@ -305,27 +307,27 @@
 
 	<!-- Bathroom wall tiles (2 m high), just inside the bathroom walls -->
 	<element class="vertical_plane">
-		<x0>8.07</x0> <y0>6.07</y0> <x1>8.07</x1> <y1>8.87</y1>
+		<x0>8.07</x0> <y0>6.07</y0> <x1>8.07</x1> <y1>10.87</y1>
 		<height>2.0</height> <thickness>0.01</thickness>
 		<texture>${PH}/long_white_tiles_diff_1k.jpg</texture>
 		<normal_map>${PH}/long_white_tiles_nor_gl_1k.png</normal_map>
 		<texture_size_x>1.27</texture_size_x> <texture_size_y>1.27</texture_size_y>
-		<door> <position>0.3321</position> <width>0.8</width> <z_min>0.0</z_min> <z_max>2.0</z_max> </door>
+		<door> <position>0.1938</position> <width>0.8</width> <z_min>0.0</z_min> <z_max>2.0</z_max> </door>
 	</element>
 	<element class="vertical_plane">
-		<x0>8.07</x0> <y0>8.87</y0> <x1>11.87</x1> <y1>8.87</y1>
+		<x0>8.07</x0> <y0>10.87</y0> <x1>11.87</x1> <y1>10.87</y1>
 		<height>2.0</height> <thickness>0.01</thickness>
 		<texture>${PH}/long_white_tiles_diff_1k.jpg</texture>
 		<normal_map>${PH}/long_white_tiles_nor_gl_1k.png</normal_map>
 		<texture_size_x>1.27</texture_size_x> <texture_size_y>1.27</texture_size_y>
 	</element>
 	<element class="vertical_plane">
-		<x0>11.87</x0> <y0>8.87</y0> <x1>11.87</x1> <y1>6.07</y1>
+		<x0>11.87</x0> <y0>10.87</y0> <x1>11.87</x1> <y1>6.07</y1>
 		<height>2.0</height> <thickness>0.01</thickness>
 		<texture>${PH}/long_white_tiles_diff_1k.jpg</texture>
 		<normal_map>${PH}/long_white_tiles_nor_gl_1k.png</normal_map>
 		<texture_size_x>1.27</texture_size_x> <texture_size_y>1.27</texture_size_y>
-		<window> <position>0.4964</position> <width>0.8</width> <z_min>1.4</z_min> <z_max>2.0</z_max> </window>
+		<window> <position>0.4938</position> <width>0.8</width> <z_min>1.4</z_min> <z_max>2.0</z_max> </window>
 	</element>
 	<element class="vertical_plane">
 		<x0>11.87</x0> <y0>6.07</y0> <x1>8.07</x1> <y1>6.07</y1>
@@ -544,30 +546,31 @@
 	<block class="ceiling_lamp"> <init_pose>3.0 2.5 0</init_pose> </block>
 
 	<!-- Kitchen: counters along the north wall, sink under the window -->
-	<block class="kitchen_drawers"> <init_pose>0.555 8.425 0</init_pose> </block>
-	<block class="coffee_machine"> <init_pose>0.555 8.55 0</init_pose> </block>
-	<block class="kitchen_stove"> <init_pose>1.415 8.425 0</init_pose> </block>
-	<block class="kitchen_cabinet"> <init_pose>2.275 8.425 0</init_pose> </block>
-	<block class="microwave"> <init_pose>2.275 8.6 0</init_pose> </block>
-	<block class="kitchen_sink"> <init_pose>3.135 8.425 0</init_pose> </block>
-	<block class="kitchen_drawers"> <init_pose>3.995 8.425 0</init_pose> </block>
-	<block class="fridge"> <init_pose>4.97 8.47 0</init_pose> </block>
-	<block class="wall_cabinet"> <init_pose>0.555 8.655 0</init_pose> </block>
-	<block class="wall_cabinet"> <init_pose>1.415 8.655 0</init_pose> </block>
-	<block class="ceiling_lamp"> <init_pose>4.2 7.6 0</init_pose> </block>
+	<block class="kitchen_drawers"> <init_pose>0.555 10.425 0</init_pose> </block>
+	<block class="coffee_machine"> <init_pose>0.555 10.55 0</init_pose> </block>
+	<block class="kitchen_stove"> <init_pose>1.415 10.425 0</init_pose> </block>
+	<block class="kitchen_cabinet"> <init_pose>2.275 10.425 0</init_pose> </block>
+	<block class="microwave"> <init_pose>2.275 10.6 0</init_pose> </block>
+	<block class="kitchen_sink"> <init_pose>3.135 10.425 0</init_pose> </block>
+	<block class="kitchen_drawers"> <init_pose>3.995 10.425 0</init_pose> </block>
+	<block class="fridge"> <init_pose>4.97 10.47 0</init_pose> </block>
+	<block class="wall_cabinet"> <init_pose>0.555 10.655 0</init_pose> </block>
+	<block class="wall_cabinet"> <init_pose>1.415 10.655 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>4.2 9.2 0</init_pose> </block>
 
-	<!-- Dining area -->
-	<block class="dining_table"> <init_pose>2.4 6.3 0</init_pose> </block>
-	<block class="dining_chair"> <init_pose>1.8 5.55 0</init_pose> </block>
-	<block class="dining_chair"> <init_pose>3.0 5.55 0</init_pose> </block>
-	<block class="dining_chair"> <init_pose>1.8 7.05 180</init_pose> </block>
-	<block class="dining_chair"> <init_pose>3.0 7.05 180</init_pose> </block>
-	<block class="ceiling_lamp"> <init_pose>2.4 6.3 0</init_pose> </block>
+	<!-- Dining area. The chairs are pulled out: their collision shapes must not
+	     overlap the table (1.4 m wide) -->
+	<block class="dining_table"> <init_pose>2.4 7.3 0</init_pose> </block>
+	<block class="dining_chair"> <init_pose>1.8 6.3 180</init_pose> </block>
+	<block class="dining_chair"> <init_pose>3.0 6.3 180</init_pose> </block>
+	<block class="dining_chair"> <init_pose>1.8 8.3 0</init_pose> </block>
+	<block class="dining_chair"> <init_pose>3.0 8.3 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>2.4 7.3 0</init_pose> </block>
 
 	<!-- Hallway -->
 	<block class="doormat"> <init_pose>7.0 0.45 0</init_pose> </block>
-	<block class="potted_plant"> <init_pose>7.45 8.45 0</init_pose> </block>
-	<block class="ceiling_lamp"> <init_pose>7.0 4.5 0</init_pose> </block>
+	<block class="potted_plant"> <init_pose>7.45 10.45 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>7.0 5.5 0</init_pose> </block>
 
 	<!-- Bedroom -->
 	<block class="bed"> <init_pose>10.65 4.9 90</init_pose> </block>
@@ -576,12 +579,12 @@
 	<block class="ceiling_lamp"> <init_pose>10.0 3.0 0</init_pose> </block>
 
 	<!-- Bathroom -->
-	<block class="bathtub"> <init_pose>10.9 8.3 0</init_pose> </block>
+	<block class="bathtub"> <init_pose>10.9 10.3 0</init_pose> </block>
 	<block class="washbasin"> <init_pose>9.6 6.37 180</init_pose> </block>
 	<block class="bathroom_mirror"> <init_pose>9.6 6.1 180</init_pose> </block>
 	<block class="toilet"> <init_pose>10.7 6.5 180</init_pose> </block>
-	<block class="washer"> <init_pose>8.5 8.45 0</init_pose> </block>
-	<block class="ceiling_lamp"> <init_pose>10.0 7.5 0</init_pose> </block>
+	<block class="washer"> <init_pose>8.5 10.45 0</init_pose> </block>
+	<block class="ceiling_lamp"> <init_pose>10.0 8.5 0</init_pose> </block>
 
 	<!-- Garden -->
 	<block class="outdoor_table_set"> <init_pose>2.8 -1.7 90</init_pose> </block>
