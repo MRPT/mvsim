@@ -90,7 +90,8 @@ class CVisualObject
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
 		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly = false) = 0;
 
-	void addCustomVisualization(
+	/// Returns the group that holds the model in the visualization.
+	mrpt::viz::CSetOfObjects::Ptr addCustomVisualization(
 		const mrpt::viz::CVisualObject::Ptr& glModel, const mrpt::poses::CPose3D& modelPose = {},
 		const float modelScale = 1.0f, const std::string& modelName = "group",
 		const std::optional<std::string>& modelURI = std::nullopt,

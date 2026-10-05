@@ -16,6 +16,7 @@
 #include <mrpt/math/geometry.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/obs/CObservationImage.h>
+#include <mrpt/system/string_utils.h>
 #include <mrpt/system/thread_name.h>
 #include <mrpt/version.h>
 #include <mrpt/viz/Scene.h>
@@ -109,7 +110,8 @@ static mrpt::img::TColorf xmlChildColorf(
 
 namespace
 {
-// TLight::range only exists in newer MRPT versions: set it only if available.
+// TLight::range and TLight::cast_shadows only exist in newer MRPT versions:
+// set them only if available.
 template <typename T, typename = void>
 struct has_light_range : std::false_type
 {
@@ -118,19 +120,51 @@ template <typename T>
 struct has_light_range<T, std::void_t<decltype(T::range)>> : std::true_type
 {
 };
+template <typename T, typename = void>
+struct has_light_cast_shadows : std::false_type
+{
+};
+template <typename T>
+struct has_light_cast_shadows<T, std::void_t<decltype(T::cast_shadows)>> : std::true_type
+{
+};
+
+// Helper: read an XML child's text as a bool ("true"/"false"/"1"/"0").
+bool xmlChildBool(const rapidxml::xml_node<char>& parent, const char* name, bool def)
+{
+	auto* n = parent.first_node(name);
+	if (!n)
+	{
+		return def;
+	}
+	const std::string s =
+		mrpt::system::lowerCase(mrpt::system::trim(std::string(n->value(), n->value_size())));
+	if (s == "1" || s == "true")
+	{
+		return true;
+	}
+	if (s == "0" || s == "false")
+	{
+		return false;
+	}
+	throw std::runtime_error(mrpt::format(
+		"[World::LightOptions] Error parsing '<%s>': expected 'true' or 'false'", name));
+}
 
 template <typename Light>
-void setLightRange(Light& l, float range)
+void setLightRangeAndShadows(Light& l, float range, bool castShadows)
 {
 	if constexpr (has_light_range<Light>::value)
 	{
 		l.range = range;
 	}
-	else
+	if constexpr (has_light_cast_shadows<Light>::value)
 	{
-		(void)l;
-		(void)range;
+		l.cast_shadows = castShadows;
 	}
+	(void)l;
+	(void)range;
+	(void)castShadows;
 }
 }  // namespace
 
@@ -165,10 +199,11 @@ void World::LightOptions::parse_from(
 		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
 
 		const float range = xmlChildFloat(*n, "range", 0.0f);
+		const bool castShadows = xmlChildBool(*n, "cast_shadows", false);
 
 		auto l = mrpt::viz::TLight::PointLight(
 			pos, color, diffuse, specular, att_const, att_lin, att_quad);
-		setLightRange(l, range);
+		setLightRangeAndShadows(l, range, castShadows);
 		extra_lights.push_back(l);
 
 		logger.logFmt(
@@ -191,10 +226,11 @@ void World::LightOptions::parse_from(
 		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
 
 		const float range = xmlChildFloat(*n, "range", 0.0f);
+		const bool castShadows = xmlChildBool(*n, "cast_shadows", false);
 
 		auto l = mrpt::viz::TLight::SpotLight(
 			pos, dir, inner_deg, outer_deg, color, diffuse, specular, att_const, att_lin, att_quad);
-		setLightRange(l, range);
+		setLightRangeAndShadows(l, range, castShadows);
 		extra_lights.push_back(l);
 
 		logger.logFmt(

@@ -17,7 +17,8 @@ Directional light
 ===================
 
 The primary directional light (sun-like, infinitely far away, parallel rays) is always present.
-Its direction is controlled via azimuth and elevation angles, and it is the only light that casts shadows.
+Its direction is controlled via azimuth and elevation angles, and it always casts shadows
+(if ``enable_shadows`` is true).
 
 - ``<light_color>#ffffff</light_color>``: The light color (see formatting for :ref:`%color <world_value_parsing>`).
 
@@ -57,8 +58,8 @@ Point lights
 =============
 
 Point lights emit in all directions from a position in world coordinates.
-They do **not** cast shadows. Multiple point lights can be defined by adding
-``<point_light>`` child elements inside ``<lights>``.
+By default they do **not** cast shadows (see ``cast_shadows`` below). Multiple point lights
+can be defined by adding ``<point_light>`` child elements inside ``<lights>``.
 
 Each ``<point_light>`` supports the following child tags (all optional, shown with defaults):
 
@@ -70,12 +71,18 @@ Each ``<point_light>`` supports the following child tags (all optional, shown wi
 - ``<attenuation_linear>0.09</attenuation_linear>``: Linear attenuation factor.
 - ``<attenuation_quadratic>0.032</attenuation_quadratic>``: Quadratic attenuation factor.
 - ``<range>0</range>``: Maximum reach of the light, in meters. The intensity fades smoothly to
-  exactly zero at this distance. ``0`` (default) means unlimited reach.
+  exactly zero at this distance. ``0`` (default) means unlimited reach (ignored by older MRPT versions).
+- ``<cast_shadows>false</cast_shadows>``: Whether the light casts shadows (ignored by older MRPT versions).
+  Up to 4 point/spot lights can cast shadows. Each one renders the scene six more times
+  (a cube shadow map) whenever something within its reach moves, so enable it only for
+  the lights that matter, and give them a ``range``. Lamp models enclosing the light must
+  not cast shadows themselves: use ``<cast_shadows>false</cast_shadows>`` in their
+  :ref:`visual <world_visual_object>`.
 
 The light intensity at distance *d* is: ``1 / (constant + linear*d + quadratic*d²)``,
 multiplied by ``(1 - (d/range)⁴)²`` if a ``range`` is given.
 
-Since point and spot lights cast no shadows, their light goes through walls.
+Point and spot lights without shadows light through walls.
 Set ``range`` to about the size of the room a lamp is in, so it does not light
 neighboring rooms. To make the lamp model itself glow, use ``<model_emissive>`` in its
 :ref:`visual <world_visual_object>`.
@@ -85,7 +92,7 @@ Spot lights
 ============
 
 Spot lights emit in a cone from a position along a direction.
-They do **not** cast shadows. Multiple spot lights can be defined by adding
+By default they do **not** cast shadows. Multiple spot lights can be defined by adding
 ``<spot_light>`` child elements inside ``<lights>``.
 
 Each ``<spot_light>`` supports the following child tags (all optional, shown with defaults):
@@ -101,6 +108,7 @@ Each ``<spot_light>`` supports the following child tags (all optional, shown wit
 - ``<attenuation_linear>0.09</attenuation_linear>``: Linear attenuation factor.
 - ``<attenuation_quadratic>0.032</attenuation_quadratic>``: Quadratic attenuation factor.
 - ``<range>0</range>``: Maximum reach in meters, as for point lights (``0``: unlimited).
+- ``<cast_shadows>false</cast_shadows>``: Whether the light casts shadows, as for point lights.
 
 .. note::
 

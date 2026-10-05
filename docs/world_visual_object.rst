@@ -39,6 +39,8 @@ Under the ``<visual> </visual>`` tag group:
 - **model_emissive**: (Default: none, keep the model file emissive materials) Emissive (glow) color of the model,
   visible regardless of the scene lights, e.g. for lamps (see :ref:`color formatting <world_value_parsing>`).
   Parts with an emissive texture in the model file only glow where that texture is bright.
+- **cast_shadows**: (Default=``true``) Whether the model casts shadows. Set it to ``false`` for lamp models
+  whose point/spot light is inside them.
 - **show_bounding_box**: (Default=``false``) Initial visibility of the object bounding box.
   
   .. note::

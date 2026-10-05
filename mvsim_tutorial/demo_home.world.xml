@@ -46,8 +46,8 @@
 		<light_ambient>0.3</light_ambient>
 		<ambient_ground_color>#a8a090</ambient_ground_color>
 
-		<!-- Ceiling lamps (warm white). These do not cast shadows, so their
-		     range is limited to about one room. -->
+		<!-- Ceiling lamps (warm white), with their range limited to about one
+		     room. Only up to 4 point/spot lights can cast shadows. -->
 		<point_light> <!-- Living room -->
 			<position>3.0 2.5 2.45</position> <color>#ffe2b8</color>
 			<diffuse>1.3</diffuse> <specular>0.3</specular>
@@ -55,6 +55,7 @@
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.12</attenuation_quadratic>
 			<range>4.5</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Kitchen -->
 			<position>4.2 7.6 2.45</position> <color>#fff1dc</color>
@@ -63,6 +64,7 @@
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.15</attenuation_quadratic>
 			<range>4.0</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Hallway -->
 			<position>7.0 4.5 2.45</position> <color>#ffe2b8</color>
@@ -71,6 +73,7 @@
 			<attenuation_linear>0.2</attenuation_linear>
 			<attenuation_quadratic>0.25</attenuation_quadratic>
 			<range>4.0</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Bedroom -->
 			<position>10.0 3.0 2.45</position> <color>#ffd9a8</color>
@@ -79,6 +82,7 @@
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.15</attenuation_quadratic>
 			<range>4.0</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Bathroom -->
 			<position>10.0 7.5 2.45</position> <color>#f4f8ff</color>
@@ -431,7 +435,9 @@
 	<block:class name="ceiling_lamp">
 		<intangible>true</intangible>
 		<visual> <model_uri>${MODELS}/modern_ceiling_lamp_01.zip/modern_ceiling_lamp_01/modern_ceiling_lamp_01.gltf</model_uri> <model_roll>90.0</model_roll> <model_offset_z>1.43</model_offset_z>
-			<model_emissive>#fff0dc</model_emissive> </visual>
+			<model_emissive>#fff0dc</model_emissive>
+			<!-- The lamp light is inside it -->
+			<cast_shadows>false</cast_shadows> </visual>
 	</block:class>
 	<!-- Kenney Furniture Kit models (glTF, Y-up, about half real size, corner at the origin) -->
 	<block:class name="kitchen_cabinet">

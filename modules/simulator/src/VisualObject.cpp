@@ -208,6 +208,7 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	double modelScale = 1.0;
 	mrpt::math::TPose3D modelPose;
 	bool initialShowBoundingBox = false;
+	bool castShadows = true;
 	std::string objectName = "group";
 
 	ModelsCache::Options opts;
@@ -225,6 +226,7 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	params["model_cull_faces"] = TParamEntry("%s", &opts.modelCull);
 	params["model_color"] = TParamEntry("%color", &opts.modelColor);
 	params["model_emissive"] = TParamEntry("%color", &opts.modelEmissive);
+	params["cast_shadows"] = TParamEntry("%bool", &castShadows);
 	params["name"] = TParamEntry("%s", &objectName);
 
 	// Parse XML params:
@@ -260,9 +262,10 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	}
 
 	// Add the 3D model as custom viz:
-	addCustomVisualization(
+	auto glGroup = addCustomVisualization(
 		glModel, mrpt::poses::CPose3D(modelPose), static_cast<float>(modelScale), objectName,
 		modelURI, initialShowBoundingBox, scaleOverride);
+	glGroup->castShadows(castShadows);
 
 	return true;  // yes, we have a custom viz model
 
@@ -292,7 +295,7 @@ bool CVisualObject::customVisualVisible() const
 	return glCustomVisual_ && glCustomVisual_->isVisible();
 }
 
-void CVisualObject::addCustomVisualization(
+mrpt::viz::CSetOfObjects::Ptr CVisualObject::addCustomVisualization(
 	const mrpt::viz::CVisualObject::Ptr& glModel, const mrpt::poses::CPose3D& modelPose,
 	const float modelScale, const std::string& modelName,
 	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox,
@@ -359,4 +362,6 @@ void CVisualObject::addCustomVisualization(
 		// ... or update collision volume:
 		collisionShape_->mergeWith(shape);
 	}
+
+	return glGroup;
 }
