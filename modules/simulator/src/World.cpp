@@ -75,16 +75,9 @@ void World::internal_initialize()
 	ASSERT_(!initialized_);
 	ASSERT_(worldVisual_);
 
-	{
-		auto& vlp = worldVisual_->getViewport()->lightParameters();
-		vlp.ambient = lightOptions_.light_ambient;
-		vlp.ambientSkyColor = mrpt::img::TColorf(lightOptions_.ambient_sky_color);
-		vlp.ambientGroundColor = mrpt::img::TColorf(lightOptions_.ambient_ground_color);
-	}
-
-	// Physical world light = visual world lights:
-	worldPhysical_.getViewport()->lightParameters() =
-		worldVisual_->getViewport()->lightParameters();
+	// Lights of both the visual and the physical worlds (the latter is the one
+	// seen by sensors, with or without GUI):
+	applyLightOptions();
 
 	// Create group for sensor viz:
 	{

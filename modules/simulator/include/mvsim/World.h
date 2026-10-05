@@ -963,6 +963,9 @@ class World : public mrpt::system::COutputLogger
 	 * radians) */
 	void setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation);
 
+	/// Applies lightOptions_ to the visual and physical world viewports.
+	void applyLightOptions();
+
 	/** @} */  // end GUI stuff
 
 	mrpt::system::CTimeLogger timlogger_{true /*enabled*/, "mvsim::World"};

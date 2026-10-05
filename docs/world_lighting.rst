@@ -69,8 +69,16 @@ Each ``<point_light>`` supports the following child tags (all optional, shown wi
 - ``<attenuation_constant>1.0</attenuation_constant>``: Constant attenuation factor.
 - ``<attenuation_linear>0.09</attenuation_linear>``: Linear attenuation factor.
 - ``<attenuation_quadratic>0.032</attenuation_quadratic>``: Quadratic attenuation factor.
+- ``<range>0</range>``: Maximum reach of the light, in meters. The intensity fades smoothly to
+  exactly zero at this distance. ``0`` (default) means unlimited reach.
 
-The light intensity at distance *d* is: ``1 / (constant + linear*d + quadratic*d²)``.
+The light intensity at distance *d* is: ``1 / (constant + linear*d + quadratic*d²)``,
+multiplied by ``(1 - (d/range)⁴)²`` if a ``range`` is given.
+
+Since point and spot lights cast no shadows, their light goes through walls.
+Set ``range`` to about the size of the room a lamp is in, so it does not light
+neighboring rooms. To make the lamp model itself glow, use ``<model_emissive>`` in its
+:ref:`visual <world_visual_object>`.
 
 
 Spot lights
@@ -92,6 +100,7 @@ Each ``<spot_light>`` supports the following child tags (all optional, shown wit
 - ``<attenuation_constant>1.0</attenuation_constant>``: Constant attenuation factor.
 - ``<attenuation_linear>0.09</attenuation_linear>``: Linear attenuation factor.
 - ``<attenuation_quadratic>0.032</attenuation_quadratic>``: Quadratic attenuation factor.
+- ``<range>0</range>``: Maximum reach in meters, as for point lights (``0``: unlimited).
 
 .. note::
 
@@ -190,6 +199,7 @@ Shadows control
         <diffuse>0.6</diffuse>
         <specular>0.3</specular>
         <attenuation_quadratic>0.05</attenuation_quadratic>
+        <range>6.0</range>
       </point_light>
 
       <!-- Spot light: ceiling spotlight -->

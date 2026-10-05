@@ -27,6 +27,7 @@
 #include <cctype>  // isspace()
 #include <cmath>  // cos(), sin()
 #include <rapidxml.hpp>
+#include <type_traits>
 
 #include "xml_utils.h"
 
@@ -106,6 +107,33 @@ static mrpt::img::TColorf xmlChildColorf(
 	return mrpt::img::TColorf(mrpt::img::TColor(r, g, b, a));
 }
 
+namespace
+{
+// TLight::range only exists in newer MRPT versions: set it only if available.
+template <typename T, typename = void>
+struct has_light_range : std::false_type
+{
+};
+template <typename T>
+struct has_light_range<T, std::void_t<decltype(T::range)>> : std::true_type
+{
+};
+
+template <typename Light>
+void setLightRange(Light& l, float range)
+{
+	if constexpr (has_light_range<Light>::value)
+	{
+		l.range = range;
+	}
+	else
+	{
+		(void)l;
+		(void)range;
+	}
+}
+}  // namespace
+
 void World::LightOptions::parse_from(
 	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
@@ -136,8 +164,12 @@ void World::LightOptions::parse_from(
 		const float att_lin = xmlChildFloat(*n, "attenuation_linear", 0.09f);
 		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
 
-		extra_lights.push_back(mrpt::viz::TLight::PointLight(
-			pos, color, diffuse, specular, att_const, att_lin, att_quad));
+		const float range = xmlChildFloat(*n, "range", 0.0f);
+
+		auto l = mrpt::viz::TLight::PointLight(
+			pos, color, diffuse, specular, att_const, att_lin, att_quad);
+		setLightRange(l, range);
+		extra_lights.push_back(l);
 
 		logger.logFmt(
 			mrpt::system::LVL_INFO, "[LightOptions] Parsed point_light at (%.1f, %.1f, %.1f)",
@@ -158,9 +190,12 @@ void World::LightOptions::parse_from(
 		const float att_lin = xmlChildFloat(*n, "attenuation_linear", 0.09f);
 		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
 
-		extra_lights.push_back(mrpt::viz::TLight::SpotLight(
-			pos, dir, inner_deg, outer_deg, color, diffuse, specular, att_const, att_lin,
-			att_quad));
+		const float range = xmlChildFloat(*n, "range", 0.0f);
+
+		auto l = mrpt::viz::TLight::SpotLight(
+			pos, dir, inner_deg, outer_deg, color, diffuse, specular, att_const, att_lin, att_quad);
+		setLightRange(l, range);
+		extra_lights.push_back(l);
 
 		logger.logFmt(
 			mrpt::system::LVL_INFO, "[LightOptions] Parsed spot_light at (%.1f, %.1f, %.1f)", pos.x,
@@ -792,55 +827,6 @@ void World::internal_GUI_thread()
 		const auto p = this->worldRenderOffset() + guiOptions_.camera_point_to;
 		cam.setCameraPointing(p.x, p.y, p.z);
 
-		const auto& lo = lightOptions_;
-
-		setLightDirectionFromAzimuthElevation(lo.light_azimuth, lo.light_elevation);
-
-		auto vv = worldVisual_->getViewport();
-		auto vp = worldPhysical_.getViewport();
-
-		auto lambdaSetLightParams = [&lo](const mrpt::viz::Viewport::Ptr& v)
-		{
-			// enable shadows and set the shadow map texture size:
-			const int sms = lo.shadow_map_size;
-			v->enableShadowCasting(lo.enable_shadows, sms, sms);
-
-			// light color and intensities:
-			const auto colf = mrpt::img::TColorf(lo.light_color);
-
-			auto& vlp = v->lightParameters();
-
-			if (!vlp.lights.empty())
-			{
-				vlp.lights[0].color = colf;
-				vlp.lights[0].diffuse = lo.light_diffuse;
-				vlp.lights[0].specular = lo.light_specular;
-			}
-
-			// Hemisphere ambient lighting (replaces fill light):
-			vlp.ambient = lo.light_ambient;
-			vlp.ambientSkyColor = mrpt::img::TColorf(lo.ambient_sky_color);
-			vlp.ambientGroundColor = mrpt::img::TColorf(lo.ambient_ground_color);
-
-			// Add extra lights (point and spot) from XML:
-			for (const auto& el : lo.extra_lights) vlp.lights.push_back(el);
-
-			vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
-
-			vlp.minimum_shadow_map_extension_ratio = lo.minimum_shadow_map_extension_ratio;
-			vlp.shadow_cascades = static_cast<uint8_t>(lo.shadow_cascades);
-			// light view frustrum near/far planes:
-			v->setLightShadowClipDistances(lo.light_clip_plane_min, lo.light_clip_plane_max);
-
-			// Shadow bias should be proportional to clip range:
-			vlp.shadow_bias = lo.shadow_bias;
-			vlp.shadow_bias_cam2frag = lo.shadow_bias_cam2frag;
-			vlp.shadow_bias_normal = lo.shadow_bias_normal;
-		};
-
-		lambdaSetLightParams(vv);
-		lambdaSetLightParams(vp);
-
 		// Main GUI loop
 		// ---------------------
 		gui_.gui_win->drawAll();
@@ -1466,6 +1452,67 @@ void World::internalGraphicsLoopTasksForSimulation()
 		clear_pending_running_sensors_on_3D_scene();
 		simulator_must_close(true);
 	}
+}
+
+void World::applyLightOptions()
+{
+	const auto& lo = lightOptions_;
+
+	setLightDirectionFromAzimuthElevation(lo.light_azimuth, lo.light_elevation);
+
+	auto vv = worldVisual_->getViewport();
+	auto vp = worldPhysical_.getViewport();
+
+	const auto renderOffset = worldRenderOffset();
+
+	auto lambdaSetLightParams = [&lo, &renderOffset](const mrpt::viz::Viewport::Ptr& v)
+	{
+		// enable shadows and set the shadow map texture size:
+		const int sms = lo.shadow_map_size;
+		v->enableShadowCasting(lo.enable_shadows, sms, sms);
+
+		// light color and intensities:
+		const auto colf = mrpt::img::TColorf(lo.light_color);
+
+		auto& vlp = v->lightParameters();
+
+		if (!vlp.lights.empty())
+		{
+			vlp.lights[0].color = colf;
+			vlp.lights[0].diffuse = lo.light_diffuse;
+			vlp.lights[0].specular = lo.light_specular;
+		}
+
+		// Hemisphere ambient lighting (replaces fill light):
+		vlp.ambient = lo.light_ambient;
+		vlp.ambientSkyColor = mrpt::img::TColorf(lo.ambient_sky_color);
+		vlp.ambientGroundColor = mrpt::img::TColorf(lo.ambient_ground_color);
+
+		// Add extra lights (point and spot) from XML:
+		// (in rendering coordinates, like everything else sent to OpenGL)
+		for (auto el : lo.extra_lights)
+		{
+			el.position.x += static_cast<float>(renderOffset.x);
+			el.position.y += static_cast<float>(renderOffset.y);
+			el.position.z += static_cast<float>(renderOffset.z);
+			vlp.lights.push_back(el);
+		}
+
+		vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
+
+		vlp.minimum_shadow_map_extension_ratio = lo.minimum_shadow_map_extension_ratio;
+		vlp.shadow_cascades = static_cast<uint8_t>(lo.shadow_cascades);
+		// light view frustrum near/far planes:
+		v->setLightShadowClipDistances(lo.light_clip_plane_min, lo.light_clip_plane_max);
+
+		// Shadow bias should be proportional to clip range:
+		vlp.shadow_bias = lo.shadow_bias;
+		vlp.shadow_bias_cam2frag = lo.shadow_bias_cam2frag;
+		vlp.shadow_bias_normal = lo.shadow_bias_normal;
+	};
+
+	lambdaSetLightParams(vv);
+	lambdaSetLightParams(vp);
 }
 
 void World::setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation)

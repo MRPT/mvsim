@@ -9,6 +9,7 @@
 
 #include "ModelsCache.h"
 
+#include <mrpt/core/format.h>
 #include <mrpt/core/get_env.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
@@ -25,17 +26,28 @@ ModelsCache& ModelsCache::Instance()
 	return o;
 }
 
+std::string ModelsCache::Options::asKey() const
+{
+	return mrpt::format(
+		"|%02x%02x%02x%02x|%s|%02x%02x%02x%02x", modelColor.R, modelColor.G, modelColor.B,
+		modelColor.A, modelCull.c_str(), modelEmissive.R, modelEmissive.G, modelEmissive.B,
+		modelEmissive.A);
+}
+
 mrpt::viz::CAssimpModel::Ptr ModelsCache::get(
 	const std::string& localFileName, const Options& options)
 {
+	// Models are shared, so instances with different options need their own:
+	const std::string key = localFileName + options.asKey();
+
 	// already cached?
-	if (auto it = cache.find(localFileName); it != cache.end())
+	if (auto it = cache.find(key); it != cache.end())
 	{
 		return it->second;
 	}
 
-	// No, it's a new model path, create its placeholder:
-	auto m = cache[localFileName] = mrpt::viz::CAssimpModel::Create();
+	// No, it's a new model, create its placeholder:
+	auto m = cache[key] = mrpt::viz::CAssimpModel::Create();
 
 	ASSERT_FILE_EXISTS_(localFileName);
 
@@ -68,6 +80,20 @@ mrpt::viz::CAssimpModel::Ptr ModelsCache::get(
 			if (auto* tt =
 					dynamic_cast<mrpt::viz::VisualObjectParams_TexturedTriangles*>(child.get()))
 				tt->cullFaces(cf);
+		}
+	}
+
+	if (options.modelEmissive.A != 0)
+	{
+		// Parts with an emissive map in the model file keep glowing only where
+		// the map is bright:
+		const auto emissive = mrpt::img::TColorf(options.modelEmissive);
+		for (auto& child : *m)
+		{
+			if (child)
+			{
+				child->materialEmissive(emissive);
+			}
 		}
 	}
 

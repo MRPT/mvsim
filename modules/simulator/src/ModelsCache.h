@@ -22,6 +22,13 @@ class ModelsCache
 	{
 		mrpt::img::TColor modelColor = mrpt::img::TColor::white();
 		std::string modelCull = "NONE";
+		/** Emissive (glow) color of the model. Parts with an emissive map in
+		 * the model file only glow where the map is bright. Ignored (the model
+		 * file emissive is kept) while its alpha is 0. */
+		mrpt::img::TColor modelEmissive{0, 0, 0, 0};
+
+		/** A string that identifies these options, for cache lookups */
+		std::string asKey() const;
 	};
 
 	mrpt::viz::CAssimpModel::Ptr get(const std::string& url, const Options& options);

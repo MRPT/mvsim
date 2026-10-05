@@ -43,53 +43,59 @@
 		<!-- Sun: the ceiling blocks it, so it only enters through windows -->
 		<light_azimuth_deg>-60.0</light_azimuth_deg>
 		<light_elevation_deg>40.0</light_elevation_deg>
-		<light_ambient>0.45</light_ambient>
+		<light_ambient>0.3</light_ambient>
 		<ambient_ground_color>#a8a090</ambient_ground_color>
 
 		<!-- Ceiling lamps (warm white). These do not cast shadows, so their
-		     reach is kept to about one room. -->
+		     range is limited to about one room. -->
 		<point_light> <!-- Living room -->
 			<position>3.0 2.5 2.45</position> <color>#ffe2b8</color>
-			<diffuse>0.9</diffuse> <specular>0.3</specular>
+			<diffuse>1.3</diffuse> <specular>0.3</specular>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.12</attenuation_quadratic>
+			<range>4.5</range>
 		</point_light>
 		<point_light> <!-- Kitchen -->
 			<position>4.2 7.6 2.45</position> <color>#fff1dc</color>
-			<diffuse>0.9</diffuse> <specular>0.4</specular>
+			<diffuse>1.3</diffuse> <specular>0.4</specular>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.15</attenuation_quadratic>
+			<range>4.0</range>
 		</point_light>
 		<point_light> <!-- Hallway -->
 			<position>7.0 4.5 2.45</position> <color>#ffe2b8</color>
-			<diffuse>0.7</diffuse> <specular>0.2</specular>
+			<diffuse>1.0</diffuse> <specular>0.2</specular>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.2</attenuation_linear>
 			<attenuation_quadratic>0.25</attenuation_quadratic>
+			<range>4.0</range>
 		</point_light>
 		<point_light> <!-- Bedroom -->
 			<position>10.0 3.0 2.45</position> <color>#ffd9a8</color>
-			<diffuse>0.8</diffuse> <specular>0.2</specular>
+			<diffuse>1.2</diffuse> <specular>0.2</specular>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.15</attenuation_quadratic>
+			<range>4.0</range>
 		</point_light>
 		<point_light> <!-- Bathroom -->
 			<position>10.0 7.5 2.45</position> <color>#f4f8ff</color>
-			<diffuse>0.9</diffuse> <specular>0.5</specular>
+			<diffuse>1.3</diffuse> <specular>0.5</specular>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.2</attenuation_linear>
 			<attenuation_quadratic>0.25</attenuation_quadratic>
+			<range>3.5</range>
 		</point_light>
 		<spot_light> <!-- Pendant lamp over the dining table -->
 			<position>2.4 6.3 2.0</position> <direction>0 0 -1</direction>
-			<color>#ffd29a</color> <diffuse>1.0</diffuse> <specular>0.4</specular>
+			<color>#ffd29a</color> <diffuse>1.4</diffuse> <specular>0.4</specular>
 			<inner_cutoff_deg>30</inner_cutoff_deg> <outer_cutoff_deg>50</outer_cutoff_deg>
 			<attenuation_constant>1.0</attenuation_constant>
 			<attenuation_linear>0.1</attenuation_linear>
 			<attenuation_quadratic>0.1</attenuation_quadratic>
+			<range>3.5</range>
 		</spot_light>
 	</lights>
 
@@ -424,7 +430,8 @@
 	<!-- Hanging from the ceiling -->
 	<block:class name="ceiling_lamp">
 		<intangible>true</intangible>
-		<visual> <model_uri>${MODELS}/modern_ceiling_lamp_01.zip/modern_ceiling_lamp_01/modern_ceiling_lamp_01.gltf</model_uri> <model_roll>90.0</model_roll> <model_offset_z>1.43</model_offset_z> </visual>
+		<visual> <model_uri>${MODELS}/modern_ceiling_lamp_01.zip/modern_ceiling_lamp_01/modern_ceiling_lamp_01.gltf</model_uri> <model_roll>90.0</model_roll> <model_offset_z>1.43</model_offset_z>
+			<model_emissive>#fff0dc</model_emissive> </visual>
 	</block:class>
 	<!-- Kenney Furniture Kit models (glTF, Y-up, about half real size, corner at the origin) -->
 	<block:class name="kitchen_cabinet">

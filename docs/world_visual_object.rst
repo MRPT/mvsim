@@ -36,6 +36,9 @@ Under the ``<visual> </visual>`` tag group:
 - **model_yaw**, **model_pitch**, **model_roll**: (Default=0) Optional model rotation [degrees].
 - **model_color**: (Default: white) For colorless files (e.g. ``*.stl``), the color to use (see :ref:`color formatting <world_value_parsing>`).
 - **model_cull_faces**: (Default=``NONE``) Can be one of ``NONE | BACK | FRONT``.
+- **model_emissive**: (Default: none, keep the model file emissive materials) Emissive (glow) color of the model,
+  visible regardless of the scene lights, e.g. for lamps (see :ref:`color formatting <world_value_parsing>`).
+  Parts with an emissive texture in the model file only glow where that texture is bright.
 - **show_bounding_box**: (Default=``false``) Initial visibility of the object bounding box.
   
   .. note::

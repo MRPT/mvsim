@@ -224,6 +224,7 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
 	params["model_cull_faces"] = TParamEntry("%s", &opts.modelCull);
 	params["model_color"] = TParamEntry("%color", &opts.modelColor);
+	params["model_emissive"] = TParamEntry("%color", &opts.modelEmissive);
 	params["name"] = TParamEntry("%s", &objectName);
 
 	// Parse XML params:
