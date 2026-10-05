@@ -73,7 +73,8 @@ Each ``<point_light>`` supports the following child tags (all optional, shown wi
 - ``<range>0</range>``: Maximum reach of the light, in meters. The intensity fades smoothly to
   exactly zero at this distance. ``0`` (default) means unlimited reach (ignored by older MRPT versions).
 - ``<cast_shadows>false</cast_shadows>``: Whether the light casts shadows (ignored by older MRPT versions).
-  Up to 4 point/spot lights can cast shadows. Each one renders the scene six more times
+  Up to 7 point/spot lights can cast shadows (8 lights in total, including the
+  directional one). Each one renders the scene six more times
   (a cube shadow map) whenever something within its reach moves, so enable it only for
   the lights that matter, and give them a ``range``. Lamp models enclosing the light must
   not cast shadows themselves: use ``<cast_shadows>false</cast_shadows>`` in their

@@ -55,8 +55,7 @@
 		<light_ambient>0.60</light_ambient>
 		<ambient_ground_color>#9a958c</ambient_ground_color>
 
-		<!-- Up to 4 point/spot lights can cast shadows: the high bay lamps over
-		     the racks and the staging area -->
+		<!-- All lamps cast shadows (up to 7 point/spot lights can, besides the sun) -->
 		<point_light> <!-- High bay lamp, south aisle -->
 			<position>-4.5 -8.0 6.2</position> <color>#fff4e0</color>
 			<diffuse>1.2</diffuse> <specular>0.3</specular>
@@ -100,6 +99,7 @@
 			<attenuation_linear>0.02</attenuation_linear>
 			<attenuation_quadratic>0.006</attenuation_quadratic>
 			<range>14.0</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Office ceiling lamp -->
 			<position>16.0 10.5 2.85</position> <color>#fff8f0</color>
@@ -108,6 +108,7 @@
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.1</attenuation_quadratic>
 			<range>4.5</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 		<point_light> <!-- Charging bay ceiling lamp -->
 			<position>16.0 5.5 2.85</position> <color>#f0f6ff</color>
@@ -116,6 +117,7 @@
 			<attenuation_linear>0.15</attenuation_linear>
 			<attenuation_quadratic>0.1</attenuation_quadratic>
 			<range>4.5</range>
+			<cast_shadows>true</cast_shadows>
 		</point_light>
 	</lights>
 
