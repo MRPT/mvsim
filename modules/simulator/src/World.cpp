@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/imgui/CImGuiSceneView.h>
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/poses/CPose3DQuat.h>
@@ -254,11 +255,19 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 
 	const size_t JOY_AXIS_AZIMUTH = 3;
 
-	if (js.axes.size() > JOY_AXIS_AZIMUTH && gui_.gui_win)
+	if (js.axes.size() > JOY_AXIS_AZIMUTH && is_GUI_open())
 	{
-		auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
-		auto& cam = gui_.gui_win->camera();
-		cam.setAzimuthDegrees(cam.getAzimuthDegrees() - js.axes[JOY_AXIS_AZIMUTH]);
+		const float dAzimuth = js.axes[JOY_AXIS_AZIMUTH];
+		enqueue_task_to_run_in_gui_thread(
+			[this, dAzimuth]()
+			{
+				if (!gui_.sceneView)
+				{
+					return;
+				}
+				auto& cam = gui_.sceneView->cameraController;
+				cam.setAzimuthDegrees(cam.getAzimuthDegrees() - dAzimuth);
+			});
 	}
 
 	return js;

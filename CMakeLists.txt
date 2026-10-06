@@ -213,7 +213,10 @@ endif()
 # Use the first cmd to set the minimum required version
 # ----------------------------------------------------------
 find_package(mrpt_maps  REQUIRED)
-find_package(mrpt_gui  REQUIRED)
+find_package(mrpt_opengl REQUIRED)
+find_package(mrpt_imgui REQUIRED)
+find_package(mrpt_imgui_vendor REQUIRED)  # Dear ImGui + GLFW
+find_package(Eigen3 REQUIRED)
 find_package(mrpt_tfest  REQUIRED)
 find_package(mrpt_topography REQUIRED)
 

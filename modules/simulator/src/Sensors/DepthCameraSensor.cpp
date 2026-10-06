@@ -17,6 +17,8 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
+#include <Eigen/Dense>	// asEigen()
+
 #include "xml_utils.h"
 
 using namespace mvsim;

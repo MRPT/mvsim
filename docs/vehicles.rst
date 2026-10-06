@@ -419,8 +419,7 @@ vehicle's actual position), tracking remains stable even for self-intersecting p
   is drawn in the 3D view (see below). Purely cosmetic, does not affect tracking.
 
 The full path polyline can be shown in the GUI as a 3D line (a ``mrpt::opengl`` line set),
-toggled with the **"View trajectories"** checkbox next to "View forces" in the control
-window. Whether it starts shown or hidden is controlled per-world via the ``<gui>`` block:
+toggled with the **"Trajectories"** item of the GUI "View" menu. Whether it starts shown or hidden is controlled per-world via the ``<gui>`` block:
 
 .. code-block:: xml
 

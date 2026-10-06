@@ -15,7 +15,6 @@
 #include <box2d/b2_world.h>
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
-#include <mrpt/gui/CDisplayWindowGUI.h>
 #include <mrpt/img/CImage.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/math/TPoint3D.h>
@@ -26,6 +25,8 @@
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/topography/data_types.h>
+#include <mrpt/viz/CSetOfObjects.h>
+#include <mrpt/viz/Scene.h>
 #include <mrpt/viz/TLightParameters.h>
 #include <mvsim/Block.h>
 #include <mvsim/HumanActor.h>
@@ -52,12 +53,22 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <set>
 #include <shared_mutex>
+#include <thread>
 #include <unordered_map>
 
-#if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 // forward declarations:
+struct GLFWwindow;
+namespace mrpt::imgui
+{
+class CImGuiSceneView;
+}
+
+#if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 namespace mvsim_msgs
 {
 class SrvGetPose;
@@ -245,7 +256,12 @@ class World : public mrpt::system::COutputLogger
 	/** For usage in TUpdateGUIParams and \a update_GUI() */
 	struct GUIKeyEvent
 	{
-		int keycode = 0;  //!< 0=no Key. Otherwise, ASCII code.
+		/// Same value as GLFW_KEY_ESCAPE
+		static constexpr int KEY_ESCAPE = 256;
+
+		/// 0=no Key. Otherwise, the GLFW key code, which is the ASCII code
+		/// for (uppercase) letters and digits.
+		int keycode = 0;
 		bool modifierShift = false;
 		bool modifierCtrl = false;
 		bool modifierAlt = false;
@@ -284,7 +300,8 @@ class World : public mrpt::system::COutputLogger
 	 * rendered), and mostly reflects the last couple of seconds. */
 	double cpu_usage() const { return cpuUsage_.load(); }
 
-	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const { return gui_.gui_win; }
+	/// The GUI window, or nullptr if it is not open.
+	GLFWwindow* gui_window() const { return gui_.window; }
 
 	const mrpt::math::TPoint3D& gui_mouse_point() const { return gui_.clickedPt; }
 
@@ -312,9 +329,23 @@ class World : public mrpt::system::COutputLogger
 
 	void mark_as_pending_running_sensors_on_3D_scene()
 	{
-		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
-		pendingRunSensorsOn3DScene_ = true;
+		{
+			std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
+			pendingRunSensorsOn3DScene_ = true;
+		}
+		internal_wake_up_gui_thread();
 	}
+
+	/// Makes the GUI thread attend pending tasks right away, instead of
+	/// waiting for its next frame.
+	void internal_wake_up_gui_thread();
+
+	/// Called from the GUI window input callbacks:
+	void internal_on_gui_key(int key, int action, int mods);
+	void internal_on_gui_input_event();
+
+	/// Sets the GUI camera from the world file <gui> options.
+	void internal_apply_initial_camera();
 	void clear_pending_running_sensors_on_3D_scene()
 	{
 		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
@@ -346,14 +377,14 @@ class World : public mrpt::system::COutputLogger
 		simulator_must_close_ = value;
 	}
 
-	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f)
+	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f) const
 	{
 		std::lock_guard<std::mutex> lck(guiUserPendingTasksMtx_);
 		guiUserPendingTasks_.emplace_back(f);
 	}
 
-	std::vector<std::function<void(void)>> guiUserPendingTasks_;
-	std::mutex guiUserPendingTasksMtx_;
+	mutable std::vector<std::function<void(void)>> guiUserPendingTasks_;
+	mutable std::mutex guiUserPendingTasksMtx_;
 
 	GUIKeyEvent lastKeyEvent_;
 	std::atomic_bool lastKeyEventValid_ = false;
@@ -930,46 +961,98 @@ class World : public mrpt::system::COutputLogger
 	/** GUI stuff  */
 	struct GUI
 	{
-		GUI(World& parent) : parent_(parent) {}
+		explicit GUI(World& parent);
+		~GUI();
 
-		mrpt::gui::CDisplayWindowGUI::Ptr gui_win;
-		nanogui::Label* lbCpuUsage = nullptr;
-		nanogui::CheckBox* cbPointAndSpotLights = nullptr;
-		std::vector<nanogui::Label*> lbStatuses;
-		nanogui::Button* btnReplaceObject = nullptr;
+		GLFWwindow* window = nullptr;
+		/// Set while `window` exists, so other threads can wake up the GUI.
+		/// Both protected by windowMtx.
+		bool windowReady = false;
+		std::mutex windowMtx;
 
-		struct InfoPerObject
-		{
-			nanogui::CheckBox* cb = nullptr;
-			Simulable::Ptr simulable;
-			CVisualObject* visual = nullptr;
-		};
+		/// Set by close_GUI(): the window gets hidden, but the GUI thread
+		/// keeps running the OpenGL sensors.
+		std::atomic_bool hideRequested = false;
+		bool hidden = false;
 
-		// Buttons that must be {dis,en}abled when there is a selected object:
-		std::vector<nanogui::Widget*> btns_selectedOps;
-		std::vector<InfoPerObject> gui_cbObjects;
-		InfoPerObject gui_selectedObject;
+		/// Renders worldVisual_ behind all panels:
+		std::unique_ptr<mrpt::imgui::CImGuiSceneView> sceneView;
 
-		/** "Lights" editor tab: one checkbox per object light group */
-		struct LightGroupCheckBox
-		{
-			nanogui::CheckBox* cb = nullptr;
-			CVisualObject* visual = nullptr;
-			std::string group;
-		};
-		std::vector<LightGroupCheckBox> gui_cbLightGroups;
-
+		/// Ground point under the mouse cursor:
 		mrpt::math::TPoint3D clickedPt{0, 0, 0};
 
-		void prepare_control_window();
-		void prepare_lights_window();
-		void prepare_status_window();
-		void prepare_editor_window();
+		/// Set from GLFW input callbacks; used to raise the frame rate while
+		/// the user interacts with the window.
+		std::atomic_bool gotInputEvents = false;
+
+		// Panels visibility:
+		bool showWorld = true;
+		bool showInspector = true;
+		bool showLighting = true;
+		bool showMessages = true;
+		bool resetLayoutRequested = false;
+
+		// View options (others are in guiOptions_):
+		bool showSensorPoses = false;
+		bool showSensorFOVs = false;
+		bool showCollisionShapes = false;
+		float sunIntensity = 1.0f;
+
+		std::string worldFilter;  //!< "World" panel search box
+
+		// Selected object in the "World" panel:
+		Simulable::Ptr selected;
+		std::string selectedName;
+		CVisualObject* selectedVisual = nullptr;
+		/// If true, the selected object follows the mouse until clicking:
+		bool placingWithMouse = false;
+
+		/// Live camera/depth images, one window per sensor:
+		struct SensorPreview
+		{
+			std::string title;	//!< "vehicle/sensor"
+			bool open = true;
+			bool visible = false;  //!< Not collapsed nor hidden, last frame
+			/// [0]=RGB, [1]=depth. GL textures (0=none yet).
+			unsigned int tex[2] = {0, 0};
+			int width[2] = {0, 0};
+			int height[2] = {0, 0};
+		};
+		std::map<std::string, SensorPreview> sensorPreviews;
+
+		void select(const std::string& name, const Simulable::Ptr& obj);
+
+		void draw_frame();
+		void draw_loading_frame();
+		void draw_menu_bar();
+		void draw_status_bar();
+		void draw_dockspace_and_background();
+		void draw_world_panel();
+		void draw_inspector_panel();
+		void draw_lighting_panel();
+		void draw_messages_panel();
+		void draw_sensor_previews();
 
 		void handle_mouse_operations();
 
+		/// False if the preview exists but is not visible, so the image
+		/// does not need to be prepared.
+		bool preview_needs_update(const std::string& previewName, int slot) const;
+		void update_preview_texture(
+			const std::string& previewName, int slot, const mrpt::img::CImage& im,
+			bool startVisible);
+		void free_preview_textures();
+
 	   private:
 		World& parent_;
+
+		unsigned int dockspaceId_ = 0;
+		unsigned int dockLeftTopId_ = 0;
+		unsigned int dockLeftMiddleId_ = 0;
+		unsigned int dockLeftBottomId_ = 0;
+		unsigned int dockRightId_ = 0;
+
+		void build_default_layout();
 	};
 	GUI gui_{*this};  //!< gui state
 
@@ -1008,15 +1091,10 @@ class World : public mrpt::system::COutputLogger
 	void internal_gui_on_observation_image(
 		const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
 
-	mrpt::math::TPoint2D internal_gui_on_image(
-		const std::string& label, const mrpt::img::CImage& im, int winPosX, bool startVisible);
-
 	/** Looks up, among veh's sensors, the one with the given sensorLabel
 	 * (nullptr if not found). */
 	static const SensorBase* internal_gui_find_sensor(
 		const Simulable& veh, const std::string& sensorLabel);
-
-	std::map<std::string, nanogui::Window*> guiObsViz_;	 //!< by sensorLabel
 
 	/** Changes the light source direction from azimuth and elevation angles (in
 	 * radians) */

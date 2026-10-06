@@ -336,7 +336,7 @@ Available options:
 			default:
 				break;
 
-			case GLFW_KEY_ESCAPE:
+			case World::GUIKeyEvent::KEY_ESCAPE:
 				doExit = true;
 				break;
 			case '1':

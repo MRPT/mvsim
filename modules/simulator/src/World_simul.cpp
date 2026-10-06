@@ -133,15 +133,7 @@ void World::updateCpuUsage(double simulTime, double cpuTime)
 	}
 	else
 	{
-		enqueue_task_to_run_in_gui_thread(
-			[this]()
-			{
-				setPointAndSpotLightsEnabled(false);
-				if (gui_.cbPointAndSpotLights)
-				{
-					gui_.cbPointAndSpotLights->setChecked(false);
-				}
-			});
+		enqueue_task_to_run_in_gui_thread([this]() { setPointAndSpotLightsEnabled(false); });
 	}
 }
 

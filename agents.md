@@ -47,7 +47,7 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 
 | Class | Header | Role |
 |---|---|---|
-| `World` | `World.h` | Central simulation container. Owns all vehicles, blocks, world elements, Box2D physics world, GUI window, ZMQ comms client. Split across `World.cpp`, `World_gui.cpp`, `World_load_xml.cpp`, `World_services.cpp`, `World_simul.cpp`, `World_walls.cpp`. `open_GUI_while_loading()` (used by mvsim-cli and the ROS node) shows the window with a "loading" message during `load_from_XML()` and the first frame. `cpu_usage()` (shown in the GUI) is smoothed over ~1 s from that point; above 100% after 5 s, the XML point/spot lights are turned off. |
+| `World` | `World.h` | Central simulation container. Owns all vehicles, blocks, world elements, Box2D physics world, GUI window, ZMQ comms client. Split across `World.cpp`, `World_gui.cpp` (GUI thread, main loop, scene update, lights), `World_gui_panels.cpp` (Dear ImGui panels), `World_load_xml.cpp`, `World_services.cpp`, `World_simul.cpp`, `World_walls.cpp`. `open_GUI_while_loading()` (used by mvsim-cli and the ROS node) shows the window with a "loading" message during `load_from_XML()` and the first frame. `cpu_usage()` (shown in the GUI) is smoothed over ~1 s from that point; above 100% after 5 s, the XML point/spot lights are turned off. The GUI thread sleeps in `glfwWaitEventsTimeout()` between frames (`refresh_fps`, 60 fps while the user interacts); sensors needing OpenGL wake it up via `internal_wake_up_gui_thread()`. `close_GUI()` only hides the window. |
 | `Simulable` | `Simulable.h` | Base interface for anything that steps through simulation time. Provides `simul_pre_timestep()`, `simul_post_timestep()`, pose access with shared mutex. |
 | `VisualObject` | `VisualObject.h` | Base interface for anything renderable in the OpenGL GUI. |
 | `VehicleBase` | `VehicleBase.h` | Abstract vehicle. Inherits `VisualObject` and `Simulable`. Holds wheels, sensors, friction model, controller, CSV logger. Created via `ClassFactory`. |
@@ -88,7 +88,7 @@ Each vehicle type has companion `*_Controller*.cpp` files for its controllers (R
 | `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model |
 | `GNSS.cpp` | GPS/GNSS with configurable noise |
 
-Cameras (`CameraSensor`, `DepthCameraSensor`) open a GUI preview subwindow showing their live image(s). The common `SensorBase` XML tag `<preview_win_visible>` (default `true`) controls whether that subwindow starts opened or minimized, without affecting the simulated sensor data itself.
+Cameras (`CameraSensor`, `DepthCameraSensor`) open one GUI preview window per sensor showing their live image(s) (RGB and depth side by side, uploaded as GL textures only while visible). The common `SensorBase` XML tag `<preview_win_visible>` (default `true`) controls whether that window starts opened or closed, without affecting the simulated sensor data itself.
 
 ### World elements (`src/WorldElements/`)
 
@@ -98,7 +98,7 @@ Elevation queries (`World::getHighestElevationUnder()`, run for every wheel and 
 
 ### Switchable lights
 
-`<light_group name=".." initially_on="..">` tags (point/spot lights in the object frame) are parsed by `CVisualObject::parseVisual()`, so vehicles and blocks support them; `<visual light_group="..">` models (loaded unshared from `ModelsCache`) glow only while their group is on. Lights are `mrpt::viz::CLight` objects, only built if `MRPT_VIZ_HAS_CLIGHT` is defined (newer MRPT; otherwise ignored with a warning), and always go into the physical scene so camera sensors see them. Switched with `World::setLightGroupState()`, the ZMQ services `set_light_state`/`get_light_state`, or the GUI editor "Lights" tab. Point/spot XML parsing is shared with the world `<lights>` in `parse_light_xml_node()` (`xml_utils.h`).
+`<light_group name=".." initially_on="..">` tags (point/spot lights in the object frame) are parsed by `CVisualObject::parseVisual()`, so vehicles and blocks support them; `<visual light_group="..">` models (loaded unshared from `ModelsCache`) glow only while their group is on. Lights are `mrpt::viz::CLight` objects, only built if `MRPT_VIZ_HAS_CLIGHT` is defined (newer MRPT; otherwise ignored with a warning), and always go into the physical scene so camera sensors see them. Switched with `World::setLightGroupState()`, the ZMQ services `set_light_state`/`get_light_state`, or the GUI "Lighting"/"Inspector" panels. Point/spot XML parsing is shared with the world `<lights>` in `parse_light_xml_node()` (`xml_utils.h`).
 
 ### Friction models (`src/FrictionModels/`)
 
@@ -205,7 +205,7 @@ Ready-to-include vehicle and sensor snippets:
 
 `demo_warehouse.world.xml`, `demo_2robots.world.xml`, `demo_greenhouse.world.xml`, `demo_elevation_map.world.xml`, `demo_road_circuit1.world.xml`, `demo_multistorey.world.xml`, `demo_logistics_center.world.xml`, `demo_articulated_vehicle.world.xml`, `demo_friction_zones.world.xml`, `demo_camera.world.xml`, `demo_depth_camera.world.xml`, `demo_jackal.world.xml`, `demo_many_robots.world.xml`, `demo_indoor_outdoor.world.xml`, `demo_outdoor.world.xml`, `demo_walls.world.xml`, `demo_turtlebot_world.world.xml`, `mvsim_slam.world.xml`, `demo_trajectory.world.xml`, `demo_trajectory_ackermann.world.xml`.
 
-**Exactly reproducible trajectories** (`trajectory` controller class, `PoseTrajectoryFollower`): drives a `differential`/`ackermann` vehicle along a closed-form, time-parameterized `(t,x,y)` polyline given directly in `<waypoint>` XML tags, using a pure-pursuit strategy (speed from waypoint distance/time, heading from a lookahead point, with `max_angular_speed` slowing `vx` down — not just capping `omega` — to round sharp corners realistically). Supports `loop="true"` (repeats forever) and `loop="false"` (runs once and stops). `demo_trajectory.world.xml`/`demo_trajectory_ackermann.world.xml` select between the 3 predefined `definitions/trajectories/*.trajectory.xml` presets via a top-level `TRAJECTORY` `<variable>` and `<include>`; both carry a 3D LiDAR + GNSS sensor. Tested in `tests/test_pose_trajectory_follower.cpp` (pure algorithm, no World) and `tests/test_trajectory_controller.cpp` (full World + Box2D). The path polyline can also be drawn in the 3D GUI (a `mrpt::viz::CSetOfLines` at a configurable `viz_height`, default 0.5m) via `ControllerBaseInterface::getTrajectoryPlotPoints()`, toggled by the "View trajectories" checkbox / `<gui><show_trajectories>` option; both demo worlds enable it by default.
+**Exactly reproducible trajectories** (`trajectory` controller class, `PoseTrajectoryFollower`): drives a `differential`/`ackermann` vehicle along a closed-form, time-parameterized `(t,x,y)` polyline given directly in `<waypoint>` XML tags, using a pure-pursuit strategy (speed from waypoint distance/time, heading from a lookahead point, with `max_angular_speed` slowing `vx` down — not just capping `omega` — to round sharp corners realistically). Supports `loop="true"` (repeats forever) and `loop="false"` (runs once and stops). `demo_trajectory.world.xml`/`demo_trajectory_ackermann.world.xml` select between the 3 predefined `definitions/trajectories/*.trajectory.xml` presets via a top-level `TRAJECTORY` `<variable>` and `<include>`; both carry a 3D LiDAR + GNSS sensor. Tested in `tests/test_pose_trajectory_follower.cpp` (pure algorithm, no World) and `tests/test_trajectory_controller.cpp` (full World + Box2D). The path polyline can also be drawn in the 3D GUI (a `mrpt::viz::CSetOfLines` at a configurable `viz_height`, default 0.5m) via `ControllerBaseInterface::getTrajectoryPlotPoints()`, toggled by the "View > Trajectories" menu item / `<gui><show_trajectories>` option; both demo worlds enable it by default.
 
 ---
 
@@ -219,7 +219,8 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 
 | Library | Role |
 |---|---|
-| **MRPT** (>= 3.0) | Math, poses, observations, GUI. 3D scene graph lives in `mrpt/viz` (`mrpt::viz::Scene`, `CSetOfObjects`, ...); `mrpt/opengl` is only used for offscreen FBO rendering (`CFBORender`) in sensors. |
+| **MRPT** (>= 3.0) | Math, poses, observations. 3D scene graph lives in `mrpt/viz` (`mrpt::viz::Scene`, `CSetOfObjects`, ...); `mrpt/opengl` is used for offscreen FBO rendering (`CFBORender`) in sensors. |
+| **mrpt_imgui / mrpt_imgui_vendor** | GUI: Dear ImGui (docking) + GLFW, linked privately to libmvsim. The world is drawn behind the dockspace with `mrpt::imgui::CImGuiSceneView::renderAsBackground()` (needs `MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW`). Layout autosaved in `~/.config/mvsim/imgui.ini`. |
 | **Box2D** | 2D rigid-body physics engine |
 | **ZeroMQ** (optional) | Pub-sub communications |
 | **Protobuf** (optional) | Message serialization |

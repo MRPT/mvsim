@@ -1,6 +1,27 @@
 GUI and visualization options
 --------------------------------------------
 
+The GUI shows the 3D world behind a set of dockable panels:
+
+- **World**: tree of vehicles (with their sensors), blocks, actors and world elements,
+  with a search box. Clicking an item selects it.
+- **Inspector**: pose of the selected object (drag or Ctrl+click to type values),
+  placing it with the mouse, its velocity and its light groups.
+- **Lighting**: shadows, sun direction and intensity, ambient light, and all object light groups.
+- **Messages**: text from the application, e.g. teleoperation help and status.
+- One preview window per camera sensor, with its RGB and depth images.
+
+A status bar shows the simulation time, CPU usage, achieved real-time factor and the ground
+point under the mouse. The "View" menu has the visualization switches below, and the
+"Window" menu shows or hides panels and resets their layout.
+Panels can be docked, tabbed, or detached; their layout is saved automatically in
+``~/.config/mvsim/imgui.ini`` (``$XDG_CONFIG_HOME/mvsim/`` if set; ``%APPDATA%\mvsim\`` on Windows)
+and restored next time, for all worlds.
+
+The 3D view has no anti-aliasing by default, to keep OpenGL sensors (cameras, lidars) fast.
+To enable multisampling anti-aliasing, set the environment variable ``MVSIM_MSAA_SAMPLES``
+(e.g. ``MVSIM_MSAA_SAMPLES=4``) before launching MVSim.
+
 Available parameters under the global ``<gui> ... </gui>`` tag (all are optional).
 
 - ``<win_w>800</win_w>`` and ``<win_h>600</win_h>``. Size of the main GUI window, in pixels.
@@ -20,13 +41,14 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
    <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-gui-view-pointclouds.mp4" type="video/mp4"> </video>
 
 - ``<show_sensor_previews>true</show_sensor_previews>``. If enabled (default),
-  camera images (RGB and depth) are shown in small preview windows within the GUI.
-  Each sensor can also start with its preview minimized with ``<preview_win_visible>``,
+  camera images (RGB and depth) are shown in preview windows within the GUI.
+  Each sensor can also start with its preview closed with ``<preview_win_visible>``
+  (it can be opened from the "Window" menu),
   and RGBD cameras can hide their depth image preview with ``<preview_depth>false</preview_depth>``.
 
 - ``<show_gui_panels>true</show_gui_panels>``. If disabled, the GUI starts with
-  only the 3D view and the sensor previews, without the control, status and editor
-  panels. Useful to record videos.
+  only the 3D view and the sensor previews, without the World, Inspector, Lighting and
+  Messages panels (they can be opened from the "Window" menu). Useful to record videos.
 
 - ``<headless>false</headless>``. If enabled, MVSim will run without
   any interactive GUI. Useful to save some CPU/GPU usage or to run 

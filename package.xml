@@ -23,8 +23,10 @@
 
   <!-- COMMON DEPS for all ROS versions -->
   <depend>cli11</depend>
+  <depend>eigen</depend>
   <depend>libzmq3-dev</depend>
-  <depend>mrpt_gui</depend>
+  <depend>mrpt_imgui</depend>
+  <depend>mrpt_imgui_vendor</depend>
   <depend>mrpt_libros_bridge</depend>
   <depend>mrpt_maps</depend>
   <depend>mrpt_topography</depend>
