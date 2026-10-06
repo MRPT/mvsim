@@ -343,6 +343,7 @@ class World : public mrpt::system::COutputLogger
 	/// Called from the GUI window input callbacks:
 	void internal_on_gui_key(int key, int action, int mods);
 	void internal_on_gui_input_event();
+	void internal_on_gui_focus(bool focused);
 
 	/// Sets the GUI camera from the world file <gui> options.
 	void internal_apply_initial_camera();
@@ -984,6 +985,7 @@ class World : public mrpt::system::COutputLogger
 		/// Set from GLFW input callbacks; used to raise the frame rate while
 		/// the user interacts with the window.
 		std::atomic_bool gotInputEvents = false;
+		bool windowFocused = false;
 
 		// Panels visibility:
 		bool showWorld = true;
@@ -999,6 +1001,30 @@ class World : public mrpt::system::COutputLogger
 		float sunIntensity = 1.0f;
 
 		std::string worldFilter;  //!< "World" panel search box
+
+		/// Snapshot of the world objects shown in the panels. Only refreshed
+		/// while the simulation thread does not hold the list of objects, so
+		/// the GUI thread (which also renders the OpenGL sensors) never waits
+		/// for a simulation step.
+		struct ObjectsSnapshot
+		{
+			using List = std::vector<std::pair<std::string, Simulable::Ptr>>;
+			List vehicles;
+			List blocks;
+			List actors;
+			List elements;
+
+			struct LightGroup
+			{
+				std::string label;
+				Simulable::Ptr owner;  //!< keeps `visual` alive
+				CVisualObject* visual = nullptr;
+				std::string group;
+			};
+			std::vector<LightGroup> lightGroups;
+		};
+		ObjectsSnapshot objects;
+		void refresh_objects_snapshot();
 
 		// Selected object in the "World" panel:
 		Simulable::Ptr selected;

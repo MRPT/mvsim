@@ -180,6 +180,10 @@ void on_glfw_scroll(GLFWwindow* w, double /*dx*/, double /*dy*/)
 {
 	world_from(w)->internal_on_gui_input_event();
 }
+void on_glfw_focus(GLFWwindow* w, int focused)
+{
+	world_from(w)->internal_on_gui_focus(focused == GLFW_TRUE);
+}
 
 void setup_imgui_fonts_and_style(GLFWwindow* win)
 {
@@ -241,7 +245,17 @@ void World::internal_wake_up_gui_thread()
 	}
 }
 
-void World::internal_on_gui_input_event() { gui_.gotInputEvents = true; }
+void World::internal_on_gui_input_event()
+{
+	// Mouse events on a window in the background (e.g. under another one) do
+	// not raise the frame rate:
+	if (gui_.windowFocused)
+	{
+		gui_.gotInputEvents = true;
+	}
+}
+
+void World::internal_on_gui_focus(bool focused) { gui_.windowFocused = focused; }
 
 void World::internal_on_gui_key(int key, int action, int mods)
 {
@@ -342,6 +356,8 @@ void World::internal_GUI_thread()
 		glfwSetCursorPosCallback(win, &on_glfw_cursor);
 		glfwSetMouseButtonCallback(win, &on_glfw_mouse_button);
 		glfwSetScrollCallback(win, &on_glfw_scroll);
+		glfwSetWindowFocusCallback(win, &on_glfw_focus);
+		gui_.windowFocused = glfwGetWindowAttrib(win, GLFW_FOCUSED) == GLFW_TRUE;
 
 		// Dear ImGui:
 		IMGUI_CHECKVERSION();
@@ -610,6 +626,8 @@ void World::GUI::handle_mouse_operations()
 
 void World::internal_process_pending_gui_user_tasks()
 {
+	auto tle = mrpt::system::CTimeLoggerEntry(timlogger_, "gui.tasks");
+
 	std::vector<std::function<void(void)>> tasks;
 	{
 		std::lock_guard<std::mutex> lck(guiUserPendingTasksMtx_);

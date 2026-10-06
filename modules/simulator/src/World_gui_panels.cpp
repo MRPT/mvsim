@@ -101,6 +101,46 @@ void World::GUI::select(const std::string& name, const Simulable::Ptr& obj)
 	}
 }
 
+void World::GUI::refresh_objects_snapshot()
+{
+	std::unique_lock<std::mutex> lck(parent_.getListOfSimulableObjectsMtx(), std::try_to_lock);
+	if (!lck.owns_lock())
+	{
+		return;	 // keep the former snapshot
+	}
+
+	ObjectsSnapshot snap;
+	for (const auto& o : parent_.getListOfSimulableObjects())
+	{
+		auto* ptr = o.second.get();
+		if (dynamic_cast<VehicleBase*>(ptr))
+		{
+			snap.vehicles.emplace_back(o);
+		}
+		else if (dynamic_cast<Block*>(ptr))
+		{
+			snap.blocks.emplace_back(o);
+		}
+		else if (dynamic_cast<HumanActor*>(ptr))
+		{
+			snap.actors.emplace_back(o);
+		}
+		else if (dynamic_cast<WorldElementBase*>(ptr))
+		{
+			snap.elements.emplace_back(o);
+		}
+
+		if (auto* visual = dynamic_cast<CVisualObject*>(ptr); visual)
+		{
+			for (const auto& group : visual->lightGroupNames())
+			{
+				snap.lightGroups.push_back({o.first + ": " + group, o.second, visual, group});
+			}
+		}
+	}
+	objects = std::move(snap);
+}
+
 void World::GUI::draw_loading_frame()
 {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -135,6 +175,8 @@ void World::GUI::draw_frame()
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+
+	refresh_objects_snapshot();
 
 	// Order matters: the menu and status bars reduce the work area used by
 	// the dockspace.
@@ -439,33 +481,10 @@ void World::GUI::draw_world_panel()
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	ImGui::InputTextWithHint("##filter", ICON_MS_SEARCH " Filter by name", &worldFilter);
 
-	auto lckListObjs = mrpt::lockHelper(parent_.getListOfSimulableObjectsMtx());
-
-	// Classify all objects:
-	std::vector<std::pair<std::string, Simulable::Ptr>> vehicles;
-	std::vector<std::pair<std::string, Simulable::Ptr>> blocks;
-	std::vector<std::pair<std::string, Simulable::Ptr>> actors;
-	std::vector<std::pair<std::string, Simulable::Ptr>> elements;
-	for (const auto& o : parent_.getListOfSimulableObjects())
-	{
-		auto* ptr = o.second.get();
-		if (dynamic_cast<VehicleBase*>(ptr))
-		{
-			vehicles.emplace_back(o);
-		}
-		else if (dynamic_cast<Block*>(ptr))
-		{
-			blocks.emplace_back(o);
-		}
-		else if (dynamic_cast<HumanActor*>(ptr))
-		{
-			actors.emplace_back(o);
-		}
-		else if (dynamic_cast<WorldElementBase*>(ptr))
-		{
-			elements.emplace_back(o);
-		}
-	}
+	const auto& vehicles = objects.vehicles;
+	const auto& blocks = objects.blocks;
+	const auto& actors = objects.actors;
+	const auto& elements = objects.elements;
 
 	const auto lambdaLeaf =
 		[this](const std::string& name, const std::string& label, const Simulable::Ptr& obj)
@@ -711,29 +730,15 @@ void World::GUI::draw_lighting_panel()
 
 	// All object light groups:
 	ImGui::SeparatorText("Object light groups");
-	bool anyGroup = false;
+	for (const auto& lg : objects.lightGroups)
 	{
-		auto lck = mrpt::lockHelper(parent_.getListOfSimulableObjectsMtx());
-		for (const auto& o : parent_.getListOfSimulableObjects())
+		bool on = lg.visual->lightGroupState(lg.group).value_or(false);
+		if (ImGui::Checkbox(lg.label.c_str(), &on))
 		{
-			auto* visual = dynamic_cast<CVisualObject*>(o.second.get());
-			if (!visual)
-			{
-				continue;
-			}
-			for (const auto& group : visual->lightGroupNames())
-			{
-				anyGroup = true;
-				bool on = visual->lightGroupState(group).value_or(false);
-				const auto label = o.first + ": " + group;
-				if (ImGui::Checkbox(label.c_str(), &on))
-				{
-					visual->setLightGroupState(group, on);
-				}
-			}
+			lg.visual->setLightGroupState(lg.group, on);
 		}
 	}
-	if (!anyGroup)
+	if (objects.lightGroups.empty())
 	{
 		ImGui::TextDisabled("(No object has <light_group> tags)");
 	}
