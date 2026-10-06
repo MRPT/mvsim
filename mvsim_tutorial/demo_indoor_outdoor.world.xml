@@ -76,10 +76,10 @@
 		<elevation_image>sensor_fusion_terrain.png</elevation_image>
 		<elevation_image_min_z>0.0</elevation_image_min_z>
 		<elevation_image_max_z>4.0</elevation_image_max_z>
-		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_BaseColor.png</texture_image>
-		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Grass01_1K_NormalGL.png</normal_map_image>
-		<texture_size_x>1.5</texture_size_x>
-		<texture_size_y>1.5</texture_size_y>
+		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_BaseColor.png</texture_image>
+		<normal_map_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Pebbles02_512_NormalGL.png</normal_map_image>
+		<texture_extension_x>1.5</texture_extension_x>
+		<texture_extension_y>1.5</texture_extension_y>
 		<corner_min_x>-37.5</corner_min_x>
 		<corner_min_y>-37.5</corner_min_y>
 	</element>
@@ -528,7 +528,7 @@
 
 		<!-- IMU -->
 		<include file="../definitions/imu.sensor.xml"
-		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.5" sensor_yaw="0"
+		  sensor_x="0.0"  sensor_y="0.0" sensor_z="0.25" sensor_yaw="0"
 		  sensor_name="imu"
 		  sensor_measure_orientation="true"
 		  sensor_period_sec="$f{1/200.0}"
