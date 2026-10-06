@@ -324,6 +324,8 @@ void World::internal_GUI_thread()
 		// variable:
 		glfwWindowHint(GLFW_SAMPLES, std::max(0, mrpt::get_env<int>("MVSIM_MSAA_SAMPLES", 0)));
 		glfwWindowHint(GLFW_DEPTH_BITS, 24);
+		// So the scene gamma correction is applied:
+		glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 		glfwWindowHint(GLFW_MAXIMIZED, guiOptions_.start_maximized ? GLFW_TRUE : GLFW_FALSE);
 
 		GLFWwindow* win = glfwCreateWindow(
