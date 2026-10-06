@@ -172,6 +172,14 @@ void World::add_gui_panel(const gui::WindowDescription& panel)
 		{
 			GUI::UserPanel p;
 			p.desc = panel;
+			p.id = panel.title;
+			const auto nSameTitle = std::count_if(
+				gui_.userPanels.begin(), gui_.userPanels.end(),
+				[&](const GUI::UserPanel& o) { return o.desc.title == panel.title; });
+			if (nSameTitle > 0)
+			{
+				p.id += "#" + std::to_string(nSameTitle);
+			}
 			gui_.userPanels.push_back(std::move(p));
 		});
 }
@@ -213,7 +221,7 @@ void World::GUI::draw_user_panels()
 		ImGui::SetNextWindowSize(
 			ImVec2(static_cast<float>(d.size[0]), static_cast<float>(d.size[1])),
 			ImGuiCond_FirstUseEver);
-		const std::string winTitle = d.title + "###user:" + d.title;
+		const std::string winTitle = d.title + "###user:" + p.id;
 		dock_new_window_right(winTitle);
 		if (!ImGui::Begin(winTitle.c_str(), &p.open))
 		{
@@ -226,8 +234,7 @@ void World::GUI::draw_user_panels()
 			for (size_t i = 0; i < tab.widgets.size(); i++)
 			{
 				draw_user_widget(
-					tab.widgets[i],
-					d.title + "/" + std::to_string(tabIdx) + "/" + std::to_string(i),
+					tab.widgets[i], p.id + "/" + std::to_string(tabIdx) + "/" + std::to_string(i),
 					p.checkStates);
 			}
 		};
@@ -548,7 +555,7 @@ void World::GUI::draw_menu_bar()
 		ImGui::MenuItem(WIN_MESSAGES, nullptr, &showMessages);
 		for (auto& p : userPanels)
 		{
-			ImGui::MenuItem((p.desc.title + "###menu:" + p.desc.title).c_str(), nullptr, &p.open);
+			ImGui::MenuItem((p.desc.title + "###menu:" + p.id).c_str(), nullptr, &p.open);
 		}
 		if (ImGui::BeginMenu(ICON_MS_PHOTO_CAMERA " Sensor previews", !sensorPreviews.empty()))
 		{

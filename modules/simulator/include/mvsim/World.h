@@ -1113,6 +1113,9 @@ class World : public mrpt::system::COutputLogger
 		struct UserPanel
 		{
 			gui::WindowDescription desc;
+			/// Unique ImGui ID: the title, plus a suffix for repeated titles.
+			/// Stable across runs, so the saved layout applies.
+			std::string id;
 			bool open = true;
 			std::map<std::string, bool> checkStates;  //!< By widget id
 		};
