@@ -199,6 +199,14 @@ void World::insertBlock(const Block::Ptr& block)
 
 void World::free_opengl_resources()
 {
+	// The GUI thread renders these scenes: stop it first. It frees its own
+	// OpenGL resources before exiting.
+	if (gui_thread_.joinable() && gui_thread_.get_id() != std::this_thread::get_id())
+	{
+		simulator_must_close(true);
+		gui_thread_.join();
+	}
+
 	auto lck = mrpt::lockHelper(worldPhysicalMtx_);
 
 	worldPhysical_.clear();

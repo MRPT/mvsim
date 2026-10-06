@@ -14,7 +14,6 @@
 
 #include <atomic>
 #include <csignal>	// sigaction
-#include <cstdlib>	// _Exit()
 #include <rapidxml_utils.hpp>
 #include <thread>
 
@@ -92,14 +91,7 @@ namespace
 std::atomic_int g_signalCount{0};
 }  // namespace
 
-void mvsim_signal_handler(int /*s*/)
-{
-	if (g_signalCount++ > 0)
-	{
-		// A second Ctrl+C: quit right away.
-		std::_Exit(1);
-	}
-}
+void mvsim_signal_handler(int /*s*/) { g_signalCount++; }
 
 void mvsim_install_signal_handler()
 {
