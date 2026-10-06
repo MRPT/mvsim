@@ -928,6 +928,7 @@ class World : public mrpt::system::COutputLogger
 		mrpt::math::TPoint3D clickedPt{0, 0, 0};
 
 		void prepare_control_window();
+		void prepare_lights_window();
 		void prepare_status_window();
 		void prepare_editor_window();
 
@@ -990,6 +991,9 @@ class World : public mrpt::system::COutputLogger
 	/** Scales the diffuse and specular intensities of the directional light
 	 * (from the world XML options) by the given factor. */
 	void setLightIntensityFactor(const float factor);
+
+	/** Changes the ambient light intensity (both viewports). */
+	void setLightAmbient(const float ambient);
 
 	/// Applies lightOptions_ to the visual and physical world viewports.
 	void applyLightOptions();

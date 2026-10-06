@@ -30,8 +30,9 @@ Its direction is controlled via azimuth and elevation angles, and it always cast
   The orbit-like azimuth and elevation angles (in **degrees**) of the directional light source.
   For example, an elevation of ``90`` means a pure vertical (downwards) light.
 
-The GUI "Control" window has sliders for the light azimuth and elevation, and for its
-intensity (a factor from 0 to 2 applied to ``light_diffuse`` and ``light_specular``).
+The GUI "Lights" window (opened from the top-left window menu) has controls for shadows,
+the light azimuth and elevation, its intensity (a factor from 0 to 2 applied to
+``light_diffuse`` and ``light_specular``), and the ambient light intensity.
 
 .. raw:: html
 

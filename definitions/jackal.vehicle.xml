@@ -71,14 +71,14 @@
       <light_group name="headlights" initially_on="${headlights_on|true}">
         <spot_light>
           <position>0.26 0.11 0.17</position> <direction>1 0 -0.25</direction>
-          <color>#fff4e0</color> <diffuse>2.5</diffuse> <specular>0.5</specular>
+          <color>#fff4e0</color> <diffuse>2.5</diffuse> <specular>0.05</specular>
           <inner_cutoff_deg>18</inner_cutoff_deg> <outer_cutoff_deg>28</outer_cutoff_deg>
           <attenuation_linear>0.05</attenuation_linear> <attenuation_quadratic>0.02</attenuation_quadratic>
           <range>12.0</range>
         </spot_light>
         <spot_light>
           <position>0.26 -0.11 0.17</position> <direction>1 0 -0.25</direction>
-          <color>#fff4e0</color> <diffuse>2.5</diffuse> <specular>0.5</specular>
+          <color>#fff4e0</color> <diffuse>2.5</diffuse> <specular>0.05</specular>
           <inner_cutoff_deg>18</inner_cutoff_deg> <outer_cutoff_deg>28</outer_cutoff_deg>
           <attenuation_linear>0.05</attenuation_linear> <attenuation_quadratic>0.02</attenuation_quadratic>
           <range>12.0</range>

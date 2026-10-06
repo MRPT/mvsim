@@ -126,53 +126,6 @@ void World::GUI::prepare_control_window()
 		 "Orthogonal view", [&](bool b) { gui_win->camera().setProjectiveModel(!b); })
 		->setChecked(parent_.guiOptions_.ortho);
 
-	w->add<nanogui::CheckBox>(
-		 "Enable shadows",
-		 [&](bool b)
-		 {
-			 auto vv = parent_.worldVisual_->getViewport();
-			 auto vp = parent_.worldPhysical_.getViewport();
-			 vv->enableShadowCasting(b);
-			 vp->enableShadowCasting(b);
-			 parent_.lightOptions_.enable_shadows = b;
-		 })
-		->setChecked(parent_.lightOptions_.enable_shadows);
-
-	w->add<nanogui::Label>("Light azimuth:");
-	{
-		auto sl = w->add<nanogui::Slider>();
-		sl->setRange({-M_PI, M_PI});
-		sl->setValue(parent_.lightOptions_.light_azimuth);
-		sl->setCallback(
-			[this](float v)
-			{
-				parent_.lightOptions_.light_azimuth = v;
-				parent_.setLightDirectionFromAzimuthElevation(
-					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
-			});
-	}
-	w->add<nanogui::Label>("Light elevation:");
-	{
-		auto sl = w->add<nanogui::Slider>();
-		sl->setRange({0, M_PI * 0.5});
-		sl->setValue(parent_.lightOptions_.light_elevation);
-		sl->setCallback(
-			[this](float v)
-			{
-				parent_.lightOptions_.light_elevation = v;
-				parent_.setLightDirectionFromAzimuthElevation(
-					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
-			});
-	}
-
-	w->add<nanogui::Label>("Light intensity:");
-	{
-		auto sl = w->add<nanogui::Slider>();
-		sl->setRange({0, 2});
-		sl->setValue(1);
-		sl->setCallback([this](float v) { parent_.setLightIntensityFactor(v); });
-	}
-
 	w->add<nanogui::CheckBox>("View forces", [&](bool b) { parent_.guiOptions_.show_forces = b; })
 		->setChecked(parent_.guiOptions_.show_forces);
 
@@ -225,6 +178,75 @@ void World::GUI::prepare_control_window()
 			 }
 		 })
 		->setChecked(false);
+}
+
+// Add lights window:
+void World::GUI::prepare_lights_window()
+{
+	const auto subwinIdx = gui_win->getSubwindowCount();
+	nanogui::Window* w = gui_win->createManagedSubWindow("Lights");
+
+	w->setPosition({340, 80});
+	w->setLayout(
+		new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 5));
+	w->setFixedWidth(220);
+
+	w->add<nanogui::CheckBox>(
+		 "Enable shadows",
+		 [&](bool b)
+		 {
+			 auto vv = parent_.worldVisual_->getViewport();
+			 auto vp = parent_.worldPhysical_.getViewport();
+			 vv->enableShadowCasting(b);
+			 vp->enableShadowCasting(b);
+			 parent_.lightOptions_.enable_shadows = b;
+		 })
+		->setChecked(parent_.lightOptions_.enable_shadows);
+
+	w->add<nanogui::Label>("Sun azimuth:");
+	{
+		auto sl = w->add<nanogui::Slider>();
+		sl->setRange({-M_PI, M_PI});
+		sl->setValue(parent_.lightOptions_.light_azimuth);
+		sl->setCallback(
+			[this](float v)
+			{
+				parent_.lightOptions_.light_azimuth = v;
+				parent_.setLightDirectionFromAzimuthElevation(
+					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
+			});
+	}
+	w->add<nanogui::Label>("Sun elevation:");
+	{
+		auto sl = w->add<nanogui::Slider>();
+		sl->setRange({0, M_PI * 0.5});
+		sl->setValue(parent_.lightOptions_.light_elevation);
+		sl->setCallback(
+			[this](float v)
+			{
+				parent_.lightOptions_.light_elevation = v;
+				parent_.setLightDirectionFromAzimuthElevation(
+					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
+			});
+	}
+
+	w->add<nanogui::Label>("Sun intensity:");
+	{
+		auto sl = w->add<nanogui::Slider>();
+		sl->setRange({0, 2});
+		sl->setValue(1);
+		sl->setCallback([this](float v) { parent_.setLightIntensityFactor(v); });
+	}
+
+	w->add<nanogui::Label>("Ambient light:");
+	{
+		auto sl = w->add<nanogui::Slider>();
+		sl->setRange({0, 1});
+		sl->setValue(parent_.lightOptions_.light_ambient);
+		sl->setCallback([this](float v) { parent_.setLightAmbient(v); });
+	}
+
+	gui_win->subwindowMinimize(subwinIdx);
 }
 
 // Add Status window
@@ -706,6 +728,7 @@ void World::internal_GUI_thread()
 
 		// Windows:
 		gui_.prepare_control_window();
+		gui_.prepare_lights_window();
 		gui_.prepare_status_window();
 		gui_.prepare_editor_window();
 
@@ -1424,6 +1447,17 @@ void World::applyLightOptions()
 
 	lambdaSetLightParams(vv);
 	lambdaSetLightParams(vp);
+}
+
+void World::setLightAmbient(const float ambient)
+{
+	ASSERT_(worldVisual_);
+
+	auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+
+	lightOptions_.light_ambient = ambient;
+	worldVisual_->getViewport()->lightParameters().ambient = ambient;
+	worldPhysical_.getViewport()->lightParameters().ambient = ambient;
 }
 
 void World::setLightIntensityFactor(const float factor)
