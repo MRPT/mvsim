@@ -42,6 +42,7 @@
 #include <cmath>  // cos(), sin()
 #include <cstdlib>	// getenv()
 #include <filesystem>
+#include <iostream>
 #include <rapidxml.hpp>
 #include <type_traits>
 
@@ -725,6 +726,23 @@ void World::GUI::handle_mouse_operations()
 		}
 	}
 
+	if (mouseCallback)
+	{
+		gui::MouseState ms;
+		ms.pt = clickedPt;
+		ms.over_scene = scene_hovered();
+		ms.left_down = ms.over_scene && ImGui::IsMouseDown(ImGuiMouseButton_Left);
+		ms.right_down = ms.over_scene && ImGui::IsMouseDown(ImGuiMouseButton_Right);
+		try
+		{
+			mouseCallback(ms);
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "[mvsim gui] Exception in the mouse callback:\n" << e.what() << std::endl;
+		}
+	}
+
 	MRPT_END
 }
 
@@ -747,9 +765,20 @@ void World::internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects)
 {
 	auto tle = mrpt::system::CTimeLoggerEntry(timlogger_, "internalRunSensorsOn3DScene");
 
-	for (auto& v : vehicles_)
-		for (auto& sensor : v.second->getSensors())
-			if (sensor) sensor->simulateOn3DScene(physicalObjects);
+	{
+		// User objects are shared with the application, which may modify them:
+		const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
+		for (auto& v : vehicles_)
+		{
+			for (auto& sensor : v.second->getSensors())
+			{
+				if (sensor)
+				{
+					sensor->simulateOn3DScene(physicalObjects);
+				}
+			}
+		}
+	}
 
 	// clear the flag of pending 3D simulation required:
 	clear_pending_running_sensors_on_3D_scene();

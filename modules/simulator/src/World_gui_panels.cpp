@@ -32,7 +32,10 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cfloat>
 #include <iostream>
+#include <map>
+#include <variant>
 
 using namespace mvsim;
 
@@ -72,11 +75,189 @@ ImTextureRef as_imgui_texture(unsigned int glTexture)
 	return ImTextureRef(static_cast<ImTextureID>(glTexture));
 }
 
+void call_user_callback(const std::function<void()>& f)
+{
+	try
+	{
+		f();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "[mvsim gui] Exception in a custom panel callback:\n" << e.what() << std::endl;
+	}
+}
+
+// Draws one widget of a custom panel. `id` must be unique within the window.
+void draw_user_widget(
+	const gui::AnyWidget& any, const std::string& id, std::map<std::string, bool>& checkStates)
+{
+	std::visit(
+		[&](const auto& w)
+		{
+			using T = std::decay_t<decltype(w)>;
+			if constexpr (std::is_same_v<T, gui::Row>)
+			{
+				for (size_t i = 0; i < w.widgets.size(); i++)
+				{
+					if (i > 0)
+					{
+						ImGui::SameLine();
+					}
+					// Row members are leaf widgets, a subset of AnyWidget:
+					std::visit(
+						[&](const auto& leaf)
+						{ draw_user_widget(leaf, id + "." + std::to_string(i), checkStates); },
+						w.widgets[i]);
+				}
+			}
+			else if constexpr (std::is_same_v<T, gui::Label>)
+			{
+				if (w.text)
+				{
+					w.text->poll_into_display();
+					ImGui::TextUnformatted(w.text->display.c_str());
+				}
+			}
+			else if constexpr (std::is_same_v<T, gui::Separator>)
+			{
+				ImGui::Separator();
+			}
+			else if constexpr (std::is_same_v<T, gui::CheckBox>)
+			{
+				auto [it, isNew] = checkStates.try_emplace(id, w.initial_value);
+				if (ImGui::Checkbox((w.label + "##" + id).c_str(), &it->second) && w.on_change)
+				{
+					call_user_callback([&]() { w.on_change(it->second); });
+				}
+			}
+			else if constexpr (std::is_same_v<T, gui::Button>)
+			{
+				if (ImGui::Button((w.label + "##" + id).c_str()) && w.on_click)
+				{
+					call_user_callback(w.on_click);
+				}
+			}
+			else if constexpr (std::is_same_v<T, gui::TextBox>)
+			{
+				if (!w.live_value)
+				{
+					return;
+				}
+				if (!w.label.empty())
+				{
+					ImGui::TextUnformatted(w.label.c_str());
+				}
+				w.live_value->poll_into_display();
+				ImGui::SetNextItemWidth(-FLT_MIN);
+				if (ImGui::InputText(("##" + id).c_str(), &w.live_value->display) && w.on_change)
+				{
+					call_user_callback([&]() { w.on_change(w.live_value->display); });
+				}
+			}
+		},
+		any);
+}
+
 }  // namespace
 
 World::GUI::GUI(World& parent) : parent_(parent) {}
 
 World::GUI::~GUI() = default;
+
+void World::add_gui_panel(const gui::WindowDescription& panel)
+{
+	// The list of panels is only accessed from the GUI thread:
+	enqueue_task_to_run_in_gui_thread(
+		[this, panel]()
+		{
+			GUI::UserPanel p;
+			p.desc = panel;
+			p.id = panel.title;
+			const auto nSameTitle = std::count_if(
+				gui_.userPanels.begin(), gui_.userPanels.end(),
+				[&](const GUI::UserPanel& o) { return o.desc.title == panel.title; });
+			if (nSameTitle > 0)
+			{
+				p.id += "#" + std::to_string(nSameTitle);
+			}
+			gui_.userPanels.push_back(std::move(p));
+		});
+}
+
+void World::set_gui_mouse_callback(const std::function<void(const gui::MouseState&)>& callback)
+{
+	enqueue_task_to_run_in_gui_thread([this, callback]() { gui_.mouseCallback = callback; });
+}
+
+void World::GUI::dock_new_window_right(const std::string& title)
+{
+	// New windows, without saved settings, go to the right column:
+	if (dockRightId_ == 0 && !ImGui::FindWindowSettingsByID(ImHashStr(title.c_str())))
+	{
+		if (const ImGuiDockNode* central = ImGui::DockBuilderGetCentralNode(dockspaceId_); central)
+		{
+			ImGuiID centralId = central->ID;
+			dockRightId_ =
+				ImGui::DockBuilderSplitNode(centralId, ImGuiDir_Right, 0.28f, nullptr, &centralId);
+			ImGui::DockBuilderFinish(dockspaceId_);
+		}
+	}
+	if (dockRightId_ != 0)
+	{
+		ImGui::SetNextWindowDockID(dockRightId_, ImGuiCond_FirstUseEver);
+	}
+}
+
+void World::GUI::draw_user_panels()
+{
+	for (auto& p : userPanels)
+	{
+		if (!p.open)
+		{
+			continue;
+		}
+		const auto& d = p.desc;
+
+		ImGui::SetNextWindowSize(
+			ImVec2(static_cast<float>(d.size[0]), static_cast<float>(d.size[1])),
+			ImGuiCond_FirstUseEver);
+		const std::string winTitle = d.title + "###user:" + p.id;
+		dock_new_window_right(winTitle);
+		if (!ImGui::Begin(winTitle.c_str(), &p.open))
+		{
+			ImGui::End();
+			continue;
+		}
+
+		const auto drawTab = [&](const gui::Tab& tab, size_t tabIdx)
+		{
+			for (size_t i = 0; i < tab.widgets.size(); i++)
+			{
+				draw_user_widget(
+					tab.widgets[i], p.id + "/" + std::to_string(tabIdx) + "/" + std::to_string(i),
+					p.checkStates);
+			}
+		};
+
+		if (d.tabs.size() == 1)
+		{
+			drawTab(d.tabs.front(), 0);
+		}
+		else if (ImGui::BeginTabBar("##tabs"))
+		{
+			for (size_t t = 0; t < d.tabs.size(); t++)
+			{
+				if (ImGui::BeginTabItem(d.tabs[t].title.c_str()))
+				{
+					drawTab(d.tabs[t], t);
+					ImGui::EndTabItem();
+				}
+			}
+			ImGui::EndTabBar();
+		}
+		ImGui::End();
+	}
+}
 
 void World::GUI::select(const std::string& name, const Simulable::Ptr& obj)
 {
@@ -198,6 +379,7 @@ void World::GUI::draw_frame()
 		draw_messages_panel();
 	}
 	draw_sensor_previews();
+	draw_user_panels();
 
 	handle_mouse_operations();
 
@@ -238,8 +420,12 @@ void World::GUI::draw_frame()
 		glQueryCounter(q[0], GL_TIMESTAMP);
 	}
 
-	// The 3D scene is rendered from within here, behind all windows:
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	// The 3D scene is rendered from within here, behind all windows. User
+	// objects are shared with the application, which may modify them:
+	{
+		const auto lck = mrpt::lockHelper(parent_.guiUserObjectsMtx_);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
 
 	if (canQuery)
 	{
@@ -367,6 +553,10 @@ void World::GUI::draw_menu_bar()
 		ImGui::MenuItem(WIN_INSPECTOR, nullptr, &showInspector);
 		ImGui::MenuItem(WIN_LIGHTING, nullptr, &showLighting);
 		ImGui::MenuItem(WIN_MESSAGES, nullptr, &showMessages);
+		for (auto& p : userPanels)
+		{
+			ImGui::MenuItem((p.desc.title + "###menu:" + p.id).c_str(), nullptr, &p.open);
+		}
 		if (ImGui::BeginMenu(ICON_MS_PHOTO_CAMERA " Sensor previews", !sensorPreviews.empty()))
 		{
 			for (auto& [name, p] : sensorPreviews)
@@ -828,22 +1018,7 @@ void World::GUI::draw_sensor_previews()
 
 		const std::string title = preview_window_title(name);
 
-		// New windows, without saved settings, go to the right column:
-		if (dockRightId_ == 0 && !ImGui::FindWindowSettingsByID(ImHashStr(title.c_str())))
-		{
-			if (const ImGuiDockNode* central = ImGui::DockBuilderGetCentralNode(dockspaceId_);
-				central)
-			{
-				ImGuiID centralId = central->ID;
-				dockRightId_ = ImGui::DockBuilderSplitNode(
-					centralId, ImGuiDir_Right, 0.28f, nullptr, &centralId);
-				ImGui::DockBuilderFinish(dockspaceId_);
-			}
-		}
-		if (dockRightId_ != 0)
-		{
-			ImGui::SetNextWindowDockID(dockRightId_, ImGuiCond_FirstUseEver);
-		}
+		dock_new_window_right(title);
 		ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
 
 		p.visible = ImGui::Begin(title.c_str(), &p.open);

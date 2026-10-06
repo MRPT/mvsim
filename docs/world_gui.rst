@@ -18,6 +18,11 @@ Panels can be docked, tabbed, or detached; their layout is saved automatically i
 ``~/.config/mvsim/imgui.ini`` (``$XDG_CONFIG_HOME/mvsim/`` if set; ``%APPDATA%\mvsim\`` on Windows)
 and restored next time, for all worlds.
 
+Applications that link against libmvsim can add their own panels with
+``World::add_gui_panel()``, described as plain data (``mvsim/GUIPanel.h``: tabs, rows, labels,
+buttons, check boxes and text boxes), so they do not need Dear ImGui. Callbacks run in the GUI
+thread, and ``World::set_gui_mouse_callback()`` reports the mouse over the 3D view each frame.
+
 The 3D view has no anti-aliasing by default, to keep OpenGL sensors (cameras, lidars) fast.
 To enable multisampling anti-aliasing, set the environment variable ``MVSIM_MSAA_SAMPLES``
 (e.g. ``MVSIM_MSAA_SAMPLES=4``) before launching MVSim.
