@@ -551,6 +551,12 @@ void MVSimNode::thread_update_GUI(TThreadParams& thread_params)
 				std::this_thread::sleep_for(std::chrono::milliseconds(obj->gui_refresh_period_ms_));
 			}
 		}
+
+		// OpenGL resources must be freed from the thread that created them:
+		if (obj->world_init_ok_ && obj->headless_)
+		{
+			obj->mvsim_world_->internalFreeOpenGLResourcesForSimulation();
+		}
 	}
 	catch (const std::exception& e)
 	{

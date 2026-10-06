@@ -612,11 +612,7 @@ void World::internal_GUI_thread()
 		}
 		gui_.sceneView.reset();
 
-		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-		for (auto& obj : getListOfSimulableObjects())
-		{
-			obj.second->freeOpenGLResources();
-		}
+		internalFreeOpenGLResourcesForSimulation();
 	}
 	catch (const std::exception& e)
 	{
@@ -1040,6 +1036,15 @@ void World::internal_gui_on_observation_image(
 	if (gui_.preview_needs_update(name, 0))
 	{
 		gui_.update_preview_texture(name, 0, obs->image, startVisible);
+	}
+}
+
+void World::internalFreeOpenGLResourcesForSimulation()
+{
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+	for (auto& obj : getListOfSimulableObjects())
+	{
+		obj.second->freeOpenGLResources();
 	}
 }
 

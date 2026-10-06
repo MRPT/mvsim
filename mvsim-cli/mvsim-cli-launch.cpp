@@ -414,6 +414,9 @@ void mvsim_server_thread_headless(TThreadParams& thread_params)
 
 		// in case we are here due to simulator_must_close()
 		thread_params.closing(true);
+
+		// OpenGL resources must be freed from the thread that created them:
+		thread_params.world->internalFreeOpenGLResourcesForSimulation();
 	}
 	catch (const std::exception& e)
 	{
