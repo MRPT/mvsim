@@ -23,6 +23,7 @@ add_library(${PROJECT_NAME}
 	src/VisualObject.cpp
 	src/Wheel.cpp
 	src/World_gui.cpp
+	src/World_gui_panels.cpp
 	src/World_load_xml.cpp
 	src/World_services.cpp
 	src/World_simul.cpp
@@ -147,7 +148,8 @@ set(PACKAGE_DEPENDENCIES
   mrpt_obs
   mrpt_opengl
   mrpt_maps
-  mrpt_gui
+  mrpt_imgui
+  mrpt_imgui_vendor
   mrpt_topography
   ${DEP_MVSIM_COMMS_PKG}
   box2d
@@ -158,11 +160,13 @@ mvsim_common_target_settings(${MODULE_NAME})
 target_link_libraries(${PROJECT_NAME}
 PRIVATE
 	${DEP_MVSIM_MSGS_TRG}
+	mrpt::mrpt_imgui
+	mrpt::mrpt_imgui_vendor
+	Eigen3::Eigen
 PUBLIC
 	mrpt::mrpt_obs
 	mrpt::mrpt_opengl
 	mrpt::mrpt_maps
-	mrpt::mrpt_gui
 	mrpt::mrpt_topography
 	${DEP_MVSIM_COMMS_TRG}
 	${BOX2D_LIBRARIES}

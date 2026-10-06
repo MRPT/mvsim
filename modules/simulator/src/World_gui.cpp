@@ -24,9 +24,24 @@
 #include <mvsim/World.h>
 #include <mvsim/assets/mvsim_icon_64x64.h>
 
+#include <Eigen/Dense>	// asEigen()
+
+// clang-format off
+#include <imgui.h>
+#include <imgui_internal.h>  // DockBuilder*
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+#include <IconsMaterialSymbols.h>
+#include <mrpt/imgui/CImGuiSceneView.h>
+#include <mrpt/imgui_vendor/icon_font.h>
+#include <GLFW/glfw3.h>
+// clang-format on
+
 #include <algorithm>
 #include <cctype>  // isspace()
 #include <cmath>  // cos(), sin()
+#include <cstdlib>	// getenv()
+#include <filesystem>
 #include <rapidxml.hpp>
 #include <type_traits>
 
@@ -77,695 +92,343 @@ void World::LightOptions::parse_from(
 	}
 }
 
+namespace
+{
+// Dear ImGui needs an OpenGL 3.3 context; mrpt rendering too.
+constexpr int GL_MAJOR = 3;
+constexpr int GL_MINOR = 3;
+constexpr float FONT_SIZE = 15.0f;
+
+// Frame rate while the user interacts with the window, and for how long
+// after the last input event:
+constexpr double INTERACTIVE_FPS = 60.0;
+constexpr double INTERACTIVE_HOLD_TIME = 1.0;  // [s]
+
+// Frame scheduling, so GUI frames do not delay OpenGL sensors:
+// - A frame is postponed until after the next sensors if it would not finish
+//   before them (plus this margin), but never by more than this number of
+//   frame periods:
+constexpr double SENSOR_MARGIN = 0.005;	 // [s]
+constexpr double MAX_POSTPONE_PERIODS = 2.0;
+// - While the simulation thread is busier than OVERLOAD_BUSY, the frame rate
+//   decreases (down to MIN_OVERLOAD_FPS), and it recovers below RELAXED_BUSY:
+constexpr double OVERLOAD_BUSY = 0.9;
+constexpr double RELAXED_BUSY = 0.75;
+constexpr double MIN_OVERLOAD_FPS = 5.0;
+constexpr double OVERLOAD_STEP = 1.25;
+
+/** Path of the autosaved ImGui settings (window layout), shared by all
+ * worlds, or empty if no config directory can be found or created. */
+std::string imgui_ini_path()
+{
+	namespace fs = std::filesystem;
+	fs::path base;
+#ifdef _WIN32
+	if (const char* appData = std::getenv("APPDATA"); appData && *appData)
+	{
+		base = fs::path(appData) / "mvsim";
+	}
+#else
+	if (const char* xdg = std::getenv("XDG_CONFIG_HOME"); xdg && *xdg)
+	{
+		base = fs::path(xdg) / "mvsim";
+	}
+	else if (const char* home = std::getenv("HOME"); home && *home)
+	{
+		base = fs::path(home) / ".config" / "mvsim";
+	}
+#endif
+	if (base.empty())
+	{
+		return {};
+	}
+	std::error_code ec;
+	fs::create_directories(base, ec);
+	if (ec)
+	{
+		return {};
+	}
+	return (base / "imgui.ini").string();
+}
+
+void set_window_icon(GLFWwindow* win)
+{
+	// GIMP header image file format (RGB), with 0xff as transparent color:
+	constexpr uint8_t TRANSPARENT = 0xff;
+	std::vector<uint8_t> rgba(mvsim_icon_width * mvsim_icon_height * 4);
+	const char* in = mvsim_icon_data;
+	uint8_t* out = rgba.data();
+	for (unsigned int i = 0; i < mvsim_icon_width * mvsim_icon_height; i++)
+	{
+		MVSIM_HEADER_PIXEL(in, out);
+		out[3] =
+			(out[0] == TRANSPARENT && out[1] == TRANSPARENT && out[2] == TRANSPARENT) ? 0x00 : 0xff;
+		out += 4;
+	}
+	GLFWimage img;
+	img.width = static_cast<int>(mvsim_icon_width);
+	img.height = static_cast<int>(mvsim_icon_height);
+	img.pixels = rgba.data();
+	glfwSetWindowIcon(win, 1, &img);
+}
+
+World* world_from(GLFWwindow* w) { return static_cast<World*>(glfwGetWindowUserPointer(w)); }
+
+// GLFW input callbacks. ImGui chains to them, since they are installed
+// before initializing its GLFW backend.
+void on_glfw_key(GLFWwindow* w, int key, int /*scancode*/, int action, int mods)
+{
+	World* world = world_from(w);
+	world->internal_on_gui_key(key, action, mods);
+}
+void on_glfw_cursor(GLFWwindow* w, double /*x*/, double /*y*/)
+{
+	world_from(w)->internal_on_gui_input_event();
+}
+void on_glfw_mouse_button(GLFWwindow* w, int /*button*/, int /*action*/, int /*mods*/)
+{
+	world_from(w)->internal_on_gui_input_event();
+}
+void on_glfw_scroll(GLFWwindow* w, double /*dx*/, double /*dy*/)
+{
+	world_from(w)->internal_on_gui_input_event();
+}
+void on_glfw_focus(GLFWwindow* w, int focused)
+{
+	world_from(w)->internal_on_gui_focus(focused == GLFW_TRUE);
+}
+
+void setup_imgui_fonts_and_style(GLFWwindow* win)
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	ImFontConfig textCfg;
+	textCfg.SizePixels = FONT_SIZE;
+	io.Fonts->AddFontDefaultVector(&textCfg);
+
+	// Merge the icons into the text font:
+	ImFontConfig iconCfg;
+	iconCfg.MergeMode = true;
+	iconCfg.FontDataOwnedByAtlas = false;  // static array
+	iconCfg.GlyphMinAdvanceX = FONT_SIZE;  // monospaced icons
+	iconCfg.GlyphOffset.y = 3.0f;
+	static const ImWchar iconRanges[] = {ICON_MIN_MS, ICON_MAX_16_MS, 0};
+	io.Fonts->AddFontFromMemoryTTF(
+		const_cast<void*>(mrpt::imgui_vendor::iconFontData()),
+		static_cast<int>(mrpt::imgui_vendor::iconFontDataSize()), FONT_SIZE, &iconCfg, iconRanges);
+
+	ImGui::StyleColorsDark();
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.WindowRounding = 4.0f;
+	style.FrameRounding = 3.0f;
+	style.TabRounding = 3.0f;
+	style.Colors[ImGuiCol_WindowBg].w = 0.92f;
+
+	// HiDPI monitors:
+	float xScale = 1.0f;
+	float yScale = 1.0f;
+	glfwGetWindowContentScale(win, &xScale, &yScale);
+	if (xScale > 1.0f)
+	{
+		style.ScaleAllSizes(xScale);
+		style.FontScaleDpi = xScale;
+	}
+}
+
+}  // namespace
+
 //!< Return true if the GUI window is open, after a previous call to
 //! update_GUI()
-bool World::is_GUI_open() const { return !!gui_.gui_win; }
-//!< Forces closing the GUI window, if any.
-void World::close_GUI() { gui_.gui_win.reset(); }
+bool World::is_GUI_open() const { return gui_.window != nullptr && !gui_.hideRequested; }
 
-// Add top menu subwindow:
-void World::GUI::prepare_control_window()
+//!< Hides the GUI window, if any. The simulation keeps running.
+void World::close_GUI()
 {
-	nanogui::Window* w = gui_win->createManagedSubWindow("Control");
-
-	// Place control UI at the top-left corner:
-	gui_win->getSubWindowsUI()->setPosition({1, 1});
-
-	w->setPosition({1, 80});
-	w->setLayout(
-		new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 5));
-
-	w->add<nanogui::Button>("Quit", ENTYPO_ICON_ARROW_BOLD_LEFT)
-		->setCallback(
-			[this]()
-			{
-				parent_.simulator_must_close(true);
-				gui_win->setVisible(false);
-				nanogui::leave();
-			});
-
-	std::vector<std::string> lstVehicles;
-	lstVehicles.reserve(parent_.vehicles_.size() + 1);
-
-	lstVehicles.push_back("[none]");  // None
-	for (const auto& v : parent_.vehicles_) lstVehicles.push_back(v.first);
-
-	w->add<nanogui::Label>("Camera follows:");
-	auto cbFollowVeh = w->add<nanogui::ComboBox>(lstVehicles);
-	cbFollowVeh->setSelectedIndex(0);
-	cbFollowVeh->setCallback(
-		[this, lstVehicles](int idx)
-		{
-			if (idx == 0)
-				parent_.guiOptions_.follow_vehicle.clear();
-			else if (idx <= static_cast<int>(parent_.vehicles_.size()))
-				parent_.guiOptions_.follow_vehicle = lstVehicles[idx];
-		});
-
-	w->add<nanogui::CheckBox>(
-		 "Orthogonal view", [&](bool b) { gui_win->camera().setProjectiveModel(!b); })
-		->setChecked(parent_.guiOptions_.ortho);
-
-	w->add<nanogui::CheckBox>("View forces", [&](bool b) { parent_.guiOptions_.show_forces = b; })
-		->setChecked(parent_.guiOptions_.show_forces);
-
-	w->add<nanogui::CheckBox>(
-		 "View trajectories", [&](bool b) { parent_.guiOptions_.show_trajectories = b; })
-		->setChecked(parent_.guiOptions_.show_trajectories);
-
-	w->add<nanogui::CheckBox>(
-		 "View sensor pointclouds",
-		 [&](bool b)
-		 {
-			 std::lock_guard<std::mutex> lck(gui_win->background_scene_mtx);
-
-			 auto glVizSensors = std::dynamic_pointer_cast<mrpt::viz::CSetOfObjects>(
-				 gui_win->background_scene->getByName("group_sensors_viz"));
-			 ASSERT_(glVizSensors);
-
-			 glVizSensors->setVisibility(b);
-		 })
-		->setChecked(parent_.guiOptions_.show_sensor_points);
-
-	w->add<nanogui::CheckBox>(
-		 "View sensor poses",
-		 [&](bool b)
-		 {
-			 const auto& objs = SensorBase::GetAllSensorsOriginViz();
-			 for (const auto& o : *objs) o->setVisibility(b);
-		 })
-		->setChecked(false);
-
-	w->add<nanogui::CheckBox>(
-		 "View sensor FOVs",
-		 [&](bool b)
-		 {
-			 const auto& objs = SensorBase::GetAllSensorsFOVViz();
-			 for (const auto& o : *objs) o->setVisibility(b);
-		 })
-		->setChecked(false);
-
-	w->add<nanogui::CheckBox>(
-		 "View collision shapes",
-		 [&](bool b)
-		 {
-			 auto lck = mrpt::lockHelper(parent_.simulableObjectsMtx_);
-			 for (auto& s : parent_.simulableObjects_)
-			 {
-				 auto* vis = dynamic_cast<CVisualObject*>(s.second.get());
-				 if (!vis) continue;
-				 vis->showCollisionShape(b);
-			 }
-		 })
-		->setChecked(false);
+	gui_.hideRequested = true;
+	internal_wake_up_gui_thread();
 }
 
-// Add lights window:
-void World::GUI::prepare_lights_window()
+void World::internal_wake_up_gui_thread()
 {
-	const auto subwinIdx = gui_win->getSubwindowCount();
-	nanogui::Window* w = gui_win->createManagedSubWindow("Lights");
-
-	w->setPosition({340, 80});
-	w->setLayout(
-		new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 5));
-	w->setFixedWidth(220);
-
-	w->add<nanogui::CheckBox>(
-		 "Enable shadows",
-		 [&](bool b)
-		 {
-			 auto vv = parent_.worldVisual_->getViewport();
-			 auto vp = parent_.worldPhysical_.getViewport();
-			 vv->enableShadowCasting(b);
-			 vp->enableShadowCasting(b);
-			 parent_.lightOptions_.enable_shadows = b;
-		 })
-		->setChecked(parent_.lightOptions_.enable_shadows);
-
-	cbPointAndSpotLights = w->add<nanogui::CheckBox>(
-		"Point and spot lights", [&](bool b) { parent_.setPointAndSpotLightsEnabled(b); });
-	cbPointAndSpotLights->setChecked(parent_.pointAndSpotLightsEnabled_);
-
-	w->add<nanogui::Label>("Sun azimuth:");
+	std::lock_guard<std::mutex> lck(gui_.windowMtx);
+	if (gui_.windowReady)
 	{
-		auto sl = w->add<nanogui::Slider>();
-		sl->setRange({-M_PI, M_PI});
-		sl->setValue(parent_.lightOptions_.light_azimuth);
-		sl->setCallback(
-			[this](float v)
-			{
-				parent_.lightOptions_.light_azimuth = v;
-				parent_.setLightDirectionFromAzimuthElevation(
-					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
-			});
+		// Thread-safe in GLFW:
+		glfwPostEmptyEvent();
 	}
-	w->add<nanogui::Label>("Sun elevation:");
-	{
-		auto sl = w->add<nanogui::Slider>();
-		sl->setRange({0, M_PI * 0.5});
-		sl->setValue(parent_.lightOptions_.light_elevation);
-		sl->setCallback(
-			[this](float v)
-			{
-				parent_.lightOptions_.light_elevation = v;
-				parent_.setLightDirectionFromAzimuthElevation(
-					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
-			});
-	}
-
-	w->add<nanogui::Label>("Sun intensity:");
-	{
-		auto sl = w->add<nanogui::Slider>();
-		sl->setRange({0, 2});
-		sl->setValue(1);
-		sl->setCallback([this](float v) { parent_.setLightIntensityFactor(v); });
-	}
-
-	w->add<nanogui::Label>("Ambient light:");
-	{
-		auto sl = w->add<nanogui::Slider>();
-		sl->setRange({0, 1});
-		sl->setValue(parent_.lightOptions_.light_ambient);
-		sl->setCallback([this](float v) { parent_.setLightAmbient(v); });
-	}
-
-	gui_win->subwindowMinimize(subwinIdx);
 }
 
-// Add Status window
-void World::GUI::prepare_status_window()
+void World::internal_on_gui_input_event()
 {
-	nanogui::Window* w = gui_win->createManagedSubWindow("Status");
-
-	w->setPosition({5, 455});
-	w->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill));
-	w->setFixedWidth(320);
-
-	lbCpuUsage = w->add<nanogui::Label>(" ");
-	lbStatuses.resize(12);
-	for (size_t i = 0; i < lbStatuses.size(); i++) lbStatuses[i] = w->add<nanogui::Label>(" ");
+	// Mouse events on a window in the background (e.g. under another one) do
+	// not raise the frame rate:
+	if (gui_.windowFocused)
+	{
+		gui_.gotInputEvents = true;
+	}
 }
 
-// Add editor window
-void World::GUI::prepare_editor_window()
+void World::internal_on_gui_focus(bool focused) { gui_.windowFocused = focused; }
+
+void World::internal_on_gui_key(int key, int action, int mods)
 {
-	const auto subwinIdx = gui_win->getSubwindowCount();
-	nanogui::Window* w = gui_win->createManagedSubWindow("Editor");
-	constexpr int pnWidth = 300, pnHeight = 200;
-	constexpr int COORDS_LABEL_WIDTH = 60;
-	constexpr int slidersWidth = pnWidth - 80 - COORDS_LABEL_WIDTH;
+	gui_.gotInputEvents = true;
 
-	w->setPosition({1, 230});
-	w->setLayout(
-		new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Fill, 3, 3));
-	w->setFixedWidth(pnWidth);
-
-	w->add<nanogui::Label>("Selected object", "sans-bold");
-
-	// Auxiliary lambda placeholder for when the user clicks on an object
-	// being able to load its current pose in the GUI controls yet to be
-	// constructed later on:
-	static std::function<void(const mrpt::math::TPose3D)> onEntitySelected;
-	static std::function<void(const mrpt::math::TPose3D)> onEntityMoved;
-
-	auto lckListObjs = mrpt::lockHelper(parent_.getListOfSimulableObjectsMtx());
-	if (!parent_.getListOfSimulableObjects().empty())
+	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 	{
-		auto tab = w->add<nanogui::TabWidget>();
-
-		constexpr size_t NUM_TABS = 6;
-
-		std::array<nanogui::Widget*, NUM_TABS> tabs = {
-			tab->createTab("Vehicles"), tab->createTab("Sensors"), tab->createTab("Blocks"),
-			tab->createTab("Elements"), tab->createTab("Misc."),   tab->createTab("Lights")};
-
-		tab->setActiveTab(0);
-
-		for (auto t : tabs)
-			t->setLayout(new nanogui::BoxLayout(
-				nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 3, 3));
-
-		std::array<nanogui::VScrollPanel*, NUM_TABS> vscrolls = {};
-		for (size_t i = 0; i < NUM_TABS; i++)
-		{
-			vscrolls[i] = tabs[i]->add<nanogui::VScrollPanel>();
-		}
-
-		for (auto vs : vscrolls)
-		{
-			vs->setFixedSize({pnWidth, pnHeight});
-		}
-
-		// vscroll should only have *ONE* child. this is what `wrapper`
-		// is for
-		std::array<nanogui::Widget*, NUM_TABS> wrappers = {};
-		for (size_t i = 0; i < NUM_TABS; i++)
-		{
-			wrappers[i] = vscrolls[i]->add<nanogui::Widget>();
-			wrappers[i]->setFixedSize({pnWidth, pnHeight});
-			wrappers[i]->setLayout(new nanogui::GridLayout(
-				nanogui::Orientation::Horizontal, 1 /*columns */, nanogui::Alignment::Minimum, 3,
-				3));
-		}
-
-		// Extend the list of world objects with the robot sensors:
-		SimulableList listAllObjs = parent_.getListOfSimulableObjects();
-		// Yes: we iterate over parent.getList...(), *not* the local copy, since
-		// it will be modified within the loop.
-		for (const auto& o : parent_.getListOfSimulableObjects())
-		{
-			if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
-			{
-				auto& sensors = v->getSensors();
-				for (auto& sensor : sensors)
-				{
-					const auto sensorFullName =
-						sensor->vehicle().getName() + "."s + sensor->getName();
-					listAllObjs.insert({sensorFullName, sensor});
-				}
-			}
-		}
-
-		// Now, fill the editor list with all the existing objects:
-		for (const auto& o : listAllObjs)
-		{
-			InfoPerObject ipo;
-
-			const auto& name = o.first;
-			int wrapperIdx = -1;  // default. The tag "page" to show this at.
-			if (auto v = dynamic_cast<VehicleBase*>(o.second.get()); v)
-			{
-				wrapperIdx = 0;
-				ipo.visual = dynamic_cast<CVisualObject*>(v);
-			}
-			if (auto v = dynamic_cast<Block*>(o.second.get()); v)
-			{
-				wrapperIdx = 2;
-				ipo.visual = dynamic_cast<CVisualObject*>(v);
-			}
-			if (auto v = dynamic_cast<SensorBase*>(o.second.get()); v)
-			{
-				wrapperIdx = 1;
-				ipo.visual = dynamic_cast<CVisualObject*>(v);
-			}
-			// bool isWorldElement = false;
-			if (auto v = dynamic_cast<WorldElementBase*>(o.second.get()); v)
-			{
-				// isWorldElement = true;
-				wrapperIdx = 3;
-				ipo.visual = dynamic_cast<CVisualObject*>(v);
-			}
-
-			if (wrapperIdx < 0)
-			{
-				continue;  // unknown / non-editable item.
-			}
-
-			auto wrapper = wrappers[wrapperIdx];
-
-			std::string label = name;
-			if (label.empty())
-			{
-				label = "(unnamed)";
-			}
-
-			auto cb = wrapper->add<nanogui::CheckBox>(label);
-			ipo.cb = cb;
-			ipo.simulable = o.second;
-			gui_cbObjects.emplace_back(ipo);
-
-			cb->setChecked(false);
-			cb->setCallback(
-				[cb, ipo, this](bool check)
-				{
-					// deselect former one:
-					if (gui_selectedObject.visual)
-					{
-						gui_selectedObject.visual->showCollisionShape(false);
-					}
-					if (gui_selectedObject.cb)
-					{
-						gui_selectedObject.cb->setChecked(false);
-					}
-					gui_selectedObject = InfoPerObject();
-
-					cb->setChecked(check);
-
-					// If checked, show bounding box:
-					if (ipo.visual && check)
-					{
-						gui_selectedObject = ipo;
-						ipo.visual->showCollisionShape(true);
-					}
-
-					const bool btnsEnabled = !!gui_selectedObject.simulable;
-					for (auto b : btns_selectedOps) b->setEnabled(btnsEnabled);
-
-					// Set current coordinates in controls:
-					if (ipo.simulable && onEntitySelected)
-					{
-						onEntitySelected(ipo.simulable->getRelativePose());
-					}
-				});
-		}
-
-		// "Lights" tab: switch the light groups of each object
-		// --------------
-		for (const auto& o : parent_.getListOfSimulableObjects())
-		{
-			auto* visual = dynamic_cast<CVisualObject*>(o.second.get());
-			if (!visual)
-			{
-				continue;
-			}
-			for (const auto& group : visual->lightGroupNames())
-			{
-				auto cb = wrappers[5]->add<nanogui::CheckBox>(o.first + ": " + group);
-				cb->setChecked(visual->lightGroupState(group).value_or(false));
-				cb->setCallback([visual, group](bool on)
-								{ visual->setLightGroupState(group, on); });
-				gui_cbLightGroups.push_back({cb, visual, group});
-			}
-		}
-		if (gui_cbLightGroups.empty())
-		{
-			wrappers[5]->add<nanogui::Label>("(No object has <light_group> tags)");
-		}
-
-		// "misc." tab
-		// --------------
-		wrappers[4]
-			->add<nanogui::Button>("Save 3D scene...", ENTYPO_ICON_EXPORT)
-			->setCallback(
-				[this]()
-				{
-					try
-					{
-						const std::string outFile = nanogui::file_dialog(
-							{{"3Dscene", "MRPT 3D scene file (*.3Dsceme)"}}, true /*save*/);
-						if (outFile.empty())
-						{
-							return;
-						}
-						auto lck = mrpt::lockHelper(parent_.physical_objects_mtx());
-						parent_.worldPhysical_.saveToFile(outFile);
-
-						std::cout << "[mvsim gui] Saved world scene to: " << outFile << std::endl;
-					}
-					catch (const std::exception& e)
-					{
-						std::cerr << "[mvsim gui] Exception while saving 3D scene:\n"
-								  << e.what() << std::endl;
-					}
-				});
+		return;
+	}
+	// Keys typed into a GUI text box are not for the user application:
+	if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureKeyboard)
+	{
+		return;
 	}
 
-	w->add<nanogui::Label>(" ");
+	auto lck = mrpt::lockHelper(lastKeyEventMtx_);
 
-	// Replace with mouse:
-	btnReplaceObject = w->add<nanogui::Button>("Click to replace...");
-	btnReplaceObject->setFlags(nanogui::Button::Flags::ToggleButton);
-	btns_selectedOps.push_back(btnReplaceObject);
+	lastKeyEvent_.keycode = key;
+	lastKeyEvent_.modifierShift = (mods & GLFW_MOD_SHIFT) != 0;
+	lastKeyEvent_.modifierCtrl = (mods & GLFW_MOD_CONTROL) != 0;
+	lastKeyEvent_.modifierSuper = (mods & GLFW_MOD_SUPER) != 0;
+	lastKeyEvent_.modifierAlt = (mods & GLFW_MOD_ALT) != 0;
 
-	// Reorient (yaw/pitch/roll):
-	constexpr float REPOSITION_SLIDER_RANGE = 1.0;	// Meters
+	lastKeyEventValid_ = true;
+}
 
-	nanogui::Slider* slidersCoordScale = nullptr;
-	nanogui::Label* slidersCoordScaleValue = nullptr;
-	{
-		auto pn = w->add<nanogui::Widget>();
-		pn->setLayout(new nanogui::BoxLayout(
-			nanogui::Orientation::Horizontal, nanogui::Alignment::Fill, 2, 2));
-		pn->add<nanogui::Label>("Change scale:");
+void World::internal_apply_initial_camera()
+{
+	auto& cam = gui_.sceneView->cameraController;
 
-		auto slCoord = pn->add<nanogui::Slider>();
-		slidersCoordScale = slCoord;
+	cam.setProjectiveModel(!guiOptions_.ortho);
+	cam.setZoomDistance(static_cast<float>(guiOptions_.camera_distance));
+	cam.setAzimuthDegrees(static_cast<float>(guiOptions_.camera_azimuth_deg));
+	cam.setElevationDegrees(static_cast<float>(guiOptions_.camera_elevation_deg));
+	cam.setFOVdeg(static_cast<float>(guiOptions_.fov_deg));
 
-		slCoord->setRange({-4.0, 1.0});
-
-		slCoord->setCallback(
-			[this]([[maybe_unused]] float v)
-			{
-				// Re-generate the other 6 sliders with this new scale:
-				if (!gui_selectedObject.simulable || !onEntitySelected)
-				{
-					return;
-				}
-				onEntitySelected(gui_selectedObject.simulable->getRelativePose());
-			});
-		slCoord->setFixedWidth(slidersWidth - 30);
-		btns_selectedOps.push_back(slCoord);
-
-		slidersCoordScaleValue = pn->add<nanogui::Label>(" ");
-		slidersCoordScaleValue->setFixedWidth(70);
-	}
-
-	std::array<nanogui::Slider*, 6> slidersCoords;
-	std::array<nanogui::Label*, 6> slidersCoordsValues;
-	const std::array<const char*, 6> coordsNames = {
-		"    Move 'x':",  //
-		"    Move 'y':",  //
-		"    Move 'z':",  //
-		"Rotate   yaw:",  //
-		"Rotate pitch:",  //
-		"Rotate  roll:"};
-
-	for (int axis = 0; axis < 6; axis++)
-	{
-		auto pn = w->add<nanogui::Widget>();
-		pn->setLayout(new nanogui::BoxLayout(
-			nanogui::Orientation::Horizontal, nanogui::Alignment::Fill, 2, 2));
-		pn->add<nanogui::Label>(coordsNames[axis]);
-
-		auto slCoord = pn->add<nanogui::Slider>();
-		slidersCoords[axis] = slCoord;
-
-		// Dummy. Correct ones set in onEntitySelected()
-		slCoord->setRange({-1.0, 1.0});
-
-		slCoord->setCallback(
-			[this, axis](float v)
-			{
-				if (!gui_selectedObject.simulable)
-				{
-					return;
-				}
-				auto p = gui_selectedObject.simulable->getRelativePose();
-				p[axis] = v;
-				gui_selectedObject.simulable->setRelativePose(p);
-				onEntityMoved(p);
-			});
-		slCoord->setFixedWidth(slidersWidth);
-		btns_selectedOps.push_back(slCoord);
-
-		slidersCoordsValues[axis] = pn->add<nanogui::Label>("(...)");
-		slidersCoordsValues[axis]->setFixedWidth(COORDS_LABEL_WIDTH);
-	}
-
-	// Now, we can define the lambda for filling in the current object pose in
-	// the GUI controls:
-	onEntitySelected =
-		[slidersCoords, slidersCoordScale, slidersCoordScaleValue](const mrpt::math::TPose3D p)
-	{
-		ASSERT_(slidersCoordScale);
-		const double scale = std::pow(10.0, mrpt::round(slidersCoordScale->value()));
-
-		slidersCoordScaleValue->setCaption(mrpt::format("%.01e", scale));
-
-		// Positions:
-		for (int i = 0; i < 3; i++)
-		{
-			slidersCoords[i]->setRange(
-				{p[i] - scale * REPOSITION_SLIDER_RANGE, p[i] + scale * REPOSITION_SLIDER_RANGE});
-			slidersCoords[i]->setValue(p[i]);
-		}
-		// Angles:
-		for (int i = 0; i < 3; i++)
-		{
-			slidersCoords[i + 3]->setRange({p[i + 3] - scale * M_PI, p[i + 3] + scale * M_PI});
-			slidersCoords[i + 3]->setValue(p[i + 3]);
-		}
-
-		onEntityMoved(p);
-	};
-
-	onEntityMoved = [slidersCoordsValues](const mrpt::math::TPose3D p)
-	{
-		// Positions:
-		for (int i = 0; i < 3; i++) slidersCoordsValues[i]->setCaption(mrpt::format("%.04f", p[i]));
-		// Angles:
-		for (int i = 0; i < 3; i++)
-			slidersCoordsValues[i + 3]->setCaption(
-				mrpt::format("%.02f deg", mrpt::RAD2DEG(p[i + 3])));
-	};
-
-	// Replace with coordinates:
-	auto btnPlaceCoords = w->add<nanogui::Button>("Replace by coordinates...");
-	btns_selectedOps.push_back(btnPlaceCoords);
-	btnPlaceCoords->setCallback(
-		[this]()
-		{
-			//
-			if (!gui_selectedObject.simulable)
-			{
-				return;
-			}
-			auto* formPose = new nanogui::Window(gui_win.get(), "Enter new pose");
-			formPose->setLayout(new nanogui::GridLayout(
-				nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill, 5));
-
-			nanogui::TextBox* lbs[6];
-
-			formPose->add<nanogui::Label>("x:");
-			lbs[0] = formPose->add<nanogui::TextBox>();
-			formPose->add<nanogui::Label>("y:");
-			lbs[1] = formPose->add<nanogui::TextBox>();
-			formPose->add<nanogui::Label>("z:");
-			lbs[2] = formPose->add<nanogui::TextBox>();
-			formPose->add<nanogui::Label>("Yaw:");
-			lbs[3] = formPose->add<nanogui::TextBox>();
-			formPose->add<nanogui::Label>("Pitch:");
-			lbs[4] = formPose->add<nanogui::TextBox>();
-			formPose->add<nanogui::Label>("Roll:");
-			lbs[5] = formPose->add<nanogui::TextBox>();
-
-			for (int i = 0; i < 6; i++)
-			{
-				lbs[i]->setEditable(true);
-				lbs[i]->setFixedSize({100, 20});
-				lbs[i]->setValue("0.0");
-				lbs[i]->setUnits(i >= 3 ? "[deg]" : "[m]");
-				lbs[i]->setDefaultValue("0.0");
-				lbs[i]->setFontSize(16);
-				lbs[i]->setFormat("[-]?[0-9]*\\.?[0-9]+");
-			}
-
-			const auto pos = gui_selectedObject.simulable->getRelativePose();
-			for (int i = 0; i < 3; i++) lbs[i]->setValue(std::to_string(pos[i]));
-
-			for (int i = 3; i < 6; i++) lbs[i]->setValue(std::to_string(mrpt::RAD2DEG(pos[i])));
-
-			formPose->add<nanogui::Label>("");
-			formPose->add<nanogui::Label>("");
-
-			formPose->add<nanogui::Button>("Cancel")->setCallback([formPose]()
-																  { formPose->dispose(); });
-
-			formPose->add<nanogui::Button>("Accept")->setCallback(
-				[formPose, this, lbs]()
-				{
-					const mrpt::math::TPose3D newPose = {// X:
-														 std::stod(lbs[0]->value()),
-														 // Y:
-														 std::stod(lbs[1]->value()),
-														 // Z:
-														 std::stod(lbs[2]->value()),
-														 // Yaw
-														 mrpt::DEG2RAD(std::stod(lbs[3]->value())),
-														 // Pitch
-														 mrpt::DEG2RAD(std::stod(lbs[4]->value())),
-														 // Roll:
-														 mrpt::DEG2RAD(std::stod(lbs[5]->value()))};
-
-					gui_selectedObject.simulable->setRelativePose(newPose);
-					onEntitySelected(newPose);
-
-					formPose->dispose();
-				});
-
-			formPose->setModal(true);
-			formPose->center();
-			formPose->setVisible(true);
-		});
-
-	// Disable all edit-controls since no object is selected:
-	for (auto b : btns_selectedOps) b->setEnabled(false);
-
-	// Minimize subwindow:
-	gui_win->subwindowMinimize(subwinIdx);
-
-}  // end "editor" window
+	const auto p = this->worldRenderOffset() + guiOptions_.camera_point_to;
+	cam.setCameraPointing(p);
+}
 
 void World::internal_GUI_thread()
 {
+	// Must outlive the ImGui context, which keeps a pointer to it:
+	const std::string iniPath = imgui_ini_path();
+
+	bool imguiReady = false;
+	// False if the GUI is closed but the simulation must go on (headless):
+	bool closeSimulator = true;
+
 	try
 	{
 		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Started.");
 
-		// Start GUI:
-		nanogui::init();
+		if (glfwInit() == GLFW_FALSE)
+		{
+			THROW_EXCEPTION("glfwInit() failed");
+		}
 
-		mrpt::gui::CDisplayWindowGUI_Params cp;
-		cp.maximized = guiOptions_.start_maximized;
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_MAJOR);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_MINOR);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+		// Multisampling anti-aliasing: off by default, since it delays the
+		// rendering of camera and lidar sensors, which share this OpenGL context.
+		// The window exists before the world file is read, hence an environment
+		// variable:
+		glfwWindowHint(GLFW_SAMPLES, std::max(0, mrpt::get_env<int>("MVSIM_MSAA_SAMPLES", 0)));
+		glfwWindowHint(GLFW_DEPTH_BITS, 24);
+		// So the scene gamma correction is applied:
+		glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
+		glfwWindowHint(GLFW_MAXIMIZED, guiOptions_.start_maximized ? GLFW_TRUE : GLFW_FALSE);
 
-		gui_.gui_win =
-			mrpt::gui::CDisplayWindowGUI::Create("mvsim", guiOptions_.win_w, guiOptions_.win_h, cp);
+		GLFWwindow* win = glfwCreateWindow(
+			static_cast<int>(guiOptions_.win_w), static_cast<int>(guiOptions_.win_h), "mvsim",
+			nullptr, nullptr);
+		if (!win)
+		{
+			glfwTerminate();
+			THROW_EXCEPTION("glfwCreateWindow() failed");
+		}
+		{
+			std::lock_guard<std::mutex> lck(gui_.windowMtx);
+			gui_.window = win;
+			gui_.windowReady = true;
+		}
 
-		gui_.gui_win->setIconFromData(mvsim_icon_data, mvsim_icon_width, mvsim_icon_height, 0xff);
+		set_window_icon(win);
+		if (guiOptions_.start_maximized)
+		{
+			// Some window managers ignore the GLFW_MAXIMIZED hint:
+			glfwMaximizeWindow(win);
+		}
+		glfwMakeContextCurrent(win);
+		// No vsync: this thread paces the frames itself, and must not block
+		// while the simulation waits for OpenGL sensors.
+		glfwSwapInterval(0);
 
-		// Show a message until the world is loaded and its first frame rendered:
-		auto* loadingMsg = gui_.gui_win->add<nanogui::Window>("mvsim");
-		loadingMsg->setLayout(
-			new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Middle, 25));
-		loadingMsg->add<nanogui::Label>("Loading the world...", "sans-bold", 24);
-		gui_.gui_win->performLayout();
-		loadingMsg->center();
-		gui_.gui_win->drawAll();
-		gui_.gui_win->setVisible(true);
+		glfwSetWindowUserPointer(win, this);
+		glfwSetKeyCallback(win, &on_glfw_key);
+		glfwSetCursorPosCallback(win, &on_glfw_cursor);
+		glfwSetMouseButtonCallback(win, &on_glfw_mouse_button);
+		glfwSetScrollCallback(win, &on_glfw_scroll);
+		glfwSetWindowFocusCallback(win, &on_glfw_focus);
+		gui_.windowFocused = glfwGetWindowAttrib(win, GLFW_FOCUSED) == GLFW_TRUE;
+
+		// Dear ImGui:
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		io.IniFilename = iniPath.empty() ? nullptr : iniPath.c_str();
+
+		setup_imgui_fonts_and_style(win);
+
+		ImGui_ImplGlfw_InitForOpenGL(win, true /*install callbacks*/);
+		ImGui_ImplOpenGL3_Init("#version 330");
+		imguiReady = true;
+
+		gui_.sceneView = std::make_unique<mrpt::imgui::CImGuiSceneView>();
 
 		gui_thread_running_ = true;
 
-		if (guiWaitsForWorldLoad_)
+		// Show a message until the world is loaded and its first frame rendered:
+		while (guiWaitsForWorldLoad_ && !simulator_must_close())
 		{
-			while (guiWaitsForWorldLoad_ && !simulator_must_close())
+			glfwWaitEventsTimeout(0.05);
+			if (glfwWindowShouldClose(win))
 			{
-				glfwPollEvents();
-				if (glfwWindowShouldClose(gui_.gui_win->glfwWindow()))
-				{
-					simulator_must_close(true);
-				}
-				loadingMsg->center();  // in case the window was resized
-				gui_.gui_win->drawAll();
-				std::this_thread::sleep_for(std::chrono::milliseconds(50));
+				simulator_must_close(true);
 			}
+			gui_.draw_loading_frame();
+		}
 
-			// Closed or failed while loading, or the world file asks for
-			// headless mode:
-			if (simulator_must_close() || headless())
-			{
-				gui_.gui_win.reset();
-				nanogui::shutdown();
-				gui_thread_running_ = false;
-				return;
-			}
+		// Closed or failed while loading, or the world file asks for headless mode:
+		if (simulator_must_close() || headless())
+		{
+			closeSimulator = !headless() || simulator_must_close();
+			THROW_EXCEPTION("");  // just to clean up
+		}
 
-			// Window options from the world file:
-			if (!guiOptions_.start_maximized)
-			{
-				glfwRestoreWindow(gui_.gui_win->glfwWindow());
-				gui_.gui_win->setSize(
-					{static_cast<int>(guiOptions_.win_w), static_cast<int>(guiOptions_.win_h)});
-			}
+		// Window options from the world file, if they were not known yet:
+		if (!guiOptions_.start_maximized && glfwGetWindowAttrib(win, GLFW_MAXIMIZED))
+		{
+			glfwRestoreWindow(win);
+			glfwSetWindowSize(
+				win, static_cast<int>(guiOptions_.win_w), static_cast<int>(guiOptions_.win_h));
 		}
 
 		// zmin / zmax of opengl viewport:
 		worldVisual_->getViewport()->setViewportClipDistances(
 			guiOptions_.clip_plane_min, guiOptions_.clip_plane_max);
 
-		// Add a background scene:
-		{
-			// we use the member scene worldVisual_ as the placeholder for the
-			// visual 3D scene:
+		// add the placeholders for user-provided objects, both for pure
+		// visualization only, and physical objects:
+		worldVisual_->insert(glUserObjsViz_);
+		worldPhysical_.insert(glUserObjsPhysical_);
 
-			// add the placeholders for user-provided objects, both for pure
-			// visualization only, and physical objects:
-			worldVisual_->insert(glUserObjsViz_);
-			worldPhysical_.insert(glUserObjsPhysical_);
-
-			std::lock_guard<std::mutex> lck(gui_.gui_win->background_scene_mtx);
-			gui_.gui_win->background_scene = worldVisual_;
-		}
+		gui_.sceneView->setScene(worldVisual_);
 
 		// Only if the world is empty: at least introduce a ground grid:
 		if (worldElements_.empty())
@@ -775,104 +438,28 @@ void World::internal_GUI_thread()
 			invalidateElevationIndex();
 		}
 
-		// Windows:
-		gui_.prepare_control_window();
-		gui_.prepare_lights_window();
-		gui_.prepare_status_window();
-		gui_.prepare_editor_window();
-
 		// Optionally, start with only the 3D view (and sensor previews), e.g. to record videos:
 		if (!guiOptions_.show_gui_panels)
 		{
-			gui_.gui_win->getSubWindowsUI()->setVisible(false);
-			for (size_t i = 0; i < gui_.gui_win->getSubwindowCount(); i++)
-			{
-				gui_.gui_win->subwindowMinimize(i);
-			}
+			gui_.showWorld = false;
+			gui_.showInspector = false;
+			gui_.showLighting = false;
+			gui_.showMessages = false;
 		}
 
-		// Finish GUI setup:
-		gui_.gui_win->performLayout();
-		auto& cam = gui_.gui_win->camera();
-
-		cam.setProjectiveModel(!guiOptions_.ortho);
-		cam.setZoomDistance(guiOptions_.camera_distance);
-		cam.setAzimuthDegrees(guiOptions_.camera_azimuth_deg);
-		cam.setElevationDegrees(guiOptions_.camera_elevation_deg);
-		cam.setFOVdeg(guiOptions_.fov_deg);
-
-		const auto p = this->worldRenderOffset() + guiOptions_.camera_point_to;
-		cam.setCameraPointing(p.x, p.y, p.z);
+		internal_apply_initial_camera();
 
 		// The first frame is the slowest one (textures, shaders, shadow
-		// maps...): render it while the message is still shown.
-		gui_.gui_win->moveWindowToFront(loadingMsg);
-		loadingMsg->center();
+		// maps...): render it while the loading message is still shown.
 		internalGraphicsLoopTasksForSimulation();
-		gui_.gui_win->drawAll();
-		loadingMsg->dispose();
+		gui_.draw_loading_frame();
+		gui_.draw_frame();
 		worldReadyWallclock_ = mrpt::Clock::nowDouble();
-
-		// Listen for keyboard events:
-		gui_.gui_win->addKeyboardCallback(
-			[&](int key, int /*scancode*/, int action, int modifiers)
-			{
-				if (action != GLFW_PRESS && action != GLFW_REPEAT)
-				{
-					return false;
-				}
-
-				auto lck = mrpt::lockHelper(lastKeyEventMtx_);
-
-				lastKeyEvent_.keycode = key;
-				lastKeyEvent_.modifierShift = (modifiers & GLFW_MOD_SHIFT) != 0;
-				lastKeyEvent_.modifierCtrl = (modifiers & GLFW_MOD_CONTROL) != 0;
-				lastKeyEvent_.modifierSuper = (modifiers & GLFW_MOD_SUPER) != 0;
-				lastKeyEvent_.modifierAlt = (modifiers & GLFW_MOD_ALT) != 0;
-
-				lastKeyEventValid_ = true;
-
-				return false;
-			});
-
-		// The GUI must be closed from this same thread. Use a shared atomic
-		// bool:
-		auto lambdaLoopCallback = [](World& me)
-		{
-			if (me.simulator_must_close())
-			{
-				nanogui::leave();
-			}
-
-			try
-			{
-				// Update 3D vehicles, sensors, run render-based sensors, etc:
-				me.internalGraphicsLoopTasksForSimulation();
-
-				me.internal_process_pending_gui_user_tasks();
-
-				// handle mouse operations:
-				me.gui_.handle_mouse_operations();
-			}
-			catch (const std::exception& e)
-			{
-				// In case of an exception in the functions above,
-				// abort. Otherwise, the error may repeat over and over forever
-				// and the main thread will never know about it.
-				me.logStr(mrpt::system::LVL_ERROR, e.what());
-				me.simulator_must_close(true);
-				me.gui_.gui_win->setVisible(false);
-				nanogui::leave();
-			}
-		};
-
-		gui_.gui_win->addLoopCallback([=]() { lambdaLoopCallback(*this); });
 
 		// Register observation callback:
 		const auto lambdaOnObservation =
 			[this](const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 		{
-			// obs->getDescriptionAsText(std::cout);
 			this->enqueue_task_to_run_in_gui_thread([this, obs, &veh]()
 													{ internal_gui_on_observation(veh, obs); });
 		};
@@ -880,132 +467,265 @@ void World::internal_GUI_thread()
 		this->registerCallbackOnObservation(lambdaOnObservation);
 
 		// ============= Mainloop =============
-		const int refresh_ms = std::max(1, mrpt::round(1000 / guiOptions_.refresh_fps));
+		// Frames are drawn at "refresh_fps", or faster while the user
+		// interacts with the window. In between, the thread sleeps until a
+		// sensor needs OpenGL rendering (see mark_as_pending_running_sensors_on_3D_scene()),
+		// and sensors have priority over frames (see the constants above).
+		const double idlePeriod = 1.0 / std::max(1, guiOptions_.refresh_fps);
+		const double interactivePeriod = std::min(idlePeriod, 1.0 / INTERACTIVE_FPS);
+		const double maxOverloadFactor = std::max(1.0, 1.0 / (MIN_OVERLOAD_FPS * idlePeriod));
 
 		MRPT_LOG_DEBUG_FMT(
-			"[World::internal_GUI_thread] Using GUI FPS=%i (T=%i ms)", guiOptions_.refresh_fps,
-			refresh_ms);
+			"[World::internal_GUI_thread] Using GUI FPS=%i", guiOptions_.refresh_fps);
 
-		const int idleLoopTasks_ms = 10;
+		double nextFrameTime = 0;
+		double lastFrameTime = 0;
+		double lastInputTime = mrpt::Clock::nowDouble();
+		double overloadFactor = 1.0;
+		bool framePostponed = false;
 
-		nanogui::mainloop(idleLoopTasks_ms, refresh_ms);
-
-		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
-
-		// to let other threads know that we are closing:
-		simulator_must_close(true);
-
-		// Make sure opengl resources are freed from this thread, not from
-		// the main one upon destruction of the last ref to shared_ptr's to
-		// opengl classes.
+		while (!simulator_must_close())
 		{
-			auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
-			if (gui_.gui_win->background_scene)
+			const double tWait = nextFrameTime - mrpt::Clock::nowDouble();
+			if (tWait > 0)
 			{
-				// In mrpt3, OpenGL resources are freed automatically
-				gui_.gui_win->background_scene.reset();
+				glfwWaitEventsTimeout(tWait);
 			}
+			else
+			{
+				glfwPollEvents();
+			}
+
+			if (glfwWindowShouldClose(win))
+			{
+				break;
+			}
+
+			const double now = mrpt::Clock::nowDouble();
+			if (gui_.gotInputEvents.exchange(false))
+			{
+				lastInputTime = now;
+			}
+			const bool sensorsPending = pending_running_sensors_on_3D_scene();
+			// A frame postponed for the sensors goes right after them:
+			const bool frameDue = now >= nextFrameTime || (framePostponed && sensorsPending);
+
+			// Update the 3D scene from the simulation and run sensors that
+			// are waiting for OpenGL:
+			if (frameDue || sensorsPending)
+			{
+				internalGraphicsLoopTasksForSimulation();
+			}
+			if (!frameDue)
+			{
+				continue;
+			}
+
+			const bool interactive = (now - lastInputTime) < INTERACTIVE_HOLD_TIME;
+			const double basePeriod = interactive ? interactivePeriod : idlePeriod;
+			const bool overloaded = simulation_busy_fraction() > OVERLOAD_BUSY;
+
+			// Postpone the frame if it would delay the next sensors. Right
+			// after running sensors, the next ones are far away.
+			if (!sensorsPending && now - lastFrameTime < MAX_POSTPONE_PERIODS * basePeriod)
+			{
+				// Wall-clock time until the next OpenGL sensor, if known:
+				std::optional<double> tSensor;
+				if (const auto tNext = next_opengl_sensor_time(); tNext.has_value())
+				{
+					const double rtf = get_realtime_factor_achieved();
+					if (rtf > 0.01)
+					{
+						tSensor = std::max(0.0, (*tNext - get_simul_time()) / rtf);
+					}
+				}
+				// When overloaded, the simulation runs ahead of the real-time
+				// factor between sensors, so just wait for them:
+				if (tSensor.has_value() &&
+					(overloaded || *tSensor < gui_.frameCost + SENSOR_MARGIN))
+				{
+					framePostponed = true;
+					// Retry by the deadline, if the sensors do not come first:
+					nextFrameTime = lastFrameTime + MAX_POSTPONE_PERIODS * basePeriod;
+					if (!overloaded)
+					{
+						nextFrameTime = std::min(nextFrameTime, now + *tSensor + SENSOR_MARGIN);
+					}
+					continue;
+				}
+			}
+			framePostponed = false;
+
+			internal_process_pending_gui_user_tasks();
+
+			// While the simulation can not keep up, give it more time by
+			// lowering the frame rate, unless the user interacts:
+			if (overloaded)
+			{
+				overloadFactor = std::min(overloadFactor * OVERLOAD_STEP, maxOverloadFactor);
+			}
+			else if (simulation_busy_fraction() < RELAXED_BUSY)
+			{
+				overloadFactor = std::max(1.0, overloadFactor / OVERLOAD_STEP);
+			}
+			nextFrameTime = now + basePeriod * (interactive ? 1.0 : overloadFactor);
+			lastFrameTime = now;
+
+			if (gui_.hideRequested && !gui_.hidden)
+			{
+				glfwHideWindow(win);
+				gui_.hidden = true;
+			}
+			if (gui_.hidden || glfwGetWindowAttrib(win, GLFW_ICONIFIED))
+			{
+				continue;
+			}
+
+			gui_.draw_frame();
 		}
 
-		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+		MRPT_LOG_DEBUG("[World::internal_GUI_thread] Mainloop ended.");
+	}
+	catch (const std::exception& e)
+	{
+		if (const auto msg = mrpt::exception_to_str(e);
+			!msg.empty() && closeSimulator && !simulator_must_close())
+		{
+			MRPT_LOG_ERROR_STREAM("[internal_GUI_thread] Exception: " << msg);
+		}
+	}
 
+	// to let other threads know that we are closing:
+	if (closeSimulator)
+	{
+		simulator_must_close(true);
+	}
+
+	// OpenGL resources must be freed from this thread, with its context
+	// still alive:
+	try
+	{
+		gui_.free_preview_textures();
+		if (gui_.gpuQueries[0][0] != 0)
+		{
+			glDeleteQueries(4, &gui_.gpuQueries[0][0]);
+		}
+		gui_.sceneView.reset();
+
+		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 		for (auto& obj : getListOfSimulableObjects())
 		{
 			obj.second->freeOpenGLResources();
 		}
-
-		lckListObjs.unlock();
-
-		// CVisualObject::FreeOpenGLResources() removed in mrpt3 (automatic)
-
-		// Now, destroy window:
-		gui_.gui_win.reset();
-
-		nanogui::shutdown();
 	}
 	catch (const std::exception& e)
 	{
-		MRPT_LOG_ERROR_STREAM("[internal_GUI_init] Exception: " << mrpt::exception_to_str(e));
+		MRPT_LOG_ERROR_STREAM("[internal_GUI_thread] Exception freeing resources: " << e.what());
 	}
+
+	if (imguiReady)
+	{
+		// This also saves the window layout:
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+	}
+
+	GLFWwindow* win = nullptr;
+	{
+		std::lock_guard<std::mutex> lck(gui_.windowMtx);
+		win = gui_.window;
+		gui_.window = nullptr;
+		gui_.windowReady = false;
+	}
+	if (win)
+	{
+		glfwDestroyWindow(win);
+		glfwTerminate();
+	}
+
 	gui_thread_running_ = false;
+}
+
+bool World::GUI::scene_hovered() const
+{
+#if defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
+	return sceneView && sceneView->isHovered();
+#else
+	return legacySceneHovered;
+#endif
+}
+
+std::optional<mrpt::math::TLine3D> World::GUI::scene_mouse_ray() const
+{
+	if (!sceneView)
+	{
+		return std::nullopt;
+	}
+#if defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
+	return sceneView->mouseRay();
+#else
+	// The FBO image of render() has one pixel per ImGui unit:
+	auto scene = sceneView->scene();
+	if (!legacySceneHovered || !scene || !scene->getViewport())
+	{
+		return std::nullopt;
+	}
+	const ImVec2 m = ImGui::GetMousePos();
+	return scene->getViewport()->get3DRayForPixelCoord(
+		{static_cast<int>(m.x - legacySceneX), static_cast<int>(m.y - legacySceneY)});
+#endif
 }
 
 void World::GUI::handle_mouse_operations()
 {
 	MRPT_START
-	if (!gui_win)
+	if (!sceneView)
 	{
 		return;
 	}
-	mrpt::viz::Viewport::Ptr vp;
+
+	if (const auto ray = scene_mouse_ray(); ray.has_value())
 	{
-		auto lck = mrpt::lockHelper(gui_win->background_scene_mtx);
-		if (!gui_win->background_scene)
+		// Create a 3D plane, i.e. Z=0
+		const auto ground_plane = mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
+
+		// Intersection of the line with the plane:
+		mrpt::math::TObject3D inters;
+		mrpt::math::intersect(*ray, ground_plane, inters);
+
+		// Interpret the intersection as a point, if there is an intersection:
+		if (inters.getPoint(clickedPt))
 		{
-			return;
+			// Apply world offset:
+			// P_GL = P_REAL + Off
+			// P_REAL = P_GL - Off
+			const auto dp = parent_.worldRenderOffset();
+			clickedPt.x -= dp.x;
+			clickedPt.y -= dp.y;
+			clickedPt.z -= dp.z;
+
+			// Find out the "z": get first elevation if many exist.
+			const auto zs =
+				parent_.getElevationsAt(mrpt::math::TPoint2Df(clickedPt.x, clickedPt.y));
+			if (!zs.empty())
+			{
+				clickedPt.z = *zs.begin();
+			}
 		}
-		vp = gui_win->background_scene->getViewport();
-	}
-	ASSERT_(vp);
-
-	const auto mousePt = gui_win->mousePos();
-	mrpt::math::TLine3D ray;
-	auto rayOpt =
-		vp->get3DRayForPixelCoord({static_cast<int>(mousePt.x()), static_cast<int>(mousePt.y())});
-	if (!rayOpt.has_value()) return;
-	ray = rayOpt.value();
-
-	// Create a 3D plane, i.e. Z=0
-	const auto ground_plane = mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
-
-	// Intersection of the line with the plane:
-	mrpt::math::TObject3D inters;
-	mrpt::math::intersect(ray, ground_plane, inters);
-
-	// Interpret the intersection as a point, if there is an
-	// intersection:
-	if (inters.getPoint(clickedPt))
-	{
-		// Apply world offset:
-		// P_GL = P_REAL + Off
-		// P_REAL = P_GL - Off
-		const auto dp = parent_.worldRenderOffset();
-		clickedPt.x -= dp.x;
-		clickedPt.y -= dp.y;
-		clickedPt.z -= dp.z;
-
-		// Find out the "z": get first elevation if many exist.
-		const auto zs = parent_.getElevationsAt(mrpt::math::TPoint2Df(clickedPt.x, clickedPt.y));
-		if (!zs.empty()) clickedPt.z = *zs.begin();
 	}
 
-	const auto screen = gui_win->screen();
-	const bool leftClick = screen->mouseState() == 0x01;
-
-	// Replace object?
-	if (btnReplaceObject && btnReplaceObject->pushed())
+	// Place the selected object with the mouse, until a click:
+	if (placingWithMouse && selected && scene_hovered())
 	{
-		static bool isReplacing = false;
+		mrpt::math::TPose3D p = selected->getPose();
+		p.x = clickedPt.x;
+		p.y = clickedPt.y;
+		selected->setPose(p);
 
-		// Start of replace? When the button push is released:
-		if (!isReplacing && !leftClick)
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 		{
-			isReplacing = true;
-		}
-		if (gui_selectedObject.simulable)
-		{
-			// btnReplaceObject->screen()->setCursor()
-
-			mrpt::math::TPose3D p = gui_selectedObject.simulable->getPose();
-			p.x = clickedPt.x;
-			p.y = clickedPt.y;
-
-			gui_selectedObject.simulable->setPose(p);
-		}
-		if (isReplacing && leftClick)
-		{
-			isReplacing = false;
-			btnReplaceObject->setPushed(false);
+			placingWithMouse = false;
 		}
 	}
 
@@ -1014,6 +734,8 @@ void World::GUI::handle_mouse_operations()
 
 void World::internal_process_pending_gui_user_tasks()
 {
+	auto tle = mrpt::system::CTimeLoggerEntry(timlogger_, "gui.tasks");
+
 	std::vector<std::function<void(void)>> tasks;
 	{
 		std::lock_guard<std::mutex> lck(guiUserPendingTasksMtx_);
@@ -1131,56 +853,16 @@ void World::internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene
 		}
 	}
 
-	// Other messages
-	// -----------------------------
-	timlogger_.enter("update_GUI.5.text-msgs");
-	if (gui_.lbCpuUsage)
-	{
-		// 1st line: time
-		gui_.lbCpuUsage->setCaption(mrpt::format(
-			"Time: %s (CPU usage: %.01f%%)",
-			mrpt::system::formatTimeInterval(get_simul_time()).c_str(), cpu_usage() * 100.0));
-
-		// User supplied-lines:
-		guiMsgLinesMtx_.lock();
-		const std::string msg_lines = guiMsgLines_;
-		guiMsgLinesMtx_.unlock();
-
-		int nextStatusLine = 0;
-
-		// Achieved real-time simulation speed (1.0 = real time):
-		gui_.lbStatuses.at(nextStatusLine++)
-			->setCaption(
-				mrpt::format("Sim speed: %.03fx real time", get_realtime_factor_achieved()));
-
-		if (!msg_lines.empty())
-		{
-			// split lines:
-			std::vector<std::string> lines;
-			mrpt::system::tokenize(msg_lines, "\r\n", lines);
-			for (const auto& l : lines) gui_.lbStatuses.at(nextStatusLine++)->setCaption(l);
-		}
-		gui_.lbStatuses.at(nextStatusLine++)
-			->setCaption(std::string("Mouse: ") + gui_.clickedPt.asString());
-	}
-
-	// Light groups may also be switched from outside the GUI:
-	for (const auto& lg : gui_.gui_cbLightGroups)
-	{
-		lg.cb->setChecked(lg.visual->lightGroupState(lg.group).value_or(false));
-	}
-
-	timlogger_.leave("update_GUI.5.text-msgs");
-
 	// Camera follow modes:
 	// -----------------------
-	if (gui_.gui_win && !guiOptions_.follow_vehicle.empty())
+	if (gui_.sceneView && !guiOptions_.follow_vehicle.empty())
 	{
 		if (auto it = vehicles_.find(guiOptions_.follow_vehicle); it != vehicles_.end())
 		{
 			const auto pose = it->second->getCPose3D();
 			const auto p = applyWorldRenderOffset(pose);
-			gui_.gui_win->camera().setCameraPointing(p.x(), p.y(), p.z());
+			gui_.sceneView->cameraController.setCameraPointing(
+				static_cast<float>(p.x()), static_cast<float>(p.y()), static_cast<float>(p.z()));
 		}
 		else
 		{
@@ -1242,7 +924,7 @@ void World::update_GUI(TUpdateGUIParams* guiparams)
 		}
 	}
 
-	if (!gui_.gui_win)
+	if (!is_GUI_open())
 	{
 		MRPT_LOG_THROTTLE_WARN(
 			5.0,
@@ -1317,22 +999,20 @@ void World::internal_gui_on_observation_3Dscan(
 {
 	using namespace std::string_literals;
 
-	if (!gui_.gui_win || !obs)
+	if (!obs)
 	{
 		return;
 	}
-	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
-
 	const auto* sensor = internal_gui_find_sensor(veh, obs->sensorLabel);
 	const bool startVisible = !sensor || sensor->previewWinVisible();
+	const auto name = veh.getName() + "/"s + obs->sensorLabel;
 
-	if (obs->hasIntensityImage)
+	if (obs->hasIntensityImage && gui_.preview_needs_update(name, 0))
 	{
-		rgbImageWinSize = internal_gui_on_image(
-			veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->intensityImage, 5,
-			startVisible);
+		gui_.update_preview_texture(name, 0, obs->intensityImage, startVisible);
 	}
-	if (obs->hasRangeImage && (!sensor || sensor->previewDepth()))
+	if (obs->hasRangeImage && (!sensor || sensor->previewDepth()) &&
+		gui_.preview_needs_update(name, 1))
 	{
 		mrpt::math::CMatrixFloat d;
 		d = obs->rangeImage.asEigen().cast<float>() * (obs->rangeUnits / obs->maxRange);
@@ -1340,9 +1020,7 @@ void World::internal_gui_on_observation_3Dscan(
 		mrpt::img::CImage imDepth;
 		imDepth.setFromMatrix(d, true /* in range [0,1] */);
 
-		internal_gui_on_image(
-			veh.getName() + "/"s + obs->sensorLabel + "_depth"s, imDepth, 5 + 5 + rgbImageWinSize.x,
-			startVisible);
+		gui_.update_preview_texture(name, 1, imDepth, startVisible);
 	}
 }
 
@@ -1351,70 +1029,18 @@ void World::internal_gui_on_observation_image(
 {
 	using namespace std::string_literals;
 
-	if (!gui_.gui_win || !obs || obs->image.isEmpty())
+	if (!obs || obs->image.isEmpty())
 	{
 		return;
 	}
-	mrpt::math::TPoint2D rgbImageWinSize = {0, 0};
-
 	const auto* sensor = internal_gui_find_sensor(veh, obs->sensorLabel);
 	const bool startVisible = !sensor || sensor->previewWinVisible();
+	const auto name = veh.getName() + "/"s + obs->sensorLabel;
 
-	rgbImageWinSize = internal_gui_on_image(
-		veh.getName() + "/"s + obs->sensorLabel + "_rgb"s, obs->image, 5, startVisible);
-}
-
-mrpt::math::TPoint2D World::internal_gui_on_image(
-	const std::string& label, const mrpt::img::CImage& im, int winPosX, bool startVisible)
-{
-	mrpt::gui::MRPT2NanoguiGLCanvas* glControl;
-
-	// Once creation:
-	if (!guiObsViz_.count(label))
+	if (gui_.preview_needs_update(name, 0))
 	{
-		auto& w = guiObsViz_[label] = gui_.gui_win->createManagedSubWindow(label);
-
-		w->setLayout(new nanogui::GridLayout(
-			nanogui::Orientation::Vertical, 1, nanogui::Alignment::Fill, 2, 2));
-
-		// Guess window size:
-		int winW = im.getWidth(), winH = im.getHeight();
-
-		// Guess if we need to decimate subwindow size:
-		while (winW >= 512 || winH >= 512)
-		{
-			winW /= 2;
-			winH /= 2;
-		}
-
-		glControl = w->add<mrpt::gui::MRPT2NanoguiGLCanvas>();
-		glControl->setSize({winW, winH});
-		glControl->setFixedSize({winW, winH});
-
-		static std::map<int, int> numGuiWindows;
-		w->setPosition({winPosX, 20 + (numGuiWindows[winPosX]++) * (winH + 10)});
-
-		auto lck = mrpt::lockHelper(glControl->scene_mtx);
-
-		glControl->scene = mrpt::viz::Scene::Create();
-		gui_.gui_win->performLayout();
-
-		if (!startVisible)
-		{
-			gui_.gui_win->subwindowMinimize(gui_.gui_win->getSubwindowCount() - 1);
-		}
+		gui_.update_preview_texture(name, 0, obs->image, startVisible);
 	}
-
-	// Update from sensor data:
-	auto& w = guiObsViz_[label];
-
-	glControl = dynamic_cast<mrpt::gui::MRPT2NanoguiGLCanvas*>(w->children().at(1));
-	ASSERT_(glControl != nullptr);
-
-	auto lck = mrpt::lockHelper(glControl->scene_mtx);
-	glControl->scene->getViewport()->setImageView(im);
-
-	return mrpt::math::TPoint2D(w->size().x(), w->size().y());
 }
 
 void World::internalGraphicsLoopTasksForSimulation()

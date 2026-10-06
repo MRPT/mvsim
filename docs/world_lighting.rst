@@ -30,7 +30,7 @@ Its direction is controlled via azimuth and elevation angles, and it always cast
   The orbit-like azimuth and elevation angles (in **degrees**) of the directional light source.
   For example, an elevation of ``90`` means a pure vertical (downwards) light.
 
-The GUI "Lights" window (opened from the top-left window menu) has controls for shadows,
+The GUI "Lighting" panel has controls for shadows,
 the point and spot lights (on/off), the light azimuth and elevation, its intensity (a factor from 0 to 2 applied to
 ``light_diffuse`` and ``light_specular``), and the ambient light intensity.
 
@@ -125,8 +125,8 @@ Each ``<spot_light>`` supports the following child tags (all optional, shown wit
 
 Point and spot lights, mostly those casting shadows, are the most expensive part of rendering.
 If the simulation is slower than real time during its first seconds (the "CPU usage" in the GUI
-"Status" window is above 100%), MVSim turns them off, with a warning in the console.
-They can be turned on again with the "Point and spot lights" checkbox of the GUI "Lights" window.
+status bar is above 100%), MVSim turns them off, with a warning in the console.
+They can be turned on again with the "Point and spot lights" checkbox of the GUI "Lighting" panel.
 To disable this check, use:
 
 - ``<disable_lights_on_high_cpu_usage>false</disable_lights_on_high_cpu_usage>``
@@ -165,7 +165,8 @@ group of lights switched together:
 
 Light groups can be switched:
 
-- From the GUI: the "Lights" tab of the "Editor" window has a checkbox per light group.
+- From the GUI: the "Lighting" panel has a checkbox per light group, and the "Inspector"
+  panel those of the selected object.
 - Via ZMQ, with the services ``set_light_state`` (``SrvSetLightState``: ``objectId``,
   ``lightGroup``, ``on``) and ``get_light_state`` (``SrvGetLightState``).
   See ``examples_python/toggle-lights.py``.

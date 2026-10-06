@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/imgui/CImGuiSceneView.h>
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/poses/CPose3DQuat.h>
@@ -198,12 +199,37 @@ void World::insertBlock(const Block::Ptr& block)
 
 void World::free_opengl_resources()
 {
+	// The GUI thread renders these scenes: stop it first. It frees its own
+	// OpenGL resources before exiting.
+	if (gui_thread_.joinable() && gui_thread_.get_id() != std::this_thread::get_id())
+	{
+		simulator_must_close(true);
+		gui_thread_.join();
+	}
+
 	auto lck = mrpt::lockHelper(worldPhysicalMtx_);
 
 	worldPhysical_.clear();
 	worldVisual_->clear();
 
 	CVisualObject::FreeOpenGLResources();
+}
+
+std::optional<double> World::next_opengl_sensor_time() const
+{
+	std::optional<double> t;
+	for (const auto& v : vehicles_)
+	{
+		for (const auto& s : v.second->getSensors())
+		{
+			if (s && s->rendersWithOpenGL())
+			{
+				const double ts = s->next_sensor_time();
+				t = t.has_value() ? std::min(*t, ts) : ts;
+			}
+		}
+	}
+	return t;
 }
 
 bool World::sensor_has_to_create_egl_context()
@@ -254,11 +280,19 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 
 	const size_t JOY_AXIS_AZIMUTH = 3;
 
-	if (js.axes.size() > JOY_AXIS_AZIMUTH && gui_.gui_win)
+	if (js.axes.size() > JOY_AXIS_AZIMUTH && is_GUI_open())
 	{
-		auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
-		auto& cam = gui_.gui_win->camera();
-		cam.setAzimuthDegrees(cam.getAzimuthDegrees() - js.axes[JOY_AXIS_AZIMUTH]);
+		const float dAzimuth = js.axes[JOY_AXIS_AZIMUTH];
+		enqueue_task_to_run_in_gui_thread(
+			[this, dAzimuth]()
+			{
+				if (!gui_.sceneView)
+				{
+					return;
+				}
+				auto& cam = gui_.sceneView->cameraController;
+				cam.setAzimuthDegrees(cam.getAzimuthDegrees() - dAzimuth);
+			});
 	}
 
 	return js;

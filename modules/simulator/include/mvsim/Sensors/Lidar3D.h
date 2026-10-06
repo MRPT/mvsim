@@ -41,6 +41,7 @@ class Lidar3D : public SensorBase
 
 	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 	void freeOpenGLResources() override;
+	bool rendersWithOpenGL() const override { return true; }
 
 	/** Read-only access to the raw XML-configured parameters, for exact
 	 * (non-visual, non-rendering) consumers such as the offline ray

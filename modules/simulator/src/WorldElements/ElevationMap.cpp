@@ -14,6 +14,7 @@
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/ElevationMap.h>
 
+#include <Eigen/Dense>	// asEigen()
 #include <limits>
 #include <rapidxml.hpp>
 

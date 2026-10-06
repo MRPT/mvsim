@@ -29,6 +29,8 @@ void World::run_simulation(double dt)
 	ASSERT_(initialized_);
 
 	const double t0 = mrpt::Clock::nowDouble();
+	const auto prevRunStart = lastRunSimulWallclock_;
+	runSimulStartWallclock_ = t0;
 
 	// Define start of simulation time:
 	if (!simul_start_wallclock_time_.has_value())
@@ -88,12 +90,35 @@ void World::run_simulation(double dt)
 
 	timlogger_.registerUserMeasure("run_simulation.cpu_dt", t1 - t0);
 
+	// Fraction of wall time spent in here, since the former call started,
+	// smoothed with a time constant (calls may be short or very long):
+	runSimulStartWallclock_ = 0;
+	if (prevRunStart.has_value() && t1 > prevRunStart.value())
+	{
+		const double interval = t1 - prevRunStart.value();
+		const double busy = (t1 - t0) / interval;
+		const double alpha = 1.0 - std::exp(-interval / BUSY_FRACTION_TIME_CONSTANT);
+		simulBusyFraction_ = (1.0 - alpha) * simulBusyFraction_.load() + alpha * busy;
+	}
+
 	// Before the world is ready, the first (slow) frames are not
 	// representative:
 	if (worldReadyWallclock_ > 0)
 	{
 		updateCpuUsage(dt, t1 - t0);
 	}
+}
+
+double World::simulation_busy_fraction() const
+{
+	// A call in progress for long means busy, before it ends and updates the
+	// smoothed value:
+	const double tStart = runSimulStartWallclock_.load();
+	if (tStart > 0 && mrpt::Clock::nowDouble() - tStart > BUSY_FRACTION_TIME_CONSTANT)
+	{
+		return 1.0;
+	}
+	return simulBusyFraction_.load();
 }
 
 void World::updateCpuUsage(double simulTime, double cpuTime)
@@ -123,7 +148,7 @@ void World::updateCpuUsage(double simulTime, double cpuTime)
 
 	MRPT_LOG_WARN_FMT(
 		"CPU usage is %.0f%%, so the simulation is slower than real time: turning off the point "
-		"and spot lights. They can be turned on again from the GUI \"Lights\" window, or this "
+		"and spot lights. They can be turned on again from the GUI \"Lighting\" panel, or this "
 		"check disabled with <disable_lights_on_high_cpu_usage>false</...> in <lights>.",
 		cpuUsage_ * 100.0);
 
@@ -133,15 +158,7 @@ void World::updateCpuUsage(double simulTime, double cpuTime)
 	}
 	else
 	{
-		enqueue_task_to_run_in_gui_thread(
-			[this]()
-			{
-				setPointAndSpotLightsEnabled(false);
-				if (gui_.cbPointAndSpotLights)
-				{
-					gui_.cbPointAndSpotLights->setChecked(false);
-				}
-			});
+		enqueue_task_to_run_in_gui_thread([this]() { setPointAndSpotLightsEnabled(false); });
 	}
 }
 

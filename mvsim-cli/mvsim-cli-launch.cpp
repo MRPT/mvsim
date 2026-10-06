@@ -12,6 +12,7 @@
 #include <mrpt/system/os.h>	 // consoleColorAndStyle()
 #include <mvsim/World.h>
 
+#include <atomic>
 #include <csignal>	// sigaction
 #include <rapidxml_utils.hpp>
 #include <thread>
@@ -83,12 +84,14 @@ void mvsim_launch_shutdown()
 	app.reset();  // destroy all
 }
 
-void mvsim_signal_handler(int s)
+namespace
 {
-	std::cerr << "Caught signal " << s << ". Shutting down..." << std::endl;
-	mvsim_launch_shutdown();
-	exit(0);
-}
+// Set by the signal handler, which may run in any thread: the actual shutdown
+// is done by the main thread.
+std::atomic_int g_signalCount{0};
+}  // namespace
+
+void mvsim_signal_handler(int /*s*/) { g_signalCount++; }
 
 void mvsim_install_signal_handler()
 {
@@ -287,9 +290,13 @@ Available options:
 
 	while (!doExit)
 	{
-		// was the quit button hit in the GUI?
-		if (app->world.simulator_must_close())
+		// was the quit button hit in the GUI, or Ctrl+C pressed?
+		if (app->world.simulator_must_close() || g_signalCount > 0)
 		{
+			if (g_signalCount > 0)
+			{
+				std::cerr << "Caught signal. Shutting down..." << std::endl;
+			}
 			break;
 		}
 
@@ -321,7 +328,7 @@ Available options:
 			default:
 				break;
 
-			case GLFW_KEY_ESCAPE:
+			case World::GUIKeyEvent::KEY_ESCAPE:
 				doExit = true;
 				break;
 			case '1':

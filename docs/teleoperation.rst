@@ -31,7 +31,7 @@ Use one of these vehicle kinematics and controllers (read :ref:`Motion controlle
 - ``DynamicsAckermannDrivetrain``: ``ControllerTwistFrontSteerPID``
 - ``DynamicsDifferential``: ``ControllerTwistIdeal``, ``ControllerTwistPID``
 
-You can check whether Joystick control is working by looking at the "Status" GUI window. It should say "Joystick" teleoperation
+You can check whether Joystick control is working by looking at the "Messages" GUI panel. It should say "Joystick" teleoperation
 instead of "Keyboard".
 
 Then, use these controls:
