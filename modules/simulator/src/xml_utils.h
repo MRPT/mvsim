@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 #pragma once
 
+#include <mrpt/viz/TLightParameters.h>
 #include <mvsim/PoseTrajectoryFollower.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/basic_types.h>
@@ -57,6 +58,13 @@ std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> readXmlAndGetRoot(
 std::string parse_variables(
 	const std::string& in, const std::map<std::string, std::string>& variables,
 	const std::set<std::string>& varsRetain);
+
+/** Parses a `<point_light>` or `<spot_light>` XML node into a light, with
+ * `${VAR}` variables in its values replaced from \a variables.
+ * \exception std::exception On unknown node names or format errors.
+ */
+mrpt::viz::TLight parse_light_xml_node(
+	const rapidxml::xml_node<char>& node, const std::map<std::string, std::string>& variables = {});
 
 void parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node, const TParameterDefinitions& params,

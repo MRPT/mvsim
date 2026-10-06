@@ -41,133 +41,6 @@ void World::TGUI_Options::parse_from(
 	parse_xmlnode_children_as_param(node, params, {}, "[World::TGUI_Options]", &logger);
 }
 
-// Helper: read an XML child's text as float, return default if missing.
-// Rejects trailing garbage after the number (e.g. "1.0junk").
-static float xmlChildFloat(const rapidxml::xml_node<char>& parent, const char* name, float def)
-{
-	auto* n = parent.first_node(name);
-	if (!n) return def;
-	const std::string s(n->value(), n->value_size());
-	size_t pos = 0;
-	float v = 0;
-	try
-	{
-		v = std::stof(s, &pos);
-	}
-	catch (const std::exception&)
-	{
-		pos = 0;
-	}
-	while (pos < s.size() && std::isspace(static_cast<unsigned char>(s[pos]))) pos++;
-	if (pos == 0 || pos != s.size())
-		throw std::runtime_error(
-			mrpt::format("[World::LightOptions] Error parsing '<%s>': expected a number", name));
-	return v;
-}
-
-// Helper: read an XML child's text as "x y z" into TPoint3Df/TVector3Df.
-// Rejects trailing garbage after the three numbers.
-static mrpt::math::TPoint3Df xmlChildPoint3f(
-	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::math::TPoint3Df& def)
-{
-	auto* n = parent.first_node(name);
-	if (!n) return def;
-	const std::string s(n->value(), n->value_size());
-	float x = 0, y = 0, z = 0;
-	int consumed = 0;
-	const int nMatched = std::sscanf(s.c_str(), "%f %f %f %n", &x, &y, &z, &consumed);
-	size_t pos = static_cast<size_t>(consumed);
-	while (pos < s.size() && std::isspace(static_cast<unsigned char>(s[pos]))) pos++;
-	if (nMatched != 3 || pos != s.size())
-		throw std::runtime_error(
-			mrpt::format("[World::LightOptions] Error parsing '<%s>': expected 'X Y Z'", name));
-	return {x, y, z};
-}
-
-// Helper: read an XML child's text as #RRGGBB[AA] into TColorf.
-// Requires the string to be exactly 7 ('#RRGGBB') or 9 ('#RRGGBBAA') chars.
-static mrpt::img::TColorf xmlChildColorf(
-	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::img::TColorf& def)
-{
-	auto* n = parent.first_node(name);
-	if (!n) return def;
-	const std::string str(n->value(), n->value_size());
-	if ((str.size() != 7 && str.size() != 9) || str[0] != '#')
-		throw std::runtime_error(mrpt::format(
-			"[World::LightOptions] Error parsing '<%s>': expected "
-			"'#RRGGBB[AA]'",
-			name));
-	unsigned int r, g, b, a = 0xff;
-	const int nExpected = str.size() == 9 ? 4 : 3;
-	const int ret = std::sscanf(str.c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a);
-	if (ret != nExpected)
-		throw std::runtime_error(mrpt::format(
-			"[World::LightOptions] Error parsing '<%s>': expected "
-			"'#RRGGBB[AA]'",
-			name));
-	return mrpt::img::TColorf(mrpt::img::TColor(r, g, b, a));
-}
-
-namespace
-{
-// TLight::range and TLight::cast_shadows only exist in newer MRPT versions:
-// set them only if available.
-template <typename T, typename = void>
-struct has_light_range : std::false_type
-{
-};
-template <typename T>
-struct has_light_range<T, std::void_t<decltype(T::range)>> : std::true_type
-{
-};
-template <typename T, typename = void>
-struct has_light_cast_shadows : std::false_type
-{
-};
-template <typename T>
-struct has_light_cast_shadows<T, std::void_t<decltype(T::cast_shadows)>> : std::true_type
-{
-};
-
-// Helper: read an XML child's text as a bool ("true"/"false"/"1"/"0").
-bool xmlChildBool(const rapidxml::xml_node<char>& parent, const char* name, bool def)
-{
-	auto* n = parent.first_node(name);
-	if (!n)
-	{
-		return def;
-	}
-	const std::string s =
-		mrpt::system::lowerCase(mrpt::system::trim(std::string(n->value(), n->value_size())));
-	if (s == "1" || s == "true")
-	{
-		return true;
-	}
-	if (s == "0" || s == "false")
-	{
-		return false;
-	}
-	throw std::runtime_error(mrpt::format(
-		"[World::LightOptions] Error parsing '<%s>': expected 'true' or 'false'", name));
-}
-
-template <typename Light>
-void setLightRangeAndShadows(Light& l, float range, bool castShadows)
-{
-	if constexpr (has_light_range<Light>::value)
-	{
-		l.range = range;
-	}
-	if constexpr (has_light_cast_shadows<Light>::value)
-	{
-		l.cast_shadows = castShadows;
-	}
-	(void)l;
-	(void)range;
-	(void)castShadows;
-}
-}  // namespace
-
 void World::LightOptions::parse_from(
 	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
@@ -187,55 +60,20 @@ void World::LightOptions::parse_from(
 	shadow_cascades = std::clamp(shadow_cascades, 1, 4);
 	sensor_shadow_cascades = std::clamp(sensor_shadow_cascades, 1, 4);
 
-	// Parse <point_light> children:
-	for (auto* n = node.first_node("point_light"); n; n = n->next_sibling("point_light"))
+	// Parse <point_light> and <spot_light> children:
+	for (auto* n = node.first_node(); n; n = n->next_sibling(nullptr))
 	{
-		const auto pos = xmlChildPoint3f(*n, "position", {0, 0, 3});
-		const auto color = xmlChildColorf(*n, "color", {1.0f, 1.0f, 1.0f});
-		const float diffuse = xmlChildFloat(*n, "diffuse", 0.8f);
-		const float specular = xmlChildFloat(*n, "specular", 0.5f);
-		const float att_const = xmlChildFloat(*n, "attenuation_constant", 1.0f);
-		const float att_lin = xmlChildFloat(*n, "attenuation_linear", 0.09f);
-		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
-
-		const float range = xmlChildFloat(*n, "range", 0.0f);
-		const bool castShadows = xmlChildBool(*n, "cast_shadows", false);
-
-		auto l = mrpt::viz::TLight::PointLight(
-			pos, color, diffuse, specular, att_const, att_lin, att_quad);
-		setLightRangeAndShadows(l, range, castShadows);
+		const std::string name(n->name(), n->name_size());
+		if (name != "point_light" && name != "spot_light")
+		{
+			continue;
+		}
+		const auto l = parse_light_xml_node(*n);
 		extra_lights.push_back(l);
 
 		logger.logFmt(
-			mrpt::system::LVL_INFO, "[LightOptions] Parsed point_light at (%.1f, %.1f, %.1f)",
-			pos.x, pos.y, pos.z);
-	}
-
-	// Parse <spot_light> children:
-	for (auto* n = node.first_node("spot_light"); n; n = n->next_sibling("spot_light"))
-	{
-		const auto pos = xmlChildPoint3f(*n, "position", {0, 0, 3});
-		const auto dir = xmlChildPoint3f(*n, "direction", {0, 0, -1});
-		const auto color = xmlChildColorf(*n, "color", {1.0f, 1.0f, 1.0f});
-		const float diffuse = xmlChildFloat(*n, "diffuse", 0.8f);
-		const float specular = xmlChildFloat(*n, "specular", 0.5f);
-		const float inner_deg = xmlChildFloat(*n, "inner_cutoff_deg", 12.5f);
-		const float outer_deg = xmlChildFloat(*n, "outer_cutoff_deg", 17.5f);
-		const float att_const = xmlChildFloat(*n, "attenuation_constant", 1.0f);
-		const float att_lin = xmlChildFloat(*n, "attenuation_linear", 0.09f);
-		const float att_quad = xmlChildFloat(*n, "attenuation_quadratic", 0.032f);
-
-		const float range = xmlChildFloat(*n, "range", 0.0f);
-		const bool castShadows = xmlChildBool(*n, "cast_shadows", false);
-
-		auto l = mrpt::viz::TLight::SpotLight(
-			pos, dir, inner_deg, outer_deg, color, diffuse, specular, att_const, att_lin, att_quad);
-		setLightRangeAndShadows(l, range, castShadows);
-		extra_lights.push_back(l);
-
-		logger.logFmt(
-			mrpt::system::LVL_INFO, "[LightOptions] Parsed spot_light at (%.1f, %.1f, %.1f)", pos.x,
-			pos.y, pos.z);
+			mrpt::system::LVL_INFO, "[LightOptions] Parsed %s at (%.1f, %.1f, %.1f)", name.c_str(),
+			l.position.x, l.position.y, l.position.z);
 	}
 }
 
@@ -325,6 +163,14 @@ void World::GUI::prepare_control_window()
 				parent_.setLightDirectionFromAzimuthElevation(
 					parent_.lightOptions_.light_azimuth, parent_.lightOptions_.light_elevation);
 			});
+	}
+
+	w->add<nanogui::Label>("Light intensity:");
+	{
+		auto sl = w->add<nanogui::Slider>();
+		sl->setRange({0, 2});
+		sl->setValue(1);
+		sl->setCallback([this](float v) { parent_.setLightIntensityFactor(v); });
 	}
 
 	w->add<nanogui::CheckBox>("View forces", [&](bool b) { parent_.guiOptions_.show_forces = b; })
@@ -422,11 +268,11 @@ void World::GUI::prepare_editor_window()
 	{
 		auto tab = w->add<nanogui::TabWidget>();
 
-		constexpr size_t NUM_TABS = 5;
+		constexpr size_t NUM_TABS = 6;
 
 		std::array<nanogui::Widget*, NUM_TABS> tabs = {
 			tab->createTab("Vehicles"), tab->createTab("Sensors"), tab->createTab("Blocks"),
-			tab->createTab("Elements"), tab->createTab("Misc.")};
+			tab->createTab("Elements"), tab->createTab("Misc."),   tab->createTab("Lights")};
 
 		tab->setActiveTab(0);
 
@@ -556,6 +402,29 @@ void World::GUI::prepare_editor_window()
 						onEntitySelected(ipo.simulable->getRelativePose());
 					}
 				});
+		}
+
+		// "Lights" tab: switch the light groups of each object
+		// --------------
+		for (const auto& o : parent_.getListOfSimulableObjects())
+		{
+			auto* visual = dynamic_cast<CVisualObject*>(o.second.get());
+			if (!visual)
+			{
+				continue;
+			}
+			for (const auto& group : visual->lightGroupNames())
+			{
+				auto cb = wrappers[5]->add<nanogui::CheckBox>(o.first + ": " + group);
+				cb->setChecked(visual->lightGroupState(group).value_or(false));
+				cb->setCallback([visual, group](bool on)
+								{ visual->setLightGroupState(group, on); });
+				gui_cbLightGroups.push_back({cb, visual, group});
+			}
+		}
+		if (gui_cbLightGroups.empty())
+		{
+			wrappers[5]->add<nanogui::Label>("(No object has <light_group> tags)");
 		}
 
 		// "misc." tab
@@ -1224,6 +1093,12 @@ void World::internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene
 			->setCaption(std::string("Mouse: ") + gui_.clickedPt.asString());
 	}
 
+	// Light groups may also be switched from outside the GUI:
+	for (const auto& lg : gui_.gui_cbLightGroups)
+	{
+		lg.cb->setChecked(lg.visual->lightGroupState(lg.group).value_or(false));
+	}
+
 	timlogger_.leave("update_GUI.5.text-msgs");
 
 	// Camera follow modes:
@@ -1549,6 +1424,23 @@ void World::applyLightOptions()
 
 	lambdaSetLightParams(vv);
 	lambdaSetLightParams(vp);
+}
+
+void World::setLightIntensityFactor(const float factor)
+{
+	ASSERT_(worldVisual_);
+
+	auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+
+	for (const auto& v : {worldVisual_->getViewport(), worldPhysical_.getViewport()})
+	{
+		auto& lights = v->lightParameters().lights;
+		if (!lights.empty())
+		{
+			lights[0].diffuse = factor * lightOptions_.light_diffuse;
+			lights[0].specular = factor * lightOptions_.light_specular;
+		}
+	}
 }
 
 void World::setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation)

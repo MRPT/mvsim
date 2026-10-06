@@ -23,7 +23,9 @@
 #include <mvsim/World.h>
 #include <mvsim/basic_types.h>
 
+#include <cctype>
 #include <cstdio>
+#include <optional>
 #include <rapidxml_print.hpp>
 #include <rapidxml_utils.hpp>
 #include <sstream>	// std::stringstream
@@ -212,6 +214,207 @@ void TParamEntry::parse(
 				functionNameContext, varName.c_str(), str.c_str(), format));
 		}
 	}
+}
+
+namespace
+{
+/** Returns the text of an XML child, with variables replaced, if it exists */
+std::optional<std::string> xmlChildText(
+	const rapidxml::xml_node<char>& parent, const char* name,
+	const std::map<std::string, std::string>& variables)
+{
+	auto* n = parent.first_node(name);
+	if (!n)
+	{
+		return {};
+	}
+	return mvsim::parse(std::string(n->value(), n->value_size()), variables);
+}
+
+std::runtime_error lightParseError(
+	const rapidxml::xml_node<char>& node, const char* name, const char* expected)
+{
+	return std::runtime_error(mrpt::format(
+		"Error parsing '<%s>' in '<%.*s>': expected %s", name, static_cast<int>(node.name_size()),
+		node.name(), expected));
+}
+
+/** True if only whitespace remains after position pos */
+bool onlySpacesFrom(const std::string& s, size_t pos)
+{
+	while (pos < s.size() && std::isspace(static_cast<unsigned char>(s[pos])))
+	{
+		pos++;
+	}
+	return pos == s.size();
+}
+
+float xmlChildFloat(
+	const rapidxml::xml_node<char>& parent, const char* name, float def,
+	const std::map<std::string, std::string>& variables)
+{
+	const auto s = xmlChildText(parent, name, variables);
+	if (!s)
+	{
+		return def;
+	}
+	size_t pos = 0;
+	float v = 0;
+	try
+	{
+		v = std::stof(*s, &pos);
+	}
+	catch (const std::exception&)
+	{
+		pos = 0;
+	}
+	if (pos == 0 || !onlySpacesFrom(*s, pos))
+	{
+		throw lightParseError(parent, name, "a number");
+	}
+	return v;
+}
+
+mrpt::math::TPoint3Df xmlChildPoint3f(
+	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::math::TPoint3Df& def,
+	const std::map<std::string, std::string>& variables)
+{
+	const auto s = xmlChildText(parent, name, variables);
+	if (!s)
+	{
+		return def;
+	}
+	float x = 0;
+	float y = 0;
+	float z = 0;
+	int consumed = 0;
+	const int nMatched = std::sscanf(s->c_str(), "%f %f %f %n", &x, &y, &z, &consumed);
+	if (nMatched != 3 || !onlySpacesFrom(*s, static_cast<size_t>(consumed)))
+	{
+		throw lightParseError(parent, name, "'X Y Z'");
+	}
+	return {x, y, z};
+}
+
+mrpt::img::TColorf xmlChildColorf(
+	const rapidxml::xml_node<char>& parent, const char* name, const mrpt::img::TColorf& def,
+	const std::map<std::string, std::string>& variables)
+{
+	const auto str = xmlChildText(parent, name, variables);
+	if (!str)
+	{
+		return def;
+	}
+	if ((str->size() != 7 && str->size() != 9) || (*str)[0] != '#')
+	{
+		throw lightParseError(parent, name, "'#RRGGBB[AA]'");
+	}
+	unsigned int r = 0;
+	unsigned int g = 0;
+	unsigned int b = 0;
+	unsigned int a = 0xff;
+	const int nExpected = str->size() == 9 ? 4 : 3;
+	if (std::sscanf(str->c_str() + 1, "%2x%2x%2x%2x", &r, &g, &b, &a) != nExpected)
+	{
+		throw lightParseError(parent, name, "'#RRGGBB[AA]'");
+	}
+	return mrpt::img::TColorf(mrpt::img::TColor(r, g, b, a));
+}
+
+bool xmlChildBool(
+	const rapidxml::xml_node<char>& parent, const char* name, bool def,
+	const std::map<std::string, std::string>& variables)
+{
+	const auto str = xmlChildText(parent, name, variables);
+	if (!str)
+	{
+		return def;
+	}
+	const std::string s = mrpt::system::lowerCase(mrpt::system::trim(*str));
+	if (s == "1" || s == "true")
+	{
+		return true;
+	}
+	if (s == "0" || s == "false")
+	{
+		return false;
+	}
+	throw lightParseError(parent, name, "'true' or 'false'");
+}
+
+// TLight::range and TLight::cast_shadows only exist in newer MRPT versions:
+// set them only if available.
+template <typename T, typename = void>
+struct has_light_range : std::false_type
+{
+};
+template <typename T>
+struct has_light_range<T, std::void_t<decltype(T::range)>> : std::true_type
+{
+};
+template <typename T, typename = void>
+struct has_light_cast_shadows : std::false_type
+{
+};
+template <typename T>
+struct has_light_cast_shadows<T, std::void_t<decltype(T::cast_shadows)>> : std::true_type
+{
+};
+
+template <typename Light>
+void setLightRangeAndShadows(Light& l, float range, bool castShadows)
+{
+	if constexpr (has_light_range<Light>::value)
+	{
+		l.range = range;
+	}
+	if constexpr (has_light_cast_shadows<Light>::value)
+	{
+		l.cast_shadows = castShadows;
+	}
+	(void)l;
+	(void)range;
+	(void)castShadows;
+}
+}  // namespace
+
+mrpt::viz::TLight mvsim::parse_light_xml_node(
+	const rapidxml::xml_node<char>& n, const std::map<std::string, std::string>& vars)
+{
+	const std::string type(n.name(), n.name_size());
+	const bool isSpot = type == "spot_light";
+	if (!isSpot && type != "point_light")
+	{
+		throw std::runtime_error(mrpt::format(
+			"Unknown light tag '<%s>' (expected '<point_light>' or '<spot_light>')", type.c_str()));
+	}
+
+	const auto pos = xmlChildPoint3f(n, "position", {0, 0, 3}, vars);
+	const auto color = xmlChildColorf(n, "color", {1.0f, 1.0f, 1.0f}, vars);
+	const float diffuse = xmlChildFloat(n, "diffuse", 0.8f, vars);
+	const float specular = xmlChildFloat(n, "specular", 0.5f, vars);
+	const float attConst = xmlChildFloat(n, "attenuation_constant", 1.0f, vars);
+	const float attLin = xmlChildFloat(n, "attenuation_linear", 0.09f, vars);
+	const float attQuad = xmlChildFloat(n, "attenuation_quadratic", 0.032f, vars);
+	const float range = xmlChildFloat(n, "range", 0.0f, vars);
+	const bool castShadows = xmlChildBool(n, "cast_shadows", false, vars);
+
+	mrpt::viz::TLight l;
+	if (isSpot)
+	{
+		const auto dir = xmlChildPoint3f(n, "direction", {0, 0, -1}, vars);
+		const float innerDeg = xmlChildFloat(n, "inner_cutoff_deg", 12.5f, vars);
+		const float outerDeg = xmlChildFloat(n, "outer_cutoff_deg", 17.5f, vars);
+		l = mrpt::viz::TLight::SpotLight(
+			pos, dir.unitarize(), innerDeg, outerDeg, color, diffuse, specular, attConst, attLin,
+			attQuad);
+	}
+	else
+	{
+		l = mrpt::viz::TLight::PointLight(pos, color, diffuse, specular, attConst, attLin, attQuad);
+	}
+	setLightRangeAndShadows(l, range, castShadows);
+	return l;
 }
 
 void mvsim::parse_xmlnode_attribs(

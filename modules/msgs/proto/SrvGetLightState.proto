@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+/* Queries whether a light group (<light_group> XML tags) of an object is on */
+message SrvGetLightState {
+  required string objectId = 1;
+
+  required string lightGroup = 2;
+}

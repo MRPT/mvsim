@@ -30,6 +30,9 @@ Its direction is controlled via azimuth and elevation angles, and it always cast
   The orbit-like azimuth and elevation angles (in **degrees**) of the directional light source.
   For example, an elevation of ``90`` means a pure vertical (downwards) light.
 
+The GUI "Control" window has sliders for the light azimuth and elevation, and for its
+intensity (a factor from 0 to 2 applied to ``light_diffuse`` and ``light_specular``).
+
 .. raw:: html
 
    <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-light-direction.mp4" type="video/mp4"> </video>
@@ -114,7 +117,57 @@ Each ``<spot_light>`` supports the following child tags (all optional, shown wit
 .. note::
 
    Up to 8 simultaneous light sources are supported (including the primary directional light).
-   This limit is defined by the shader pipeline.
+   This limit is defined by the shader pipeline. With MRPT versions supporting lights in the
+   scene graph (``MRPT_VIZ_HAS_CLIGHT``), more lights can be defined: each rendered view
+   (the GUI or a camera sensor) uses the directional light and the point/spot lights closest
+   to its camera.
+
+
+Switchable lights (light groups)
+=================================
+
+Vehicles and blocks can carry their own point and spot lights, e.g. headlights, which move
+with the object and can be switched on and off while the simulation runs. Each
+``<light_group>`` tag, inside a vehicle or block (class or instance) definition, defines a
+group of lights switched together:
+
+.. code-block:: xml
+
+    <light_group name="headlights" initially_on="${headlights_on|true}">
+      <spot_light>
+        <position>0.26 0.11 0.17</position> <direction>1 0 -0.25</direction>
+        <range>12</range>
+      </spot_light>
+      <spot_light> ... </spot_light>
+    </light_group>
+
+    <!-- A lamp model that glows while the group is on: -->
+    <visual light_group="headlights">
+      <model_uri>headlight.obj</model_uri>
+    </visual>
+
+- The ``name`` attribute is required. ``initially_on`` (default: ``true``) sets the state
+  at load time, and accepts :ref:`variables <world_value_parsing>`.
+- ``<point_light>`` and ``<spot_light>`` take the same tags as above, with positions and
+  directions given in the **object frame**.
+- ``<visual>`` models with a ``light_group`` attribute keep their emissive materials
+  (from the model file, or ``model_emissive``) only while the group is on.
+
+Light groups can be switched:
+
+- From the GUI: the "Lights" tab of the "Editor" window has a checkbox per light group.
+- Via ZMQ, with the services ``set_light_state`` (``SrvSetLightState``: ``objectId``,
+  ``lightGroup``, ``on``) and ``get_light_state`` (``SrvGetLightState``).
+  See ``examples_python/toggle-lights.py``.
+- From C++, with ``World::setLightGroupState()``.
+
+The lights are also seen by camera sensors. The Jackal vehicle definition has headlights,
+enabled with the include variable ``headlights="true"`` (see the warehouse demo world).
+
+.. note::
+
+   The lights of light groups need MRPT versions with ``MRPT_VIZ_HAS_CLIGHT``. With older
+   versions they are ignored with a warning, and only the emissive models are switched.
 
 
 Shadows control

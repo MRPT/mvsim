@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SrvGetLightStateAnswer {
+  /* Should be checked */
+  required bool success = 1;
+
+  optional string errorMessage = 2;
+
+  /* Whether the light group is on, if success */
+  optional bool on = 3;
+}

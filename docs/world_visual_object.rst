@@ -42,6 +42,8 @@ Under the ``<visual> </visual>`` tag group:
 - **cast_shadows**: (Default=``true``) Whether the model casts shadows. Set it to ``false`` for lamp models
   whose point/spot light is inside them.
 - **show_bounding_box**: (Default=``false``) Initial visibility of the object bounding box.
+- ``<visual light_group="NAME">`` (attribute): The model glows (keeps its emissive materials)
+  only while that :ref:`light group <world_lighting>` of the object is on.
   
   .. note::
      The ``visual_scale`` parameter is only available for blocks, not vehicles. 
