@@ -328,6 +328,10 @@ class World : public mrpt::system::COutputLogger
 	/// mode.
 	void internalGraphicsLoopTasksForSimulation();
 
+	/// Frees the sensors OpenGL resources. Must be called from the same thread
+	/// that called internalGraphicsLoopTasksForSimulation(), before exiting it.
+	void internalFreeOpenGLResourcesForSimulation();
+
 	void internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects);
 
 	void internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene& physical);
