@@ -730,7 +730,8 @@ void World::GUI::draw_world_panel()
 		{
 			fl |= ImGuiTreeNodeFlags_Selected;
 		}
-		ImGui::TreeNodeEx(name.c_str(), fl, "%s", label.c_str());
+		// Names may be empty or repeated, so use the object as ImGui ID:
+		ImGui::TreeNodeEx(static_cast<const void*>(obj.get()), fl, "%s", label.c_str());
 		if (ImGui::IsItemClicked())
 		{
 			select(name, obj);
