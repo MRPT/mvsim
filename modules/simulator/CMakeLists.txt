@@ -144,9 +144,11 @@ if (TARGET mvsim::msgs)
 endif()
 
 set(PACKAGE_DEPENDENCIES
-  mrpt-maps
-  mrpt-gui
-  mrpt-topography
+  mrpt_obs
+  mrpt_opengl
+  mrpt_maps
+  mrpt_gui
+  mrpt_topography
   ${DEP_MVSIM_COMMS_PKG}
   box2d
   )

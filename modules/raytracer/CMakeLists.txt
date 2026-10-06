@@ -17,8 +17,8 @@ mvsim_set_target_build_options(${PROJECT_NAME})
 source_group(RayTracer FILES ${RayTracer_SRCS})
 
 set(PACKAGE_DEPENDENCIES
-  mrpt-math
-  mrpt-poses
+  mrpt_math
+  mrpt_poses
   )
 mvsim_common_target_settings(${MODULE_NAME})
 
