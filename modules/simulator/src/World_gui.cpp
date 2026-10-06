@@ -104,6 +104,19 @@ constexpr float FONT_SIZE = 15.0f;
 constexpr double INTERACTIVE_FPS = 60.0;
 constexpr double INTERACTIVE_HOLD_TIME = 1.0;  // [s]
 
+// Frame scheduling, so GUI frames do not delay OpenGL sensors:
+// - A frame is postponed until after the next sensors if it would not finish
+//   before them (plus this margin), but never by more than this number of
+//   frame periods:
+constexpr double SENSOR_MARGIN = 0.005;	 // [s]
+constexpr double MAX_POSTPONE_PERIODS = 2.0;
+// - While the simulation thread is busier than OVERLOAD_BUSY, the frame rate
+//   decreases (down to MIN_OVERLOAD_FPS), and it recovers below RELAXED_BUSY:
+constexpr double OVERLOAD_BUSY = 0.9;
+constexpr double RELAXED_BUSY = 0.75;
+constexpr double MIN_OVERLOAD_FPS = 5.0;
+constexpr double OVERLOAD_STEP = 1.25;
+
 /** Path of the autosaved ImGui settings (window layout), shared by all
  * worlds, or empty if no config directory can be found or created. */
 std::string imgui_ini_path()
@@ -456,15 +469,20 @@ void World::internal_GUI_thread()
 		// ============= Mainloop =============
 		// Frames are drawn at "refresh_fps", or faster while the user
 		// interacts with the window. In between, the thread sleeps until a
-		// sensor needs OpenGL rendering (see mark_as_pending_running_sensors_on_3D_scene()).
+		// sensor needs OpenGL rendering (see mark_as_pending_running_sensors_on_3D_scene()),
+		// and sensors have priority over frames (see the constants above).
 		const double idlePeriod = 1.0 / std::max(1, guiOptions_.refresh_fps);
 		const double interactivePeriod = std::min(idlePeriod, 1.0 / INTERACTIVE_FPS);
+		const double maxOverloadFactor = std::max(1.0, 1.0 / (MIN_OVERLOAD_FPS * idlePeriod));
 
 		MRPT_LOG_DEBUG_FMT(
 			"[World::internal_GUI_thread] Using GUI FPS=%i", guiOptions_.refresh_fps);
 
 		double nextFrameTime = 0;
+		double lastFrameTime = 0;
 		double lastInputTime = mrpt::Clock::nowDouble();
+		double overloadFactor = 1.0;
+		bool framePostponed = false;
 
 		while (!simulator_must_close())
 		{
@@ -488,11 +506,13 @@ void World::internal_GUI_thread()
 			{
 				lastInputTime = now;
 			}
-			const bool frameDue = now >= nextFrameTime;
+			const bool sensorsPending = pending_running_sensors_on_3D_scene();
+			// A frame postponed for the sensors goes right after them:
+			const bool frameDue = now >= nextFrameTime || (framePostponed && sensorsPending);
 
 			// Update the 3D scene from the simulation and run sensors that
 			// are waiting for OpenGL:
-			if (frameDue || pending_running_sensors_on_3D_scene())
+			if (frameDue || sensorsPending)
 			{
 				internalGraphicsLoopTasksForSimulation();
 			}
@@ -501,10 +521,55 @@ void World::internal_GUI_thread()
 				continue;
 			}
 
+			const bool interactive = (now - lastInputTime) < INTERACTIVE_HOLD_TIME;
+			const double basePeriod = interactive ? interactivePeriod : idlePeriod;
+			const bool overloaded = simulation_busy_fraction() > OVERLOAD_BUSY;
+
+			// Postpone the frame if it would delay the next sensors. Right
+			// after running sensors, the next ones are far away.
+			if (!sensorsPending && now - lastFrameTime < MAX_POSTPONE_PERIODS * basePeriod)
+			{
+				// Wall-clock time until the next OpenGL sensor, if known:
+				std::optional<double> tSensor;
+				if (const auto tNext = next_opengl_sensor_time(); tNext.has_value())
+				{
+					const double rtf = get_realtime_factor_achieved();
+					if (rtf > 0.01)
+					{
+						tSensor = std::max(0.0, (*tNext - get_simul_time()) / rtf);
+					}
+				}
+				// When overloaded, the simulation runs ahead of the real-time
+				// factor between sensors, so just wait for them:
+				if (tSensor.has_value() &&
+					(overloaded || *tSensor < gui_.frameCost + SENSOR_MARGIN))
+				{
+					framePostponed = true;
+					// Retry by the deadline, if the sensors do not come first:
+					nextFrameTime = lastFrameTime + MAX_POSTPONE_PERIODS * basePeriod;
+					if (!overloaded)
+					{
+						nextFrameTime = std::min(nextFrameTime, now + *tSensor + SENSOR_MARGIN);
+					}
+					continue;
+				}
+			}
+			framePostponed = false;
+
 			internal_process_pending_gui_user_tasks();
 
-			const bool interactive = (now - lastInputTime) < INTERACTIVE_HOLD_TIME;
-			nextFrameTime = now + (interactive ? interactivePeriod : idlePeriod);
+			// While the simulation can not keep up, give it more time by
+			// lowering the frame rate, unless the user interacts:
+			if (overloaded)
+			{
+				overloadFactor = std::min(overloadFactor * OVERLOAD_STEP, maxOverloadFactor);
+			}
+			else if (simulation_busy_fraction() < RELAXED_BUSY)
+			{
+				overloadFactor = std::max(1.0, overloadFactor / OVERLOAD_STEP);
+			}
+			nextFrameTime = now + basePeriod * (interactive ? 1.0 : overloadFactor);
+			lastFrameTime = now;
 
 			if (gui_.hideRequested && !gui_.hidden)
 			{
@@ -541,6 +606,10 @@ void World::internal_GUI_thread()
 	try
 	{
 		gui_.free_preview_textures();
+		if (gui_.gpuQueries[0][0] != 0)
+		{
+			glDeleteQueries(4, &gui_.gpuQueries[0][0]);
+		}
 		gui_.sceneView.reset();
 
 		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());

@@ -228,6 +228,15 @@ class World : public mrpt::system::COutputLogger
 	 *  simulation is running slower than real time. \sa run_simulation() */
 	double get_realtime_factor_achieved() const { return achievedRealtimeFactor_.load(); }
 
+	/** Smoothed fraction of the wall-clock time spent inside run_simulation().
+	 * Close to 1.0 means the simulation can not keep up with the requested
+	 * speed, e.g. because it waits for OpenGL sensors. */
+	double simulation_busy_fraction() const;
+
+	/** Simulation time of the next sensor reading that needs OpenGL
+	 * rendering (cameras, 3D lidars...), or nullopt if there are none. */
+	std::optional<double> next_opengl_sensor_time() const;
+
 	/// Simulation fixed-time interval for numerical integration
 	double get_simul_timestep() const;
 
@@ -638,6 +647,11 @@ class World : public mrpt::system::COutputLogger
 	 * second), exponentially smoothed. 1.0 = real time; below 1.0 = running
 	 * slower than real time (e.g. CPU-bound). Updated by run_simulation(). */
 	std::atomic<double> achievedRealtimeFactor_{1.0};
+	/// See simulation_busy_fraction()
+	std::atomic<double> simulBusyFraction_{0.0};
+	/// Wall-clock start of the run_simulation() call in progress, or 0.
+	std::atomic<double> runSimulStartWallclock_{0.0};
+	static constexpr double BUSY_FRACTION_TIME_CONSTANT = 1.0;	// [s]
 	std::optional<double> lastRunSimulWallclock_;
 
 	/// Set by open_GUI_while_loading(), until load_from_XML() ends.
@@ -986,6 +1000,14 @@ class World : public mrpt::system::COutputLogger
 		/// the user interacts with the window.
 		std::atomic_bool gotInputEvents = false;
 		bool windowFocused = false;
+
+		/// Smoothed time a frame occupies the GUI thread and the GPU [s]
+		double frameCost = 0.02;
+		/// GPU time stamp queries: two alternating [begin,end] pairs
+		unsigned int gpuQueries[2][2] = {{0, 0}, {0, 0}};
+		bool gpuQueriesIssued[2] = {false, false};
+		int gpuQueryIdx = 0;
+		double lastGpuFrameTime = 0;  //!< [s]
 
 		// Panels visibility:
 		bool showWorld = true;

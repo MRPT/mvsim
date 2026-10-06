@@ -31,6 +31,9 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
 - ``<refresh_fps>20</refresh_fps>``. GUI refresh rate (in FPS or Hz). Faster will
   lead to smoother graphics and animations of the vehicle motion, at a higher CPU/GPU
   cost. Publication of sensor readings, odometry, etc. is not affected at all by this parameter.
+  OpenGL sensors (cameras, 3D lidars) have priority: frames are delayed if they would delay
+  a sensor, and while the simulation can not keep up with the requested speed, the GUI
+  refresh rate decreases (down to 5 FPS) unless the user interacts with the window.
 
 - ``<show_sensor_points>true</show_sensor_points>``. If enabled (default),
   obstacle readings (RGBD cameras, 2D or 3D Lidars, etc.) will be visible as point clouds.

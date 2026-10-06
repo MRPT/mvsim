@@ -16,6 +16,7 @@
 #include <mvsim/Simulable.h>
 #include <mvsim/VisualObject.h>
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 
@@ -62,6 +63,13 @@ class SensorBase : public CVisualObject, public Simulable
 
 	double sensor_period() const { return sensor_period_; }
 
+	/** Simulation time of the next sensor reading. Thread-safe. */
+	double next_sensor_time() const { return sensor_last_timestamp_ + sensor_period_; }
+
+	/** Whether this sensor is simulated by rendering the 3D scene with
+	 * OpenGL, in the GUI thread (or the headless rendering thread). */
+	virtual bool rendersWithOpenGL() const { return false; }
+
 	/** Whether the sensor preview subwindow (for sensors with a GUI
 	 * image/point-cloud preview, e.g. cameras) should start opened (true,
 	 * default) or minimized (false). See XML tag "preview_win_visible". */
@@ -94,8 +102,9 @@ class SensorBase : public CVisualObject, public Simulable
 	/** Generate one sensor reading every this period [s] (Default = 0.1) */
 	double sensor_period_ = 0.1;
 
-	/** The last sensor reading timestamp. See  sensor_period_ */
-	double sensor_last_timestamp_ = 0;
+	/** The last sensor reading timestamp. See  sensor_period_
+	 * Atomic, since the GUI thread reads it, see next_sensor_time(). */
+	std::atomic<double> sensor_last_timestamp_ = 0;
 
 	/** Publish to MVSIM ZMQ topic stream, if not empty (default) */
 	std::string publishTopic_;

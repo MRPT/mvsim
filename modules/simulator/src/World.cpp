@@ -215,6 +215,23 @@ void World::free_opengl_resources()
 	CVisualObject::FreeOpenGLResources();
 }
 
+std::optional<double> World::next_opengl_sensor_time() const
+{
+	std::optional<double> t;
+	for (const auto& v : vehicles_)
+	{
+		for (const auto& s : v.second->getSensors())
+		{
+			if (s && s->rendersWithOpenGL())
+			{
+				const double ts = s->next_sensor_time();
+				t = t.has_value() ? std::min(*t, ts) : ts;
+			}
+		}
+	}
+	return t;
+}
+
 bool World::sensor_has_to_create_egl_context()
 {
 	// If we have a GUI, reuse that context:

@@ -171,6 +171,7 @@ void World::GUI::draw_loading_frame()
 void World::GUI::draw_frame()
 {
 	auto tle = mrpt::system::CTimeLoggerEntry(parent_.timlogger_, "gui.frame");
+	const double tStart = mrpt::Clock::nowDouble();
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -213,10 +214,49 @@ void World::GUI::draw_frame()
 	glClearColor(0.15f, 0.15f, 0.17f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	// Measure the GPU time of frames, with two alternating pairs of time
+	// stamp queries. Results are read when available, never waited for.
+	if (gpuQueries[0][0] == 0)
+	{
+		glGenQueries(4, &gpuQueries[0][0]);
+	}
+	gpuQueryIdx = 1 - gpuQueryIdx;
+	const auto& q = gpuQueries[gpuQueryIdx];
+	bool canQuery = true;
+	if (gpuQueriesIssued[gpuQueryIdx])
+	{
+		GLint available = 0;
+		glGetQueryObjectiv(q[1], GL_QUERY_RESULT_AVAILABLE, &available);
+		canQuery = available != 0;
+		if (canQuery)
+		{
+			GLuint64 tBegin = 0;
+			GLuint64 tEnd = 0;
+			glGetQueryObjectui64v(q[0], GL_QUERY_RESULT, &tBegin);
+			glGetQueryObjectui64v(q[1], GL_QUERY_RESULT, &tEnd);
+			lastGpuFrameTime = 1e-9 * static_cast<double>(tEnd - tBegin);
+		}
+	}
+	if (canQuery)
+	{
+		glQueryCounter(q[0], GL_TIMESTAMP);
+	}
+
 	// The 3D scene is rendered from within here, behind all windows:
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+	if (canQuery)
+	{
+		glQueryCounter(q[1], GL_TIMESTAMP);
+		gpuQueriesIssued[gpuQueryIdx] = true;
+	}
+
 	glfwSwapBuffers(window);
+
+	// Conservative: CPU and GPU work only partially overlap.
+	constexpr double alpha = 0.2;
+	const double cpuTime = mrpt::Clock::nowDouble() - tStart;
+	frameCost = (1.0 - alpha) * frameCost + alpha * (cpuTime + lastGpuFrameTime);
 }
 
 void World::GUI::draw_menu_bar()

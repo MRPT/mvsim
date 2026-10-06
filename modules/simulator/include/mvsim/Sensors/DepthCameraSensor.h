@@ -48,6 +48,7 @@ class DepthCameraSensor : public SensorBase
 	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 
 	void freeOpenGLResources() override;
+	bool rendersWithOpenGL() const override { return true; }
 
 	/** Whether to publish the depth image as a separate 16UC1 ROS topic.
 	 *  Parsed from the XML tag `<publish_ros_depth_image>`. Default: true.

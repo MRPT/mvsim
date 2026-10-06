@@ -37,6 +37,7 @@ class CameraSensor : public SensorBase
 	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 
 	void freeOpenGLResources() override;
+	bool rendersWithOpenGL() const override { return true; }
 
    protected:
 	virtual void internalGuiUpdate(
