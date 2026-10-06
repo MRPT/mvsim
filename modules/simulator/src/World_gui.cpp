@@ -37,6 +37,10 @@
 #include <GLFW/glfw3.h>
 // clang-format on
 
+#if !defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
+#error "MVSim needs a newer MRPT, with CImGuiSceneView::renderAsBackground()"
+#endif
+
 #include <algorithm>
 #include <cctype>  // isspace()
 #include <cmath>  // cos(), sin()
