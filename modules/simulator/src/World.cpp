@@ -439,3 +439,35 @@ float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
 		});
 	return highest.value_or(.0f);
 }
+
+namespace
+{
+CVisualObject* findVisualObject(const World::SimulableList& objs, const std::string& name)
+{
+	const auto it = objs.find(name);
+	if (it == objs.end())
+	{
+		return nullptr;
+	}
+	return dynamic_cast<CVisualObject*>(it->second.get());
+}
+}  // namespace
+
+bool World::setLightGroupState(const std::string& objectName, const std::string& groupName, bool on)
+{
+	auto lck = mrpt::lockHelper(simulableObjectsMtx_);
+	auto* obj = findVisualObject(simulableObjects_, objectName);
+	return obj && obj->setLightGroupState(groupName, on);
+}
+
+std::optional<bool> World::lightGroupState(
+	const std::string& objectName, const std::string& groupName) const
+{
+	auto lck = mrpt::lockHelper(simulableObjectsMtx_);
+	const auto* obj = findVisualObject(simulableObjects_, objectName);
+	if (!obj)
+	{
+		return {};
+	}
+	return obj->lightGroupState(groupName);
+}

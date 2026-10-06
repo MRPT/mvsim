@@ -40,14 +40,17 @@ mrpt::viz::CAssimpModel::Ptr ModelsCache::get(
 	// Models are shared, so instances with different options need their own:
 	const std::string key = localFileName + options.asKey();
 
-	// already cached?
-	if (auto it = cache.find(key); it != cache.end())
+	auto m = mrpt::viz::CAssimpModel::Create();
+	if (options.shared)
 	{
-		return it->second;
+		// already cached?
+		if (auto it = cache.find(key); it != cache.end())
+		{
+			return it->second;
+		}
+		// No, it's a new model:
+		cache[key] = m;
 	}
-
-	// No, it's a new model, create its placeholder:
-	auto m = cache[key] = mrpt::viz::CAssimpModel::Create();
 
 	ASSERT_FILE_EXISTS_(localFileName);
 

@@ -27,6 +27,10 @@ class ModelsCache
 		 * file emissive is kept) while its alpha is 0. */
 		mrpt::img::TColor modelEmissive{0, 0, 0, 0};
 
+		/** If false, a new instance is always loaded, so it can be modified
+		 * without affecting other objects using the same model. */
+		bool shared = true;
+
 		/** A string that identifies these options, for cache lookups */
 		std::string asKey() const;
 	};

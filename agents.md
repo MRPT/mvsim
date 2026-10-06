@@ -96,6 +96,10 @@ Cameras (`CameraSensor`, `DepthCameraSensor`) open a GUI preview subwindow showi
 
 Elevation queries (`World::getHighestElevationUnder()`, run for every wheel and chassis contour point each step) use a 2D grid index: world elements providing elevation must override `elevationBoundingBox()` to be indexed (otherwise they are queried everywhere), and the index is rebuilt when elements are added or moved (`World::invalidateElevationIndex()`).
 
+### Switchable lights
+
+`<light_group name=".." initially_on="..">` tags (point/spot lights in the object frame) are parsed by `CVisualObject::parseVisual()`, so vehicles and blocks support them; `<visual light_group="..">` models (loaded unshared from `ModelsCache`) glow only while their group is on. Lights are `mrpt::viz::CLight` objects, only built if `MRPT_VIZ_HAS_CLIGHT` is defined (newer MRPT; otherwise ignored with a warning), and always go into the physical scene so camera sensors see them. Switched with `World::setLightGroupState()`, the ZMQ services `set_light_state`/`get_light_state`, or the GUI editor "Lights" tab. Point/spot XML parsing is shared with the world `<lights>` in `parse_light_xml_node()` (`xml_utils.h`).
+
 ### Friction models (`src/FrictionModels/`)
 
 Default Coulomb, Ward-Iagnemma (off-road), Ellipse (slip angle + slip ratio).
@@ -124,7 +128,7 @@ Key headers in `modules/comms/include/mvsim/Comms/`:
 - `CallService` / `GenericAnswer` — RPC
 - `ObservationLidar2D` / `GenericObservation` — sensor data
 - `Pose` / `TimeStampedPose` — pose data
-- `SrvGetPose` / `SrvSetPose` / `SrvSetControllerTwist` / `SrvShutdown` — services
+- `SrvGetPose` / `SrvSetPose` / `SrvSetControllerTwist` / `SrvShutdown` / `SrvSetLightState` / `SrvGetLightState` — services
 
 ---
 
@@ -207,7 +211,7 @@ Ready-to-include vehicle and sensor snippets:
 
 ## Python API (`examples_python/`)
 
-Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`, `simple-obstacle-avoidance.py`, `move-object-example.py`, `call-shutdown.py`, `plot-log-files-4-wheels.py`.
+Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`, `simple-obstacle-avoidance.py`, `move-object-example.py`, `call-shutdown.py`, `toggle-lights.py`, `plot-log-files-4-wheels.py`.
 
 ---
 

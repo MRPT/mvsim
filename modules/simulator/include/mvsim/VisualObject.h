@@ -10,6 +10,7 @@
 #pragma once
 
 #include <mrpt/core/optional_ref.h>
+#include <mrpt/img/TColor.h>
 #include <mrpt/math/TBoundingBox.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mrpt/viz/Scene.h>
@@ -18,7 +19,12 @@
 #include <mvsim/basic_types.h>
 
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace mvsim
 {
@@ -70,6 +76,24 @@ class CVisualObject
 	/** Epsilon for geometry checks related to bounding boxes (default:1e-3) */
 	static double GeometryEpsilon;
 
+	/** @name Switchable lights (`<light_group>` XML tags)
+	 * @{ */
+
+	/** Names of the light groups of this object, defined with
+	 * `<light_group name="...">` tags or the `light_group` attribute of
+	 * `<visual>` tags. */
+	std::vector<std::string> lightGroupNames() const;
+
+	/** Switches all the lights (and emissive visual models) of a light group
+	 * on or off. It can be called from any thread.
+	 * \return false if there is no such light group. */
+	bool setLightGroupState(const std::string& groupName, bool on);
+
+	/** Whether a light group is on, or empty if there is no such group. */
+	std::optional<bool> lightGroupState(const std::string& groupName) const;
+
+	/** @} */
+
    protected:
 	/// Returns true if there is at least one `<visual>...</visual>` entry.
 	bool parseVisual(const rapidxml::xml_node<char>& rootNode);
@@ -102,6 +126,35 @@ class CVisualObject
 
    private:
 	std::optional<Shape2p5> collisionShape_;
+
+	struct LightGroup
+	{
+		bool on = true;
+
+		/** The lights (mrpt::viz::CLight), in the object frame. Hidden while
+		 * the group is off. */
+		std::shared_ptr<mrpt::viz::CSetOfObjects> glLights;
+
+		/** Model parts that glow while the group is on, with their emissive
+		 * color. */
+		std::vector<std::pair<std::shared_ptr<mrpt::viz::CVisualObject>, mrpt::img::TColorf>>
+			emissiveParts;
+
+		void apply() const;
+	};
+	std::map<std::string, LightGroup> lightGroups_;
+	mutable std::mutex lightGroupsMtx_;
+
+	/** All the lights of all groups, placed at the object pose */
+	std::shared_ptr<mrpt::viz::CSetOfObjects> glLightGroups_;
+	bool glLightGroupsInserted_ = false;
+
+	/** Returns the group, creating it (on) if it did not exist. Lock
+	 * lightGroupsMtx_ first. */
+	LightGroup& lightGroup(const std::string& name);
+
+	/** Called by parseVisual once per "light_group" block. */
+	void implParseLightGroup(const rapidxml::xml_node<char>& node);
 
 	/// Called by parseVisual once per "visual" block.
 	bool implParseVisual(const rapidxml::xml_node<char>& visual_node);

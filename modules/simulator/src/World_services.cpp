@@ -12,10 +12,14 @@
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 #include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetLightState.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetLightStateAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPoseAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetControllerTwist.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetControllerTwistAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetLightState.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetLightStateAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdown.pb.h>
@@ -177,6 +181,71 @@ mvsim_msgs::SrvShutdownAnswer World::srv_shutdown(
 	return ans;
 }
 
+namespace
+{
+/** Finds the light group of an object, or returns an error message */
+std::string findLightGroup(
+	const World::SimulableList& objs, const std::string& objectId, const std::string& group,
+	CVisualObject*& obj)
+{
+	const auto it = objs.find(objectId);
+	obj = it == objs.end() ? nullptr : dynamic_cast<CVisualObject*>(it->second.get());
+	if (!obj)
+	{
+		return "objectId not found";
+	}
+	if (!obj->lightGroupState(group).has_value())
+	{
+		std::string available;
+		for (const auto& name : obj->lightGroupNames())
+		{
+			available += (available.empty() ? "" : ", ") + name;
+		}
+		return "light group not found. Available ones: [" + available + "]";
+	}
+	return {};
+}
+}  // namespace
+
+mvsim_msgs::SrvSetLightStateAnswer World::srv_set_light_state(
+	const mvsim_msgs::SrvSetLightState& req)
+{
+	mvsim_msgs::SrvSetLightStateAnswer ans;
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+
+	CVisualObject* obj = nullptr;
+	if (const auto err = findLightGroup(simulableObjects_, req.objectid(), req.lightgroup(), obj);
+		!err.empty())
+	{
+		ans.set_success(false);
+		ans.set_errormessage(err);
+		return ans;
+	}
+	ans.set_success(obj->setLightGroupState(req.lightgroup(), req.on()));
+	return ans;
+}
+
+mvsim_msgs::SrvGetLightStateAnswer World::srv_get_light_state(
+	const mvsim_msgs::SrvGetLightState& req)
+{
+	mvsim_msgs::SrvGetLightStateAnswer ans;
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+
+	CVisualObject* obj = nullptr;
+	if (const auto err = findLightGroup(simulableObjects_, req.objectid(), req.lightgroup(), obj);
+		!err.empty())
+	{
+		ans.set_success(false);
+		ans.set_errormessage(err);
+		return ans;
+	}
+	ans.set_success(true);
+	ans.set_on(obj->lightGroupState(req.lightgroup()).value_or(false));
+	return ans;
+}
+
 #endif	// MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 
 void World::internal_advertiseServices()
@@ -195,6 +264,12 @@ void World::internal_advertiseServices()
 
 	client_.advertiseService<mvsim_msgs::SrvShutdown, mvsim_msgs::SrvShutdownAnswer>(
 		"shutdown", [this](const auto& req) { return srv_shutdown(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvSetLightState, mvsim_msgs::SrvSetLightStateAnswer>(
+		"set_light_state", [this](const auto& req) { return srv_set_light_state(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvGetLightState, mvsim_msgs::SrvGetLightStateAnswer>(
+		"get_light_state", [this](const auto& req) { return srv_get_light_state(req); });
 
 #endif
 }

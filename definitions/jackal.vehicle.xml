@@ -64,6 +64,39 @@
         <model_roll>90.0</model_roll>
     </visual>
 
+    <!-- Headlights, enabled with the include variable headlights="true".
+         Switched on/off with the GUI editor ("Lights" tab), or the ZMQ
+         service "set_light_state". -->
+    <if condition="${headlights|false}">
+      <light_group name="headlights" initially_on="${headlights_on|true}">
+        <spot_light>
+          <position>0.26 0.11 0.17</position> <direction>1 0 -0.25</direction>
+          <color>#fff4e0</color> <diffuse>2.5</diffuse> <specular>0.05</specular>
+          <inner_cutoff_deg>18</inner_cutoff_deg> <outer_cutoff_deg>28</outer_cutoff_deg>
+          <attenuation_linear>0.05</attenuation_linear> <attenuation_quadratic>0.02</attenuation_quadratic>
+          <range>12.0</range>
+        </spot_light>
+        <spot_light>
+          <position>0.26 -0.11 0.17</position> <direction>1 0 -0.25</direction>
+          <color>#fff4e0</color> <diffuse>2.5</diffuse> <specular>0.05</specular>
+          <inner_cutoff_deg>18</inner_cutoff_deg> <outer_cutoff_deg>28</outer_cutoff_deg>
+          <attenuation_linear>0.05</attenuation_linear> <attenuation_quadratic>0.02</attenuation_quadratic>
+          <range>12.0</range>
+        </spot_light>
+      </light_group>
+      <!-- The lamp models: their lenses glow while the light group is on -->
+      <visual light_group="headlights">
+        <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/headlight.obj</model_uri>
+        <model_offset_x>0.255</model_offset_x> <model_offset_y>0.11</model_offset_y> <model_offset_z>0.17</model_offset_z>
+        <cast_shadows>false</cast_shadows>
+      </visual>
+      <visual light_group="headlights">
+        <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/headlight.obj</model_uri>
+        <model_offset_x>0.255</model_offset_x> <model_offset_y>-0.11</model_offset_y> <model_offset_z>0.17</model_offset_z>
+        <cast_shadows>false</cast_shadows>
+      </visual>
+    </if>
+
 
     <if condition="${default_sensors|true}">
       <!-- Sensors -->

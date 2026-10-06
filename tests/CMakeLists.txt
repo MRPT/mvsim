@@ -62,6 +62,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_light_groups
+	SOURCES test_light_groups.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_elevation_queries
 	SOURCES test_elevation_queries.cpp
 	LINK_LIBRARIES mvsim::simulator

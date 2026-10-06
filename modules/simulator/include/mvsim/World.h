@@ -68,6 +68,10 @@ class SrvSetControllerTwist;
 class SrvSetControllerTwistAnswer;
 class SrvShutdown;
 class SrvShutdownAnswer;
+class SrvSetLightState;
+class SrvSetLightStateAnswer;
+class SrvGetLightState;
+class SrvGetLightStateAnswer;
 }  // namespace mvsim_msgs
 #endif
 
@@ -392,6 +396,17 @@ class World : public mrpt::system::COutputLogger
 	auto& getListOfSimulableObjectsMtx() { return simulableObjectsMtx_; }
 
 	mrpt::system::CTimeLogger& getTimeLogger() { return timlogger_; }
+
+	/** Switches a light group (`<light_group>` XML tags) of a vehicle, block,
+	 * etc. on or off. It can be called from any thread.
+	 * \return false if there is no such object or light group.
+	 * \sa CVisualObject::setLightGroupState() */
+	bool setLightGroupState(const std::string& objectName, const std::string& groupName, bool on);
+
+	/** Whether a light group of an object is on, or empty if there is no such
+	 * object or light group. */
+	std::optional<bool> lightGroupState(
+		const std::string& objectName, const std::string& groupName) const;
 
 	/** Replace macros, prefix the base_path if input filename is relative, etc.
 	 *  \sa xmlPathToActualPath
@@ -803,7 +818,7 @@ class World : public mrpt::system::COutputLogger
 	// shared_ptr to their Simulable interfaces, so we can easily iterate on
 	// this list only for common tasks:
 	SimulableList simulableObjects_;
-	std::mutex simulableObjectsMtx_;
+	mutable std::mutex simulableObjectsMtx_;
 
 	/** Runs one individual time step */
 	void internal_one_timestep(double dt);
@@ -901,9 +916,19 @@ class World : public mrpt::system::COutputLogger
 		std::vector<InfoPerObject> gui_cbObjects;
 		InfoPerObject gui_selectedObject;
 
+		/** "Lights" editor tab: one checkbox per object light group */
+		struct LightGroupCheckBox
+		{
+			nanogui::CheckBox* cb = nullptr;
+			CVisualObject* visual = nullptr;
+			std::string group;
+		};
+		std::vector<LightGroupCheckBox> gui_cbLightGroups;
+
 		mrpt::math::TPoint3D clickedPt{0, 0, 0};
 
 		void prepare_control_window();
+		void prepare_lights_window();
 		void prepare_status_window();
 		void prepare_editor_window();
 
@@ -962,6 +987,13 @@ class World : public mrpt::system::COutputLogger
 	/** Changes the light source direction from azimuth and elevation angles (in
 	 * radians) */
 	void setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation);
+
+	/** Scales the diffuse and specular intensities of the directional light
+	 * (from the world XML options) by the given factor. */
+	void setLightIntensityFactor(const float factor);
+
+	/** Changes the ambient light intensity (both viewports). */
+	void setLightAmbient(const float ambient);
 
 	/// Applies lightOptions_ to the visual and physical world viewports.
 	void applyLightOptions();
@@ -1081,6 +1113,8 @@ class World : public mrpt::system::COutputLogger
 	mvsim_msgs::SrvSetControllerTwistAnswer srv_set_controller_twist(
 		const mvsim_msgs::SrvSetControllerTwist& req);
 	mvsim_msgs::SrvShutdownAnswer srv_shutdown(const mvsim_msgs::SrvShutdown& req);
+	mvsim_msgs::SrvSetLightStateAnswer srv_set_light_state(const mvsim_msgs::SrvSetLightState& req);
+	mvsim_msgs::SrvGetLightStateAnswer srv_get_light_state(const mvsim_msgs::SrvGetLightState& req);
 #endif
 };
 }  // namespace mvsim
