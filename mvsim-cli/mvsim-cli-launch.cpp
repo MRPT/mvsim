@@ -226,6 +226,11 @@ Available options:
 	{
 		app->world.headless(true);
 	}
+	else
+	{
+		// Give feedback while loading the world:
+		app->world.open_GUI_while_loading();
+	}
 
 	// Load from XML:
 	try

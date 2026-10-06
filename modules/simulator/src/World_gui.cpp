@@ -203,6 +203,10 @@ void World::GUI::prepare_lights_window()
 		 })
 		->setChecked(parent_.lightOptions_.enable_shadows);
 
+	cbPointAndSpotLights = w->add<nanogui::CheckBox>(
+		"Point and spot lights", [&](bool b) { parent_.setPointAndSpotLightsEnabled(b); });
+	cbPointAndSpotLights->setChecked(parent_.pointAndSpotLightsEnabled_);
+
 	w->add<nanogui::Label>("Sun azimuth:");
 	{
 		auto sl = w->add<nanogui::Slider>();
@@ -700,6 +704,51 @@ void World::internal_GUI_thread()
 
 		gui_.gui_win->setIconFromData(mvsim_icon_data, mvsim_icon_width, mvsim_icon_height, 0xff);
 
+		// Show a message until the world is loaded and its first frame rendered:
+		auto* loadingMsg = gui_.gui_win->add<nanogui::Window>("mvsim");
+		loadingMsg->setLayout(
+			new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Middle, 25));
+		loadingMsg->add<nanogui::Label>("Loading the world...", "sans-bold", 24);
+		gui_.gui_win->performLayout();
+		loadingMsg->center();
+		gui_.gui_win->drawAll();
+		gui_.gui_win->setVisible(true);
+
+		gui_thread_running_ = true;
+
+		if (guiWaitsForWorldLoad_)
+		{
+			while (guiWaitsForWorldLoad_ && !simulator_must_close())
+			{
+				glfwPollEvents();
+				if (glfwWindowShouldClose(gui_.gui_win->glfwWindow()))
+				{
+					simulator_must_close(true);
+				}
+				loadingMsg->center();  // in case the window was resized
+				gui_.gui_win->drawAll();
+				std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			}
+
+			// Closed or failed while loading, or the world file asks for
+			// headless mode:
+			if (simulator_must_close() || headless())
+			{
+				gui_.gui_win.reset();
+				nanogui::shutdown();
+				gui_thread_running_ = false;
+				return;
+			}
+
+			// Window options from the world file:
+			if (!guiOptions_.start_maximized)
+			{
+				glfwRestoreWindow(gui_.gui_win->glfwWindow());
+				gui_.gui_win->setSize(
+					{static_cast<int>(guiOptions_.win_w), static_cast<int>(guiOptions_.win_h)});
+			}
+		}
+
 		// zmin / zmax of opengl viewport:
 		worldVisual_->getViewport()->setViewportClipDistances(
 			guiOptions_.clip_plane_min, guiOptions_.clip_plane_max);
@@ -755,10 +804,14 @@ void World::internal_GUI_thread()
 		const auto p = this->worldRenderOffset() + guiOptions_.camera_point_to;
 		cam.setCameraPointing(p.x, p.y, p.z);
 
-		// Main GUI loop
-		// ---------------------
+		// The first frame is the slowest one (textures, shaders, shadow
+		// maps...): render it while the message is still shown.
+		gui_.gui_win->moveWindowToFront(loadingMsg);
+		loadingMsg->center();
+		internalGraphicsLoopTasksForSimulation();
 		gui_.gui_win->drawAll();
-		gui_.gui_win->setVisible(true);
+		loadingMsg->dispose();
+		worldReadyWallclock_ = mrpt::Clock::nowDouble();
 
 		// Listen for keyboard events:
 		gui_.gui_win->addKeyboardCallback(
@@ -781,8 +834,6 @@ void World::internal_GUI_thread()
 
 				return false;
 			});
-
-		gui_thread_running_ = true;
 
 		// The GUI must be closed from this same thread. Use a shared atomic
 		// bool:
@@ -1086,12 +1137,9 @@ void World::internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene
 	if (gui_.lbCpuUsage)
 	{
 		// 1st line: time
-		double cpu_usage_ratio = std::max(1e-10, timlogger_.getMeanTime("run_simulation.cpu_dt")) /
-								 std::max(1e-10, timlogger_.getMeanTime("run_simulation.dt"));
-
 		gui_.lbCpuUsage->setCaption(mrpt::format(
-			"Time: %s (CPU usage: %.03f%%)",
-			mrpt::system::formatTimeInterval(get_simul_time()).c_str(), cpu_usage_ratio * 100.0));
+			"Time: %s (CPU usage: %.01f%%)",
+			mrpt::system::formatTimeInterval(get_simul_time()).c_str(), cpu_usage() * 100.0));
 
 		// User supplied-lines:
 		guiMsgLinesMtx_.lock();
@@ -1143,6 +1191,22 @@ void World::internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene
 				guiOptions_.follow_vehicle.c_str());
 		}
 	}
+}
+
+void World::open_GUI_while_loading()
+{
+	if (headless())
+	{
+		return;
+	}
+	auto lock = mrpt::lockHelper(gui_thread_start_mtx_);
+	if (gui_thread_.joinable())
+	{
+		return;
+	}
+	guiWaitsForWorldLoad_ = true;
+	gui_thread_ = std::thread(&World::internal_GUI_thread, this);
+	mrpt::system::thread_name("guiThread", gui_thread_);
 }
 
 void World::update_GUI(TUpdateGUIParams* guiparams)
@@ -1368,6 +1432,11 @@ void World::internalGraphicsLoopTasksForSimulation()
 
 		lckPhys.unlock();
 
+		if (headless() && worldReadyWallclock_ == 0)
+		{
+			worldReadyWallclock_ = mrpt::Clock::nowDouble();
+		}
+
 		// handle user custom 3D visual objects:
 		{
 			const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
@@ -1397,9 +1466,9 @@ void World::applyLightOptions()
 	auto vv = worldVisual_->getViewport();
 	auto vp = worldPhysical_.getViewport();
 
-	const auto renderOffset = worldRenderOffset();
+	const auto extraLights = pointAndSpotLightsForRendering();
 
-	auto lambdaSetLightParams = [&lo, &renderOffset](const mrpt::viz::Viewport::Ptr& v)
+	auto lambdaSetLightParams = [&lo, &extraLights](const mrpt::viz::Viewport::Ptr& v)
 	{
 		// enable shadows and set the shadow map texture size:
 		const int sms = lo.shadow_map_size;
@@ -1423,12 +1492,8 @@ void World::applyLightOptions()
 		vlp.ambientGroundColor = mrpt::img::TColorf(lo.ambient_ground_color);
 
 		// Add extra lights (point and spot) from XML:
-		// (in rendering coordinates, like everything else sent to OpenGL)
-		for (auto el : lo.extra_lights)
+		for (const auto& el : extraLights)
 		{
-			el.position.x += static_cast<float>(renderOffset.x);
-			el.position.y += static_cast<float>(renderOffset.y);
-			el.position.z += static_cast<float>(renderOffset.z);
 			vlp.lights.push_back(el);
 		}
 
@@ -1447,6 +1512,42 @@ void World::applyLightOptions()
 
 	lambdaSetLightParams(vv);
 	lambdaSetLightParams(vp);
+}
+
+std::vector<mrpt::viz::TLight> World::pointAndSpotLightsForRendering() const
+{
+	// In rendering coordinates, like everything else sent to OpenGL:
+	const auto renderOffset = worldRenderOffset();
+
+	auto lights = lightOptions_.extra_lights;
+	for (auto& l : lights)
+	{
+		l.position.x += static_cast<float>(renderOffset.x);
+		l.position.y += static_cast<float>(renderOffset.y);
+		l.position.z += static_cast<float>(renderOffset.z);
+	}
+	return lights;
+}
+
+void World::setPointAndSpotLightsEnabled(const bool enabled)
+{
+	ASSERT_(worldVisual_);
+
+	auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+
+	pointAndSpotLightsEnabled_ = enabled;
+	const auto extraLights = pointAndSpotLightsForRendering();
+
+	for (const auto& v : {worldVisual_->getViewport(), worldPhysical_.getViewport()})
+	{
+		// Keep the directional light only:
+		auto& lights = v->lightParameters().lights;
+		lights.resize(std::min<size_t>(lights.size(), 1));
+		if (enabled)
+		{
+			lights.insert(lights.end(), extraLights.begin(), extraLights.end());
+		}
+	}
 }
 
 void World::setLightAmbient(const float ambient)

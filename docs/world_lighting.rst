@@ -31,7 +31,7 @@ Its direction is controlled via azimuth and elevation angles, and it always cast
   For example, an elevation of ``90`` means a pure vertical (downwards) light.
 
 The GUI "Lights" window (opened from the top-left window menu) has controls for shadows,
-the light azimuth and elevation, its intensity (a factor from 0 to 2 applied to
+the point and spot lights (on/off), the light azimuth and elevation, its intensity (a factor from 0 to 2 applied to
 ``light_diffuse`` and ``light_specular``), and the ambient light intensity.
 
 .. raw:: html
@@ -122,6 +122,15 @@ Each ``<spot_light>`` supports the following child tags (all optional, shown wit
    scene graph (``MRPT_VIZ_HAS_CLIGHT``), more lights can be defined: each rendered view
    (the GUI or a camera sensor) uses the directional light and the point/spot lights closest
    to its camera.
+
+Point and spot lights, mostly those casting shadows, are the most expensive part of rendering.
+If the simulation is slower than real time during its first seconds (the "CPU usage" in the GUI
+"Status" window is above 100%), MVSim turns them off, with a warning in the console.
+They can be turned on again with the "Point and spot lights" checkbox of the GUI "Lights" window.
+To disable this check, use:
+
+- ``<disable_lights_on_high_cpu_usage>false</disable_lights_on_high_cpu_usage>``
+  (default: ``true``), under ``<lights>``.
 
 
 Switchable lights (light groups)

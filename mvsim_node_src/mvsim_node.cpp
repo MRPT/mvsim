@@ -298,6 +298,12 @@ void MVSimNode::loadWorldModel(const std::string& world_xml_file)
 
 	ASSERT_FILE_EXISTS_(world_xml_file);
 
+	if (!headless_)
+	{
+		// Give feedback while loading the world:
+		mvsim_world_->open_GUI_while_loading();
+	}
+
 	// Load from XML:
 	rapidxml::file<> fil_xml(world_xml_file.c_str());
 	mvsim_world_->load_from_XML(fil_xml.data(), world_xml_file);

@@ -18,6 +18,8 @@
 #include <mrpt/version.h>
 #include <mvsim/World.h>
 
+#include <cmath>
+
 using namespace mvsim;
 using namespace std;
 
@@ -85,6 +87,62 @@ void World::run_simulation(double dt)
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
 
 	timlogger_.registerUserMeasure("run_simulation.cpu_dt", t1 - t0);
+
+	// Before the world is ready, the first (slow) frames are not
+	// representative:
+	if (worldReadyWallclock_ > 0)
+	{
+		updateCpuUsage(dt, t1 - t0);
+	}
+}
+
+void World::updateCpuUsage(double simulTime, double cpuTime)
+{
+	// Exponentially-weighted sums, forgetting with this time constant:
+	constexpr double timeConstant = 1.0;  // [s]
+	const double decay = std::exp(-simulTime / timeConstant);
+
+	cpuUsageSumCpuTime_ = decay * cpuUsageSumCpuTime_ + cpuTime;
+	cpuUsageSumSimulTime_ = decay * cpuUsageSumSimulTime_ + simulTime;
+	cpuUsage_ = cpuUsageSumCpuTime_ / cpuUsageSumSimulTime_;
+
+	// After the first seconds, turn off the point and spot lights (the most
+	// expensive rendering) if the simulation cannot keep up with real time:
+	constexpr double checkAfterReady = 5.0;	 // [s]
+	if (highCpuUsageChecked_ || mrpt::Clock::nowDouble() - worldReadyWallclock_ < checkAfterReady)
+	{
+		return;
+	}
+	highCpuUsageChecked_ = true;
+
+	if (cpuUsage_ <= 1.0 || !lightOptions_.disable_lights_on_high_cpu_usage ||
+		lightOptions_.extra_lights.empty())
+	{
+		return;
+	}
+
+	MRPT_LOG_WARN_FMT(
+		"CPU usage is %.0f%%, so the simulation is slower than real time: turning off the point "
+		"and spot lights. They can be turned on again from the GUI \"Lights\" window, or this "
+		"check disabled with <disable_lights_on_high_cpu_usage>false</...> in <lights>.",
+		cpuUsage_ * 100.0);
+
+	if (headless())
+	{
+		setPointAndSpotLightsEnabled(false);
+	}
+	else
+	{
+		enqueue_task_to_run_in_gui_thread(
+			[this]()
+			{
+				setPointAndSpotLightsEnabled(false);
+				if (gui_.cbPointAndSpotLights)
+				{
+					gui_.cbPointAndSpotLights->setChecked(false);
+				}
+			});
+	}
 }
 
 /** Runs one individual time step */

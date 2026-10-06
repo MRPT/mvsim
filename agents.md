@@ -47,7 +47,7 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 
 | Class | Header | Role |
 |---|---|---|
-| `World` | `World.h` | Central simulation container. Owns all vehicles, blocks, world elements, Box2D physics world, GUI window, ZMQ comms client. Split across `World.cpp`, `World_gui.cpp`, `World_load_xml.cpp`, `World_services.cpp`, `World_simul.cpp`, `World_walls.cpp`. |
+| `World` | `World.h` | Central simulation container. Owns all vehicles, blocks, world elements, Box2D physics world, GUI window, ZMQ comms client. Split across `World.cpp`, `World_gui.cpp`, `World_load_xml.cpp`, `World_services.cpp`, `World_simul.cpp`, `World_walls.cpp`. `open_GUI_while_loading()` (used by mvsim-cli and the ROS node) shows the window with a "loading" message during `load_from_XML()` and the first frame. `cpu_usage()` (shown in the GUI) is smoothed over ~1 s from that point; above 100% after 5 s, the XML point/spot lights are turned off. |
 | `Simulable` | `Simulable.h` | Base interface for anything that steps through simulation time. Provides `simul_pre_timestep()`, `simul_post_timestep()`, pose access with shared mutex. |
 | `VisualObject` | `VisualObject.h` | Base interface for anything renderable in the OpenGL GUI. |
 | `VehicleBase` | `VehicleBase.h` | Abstract vehicle. Inherits `VisualObject` and `Simulable`. Holds wheels, sensors, friction model, controller, CSV logger. Created via `ClassFactory`. |

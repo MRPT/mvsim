@@ -106,6 +106,8 @@ void World::load_from_XML(const std::string& xml_text, const std::string& fileNa
 	}
 
 	internal_initialize();
+
+	guiWaitsForWorldLoad_ = false;
 }
 
 void World::register_standard_xml_tag_parsers()
