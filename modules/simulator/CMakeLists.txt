@@ -39,6 +39,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/CollisionShapeCache.h
 	include/mvsim/ControllerBase.h
 	include/mvsim/CsvLogger.h
+	include/mvsim/GUIPanel.h
 	include/mvsim/HumanActor.h
 	include/mvsim/Joystick.h
 	include/mvsim/mvsim_version.h

@@ -30,6 +30,7 @@
 #include <mrpt/viz/Scene.h>
 #include <mrpt/viz/TLightParameters.h>
 #include <mvsim/Block.h>
+#include <mvsim/GUIPanel.h>
 #include <mvsim/HumanActor.h>
 #include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
@@ -315,8 +316,19 @@ class World : public mrpt::system::COutputLogger
 
 	const mrpt::math::TPoint3D& gui_mouse_point() const { return gui_.clickedPt; }
 
+	/** Adds a custom dockable panel to the GUI. It can be called from any
+	 * thread, before or after the GUI window opens. Its callbacks run in the
+	 * GUI thread. Panels are listed in the "Window" menu, and docked in the
+	 * right column the first time the default layout is built. */
+	void add_gui_panel(const gui::WindowDescription& panel);
+
+	/** Sets a function called from the GUI thread once per GUI frame, with the
+	 * state of the mouse over the 3D view. Replaces any previous one. */
+	void set_gui_mouse_callback(const std::function<void(const gui::MouseState&)>& callback);
+
 	/** If !=null, a set of objects to be rendered merged with the default
-	 * visualization. Lock the mutex gui_user_objects_mtx_ while writing.
+	 * visualization. Lock the mutex guiUserObjectsMtx_ while writing to these
+	 * objects or their children: the GUI and sensors hold it while rendering.
 	 * There are two sets of objects: "viz" for visualization only, "physical"
 	 * for objects which should be detected by sensors.
 	 */
@@ -1097,6 +1109,17 @@ class World : public mrpt::system::COutputLogger
 
 		void handle_mouse_operations();
 
+		/// Custom panels (see add_gui_panel()). Only accessed from the GUI thread.
+		struct UserPanel
+		{
+			gui::WindowDescription desc;
+			bool open = true;
+			std::map<std::string, bool> checkStates;  //!< By widget id
+		};
+		std::vector<UserPanel> userPanels;
+		std::function<void(const gui::MouseState&)> mouseCallback;
+		void draw_user_panels();
+
 		/// False if the preview exists but is not visible, so the image
 		/// does not need to be prepared.
 		bool preview_needs_update(const std::string& previewName, int slot) const;
@@ -1115,6 +1138,8 @@ class World : public mrpt::system::COutputLogger
 		unsigned int dockRightId_ = 0;
 
 		void build_default_layout();
+		/// Docks a window in the right column, unless it has saved settings.
+		void dock_new_window_right(const std::string& title);
 	};
 	GUI gui_{*this};  //!< gui state
 
