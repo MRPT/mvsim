@@ -22,6 +22,12 @@
 		<follow_vehicle>tractor</follow_vehicle>
 	</gui>
 
+	<lights>
+		<light_azimuth_deg>-24.0</light_azimuth_deg>
+		<light_elevation_deg>33.0</light_elevation_deg>
+		<light_ambient>0.20</light_ambient>
+	</lights>
+
 	<!-- ======================== Ground plane ======================== -->
 
 	<element class='elevation_map'>
