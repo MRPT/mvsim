@@ -302,6 +302,8 @@ void World::internal_GUI_thread()
 	const std::string iniPath = imgui_ini_path();
 
 	bool imguiReady = false;
+	// False if the GUI is closed but the simulation must go on (headless):
+	bool closeSimulator = true;
 
 	try
 	{
@@ -392,6 +394,7 @@ void World::internal_GUI_thread()
 		// Closed or failed while loading, or the world file asks for headless mode:
 		if (simulator_must_close() || headless())
 		{
+			closeSimulator = !headless() || simulator_must_close();
 			THROW_EXCEPTION("");  // just to clean up
 		}
 
@@ -520,14 +523,18 @@ void World::internal_GUI_thread()
 	}
 	catch (const std::exception& e)
 	{
-		if (const auto msg = mrpt::exception_to_str(e); !msg.empty() && !simulator_must_close())
+		if (const auto msg = mrpt::exception_to_str(e);
+			!msg.empty() && closeSimulator && !simulator_must_close())
 		{
 			MRPT_LOG_ERROR_STREAM("[internal_GUI_thread] Exception: " << msg);
 		}
 	}
 
 	// to let other threads know that we are closing:
-	simulator_must_close(true);
+	if (closeSimulator)
+	{
+		simulator_must_close(true);
+	}
 
 	// OpenGL resources must be freed from this thread, with its context
 	// still alive:

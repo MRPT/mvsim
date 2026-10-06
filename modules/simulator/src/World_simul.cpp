@@ -123,7 +123,7 @@ void World::updateCpuUsage(double simulTime, double cpuTime)
 
 	MRPT_LOG_WARN_FMT(
 		"CPU usage is %.0f%%, so the simulation is slower than real time: turning off the point "
-		"and spot lights. They can be turned on again from the GUI \"Lights\" window, or this "
+		"and spot lights. They can be turned on again from the GUI \"Lighting\" panel, or this "
 		"check disabled with <disable_lights_on_high_cpu_usage>false</...> in <lights>.",
 		cpuUsage_ * 100.0);
 
