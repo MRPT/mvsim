@@ -24,6 +24,7 @@
 #include <mvsim/basic_types.h>
 
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <optional>
 #include <rapidxml_print.hpp>
@@ -268,9 +269,9 @@ float xmlChildFloat(
 	{
 		pos = 0;
 	}
-	if (pos == 0 || !onlySpacesFrom(*s, pos))
+	if (pos == 0 || !onlySpacesFrom(*s, pos) || !std::isfinite(v))
 	{
-		throw lightParseError(parent, name, "a number");
+		throw lightParseError(parent, name, "a finite number");
 	}
 	return v;
 }
@@ -289,9 +290,10 @@ mrpt::math::TPoint3Df xmlChildPoint3f(
 	float z = 0;
 	int consumed = 0;
 	const int nMatched = std::sscanf(s->c_str(), "%f %f %f %n", &x, &y, &z, &consumed);
-	if (nMatched != 3 || !onlySpacesFrom(*s, static_cast<size_t>(consumed)))
+	if (nMatched != 3 || !onlySpacesFrom(*s, static_cast<size_t>(consumed)) || !std::isfinite(x) ||
+		!std::isfinite(y) || !std::isfinite(z))
 	{
-		throw lightParseError(parent, name, "'X Y Z'");
+		throw lightParseError(parent, name, "'X Y Z' (finite numbers)");
 	}
 	return {x, y, z};
 }
@@ -403,6 +405,10 @@ mrpt::viz::TLight mvsim::parse_light_xml_node(
 	if (isSpot)
 	{
 		const auto dir = xmlChildPoint3f(n, "direction", {0, 0, -1}, vars);
+		if (dir.norm() <= 0)
+		{
+			throw lightParseError(n, "direction", "a non-zero vector");
+		}
 		const float innerDeg = xmlChildFloat(n, "inner_cutoff_deg", 12.5f, vars);
 		const float outerDeg = xmlChildFloat(n, "outer_cutoff_deg", 17.5f, vars);
 		l = mrpt::viz::TLight::SpotLight(

@@ -162,8 +162,10 @@ void test_parse_and_switch()
 		EXPECT_TRUE(c.lights == 6);
 		EXPECT_TRUE(c.lightsOn == 4);
 	}
+#endif
 	world.setLightGroupState("v1", "beacon", false);
 	world.setLightGroupState("v2", "headlights", true);
+#if defined(MRPT_VIZ_HAS_CLIGHT)
 	EXPECT_TRUE(contentsOf(physical).lightsOn == 5);
 #endif
 
@@ -210,6 +212,11 @@ void test_parse_errors()
 	EXPECT_TRUE(throws("<light_group name='a'> <lamp/> </light_group>"));  // unknown tag
 	EXPECT_TRUE(throws(
 		"<light_group name='a'> <point_light> <range>far</range> </point_light> </light_group>"));
+	EXPECT_TRUE(throws(
+		"<light_group name='a'> <point_light> <range>inf</range> </point_light> </light_group>"));
+	EXPECT_TRUE(
+		throws("<light_group name='a'> <spot_light> <direction>0 0 0</direction> "
+			   "</spot_light> </light_group>"));
 }
 }  // namespace
 
