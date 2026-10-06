@@ -571,9 +571,11 @@
 	<!-- A truck with its trailer, parked at a dock door -->
 	<block:class name="truck">
 		<static>true</static> <shape_from_visual/>
+		<!-- Roll/pitch/z fitted to the model geometry, so all the tractor tires touch the
+		     ground (the model tractor is slightly tilted). Its trailer floats ~0.15 m. -->
 		<visual> <model_uri>${MODELS}/scania-trucktrailer.zip/scania-trucktrailer/scania_trucktrailer.glb</model_uri>
-			<model_roll>90.0</model_roll> <model_scale>2.3</model_scale>
-			<model_offset_y>-7.1</model_offset_y> <model_offset_z>0.37</model_offset_z> </visual>
+			<model_roll>89.69</model_roll> <model_pitch>-1.75</model_pitch> <model_scale>2.3</model_scale>
+			<model_offset_y>-7.1</model_offset_y> <model_offset_z>0.366</model_offset_z> </visual>
 	</block:class>
 
 	<!-- ======================================
