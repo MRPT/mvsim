@@ -220,7 +220,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 | Library | Role |
 |---|---|
 | **MRPT** (>= 3.0) | Math, poses, observations. 3D scene graph lives in `mrpt/viz` (`mrpt::viz::Scene`, `CSetOfObjects`, ...); `mrpt/opengl` is used for offscreen FBO rendering (`CFBORender`) in sensors. |
-| **mrpt_imgui / mrpt_imgui_vendor** | GUI: Dear ImGui (docking) + GLFW, linked privately to libmvsim. The world is drawn behind the dockspace with `mrpt::imgui::CImGuiSceneView::renderAsBackground()` (needs `MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW`). Layout autosaved in `~/.config/mvsim/imgui.ini`. |
+| **mrpt_imgui / mrpt_imgui_vendor** | GUI: Dear ImGui (docking) + GLFW, linked privately to libmvsim. The world is drawn behind the dockspace with `mrpt::imgui::CImGuiSceneView::renderAsBackground()` (if `MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW`; with older MRPT, as an FBO image with `render()`). Layout autosaved in `~/.config/mvsim/imgui.ini`. |
 | **Box2D** | 2D rigid-body physics engine |
 | **ZeroMQ** (optional) | Pub-sub communications |
 | **Protobuf** (optional) | Message serialization |

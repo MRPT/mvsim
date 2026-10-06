@@ -17,6 +17,7 @@
 #include <mrpt/core/format.h>
 #include <mrpt/img/CImage.h>
 #include <mrpt/img/TColor.h>
+#include <mrpt/math/TLine3D.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/obs/CObservationImage.h>
@@ -992,6 +993,15 @@ class World : public mrpt::system::COutputLogger
 
 		/// Renders worldVisual_ behind all panels:
 		std::unique_ptr<mrpt::imgui::CImGuiSceneView> sceneView;
+
+		/// Mouse over the 3D view, and the ray (scene coordinates) under it:
+		bool scene_hovered() const;
+		std::optional<mrpt::math::TLine3D> scene_mouse_ray() const;
+		/// For MRPT versions without CImGuiSceneView::mouseRay(): the 3D view
+		/// widget, from the last frame.
+		bool legacySceneHovered = false;
+		float legacySceneX = 0;
+		float legacySceneY = 0;
 
 		/// Ground point under the mouse cursor:
 		mrpt::math::TPoint3D clickedPt{0, 0, 0};

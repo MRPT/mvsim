@@ -30,10 +30,6 @@
 #include <GLFW/glfw3.h>
 // clang-format on
 
-#if !defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
-#error "MVSim needs a newer MRPT, with CImGuiSceneView::renderAsBackground()"
-#endif
-
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -506,7 +502,16 @@ void World::GUI::draw_dockspace_and_background()
 									   ImGuiWindowFlags_NoScrollWithMouse;
 	ImGui::Begin("##mvsim_3d_view", nullptr, flags);
 	ImGui::PopStyleVar(2);
+#if defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
 	sceneView->renderAsBackground();
+#else
+	// Older MRPT: rendered into an FBO and shown as an image (an extra copy,
+	// and no multisampling). Its last item is the input-capturing button:
+	sceneView->render();
+	legacySceneHovered = ImGui::IsItemHovered();
+	legacySceneX = ImGui::GetItemRectMin().x;
+	legacySceneY = ImGui::GetItemRectMin().y;
+#endif
 	ImGui::End();
 }
 

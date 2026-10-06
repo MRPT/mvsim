@@ -37,10 +37,6 @@
 #include <GLFW/glfw3.h>
 // clang-format on
 
-#if !defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
-#error "MVSim needs a newer MRPT, with CImGuiSceneView::renderAsBackground()"
-#endif
-
 #include <algorithm>
 #include <cctype>  // isspace()
 #include <cmath>  // cos(), sin()
@@ -651,6 +647,36 @@ void World::internal_GUI_thread()
 	gui_thread_running_ = false;
 }
 
+bool World::GUI::scene_hovered() const
+{
+#if defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
+	return sceneView && sceneView->isHovered();
+#else
+	return legacySceneHovered;
+#endif
+}
+
+std::optional<mrpt::math::TLine3D> World::GUI::scene_mouse_ray() const
+{
+	if (!sceneView)
+	{
+		return std::nullopt;
+	}
+#if defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
+	return sceneView->mouseRay();
+#else
+	// The FBO image of render() has one pixel per ImGui unit:
+	auto scene = sceneView->scene();
+	if (!legacySceneHovered || !scene || !scene->getViewport())
+	{
+		return std::nullopt;
+	}
+	const ImVec2 m = ImGui::GetMousePos();
+	return scene->getViewport()->get3DRayForPixelCoord(
+		{static_cast<int>(m.x - legacySceneX), static_cast<int>(m.y - legacySceneY)});
+#endif
+}
+
 void World::GUI::handle_mouse_operations()
 {
 	MRPT_START
@@ -659,7 +685,7 @@ void World::GUI::handle_mouse_operations()
 		return;
 	}
 
-	if (const auto ray = sceneView->mouseRay(); ray.has_value())
+	if (const auto ray = scene_mouse_ray(); ray.has_value())
 	{
 		// Create a 3D plane, i.e. Z=0
 		const auto ground_plane = mrpt::math::TPlane::From3Points({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
@@ -690,7 +716,7 @@ void World::GUI::handle_mouse_operations()
 	}
 
 	// Place the selected object with the mouse, until a click:
-	if (placingWithMouse && selected && sceneView->isHovered())
+	if (placingWithMouse && selected && scene_hovered())
 	{
 		mrpt::math::TPose3D p = selected->getPose();
 		p.x = clickedPt.x;
