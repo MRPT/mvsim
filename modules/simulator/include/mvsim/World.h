@@ -271,6 +271,19 @@ class World : public mrpt::system::COutputLogger
 	 */
 	void update_GUI(TUpdateGUIParams* params = nullptr);
 
+	/** Opens the GUI window right away, with a "loading" message until the
+	 * world is loaded by load_from_XML() and its first frame is rendered.
+	 * Otherwise, the window opens in the first call to update_GUI().
+	 * Call it before load_from_XML(). It does nothing in headless mode.
+	 */
+	void open_GUI_while_loading();
+
+	/** Smoothed ratio of the wall-clock time spent in run_simulation() to the
+	 * simulated time: above 1.0, the simulation runs slower than real time.
+	 * It is measured since the world is ready (loaded, and its first frame
+	 * rendered), and mostly reflects the last couple of seconds. */
+	double cpu_usage() const { return cpuUsage_.load(); }
+
 	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const { return gui_.gui_win; }
 
 	const mrpt::math::TPoint3D& gui_mouse_point() const { return gui_.clickedPt; }
@@ -595,6 +608,21 @@ class World : public mrpt::system::COutputLogger
 	std::atomic<double> achievedRealtimeFactor_{1.0};
 	std::optional<double> lastRunSimulWallclock_;
 
+	/// Set by open_GUI_while_loading(), until load_from_XML() ends.
+	std::atomic_bool guiWaitsForWorldLoad_ = false;
+
+	/// Wall-clock time when the world got ready: loaded, and its first frame
+	/// rendered (or, in headless mode, its sensors first updated). 0=not yet.
+	std::atomic<double> worldReadyWallclock_{0};
+
+	/// See cpu_usage(). Updated by run_simulation():
+	std::atomic<double> cpuUsage_{0};
+	double cpuUsageSumCpuTime_ = 0;
+	double cpuUsageSumSimulTime_ = 0;
+	bool highCpuUsageChecked_ = false;
+
+	void updateCpuUsage(double simulTime, double cpuTime);
+
 	/** Path from which to take relative directories. */
 	std::string basePath_{"."};
 
@@ -666,6 +694,10 @@ class World : public mrpt::system::COutputLogger
 		bool enable_shadows = true;
 		int shadow_map_size = 2048;
 
+		/// Turn off the point and spot lights if the simulation is slower
+		/// than real time during its first seconds:
+		bool disable_lights_on_high_cpu_usage = true;
+
 		/// Cascaded shadow map splits (1-4) for the GUI view.
 		int shadow_cascades = 4;
 
@@ -701,6 +733,7 @@ class World : public mrpt::system::COutputLogger
 
 		const TParameterDefinitions params = {
 			{"enable_shadows", {"%bool", &enable_shadows}},
+			{"disable_lights_on_high_cpu_usage", {"%bool", &disable_lights_on_high_cpu_usage}},
 			{"shadow_map_size", {"%i", &shadow_map_size}},
 			{"shadow_cascades", {"%i", &shadow_cascades}},
 			{"sensor_shadow_cascades", {"%i", &sensor_shadow_cascades}},
@@ -901,6 +934,7 @@ class World : public mrpt::system::COutputLogger
 
 		mrpt::gui::CDisplayWindowGUI::Ptr gui_win;
 		nanogui::Label* lbCpuUsage = nullptr;
+		nanogui::CheckBox* cbPointAndSpotLights = nullptr;
 		std::vector<nanogui::Label*> lbStatuses;
 		nanogui::Button* btnReplaceObject = nullptr;
 
@@ -997,6 +1031,14 @@ class World : public mrpt::system::COutputLogger
 
 	/// Applies lightOptions_ to the visual and physical world viewports.
 	void applyLightOptions();
+
+	/** Turns on or off the point and spot lights from the world XML <lights>
+	 * tag (both viewports). */
+	void setPointAndSpotLightsEnabled(bool enabled);
+	bool pointAndSpotLightsEnabled_ = true;
+
+	/// The point and spot lights from the world XML, in rendering coordinates.
+	std::vector<mrpt::viz::TLight> pointAndSpotLightsForRendering() const;
 
 	/** @} */  // end GUI stuff
 
