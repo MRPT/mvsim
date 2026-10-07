@@ -36,7 +36,7 @@
 		<cam_point_to>5 4 0</cam_point_to>
 		<fov_deg>60</fov_deg>
 		<refresh_fps>40</refresh_fps>
-		<show_sensor_previews>false</show_sensor_previews>
+		<show_sensor_previews>true</show_sensor_previews>
 	</gui>
 
 	<!-- Light parameters -->
@@ -240,7 +240,7 @@
 		<normal_map>${PH}/painted_plaster_wall_nor_gl_1k.png</normal_map>
 		<texture_size_x>2.0</texture_size_x> <texture_size_y>2.0</texture_size_y>
 		<window> <position>0.2727</position> <width>1.4</width> <z_min>0.9</z_min> <z_max>2.2</z_max> </window>
-		<window> <position>0.7727</position> <width>2.0</width> <z_min>0.6</z_min> <z_max>2.2</z_max> </window>
+		<window> <position>0.85</position> <width>1.4</width> <z_min>0.6</z_min> <z_max>2.2</z_max> </window>
 	</element>
 
 	<!-- ========================
@@ -537,10 +537,10 @@
 	<!-- Living room -->
 	<block class="sofa"> <init_pose>2.6 0.65 180</init_pose> </block>
 	<block class="coffee_table"> <init_pose>2.6 2.0 90</init_pose> </block>
-	<block class="armchair"> <init_pose>4.7 2.0 90</init_pose> </block>
+	<block class="armchair"> <init_pose>4.7 2.0 -90</init_pose> </block>
 	<block class="side_table"> <init_pose>1.2 0.5 0</init_pose> </block>
 	<block class="floor_lamp"> <init_pose>0.4 0.4 0</init_pose> </block>
-	<block class="bookshelf"> <init_pose>0.45 3.0 -90</init_pose> </block>
+	<block class="bookshelf"> <init_pose>0.45 4.0 -90</init_pose> </block>
 	<block class="potted_plant"> <init_pose>5.45 0.5 0</init_pose> </block>
 	<block class="tv_stand"> <init_pose>2.6 4.67 0</init_pose> </block>
 	<block class="tv"> <init_pose>2.6 4.72 0</init_pose> </block>
