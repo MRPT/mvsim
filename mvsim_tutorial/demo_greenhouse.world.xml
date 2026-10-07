@@ -127,7 +127,9 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="../definitions/agricobiot2.vehicle.xml" />
+	<include file="../definitions/agricobiot2.vehicle.xml"
+		headlights="false"
+	/>
 
 	<!-- ========================
 		   Vehicle(s) definition

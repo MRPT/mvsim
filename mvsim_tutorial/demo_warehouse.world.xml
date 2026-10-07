@@ -52,7 +52,7 @@
 		<!-- Sun: the roof blocks it, so it only enters through windows and the open dock door -->
 		<light_azimuth_deg>-75.0</light_azimuth_deg>
 		<light_elevation_deg>35.0</light_elevation_deg>
-		<light_ambient>0.60</light_ambient>
+		<light_ambient>0.30</light_ambient>
 		<ambient_ground_color>#9a958c</ambient_ground_color>
 
 		<!-- All lamps cast shadows (up to 7 point/spot lights can, besides the sun) -->
