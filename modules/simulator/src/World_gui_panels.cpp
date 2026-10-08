@@ -694,6 +694,12 @@ void World::GUI::draw_dockspace_and_background()
 	ImGui::PopStyleVar(2);
 #if defined(MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW)
 	sceneView->renderAsBackground();
+	// ImGui samples texture unit 0, but does not reset the active unit after
+	// the scene callback, and older MRPT versions may leave another one
+	// active (drawing all windows black):
+	ImGui::GetBackgroundDrawList(ImGui::GetWindowViewport())
+		->AddCallback(
+			[](const ImDrawList*, const ImDrawCmd*) { glActiveTexture(GL_TEXTURE0); }, nullptr);
 #else
 	// Older MRPT: rendered into an FBO and shown as an image (an extra copy,
 	// and no multisampling). Its last item is the input-capturing button:
