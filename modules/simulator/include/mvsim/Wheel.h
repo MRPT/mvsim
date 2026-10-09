@@ -63,6 +63,11 @@ class Wheel : public CVisualObject
 	std::string linked_yaw_object_name;
 	double linked_yaw_offset = .0;
 
+	/** Name of the joint of this wheel, for joint-level interfaces (e.g.
+	 * ros2_control). If not set in the XML, it defaults to the wheel XML tag
+	 * name plus "_joint" (e.g. "l_wheel_joint"). */
+	std::string joint_name;
+
 	const TParameterDefinitions params_ = {
 		{"mass", {"%lf", &mass}},
 		{"width", {"%lf", &width}},
@@ -70,7 +75,8 @@ class Wheel : public CVisualObject
 		{"color", {"%color", &color}},
 		{"inertia", {"%lf", &Iyy}},
 		{"linked_yaw", {"%s", &linked_yaw_object_name}},
-		{"linked_yaw_offset_deg", {"%lf_deg", &linked_yaw_offset}}};
+		{"linked_yaw_offset_deg", {"%lf_deg", &linked_yaw_offset}},
+		{"joint_name", {"%s", &joint_name}}};
 
 	/** Generates a human-readable description of the wheel parameters and
 	 * kinematic status */

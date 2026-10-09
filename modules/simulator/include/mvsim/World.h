@@ -555,6 +555,15 @@ class World : public mrpt::system::COutputLogger
 	void internalAddSensorProcessingTime(
 		const std::string& key, double seconds, bool inSimulationThread);
 
+	/** Registers a function to be called at the end of each simulation step,
+	 * from the simulation thread, with the simulation time (seconds) as
+	 * argument. Used for lock-step co-simulation (e.g. ros2_control).
+	 * Register them before the simulation starts. */
+	void addPostStepCallback(const std::function<void(double)>& f)
+	{
+		postStepCallbacks_.push_back(f);
+	}
+
 	/** Calls all registered callbacks: */
 	void dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
@@ -1214,6 +1223,8 @@ class World : public mrpt::system::COutputLogger
 	std::optional<double> perfWindowStartWall_;
 	double perfSensorTimeInStep_ = 0;  //!< CPU-side sensors, current step
 	void internalUpdatePerformanceStats(double physicsTime, double sensorsWaitTime);
+
+	std::vector<std::function<void(double)>> postStepCallbacks_;
 	std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;

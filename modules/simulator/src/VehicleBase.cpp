@@ -597,6 +597,12 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
  * equations for each timestep */
 void VehicleBase::simul_post_timestep(const TSimulContext& context)
 {
+	// Integrate wheels' rotation (before the controllers, which may report it):
+	for (size_t i = 0; i < getNumWheels(); i++)
+	{
+		getWheelInfo(i).integrateSpin(context.dt);
+	}
+
 	invoke_motor_controllers_post_step(context);
 
 	// Common part (update q_, dq_)
@@ -611,15 +617,6 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 				getName() + "/" + s->getName(), mrpt::Clock::nowDouble() - t0,
 				true /*simulation thread*/);
 		}
-	}
-
-	// Integrate wheels' rotation:
-	const size_t nW = getNumWheels();
-
-	for (size_t i = 0; i < nW; i++)
-	{
-		Wheel& w = getWheelInfo(i);
-		w.integrateSpin(context.dt);
 	}
 
 	// Estimate 2D pose increment as 2D-projected 3D pose increment, plus noise and bias:
