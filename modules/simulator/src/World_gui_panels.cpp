@@ -612,6 +612,10 @@ void World::GUI::draw_status_bar()
 			}
 			ImGui::Separator();
 			ImGui::Text(ICON_MS_SPEED " %.03fx real time", parent_.get_realtime_factor_achieved());
+			if (ImGui::IsItemHovered())
+			{
+				show_performance_tooltip();
+			}
 			ImGui::Separator();
 			ImGui::Text(
 				ICON_MS_MOUSE " (%.02f, %.02f, %.02f)", clickedPt.x, clickedPt.y, clickedPt.z);
@@ -626,6 +630,45 @@ void World::GUI::draw_status_bar()
 		}
 	}
 	ImGui::End();
+}
+
+void World::GUI::show_performance_tooltip()
+{
+	const auto st = parent_.getPerformanceStats();
+	ImGui::BeginTooltip();
+	if (st.window_simul_time <= 0)
+	{
+		ImGui::TextUnformatted("Measuring...");
+		ImGui::EndTooltip();
+		return;
+	}
+	// Times as a percentage of the simulated time (100% = real time):
+	const double T = st.window_simul_time;
+	ImGui::Text(
+		"Last %.1f s of simulated time: %.03fx real time, %zu steps", T, st.realtime_factor,
+		st.steps);
+	ImGui::Text("Physics: %.02f%%", 100.0 * st.physics_time / T);
+	ImGui::Text("Waiting for OpenGL sensors: %.02f%%", 100.0 * st.sensors_wait_time / T);
+	if (!st.sensors.empty() &&
+		ImGui::BeginTable("##perf_sensors", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+	{
+		ImGui::TableSetupColumn("Sensor");
+		ImGui::TableSetupColumn("CPU/GPU %");
+		ImGui::TableSetupColumn("Rate (Hz)");
+		ImGui::TableHeadersRow();
+		for (const auto& [name, s] : st.sensors)
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(name.c_str());
+			ImGui::TableNextColumn();
+			ImGui::Text("%.02f", 100.0 * s.processing_time / T);
+			ImGui::TableNextColumn();
+			ImGui::Text("%.01f", static_cast<double>(s.observations) / T);
+		}
+		ImGui::EndTable();
+	}
+	ImGui::EndTooltip();
 }
 
 void World::GUI::build_default_layout()

@@ -523,6 +523,33 @@ class World : public mrpt::system::COutputLogger
 		callbacksOnObservation_.emplace_back(f);
 	}
 
+	/** Performance statistics, measured over consecutive windows of
+	 * simulated time. \sa getPerformanceStats() */
+	struct PerformanceStats
+	{
+		double window_simul_time = 0;  //!< [s] Simulated time of the window
+		double window_wall_time = 0;  //!< [s] Wall-clock time of the window
+		double realtime_factor = 0;	 //!< window_simul_time/window_wall_time
+		size_t steps = 0;  //!< Number of physics steps
+		double physics_time = 0;  //!< [s] Wall-clock time in physics steps
+		double sensors_wait_time = 0;  //!< [s] Waiting for OpenGL sensors
+
+		struct Sensor
+		{
+			double processing_time = 0;	 //!< [s] Wall-clock time
+			size_t observations = 0;  //!< Number of generated observations
+		};
+		/** Per sensor, by "<vehicle>/<sensor>" */
+		std::map<std::string, Sensor> sensors;
+	};
+
+	/** Statistics of the last completed window (a few seconds of simulated
+	 * time). Thread-safe. */
+	PerformanceStats getPerformanceStats() const;
+
+	/** Internal: accounts the wall-clock processing time of a sensor */
+	void internalAddSensorProcessingTime(const std::string& key, double seconds);
+
 	/** Calls all registered callbacks: */
 	void dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
@@ -1141,6 +1168,7 @@ class World : public mrpt::system::COutputLogger
 		unsigned int dockRightId_ = 0;
 
 		void build_default_layout();
+		void show_performance_tooltip();
 		/// Docks a window in the right column, unless it has saved settings.
 		void dock_new_window_right(const std::string& title);
 	};
@@ -1173,6 +1201,11 @@ class World : public mrpt::system::COutputLogger
 
 	/// See sensor_has_to_create_egl_context()
 	bool eglContextCreated_ = false;
+
+	mutable std::mutex perfStatsMtx_;
+	PerformanceStats perfStatsCurrent_, perfStatsLast_;
+	std::optional<double> perfWindowStartSim_, perfWindowStartWall_;
+	void internalUpdatePerformanceStats(double physicsTime, double sensorsWaitTime);
 	std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;

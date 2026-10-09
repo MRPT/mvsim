@@ -172,6 +172,7 @@ void World::internal_one_timestep(double dt)
 	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
 
 	timer_iteration_.Tic();
+	const double tStepStart = mrpt::Clock::nowDouble();
 
 	TSimulContext context;
 	context.world = this;
@@ -253,6 +254,7 @@ void World::internal_one_timestep(double dt)
 	lckListObjs.unlock();  // for simulableObjects_
 
 	// 5) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
+	const double tWaitStart = mrpt::Clock::nowDouble();
 	mrpt::system::CTimeLoggerEntry tle4(timlogger_, "timestep.5.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
@@ -273,6 +275,7 @@ void World::internal_one_timestep(double dt)
 		}
 	}
 	tle4.stop();
+	const double tWaitEnd = mrpt::Clock::nowDouble();
 
 	// 6) If we have .rawlog generation enabled, process odometry, etc.
 	mrpt::system::CTimeLoggerEntry tle5(timlogger_, "timestep.6.post_rawlog");
@@ -281,6 +284,10 @@ void World::internal_one_timestep(double dt)
 	internalPostSimulStepForTrajectory();
 
 	tle5.stop();
+
+	const double tStepEnd = mrpt::Clock::nowDouble();
+	internalUpdatePerformanceStats(
+		(tWaitStart - tStepStart) + (tStepEnd - tWaitEnd), tWaitEnd - tWaitStart);
 
 	const double ts = timer_iteration_.Tac();
 	timlogger_.registerUserMeasure("timestep", ts);
@@ -831,4 +838,50 @@ void World::internal_update_lut_cache() const
 			}
 		}
 	}
+}
+
+void World::internalUpdatePerformanceStats(double physicsTime, double sensorsWaitTime)
+{
+	// Length of each measuring window, in simulated time:
+	constexpr double windowLength = 2.0;  // [s]
+
+	const double tSim = get_simul_time();
+	const double tWall = mrpt::Clock::nowDouble();
+
+	auto lck = mrpt::lockHelper(perfStatsMtx_);
+	if (!perfWindowStartSim_)
+	{
+		perfWindowStartSim_ = tSim;
+		perfWindowStartWall_ = tWall;
+	}
+	auto& cur = perfStatsCurrent_;
+	cur.steps++;
+	cur.physics_time += physicsTime;
+	cur.sensors_wait_time += sensorsWaitTime;
+
+	if (tSim - *perfWindowStartSim_ < windowLength)
+	{
+		return;
+	}
+	cur.window_simul_time = tSim - *perfWindowStartSim_;
+	cur.window_wall_time = tWall - *perfWindowStartWall_;
+	cur.realtime_factor =
+		cur.window_wall_time > 0 ? cur.window_simul_time / cur.window_wall_time : .0;
+
+	perfStatsLast_ = std::move(cur);
+	perfStatsCurrent_ = {};
+	perfWindowStartSim_ = tSim;
+	perfWindowStartWall_ = tWall;
+}
+
+World::PerformanceStats World::getPerformanceStats() const
+{
+	auto lck = mrpt::lockHelper(perfStatsMtx_);
+	return perfStatsLast_;
+}
+
+void World::internalAddSensorProcessingTime(const std::string& key, double seconds)
+{
+	auto lck = mrpt::lockHelper(perfStatsMtx_);
+	perfStatsCurrent_.sensors[key].processing_time += seconds;
 }

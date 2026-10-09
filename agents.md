@@ -150,6 +150,8 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 
 **As fast as possible:** `realtime_factor<=0` (node parameter and `launch_world.launch.py` argument) or `--realtime-factor 0` (`mvsim launch`) runs fixed chunks of physics steps back to back; OpenGL sensors already block the simulation until rendered, and the node also waits for its sensor publication queue (back-pressure), so no sensor data is skipped.
 
+**Performance diagnostics:** `World::getPerformanceStats()` (2 s windows of sim time: achieved RTF, physics time, OpenGL sensors wait, per-sensor `<veh>/<sensor>` processing time and observation rate), shown in the GUI status bar tooltip and published by the node (ROS 2) on `/diagnostics` at `diagnostics_rate` Hz.
+
 **Simulation time:** the node is the ROS time source. It publishes `/clock` and stamps every header with *simulation* time (`World::get_simul_timestamp()`); sensor messages use the observation's own `obs.timestamp` so stamps are immune to publisher-thread latency. `myNow()`/`myNowSec()` return sim time (wall-clock fallback before the first step). Downstream nodes should set `use_sim_time:=true`; the node itself runs with `use_sim_time:=false` (only warns if set true). The `disable_sim_time_clock` parameter (default `false`) opts out of all of the above: no `/clock` publication, and every header stamp (via `myNow()`/`myObsStamp()`) uses wall-clock time instead, matching pre-simulation-clock behavior.
 
 ---

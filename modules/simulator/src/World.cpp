@@ -300,6 +300,12 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 
 void World::dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
+	if (obs)
+	{
+		auto lck = mrpt::lockHelper(perfStatsMtx_);
+		perfStatsCurrent_.sensors[veh.getName() + "/" + obs->sensorLabel].observations++;
+	}
+
 	internalOnObservation(veh, obs);
 	for (const auto& cb : callbacksOnObservation_) cb(veh, obs);
 }
