@@ -240,10 +240,10 @@ bool World::sensor_has_to_create_egl_context()
 		return false;
 	}
 
-	// otherwise, just the first time:
-	static bool first = true;
-	bool ret = first;
-	first = false;
+	// otherwise, just the first time for this world (each world renders its
+	// sensors from its own thread):
+	const bool ret = !eglContextCreated_;
+	eglContextCreated_ = true;
 	return ret;
 }
 
