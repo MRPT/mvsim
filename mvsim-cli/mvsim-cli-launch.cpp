@@ -262,10 +262,12 @@ Available options:
 	}
 
 	// Attach world as a mvsim communications node:
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	if (serverPort != 0)
 	{
 		app->world.commsClient().serverPort(serverPort);
 	}
+#endif
 	app->world.connectToServer();
 
 	// Launch GUI thread, unless we are in headless mode (from the command line
