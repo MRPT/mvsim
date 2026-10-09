@@ -81,7 +81,7 @@ Each vehicle type has companion `*_Controller*.cpp` files for its controllers (R
 
 | File | Sensor |
 |---|---|
-| `LaserScanner.cpp` | 2D LiDAR (generic + RPLidar A2) |
+| `LaserScanner.cpp` | 2D LiDAR (generic + RPLidar A2). 2D mode: planar ray tracing (ignores pitch/roll); `raytrace_3d=true`: OpenGL depth renders of up to 150 deg each, supports tilted scan planes |
 | `Lidar3D.cpp` | 3D LiDAR (Velodyne VLP-16, Ouster OS1, Hesai Helios-32) |
 | `CameraSensor.cpp` | RGB pinhole camera |
 | `DepthCameraSensor.cpp` | RGBD depth + color camera |
