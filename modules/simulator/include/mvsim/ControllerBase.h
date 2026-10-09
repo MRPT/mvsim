@@ -15,6 +15,8 @@
 
 namespace mvsim
 {
+class WheelJointsInterface;
+
 /** Interface of ControllerBaseTempl<> for teleoperation, etc.
  * Abstract interface common to any vehicle type & any controller.
  * \ingroup mvsim_simulator_module
@@ -69,6 +71,11 @@ class ControllerBaseInterface
 	{
 		return false; /* default: no trajectory data */
 	}
+
+	/** Controllers driven by per-wheel (joint) commands from an external
+	 * source (e.g. ros2_control) return their joint interface here.
+	 * eturn nullptr (default) for other controllers. */
+	virtual WheelJointsInterface* wheelJointsInterface() { return nullptr; }
 };
 
 /** Virtual base for controllers of vehicles of any type (template) */

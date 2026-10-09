@@ -523,6 +523,15 @@ class World : public mrpt::system::COutputLogger
 		callbacksOnObservation_.emplace_back(f);
 	}
 
+	/** Registers a function to be called at the end of each simulation step,
+	 * from the simulation thread, with the simulation time (seconds) as
+	 * argument. Used for lock-step co-simulation (e.g. ros2_control).
+	 * Register them before the simulation starts. */
+	void addPostStepCallback(const std::function<void(double)>& f)
+	{
+		postStepCallbacks_.push_back(f);
+	}
+
 	/** Calls all registered callbacks: */
 	void dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
 
@@ -1173,6 +1182,8 @@ class World : public mrpt::system::COutputLogger
 
 	/// See sensor_has_to_create_egl_context()
 	bool eglContextCreated_ = false;
+
+	std::vector<std::function<void(double)>> postStepCallbacks_;
 	std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;

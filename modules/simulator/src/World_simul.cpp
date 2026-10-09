@@ -282,6 +282,12 @@ void World::internal_one_timestep(double dt)
 
 	tle5.stop();
 
+	// 7) User hooks:
+	for (const auto& cb : postStepCallbacks_)
+	{
+		cb(get_simul_time());
+	}
+
 	const double ts = timer_iteration_.Tac();
 	timlogger_.registerUserMeasure("timestep", ts);
 	if (ts > dt)

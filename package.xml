@@ -58,6 +58,12 @@
   <build_depend     condition="$ROS_VERSION == 2">ament_cmake_xmllint</build_depend>
   <!-- to recognize launch files -->
   <exec_depend      condition="$ROS_VERSION == 2">ros2launch</exec_depend>
+  <!-- Optional ros2_control integration (built only if found): -->
+  <depend           condition="$ROS_VERSION == 2">controller_manager</depend>
+  <depend           condition="$ROS_VERSION == 2">hardware_interface</depend>
+  <exec_depend      condition="$ROS_VERSION == 2">diff_drive_controller</exec_depend>
+  <exec_depend      condition="$ROS_VERSION == 2">joint_state_broadcaster</exec_depend>
+  <exec_depend      condition="$ROS_VERSION == 2">robot_state_publisher</exec_depend>
 
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>

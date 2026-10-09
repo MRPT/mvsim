@@ -1,0 +1,37 @@
+# ros2_control controllers for the "jackal" vehicle (4 wheels, skid steer),
+# used with: <controller class="ros2_control">
+#
+# Without vehicle namespaces (one vehicle), the controller manager is
+# "/controller_manager". With several vehicles, it is "/<VEHICLE>/controller_manager"
+# and the node names below must be prefixed with "/<VEHICLE>/".
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz. Should be a multiple of the simulation time step.
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+
+diff_drive_controller:
+  ros__parameters:
+    use_sim_time: true
+
+    # Joint names: wheel "joint_name" attributes in the vehicle XML,
+    # or "<wheel tag>_joint" by default.
+    left_wheel_names: ["lf_wheel_joint", "lr_wheel_joint"]
+    right_wheel_names: ["rf_wheel_joint", "rr_wheel_joint"]
+
+    wheel_separation: 0.32
+    wheel_radius: 0.10
+
+    odom_frame_id: odom
+    base_frame_id: base_link
+    enable_odom_tf: true
+    publish_rate: 50.0
+    cmd_vel_timeout: 0.5

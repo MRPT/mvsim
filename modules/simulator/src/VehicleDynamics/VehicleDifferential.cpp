@@ -72,6 +72,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			wheels_info_[i].x = cpw.pos.x;
 			wheels_info_[i].y = cpw.pos.y;
 		}
+		if (wheels_info_[i].joint_name.empty())
+		{
+			wheels_info_[i].joint_name = cpw.name + "_joint";
+		}
 	}
 
 	// Vehicle controller:
@@ -104,6 +108,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			else if (sCtrlClass == ControllerTrajectory::class_name())
 			{
 				controller_ = std::make_shared<ControllerTrajectory>(*this);
+			}
+			else if (sCtrlClass == ControllerJointCommands::class_name())
+			{
+				controller_ = std::make_shared<ControllerJointCommands>(*this);
 			}
 			else
 			{
@@ -143,6 +151,11 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 		controller_->control_step(ci, co);
 
 		// Take its output:
+		if (!co.wheel_torques.empty())
+		{
+			ASSERT_EQUAL_(co.wheel_torques.size(), getNumWheels());
+			return co.wheel_torques;
+		}
 		switch (getNumWheels())
 		{
 			case 2:
