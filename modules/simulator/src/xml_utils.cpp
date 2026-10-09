@@ -644,6 +644,8 @@ static std::string parseVars(
 	const auto varnameOrg = post.substr(0, post_end);
 
 	const auto [varname, defaultValue] = splitVerticalBar(varnameOrg);
+	// "${var|}" means an empty default value:
+	const bool hasDefault = varnameOrg.find('|') != std::string::npos;
 
 	if (varsRetain.count(varname) != 0)
 	{
@@ -662,7 +664,7 @@ static std::string parseVars(
 	}
 	else
 	{
-		if (!defaultValue.empty())
+		if (hasDefault)
 		{
 			varvalue = defaultValue;
 		}
