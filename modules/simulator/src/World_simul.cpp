@@ -230,6 +230,7 @@ void World::internal_one_timestep(double dt)
 
 		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 		const auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
+		copy_of_objects_dynstate_time_ = simulTime_;
 
 		// Both maps are sorted by name like simulableObjects_, so the position of
 		// each object is the one right after the previous one (hinted inserts):
