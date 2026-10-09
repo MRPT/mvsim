@@ -65,6 +65,7 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 | `CsvLogger` | `CsvLogger.h` | Per-vehicle time-series logging to CSV. |
 | `PID_Controller` | `PID_Controller.h` | Generic discrete PID used by controllers. |
 | `CollisionShapeCache` | `CollisionShapeCache.h` | Caches Box2D collision shapes for mesh reuse. |
+| `RuntimeObjects` | `RuntimeObjects.h` | Thread-safe container (`World::runtimeObjects()`) of visual-only objects spawned/moved/removed at runtime (boxes, cylinders, flat ground decals, meshes, lines; `RuntimeObjectDescription`), applied to the 3D scenes by the rendering thread before sensors render. Optionally GUI-only (not seen by sensors). Docs: `docs/runtime_objects.rst`. |
 | `PoseTrajectoryFollower` | `PoseTrajectoryFollower.h` | Standalone (no World/Box2D dependency) pure-pursuit tracker for the "exactly reproducible trajectories" feature: evaluates a time-parameterized `(t,x,y)` polyline and computes the `(vx,omega)` twist to follow it. Used by the `trajectory` controller class (differential and Ackermann). |
 
 ### Vehicle dynamics (`src/VehicleDynamics/`)
@@ -129,6 +130,8 @@ Key headers in `modules/comms/include/mvsim/Comms/`:
 - `ObservationLidar2D` / `GenericObservation` — sensor data
 - `Pose` / `TimeStampedPose` — pose data
 - `SrvGetPose` / `SrvSetPose` / `SrvSetControllerTwist` / `SrvShutdown` / `SrvSetLightState` / `SrvGetLightState` — services
+- `SrvSpawnObjects` (`RuntimeObject`) / `SrvRemoveObjects` — runtime visual objects (services `spawn_objects`, `remove_objects`; `set_pose`/`get_pose` also accept them)
+- `SrvGetAllPoses` — ground truth of all named objects (service `get_all_poses`, from `World::getGroundTruthSnapshot()`)
 
 ---
 
@@ -147,6 +150,8 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 - `mvsim_node_main.cpp` — entry point
 - `mvsim_node.cpp` — `MvSimNode` class wrapping `World`, publishing sensor observations as ROS topics, subscribing to `cmd_vel`, advertising TF transforms and ROS 2 parameters.
 - `mvsim_node_src/include/` — node header
+
+**Runtime objects and ground truth (ROS 2 only):** subscribes to `runtime_objects` / `runtime_overlays` (`visualization_msgs/MarkerArray`, world frame `world_frame_id`, default `map`) to spawn/remove runtime objects; publishes `objects_ground_truth` (`tf2_msgs/TFMessage`, all named objects) if `objects_ground_truth_rate` > 0.
 
 **Simulation time:** the node is the ROS time source. It publishes `/clock` and stamps every header with *simulation* time (`World::get_simul_timestamp()`); sensor messages use the observation's own `obs.timestamp` so stamps are immune to publisher-thread latency. `myNow()`/`myNowSec()` return sim time (wall-clock fallback before the first step). Downstream nodes should set `use_sim_time:=true`; the node itself runs with `use_sim_time:=false` (only warns if set true). The `disable_sim_time_clock` parameter (default `false`) opts out of all of the above: no `/clock` publication, and every header stamp (via `myNow()`/`myObsStamp()`) uses wall-clock time instead, matching pre-simulation-clock behavior.
 
@@ -211,7 +216,7 @@ Ready-to-include vehicle and sensor snippets:
 
 ## Python API (`examples_python/`)
 
-Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`, `simple-obstacle-avoidance.py`, `move-object-example.py`, `call-shutdown.py`, `toggle-lights.py`, `plot-log-files-4-wheels.py`.
+Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`, `simple-obstacle-avoidance.py`, `move-object-example.py`, `spawn-objects-example.py`, `call-shutdown.py`, `toggle-lights.py`, `plot-log-files-4-wheels.py`.
 
 ---
 

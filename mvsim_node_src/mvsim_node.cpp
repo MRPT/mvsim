@@ -211,6 +211,11 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	disable_sim_time_clock_ =
 		n_->declare_parameter<bool>("disable_sim_time_clock", disable_sim_time_clock_);
 
+	objects_ground_truth_rate_ =
+		n_->declare_parameter<double>("objects_ground_truth_rate", objects_ground_truth_rate_);
+
+	world_frame_id_ = n_->declare_parameter<std::string>("world_frame_id", world_frame_id_);
+
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
 	// normally runs with use_sim_time:=false (it drives the clock); it is the
@@ -639,6 +644,23 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	worldPubs_.pub_map_ros = n_->create_publisher<Msg_OccupancyGrid>("simul_map", qosLatched);
 	worldPubs_.pub_map_metadata =
 		n_->create_publisher<Msg_MapMetaData>("simul_map_metadata", qosLatched);
+
+	// pub: objects_ground_truth
+	if (objects_ground_truth_rate_ > 0)
+	{
+		pub_objects_ground_truth_ =
+			n_->create_publisher<Msg_TFMessage>("objects_ground_truth", publisher_history_len_);
+	}
+
+	// sub: runtime_objects, runtime_overlays
+	// Keep all messages, since each one may add or delete objects:
+	const auto qosMarkers = rclcpp::QoS(rclcpp::KeepLast(100)).reliable();
+	sub_runtime_objects_ = n_->create_subscription<Msg_MarkerArray>(
+		"runtime_objects", qosMarkers,
+		[this](const Msg_MarkerArray& msg) { onRuntimeObjectMarkers(msg, true); });
+	sub_runtime_overlays_ = n_->create_subscription<Msg_MarkerArray>(
+		"runtime_overlays", qosMarkers,
+		[this](const Msg_MarkerArray& msg) { onRuntimeObjectMarkers(msg, false); });
 #endif
 
 	// Publish maps and static stuff:
@@ -942,6 +964,10 @@ void MVSimNode::spinNotifyROS()
 		clockMsg.clock = mrpt2ros::toROS(mvsim_world_->get_simul_timestamp());
 		pub_clock_->publish(clockMsg);
 	}
+
+#if PACKAGE_ROS_VERSION == 2
+	publishObjectsGroundTruth();
+#endif
 
 	// Publish all TFs for each vehicle:
 	// ---------------------------------------------------------------------
@@ -1930,3 +1956,190 @@ void MVSimNode::internalOn(
 		pubPts->publish(msg_pts);
 	}
 }
+
+#if PACKAGE_ROS_VERSION == 2
+namespace
+{
+mrpt::img::TColor toColor(const std_msgs::msg::ColorRGBA& c)
+{
+	const auto f2u8 = [](float v)
+	{ return static_cast<uint8_t>(std::clamp(v, 0.0f, 1.0f) * 255.0f + 0.5f); };
+	return {f2u8(c.r), f2u8(c.g), f2u8(c.b), f2u8(c.a)};
+}
+
+/** Converts a marker into a runtime object. Returns false if the marker
+ * type is not supported. */
+bool markerToRuntimeObject(
+	const visualization_msgs::msg::Marker& m, mvsim::RuntimeObjectDescription& d)
+{
+	using Shape = mvsim::RuntimeObjectDescription::Shape;
+	using visualization_msgs::msg::Marker;
+
+	auto pose = mrpt::ros2bridge::fromROS(m.pose);
+	d.size = {m.scale.x, m.scale.y, m.scale.z};
+	d.color = toColor(m.color);
+
+	const auto scaled = [&m](const geometry_msgs::msg::Point& p)
+	{ return mrpt::math::TPoint3D(p.x * m.scale.x, p.y * m.scale.y, p.z * m.scale.z); };
+
+	switch (m.type)
+	{
+		case Marker::CUBE:
+			// A zero-height cube is a flat decal:
+			d.shape = m.scale.z == 0 ? Shape::Rectangle : Shape::Box;
+			break;
+		case Marker::SPHERE:
+			d.shape = Shape::Sphere;
+			break;
+		case Marker::CYLINDER:
+			// A zero-height cylinder is a flat disk decal:
+			if (m.scale.z == 0)
+			{
+				d.shape = Shape::Disk;
+			}
+			else
+			{
+				// Markers are centered, mvsim cylinders start at their base:
+				d.shape = Shape::Cylinder;
+				pose = pose + mrpt::poses::CPose3D(0, 0, -0.5 * m.scale.z, 0, 0, 0);
+			}
+			break;
+		case Marker::TRIANGLE_LIST:
+			d.shape = Shape::Triangles;
+			for (const auto& p : m.points)
+			{
+				d.points.push_back(scaled(p));
+			}
+			for (const auto& c : m.colors)
+			{
+				d.point_colors.push_back(toColor(c));
+			}
+			if (d.point_colors.size() != d.points.size())
+			{
+				d.point_colors.clear();
+			}
+			break;
+		case Marker::LINE_LIST:
+		case Marker::LINE_STRIP:
+			d.shape = Shape::Lines;
+			for (size_t i = 0; i < m.points.size(); i++)
+			{
+				if (m.type == Marker::LINE_STRIP && i >= 2)
+				{
+					d.points.push_back(d.points.back());
+				}
+				d.points.push_back(
+					mrpt::math::TPoint3D(m.points[i].x, m.points[i].y, m.points[i].z));
+			}
+			d.size.x = 2.0;	 // line width (pixels)
+			break;
+		default:
+			return false;
+	};
+	d.pose = pose.asTPose();
+	return true;
+}
+}  // namespace
+
+void MVSimNode::onRuntimeObjectMarkers(const Msg_MarkerArray& msg, bool visibleToSensors)
+{
+	using visualization_msgs::msg::Marker;
+
+	if (!mvsim_world_)
+	{
+		return;
+	}
+	auto& ro = mvsim_world_->runtimeObjects();
+
+	// Separate name spaces for each topic:
+	const std::string prefix = visibleToSensors ? "ros/" : "ros_overlay/";
+
+	std::vector<mvsim::RuntimeObjectDescription> toSpawn;
+	for (const auto& m : msg.markers)
+	{
+		const std::string name = prefix + m.ns + "/" + std::to_string(m.id);
+
+		if (m.action == Marker::DELETEALL)
+		{
+			// Apply the pending ones first, to keep the message order:
+			ro.spawn(toSpawn);
+			toSpawn.clear();
+			ro.removeByPrefix(prefix);
+			continue;
+		}
+		if (m.action == Marker::DELETE)
+		{
+			ro.spawn(toSpawn);
+			toSpawn.clear();
+			ro.remove({name});
+			continue;
+		}
+		if (!m.header.frame_id.empty() && m.header.frame_id != world_frame_id_)
+		{
+			RCLCPP_WARN_THROTTLE(
+				n_->get_logger(), *clock_, 5000,
+				"Runtime object markers must be given in the '%s' frame (got '%s')",
+				world_frame_id_.c_str(), m.header.frame_id.c_str());
+		}
+
+		mvsim::RuntimeObjectDescription d;
+		d.name = name;
+		d.visible_to_sensors = visibleToSensors;
+		if (!markerToRuntimeObject(m, d))
+		{
+			RCLCPP_WARN_THROTTLE(
+				n_->get_logger(), *clock_, 5000,
+				"Unsupported marker type %d for runtime objects (supported: CUBE, SPHERE, "
+				"CYLINDER, TRIANGLE_LIST, LINE_LIST, LINE_STRIP)",
+				m.type);
+			continue;
+		}
+		toSpawn.push_back(std::move(d));
+	}
+
+	try
+	{
+		ro.spawn(toSpawn);
+	}
+	catch (const std::exception& e)
+	{
+		RCLCPP_ERROR(n_->get_logger(), "Error spawning runtime objects: %s", e.what());
+	}
+}
+
+void MVSimNode::publishObjectsGroundTruth()
+{
+	if (!pub_objects_ground_truth_ || !mvsim_world_->has_simul_timestamp())
+	{
+		return;
+	}
+	if (tim_publish_objects_gt_.Tac() < 1.0 / objects_ground_truth_rate_)
+	{
+		return;
+	}
+	tim_publish_objects_gt_.Tic();
+
+	const auto snap = mvsim_world_->getGroundTruthSnapshot();
+	const auto stamp =
+		disable_sim_time_clock_
+			? myNow()
+			: mrpt2ros::toROS(mvsim_world_->simul_time_to_timestamp(snap.simul_time));
+
+	Msg_TFMessage msg;
+	msg.transforms.reserve(snap.objects.size());
+	for (const auto& o : snap.objects)
+	{
+		const auto p = mrpt2ros::toROS_Pose(o.pose);
+		Msg_TransformStamped tx;
+		tx.header.frame_id = world_frame_id_;
+		tx.header.stamp = stamp;
+		tx.child_frame_id = o.name;
+		tx.transform.translation.x = p.position.x;
+		tx.transform.translation.y = p.position.y;
+		tx.transform.translation.z = p.position.z;
+		tx.transform.rotation = p.orientation;
+		msg.transforms.push_back(std::move(tx));
+	}
+	pub_objects_ground_truth_->publish(msg);
+}
+#endif

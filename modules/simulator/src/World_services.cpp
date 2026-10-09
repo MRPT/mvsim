@@ -12,10 +12,14 @@
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 #include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetAllPoses.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetAllPosesAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetLightState.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetLightStateAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPoseAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveObjects.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveObjectsAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetControllerTwist.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetControllerTwistAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetLightState.pb.h>
@@ -24,6 +28,8 @@
 #include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdown.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdownAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvSpawnObjects.pb.h>
+#include <mvsim/mvsim-msgs/SrvSpawnObjectsAnswer.pb.h>
 #endif
 
 #include <map>
@@ -68,6 +74,18 @@ mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(const mvsim_msgs::SrvSetPose& r
 		ans.set_objectisincollision(itV->second->hadCollision());
 		itV->second->resetCollisionFlag();
 	}
+	else if (auto rp = runtimeObjects_.getPose(sId); rp.has_value())
+	{
+		// Runtime (visual-only) objects:
+		auto p = mrpt::math::TPose3D(
+			req.pose().x(), req.pose().y(), req.pose().z(), req.pose().yaw(), req.pose().pitch(),
+			req.pose().roll());
+		if (req.has_relativeincrement() && req.relativeincrement())
+		{
+			p = (mrpt::poses::CPose3D(*rp) + mrpt::poses::CPose3D(p)).asTPose();
+		}
+		ans.set_success(runtimeObjects_.setPose(sId, p));
+	}
 	else
 	{
 		ans.set_success(false);
@@ -106,6 +124,18 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(const mvsim_msgs::SrvGetPose& r
 		tw->set_wz(t.omega);
 
 		ans.set_objectisincollision(copy_of_objects_had_collision_.count(sId) != 0);
+	}
+	else if (auto rp = runtimeObjects_.getPose(sId); rp.has_value())
+	{
+		// Runtime (visual-only) objects:
+		ans.set_success(true);
+		auto* po = ans.mutable_pose();
+		po->set_x(rp->x);
+		po->set_y(rp->y);
+		po->set_z(rp->z);
+		po->set_yaw(rp->yaw);
+		po->set_pitch(rp->pitch);
+		po->set_roll(rp->roll);
 	}
 	else
 	{
@@ -246,6 +276,110 @@ mvsim_msgs::SrvGetLightStateAnswer World::srv_get_light_state(
 	return ans;
 }
 
+namespace
+{
+mrpt::img::TColor colorFromRGBA(uint32_t c)
+{
+	return mrpt::img::TColor(
+		static_cast<uint8_t>(c >> 24), static_cast<uint8_t>(c >> 16), static_cast<uint8_t>(c >> 8),
+		static_cast<uint8_t>(c));
+}
+
+RuntimeObjectDescription fromProto(const mvsim_msgs::RuntimeObject& o)
+{
+	RuntimeObjectDescription d;
+	d.name = o.name();
+	d.shape = static_cast<RuntimeObjectDescription::Shape>(o.shape());
+	if (o.has_pose())
+	{
+		const auto& p = o.pose();
+		d.pose = {p.x(), p.y(), p.z(), p.yaw(), p.pitch(), p.roll()};
+	}
+	d.size = {o.sizex(), o.sizey(), o.sizez()};
+	d.color = colorFromRGBA(o.color());
+	for (int i = 0; i + 1 < o.polygonxy_size(); i += 2)
+	{
+		d.polygon.emplace_back(o.polygonxy(i), o.polygonxy(i + 1));
+	}
+	for (int i = 0; i + 2 < o.pointsxyz_size(); i += 3)
+	{
+		d.points.emplace_back(o.pointsxyz(i), o.pointsxyz(i + 1), o.pointsxyz(i + 2));
+	}
+	for (const auto c : o.pointcolors())
+	{
+		d.point_colors.push_back(colorFromRGBA(c));
+	}
+	d.texture = o.texture();
+	d.visible_to_sensors = o.visibletosensors();
+	d.on_ground = o.onground();
+	return d;
+}
+}  // namespace
+
+mvsim_msgs::SrvSpawnObjectsAnswer World::srv_spawn_objects(const mvsim_msgs::SrvSpawnObjects& req)
+{
+	mvsim_msgs::SrvSpawnObjectsAnswer ans;
+	try
+	{
+		std::vector<RuntimeObjectDescription> objs;
+		objs.reserve(static_cast<size_t>(req.objects_size()));
+		for (const auto& o : req.objects())
+		{
+			objs.push_back(fromProto(o));
+		}
+		runtimeObjects_.spawn(objs);
+		ans.set_success(true);
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(e.what());
+	}
+	return ans;
+}
+
+mvsim_msgs::SrvRemoveObjectsAnswer World::srv_remove_objects(
+	const mvsim_msgs::SrvRemoveObjects& req)
+{
+	mvsim_msgs::SrvRemoveObjectsAnswer ans;
+	size_t n = runtimeObjects_.remove({req.names().begin(), req.names().end()});
+	if (req.has_prefix())
+	{
+		n += runtimeObjects_.removeByPrefix(req.prefix());
+	}
+	ans.set_success(true);
+	ans.set_numremoved(static_cast<uint32_t>(n));
+	return ans;
+}
+
+mvsim_msgs::SrvGetAllPosesAnswer World::srv_get_all_poses(const mvsim_msgs::SrvGetAllPoses& req)
+{
+	mvsim_msgs::SrvGetAllPosesAnswer ans;
+	const auto snap = getGroundTruthSnapshot(req.prefix());
+	ans.set_success(true);
+	ans.set_simultime(snap.simul_time);
+	for (const auto& o : snap.objects)
+	{
+		auto* np = ans.add_objects();
+		np->set_name(o.name);
+		auto* po = np->mutable_pose();
+		po->set_x(o.pose.x);
+		po->set_y(o.pose.y);
+		po->set_z(o.pose.z);
+		po->set_yaw(o.pose.yaw);
+		po->set_pitch(o.pose.pitch);
+		po->set_roll(o.pose.roll);
+		auto* tw = np->mutable_twist();
+		tw->set_vx(o.twist.vx);
+		tw->set_vy(o.twist.vy);
+		tw->set_vz(0);
+		tw->set_wx(0);
+		tw->set_wy(0);
+		tw->set_wz(o.twist.omega);
+	}
+	return ans;
+}
+
 #endif	// MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 
 void World::internal_advertiseServices()
@@ -270,6 +404,15 @@ void World::internal_advertiseServices()
 
 	client_.advertiseService<mvsim_msgs::SrvGetLightState, mvsim_msgs::SrvGetLightStateAnswer>(
 		"get_light_state", [this](const auto& req) { return srv_get_light_state(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvSpawnObjects, mvsim_msgs::SrvSpawnObjectsAnswer>(
+		"spawn_objects", [this](const auto& req) { return srv_spawn_objects(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvRemoveObjects, mvsim_msgs::SrvRemoveObjectsAnswer>(
+		"remove_objects", [this](const auto& req) { return srv_remove_objects(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvGetAllPoses, mvsim_msgs::SrvGetAllPosesAnswer>(
+		"get_all_poses", [this](const auto& req) { return srv_get_all_poses(req); });
 
 #endif
 }

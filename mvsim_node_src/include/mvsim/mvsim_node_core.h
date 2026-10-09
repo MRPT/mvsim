@@ -236,6 +236,22 @@ class MVSimNode
 
 	WorldPubs worldPubs_;
 
+#if PACKAGE_ROS_VERSION == 2
+	/// Rate (Hz) of the "objects_ground_truth" topic (0=disabled)
+	double objects_ground_truth_rate_ = 0;
+	mrpt::system::CTicTac tim_publish_objects_gt_;
+
+	/// Frame of world coordinates, for ground truth and runtime objects
+	std::string world_frame_id_ = "map";
+
+	rclcpp::Publisher<Msg_TFMessage>::SharedPtr pub_objects_ground_truth_;
+	rclcpp::Subscription<Msg_MarkerArray>::SharedPtr sub_runtime_objects_;
+	rclcpp::Subscription<Msg_MarkerArray>::SharedPtr sub_runtime_overlays_;
+
+	void onRuntimeObjectMarkers(const Msg_MarkerArray& msg, bool visibleToSensors);
+	void publishObjectsGroundTruth();
+#endif
+
 	struct TPubSubPerVehicle
 	{
 #if PACKAGE_ROS_VERSION == 1

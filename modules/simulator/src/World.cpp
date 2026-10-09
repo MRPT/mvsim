@@ -505,3 +505,43 @@ std::optional<bool> World::lightGroupState(
 	}
 	return obj->lightGroupState(groupName);
 }
+
+World::GroundTruthSnapshot World::getGroundTruthSnapshot(const std::string& prefix) const
+{
+	// Skip unnamed and internal ("__"-prefixed) objects:
+	const auto startsWithPrefix = [&prefix](const std::string& name)
+	{
+		return !name.empty() && name.compare(0, 2, "__") != 0 &&
+			   name.compare(0, prefix.size(), prefix) == 0;
+	};
+
+	GroundTruthSnapshot snap;
+	{
+		auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
+		snap.simul_time = copy_of_objects_dynstate_time_;
+		for (const auto& [name, pose] : copy_of_objects_dynstate_pose_)
+		{
+			if (!startsWithPrefix(name))
+			{
+				continue;
+			}
+			ObjectGroundTruth o;
+			o.name = name;
+			o.pose = pose;
+			if (auto it = copy_of_objects_dynstate_twist_.find(name);
+				it != copy_of_objects_dynstate_twist_.end())
+			{
+				o.twist = it->second;
+			}
+			snap.objects.push_back(std::move(o));
+		}
+	}
+	for (const auto& [name, pose] : runtimeObjects_.poses())
+	{
+		if (startsWithPrefix(name))
+		{
+			snap.objects.push_back({name, pose, {}});
+		}
+	}
+	return snap;
+}

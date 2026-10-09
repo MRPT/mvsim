@@ -34,6 +34,7 @@
 #include <mvsim/HumanActor.h>
 #include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
+#include <mvsim/RuntimeObjects.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
@@ -85,6 +86,12 @@ class SrvSetLightState;
 class SrvSetLightStateAnswer;
 class SrvGetLightState;
 class SrvGetLightStateAnswer;
+class SrvSpawnObjects;
+class SrvSpawnObjectsAnswer;
+class SrvRemoveObjects;
+class SrvRemoveObjectsAnswer;
+class SrvGetAllPoses;
+class SrvGetAllPosesAnswer;
 }  // namespace mvsim_msgs
 #endif
 
@@ -214,6 +221,15 @@ class World : public mrpt::system::COutputLogger
 		auto lck = mrpt::lockHelper(simul_time_mtx_);
 		ASSERT_(simul_start_wallclock_time_.has_value());
 		return mrpt::Clock::fromDouble(simulTime_ + simul_start_wallclock_time_.value());
+	}
+
+	/** Converts a simulation time (seconds since start) into a full
+	 * timestamp, as in get_simul_timestamp() */
+	mrpt::Clock::time_point simul_time_to_timestamp(double simulTime) const
+	{
+		auto lck = mrpt::lockHelper(simul_time_mtx_);
+		ASSERT_(simul_start_wallclock_time_.has_value());
+		return mrpt::Clock::fromDouble(simulTime + simul_start_wallclock_time_.value());
 	}
 
 	/** Returns true once the simulation has an established wall-clock time
@@ -452,6 +468,30 @@ class World : public mrpt::system::COutputLogger
 	b2Body* getBox2DGroundBody() { return b2_ground_body_; }
 	const VehicleList& getListOfVehicles() const { return vehicles_; }
 	VehicleList& getListOfVehicles() { return vehicles_; }
+	/** Ground truth of one named object (see getGroundTruthSnapshot()) */
+	struct ObjectGroundTruth
+	{
+		std::string name;
+		mrpt::math::TPose3D pose;
+		mrpt::math::TTwist2D twist;	 //!< In local coordinates
+	};
+	struct GroundTruthSnapshot
+	{
+		double simul_time = 0;	//!< Simulation time of the poses [s]
+		std::vector<ObjectGroundTruth> objects;
+	};
+
+	/** Thread-safe copy of the poses and velocities of all named objects
+	 * (vehicles, blocks, actors, and runtime objects), as of the end of the
+	 * last simulation step. Optionally, only for names starting with `prefix`.
+	 */
+	GroundTruthSnapshot getGroundTruthSnapshot(const std::string& prefix = {}) const;
+
+	/** Visual-only objects (and ground decals) that can be spawned, moved
+	 * and removed at runtime from any thread. */
+	RuntimeObjects& runtimeObjects() { return runtimeObjects_; }
+	const RuntimeObjects& runtimeObjects() const { return runtimeObjects_; }
+
 	const BlockList& getListOfBlocks() const { return blocks_; }
 	BlockList& getListOfBlocks() { return blocks_; }
 	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
@@ -903,6 +943,8 @@ class World : public mrpt::system::COutputLogger
 	VehicleList vehicles_;
 	WorldElementList worldElements_;
 	BlockList blocks_;
+
+	RuntimeObjects runtimeObjects_{*this};
 	ActorList actors_;
 
 	/// Inter-body joints (distance / revolute)
@@ -1173,7 +1215,8 @@ class World : public mrpt::system::COutputLogger
 
 	/// See sensor_has_to_create_egl_context()
 	bool eglContextCreated_ = false;
-	std::recursive_mutex copy_of_objects_dynstate_mtx_;
+	double copy_of_objects_dynstate_time_ = 0;
+	mutable std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;
 	std::mutex reset_collision_flags_mtx_;
@@ -1328,6 +1371,9 @@ class World : public mrpt::system::COutputLogger
 	mvsim_msgs::SrvShutdownAnswer srv_shutdown(const mvsim_msgs::SrvShutdown& req);
 	mvsim_msgs::SrvSetLightStateAnswer srv_set_light_state(const mvsim_msgs::SrvSetLightState& req);
 	mvsim_msgs::SrvGetLightStateAnswer srv_get_light_state(const mvsim_msgs::SrvGetLightState& req);
+	mvsim_msgs::SrvSpawnObjectsAnswer srv_spawn_objects(const mvsim_msgs::SrvSpawnObjects& req);
+	mvsim_msgs::SrvRemoveObjectsAnswer srv_remove_objects(const mvsim_msgs::SrvRemoveObjects& req);
+	mvsim_msgs::SrvGetAllPosesAnswer srv_get_all_poses(const mvsim_msgs::SrvGetAllPoses& req);
 #endif
 };
 }  // namespace mvsim

@@ -19,6 +19,7 @@ MVSim: a lightweight MultiVehicle Simulator
    sensors
    demo_worlds
    teleoperation
+   runtime_objects
    mvsim-cli
    mvsim_node
    mvsim-pid-tuner

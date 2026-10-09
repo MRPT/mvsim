@@ -821,6 +821,8 @@ void World::internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene
 
 	timlogger_.leave("update_GUI.4b.actors");
 
+	runtimeObjects_.guiUpdate(viz, physical);
+
 	// Update view of joints
 	// -----------------------------
 	{

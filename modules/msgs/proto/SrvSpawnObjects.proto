@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+import "RuntimeObject.proto";
+
+// Creates (or replaces, by name) visual-only runtime objects.
+message SrvSpawnObjects {
+  repeated RuntimeObject objects = 1;
+}
