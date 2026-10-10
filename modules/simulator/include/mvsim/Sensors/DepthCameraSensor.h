@@ -60,6 +60,10 @@ class DepthCameraSensor : public SensorBase
 	 */
 	bool publishColoredPointcloud() const { return publish_colored_pointcloud_; }
 
+	/** ROS depth image encoding: "16UC1" (millimeters, default) or "32FC1"
+	 * (meters) */
+	const std::string& rosDepthImageEncoding() const { return ros_depth_image_encoding_; }
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
@@ -103,6 +107,7 @@ class DepthCameraSensor : public SensorBase
 	bool sense_depth_ = true;  //!< Simulate the DEPTH sensor part
 	bool sense_rgb_ = true;	 //!< Simulate the RGB sensor part
 
+	std::string ros_depth_image_encoding_ = "16UC1";
 	bool publish_depth_image_ = true;  //!< Publish depth as 16UC1 image + CameraInfo
 	bool publish_colored_pointcloud_ = false;  //!< Publish XYZRGB instead of XYZ pointcloud
 

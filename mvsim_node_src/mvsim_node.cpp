@@ -22,6 +22,9 @@
 #include <mrpt/maps/CPointsMapXYZIRT.h>
 #endif
 
+#include <cmath>
+#include <limits>
+
 #include "rapidxml_utils.hpp"
 
 #if PACKAGE_ROS_VERSION == 1
@@ -1697,9 +1700,11 @@ void MVSimNode::internalOn(
 	// ----------------------------------------------------------------
 	if (wantDepthImage && obs.hasRangeImage)
 	{
-		// Send TF for depth frame:
+		// Send TF for depth frame: the depth image is in the camera optical
+		// frame (+Z forward), while sensorPose is +X forward:
 		{
-			mrpt::poses::CPose3D sensorPose = obs.sensorPose;
+			const mrpt::poses::CPose3D sensorPose =
+				obs.sensorPose + mrpt::poses::CPose3D::FromYawPitchRoll(-M_PI_2, 0.0, -M_PI_2);
 			auto transform = mrpt2ros::toROS_tfTransform(sensorPose);
 
 			Msg_TransformStamped tfStmp;
@@ -1717,21 +1722,54 @@ void MVSimNode::internalOn(
 		msg_header.stamp = obsStamp;
 		msg_header.frame_id = obs.sensorLabel + "_depth";
 
-		// Build 16UC1 depth image from rangeImage (uint16_t matrix).
-		// Each pixel = depth in rangeUnits (default 1 mm), 0 = invalid.
+		// Depth image from rangeImage (uint16_t matrix, in rangeUnits, 0 =
+		// invalid), as 16UC1 in millimeters (REP 118) or 32FC1 in meters:
 		{
+			const bool asFloat = depthSensor && depthSensor->rosDepthImageEncoding() == "32FC1";
+			const auto cols = static_cast<uint32_t>(obs.rangeImage.cols());
+			const auto rows = static_cast<uint32_t>(obs.rangeImage.rows());
+
 			Msg_Image depth_msg;
 			depth_msg.header = msg_header;
-			depth_msg.width = static_cast<uint32_t>(obs.rangeImage.cols());
-			depth_msg.height = static_cast<uint32_t>(obs.rangeImage.rows());
-			depth_msg.encoding = "16UC1";
+			depth_msg.width = cols;
+			depth_msg.height = rows;
+			depth_msg.encoding = asFloat ? "32FC1" : "16UC1";
 			depth_msg.is_bigendian = 0;
-			depth_msg.step = static_cast<uint32_t>(obs.rangeImage.cols()) *
-							 static_cast<uint32_t>(sizeof(uint16_t));
-			const size_t totalBytes =
-				static_cast<size_t>(depth_msg.step) * static_cast<size_t>(depth_msg.height);
-			depth_msg.data.resize(totalBytes);
-			std::memcpy(depth_msg.data.data(), obs.rangeImage.data(), totalBytes);
+			depth_msg.step =
+				cols * static_cast<uint32_t>(asFloat ? sizeof(float) : sizeof(uint16_t));
+			depth_msg.data.resize(static_cast<size_t>(depth_msg.step) * rows);
+
+			const bool isMillimeters = std::abs(obs.rangeUnits - 1e-3f) < 1e-9f;
+			if (!asFloat && isMillimeters)
+			{
+				std::memcpy(depth_msg.data.data(), obs.rangeImage.data(), depth_msg.data.size());
+			}
+			else
+			{
+				for (uint32_t r = 0; r < rows; r++)
+				{
+					for (uint32_t c = 0; c < cols; c++)
+					{
+						const uint16_t raw = obs.rangeImage(r, c);
+						const float meters = raw * obs.rangeUnits;
+						const size_t idx = static_cast<size_t>(r) * cols + c;
+						if (asFloat)
+						{
+							// Invalid pixels: NaN, as in common RGB-D drivers
+							const float v =
+								raw == 0 ? std::numeric_limits<float>::quiet_NaN() : meters;
+							std::memcpy(&depth_msg.data[idx * sizeof(float)], &v, sizeof(float));
+						}
+						else
+						{
+							const auto mm = static_cast<uint16_t>(
+								std::min(65535.0f, std::round(meters * 1000.0f)));
+							std::memcpy(
+								&depth_msg.data[idx * sizeof(uint16_t)], &mm, sizeof(uint16_t));
+						}
+					}
+				}
+			}
 
 			auto lck2 = mrpt::lockHelper(pubsub_vehicles_mtx_);
 
