@@ -23,6 +23,8 @@
 
     <!-- ROS publishing options for depth image & colored pointcloud -->
     <publish_ros_depth_image>${publish_ros_depth_image|true}</publish_ros_depth_image>
+    <!-- ROS depth image encoding: "16UC1" (millimeters) or "32FC1" (meters, NaN if invalid) -->
+    <ros_depth_image_encoding>${ros_depth_image_encoding|16UC1}</ros_depth_image_encoding>
     <publish_ros_colored_pointcloud>${publish_ros_colored_pointcloud|false}</publish_ros_colored_pointcloud>
 
     <depth_ncols>640</depth_ncols>

@@ -95,10 +95,15 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["depth_noise_sigma"] = TParamEntry("%f", &depth_noise_sigma_);
 	params["show_3d_pointcloud"] = TParamEntry("%bool", &show_3d_pointcloud_);
 	params["publish_ros_depth_image"] = TParamEntry("%bool", &publish_depth_image_);
+	params["ros_depth_image_encoding"] = TParamEntry("%s", &ros_depth_image_encoding_);
 	params["publish_ros_colored_pointcloud"] = TParamEntry("%bool", &publish_colored_pointcloud_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
+
+	ASSERTMSG_(
+		ros_depth_image_encoding_ == "16UC1" || ros_depth_image_encoding_ == "32FC1",
+		"<ros_depth_image_encoding> must be '16UC1' or '32FC1'");
 
 	depthCam.ncols = depth_ncols;
 	depthCam.nrows = depth_nrows;

@@ -436,7 +436,7 @@ ROS the following topics:
      - XYZ pointcloud, or **XYZRGB** if ``publish_ros_colored_pointcloud=true``
    * - ``<label>_depth/image_raw``
      - ``sensor_msgs/Image``
-     - 16UC1 depth image (each pixel = depth in ``rangeUnits``, default 1 mm; 0 = invalid). Published when ``publish_ros_depth_image=true``
+     - Depth image, ``16UC1`` in millimeters (0 = invalid, as REP 118) or ``32FC1`` in meters (NaN = invalid), see ``ros_depth_image_encoding``. Its frame ``<label>_depth`` is a camera optical frame (+Z forward). Published when ``publish_ros_depth_image=true``
    * - ``<label>_depth/camera_info``
      - ``sensor_msgs/CameraInfo``
      - Depth camera intrinsics. Published when ``publish_ros_depth_image=true``
@@ -472,6 +472,10 @@ ROS publishing options
   ``sensor_msgs/CameraInfo`` on ``<label>_depth/camera_info``.
   This matches the topic layout of real RGBD cameras such as the
   ASUS Xtion / Astra (``/depth/image_raw``).
+
+``ros_depth_image_encoding`` (default: ``16UC1``)
+  ``16UC1``: depth in millimeters, 0 for invalid pixels. ``32FC1``: depth in meters, NaN for
+  invalid pixels. Valid depths are limited to ``[depth_clip_min, depth_clip_max]``.
 
 ``publish_ros_colored_pointcloud`` (default: ``false``)
   When enabled **and** the sensor has ``sense_rgb=true``, the pointcloud
