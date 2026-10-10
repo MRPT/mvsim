@@ -146,7 +146,6 @@ function(mvsim_common_target_settings MODULENAME_)
   target_include_directories(${TARGETNAME_}
 	  PRIVATE
 		  ${CMAKE_CURRENT_SOURCE_DIR}/src
-		  ${ZeroMQ_INCLUDE_DIR}
   )
 
   if (MVSIM_WITH_PROTOBUF)
@@ -154,6 +153,7 @@ function(mvsim_common_target_settings MODULENAME_)
   endif()
 
   if (MVSIM_WITH_ZMQ)
+    target_include_directories(${TARGETNAME_} PRIVATE ${ZeroMQ_INCLUDE_DIR})
     target_compile_definitions(${TARGETNAME_} PUBLIC MVSIM_HAS_ZMQ)
   endif()
 
