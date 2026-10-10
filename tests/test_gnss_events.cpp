@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <map>
+#include <utility>
 #include <vector>
 
 #include "test_utils.h"
@@ -64,10 +65,15 @@ struct Sample
 int main()
 {
 	// Invalid event values must be rejected:
+	const std::vector<std::pair<std::string, std::string>> invalid = {
+		{"horizontal_std_noise=\"0.3\"", "horizontal_std_noise=\"-0.3\""},
+		{"horizontal_std_noise=\"0.3\"", "horizontal_std_noise=\"inf\""},
+		{"<event start=\"2.0\" end", "<event end"},
+	};
+	for (const auto& [from, to] : invalid)
 	{
 		std::string xml = kWorldXml;
-		const std::string from = "horizontal_std_noise=\"0.3\"";
-		xml.replace(xml.find(from), from.size(), "horizontal_std_noise=\"-0.3\"");
+		xml.replace(xml.find(from), from.size(), to);
 		bool thrown = false;
 		try
 		{

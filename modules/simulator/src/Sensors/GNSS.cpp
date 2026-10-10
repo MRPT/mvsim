@@ -15,6 +15,7 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
+#include <cmath>
 #include <cstdlib>
 #include <sstream>
 
@@ -64,7 +65,7 @@ mrpt::obs::GnssFixType parseFixType(const std::string& s)
 		s.c_str());
 }
 
-/** Parses an optional, non-negative noise value of an <event> */
+/** Parses an optional, finite and non-negative noise value of an <event> */
 std::optional<double> parseOptionalStd(const std::string& s, const char* name)
 {
 	if (s.empty())
@@ -74,9 +75,9 @@ std::optional<double> parseOptionalStd(const std::string& s, const char* name)
 	char* end = nullptr;
 	const double v = std::strtod(s.c_str(), &end);
 	ASSERTMSG_(
-		end != s.c_str() && *end == '\0' && v >= 0,
+		end != s.c_str() && *end == '\0' && std::isfinite(v) && v >= 0,
 		mrpt::format(
-			"GNSS <event>: '%s' must be a non-negative number, got '%s'", name, s.c_str()));
+			"GNSS <event>: '%s' must be a finite, non-negative number, got '%s'", name, s.c_str()));
 	return v;
 }
 
@@ -139,6 +140,9 @@ void GNSS::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		attribs["offset"] = TParamEntry("%s", &offset);
 		parse_xmlnode_attribs(*n, attribs, varValues_, "[GNSS]");
 
+		ASSERTMSG_(
+			n->first_attribute("start") && n->first_attribute("end"),
+			"GNSS <event>: both 'start' and 'end' are required");
 		ASSERTMSG_(ev.end > ev.start, "GNSS <event>: 'end' must be greater than 'start'");
 		ASSERTMSG_(
 			!n->first_attribute("fix_type") || !evFixType.empty(),
