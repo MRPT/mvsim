@@ -63,6 +63,11 @@ Vehicle XML
   Relative paths are relative to the world file. Each controller declared there with
   ``<name>.type`` reads its parameters from the same file, unless ``<name>.params_file``
   is given. Controllers should also set ``use_sim_time: true``.
+- **Several vehicles:** each one gets its own controller manager in its namespace
+  (``/<vehicle>/controller_manager``), and its controllers are spawned with
+  ``--controller-manager /<vehicle>/controller_manager``. Prefix node names in the YAML
+  file with ``/**/`` to share the same parameters among all of them (as in the tutorial
+  file), or with ``/<vehicle>/`` for per-vehicle values.
 - ``robot_description``:
 
   - ``generated`` (default): MVSim publishes a URDF on ``robot_description`` (in the
