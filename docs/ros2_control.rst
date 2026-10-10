@@ -115,8 +115,8 @@ Odometry is published by ``diff_drive_controller`` (``/diff_drive_controller/odo
 Simulation rate vs. controller rate
 -------------------------------------
 
-The controller manager ``update_rate`` should be an integer multiple of the simulation rate
-(``1/simul_timestep``); otherwise, the closest multiple is used and a warning is printed.
+The simulation rate (``1/simul_timestep``) should be an integer multiple of the controller
+manager ``update_rate``; otherwise, the closest multiple is used and a warning is printed.
 For instance, ``simul_timestep=0.005`` (200 Hz) with ``update_rate: 100`` updates the
 controllers every 2 physics steps. Smaller simulation time steps improve the accuracy of the
 wheel-ground contact dynamics at a higher CPU cost; 2 to 5 physics steps per controller update
