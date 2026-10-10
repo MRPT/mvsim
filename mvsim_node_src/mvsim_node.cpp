@@ -14,6 +14,7 @@
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
+#include <mvsim/Sensors/IMU.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/mvsim_node_core.h>
 
@@ -1356,6 +1357,32 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 		msg_header.stamp = obsStamp;
 		msg_header.frame_id = obs.sensorLabel;
 		mrpt2ros::toROS(obs, msg_header, msg_imu);
+
+		// Covariances from the actual sensor noise parameters:
+		for (const auto& s : veh.getSensors())
+		{
+			const auto* imu = dynamic_cast<const mvsim::IMU*>(s.get());
+			if (!imu || imu->getName() != obs.sensorLabel)
+			{
+				continue;
+			}
+			const auto setDiagonal = [](auto& cov, double stdDev)
+			{
+				cov.fill(0);
+				cov[0] = cov[4] = cov[8] = stdDev * stdDev;
+			};
+			setDiagonal(
+				msg_imu.angular_velocity_covariance, imu->noiseModel().gyroscope.white_noise_std);
+			setDiagonal(
+				msg_imu.linear_acceleration_covariance,
+				imu->noiseModel().accelerometer.white_noise_std);
+			if (imu->measureOrientation())
+			{
+				setDiagonal(msg_imu.orientation_covariance, imu->orientationStdNoise());
+			}
+			break;
+		}
+
 		pub->publish(mvsim_node::make_shared<Msg_Imu>(msg_imu));
 	}
 }
