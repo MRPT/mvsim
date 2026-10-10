@@ -58,6 +58,7 @@
   <build_depend     condition="$ROS_VERSION == 2">ament_cmake_xmllint</build_depend>
   <!-- to recognize launch files -->
   <exec_depend      condition="$ROS_VERSION == 2">ros2launch</exec_depend>
+  <!-- Optional: /diagnostics publisher (built only if found): -->
   <depend           condition="$ROS_VERSION == 2">diagnostic_msgs</depend>
 
   <export>

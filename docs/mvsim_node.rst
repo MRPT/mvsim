@@ -231,4 +231,5 @@ and, per sensor, its processing time and achieved output rate.
   ``0`` disables it). Times are given as a percentage of the simulated time, so ``100%``
   means as much time as real time. The status is ``WARN`` if the achieved real time factor is
   below 90% of the requested one (``realtime_factor``).
+  This publisher is only built if ``diagnostic_msgs`` is found.
 - C++: ``World::getPerformanceStats()``.

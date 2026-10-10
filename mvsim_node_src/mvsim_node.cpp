@@ -212,7 +212,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	disable_sim_time_clock_ =
 		n_->declare_parameter<bool>("disable_sim_time_clock", disable_sim_time_clock_);
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
 	diagnostics_rate_ = n_->declare_parameter<double>("diagnostics_rate", diagnostics_rate_);
+#endif
 
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
@@ -655,11 +657,13 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	worldPubs_.pub_map_metadata =
 		n_->create_publisher<Msg_MapMetaData>("simul_map_metadata", qosLatched);
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
 	if (diagnostics_rate_ > 0)
 	{
 		pub_diagnostics_ =
 			n_->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/diagnostics", 10);
 	}
+#endif
 #endif
 
 	// Publish maps and static stuff:
@@ -964,7 +968,7 @@ void MVSimNode::spinNotifyROS()
 		pub_clock_->publish(clockMsg);
 	}
 
-#if PACKAGE_ROS_VERSION == 2
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
 	publishDiagnostics();
 #endif
 
@@ -1981,7 +1985,7 @@ void MVSimNode::internalOn(
 	}
 }
 
-#if PACKAGE_ROS_VERSION == 2
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
 void MVSimNode::publishDiagnostics()
 {
 	if (!pub_diagnostics_ || tim_publish_diagnostics_.Tac() < 1.0 / diagnostics_rate_)
