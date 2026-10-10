@@ -18,6 +18,10 @@
 #include <mvsim/mvsim-msgs/SrvGetLightStateAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPoseAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvInsertEntities.pb.h>
+#include <mvsim/mvsim-msgs/SrvInsertEntitiesAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveEntities.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveEntitiesAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvRemoveObjects.pb.h>
 #include <mvsim/mvsim-msgs/SrvRemoveObjectsAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetControllerTwist.pb.h>
@@ -28,10 +32,6 @@
 #include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdown.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdownAnswer.pb.h>
-#include <mvsim/mvsim-msgs/SrvInsertEntities.pb.h>
-#include <mvsim/mvsim-msgs/SrvInsertEntitiesAnswer.pb.h>
-#include <mvsim/mvsim-msgs/SrvRemoveEntities.pb.h>
-#include <mvsim/mvsim-msgs/SrvRemoveEntitiesAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSpawnObjects.pb.h>
 #include <mvsim/mvsim-msgs/SrvSpawnObjectsAnswer.pb.h>
 #endif
