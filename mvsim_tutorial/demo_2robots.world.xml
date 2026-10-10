@@ -83,6 +83,8 @@
 		<include file="../definitions/camera.sensor.xml"
 			sensor_x="1.9" sensor_z="0.5"
 			sensor_publish="true"
+			distortion_model="$env{MVSIM_CAMERA_DISTORTION|none}" k1="-0.25" k2="0.07"
+			image_noise_std="$env{MVSIM_CAMERA_NOISE_STD|0}"
 		/>
 	</vehicle>
 

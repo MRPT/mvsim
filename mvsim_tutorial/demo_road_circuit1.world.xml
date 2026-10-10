@@ -303,6 +303,8 @@
 		  ncols="800" nrows="600"
 		  cx="400" cy="300"
 		  sensor_period_sec="0.10"
+		  distortion_model="$env{MVSIM_CAMERA_DISTORTION|none}" k1="-0.25" k2="0.07"
+		  image_noise_std="$env{MVSIM_CAMERA_NOISE_STD|0}"
 		/>
 	</vehicle>
 	
@@ -334,6 +336,8 @@
 		  ncols="800" nrows="600"
 		  cx="400" cy="300"
 		  sensor_period_sec="0.10"
+		  distortion_model="$env{MVSIM_CAMERA_DISTORTION|none}" k1="-0.25" k2="0.07"
+		  image_noise_std="$env{MVSIM_CAMERA_NOISE_STD|0}"
 		/>
 	</vehicle>
 	

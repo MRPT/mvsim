@@ -83,7 +83,7 @@ Each vehicle type has companion `*_Controller*.cpp` files for its controllers (R
 |---|---|
 | `LaserScanner.cpp` | 2D LiDAR (generic + RPLidar A2). 2D mode: planar ray tracing (ignores pitch/roll); `raytrace_3d=true`: OpenGL depth renders of up to 150 deg each, supports tilted scan planes |
 | `Lidar3D.cpp` | 3D LiDAR (Velodyne VLP-16, Ouster OS1, Hesai Helios-32) |
-| `CameraSensor.cpp` | RGB pinhole camera |
+| `CameraSensor.cpp` | RGB pinhole camera. Optional plumb_bob lens distortion and Gaussian pixel noise, applied by the MRPT GPU renderer (requires MRPT >= 3.6.0, `MIN_MRPT_VERSION_CAMERA_DISTORTION`; with older MRPT, using them fails at load time); `camera_info` carries the distortion. Off by default; tutorial worlds/vehicles enable them with env vars `MVSIM_CAMERA_DISTORTION=plumb_bob` and `MVSIM_CAMERA_NOISE_STD` |
 | `DepthCameraSensor.cpp` | RGBD depth + color camera. ROS depth image: optical frame `<label>_depth`, `16UC1` in mm or `32FC1` in m (`ros_depth_image_encoding`) |
 | `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model. The ROS node fills `sensor_msgs/Imu` covariances from its white noise (and orientation noise, if `measure_orientation`) |
 | `GNSS.cpp` | GPS/GNSS with configurable noise, `fix_type`, and `<event>` tags (sim-time quality changes, outages, ENU position jumps) |
