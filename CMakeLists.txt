@@ -127,6 +127,7 @@ if (DETECTED_ROS2)
   find_package(tf2_geometry_msgs REQUIRED)
   find_package(mrpt-ros2bridge REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(diagnostic_msgs QUIET)  # optional: /diagnostics publisher
 endif()
 
 
@@ -357,6 +358,11 @@ if (BUILD_FOR_ROS)
       ${visualization_msgs_TARGETS}
       ${tf2_geometry_msgs_TARGETS}
     )
+
+    if (diagnostic_msgs_FOUND)
+      target_link_libraries(mvsim_node ${diagnostic_msgs_TARGETS})
+      target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_DIAGNOSTIC_MSGS)
+    endif()
 
     # We need this to handle this backwards-incompatible change: https://github.com/ros2/geometry2/pull/416
     if("${tf2_geometry_msgs_VERSION}" VERSION_GREATER_EQUAL "0.18.0")

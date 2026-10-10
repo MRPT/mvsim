@@ -603,7 +603,14 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	Simulable::simul_post_timestep(context);
 	for (auto& s : sensors_)
 	{
+		const double t0 = mrpt::Clock::nowDouble();
 		s->simul_post_timestep(context);
+		if (world_)
+		{
+			world_->internalAddSensorProcessingTime(
+				getName() + "/" + s->getName(), mrpt::Clock::nowDouble() - t0,
+				true /*simulation thread*/);
+		}
 	}
 
 	// Integrate wheels' rotation:

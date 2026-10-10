@@ -212,6 +212,17 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	disable_sim_time_clock_ =
 		n_->declare_parameter<bool>("disable_sim_time_clock", disable_sim_time_clock_);
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	diagnostics_rate_ = n_->declare_parameter<double>("diagnostics_rate", diagnostics_rate_);
+	if (!std::isfinite(diagnostics_rate_) || diagnostics_rate_ < 0)
+	{
+		RCLCPP_ERROR(
+			n_->get_logger(), "Invalid 'diagnostics_rate' (%f): /diagnostics disabled",
+			diagnostics_rate_);
+		diagnostics_rate_ = 0;
+	}
+#endif
+
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
 	// normally runs with use_sim_time:=false (it drives the clock); it is the
@@ -652,6 +663,14 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	worldPubs_.pub_map_ros = n_->create_publisher<Msg_OccupancyGrid>("simul_map", qosLatched);
 	worldPubs_.pub_map_metadata =
 		n_->create_publisher<Msg_MapMetaData>("simul_map_metadata", qosLatched);
+
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	if (diagnostics_rate_ > 0)
+	{
+		pub_diagnostics_ =
+			n_->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/diagnostics", 10);
+	}
+#endif
 #endif
 
 	// Publish maps and static stuff:
@@ -955,6 +974,10 @@ void MVSimNode::spinNotifyROS()
 		clockMsg.clock = mrpt2ros::toROS(mvsim_world_->get_simul_timestamp());
 		pub_clock_->publish(clockMsg);
 	}
+
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	publishDiagnostics();
+#endif
 
 	// Publish all TFs for each vehicle:
 	// ---------------------------------------------------------------------
@@ -1968,3 +1991,72 @@ void MVSimNode::internalOn(
 		pubPts->publish(msg_pts);
 	}
 }
+
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+void MVSimNode::publishDiagnostics()
+{
+	if (!pub_diagnostics_ || tim_publish_diagnostics_.Tac() < 1.0 / diagnostics_rate_)
+	{
+		return;
+	}
+	tim_publish_diagnostics_.Tic();
+
+	const auto st = mvsim_world_->getPerformanceStats();
+	if (st.window_simul_time <= 0)
+	{
+		return;
+	}
+	const double T = st.window_simul_time;
+
+	diagnostic_msgs::msg::DiagnosticStatus status;
+	status.name = "mvsim: performance";
+	status.hardware_id = "mvsim";
+
+	// Times as a percentage of the simulated time (100% = real time):
+	const auto addValue = [&status](const std::string& key, double value)
+	{
+		diagnostic_msgs::msg::KeyValue kv;
+		kv.key = key;
+		kv.value = mrpt::format("%.3f", value);
+		status.values.push_back(kv);
+	};
+	addValue("realtime_factor", st.realtime_factor);
+	addValue("realtime_factor_requested", realtime_factor_);
+	addValue("window_simul_time", T);
+	addValue("physics_steps", static_cast<double>(st.steps));
+	addValue("physics_time_percent", 100.0 * st.physics_time / T);
+	addValue("sensors_wait_time_percent", 100.0 * st.sensors_wait_time / T);
+	for (const auto& [name, s] : st.sensors)
+	{
+		addValue(name + "/time_percent", 100.0 * s.processing_time / T);
+		addValue(name + "/rate_hz", static_cast<double>(s.observations) / T);
+	}
+
+	// The last window is too old if the current one takes much longer than
+	// it, e.g. if the simulation slowed down a lot or stopped:
+	const double age = mrpt::Clock::nowDouble() - st.window_end_wall_time;
+	if (age > std::max(5.0, 2 * st.window_wall_time))
+	{
+		status.level = diagnostic_msgs::msg::DiagnosticStatus::STALE;
+		status.message = mrpt::format(
+			"No performance data in the last %.1f s: the simulation is much slower than "
+			"before, or stopped",
+			age);
+	}
+	else if (realtime_factor_ > 0 && st.realtime_factor < 0.9 * realtime_factor_)
+	{
+		status.level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
+		status.message = "Simulation slower than the requested real time factor";
+	}
+	else
+	{
+		status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+		status.message = "OK";
+	}
+
+	diagnostic_msgs::msg::DiagnosticArray msg;
+	msg.header.stamp = myNow();
+	msg.status.push_back(status);
+	pub_diagnostics_->publish(msg);
+}
+#endif

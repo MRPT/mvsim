@@ -774,7 +774,11 @@ void World::internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects)
 			{
 				if (sensor)
 				{
+					const double t0 = mrpt::Clock::nowDouble();
 					sensor->simulateOn3DScene(physicalObjects);
+					internalAddSensorProcessingTime(
+						v.second->getName() + "/" + sensor->getName(),
+						mrpt::Clock::nowDouble() - t0, false /*render thread*/);
 				}
 			}
 		}

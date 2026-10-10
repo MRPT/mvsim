@@ -216,3 +216,48 @@ parameter (ROS launch argument) to ``true``. In that case:
    ros2 launch mvsim launch_world.launch.py \
      world_file:=/path/to/your/my.world.xml \
      disable_sim_time_clock:=True
+
+|
+
+Performance diagnostics
+-------------------------
+MVSim measures its own performance over consecutive windows of 2 seconds of simulated time:
+achieved real time factor, wall-clock time spent in physics and waiting for OpenGL-based sensors,
+and, per sensor, its processing time and achieved output rate.
+
+- In the GUI: hover the mouse over the real time factor in the bottom status bar.
+- ROS 2: published as ``diagnostic_msgs/DiagnosticArray`` on ``/diagnostics`` (status name
+  ``mvsim: performance``), at ``diagnostics_rate`` Hz (node parameter, default ``1.0``,
+  ``0`` disables it). Times are given as a percentage of the simulated time, so ``100%``
+  means as much time as real time. The status is ``WARN`` if the achieved real time factor is
+  below 90% of the requested one (``realtime_factor``).
+  This publisher is only built if ``diagnostic_msgs`` is found.
+- C++: ``World::getPerformanceStats()``.
+
+Example (ROS 2): publish at 2 Hz and watch the values:
+
+.. code-block:: bash
+
+   ros2 run mvsim mvsim_node --ros-args \
+     -p world_file:=/path/to/my.world.xml \
+     -p diagnostics_rate:=2.0
+
+   # In another terminal:
+   ros2 topic echo /diagnostics
+   # ...or with a GUI: ros2 run rqt_runtime_monitor rqt_runtime_monitor
+
+Each message holds the keys ``realtime_factor``, ``realtime_factor_requested``,
+``window_simul_time``, ``physics_steps``, ``physics_time_percent``,
+``sensors_wait_time_percent``, and, for each sensor, ``<vehicle>/<sensor>/time_percent`` and
+``<vehicle>/<sensor>/rate_hz``.
+
+Example (C++):
+
+.. code-block:: cpp
+
+   const mvsim::World::PerformanceStats st = world.getPerformanceStats();
+   std::cout << "RTF: " << st.realtime_factor << "\n";
+   for (const auto& [name, s] : st.sensors)
+   {
+       std::cout << name << ": " << s.observations / st.window_simul_time << " Hz\n";
+   }

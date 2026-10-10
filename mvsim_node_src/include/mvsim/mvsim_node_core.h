@@ -24,6 +24,10 @@
 #include <mvsim/Comms/Server.h>
 #endif
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
+#endif
+
 #include <atomic>
 #include <thread>
 
@@ -241,6 +245,14 @@ class MVSimNode
 	};
 
 	WorldPubs worldPubs_;
+
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	/// Rate (Hz) of performance diagnostics on /diagnostics (0=disabled)
+	double diagnostics_rate_ = 1.0;
+	mrpt::system::CTicTac tim_publish_diagnostics_;
+	rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr pub_diagnostics_;
+	void publishDiagnostics();
+#endif
 
 	struct TPubSubPerVehicle
 	{

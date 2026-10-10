@@ -44,6 +44,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_performance_stats
+	SOURCES test_performance_stats.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_tilted_lidar2d
 	SOURCES test_tilted_lidar2d.cpp
 	LINK_LIBRARIES mvsim::simulator
