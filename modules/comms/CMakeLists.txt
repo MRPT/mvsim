@@ -1,9 +1,16 @@
 set(MODULE_NAME "comms")
 project(mvsim-${MODULE_NAME} LANGUAGES CXX VERSION ${MVSIM_VERSION})
 
-file(GLOB Comms_SRCS
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/Comms/*.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/Comms/*.h"
+set(Comms_SRCS
+	src/Comms/Client.cpp
+	src/Comms/Server.cpp
+	src/Comms/common.cpp
+	include/mvsim/Comms/Client.h
+	include/mvsim/Comms/Server.h
+	include/mvsim/Comms/common.h
+	include/mvsim/Comms/ports.h
+	include/mvsim/Comms/zmq_fwrds.h
+	include/mvsim/Comms/zmq_monitor.h
 )
 
 # Declare the target (a library)
@@ -51,7 +58,14 @@ if (MVSIM_WITH_PYTHON)
   if (NOT EXISTS ${PY_SRCS_DIR})
 	message(WARNING "Skipping python wrapper due to missing wrapper C++ files for especific pybind11 version ${PYBIND11_MM_VERSION}: expected directory '${PY_SRCS_DIR}'")
   else()
-	file(GLOB_RECURSE PY_SRCS ${PY_SRCS_DIR}/*.cpp)
+	# Generated files, as listed in pymvsim_comms.sources:
+	set(PY_SRCS
+		${PY_SRCS_DIR}/pymvsim_comms.cpp
+		${PY_SRCS_DIR}/std/exception.cpp
+		${PY_SRCS_DIR}/std/stdexcept.cpp
+		${PY_SRCS_DIR}/mvsim/Comms/common.cpp
+		${PY_SRCS_DIR}/mvsim/Comms/Client.cpp
+	)
 
 	pybind11_add_module(pymvsim_${MODULE_NAME}
 		${PY_SRCS}
