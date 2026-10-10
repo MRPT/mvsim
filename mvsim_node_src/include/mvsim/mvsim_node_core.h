@@ -164,8 +164,14 @@ class MVSimNode
 	mrpt::WorkerThreadsPool ros_publisher_workers_{
 		4 /*threads*/, mrpt::WorkerThreadsPool::POLICY_FIFO};
 
-	/// (Defaul=1.0) >1: speed-up, <1: slow-down
+	/// Simulation speed wrt real time (default=1.0): >1: speed-up,
+	/// <1: slow-down, <=0: as fast as possible.
 	double realtime_factor_ = 1.0;
+
+	/// "As fast as possible" mode: physics steps per spin() call, and maximum
+	/// number of pending sensor publications before waiting for them.
+	unsigned int afapStepsPerSpin_ = 10;
+	size_t afapMaxPendingPublications_ = 8;
 
 	/// [s] Max wall-time worth of simulation integrated in a single spin()
 	/// catch-up. Bounds the fixed-timestep "spiral of death": if a spin blocks

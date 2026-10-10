@@ -189,7 +189,8 @@ Available options:
                          default port is in use, the next free one is used. The
                          environment variable MVSIM_SERVER_PORT also sets it.
  --full-profiler         Enable full profiling (generates file with all timings)
- --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0
+ --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0,
+                          or as fast as possible if <=0
  -v, --verbosity         Set verbosity level: DEBUG, INFO (default), WARN, ERROR
 )XXX");
 		return 0;
@@ -310,13 +311,23 @@ Available options:
 		int incrTimeSteps =
 			static_cast<int>(std::floor(incrTime / app->world.get_simul_timestep()));
 
+		// "As fast as possible" mode:
+		const bool asFastAsPossible = rtFactor <= 0;
+		if (asFastAsPossible)
+		{
+			incrTimeSteps = 10;
+		}
+
 		// Simulate:
 		if (incrTimeSteps > 0)
 		{
 			app->world.run_simulation(incrTimeSteps * app->world.get_simul_timestep());
 		}
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		if (!asFastAsPossible)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
 
 		// GUI msgs, teleop, etc.
 		// ====================================================

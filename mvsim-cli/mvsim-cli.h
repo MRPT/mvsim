@@ -61,7 +61,8 @@ struct cli_flags
 
 		cmd.add_option(
 			"--realtime-factor", argRealTimeFactor,
-			"Realtime modification factor: <1 slower than real-time, >1 faster than real-time");
+			"Realtime modification factor: <1 slower than real-time, >1 faster than real-time, "
+			"<=0 as fast as possible");
 	}
 };
 

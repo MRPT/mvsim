@@ -225,7 +225,9 @@ ROS 2 Launch Parameters
 
 Key parameters when launching the mvsim_node:
 
-* ``realtime_factor`` — Simulation speed multiplier (default: 1.0)
+* ``realtime_factor`` — Simulation speed multiplier (default: 1.0). Use ``0`` to run **as fast as
+  possible**: sensors and controllers stay in lock-step with simulation time (no sensor
+  frames are skipped), and downstream nodes must use ``use_sim_time:=true``.
 * ``headless`` — Run without GUI (default: false)  
 * ``period_ms_publish_tf`` — Transform publication rate in milliseconds (default: 20)
 * ``do_fake_localization`` — Enable fake AMCL output (default: false)
