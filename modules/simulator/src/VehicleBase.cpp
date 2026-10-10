@@ -611,20 +611,8 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 
 	for (size_t i = 0; i < nW; i++)
 	{
-		// prepare data:
 		Wheel& w = getWheelInfo(i);
-
-		// Explicit Euler:
-		w.setPhi(w.getPhi() + w.getW() * context.dt);
-
-		// Wrap wheel spin position (angle), so it doesn't
-		// become excessively large (it's actually unbound, but we don't want to
-		// lose 'double' accuracy):
-		const double cur_abs_phi = std::abs(w.getPhi());
-		if (cur_abs_phi > 1e4)
-		{
-			w.setPhi(::fmod(cur_abs_phi, 2 * M_PI) * (w.getPhi() < 0.0 ? -1.0 : 1.0));
-		}
+		w.integrateSpin(context.dt);
 	}
 
 	// Estimate 2D pose increment as 2D-projected 3D pose increment, plus noise and bias:

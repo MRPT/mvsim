@@ -53,7 +53,7 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 | `VehicleBase` | `VehicleBase.h` | Abstract vehicle. Inherits `VisualObject` and `Simulable`. Holds wheels, sensors, friction model, controller, CSV logger. Created via `ClassFactory`. |
 | `Block` | `Block.h` | Static or dynamic rigid-body obstacle/object in the world. |
 | `HumanActor` | `HumanActor.h` | Pedestrian/human agent with motion model. |
-| `Wheel` | `Wheel.h` | Per-wheel physical state (torque, slip, contact). |
+| `Wheel` | `Wheel.h` | Per-wheel physical state (torque, slip, contact). `getPhi()` is the spin angle, kept bounded by wrapping whole turns; `getPhiContinuous()` is the unwrapped angle (e.g. for joint positions). |
 | `SensorBase` | `Sensors/SensorBase.h` | Base class for all sensors. |
 | `WorldElementBase` | `WorldElements/WorldElementBase.h` | Base class for ground plane, grids, elevation maps, etc. |
 | `ControllerBase` | `ControllerBase.h` | Abstract controller interface. |
