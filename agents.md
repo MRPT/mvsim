@@ -84,7 +84,7 @@ Each vehicle type has companion `*_Controller*.cpp` files for its controllers (R
 | `LaserScanner.cpp` | 2D LiDAR (generic + RPLidar A2) |
 | `Lidar3D.cpp` | 3D LiDAR (Velodyne VLP-16, Ouster OS1, Hesai Helios-32) |
 | `CameraSensor.cpp` | RGB pinhole camera |
-| `DepthCameraSensor.cpp` | RGBD depth + color camera |
+| `DepthCameraSensor.cpp` | RGBD depth + color camera. ROS depth image: optical frame `<label>_depth`, `16UC1` in mm or `32FC1` in m (`ros_depth_image_encoding`) |
 | `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model |
 | `GNSS.cpp` | GPS/GNSS with configurable noise |
 

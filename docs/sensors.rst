@@ -467,7 +467,7 @@ ROS publishing options
 
 ``publish_ros_depth_image`` (default: ``true``)
   When enabled, the sensor publishes the depth channel as a separate
-  ``sensor_msgs/Image`` message encoded as **16UC1** on the topic
+  ``sensor_msgs/Image`` message (see ``ros_depth_image_encoding``) on the topic
   ``<label>_depth/image_raw``, together with a matching
   ``sensor_msgs/CameraInfo`` on ``<label>_depth/camera_info``.
   This matches the topic layout of real RGBD cameras such as the
@@ -476,6 +476,22 @@ ROS publishing options
 ``ros_depth_image_encoding`` (default: ``16UC1``)
   ``16UC1``: depth in millimeters, 0 for invalid pixels. ``32FC1``: depth in meters, NaN for
   invalid pixels. Valid depths are limited to ``[depth_clip_min, depth_clip_max]``.
+
+  Example: depth images in meters, as floats:
+
+  .. code-block:: xml
+
+     <include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/rgbd_camera.sensor.xml"
+       sensor_name="camera1"
+       publish_ros_depth_image="true"
+       ros_depth_image_encoding="32FC1"
+     />
+
+  .. code-block:: bash
+
+     # Check the encoding and the optical frame of the depth images:
+     ros2 topic echo --once /camera1_depth/image_raw --field encoding
+     ros2 topic echo --once /camera1_depth/image_raw --field header.frame_id
 
 ``publish_ros_colored_pointcloud`` (default: ``false``)
   When enabled **and** the sensor has ``sense_rgb=true``, the pointcloud
