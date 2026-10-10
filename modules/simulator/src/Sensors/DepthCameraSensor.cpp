@@ -511,7 +511,9 @@ void DepthCameraSensor::depthToRangeImage(mrpt::obs::CObservation3DRangeScan& ob
 		std::array<float, DEPTH_BLOCK> lastDepths{};
 		std::array<uint16_t, DEPTH_BLOCK> lastRanges{};
 		std::copy(depths + i, depths + N, lastDepths.begin());
-		depthBlockToRanges(lastDepths.data(), depthNoiseSeq_.data(), lastRanges.data(), p);
+		depthBlockToRanges(
+			lastDepths.data(), depthNoiseSeq_.data() + depthNoiseIdx_, lastRanges.data(), p);
+		depthNoiseIdx_ = (depthNoiseIdx_ + DEPTH_BLOCK) % noiseLen;
 		std::copy_n(lastRanges.begin(), N - i, ranges + i);
 	}
 
