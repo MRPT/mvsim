@@ -68,11 +68,21 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
   off-screen through EGL. With no GPU, Mesa's software renderer (llvmpipe) is used, which is
   much slower but gives the same images. On Debian/Ubuntu, it needs the Mesa EGL drivers
   (``libegl1``, ``libegl-mesa0``), usually installed already. Only the interactive GUI needs a
-  display; to run it on a machine without one, use a virtual display:
-  ``xvfb-run -a mvsim launch my.world.xml``.
+  display; to run it on a machine without one, use a virtual display (package ``xvfb``).
 
-  To check that sensors render, run a world with a camera headless and look for its images
-  (e.g. ``ros2 topic hz``), or see the per-sensor rates in ``/diagnostics``.
+  Examples:
+
+  .. code-block:: bash
+
+     # Headless, sensors rendered off-screen (no display needed):
+     mvsim launch mvsim_tutorial/demo_depth_camera.world.xml --headless
+
+     # Same with ROS 2; then check that the camera images are published:
+     ros2 launch mvsim demo_depth_camera.launch.py headless:=True use_rviz:=False
+     ros2 topic hz /camera1_rgb/image_raw
+
+     # Interactive GUI on a machine without a display:
+     xvfb-run -a mvsim launch mvsim_tutorial/demo_depth_camera.world.xml
 
 - ``<cam_point_to>0  0  0</cam_point_to>``. Defines the (x,y,z) coordinates
   of the point the camera should look at upon start.
