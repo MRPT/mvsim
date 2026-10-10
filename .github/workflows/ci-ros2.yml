@@ -2,6 +2,9 @@ name: CI ROS 2
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: ROS 2 ${{ matrix.ros_distro }}
@@ -33,6 +36,7 @@ jobs:
         with:
           path: src/mvsim
           submodules: recursive
+          persist-credentials: false
 
       - name: Install dependencies
         run: |
