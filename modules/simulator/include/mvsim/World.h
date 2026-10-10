@@ -1206,8 +1206,10 @@ class World : public mrpt::system::COutputLogger
 	bool eglContextCreated_ = false;
 
 	mutable std::mutex perfStatsMtx_;
-	PerformanceStats perfStatsCurrent_, perfStatsLast_;
-	std::optional<double> perfWindowStartSim_, perfWindowStartWall_;
+	PerformanceStats perfStatsCurrent_;
+	PerformanceStats perfStatsLast_;
+	std::optional<double> perfWindowStartSim_;
+	std::optional<double> perfWindowStartWall_;
 	double perfSensorTimeInStep_ = 0;  //!< CPU-side sensors, current step
 	void internalUpdatePerformanceStats(double physicsTime, double sensorsWaitTime);
 	std::recursive_mutex copy_of_objects_dynstate_mtx_;
