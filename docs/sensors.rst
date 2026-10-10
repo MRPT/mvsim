@@ -203,6 +203,8 @@ Velodyne VLP-16
 
 ----
 
+.. _sensors-rgb-camera:
+
 RGB camera
 ------------------
 
@@ -230,8 +232,8 @@ intensity levels), both applied on the GPU while rendering. The published ``came
 the distortion model and coefficients, so standard rectification gives back the pinhole image.
 They require MRPT >= 3.6.0 (loading a world that uses them fails with older versions).
 
-Both are disabled by default. To quickly try them in the tutorial worlds and vehicle definitions
-with an RGB camera, set the environment variables ``MVSIM_CAMERA_DISTORTION=plumb_bob`` (with
+Both are disabled by default. To quickly try them in all the tutorial worlds and vehicle
+definitions with an RGB or RGB-D camera, set the environment variables ``MVSIM_CAMERA_DISTORTION=plumb_bob`` (with
 ``k1=-0.25``, ``k2=0.07``) and/or ``MVSIM_CAMERA_NOISE_STD=2.0`` (any noise std):
 
 .. code-block:: bash
@@ -498,6 +500,12 @@ ROS the following topics:
 		  publish_ros_depth_image="true"
 		  publish_ros_colored_pointcloud="false"
 		/>
+
+The RGB image supports the same optional lens distortion and pixel noise as the
+:ref:`RGB camera <sensors-rgb-camera>`, with the same include parameters (``distortion_model``,
+``k1``, ..., ``image_noise_std``, which set the ``rgb_*`` tags). The depth image is not distorted.
+The colors of the 3D point cloud are taken ignoring the distortion, so they are slightly
+misregistered near the image borders when it is enabled.
 
 .. dropdown:: All parameters available in rgbd_camera.sensor.xml
 

@@ -46,6 +46,11 @@
     <rgb_fy>400</rgb_fy>
     <rgb_clip_min>${rgb_clip_min|1e-2}</rgb_clip_min>
     <rgb_clip_max>${rgb_clip_max|1e+4}</rgb_clip_max>
+    <!-- Optional lens distortion of the RGB image ("none" or "plumb_bob", as OpenCV/ROS camera_info). Requires MRPT >= 3.6.0 -->
+    <rgb_distortion_model>${distortion_model|none}</rgb_distortion_model>
+    <rgb_k1>${k1|0}</rgb_k1> <rgb_k2>${k2|0}</rgb_k2> <rgb_p1>${p1|0}</rgb_p1> <rgb_p2>${p2|0}</rgb_p2> <rgb_k3>${k3|0}</rgb_k3>
+    <!-- Optional Gaussian noise added to each RGB pixel channel [intensity levels, 0-255]. Requires MRPT >= 3.6.0 -->
+    <rgb_image_noise_std>${image_noise_std|0}</rgb_image_noise_std>
 
     <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_camera.dae</model_uri> <model_pitch>90</model_pitch> </visual>
 

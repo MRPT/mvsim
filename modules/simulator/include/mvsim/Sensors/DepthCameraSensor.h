@@ -12,6 +12,7 @@
 #include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/opengl/CFBORender.h>
 #include <mrpt/viz/CPointCloudColoured.h>
+#include <mvsim/Sensors/CameraSensor.h>
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
@@ -101,6 +102,7 @@ class DepthCameraSensor : public SensorBase
 	std::mutex has_to_render_mtx_;
 
 	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
+	CameraDistortionOptions rgbDistortion_;	 //!< Of the RGB image only
 	float depth_clip_min_ = 0.1, depth_clip_max_ = 15.0;
 	float depth_resolution_ = 1e-3;
 

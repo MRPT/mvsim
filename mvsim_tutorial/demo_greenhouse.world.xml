@@ -174,6 +174,8 @@
 		  show_3d_pointcloud="false"
 		  publish_ros_depth_image="true"
 		  publish_ros_colored_pointcloud="true"
+		  distortion_model="$env{MVSIM_CAMERA_DISTORTION|none}" k1="-0.25" k2="0.07"
+		  image_noise_std="$env{MVSIM_CAMERA_NOISE_STD|0}"
 		/>
 
 		<include file="../definitions/gnss.sensor.xml"
