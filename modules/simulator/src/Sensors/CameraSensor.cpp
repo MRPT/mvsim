@@ -70,11 +70,46 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["clip_min"] = TParamEntry("%f", &rgbClipMin_);
 	params["clip_max"] = TParamEntry("%f", &rgbClipMax_);
 
+	// Lens distortion and noise:
+	std::string distortionModel = "none";
+	double k1 = 0;
+	double k2 = 0;
+	double p1 = 0;
+	double p2 = 0;
+	double k3 = 0;
+	params["distortion_model"] = TParamEntry("%s", &distortionModel);
+	params["k1"] = TParamEntry("%lf", &k1);
+	params["k2"] = TParamEntry("%lf", &k2);
+	params["p1"] = TParamEntry("%lf", &p1);
+	params["p2"] = TParamEntry("%lf", &p2);
+	params["k3"] = TParamEntry("%lf", &k3);
+	params["image_noise_std"] = TParamEntry("%lf", &imageNoiseStd_);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
 
 	rgbCam.ncols = rgb_ncols;
 	rgbCam.nrows = rgb_nrows;
+
+	if (distortionModel == "plumb_bob")
+	{
+		rgbCam.distortion = mrpt::img::DistortionModel::plumb_bob;
+		rgbCam.k1(k1);
+		rgbCam.k2(k2);
+		rgbCam.p1(p1);
+		rgbCam.p2(p2);
+		rgbCam.k3(k3);
+	}
+	else
+	{
+		ASSERTMSG_(distortionModel == "none", "<distortion_model> must be 'none' or 'plumb_bob'");
+	}
+
+#if MRPT_VERSION < MIN_MRPT_VERSION_CAMERA_DISTORTION
+	ASSERTMSG_(
+		rgbCam.distortion == mrpt::img::DistortionModel::none && imageNoiseStd_ == 0,
+		"Camera <distortion_model> and <image_noise_std> require MRPT >= 3.6.0");
+#endif
 
 	// save sensor label here too:
 	sensor_params_.sensorLabel = name_;
@@ -187,6 +222,17 @@ void CameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		fbo_renderer_rgb_ = std::make_shared<mrpt::opengl::CFBORender>(p);
+#if MRPT_VERSION >= MIN_MRPT_VERSION_CAMERA_DISTORTION
+		// Lens distortion and pixel noise, applied on the GPU:
+		if (sensor_params_.cameraParams.distortion != mrpt::img::DistortionModel::none)
+		{
+			fbo_renderer_rgb_->setLensDistortion(sensor_params_.cameraParams);
+		}
+		if (imageNoiseStd_ > 0)
+		{
+			fbo_renderer_rgb_->setRGBNoise(static_cast<float>(imageNoiseStd_));
+		}
+#endif
 	}
 
 	auto viewport = world3DScene.getViewport();

@@ -15,6 +15,9 @@
 
 #include <mutex>
 
+/** Lens distortion and pixel noise are applied by the MRPT GPU renderer */
+#define MIN_MRPT_VERSION_CAMERA_DISTORTION 0x030600
+
 namespace mvsim
 {
 /** An "RGB" camera sensor on board a vehicle.
@@ -71,6 +74,8 @@ class CameraSensor : public SensorBase
 	std::mutex has_to_render_mtx_;
 
 	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
+
+	double imageNoiseStd_ = 0;	//!< Gaussian pixel noise [intensity levels, 0-255]
 
 	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
