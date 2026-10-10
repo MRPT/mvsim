@@ -15,6 +15,7 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
+#include <cstdlib>
 #include <sstream>
 
 #include "xml_utils.h"
@@ -61,6 +62,22 @@ mrpt::obs::GnssFixType parseFixType(const std::string& s)
 	THROW_EXCEPTION_FMT(
 		"Invalid GNSS fix_type '%s' (valid: no_fix, single, dgps, rtk_float, rtk_fixed)",
 		s.c_str());
+}
+
+/** Parses an optional, non-negative noise value of an <event> */
+std::optional<double> parseOptionalStd(const std::string& s, const char* name)
+{
+	if (s.empty())
+	{
+		return std::nullopt;
+	}
+	char* end = nullptr;
+	const double v = std::strtod(s.c_str(), &end);
+	ASSERTMSG_(
+		end != s.c_str() && *end == '\0' && v >= 0,
+		mrpt::format(
+			"GNSS <event>: '%s' must be a non-negative number, got '%s'", name, s.c_str()));
+	return v;
 }
 
 /** NMEA GGA fix quality for a fix type */
@@ -110,31 +127,28 @@ void GNSS::loadConfigFrom(const rapidxml::xml_node<char>* root)
 		Event ev;
 		std::string evFixType;
 		std::string offset;
-		double hStd = -1;
-		double vStd = -1;
+		std::string hStd;
+		std::string vStd;
 		TParameterDefinitions attribs;
 		attribs["start"] = TParamEntry("%lf", &ev.start);
 		attribs["end"] = TParamEntry("%lf", &ev.end);
 		attribs["outage"] = TParamEntry("%bool", &ev.outage);
 		attribs["fix_type"] = TParamEntry("%s", &evFixType);
-		attribs["horizontal_std_noise"] = TParamEntry("%lf", &hStd);
-		attribs["vertical_std_noise"] = TParamEntry("%lf", &vStd);
+		attribs["horizontal_std_noise"] = TParamEntry("%s", &hStd);
+		attribs["vertical_std_noise"] = TParamEntry("%s", &vStd);
 		attribs["offset"] = TParamEntry("%s", &offset);
 		parse_xmlnode_attribs(*n, attribs, varValues_, "[GNSS]");
 
 		ASSERTMSG_(ev.end > ev.start, "GNSS <event>: 'end' must be greater than 'start'");
+		ASSERTMSG_(
+			!n->first_attribute("fix_type") || !evFixType.empty(),
+			"GNSS <event>: 'fix_type' cannot be empty");
 		if (!evFixType.empty())
 		{
 			ev.fix_type = parseFixType(evFixType);
 		}
-		if (hStd >= 0)
-		{
-			ev.horizontal_std_noise = hStd;
-		}
-		if (vStd >= 0)
-		{
-			ev.vertical_std_noise = vStd;
-		}
+		ev.horizontal_std_noise = parseOptionalStd(hStd, "horizontal_std_noise");
+		ev.vertical_std_noise = parseOptionalStd(vStd, "vertical_std_noise");
 		if (!offset.empty())
 		{
 			std::stringstream ss(offset);

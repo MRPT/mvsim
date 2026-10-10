@@ -63,6 +63,25 @@ struct Sample
 
 int main()
 {
+	// Invalid event values must be rejected:
+	{
+		std::string xml = kWorldXml;
+		const std::string from = "horizontal_std_noise=\"0.3\"";
+		xml.replace(xml.find(from), from.size(), "horizontal_std_noise=\"-0.3\"");
+		bool thrown = false;
+		try
+		{
+			mvsim::World world;
+			world.headless(true);
+			world.load_from_XML(xml, ".");
+		}
+		catch (const std::exception&)
+		{
+			thrown = true;
+		}
+		EXPECT_TRUE(thrown);
+	}
+
 	try
 	{
 		mvsim::World world;
