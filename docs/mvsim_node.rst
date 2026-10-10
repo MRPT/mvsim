@@ -233,3 +233,31 @@ and, per sensor, its processing time and achieved output rate.
   below 90% of the requested one (``realtime_factor``).
   This publisher is only built if ``diagnostic_msgs`` is found.
 - C++: ``World::getPerformanceStats()``.
+
+Example (ROS 2): publish at 2 Hz and watch the values:
+
+.. code-block:: bash
+
+   ros2 run mvsim mvsim_node --ros-args \
+     -p world_file:=/path/to/my.world.xml \
+     -p diagnostics_rate:=2.0
+
+   # In another terminal:
+   ros2 topic echo /diagnostics
+   # ...or with a GUI: ros2 run rqt_runtime_monitor rqt_runtime_monitor
+
+Each message holds the keys ``realtime_factor``, ``realtime_factor_requested``,
+``window_simul_time``, ``physics_steps``, ``physics_time_percent``,
+``sensors_wait_time_percent``, and, for each sensor, ``<vehicle>/<sensor>/time_percent`` and
+``<vehicle>/<sensor>/rate_hz``.
+
+Example (C++):
+
+.. code-block:: cpp
+
+   const mvsim::World::PerformanceStats st = world.getPerformanceStats();
+   std::cout << "RTF: " << st.realtime_factor << "\n";
+   for (const auto& [name, s] : st.sensors)
+   {
+       std::cout << name << ": " << s.observations / st.window_simul_time << " Hz\n";
+   }
