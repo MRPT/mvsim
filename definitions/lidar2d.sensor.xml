@@ -1,5 +1,6 @@
 <sensor class="laser" name="${sensor_name|laser1}">
-    <pose_3d> ${sensor_x|1.80}  ${sensor_y|0.0}  ${sensor_z|0.7}  ${sensor_yaw|0.0} 0.0 0.0</pose_3d>
+    <!-- With pitch or roll (e.g. tilted to see the ground), use raytrace_3d=true -->
+    <pose_3d> ${sensor_x|1.80}  ${sensor_y|0.0}  ${sensor_z|0.7}  ${sensor_yaw|0.0} ${sensor_pitch|0.0} ${sensor_roll|0.0}</pose_3d>
     <fov_degrees>${fov_degrees|180}</fov_degrees>
     <!-- With raytrace_3d=true, each scan is rendered with OpenGL: use ~10 Hz (sensor_period_sec=0.1) -->
     <sensor_period>${sensor_period_sec|0.05}</sensor_period>

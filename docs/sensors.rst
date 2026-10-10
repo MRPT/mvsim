@@ -358,6 +358,9 @@ Generic 2D LIDAR
    
    - ``raytrace_3d=false`` (**DEFAULT**),  Very fast simulation using approximate 2D shapes of world elements.
    - ``raytrace_3d=true``: It uses GPU-based raytracing for exact distance calculation to world elements of arbitrary 3D shapes.
+   - A **tilted** scan plane (``sensor_pitch``, ``sensor_roll``, e.g. a LiDAR looking down to see
+     ground-level structures) requires ``raytrace_3d=true``: the 2D mode ignores pitch and roll
+     (a warning is printed).
 
    .. code-block:: xml
 
@@ -369,6 +372,20 @@ Generic 2D LIDAR
 			fov_degrees="270"
 			sensor_name="scanner1"
 		>
+
+   Example of a scanner tilted 20 degrees downward (positive pitch points it down), so its
+   scan plane hits the ground about 1.4 m ahead:
+
+   .. code-block:: xml
+
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/lidar2d.sensor.xml"
+			sensor_x="0.2" sensor_y="0" sensor_z="0.50"
+			sensor_yaw="0" sensor_pitch="20" sensor_roll="0"
+			sensor_period_sec="0.10"
+			raytrace_3d="true"
+			fov_degrees="120"
+			sensor_name="ground_scanner"
+		/>
 
 .. dropdown:: All parameters available in lidar2d.sensor.xml
 
