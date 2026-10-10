@@ -92,7 +92,7 @@ Headless (`headless` world/CLI/ROS option): OpenGL sensors render off-screen thr
 
 ### World elements (`src/WorldElements/`)
 
-`OccupancyGridMap`, `ElevationMap`, `HorizontalPlane`, `VerticalPlane`, `GroundGrid`, `PointCloud`, `SkyBox`, `PropertyRegion` (friction zones).
+`OccupancyGridMap`, `ElevationMap`, `HorizontalPlane` (optionally a north-up texture placed by geodetic corners, `geo_corner_sw`/`geo_corner_ne`), `VerticalPlane`, `GroundGrid`, `PointCloud`, `SkyBox`, `PropertyRegion` (friction zones).
 
 Elevation queries (`World::getHighestElevationUnder()`, run for every wheel and chassis contour point each step) use a 2D grid index: world elements providing elevation must override `elevationBoundingBox()` to be indexed (otherwise they are queried everywhere), and the index is rebuilt when elements are added or moved (`World::invalidateElevationIndex()`).
 
