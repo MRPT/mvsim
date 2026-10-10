@@ -373,6 +373,20 @@ Generic 2D LIDAR
 			sensor_name="scanner1"
 		>
 
+   Example of a scanner tilted 20 degrees downward (positive pitch points it down), so its
+   scan plane hits the ground about 1.4 m ahead:
+
+   .. code-block:: xml
+
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/lidar2d.sensor.xml"
+			sensor_x="0.2" sensor_y="0" sensor_z="0.50"
+			sensor_yaw="0" sensor_pitch="20" sensor_roll="0"
+			sensor_period_sec="0.10"
+			raytrace_3d="true"
+			fov_degrees="120"
+			sensor_name="ground_scanner"
+		/>
+
 .. dropdown:: All parameters available in lidar2d.sensor.xml
 
    File: `mvsim_tutorial/definitions/lidar2d.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/lidar2d.sensor.xml>`_
