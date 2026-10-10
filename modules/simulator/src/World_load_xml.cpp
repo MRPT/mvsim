@@ -373,7 +373,7 @@ void World::parse_tag_for(const XmlParserContext& ctx)
 		for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr); curVal++)
 		{
 			userDefinedVariables_[varName] = std::to_string(curVal);
-			internal_recursive_parse_XML({childNode, basePath_});
+			internal_recursive_parse_XML({childNode, ctx.currentBasePath});
 		}
 	}
 
@@ -395,7 +395,7 @@ void World::parse_tag_if(const XmlParserContext& ctx)
 	}
 	for (auto childNode = ctx.node->first_node(); childNode; childNode = childNode->next_sibling())
 	{
-		internal_recursive_parse_XML({childNode, basePath_});
+		internal_recursive_parse_XML({childNode, ctx.currentBasePath});
 	}
 }
 

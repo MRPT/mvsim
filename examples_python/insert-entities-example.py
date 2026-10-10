@@ -6,7 +6,7 @@
 # remove them later.
 #
 # Start a simulation first, e.g.:
-#   mvsim launch mvsim_tutorial/demo_1robot.world.xml
+#   mvsim launch mvsim_tutorial/demo_empty.world.xml
 #
 # Install python3-mvsim, or test with a local build with:
 # export PYTHONPATH=$HOME/code/mvsim/build/:$PYTHONPATH
