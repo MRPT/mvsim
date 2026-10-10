@@ -235,6 +235,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 ## Build system
 
 - CMake 3.9+, C++17.
+- No `file(GLOB)`: every source, header and `.proto` file is listed explicitly in its module `CMakeLists.txt`; add new files there.
 - Detects ROS 2 via `$ROS_VERSION` env var; builds the ROS node and uses `ament_cmake` when present.
 - Standalone build: `cmake .. && make`.
 - ROS 2 build: `colcon build`.
