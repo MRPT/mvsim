@@ -8,12 +8,14 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/system/filesystem.h>
+#include <mrpt/topography/conversions.h>
 #include <mrpt/version.h>
 #include <mrpt/viz/Scene.h>
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/HorizontalPlane.h>
 
 #include <rapidxml.hpp>
+#include <sstream>
 
 #include "JointXMLnode.h"
 #include "xml_utils.h"
@@ -61,7 +63,16 @@ void HorizontalPlane::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["texture_size_y"] = TParamEntry("%lf", &textureSizeY_);
 	params["normal_map"] = TParamEntry("%s", &normalMapFileName_);
 
+	std::string geoCornerSW, geoCornerNE;
+	params["geo_corner_sw"] = TParamEntry("%s", &geoCornerSW);
+	params["geo_corner_ne"] = TParamEntry("%s", &geoCornerNE);
+
 	parse_xmlnode_children_as_param(*root, params, world_->user_defined_variables());
+
+	if (!geoCornerSW.empty() || !geoCornerNE.empty())
+	{
+		setGeoreferencedCorners(geoCornerSW, geoCornerNE);
+	}
 
 	// The world z also depends on the plane z, parsed after the pose:
 	updateCachedPose(getPose());
@@ -107,6 +118,11 @@ void HorizontalPlane::internalGuiUpdate(
 		float v_min = 0;
 		float u_max = (x_max_ - x_min_) / textureSizeX_;
 		float v_max = (y_max_ - y_min_) / textureSizeY_;
+		if (georeferencedTexture_)
+		{
+			// The first image row is the northern (y_max) edge:
+			std::swap(v_min, v_max);
+		}
 
 		gl_plane_text_ = mrpt::viz::CSetOfTexturedTriangles::Create();
 		gl_plane_text_->setName("HorizontalPlane_"s + getName());
@@ -225,4 +241,66 @@ void HorizontalPlane::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
 {
 	updateCachedPose(newPose);
 	WorldElementBase::notifySimulableSetPose(newPose);
+}
+
+void HorizontalPlane::setGeoreferencedCorners(const std::string& sw, const std::string& ne)
+{
+	const auto parseLatLon = [](const std::string& s, const char* name)
+	{
+		std::stringstream ss(s);
+		double lat = 0, lon = 0;
+		ss >> lat >> lon;
+		ASSERTMSG_(!ss.fail(), mrpt::format("<%s> must be 'latitude longitude' (degrees)", name));
+		return std::make_pair(lat, lon);
+	};
+	const auto [latSW, lonSW] = parseLatLon(sw, "geo_corner_sw");
+	const auto [latNE, lonNE] = parseLatLon(ne, "geo_corner_ne");
+
+	const auto& g = world_->georeferenceOptions();
+	ASSERTMSG_(
+		!g.georefCoord.isClear(),
+		"<geo_corner_sw>/<geo_corner_ne> require a world <georeference> tag, defined before "
+		"this element");
+
+	// The plane local frame is aligned with East-North, so a north-up image
+	// (e.g. an orthophoto) covers exactly the rectangle between the corners:
+	mrpt::math::TPoint2D cSW, cNE;
+	mrpt::math::TPose3D pose = getPose();
+	if (g.world_is_utm)
+	{
+		// World coordinates are UTM coordinates:
+		int zone = 0;
+		char band = 0;
+		mrpt::topography::GeodeticToUTM(latSW, lonSW, cSW.x, cSW.y, zone, band);
+		mrpt::topography::GeodeticToUTM(latNE, lonNE, cNE.x, cNE.y, zone, band);
+	}
+	else
+	{
+		mrpt::math::TPoint3D enuSW, enuNE;
+		mrpt::topography::geodeticToENU_WGS84(
+			mrpt::topography::TGeodeticCoords(latSW, lonSW, g.georefCoord.height), enuSW,
+			g.georefCoord);
+		mrpt::topography::geodeticToENU_WGS84(
+			mrpt::topography::TGeodeticCoords(latNE, lonNE, g.georefCoord.height), enuNE,
+			g.georefCoord);
+		cSW = {enuSW.x, enuSW.y};
+		cNE = {enuNE.x, enuNE.y};
+		// world = Rz(-world_to_enu_rotation) * ENU
+		pose.yaw = -g.world_to_enu_rotation;
+	}
+	ASSERTMSG_(
+		cNE.x > cSW.x && cNE.y > cSW.y,
+		"<geo_corner_ne> must be to the north-east of <geo_corner_sw>");
+
+	x_min_ = static_cast<float>(cSW.x);
+	y_min_ = static_cast<float>(cSW.y);
+	x_max_ = static_cast<float>(cNE.x);
+	y_max_ = static_cast<float>(cNE.y);
+	// The texture image covers the whole plane once:
+	textureSizeX_ = cNE.x - cSW.x;
+	textureSizeY_ = cNE.y - cSW.y;
+	georeferencedTexture_ = true;
+
+	setPose(pose);
+	updateCachedPose(getPose());
 }
