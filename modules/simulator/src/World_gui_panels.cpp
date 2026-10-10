@@ -124,10 +124,10 @@ void draw_user_widget(
 			}
 			else if constexpr (std::is_same_v<T, gui::CheckBox>)
 			{
-				auto [it, isNew] = checkStates.try_emplace(id, w.initial_value);
-				if (ImGui::Checkbox((w.label + "##" + id).c_str(), &it->second) && w.on_change)
+				bool& checked = checkStates.try_emplace(id, w.initial_value).first->second;
+				if (ImGui::Checkbox((w.label + "##" + id).c_str(), &checked) && w.on_change)
 				{
-					call_user_callback([&]() { w.on_change(it->second); });
+					call_user_callback([&]() { w.on_change(checked); });
 				}
 			}
 			else if constexpr (std::is_same_v<T, gui::Button>)
