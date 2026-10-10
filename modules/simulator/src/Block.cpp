@@ -101,7 +101,9 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		const xml_attribute<>* attrib_name = root->first_attribute("name");
 		if (attrib_name && attrib_name->value())
 		{
-			block->name_ = attrib_name->value();
+			// World variables, e.g. for names in <for> loops:
+			block->name_ =
+				mvsim::parse_variables(attrib_name->value(), parent->user_defined_variables(), {});
 		}
 		else
 		{
@@ -256,8 +258,8 @@ void Block::internalGuiUpdate(
 
 			gl_block_->insert(gl_poly);
 
-			viz->get().insert(gl_block_);
-			physical->get().insert(gl_block_);
+			insertIntoScene(viz->get(), gl_block_);
+			insertIntoScene(physical->get(), gl_block_);
 		}
 
 		// Update them:
@@ -281,7 +283,7 @@ void Block::internalGuiUpdate(
 
 		gl_forces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
-		viz->get().insert(gl_forces_);	// forces are in global coords
+		insertIntoScene(viz->get(), gl_forces_);  // forces are in global coords
 	}
 
 	// Other common stuff:

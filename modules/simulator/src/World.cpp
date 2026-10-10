@@ -69,6 +69,10 @@ void World::clear_all()
 	blocks_.clear();
 	joints_.clear();
 	actors_.clear();
+	obstacles_for_each_obj_.clear();  // their bodies belonged to the old b2World
+	nextVehicleIndex_ = 0;
+	nextBlockIndex_ = 0;
+	nextRuntimeElementId_ = 0;
 }
 
 void World::internal_initialize()
@@ -185,7 +189,7 @@ void World::connectToServer()
 void World::insertBlock(const Block::Ptr& block)
 {
 	// Assign each block an "index" number
-	block->setBlockIndex(blocks_.size());
+	block->setBlockIndex(nextBlockIndex_++);
 
 	// make sure the name is not duplicated:
 	blocks_.insert(BlockList::value_type(block->getName(), block));
@@ -504,4 +508,44 @@ std::optional<bool> World::lightGroupState(
 		return {};
 	}
 	return obj->lightGroupState(groupName);
+}
+
+World::GroundTruthSnapshot World::getGroundTruthSnapshot(const std::string& prefix) const
+{
+	// Skip unnamed and internal ("__"-prefixed) objects:
+	const auto startsWithPrefix = [&prefix](const std::string& name)
+	{
+		return !name.empty() && name.compare(0, 2, "__") != 0 &&
+			   name.compare(0, prefix.size(), prefix) == 0;
+	};
+
+	GroundTruthSnapshot snap;
+	{
+		auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
+		snap.simul_time = copy_of_objects_dynstate_time_;
+		for (const auto& [name, pose] : copy_of_objects_dynstate_pose_)
+		{
+			if (!startsWithPrefix(name))
+			{
+				continue;
+			}
+			ObjectGroundTruth o;
+			o.name = name;
+			o.pose = pose;
+			if (auto it = copy_of_objects_dynstate_twist_.find(name);
+				it != copy_of_objects_dynstate_twist_.end())
+			{
+				o.twist = it->second;
+			}
+			snap.objects.push_back(std::move(o));
+		}
+	}
+	for (const auto& [name, pose] : runtimeObjects_.poses())
+	{
+		if (startsWithPrefix(name))
+		{
+			snap.objects.push_back({name, pose, {}});
+		}
+	}
+	return snap;
 }

@@ -821,6 +821,8 @@ void World::internalUpdate3DSceneObjects(mrpt::viz::Scene& viz, mrpt::viz::Scene
 
 	timlogger_.leave("update_GUI.4b.actors");
 
+	runtimeObjects_.guiUpdate(viz, physical);
+
 	// Update view of joints
 	// -----------------------------
 	{
@@ -1085,6 +1087,8 @@ void World::internalGraphicsLoopTasksForSimulation()
 		ASSERT_(worldVisual_);
 
 		auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
+
+		internalProcessRemovedEntitiesInGui();
 
 		internalUpdate3DSceneObjects(*worldVisual_, worldPhysical_);
 

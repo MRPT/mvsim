@@ -17,6 +17,7 @@ add_library(${PROJECT_NAME}
 	src/PID_Controller.cpp
 	src/PoseTrajectoryFollower.cpp
 	src/RemoteResourcesManager.cpp
+	src/RuntimeObjects.cpp
 	src/Shape2p5.cpp
 	src/Simulable.cpp
 	src/VehicleBase.cpp
@@ -25,6 +26,7 @@ add_library(${PROJECT_NAME}
 	src/World_gui.cpp
 	src/World_gui_panels.cpp
 	src/World_load_xml.cpp
+	src/World_runtime_entities.cpp
 	src/World_services.cpp
 	src/World_simul.cpp
 	src/World_walls.cpp
@@ -47,6 +49,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/PID_Controller.h
 	include/mvsim/PoseTrajectoryFollower.h
 	include/mvsim/RemoteResourcesManager.h
+	include/mvsim/RuntimeObjects.h
 	include/mvsim/Shape2p5.h
 	include/mvsim/Simulable.h
 	include/mvsim/TParameterDefinitions.h

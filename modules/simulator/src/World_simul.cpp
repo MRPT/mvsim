@@ -28,6 +28,8 @@ void World::run_simulation(double dt)
 {
 	ASSERT_(initialized_);
 
+	internalRunSimulationThreadTasks();
+
 	const double t0 = mrpt::Clock::nowDouble();
 	const auto prevRunStart = lastRunSimulWallclock_;
 	runSimulStartWallclock_ = t0;
@@ -219,6 +221,7 @@ void World::internal_one_timestep(double dt)
 
 		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 		const auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
+		copy_of_objects_dynstate_time_ = simulTime_;
 
 		for (auto& e : simulableObjects_)
 		{

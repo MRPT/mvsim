@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SrvInsertEntitiesAnswer {
+  /* Should be checked */
+  required bool success = 1;
+  optional string errorMessage = 2;
+  // Names of the new vehicles, blocks and elements
+  repeated string names = 3;
+}

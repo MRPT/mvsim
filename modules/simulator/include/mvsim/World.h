@@ -34,6 +34,7 @@
 #include <mvsim/HumanActor.h>
 #include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
+#include <mvsim/RuntimeObjects.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
@@ -53,6 +54,7 @@
 #include <any>
 #include <atomic>
 #include <functional>
+#include <future>
 #include <list>
 #include <map>
 #include <memory>
@@ -85,6 +87,16 @@ class SrvSetLightState;
 class SrvSetLightStateAnswer;
 class SrvGetLightState;
 class SrvGetLightStateAnswer;
+class SrvSpawnObjects;
+class SrvSpawnObjectsAnswer;
+class SrvInsertEntities;
+class SrvInsertEntitiesAnswer;
+class SrvRemoveEntities;
+class SrvRemoveEntitiesAnswer;
+class SrvRemoveObjects;
+class SrvRemoveObjectsAnswer;
+class SrvGetAllPoses;
+class SrvGetAllPosesAnswer;
 }  // namespace mvsim_msgs
 #endif
 
@@ -214,6 +226,15 @@ class World : public mrpt::system::COutputLogger
 		auto lck = mrpt::lockHelper(simul_time_mtx_);
 		ASSERT_(simul_start_wallclock_time_.has_value());
 		return mrpt::Clock::fromDouble(simulTime_ + simul_start_wallclock_time_.value());
+	}
+
+	/** Converts a simulation time (seconds since start) into a full
+	 * timestamp, as in get_simul_timestamp() */
+	mrpt::Clock::time_point simul_time_to_timestamp(double simulTime) const
+	{
+		auto lck = mrpt::lockHelper(simul_time_mtx_);
+		ASSERT_(simul_start_wallclock_time_.has_value());
+		return mrpt::Clock::fromDouble(simulTime + simul_start_wallclock_time_.value());
 	}
 
 	/** Returns true once the simulation has an established wall-clock time
@@ -452,6 +473,95 @@ class World : public mrpt::system::COutputLogger
 	b2Body* getBox2DGroundBody() { return b2_ground_body_; }
 	const VehicleList& getListOfVehicles() const { return vehicles_; }
 	VehicleList& getListOfVehicles() { return vehicles_; }
+	/** Ground truth of one named object (see getGroundTruthSnapshot()) */
+	struct ObjectGroundTruth
+	{
+		std::string name;
+		mrpt::math::TPose3D pose;
+		mrpt::math::TTwist2D twist;	 //!< In local coordinates
+	};
+	struct GroundTruthSnapshot
+	{
+		double simul_time = 0;	//!< Simulation time of the poses [s]
+		std::vector<ObjectGroundTruth> objects;
+	};
+
+	/** Thread-safe copy of the poses and velocities of all named objects
+	 * (vehicles, blocks, actors, and runtime objects), as of the end of the
+	 * last simulation step. Optionally, only for names starting with `prefix`.
+	 */
+	GroundTruthSnapshot getGroundTruthSnapshot(const std::string& prefix = {}) const;
+
+	/** Visual-only objects (and ground decals) that can be spawned, moved
+	 * and removed at runtime from any thread. */
+	RuntimeObjects& runtimeObjects() { return runtimeObjects_; }
+	const RuntimeObjects& runtimeObjects() const { return runtimeObjects_; }
+
+	/** @name Insertion and removal of entities at runtime
+	 * @{ */
+
+	enum class EntityKind : uint8_t
+	{
+		Vehicle = 0,
+		Block,
+		Element
+	};
+
+	/** An entity added to or removed from the world at runtime. */
+	struct EntityChange
+	{
+		std::string name;
+		EntityKind kind = EntityKind::Block;
+		bool added = true;	//!< false if it was removed
+		std::shared_ptr<Simulable> object;
+	};
+	using on_entity_change_callback_t = std::function<void(const EntityChange&)>;
+
+	/** Registers a function to be called after an entity is inserted or
+	 * removed at runtime, from the thread that did it. */
+	void registerCallbackOnEntityChange(const on_entity_change_callback_t& f);
+
+	/** Inserts entities into the running simulation, given as world XML:
+	 * the same tags as in a world file (`<vehicle>`, `<block>`, `<element>`,
+	 * `<include>`, classes, variables...), optionally enclosed in a
+	 * `<mvsim_world>` root tag. Relative paths are resolved wrt `basePath`
+	 * (default: the directory of the loaded world file). Unnamed elements get
+	 * a unique `element_<N>` name.
+	 *
+	 * It must not run concurrently with run_simulation(): call it from the
+	 * thread that runs the simulation, or through runInSimulationThread().
+	 *
+	 * \return Names of the new vehicles, blocks and elements.
+	 * \exception std::exception On errors (e.g. invalid XML, or a name
+	 * already in use). Entities inserted before the error are removed.
+	 */
+	std::vector<std::string> insertEntitiesFromXML(
+		const std::string& xmlText, const std::string& basePath = {});
+
+	/** Options of insertEntitiesFromXML(). Both overrides require the XML to
+	 * define exactly one entity, with a top-level `<vehicle>`, `<block>` or
+	 * `<element>` tag. */
+	struct InsertOptions
+	{
+		std::string basePath;  //!< See insertEntitiesFromXML()
+		std::optional<std::string> name;  //!< Overrides the entity name
+		std::optional<mrpt::math::TPose3D> pose;  //!< Overrides its initial pose
+	};
+
+	std::vector<std::string> insertEntitiesFromXML(
+		const std::string& xmlText, const InsertOptions& options);
+
+	/** Removes a vehicle, block or world element by name, with its sensors,
+	 * physics bodies, joints and 3D visualization. Same threading rules as
+	 * insertEntitiesFromXML(). \return false if there is no such entity. */
+	bool removeEntity(const std::string& name);
+
+	/** Runs `task` in the simulation thread, at the start of the next
+	 * run_simulation() call. Exceptions are forwarded to the future. */
+	std::future<void> runInSimulationThread(const std::function<void()>& task);
+
+	/** @} */
+
 	const BlockList& getListOfBlocks() const { return blocks_; }
 	BlockList& getListOfBlocks() { return blocks_; }
 	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
@@ -597,6 +707,31 @@ class World : public mrpt::system::COutputLogger
 #endif
 
 	std::vector<on_observation_callback_t> callbacksOnObservation_;
+
+	std::vector<on_entity_change_callback_t> callbacksOnEntityChange_;
+	std::mutex callbacksOnEntityChangeMtx_;
+
+	/// Tasks to run at the start of the next run_simulation() call:
+	std::vector<std::packaged_task<void()>> simulationThreadTasks_;
+	std::mutex simulationThreadTasksMtx_;
+	void internalRunSimulationThreadTasks();
+
+	/// Removed entities, whose 3D objects must be removed by the thread that
+	/// renders the scenes (see internalGraphicsLoopTasksForSimulation()):
+	std::vector<std::shared_ptr<Simulable>> removedEntitiesPendingGui_;
+	std::mutex removedEntitiesPendingGuiMtx_;
+	void internalProcessRemovedEntitiesInGui();
+
+	/// Used to give unique indices to vehicles and blocks inserted at runtime:
+	size_t nextVehicleIndex_ = 0;
+	size_t nextBlockIndex_ = 0;
+	size_t nextRuntimeElementId_ = 0;
+
+	void internalNotifyEntityChange(const EntityChange& c);
+	void internalResetPerObjectCollisionCaches();
+	void internalDestroyBox2DBodiesOf(Simulable& obj);
+	/// Lock simulationStepRunningMtx_, world_cs_ and the physical objects first.
+	void internalRemoveEntityNoLock(const std::shared_ptr<Simulable>& obj);
 
 	// -------- World Params ----------
 	/** Gravity acceleration (Default=9.81 m/s^2). Used to evaluate weights for
@@ -903,6 +1038,8 @@ class World : public mrpt::system::COutputLogger
 	VehicleList vehicles_;
 	WorldElementList worldElements_;
 	BlockList blocks_;
+
+	RuntimeObjects runtimeObjects_{*this};
 	ActorList actors_;
 
 	/// Inter-body joints (distance / revolute)
@@ -1131,6 +1268,9 @@ class World : public mrpt::system::COutputLogger
 			bool startVisible);
 		void free_preview_textures();
 
+		/// Drops the sensor previews and the selection of a removed entity.
+		void forget_entity(const std::string& name);
+
 	   private:
 		World& parent_;
 
@@ -1173,7 +1313,8 @@ class World : public mrpt::system::COutputLogger
 
 	/// See sensor_has_to_create_egl_context()
 	bool eglContextCreated_ = false;
-	std::recursive_mutex copy_of_objects_dynstate_mtx_;
+	double copy_of_objects_dynstate_time_ = 0;
+	mutable std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;
 	std::mutex reset_collision_flags_mtx_;
@@ -1328,6 +1469,13 @@ class World : public mrpt::system::COutputLogger
 	mvsim_msgs::SrvShutdownAnswer srv_shutdown(const mvsim_msgs::SrvShutdown& req);
 	mvsim_msgs::SrvSetLightStateAnswer srv_set_light_state(const mvsim_msgs::SrvSetLightState& req);
 	mvsim_msgs::SrvGetLightStateAnswer srv_get_light_state(const mvsim_msgs::SrvGetLightState& req);
+	mvsim_msgs::SrvSpawnObjectsAnswer srv_spawn_objects(const mvsim_msgs::SrvSpawnObjects& req);
+	mvsim_msgs::SrvInsertEntitiesAnswer srv_insert_entities(
+		const mvsim_msgs::SrvInsertEntities& req);
+	mvsim_msgs::SrvRemoveEntitiesAnswer srv_remove_entities(
+		const mvsim_msgs::SrvRemoveEntities& req);
+	mvsim_msgs::SrvRemoveObjectsAnswer srv_remove_objects(const mvsim_msgs::SrvRemoveObjects& req);
+	mvsim_msgs::SrvGetAllPosesAnswer srv_get_all_poses(const mvsim_msgs::SrvGetAllPoses& req);
 #endif
 };
 }  // namespace mvsim

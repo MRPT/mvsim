@@ -89,8 +89,8 @@ void HorizontalPlane::internalGuiUpdate(
 		gl_plane_->cullFaces(
 			mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(cull_faces_));
 		glGroup_->insert(gl_plane_);
-		viz->get().insert(glGroup_);
-		physical->get().insert(glGroup_);
+		insertIntoScene(viz->get(), glGroup_);
+		insertIntoScene(physical->get(), glGroup_);
 	}
 	// 1st call? (with texture)
 	if (!gl_plane_text_ && !textureFileName_.empty() && viz && physical)
@@ -159,8 +159,8 @@ void HorizontalPlane::internalGuiUpdate(
 			mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(cull_faces_));
 
 		glGroup_->insert(gl_plane_text_);
-		viz->get().insert(glGroup_);
-		physical->get().insert(glGroup_);
+		insertIntoScene(viz->get(), glGroup_);
+		insertIntoScene(physical->get(), glGroup_);
 	}
 
 	// Update them:

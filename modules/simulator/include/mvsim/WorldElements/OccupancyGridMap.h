@@ -44,6 +44,9 @@ class OccupancyGridMap : public WorldElementBase
 	const mrpt::maps::COccupancyGridMap2D& getOccGrid() const { return grid_; }
 	mrpt::maps::COccupancyGridMap2D& getOccGrid() { return grid_; }
 
+	void onSimulableObjectsChanged() override;
+	void destroyBox2DBodies(b2World& world) override;
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,

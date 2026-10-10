@@ -9,6 +9,7 @@
 
 #include <box2d/b2_contact.h>
 #include <box2d/b2_distance.h>
+#include <box2d/b2_world.h>
 #include <mvsim/Block.h>
 #include <mvsim/Simulable.h>
 #include <mvsim/TParameterDefinitions.h>
@@ -621,5 +622,14 @@ void Simulable::setRefVelocityLocal(const mrpt::math::TTwist2D& dq)
 		// No Box2D body: store as-is (body frame)
 		dq_ = dq;
 		dq_com_ = dq;
+	}
+}
+
+void Simulable::destroyBox2DBodies(b2World& world)
+{
+	if (b2dBody_)
+	{
+		world.DestroyBody(b2dBody_);
+		b2dBody_ = nullptr;
 	}
 }

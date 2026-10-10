@@ -73,6 +73,12 @@ class CVisualObject
 
 	static void FreeOpenGLResources();
 
+	/** Removes from the 3D scenes all the visual objects inserted by this
+	 * entity (see insertIntoScene()). Used when an entity is removed from
+	 * the world at runtime. Call it from the thread that renders the scenes.
+	 * Derived classes with children (e.g. sensors) also remove theirs. */
+	virtual void removeFromScenes();
+
 	/** Epsilon for geometry checks related to bounding boxes (default:1e-3) */
 	static double GeometryEpsilon;
 
@@ -124,7 +130,26 @@ class CVisualObject
 
 	void setCollisionShape(const Shape2p5& cs) { collisionShape_ = cs; }
 
+	/** Inserts a visual object into a scene, remembering it so
+	 * removeFromScenes() can undo it. */
+	void insertIntoScene(
+		mrpt::viz::Scene& scene, const std::shared_ptr<mrpt::viz::CVisualObject>& obj);
+
+	/** Same as above, for a group of objects shared by several entities. */
+	void insertIntoScene(
+		const std::shared_ptr<mrpt::viz::CSetOfObjects>& group,
+		const std::shared_ptr<mrpt::viz::CVisualObject>& obj);
+
    private:
+	struct SceneInsertion
+	{
+		mrpt::viz::Scene* scene = nullptr;	//!< Either a scene...
+		std::weak_ptr<mrpt::viz::CSetOfObjects> group;	//!< ...or a group
+		std::weak_ptr<mrpt::viz::CVisualObject> obj;
+	};
+	std::vector<SceneInsertion> sceneInsertions_;
+	std::mutex sceneInsertionsMtx_;
+
 	std::optional<Shape2p5> collisionShape_;
 
 	struct LightGroup

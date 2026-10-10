@@ -161,6 +161,12 @@ class Block : public CVisualObject, public Simulable
 	 * sensors nor collides with anything. */
 	bool isIntangible() const { return intangible_; }
 
+	void destroyBox2DBodies(b2World& world) override
+	{
+		friction_joints_.clear();  // destroyed with the body
+		Simulable::destroyBox2DBodies(world);
+	}
+
    protected:
 	virtual void internalGuiUpdate(
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,

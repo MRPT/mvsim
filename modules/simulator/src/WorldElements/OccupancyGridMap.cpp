@@ -105,8 +105,8 @@ void OccupancyGridMap::internalGuiUpdate(
 	{
 		gl_grid_ = mrpt::viz::CSetOfObjects::Create();
 		gl_grid_->setName("OccupancyGridMap");
-		viz->get().insert(gl_grid_);
-		physical->get().insert(gl_grid_);
+		insertIntoScene(viz->get(), gl_grid_);
+		insertIntoScene(physical->get(), gl_grid_);
 	}
 	if (gl_obs_clouds_.size() != obstacles_for_each_obj_.size())
 	{
@@ -133,7 +133,7 @@ void OccupancyGridMap::internalGuiUpdate(
 				gl_objs->setName(
 					"OccupancyGridMap"s + this->getName() + ".obstacles["s + std::to_string(i) +
 					"]"s);
-				viz->get().insert(gl_objs);
+				insertIntoScene(viz->get(), gl_objs);
 			}
 
 			// Now that we are in a safe thread (with the OpenGL scene lock
@@ -309,4 +309,23 @@ void OccupancyGridMap::simul_pre_timestep([[maybe_unused]] const TSimulContext& 
 		}  // end for obj_idx
 
 	}  // end lock
+}
+
+void OccupancyGridMap::onSimulableObjectsChanged()
+{
+	// Collision bodies are kept per object index, which may have changed:
+	for (auto& ipv : obstacles_for_each_obj_)
+	{
+		if (ipv.collide_body)
+		{
+			world_->getBox2DWorld()->DestroyBody(ipv.collide_body);
+		}
+	}
+	obstacles_for_each_obj_.clear();
+}
+
+void OccupancyGridMap::destroyBox2DBodies(b2World& world)
+{
+	onSimulableObjectsChanged();
+	WorldElementBase::destroyBox2DBodies(world);
 }

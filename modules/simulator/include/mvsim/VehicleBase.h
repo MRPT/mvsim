@@ -156,6 +156,14 @@ class VehicleBase : public CVisualObject, public Simulable
 			sensor->freeOpenGLResources();
 		}
 	}
+	void removeFromScenes() override
+	{
+		CVisualObject::removeFromScenes();
+		for (auto& sensor : sensors_)
+		{
+			sensor->removeFromScenes();
+		}
+	}
 	void chassisAndWheelsVisible(bool visible);
 
 	double chassisZMin() const { return chassis_z_min_; }

@@ -137,7 +137,7 @@ void DepthCameraSensor::internalGuiUpdate(
 		gl_obs_ = mrpt::viz::CPointCloudColoured::Create();
 		gl_obs_->setPointSize(2.0f);
 		gl_obs_->setLocalRepresentativePoint(sensor_params_.sensorPose.translation());
-		glVizSensors->insert(gl_obs_);
+		insertIntoScene(glVizSensors, gl_obs_);
 	}
 
 	if (!gl_sensor_origin_ && viz)
@@ -149,15 +149,15 @@ void DepthCameraSensor::internalGuiUpdate(
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
 		gl_sensor_origin_->setVisibility(false);
-		viz->get().insert(gl_sensor_origin_);
-		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
+		insertIntoScene(viz->get(), gl_sensor_origin_);
+		insertIntoScene(SensorBase::GetAllSensorsOriginViz(), gl_sensor_origin_);
 	}
 	if (!gl_sensor_fov_ && viz)
 	{
 		gl_sensor_fov_ = mrpt::viz::CSetOfObjects::Create();
 		gl_sensor_fov_->setVisibility(false);
-		viz->get().insert(gl_sensor_fov_);
-		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
+		insertIntoScene(viz->get(), gl_sensor_fov_);
+		insertIntoScene(SensorBase::GetAllSensorsFOVViz(), gl_sensor_fov_);
 	}
 
 	if (!gui_uptodate_)
