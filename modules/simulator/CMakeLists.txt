@@ -17,6 +17,7 @@ add_library(${PROJECT_NAME}
 	src/PID_Controller.cpp
 	src/PoseTrajectoryFollower.cpp
 	src/RemoteResourcesManager.cpp
+	src/WheelJointsInterface.cpp
 	src/Shape2p5.cpp
 	src/Simulable.cpp
 	src/VehicleBase.cpp
@@ -47,6 +48,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/PID_Controller.h
 	include/mvsim/PoseTrajectoryFollower.h
 	include/mvsim/RemoteResourcesManager.h
+	include/mvsim/WheelJointsInterface.h
 	include/mvsim/Shape2p5.h
 	include/mvsim/Simulable.h
 	include/mvsim/TParameterDefinitions.h
@@ -97,6 +99,7 @@ add_library(${PROJECT_NAME}
 	src/VehicleDynamics/VehicleAckermann_Drivetrain_ControllerRaw.cpp
 	src/VehicleDynamics/Vehicleackermann_Drivetrain_ControllerTwistFrontSteerPID.cpp
 	src/VehicleDynamics/VehicleAckermann_Drivetrain.cpp
+	src/VehicleDynamics/VehicleDifferential_ControllerJointCommands.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerRaw.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerTrajectory.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerTwistIdeal.cpp

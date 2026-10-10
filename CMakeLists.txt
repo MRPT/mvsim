@@ -364,6 +364,28 @@ if (BUILD_FOR_ROS)
       target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_DIAGNOSTIC_MSGS)
     endif()
 
+    # Optional ros2_control integration:
+    option(MVSIM_WITH_ROS2_CONTROL "Build ros2_control support, if found" ON)
+    if (MVSIM_WITH_ROS2_CONTROL)
+      find_package(controller_manager QUIET)
+      find_package(hardware_interface QUIET)
+    endif()
+    if (controller_manager_FOUND AND hardware_interface_FOUND AND
+        "${hardware_interface_VERSION}" VERSION_GREATER_EQUAL "6.0.0")
+      message(STATUS "mvsim_node: ros2_control support enabled (hardware_interface ${hardware_interface_VERSION})")
+      target_sources(mvsim_node PRIVATE
+        mvsim_node_src/mvsim_ros2_control.cpp
+        mvsim_node_src/include/mvsim/mvsim_ros2_control.h
+      )
+      target_link_libraries(mvsim_node
+        controller_manager::controller_manager
+        hardware_interface::hardware_interface
+      )
+      target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_ROS2_CONTROL)
+    else()
+      message(STATUS "mvsim_node: ros2_control support disabled (needs controller_manager and hardware_interface>=6.0)")
+    endif()
+
     # We need this to handle this backwards-incompatible change: https://github.com/ros2/geometry2/pull/416
     if("${tf2_geometry_msgs_VERSION}" VERSION_GREATER_EQUAL "0.18.0")
       target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_TF2_GEOMETRY_MSGS_HPP)
