@@ -171,6 +171,39 @@ void testErrors()
 	}
 	EXPECT_TRUE(thrown);
 
+	// Name and pose overrides:
+	{
+		mvsim::World::InsertOptions opts;
+		opts.name = "renamed";
+		opts.pose = mrpt::math::TPose3D(7.0, -3.0, 0, 0.5, 0, 0);
+		const auto n = w.insertEntitiesFromXML(vehicleXml("orig", 0, 0), opts);
+		EXPECT_TRUE(n.size() == 1 && n.at(0) == "renamed");
+		EXPECT_TRUE(w.getListOfVehicles().count("orig") == 0);
+		const auto p = w.getListOfVehicles().find("renamed")->second->getPose();
+		EXPECT_NEAR(p.x, 7.0, 1e-6);
+		EXPECT_NEAR(p.y, -3.0, 1e-6);
+		EXPECT_NEAR(p.yaw, 0.5, 1e-6);
+
+		// Overrides need exactly one entity:
+		thrown = false;
+		try
+		{
+			w.insertEntitiesFromXML(blockXml("a", 1, 1) + blockXml("b", 2, 2), opts);
+		}
+		catch (const std::exception&)
+		{
+			thrown = true;
+		}
+		EXPECT_TRUE(thrown);
+	}
+
+	// Names with variables, e.g. in loops:
+	{
+		const auto n = w.insertEntitiesFromXML(
+			"<for var='i' from='0' to='2'>" + blockXml("loop_${i}", 20, 20) + "</for>");
+		EXPECT_TRUE(n.size() == 3 && w.getListOfBlocks().count("loop_2") == 1);
+	}
+
 	// Unnamed elements get a name, so they can be removed:
 	const auto names = w.insertEntitiesFromXML(
 		"<element class='ground_grid'><interval>1</interval></element>");

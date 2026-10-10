@@ -8,6 +8,8 @@
   +-------------------------------------------------------------------------+ */
 
 #include <box2d/b2_world.h>
+#include <mrpt/core/bits_math.h>
+#include <mrpt/core/format.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/system/filesystem.h>
 #include <mvsim/World.h>
@@ -114,6 +116,15 @@ void World::internalDestroyBox2DBodiesOf(Simulable& obj)
 std::vector<std::string> World::insertEntitiesFromXML(
 	const std::string& xmlText, const std::string& basePath)
 {
+	InsertOptions opts;
+	opts.basePath = basePath;
+	return insertEntitiesFromXML(xmlText, opts);
+}
+
+std::vector<std::string> World::insertEntitiesFromXML(
+	const std::string& xmlText, const InsertOptions& options)
+{
+	const std::string& basePath = options.basePath;
 	std::string text = xmlText;
 	if (text.find("<mvsim_world") == std::string::npos)
 	{
@@ -182,6 +193,43 @@ std::vector<std::string> World::insertEntitiesFromXML(
 				THROW_EXCEPTION_FMT(
 					"XML root element is '%s' ('mvsim_world' expected)", root->name());
 			}
+			if (options.name || options.pose)
+			{
+				std::vector<rapidxml::xml_node<>*> entityNodes;
+				for (auto* node = root->first_node(); node; node = node->next_sibling(nullptr))
+				{
+					const std::string tag = node->name();
+					if (tag == "vehicle" || tag == "block" || tag == "element")
+					{
+						entityNodes.push_back(node);
+					}
+				}
+				if (entityNodes.size() != 1)
+				{
+					THROW_EXCEPTION(
+						"Overriding the name or pose requires exactly one top-level <vehicle>, "
+						"<block> or <element> tag");
+				}
+				auto* n = entityNodes.front();
+				if (options.name && std::string(n->name()) != "element")
+				{
+					if (auto* a = n->first_attribute("name"); a)
+					{
+						n->remove_attribute(a);
+					}
+					n->append_attribute(xml->allocate_attribute(
+						"name", xml->allocate_string(options.name->c_str())));
+				}
+				// <init_pose> is mandatory, but the pose is given here:
+				if (options.pose && !n->first_node("init_pose"))
+				{
+					const auto& p = *options.pose;
+					const auto s = mrpt::format("%f %f %f", p.x, p.y, mrpt::RAD2DEG(p.yaw));
+					n->append_node(xml->allocate_node(
+						rapidxml::node_element, "init_pose", xml->allocate_string(s.c_str())));
+				}
+			}
+
 			for (auto* node = root->first_node(); node; node = node->next_sibling(nullptr))
 			{
 				internal_recursive_parse_XML({node, base});
@@ -195,7 +243,8 @@ std::vector<std::string> World::insertEntitiesFromXML(
 			{
 				if (c.kind == EntityKind::Element && c.name.empty())
 				{
-					c.name = "element_" + std::to_string(nextRuntimeElementId_++);
+					c.name = options.name ? *options.name
+										  : "element_" + std::to_string(nextRuntimeElementId_++);
 					c.object->setName(c.name);
 					auto lckObjs = mrpt::lockHelper(simulableObjectsMtx_);
 					eraseByPointer(simulableObjects_, c.object.get());
@@ -243,6 +292,10 @@ std::vector<std::string> World::insertEntitiesFromXML(
 			throw;
 		}
 
+		if (options.pose && changes.size() == 1)
+		{
+			changes.front().object->setPose(*options.pose);
+		}
 		if (!changes.empty())
 		{
 			internalResetPerObjectCollisionCaches();

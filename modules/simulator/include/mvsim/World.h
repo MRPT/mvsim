@@ -538,6 +538,19 @@ class World : public mrpt::system::COutputLogger
 	std::vector<std::string> insertEntitiesFromXML(
 		const std::string& xmlText, const std::string& basePath = {});
 
+	/** Options of insertEntitiesFromXML(). Both overrides require the XML to
+	 * define exactly one entity, with a top-level `<vehicle>`, `<block>` or
+	 * `<element>` tag. */
+	struct InsertOptions
+	{
+		std::string basePath;  //!< See insertEntitiesFromXML()
+		std::optional<std::string> name;  //!< Overrides the entity name
+		std::optional<mrpt::math::TPose3D> pose;	//!< Overrides its initial pose
+	};
+
+	std::vector<std::string> insertEntitiesFromXML(
+		const std::string& xmlText, const InsertOptions& options);
+
 	/** Removes a vehicle, block or world element by name, with its sensors,
 	 * physics bodies, joints and 3D visualization. Same threading rules as
 	 * insertEntitiesFromXML(). \return false if there is no such entity. */

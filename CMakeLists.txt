@@ -127,6 +127,7 @@ if (DETECTED_ROS2)
   find_package(tf2_geometry_msgs REQUIRED)
   find_package(mrpt-ros2bridge REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(simulation_interfaces QUIET)  # optional: standard simulator services
 endif()
 
 
@@ -315,6 +316,7 @@ if (BUILD_FOR_ROS)
   add_executable(mvsim_node
     mvsim_node_src/mvsim_node.cpp
     mvsim_node_src/mvsim_node_main.cpp
+    mvsim_node_src/mvsim_node_sim_interfaces.cpp
     mvsim_node_src/include/mvsim/mvsim_node_core.h
     mvsim_node_src/include/wrapper/publisher_wrapper.h
   )
@@ -361,6 +363,19 @@ if (BUILD_FOR_ROS)
     # We need this to handle this backwards-incompatible change: https://github.com/ros2/geometry2/pull/416
     if("${tf2_geometry_msgs_VERSION}" VERSION_GREATER_EQUAL "0.18.0")
       target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_TF2_GEOMETRY_MSGS_HPP)
+    endif()
+
+    if (simulation_interfaces_FOUND)
+      message(STATUS "mvsim_node: simulation_interfaces services enabled")
+      target_link_libraries(mvsim_node ${simulation_interfaces_TARGETS})
+      target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_SIMULATION_INTERFACES)
+      # Version 2 moved the spawn resource into a message, and added flags to
+      # SetEntityState:
+      if ("${simulation_interfaces_VERSION}" VERSION_GREATER_EQUAL "2.0.0")
+        target_compile_definitions(mvsim_node PRIVATE MVSIM_SIMULATION_INTERFACES_V2)
+      endif()
+    else()
+      message(STATUS "mvsim_node: simulation_interfaces not found, its services are disabled")
     endif()
 
   endif()

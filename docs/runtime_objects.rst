@@ -8,6 +8,8 @@ runs, without reloading the world. Typical uses: marks drawn on the ground by a
 robot tool, targets placed for each trial, or debug overlays.
 
 These objects have **no physics** (no collisions, like ``intangible`` blocks).
+To insert complete robots, obstacles or world elements at runtime, see
+:ref:`dynamic-worlds`.
 By default they are rendered both in the GUI and in **camera and RGB-D sensor
 images**; GUI-only overlays are also possible.
 

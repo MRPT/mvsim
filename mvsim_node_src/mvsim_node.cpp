@@ -255,6 +255,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	base_last_cmd_ = rclcpp::Time(0);
 #endif
 
+	mvsim_world_->registerCallbackOnEntityChange([this](const mvsim::World::EntityChange& c)
+												 { onWorldEntityChange(c); });
+
 	mvsim_world_->registerCallbackOnObservation(
 		[this](const mvsim::Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 		{
@@ -264,14 +267,25 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 			}
 			mrpt::system::CTimeLoggerEntry tle(profiler_, "lambda_onNewObservation");
 
-			const mvsim::Simulable* vehPtr = &veh;
+			// Only vehicles have ROS interfaces. Keep the vehicle alive until
+			// published, even if it is removed at runtime meanwhile:
+			std::shared_ptr<TPubSubPerVehicle> pubsPtr;
+			if (const auto* v = dynamic_cast<const mvsim::VehicleBase*>(&veh); v)
+			{
+				auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+				pubsPtr = findPubSubs(*v);
+			}
+			if (!pubsPtr)
+			{
+				return;
+			}
 			const mrpt::obs::CObservation::Ptr obsCopy = obs;
 			const auto fut = ros_publisher_workers_.enqueue(
-				[this, vehPtr, obsCopy]()
+				[this, pubsPtr, obsCopy]()
 				{
 					try
 					{
-						onNewObservation(*vehPtr, obsCopy);
+						onNewObservation(*pubsPtr->vehicle, obsCopy);
 					}
 					catch (const std::exception& e)
 					{
@@ -611,22 +625,13 @@ void MVSimNode::notifyROSWorldIsUpdated()
 
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
-	const auto& vehs = mvsim_world_->getListOfVehicles();
-	pubsub_vehicles_.clear();
-	pubsub_vehicles_.resize(vehs.size());
-	size_t idx = 0;
-	for (auto it = vehs.begin(); it != vehs.end(); ++it, ++idx)
 	{
-		mvsim::VehicleBase* veh = dynamic_cast<mvsim::VehicleBase*>(it->second.get());
-		if (!veh)
-		{
-			continue;
-		}
-
-		auto& pubsubs = pubsub_vehicles_[idx];
-
-		initPubSubs(pubsubs, veh);
-		initLoggerTopicCallbacks(pubsubs, veh);
+		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+		pubsub_vehicles_.clear();
+	}
+	for (const auto& [name, veh] : mvsim_world_->getListOfVehicles())
+	{
+		addVehiclePubSubs(veh, false);
 	}
 
 #if PACKAGE_ROS_VERSION == 1
@@ -661,6 +666,10 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	sub_runtime_overlays_ = n_->create_subscription<Msg_MarkerArray>(
 		"runtime_overlays", qosMarkers,
 		[this](const Msg_MarkerArray& msg) { onRuntimeObjectMarkers(msg, false); });
+
+#if defined(MVSIM_HAS_SIMULATION_INTERFACES)
+	initSimulationInterfacesServices();
+#endif
 #endif
 
 	// Publish maps and static stuff:
@@ -713,6 +722,75 @@ ros_Time MVSimNode::myObsStamp(const mrpt::system::TTimeStamp& obsTimestamp) con
 		return myNow();
 	}
 	return mrpt2ros::toROS(obsTimestamp);
+}
+
+std::shared_ptr<MVSimNode::TPubSubPerVehicle> MVSimNode::findPubSubs(
+	const mvsim::VehicleBase& veh)
+{
+	const auto it = pubsub_vehicles_.find(veh.getVehicleIndex());
+	if (it == pubsub_vehicles_.end() || it->second->vehicle.get() != &veh)
+	{
+		return {};
+	}
+	return it->second;
+}
+
+void MVSimNode::addVehiclePubSubs(const std::shared_ptr<mvsim::VehicleBase>& veh, bool atRuntime)
+{
+	ASSERT_(veh);
+	{
+		// Fixed from now on, so topics do not change if vehicles are inserted
+		// or removed later:
+		auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
+		vehicleUsesNamespace_[veh->getVehicleIndex()] = atRuntime ||
+														 force_publish_vehicle_namespace_ ||
+														 mvsim_world_->getListOfVehicles().size() > 1;
+	}
+	auto pubsubs = std::make_shared<TPubSubPerVehicle>();
+	pubsubs->vehicle = veh;
+	initPubSubs(*pubsubs, veh.get());
+	initLoggerTopicCallbacks(pubsubs, veh.get());
+
+	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+	pubsub_vehicles_[veh->getVehicleIndex()] = pubsubs;
+}
+
+void MVSimNode::removeVehiclePubSubs(const mvsim::VehicleBase& veh)
+{
+	{
+		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+		pubsub_vehicles_.erase(veh.getVehicleIndex());
+	}
+	auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
+	vehicleUsesNamespace_.erase(veh.getVehicleIndex());
+}
+
+void MVSimNode::onWorldEntityChange(const mvsim::World::EntityChange& c)
+{
+	using Kind = mvsim::World::EntityKind;
+	if (c.kind == Kind::Vehicle)
+	{
+		const auto veh = std::dynamic_pointer_cast<mvsim::VehicleBase>(c.object);
+		if (!veh)
+		{
+			return;
+		}
+		if (c.added)
+		{
+			addVehiclePubSubs(veh, true);
+		}
+		else
+		{
+			removeVehiclePubSubs(*veh);
+		}
+	}
+	else if (c.kind == Kind::Element && c.added)
+	{
+		if (const auto e = std::dynamic_pointer_cast<mvsim::WorldElementBase>(c.object); e)
+		{
+			publishWorldElements(*e);
+		}
+	}
 }
 
 /** Initialize all pub/subs required for each vehicle, for the specific vehicle
@@ -975,13 +1053,15 @@ void MVSimNode::spinNotifyROS()
 	{
 		tim_publish_tf_.Tic();
 
-		size_t i = 0;
-		ASSERT_EQUAL_(pubsub_vehicles_.size(), vehs.size());
-
-		for (auto it = vehs.begin(); it != vehs.end(); ++it, ++i)
+		for (auto it = vehs.begin(); it != vehs.end(); ++it)
 		{
 			const auto& veh = it->second;
-			auto& pubs = pubsub_vehicles_[i];
+			const auto pubsPtr = findPubSubs(*veh);
+			if (!pubsPtr)
+			{
+				continue;
+			}
+			auto& pubs = *pubsPtr;
 
 			// 1) Ground-truth pose and velocity
 			// --------------------------------------------
@@ -1128,12 +1208,13 @@ void MVSimNode::spinNotifyROS()
 
 #if PACKAGE_ROS_VERSION == 1
 void MVSimNode::initLoggerTopicCallbacks(
-	TPubSubPerVehicle& /*pubsubs*/, mvsim::VehicleBase* /*veh*/)
+	const std::shared_ptr<TPubSubPerVehicle>& /*pubsubs*/, mvsim::VehicleBase* /*veh*/)
 {
 	// Log-topic publishing is only supported in ROS2.
 }
 #else
-void MVSimNode::initLoggerTopicCallbacks(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
+void MVSimNode::initLoggerTopicCallbacks(
+	const std::shared_ptr<TPubSubPerVehicle>& pubsubs, mvsim::VehicleBase* veh)
 {
 	if (!publish_log_topics_)
 	{
@@ -1167,15 +1248,19 @@ void MVSimNode::initLoggerTopicCallbacks(TPubSubPerVehicle& pubsubs, mvsim::Vehi
 		const size_t loggerIdx = li;
 
 		// Register callback that publishes every column as a Float64 topic.
-		// Pointers captured here remain valid because:
-		//  - pubsubs lives in pubsub_vehicles_ (resized once, never again)
-		//  - veh lives in mvsim_world_ vehicle list (stable after load)
+		// The logger belongs to the vehicle, so "veh" outlives it.
+		const std::weak_ptr<TPubSubPerVehicle> weakPubSubs = pubsubs;
 		logger->registerOnRowCallback(
-			[this, &pubsubs, veh, loggerLabel,
+			[this, weakPubSubs, veh, loggerLabel,
 			 loggerIdx](const std::map<std::string_view, double>& columns)
 			{
+				const auto pubsubsPtr = weakPubSubs.lock();
+				if (!pubsubsPtr)
+				{
+					return;	 // removed at runtime
+				}
 				auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-				auto& pubMap = pubsubs.pub_log_topics[loggerIdx];
+				auto& pubMap = pubsubsPtr->pub_log_topics[loggerIdx];
 
 				for (const auto& [colName, value] : columns)
 				{
@@ -1276,7 +1361,17 @@ void MVSimNode::onNewObservation(
  * vehicle in the World, or "/<VAR_NAME>" otherwise. */
 std::string MVSimNode::vehVarName(const std::string& sVarName, const mvsim::VehicleBase& veh) const
 {
-	if (mvsim_world_->getListOfVehicles().size() == 1 && !force_publish_vehicle_namespace_)
+	bool useNamespace = force_publish_vehicle_namespace_ ||
+						mvsim_world_->getListOfVehicles().size() > 1;
+	{
+		auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
+		if (auto it = vehicleUsesNamespace_.find(veh.getVehicleIndex());
+			it != vehicleUsesNamespace_.end())
+		{
+			useNamespace = it->second;
+		}
+	}
+	if (!useNamespace)
 	{
 		return sVarName;
 	}
@@ -1287,7 +1382,12 @@ void MVSimNode::internalOn(
 	const mvsim::VehicleBase& veh, const mrpt::obs::CObservation2DRangeScan& obs)
 {
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub = pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
@@ -1339,7 +1439,12 @@ void MVSimNode::internalOn(
 void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs)
 {
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub = pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
@@ -1396,7 +1501,12 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	}
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub = pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
@@ -1547,7 +1657,12 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	using namespace std::string_literals;
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	const std::string img_topic = obs.sensorLabel + "/image_raw"s;
 	const std::string camInfo_topic = obs.sensorLabel + "/camera_info"s;
@@ -1621,7 +1736,12 @@ void MVSimNode::internalOn(
 	const bool wantColoredPc = depthSensor ? depthSensor->publishColoredPointcloud() : false;
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
 	const auto lbImage = obs.sensorLabel + "_rgb/image_raw"s;
@@ -1873,7 +1993,12 @@ void MVSimNode::internalOn(
 	using namespace std::string_literals;
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
 

@@ -231,7 +231,9 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		const xml_attribute<>* attrib_name = root->first_attribute("name");
 		if (attrib_name && attrib_name->value())
 		{
-			veh->name_ = mvsim::parse_variables(attrib_name->value(), {}, {});
+			// World variables, e.g. for names in <for> loops:
+			veh->name_ =
+				mvsim::parse_variables(attrib_name->value(), parent->user_defined_variables(), {});
 		}
 		else
 		{

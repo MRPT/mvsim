@@ -1,0 +1,21 @@
+<mvsim_world version="1.0">
+	<!-- An empty world: just the ground. Robots, obstacles and other elements
+	     can be inserted at runtime. See:
+	     https://mvsimulator.readthedocs.io/en/latest/dynamic_worlds.html -->
+	<simul_timestep>0</simul_timestep>
+
+	<gui>
+		<cam_distance>25</cam_distance>
+		<fov_deg>60</fov_deg>
+		<refresh_fps>20</refresh_fps>
+	</gui>
+
+	<element class="horizontal_plane">
+		<cutout>-50.0 -50.0 50.0 50.0</cutout>
+		<color>#a0a0a0</color>
+	</element>
+
+	<element class="ground_grid">
+		<floating>true</floating>
+	</element>
+</mvsim_world>
