@@ -394,6 +394,18 @@ void MVSimNode::spin()
 	const double wall_gap = t_new - t_old_;
 	double incr_time = realtime_factor_ * wall_gap;
 
+	// "As fast as possible" mode: a fixed number of steps per call, with no
+	// skipped sensor data (OpenGL sensors already run in lock-step):
+	if (realtime_factor_ <= 0)
+	{
+		// Back-pressure: let the ROS publishers keep up with the simulation:
+		while (ros_publisher_workers_.pendingTasks() > afapMaxPendingPublications_ && ok())
+		{
+			std::this_thread::sleep_for(std::chrono::microseconds(100));
+		}
+		incr_time = afapStepsPerSpin_ * mvsim_world_->get_simul_timestep();
+	}
+
 	// Just in case the computer is *really fast*...
 	if (incr_time < mvsim_world_->get_simul_timestep())
 	{
@@ -408,7 +420,7 @@ void MVSimNode::spin()
 	// the *next* spin even later -> the simulation publishes odometry/TF/sensors
 	// in multi-hundred-ms bursts instead of smoothly. Capping lets sim time fall
 	// slightly behind wall-clock under load and recover, rather than cascading.
-	if (max_simul_catchup_time_ > 0 && incr_time > max_simul_catchup_time_)
+	if (realtime_factor_ > 0 && max_simul_catchup_time_ > 0 && incr_time > max_simul_catchup_time_)
 	{
 		ROS12_WARN_THROTTLE(
 			10000,
