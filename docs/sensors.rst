@@ -203,10 +203,12 @@ Velodyne VLP-16
 
 ----
 
+.. _sensors-rgb-camera:
+
 RGB camera
 ------------------
 
-A regular RGB (color) pin-hole camera (without lens distortion at present).
+A regular RGB (color) pin-hole camera, with optional lens distortion and pixel noise.
 The user must provide the camera intrinsic and extrinsic parameters:
 
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
@@ -223,6 +225,34 @@ The user must provide the camera intrinsic and extrinsic parameters:
 			clip_min="0.02" clip_max="300"
 			sensor_visual_scale="0.2"
 		/>
+
+Optional **lens distortion** (``distortion_model=plumb_bob`` with ``k1``, ``k2``, ``p1``, ``p2``,
+``k3``, as in OpenCV and ROS ``camera_info``) and Gaussian **pixel noise** (``image_noise_std``, in
+intensity levels), both applied on the GPU while rendering. The published ``camera_info`` includes
+the distortion model and coefficients, so standard rectification gives back the pinhole image.
+They require MRPT >= 3.6.0 (loading a world that uses them fails with older versions).
+
+Both are disabled by default. To quickly try them in all the tutorial worlds and vehicle
+definitions with an RGB or RGB-D camera, set the environment variables ``MVSIM_CAMERA_DISTORTION=plumb_bob`` (with
+``k1=-0.25``, ``k2=0.07``) and/or ``MVSIM_CAMERA_NOISE_STD=2.0`` (any noise std):
+
+.. code-block:: bash
+
+	MVSIM_CAMERA_DISTORTION=plumb_bob mvsim launch mvsim_tutorial/demo_camera.world.xml
+
+Example: a camera with barrel distortion and some pixel noise:
+
+.. code-block:: xml
+
+	<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/camera.sensor.xml"
+		sensor_x="0.1" sensor_y="0.0" sensor_z="0.8"
+		ncols="800"    nrows="600"
+		cx="$f{800/2}" cy="$f{600/2}"
+		fx="500" fy="500"
+		distortion_model="plumb_bob"
+		k1="-0.25" k2="0.07" p1="0" p2="0" k3="0"
+		image_noise_std="2.0"
+	/>
 
 .. dropdown:: All parameters available in camera.sensor.xml
 
@@ -470,6 +500,12 @@ ROS the following topics:
 		  publish_ros_depth_image="true"
 		  publish_ros_colored_pointcloud="false"
 		/>
+
+The RGB image supports the same optional lens distortion and pixel noise as the
+:ref:`RGB camera <sensors-rgb-camera>`, with the same include parameters (``distortion_model``,
+``k1``, ..., ``image_noise_std``, which set the ``rgb_*`` tags). The depth image is not distorted.
+The colors of the 3D point cloud are taken ignoring the distortion, so they are slightly
+misregistered near the image borders when it is enabled.
 
 .. dropdown:: All parameters available in rgbd_camera.sensor.xml
 

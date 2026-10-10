@@ -91,6 +91,8 @@
 		  sensor_x="0.22" sensor_z="0.29"
 		  sensor_period_sec="0.10"
 		  show_3d_pointcloud="false"
+		  distortion_model="$env{MVSIM_CAMERA_DISTORTION|none}" k1="-0.25" k2="0.07"
+		  image_noise_std="$env{MVSIM_CAMERA_NOISE_STD|0}"
 		/>
 
 		<include file="../definitions/gnss.sensor.xml"

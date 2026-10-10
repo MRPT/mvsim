@@ -87,6 +87,10 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["rgb_nrows"] = TParamEntry("%u", &rgb_nrows);
 
 	params["rgb_clip_min"] = TParamEntry("%f", &rgbClipMin_);
+
+	// Lens distortion and noise of the RGB image:
+	rgbDistortion_ = CameraDistortionOptions();
+	rgbDistortion_.declareParams(params, "rgb_");
 	params["rgb_clip_max"] = TParamEntry("%f", &rgbClipMax_);
 	params["depth_clip_min"] = TParamEntry("%f", &depth_clip_min_);
 	params["depth_clip_max"] = TParamEntry("%f", &depth_clip_max_);
@@ -110,6 +114,7 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	rgbCam.ncols = rgb_ncols;
 	rgbCam.nrows = rgb_nrows;
+	rgbDistortion_.applyTo(rgbCam);
 
 	// save sensor label here too:
 	sensor_params_.sensorLabel = name_;
@@ -264,6 +269,7 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		fbo_renderer_rgb_ = std::make_shared<mrpt::opengl::CFBORender>(p);
+		rgbDistortion_.applyTo(*fbo_renderer_rgb_, sensor_params_.cameraParamsIntensity);
 	}
 
 	if (!fbo_renderer_depth_ && sense_depth_)

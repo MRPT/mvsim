@@ -62,6 +62,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_camera_distortion
+	SOURCES test_camera_distortion.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_imu_noise_model
 	SOURCES test_imu_noise_model.cpp
 	LINK_LIBRARIES mvsim::simulator

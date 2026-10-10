@@ -12,11 +12,41 @@
 #include <mrpt/obs/CObservationImage.h>
 #include <mrpt/opengl/CFBORender.h>
 #include <mvsim/Sensors/SensorBase.h>
+#include <mvsim/TParameterDefinitions.h>
 
 #include <mutex>
+#include <string>
+
+/** Lens distortion and pixel noise are applied by the MRPT GPU renderer */
+#define MIN_MRPT_VERSION_CAMERA_DISTORTION 0x030600
 
 namespace mvsim
 {
+/** Lens distortion and pixel noise options of an RGB camera image, read from
+ * the XML tags `distortion_model`, `k1`, `k2`, `p1`, `p2`, `k3` and
+ * `image_noise_std`, optionally with a prefix (e.g. `rgb_k1`).
+ * \ingroup sensors_module
+ */
+struct CameraDistortionOptions
+{
+	std::string distortionModel = "none";  //!< "none" or "plumb_bob"
+	double k1 = 0;
+	double k2 = 0;
+	double p1 = 0;
+	double p2 = 0;
+	double k3 = 0;
+	double imageNoiseStd = 0;  //!< Gaussian pixel noise [intensity levels, 0-255]
+
+	/** Adds the XML parameters, with tag names starting with `prefix` */
+	void declareParams(TParameterDefinitions& params, const std::string& prefix = "");
+
+	/** Validates the parsed options and sets the distortion model of `cam` */
+	void applyTo(mrpt::img::TCamera& cam) const;
+
+	/** Enables distortion and noise in a renderer of `cam` images */
+	void applyTo(mrpt::opengl::CFBORender& renderer, const mrpt::img::TCamera& cam) const;
+};
+
 /** An "RGB" camera sensor on board a vehicle.
  * \ingroup sensors_module
  */
@@ -71,6 +101,8 @@ class CameraSensor : public SensorBase
 	std::mutex has_to_render_mtx_;
 
 	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
+
+	CameraDistortionOptions distortion_;
 
 	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
