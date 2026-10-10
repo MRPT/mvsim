@@ -210,6 +210,20 @@ int main()
 		std::cout << "Pixels with different depth: " << numDifferent << "\n";
 		EXPECT_TRUE(numDifferent < NCOLS * NROWS / 1000);
 
+		// Valid depths below one range unit are not invalid ranges:
+		{
+			std::string xml = worldXml(noNoise);
+			const std::string res = "<depth_resolution>1e-3</depth_resolution>";
+			xml.replace(xml.find(res), res.size(), "<depth_resolution>5</depth_resolution>");
+			const auto coarse = getObservation(xml);
+			EXPECT_TRUE(coarse.obs != nullptr);
+			if (coarse.obs)
+			{
+				EXPECT_TRUE(coarse.obs->rangeImage(60, 20) == 1);
+				EXPECT_TRUE(coarse.obs->rangeImage(60, 140) == 0);
+			}
+		}
+
 		// Noise: zero mean, the given sigma, and valid ranges only:
 		const auto noisy = getObservation(worldXml("<depth_noise_sigma>0.05</depth_noise_sigma>"));
 		EXPECT_TRUE(noisy.obs != nullptr);

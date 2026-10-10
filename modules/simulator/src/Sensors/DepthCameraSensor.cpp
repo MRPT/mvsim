@@ -157,6 +157,8 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	sensor_params_.maxRange = depth_clip_max_;
 	sensor_params_.rangeUnits = depth_resolution_;
+	depthNoiseSeq_.clear();	 // regenerated with the new parameters
+	depthNoiseIdx_ = 0;
 
 	// A single render gives both images if the RGB camera has the depth
 	// camera intrinsics and pose, and a clip range that covers the depth one:
@@ -511,6 +513,19 @@ void DepthCameraSensor::depthToRangeImage(mrpt::obs::CObservation3DRangeScan& ob
 		std::copy(depths + i, depths + N, lastDepths.begin());
 		depthBlockToRanges(lastDepths.data(), depthNoiseSeq_.data(), lastRanges.data(), p);
 		std::copy_n(lastRanges.begin(), N - i, ranges + i);
+	}
+
+	// Valid depths can only be below one range unit with a near clip distance
+	// below it. They must not become invalid (0):
+	if (depth_clip_min_ < obs.rangeUnits)
+	{
+		for (size_t k = 0; k < N; k++)
+		{
+			if (ranges[k] == 0 && depths[k] > 0 && depths[k] <= p.maxRange)
+			{
+				ranges[k] = 1;
+			}
+		}
 	}
 }
 
