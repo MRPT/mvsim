@@ -151,6 +151,10 @@ class Simulable
 
 	virtual void freeOpenGLResources() {}
 
+	/** Destroys the Box2D bodies of this object (and joints attached to them),
+	 * when it is removed from the world at runtime. */
+	virtual void destroyBox2DBodies(b2World& world);
+
 	/** If the given world-frame 2D coordinates are within the limits of this entity,
 	 *  this method returns the ground height or elevation or "z" coordinate of the object
 	 *  for the queried (x,y). If the coordinates do not affect this object, it will return nullopt.

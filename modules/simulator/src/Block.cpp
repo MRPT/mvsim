@@ -256,8 +256,8 @@ void Block::internalGuiUpdate(
 
 			gl_block_->insert(gl_poly);
 
-			viz->get().insert(gl_block_);
-			physical->get().insert(gl_block_);
+			insertIntoScene(viz->get(), gl_block_);
+			insertIntoScene(physical->get(), gl_block_);
 		}
 
 		// Update them:
@@ -281,7 +281,7 @@ void Block::internalGuiUpdate(
 
 		gl_forces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
-		viz->get().insert(gl_forces_);	// forces are in global coords
+		insertIntoScene(viz->get(), gl_forces_);	// forces are in global coords
 	}
 
 	// Other common stuff:

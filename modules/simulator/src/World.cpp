@@ -78,6 +78,11 @@ void World::clear_all()
 		perfWindowStartWall_.reset();
 		perfSensorTimeInStep_ = 0;
 	}
+
+	obstacles_for_each_obj_.clear();  // their bodies belonged to the old b2World
+	nextVehicleIndex_ = 0;
+	nextBlockIndex_ = 0;
+	nextRuntimeElementId_ = 0;
 }
 
 void World::internal_initialize()
@@ -194,7 +199,7 @@ void World::connectToServer()
 void World::insertBlock(const Block::Ptr& block)
 {
 	// Assign each block an "index" number
-	block->setBlockIndex(blocks_.size());
+	block->setBlockIndex(nextBlockIndex_++);
 
 	// make sure the name is not duplicated:
 	blocks_.insert(BlockList::value_type(block->getName(), block));

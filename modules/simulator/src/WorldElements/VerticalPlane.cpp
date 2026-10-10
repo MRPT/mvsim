@@ -395,8 +395,8 @@ void VerticalPlane::createVisualRepresentation(
 		mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(cull_faces_));
 
 	glGroup_->insert(gl_plane_text_);
-	viz->get().insert(glGroup_);
-	physical->get().insert(glGroup_);
+	insertIntoScene(viz->get(), glGroup_);
+	insertIntoScene(physical->get(), glGroup_);
 }
 
 void VerticalPlane::renderWallFace(

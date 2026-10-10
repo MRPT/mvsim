@@ -28,6 +28,8 @@ void World::run_simulation(double dt)
 {
 	ASSERT_(initialized_);
 
+	internalRunSimulationThreadTasks();
+
 	const double t0 = mrpt::Clock::nowDouble();
 	const auto prevRunStart = lastRunSimulWallclock_;
 	runSimulStartWallclock_ = t0;

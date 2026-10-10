@@ -131,7 +131,7 @@ void LaserScanner::internalGuiUpdate(
 		gl_scan_->setLocalRepresentativePoint({0, 0, 0.10f});
 		gl_scan_->setName("glScan veh:"s + vehicle_.getName() + " sensor:"s + this->name_);
 
-		glVizSensors->insert(gl_scan_);
+		insertIntoScene(glVizSensors, gl_scan_);
 	}
 	if (!gl_sensor_origin_ && viz)
 	{
@@ -142,8 +142,8 @@ void LaserScanner::internalGuiUpdate(
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
 		gl_sensor_origin_->setVisibility(false);
-		viz->get().insert(gl_sensor_origin_);
-		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
+		insertIntoScene(viz->get(), gl_sensor_origin_);
+		insertIntoScene(SensorBase::GetAllSensorsOriginViz(), gl_sensor_origin_);
 	}
 	if (!gl_sensor_fov_ && viz)
 	{
@@ -166,8 +166,8 @@ void LaserScanner::internalGuiUpdate(
 		gl_sensor_fov_->insert(fovScan);
 
 		gl_sensor_fov_->setVisibility(false);
-		viz->get().insert(gl_sensor_fov_);
-		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
+		insertIntoScene(viz->get(), gl_sensor_fov_);
+		insertIntoScene(SensorBase::GetAllSensorsFOVViz(), gl_sensor_fov_);
 	}
 
 	if (!gui_uptodate_ && glVizSensors->isVisible())

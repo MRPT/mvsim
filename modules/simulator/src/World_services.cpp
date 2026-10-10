@@ -28,6 +28,10 @@
 #include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdown.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdownAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvInsertEntities.pb.h>
+#include <mvsim/mvsim-msgs/SrvInsertEntitiesAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveEntities.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveEntitiesAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSpawnObjects.pb.h>
 #include <mvsim/mvsim-msgs/SrvSpawnObjectsAnswer.pb.h>
 #endif
@@ -352,6 +356,87 @@ mvsim_msgs::SrvRemoveObjectsAnswer World::srv_remove_objects(
 	return ans;
 }
 
+namespace
+{
+// Services run in the communications thread: entities are inserted or removed
+// in the simulation thread.
+constexpr auto kSimulationThreadTimeout = std::chrono::seconds(30);
+}  // namespace
+
+mvsim_msgs::SrvInsertEntitiesAnswer World::srv_insert_entities(
+	const mvsim_msgs::SrvInsertEntities& req)
+{
+	mvsim_msgs::SrvInsertEntitiesAnswer ans;
+	auto names = std::make_shared<std::vector<std::string>>();
+	const std::string xml = req.xml();
+	const std::string basePath = req.has_basepath() ? req.basepath() : std::string();
+	try
+	{
+		auto fut = runInSimulationThread([this, names, xml, basePath]()
+										 { *names = insertEntitiesFromXML(xml, basePath); });
+		if (fut.wait_for(kSimulationThreadTimeout) != std::future_status::ready)
+		{
+			THROW_EXCEPTION("Timeout waiting for the simulation thread");
+		}
+		fut.get();
+		ans.set_success(true);
+		for (const auto& n : *names)
+		{
+			ans.add_names(n);
+		}
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(e.what());
+	}
+	return ans;
+}
+
+mvsim_msgs::SrvRemoveEntitiesAnswer World::srv_remove_entities(
+	const mvsim_msgs::SrvRemoveEntities& req)
+{
+	mvsim_msgs::SrvRemoveEntitiesAnswer ans;
+	auto notFound = std::make_shared<std::vector<std::string>>();
+	const std::vector<std::string> names(req.names().begin(), req.names().end());
+	try
+	{
+		auto fut = runInSimulationThread(
+			[this, notFound, names]()
+			{
+				for (const auto& n : names)
+				{
+					if (!removeEntity(n))
+					{
+						notFound->push_back(n);
+					}
+				}
+			});
+		if (fut.wait_for(kSimulationThreadTimeout) != std::future_status::ready)
+		{
+			THROW_EXCEPTION("Timeout waiting for the simulation thread");
+		}
+		fut.get();
+		ans.set_numremoved(static_cast<uint32_t>(names.size() - notFound->size()));
+		ans.set_success(notFound->empty());
+		if (!notFound->empty())
+		{
+			std::string msg = "Not found:";
+			for (const auto& n : *notFound)
+			{
+				msg += " '" + n + "'";
+			}
+			ans.set_errormessage(msg);
+		}
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(e.what());
+	}
+	return ans;
+}
+
 mvsim_msgs::SrvGetAllPosesAnswer World::srv_get_all_poses(const mvsim_msgs::SrvGetAllPoses& req)
 {
 	mvsim_msgs::SrvGetAllPosesAnswer ans;
@@ -410,6 +495,12 @@ void World::internal_advertiseServices()
 
 	client_.advertiseService<mvsim_msgs::SrvRemoveObjects, mvsim_msgs::SrvRemoveObjectsAnswer>(
 		"remove_objects", [this](const auto& req) { return srv_remove_objects(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvInsertEntities, mvsim_msgs::SrvInsertEntitiesAnswer>(
+		"insert_entities", [this](const auto& req) { return srv_insert_entities(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvRemoveEntities, mvsim_msgs::SrvRemoveEntitiesAnswer>(
+		"remove_entities", [this](const auto& req) { return srv_remove_entities(req); });
 
 	client_.advertiseService<mvsim_msgs::SrvGetAllPoses, mvsim_msgs::SrvGetAllPosesAnswer>(
 		"get_all_poses", [this](const auto& req) { return srv_get_all_poses(req); });
