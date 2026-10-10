@@ -22,7 +22,7 @@ How it works
   joint per wheel, with ``position`` (continuous), ``velocity`` and ``effort`` state
   interfaces, and a ``velocity`` or ``effort`` command interface.
 - With ``velocity`` commands, an inner per-wheel PID (``KP``, ``KI``, ``KD``,
-  ``max_torque``, same units than the ``twist_pid`` controller) produces the wheel
+  ``max_torque``, same units as the ``twist_pid`` controller) produces the wheel
   torques, so wheels may lag and slip realistically. With ``effort`` commands, torques
   are applied directly.
 - ``mvsim_node`` creates one controller manager per such vehicle, named
@@ -32,7 +32,7 @@ How it works
   the simulation thread at its ``update_rate`` (a multiple of the simulation time step,
   ``<simul_timestep>``), stamped with simulation time. Controllers see the same timing
   regardless of the real time factor or the CPU load.
-- For these vehicles, ``mvsim_node`` does not subscribe to ``cmd_vel`` nor publishes
+- For these vehicles, ``mvsim_node`` neither subscribes to ``cmd_vel`` nor publishes
   odometry (topic and ``odom -> base_link`` TF) or the fake localization
   (``map -> odom``): those come from the controllers. Ground truth and sensors are
   unchanged.

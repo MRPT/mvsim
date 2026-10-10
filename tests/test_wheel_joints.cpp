@@ -50,7 +50,9 @@ struct Result
 	std::vector<mvsim::WheelJointsInterface::JointState> states;
 };
 
-Result run(const std::string& cmdIf, const std::vector<double>& cmds, double duration)
+Result run(
+	const std::string& cmdIf, const std::vector<double>& cmds, double duration,
+	bool perWheel = false)
 {
 	std::string xml = kWorldXml;
 	const std::string tag = "${CMD_IF}";
@@ -70,7 +72,18 @@ Result run(const std::string& cmdIf, const std::vector<double>& cmds, double dur
 	EXPECT_TRUE(veh->getWheelInfo(2).joint_name == "lf_wheel_joint");
 	EXPECT_TRUE(veh->getWheelInfo(3).joint_name == "custom_rf");
 
-	joints->setCommands(cmds);
+	if (perWheel)
+	{
+		// As done by several ros2_control systems, each with some wheels:
+		for (size_t i = 0; i < cmds.size(); i++)
+		{
+			joints->setCommand(i, cmds[i]);
+		}
+	}
+	else
+	{
+		joints->setCommands(cmds);
+	}
 	for (double t = 0; t < duration; t += 0.01)
 	{
 		world.run_simulation(0.01);
@@ -112,6 +125,15 @@ void test_effort()
 	}
 }
 
+void test_per_wheel_commands()
+{
+	const auto a = run("velocity", {4.0, 6.0, 4.0, 6.0}, 2.0);
+	const auto b = run("velocity", {4.0, 6.0, 4.0, 6.0}, 2.0, true);
+	EXPECT_NEAR(a.pose.x, b.pose.x, 1e-12);
+	EXPECT_NEAR(a.pose.y, b.pose.y, 1e-12);
+	EXPECT_NEAR(a.pose.yaw, b.pose.yaw, 1e-12);
+}
+
 void test_determinism()
 {
 	const auto a = run("velocity", {4.0, 6.0, 4.0, 6.0}, 3.0);
@@ -129,6 +151,7 @@ int main()
 		test_velocity();
 		test_effort();
 		test_determinism();
+		test_per_wheel_commands();
 	}
 	catch (const std::exception& e)
 	{

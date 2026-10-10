@@ -558,6 +558,8 @@ class World : public mrpt::system::COutputLogger
 	/** Registers a function to be called at the end of each simulation step,
 	 * from the simulation thread, with the simulation time (seconds) as
 	 * argument. Used for lock-step co-simulation (e.g. ros2_control).
+	 * Callbacks may add or remove callbacks, but must not wait for other
+	 * threads that do so, since that would deadlock.
 	 * \return An ID for removePostStepCallback() */
 	size_t addPostStepCallback(const std::function<void(double)>& f)
 	{
@@ -1236,7 +1238,7 @@ class World : public mrpt::system::COutputLogger
 
 	std::map<size_t, std::function<void(double)>> postStepCallbacks_;
 	size_t postStepCallbacksLastId_ = 0;
-	std::mutex postStepCallbacksMtx_;
+	std::recursive_mutex postStepCallbacksMtx_;
 	std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;
