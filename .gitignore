@@ -287,3 +287,4 @@ docs/myenv
 docs/html
 .vscode
 *.csv
+__pycache__/

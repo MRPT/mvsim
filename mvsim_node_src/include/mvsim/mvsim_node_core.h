@@ -25,6 +25,8 @@
 #endif
 
 #include <atomic>
+#include <memory>
+#include <set>
 #include <thread>
 
 #if PACKAGE_ROS_VERSION == 1
@@ -301,6 +303,20 @@ class MVSimNode
 	/// Pubs/Subs for each vehicle. Initialized by initPubSubs(), called
 	/// from notifyROSWorldIsUpdated()
 	std::vector<TPubSubPerVehicle> pubsub_vehicles_;
+
+	/// Vehicles driven by ros2_control: MVSim does not subscribe to their
+	/// cmd_vel nor publishes their odometry.
+	std::set<const mvsim::VehicleBase*> ros2_controlled_vehicles_;
+
+	/// ros2_control managers (opaque here, see mvsim_ros2_control.h)
+	std::vector<std::shared_ptr<void>> ros2_control_managers_;
+
+	bool isRos2Controlled(const mvsim::VehicleBase* veh) const
+	{
+		return ros2_controlled_vehicles_.count(veh) != 0;
+	}
+
+	void initRos2Control();
 	std::mutex pubsub_vehicles_mtx_;
 
 	/** Initialize all pub/subs required for each vehicle, for the specific
@@ -343,6 +359,10 @@ class MVSimNode
 	double period_ms_publish_tf_ = 20;
 
 	mrpt::system::CTicTac tim_publish_tf_;
+
+	/// Publish the TFs base_link -> sensor frames. Disable it if other node
+	/// (e.g. robot_state_publisher from a URDF) already publishes them.
+	bool publish_sensor_tf_ = true;
 
 	/// If true, vehicle namespaces will be used even if there is only one vehicle:
 	bool force_publish_vehicle_namespace_ = false;

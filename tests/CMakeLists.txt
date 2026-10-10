@@ -28,6 +28,15 @@ if(MVSIM_WITH_PYTHON AND MVSIM_WITH_ZMQ)
   #    LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/modules/comms/lib/:${CMAKE_BINARY_DIR}/modules/simulator/lib/:${CMAKE_BINARY_DIR}/modules/msgs/lib/:$ENV{LD_LIBRARY_PATH}
 endif()
 
+# Python tool tests (no ZMQ needed):
+find_program(MVSIM_PYTHON3_EXE NAMES python3)
+if (MVSIM_PYTHON3_EXE)
+  add_test(
+    NAME test_urdf2xml
+    COMMAND ${MVSIM_PYTHON3_EXE} ${TESTS_DIR}/test_urdf2xml.py
+  )
+endif()
+
 # ----------------------------------------------------------
 # C++ tests
 # ----------------------------------------------------------
@@ -46,6 +55,12 @@ mvsim_add_test(
 mvsim_add_test(
 	TARGET test_tilted_lidar2d
 	SOURCES test_tilted_lidar2d.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_wheel_joints
+	SOURCES test_wheel_joints.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
 

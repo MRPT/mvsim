@@ -28,7 +28,7 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="${controller|twist_ideal}">  <!-- "twist_ideal" or "twist_pid" -->
+        <controller class="${controller|twist_ideal}">  <!-- "twist_ideal", "twist_pid", or "ros2_control" -->
           <!-- Optimal parameters from the mvsim-pid-tuner tool -->
           <KP>18.2909</KP>
           <KI>474.4889</KI>
@@ -37,6 +37,10 @@
           <!-- Joystick teleop maximum speeds (overridable via include variables) -->
           <joyMaxLinSpeed>${joyMaxLinSpeed|1.0}</joyMaxLinSpeed>
           <joyMaxAngSpeed>${joyMaxAngSpeed|0.5}</joyMaxAngSpeed>
+          <!-- Only for controller="ros2_control" (ROS 2 node): -->
+          <command_interface>${command_interface|velocity}</command_interface>
+          <controllers_yaml>${controllers_yaml|}</controllers_yaml>
+          <robot_description>${robot_description|generated}</robot_description>
         </controller>
     </dynamics>
 

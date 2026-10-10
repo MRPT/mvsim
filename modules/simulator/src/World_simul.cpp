@@ -282,6 +282,23 @@ void World::internal_one_timestep(double dt)
 
 	tle5.stop();
 
+	// 7) User hooks:
+	{
+		// Held while they run, so removePostStepCallback() returns only once
+		// a callback is not running. A copy, since they may add or remove
+		// callbacks:
+		auto lckCb = mrpt::lockHelper(postStepCallbacksMtx_);
+		const auto callbacks = postStepCallbacks_;
+		for (const auto& [id, cb] : callbacks)
+		{
+			if (postStepCallbacks_.count(id) == 0)
+			{
+				continue;  // removed by a former one
+			}
+			cb(get_simul_time());
+		}
+	}
+
 	const double ts = timer_iteration_.Tac();
 	timlogger_.registerUserMeasure("timestep", ts);
 	if (ts > dt)

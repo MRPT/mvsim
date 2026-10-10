@@ -27,6 +27,7 @@ mvsim/
 ├── mvsim-cli/             # Command-line tool (mvsim launch/topic/node/server)
 ├── mvsim-pid-tuner/       # GUI tool for tuning PID controllers
 ├── mvsim-dataset-gen/     # Offline ray-traced LiDAR/IMU/odometry dataset generator
+├── mvsim-urdf2xml/        # Standalone Python tool: URDF -> MVSim vehicle XML (and --check)
 ├── mvsim_tutorial/        # Demo world XML files + launch files + RViz configs
 ├── definitions/           # Reusable vehicle and sensor XML definitions
 ├── examples_cpp/          # C++ subscriber and service-caller examples
@@ -65,6 +66,7 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 | `CsvLogger` | `CsvLogger.h` | Per-vehicle time-series logging to CSV. |
 | `PID_Controller` | `PID_Controller.h` | Generic discrete PID used by controllers. |
 | `CollisionShapeCache` | `CollisionShapeCache.h` | Caches Box2D collision shapes for mesh reuse. |
+| `WheelJointsInterface` | `WheelJointsInterface.h` | ROS-agnostic, thread-safe per-wheel joint commands (velocity with inner PID, or effort) and states (continuous position, velocity, effort) for external joint-level controllers. Exposed by controllers via `ControllerBaseInterface::wheelJointsInterface()`; implemented by the `ros2_control` controller class (`DynamicsDifferential::ControllerJointCommands`). Wheels have a `joint_name` (default `<wheel tag>_joint`). |
 | `PoseTrajectoryFollower` | `PoseTrajectoryFollower.h` | Standalone (no World/Box2D dependency) pure-pursuit tracker for the "exactly reproducible trajectories" feature: evaluates a time-parameterized `(t,x,y)` polyline and computes the `(vx,omega)` twist to follow it. Used by the `trajectory` controller class (differential and Ackermann). |
 
 ### Vehicle dynamics (`src/VehicleDynamics/`)
@@ -148,6 +150,8 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 - `mvsim_node.cpp` — `MvSimNode` class wrapping `World`, publishing sensor observations as ROS topics, subscribing to `cmd_vel`, advertising TF transforms and ROS 2 parameters.
 - `mvsim_node_src/include/` — node header
 
+**ros2_control (ROS 2, optional):** `mvsim_ros2_control.cpp/.h`, built only if `controller_manager` and `hardware_interface` >= 6 are found (`MVSIM_HAS_ROS2_CONTROL`). For each vehicle with `<controller class="ros2_control">`, `Ros2ControlVehicle` creates a `controller_manager::ControllerManager` (vehicle namespace if needed) with a custom `ResourceManager` that binds the `<ros2_control>` systems of the robot description (topic `robot_description`: generated from the vehicle, or user URDF) to the wheels by joint name, via an in-process `MvsimSystem` (no pluginlib). Lock-step: read/update/write run from `World::addPostStepCallback()` every N physics steps, in sim time. Such vehicles get no `cmd_vel` subscription, odometry or fake localization from MVSim. Demo: `mvsim_tutorial/demo_ros2_control.launch.py`. Docs: `docs/ros2_control.rst`.
+
 **Simulation time:** the node is the ROS time source. It publishes `/clock` and stamps every header with *simulation* time (`World::get_simul_timestamp()`); sensor messages use the observation's own `obs.timestamp` so stamps are immune to publisher-thread latency. `myNow()`/`myNowSec()` return sim time (wall-clock fallback before the first step). Downstream nodes should set `use_sim_time:=true`; the node itself runs with `use_sim_time:=false` (only warns if set true). The `disable_sim_time_clock` parameter (default `false`) opts out of all of the above: no `/clock` publication, and every header stamp (via `myNow()`/`myObsStamp()`) uses wall-clock time instead, matching pre-simulation-clock behavior.
 
 ---
@@ -170,6 +174,12 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 - `TrajectorySource.h/.cpp` — `.tum` and 2D-waypoints-with-terrain-following loading via `CPose3DInterpolator`.
 - `LidarSimulator.h/.cpp`, `ImuSimulator.h/.cpp`, `OdometrySimulator.h/.cpp` — per-sensor observation generators. `LidarSimulator` ray-casts each sweep's columns in parallel with TBB (`tbb::parallel_for`) when available, falling back to a serial `for` loop otherwise (`MVSIM_HAS_TBB` compile-time define); each column gets its own RNG stream, seeded up front from the caller's `std::mt19937`, so a given `--seed` produces a byte-identical `.rawlog` regardless of thread scheduling or TBB availability.
 - `main.cpp` — CLI11 wiring and a min-heap scheduler merging all sensor streams into strict chronological order; prints a live progress bar with ETA (`mrpt::system::progress()` / `formatTimeInterval()`) while the merge loop runs.
+
+---
+
+## URDF to vehicle XML (`mvsim-urdf2xml/`)
+
+`mvsim-urdf2xml` (single Python file, stdlib + PyYAML): generates a `<vehicle:class>` XML from an expanded URDF plus a YAML mapping file (dynamics class, wheel tag -> joint, chassis link, sensor link -> MVSim sensor include), or `--check`s an existing XML against the URDF. Sensor poses come from the chain of joints from the mapped base frame (must be on the ground). The simulator never reads URDF. Tests: `tests/test_urdf2xml.py` (+ `tests/urdf2xml/` fixture). Example: `mvsim_tutorial/urdf2xml/`. Docs: `docs/mvsim-urdf2xml.rst`. Node param `publish_sensor_tf` (default true) disables MVSim sensor TFs when robot_state_publisher publishes them.
 
 ---
 
@@ -203,7 +213,7 @@ Ready-to-include vehicle and sensor snippets:
 
 ## Demo worlds (`mvsim_tutorial/`)
 
-`demo_warehouse.world.xml`, `demo_2robots.world.xml`, `demo_greenhouse.world.xml`, `demo_elevation_map.world.xml`, `demo_road_circuit1.world.xml`, `demo_multistorey.world.xml`, `demo_logistics_center.world.xml`, `demo_articulated_vehicle.world.xml`, `demo_friction_zones.world.xml`, `demo_camera.world.xml`, `demo_depth_camera.world.xml`, `demo_jackal.world.xml`, `demo_many_robots.world.xml`, `demo_indoor_outdoor.world.xml`, `demo_outdoor.world.xml`, `demo_walls.world.xml`, `demo_turtlebot_world.world.xml`, `mvsim_slam.world.xml`, `demo_trajectory.world.xml`, `demo_trajectory_ackermann.world.xml`.
+`demo_warehouse.world.xml`, `demo_2robots.world.xml`, `demo_greenhouse.world.xml`, `demo_elevation_map.world.xml`, `demo_road_circuit1.world.xml`, `demo_multistorey.world.xml`, `demo_logistics_center.world.xml`, `demo_articulated_vehicle.world.xml`, `demo_friction_zones.world.xml`, `demo_camera.world.xml`, `demo_depth_camera.world.xml`, `demo_jackal.world.xml`, `demo_many_robots.world.xml`, `demo_indoor_outdoor.world.xml`, `demo_outdoor.world.xml`, `demo_walls.world.xml`, `demo_turtlebot_world.world.xml`, `mvsim_slam.world.xml`, `demo_trajectory.world.xml`, `demo_trajectory_ackermann.world.xml`, `demo_ros2_control.world.xml` (+ `ros2_control/` controllers YAML and example URDF).
 
 **Exactly reproducible trajectories** (`trajectory` controller class, `PoseTrajectoryFollower`): drives a `differential`/`ackermann` vehicle along a closed-form, time-parameterized `(t,x,y)` polyline given directly in `<waypoint>` XML tags, using a pure-pursuit strategy (speed from waypoint distance/time, heading from a lookahead point, with `max_angular_speed` slowing `vx` down — not just capping `omega` — to round sharp corners realistically). Supports `loop="true"` (repeats forever) and `loop="false"` (runs once and stops). `demo_trajectory.world.xml`/`demo_trajectory_ackermann.world.xml` select between the 3 predefined `definitions/trajectories/*.trajectory.xml` presets via a top-level `TRAJECTORY` `<variable>` and `<include>`; both carry a 3D LiDAR + GNSS sensor. Tested in `tests/test_pose_trajectory_follower.cpp` (pure algorithm, no World) and `tests/test_trajectory_controller.cpp` (full World + Box2D). The path polyline can also be drawn in the 3D GUI (a `mrpt::viz::CSetOfLines` at a configurable `viz_height`, default 0.5m) via `ControllerBaseInterface::getTrajectoryPlotPoints()`, toggled by the "View > Trajectories" menu item / `<gui><show_trajectories>` option; both demo worlds enable it by default.
 

@@ -73,6 +73,11 @@ All these parameters apply to both, ROS 1 and ROS 2 launch files above:
          simulation time support was added
          (default: 'False')
 
+      'publish_sensor_tf':
+         Publish the TF of each sensor wrt "base_link". Disable it if
+         robot_state_publisher publishes them from the URDF.
+         (default: 'True')
+
       'use_rviz':
          Whether to launch RViz2
          (default: 'True')
@@ -211,3 +216,12 @@ parameter (ROS launch argument) to ``true``. In that case:
    ros2 launch mvsim launch_world.launch.py \
      world_file:=/path/to/your/my.world.xml \
      disable_sim_time_clock:=True
+
+|
+
+Sensor TFs
+------------
+By default, ``mvsim_node`` publishes the TF from ``base_link`` to each sensor frame. If another
+node already publishes them (e.g. ``robot_state_publisher`` from a URDF, see
+:ref:`mvsim-urdf2xml`), set the node parameter ``publish_sensor_tf`` to ``false``, e.g.
+``ros2 launch mvsim launch_world.launch.py world_file:=... publish_sensor_tf:=False``.

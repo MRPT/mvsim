@@ -1,0 +1,13 @@
+vehicle_class: test_robot
+base_link: base_footprint
+dynamics: differential_4_wheels
+wheels:
+  lf_wheel: front_left_wheel_joint
+  rf_wheel: front_right_wheel_joint
+  lr_wheel: rear_left_wheel_joint
+  rr_wheel: rear_right_wheel_joint
+chassis:
+  link: base_link
+sensors:
+  - link: lidar
+    include: velodyne-vlp16.sensor.xml
