@@ -211,3 +211,11 @@ parameter (ROS launch argument) to ``true``. In that case:
    ros2 launch mvsim launch_world.launch.py \
      world_file:=/path/to/your/my.world.xml \
      disable_sim_time_clock:=True
+
+|
+
+Sensor TFs
+------------
+By default, ``mvsim_node`` publishes the TF from ``base_link`` to each sensor frame. If another
+node already publishes them (e.g. ``robot_state_publisher`` from a URDF, see
+:ref:`mvsim-urdf2xml`), set the node parameter ``publish_sensor_tf:=false``.

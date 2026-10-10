@@ -306,6 +306,7 @@ add_subdirectory(modules)
 add_subdirectory(mvsim-cli)
 add_subdirectory(mvsim-pid-tuner)
 add_subdirectory(mvsim-dataset-gen)
+add_subdirectory(mvsim-urdf2xml)
 
 # ================================================================
 #                  ROS NODES (BUILD_FOR_ROS)

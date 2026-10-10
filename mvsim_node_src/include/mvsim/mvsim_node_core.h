@@ -360,6 +360,10 @@ class MVSimNode
 
 	mrpt::system::CTicTac tim_publish_tf_;
 
+	/// Publish the TFs base_link -> sensor frames. Disable it if other node
+	/// (e.g. robot_state_publisher from a URDF) already publishes them.
+	bool publish_sensor_tf_ = true;
+
 	/// If true, vehicle namespaces will be used even if there is only one vehicle:
 	bool force_publish_vehicle_namespace_ = false;
 

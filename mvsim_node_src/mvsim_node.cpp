@@ -157,6 +157,7 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 		"force_publish_vehicle_namespace", force_publish_vehicle_namespace_,
 		force_publish_vehicle_namespace_);
 	localn_.param("disable_sim_time_clock", disable_sim_time_clock_, disable_sim_time_clock_);
+	localn_.param("publish_sensor_tf", publish_sensor_tf_, publish_sensor_tf_);
 
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
@@ -214,6 +215,8 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	disable_sim_time_clock_ =
 		n_->declare_parameter<bool>("disable_sim_time_clock", disable_sim_time_clock_);
+
+	publish_sensor_tf_ = n_->declare_parameter<bool>("publish_sensor_tf", publish_sensor_tf_);
 
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
@@ -1323,7 +1326,10 @@ void MVSimNode::internalOn(
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-	pubs.pub_tf->publish(tfMsg);
+	if (publish_sensor_tf_)
+	{
+		pubs.pub_tf->publish(tfMsg);
+	}
 
 	// Send observation:
 	{
@@ -1374,7 +1380,10 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-	pubs.pub_tf->publish(tfMsg);
+	if (publish_sensor_tf_)
+	{
+		pubs.pub_tf->publish(tfMsg);
+	}
 
 	// Send observation:
 	{
@@ -1431,7 +1440,10 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-	pubs.pub_tf->publish(tfMsg);
+	if (publish_sensor_tf_)
+	{
+		pubs.pub_tf->publish(tfMsg);
+	}
 
 	// Send observation:
 	{
@@ -1590,7 +1602,10 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-	pubs.pub_tf->publish(tfMsg);
+	if (publish_sensor_tf_)
+	{
+		pubs.pub_tf->publish(tfMsg);
+	}
 
 	// Send observation:
 	Msg_Header msg_header;
@@ -1701,7 +1716,10 @@ void MVSimNode::internalOn(
 
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
-		pubs.pub_tf->publish(tfMsg);
+		if (publish_sensor_tf_)
+		{
+			pubs.pub_tf->publish(tfMsg);
+		}
 
 		Msg_Header msg_header;
 		msg_header.stamp = obsStamp;
@@ -1742,7 +1760,10 @@ void MVSimNode::internalOn(
 
 			Msg_TFMessage tfMsg;
 			tfMsg.transforms.push_back(tfStmp);
-			pubs.pub_tf->publish(tfMsg);
+			if (publish_sensor_tf_)
+			{
+				pubs.pub_tf->publish(tfMsg);
+			}
 		}
 
 		Msg_Header msg_header;
@@ -1833,7 +1854,10 @@ void MVSimNode::internalOn(
 
 		Msg_TFMessage tfMsg;
 		tfMsg.transforms.push_back(tfStmp);
-		pubs.pub_tf->publish(tfMsg);
+		if (publish_sensor_tf_)
+		{
+			pubs.pub_tf->publish(tfMsg);
+		}
 
 		// Send observation:
 		{
@@ -1914,7 +1938,10 @@ void MVSimNode::internalOn(
 
 	Msg_TFMessage tfMsg;
 	tfMsg.transforms.push_back(tfStmp);
-	pubs.pub_tf->publish(tfMsg);
+	if (publish_sensor_tf_)
+	{
+		pubs.pub_tf->publish(tfMsg);
+	}
 
 	// Send observation:
 	{
