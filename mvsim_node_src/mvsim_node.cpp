@@ -724,8 +724,7 @@ ros_Time MVSimNode::myObsStamp(const mrpt::system::TTimeStamp& obsTimestamp) con
 	return mrpt2ros::toROS(obsTimestamp);
 }
 
-std::shared_ptr<MVSimNode::TPubSubPerVehicle> MVSimNode::findPubSubs(
-	const mvsim::VehicleBase& veh)
+std::shared_ptr<MVSimNode::TPubSubPerVehicle> MVSimNode::findPubSubs(const mvsim::VehicleBase& veh)
 {
 	const auto it = pubsub_vehicles_.find(veh.getVehicleIndex());
 	if (it == pubsub_vehicles_.end() || it->second->vehicle.get() != &veh)
@@ -742,9 +741,9 @@ void MVSimNode::addVehiclePubSubs(const std::shared_ptr<mvsim::VehicleBase>& veh
 		// Fixed from now on, so topics do not change if vehicles are inserted
 		// or removed later:
 		auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
-		vehicleUsesNamespace_[veh->getVehicleIndex()] = atRuntime ||
-														 force_publish_vehicle_namespace_ ||
-														 mvsim_world_->getListOfVehicles().size() > 1;
+		vehicleUsesNamespace_[veh->getVehicleIndex()] =
+			atRuntime || force_publish_vehicle_namespace_ ||
+			mvsim_world_->getListOfVehicles().size() > 1;
 	}
 	auto pubsubs = std::make_shared<TPubSubPerVehicle>();
 	pubsubs->vehicle = veh;
@@ -1361,8 +1360,8 @@ void MVSimNode::onNewObservation(
  * vehicle in the World, or "/<VAR_NAME>" otherwise. */
 std::string MVSimNode::vehVarName(const std::string& sVarName, const mvsim::VehicleBase& veh) const
 {
-	bool useNamespace = force_publish_vehicle_namespace_ ||
-						mvsim_world_->getListOfVehicles().size() > 1;
+	bool useNamespace =
+		force_publish_vehicle_namespace_ || mvsim_world_->getListOfVehicles().size() > 1;
 	{
 		auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
 		if (auto it = vehicleUsesNamespace_.find(veh.getVehicleIndex());

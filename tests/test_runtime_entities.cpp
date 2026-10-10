@@ -38,8 +38,7 @@ const char* kVehicleDynamics = R"(
 std::string vehicleXml(const std::string& name, double x, double y, const std::string& extra = {})
 {
 	return "<vehicle name=\"" + name + "\">" + kVehicleDynamics + "<init_pose>" +
-		   std::to_string(x) + " " + std::to_string(y) + " 0</init_pose>" + extra +
-		   "</vehicle>";
+		   std::to_string(x) + " " + std::to_string(y) + " 0</init_pose>" + extra + "</vehicle>";
 }
 
 // A static red box of 1x1 m:
@@ -107,9 +106,8 @@ void testVehicleInsertRemove()
 	w.load_from_XML(worldXml());
 
 	std::vector<std::string> events;
-	w.registerCallbackOnEntityChange(
-		[&](const mvsim::World::EntityChange& c)
-		{ events.push_back((c.added ? "+" : "-") + c.name); });
+	w.registerCallbackOnEntityChange([&](const mvsim::World::EntityChange& c)
+									 { events.push_back((c.added ? "+" : "-") + c.name); });
 
 	// Several entities in one call, with a <mvsim_world> root:
 	const auto names = w.insertEntitiesFromXML(
@@ -205,8 +203,8 @@ void testErrors()
 	}
 
 	// Unnamed elements get a name, so they can be removed:
-	const auto names = w.insertEntitiesFromXML(
-		"<element class='ground_grid'><interval>1</interval></element>");
+	const auto names =
+		w.insertEntitiesFromXML("<element class='ground_grid'><interval>1</interval></element>");
 	EXPECT_TRUE(names.size() == 1 && names.at(0).rfind("element_", 0) == 0);
 	EXPECT_TRUE(w.removeEntity(names.at(0)));
 
@@ -224,9 +222,8 @@ void testFromOtherThread()
 	std::thread th(
 		[&]()
 		{
-			auto fut = w.runInSimulationThread([&]()
-											   { names = w.insertEntitiesFromXML(
-													 blockXml("fromThread", 4, 4)); });
+			auto fut = w.runInSimulationThread(
+				[&]() { names = w.insertEntitiesFromXML(blockXml("fromThread", 4, 4)); });
 			fut.get();
 			done = true;
 		});

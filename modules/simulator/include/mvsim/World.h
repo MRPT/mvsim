@@ -545,7 +545,7 @@ class World : public mrpt::system::COutputLogger
 	{
 		std::string basePath;  //!< See insertEntitiesFromXML()
 		std::optional<std::string> name;  //!< Overrides the entity name
-		std::optional<mrpt::math::TPose3D> pose;	//!< Overrides its initial pose
+		std::optional<mrpt::math::TPose3D> pose;  //!< Overrides its initial pose
 	};
 
 	std::vector<std::string> insertEntitiesFromXML(
