@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SrvRemoveEntitiesAnswer {
+  /* Should be checked: false if any name was not found */
+  required bool success = 1;
+  optional string errorMessage = 2;
+  optional uint32 numRemoved = 3;
+}

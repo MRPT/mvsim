@@ -26,6 +26,7 @@ add_library(${PROJECT_NAME}
 	src/World_gui.cpp
 	src/World_gui_panels.cpp
 	src/World_load_xml.cpp
+	src/World_runtime_entities.cpp
 	src/World_services.cpp
 	src/World_simul.cpp
 	src/World_walls.cpp

@@ -194,7 +194,7 @@ void World::insert_vehicle(const VehicleBase::Ptr& veh)
 	auto lck = mrpt::lockHelper(world_cs_);
 
 	// Assign each vehicle a unique "index" number
-	veh->setVehicleIndex(vehicles_.size());
+	veh->setVehicleIndex(nextVehicleIndex_++);
 
 	ASSERTMSG_(
 		vehicles_.count(veh->getName()) == 0,

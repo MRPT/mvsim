@@ -1088,6 +1088,8 @@ void World::internalGraphicsLoopTasksForSimulation()
 
 		auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 
+		internalProcessRemovedEntitiesInGui();
+
 		internalUpdate3DSceneObjects(*worldVisual_, worldPhysical_);
 
 		internalRunSensorsOn3DScene(worldPhysical_);

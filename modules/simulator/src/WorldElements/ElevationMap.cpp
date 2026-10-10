@@ -457,8 +457,8 @@ void ElevationMap::internalGuiUpdate(
 		firstSceneRendering_ = false;
 		gl_mesh_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
-		viz->get().insert(gl_mesh_);
-		physical->get().insert(gl_mesh_);
+		insertIntoScene(viz->get(), gl_mesh_);
+		insertIntoScene(physical->get(), gl_mesh_);
 	}
 }
 

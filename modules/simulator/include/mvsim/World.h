@@ -54,6 +54,7 @@
 #include <any>
 #include <atomic>
 #include <functional>
+#include <future>
 #include <list>
 #include <map>
 #include <memory>
@@ -88,6 +89,10 @@ class SrvGetLightState;
 class SrvGetLightStateAnswer;
 class SrvSpawnObjects;
 class SrvSpawnObjectsAnswer;
+class SrvInsertEntities;
+class SrvInsertEntitiesAnswer;
+class SrvRemoveEntities;
+class SrvRemoveEntitiesAnswer;
 class SrvRemoveObjects;
 class SrvRemoveObjectsAnswer;
 class SrvGetAllPoses;
@@ -492,6 +497,58 @@ class World : public mrpt::system::COutputLogger
 	RuntimeObjects& runtimeObjects() { return runtimeObjects_; }
 	const RuntimeObjects& runtimeObjects() const { return runtimeObjects_; }
 
+	/** @name Insertion and removal of entities at runtime
+	 * @{ */
+
+	enum class EntityKind : uint8_t
+	{
+		Vehicle = 0,
+		Block,
+		Element
+	};
+
+	/** An entity added to or removed from the world at runtime. */
+	struct EntityChange
+	{
+		std::string name;
+		EntityKind kind = EntityKind::Block;
+		bool added = true;	//!< false if it was removed
+		std::shared_ptr<Simulable> object;
+	};
+	using on_entity_change_callback_t = std::function<void(const EntityChange&)>;
+
+	/** Registers a function to be called after an entity is inserted or
+	 * removed at runtime, from the thread that did it. */
+	void registerCallbackOnEntityChange(const on_entity_change_callback_t& f);
+
+	/** Inserts entities into the running simulation, given as world XML:
+	 * the same tags as in a world file (`<vehicle>`, `<block>`, `<element>`,
+	 * `<include>`, classes, variables...), optionally enclosed in a
+	 * `<mvsim_world>` root tag. Relative paths are resolved wrt `basePath`
+	 * (default: the directory of the loaded world file). Unnamed elements get
+	 * a unique `element_<N>` name.
+	 *
+	 * It must not run concurrently with run_simulation(): call it from the
+	 * thread that runs the simulation, or through runInSimulationThread().
+	 *
+	 * \return Names of the new vehicles, blocks and elements.
+	 * \exception std::exception On errors (e.g. invalid XML, or a name
+	 * already in use). Entities inserted before the error are removed.
+	 */
+	std::vector<std::string> insertEntitiesFromXML(
+		const std::string& xmlText, const std::string& basePath = {});
+
+	/** Removes a vehicle, block or world element by name, with its sensors,
+	 * physics bodies, joints and 3D visualization. Same threading rules as
+	 * insertEntitiesFromXML(). \return false if there is no such entity. */
+	bool removeEntity(const std::string& name);
+
+	/** Runs `task` in the simulation thread, at the start of the next
+	 * run_simulation() call. Exceptions are forwarded to the future. */
+	std::future<void> runInSimulationThread(const std::function<void()>& task);
+
+	/** @} */
+
 	const BlockList& getListOfBlocks() const { return blocks_; }
 	BlockList& getListOfBlocks() { return blocks_; }
 	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
@@ -637,6 +694,31 @@ class World : public mrpt::system::COutputLogger
 #endif
 
 	std::vector<on_observation_callback_t> callbacksOnObservation_;
+
+	std::vector<on_entity_change_callback_t> callbacksOnEntityChange_;
+	std::mutex callbacksOnEntityChangeMtx_;
+
+	/// Tasks to run at the start of the next run_simulation() call:
+	std::vector<std::packaged_task<void()>> simulationThreadTasks_;
+	std::mutex simulationThreadTasksMtx_;
+	void internalRunSimulationThreadTasks();
+
+	/// Removed entities, whose 3D objects must be removed by the thread that
+	/// renders the scenes (see internalGraphicsLoopTasksForSimulation()):
+	std::vector<std::shared_ptr<Simulable>> removedEntitiesPendingGui_;
+	std::mutex removedEntitiesPendingGuiMtx_;
+	void internalProcessRemovedEntitiesInGui();
+
+	/// Used to give unique indices to vehicles and blocks inserted at runtime:
+	size_t nextVehicleIndex_ = 0;
+	size_t nextBlockIndex_ = 0;
+	size_t nextRuntimeElementId_ = 0;
+
+	void internalNotifyEntityChange(const EntityChange& c);
+	void internalResetPerObjectCollisionCaches();
+	void internalDestroyBox2DBodiesOf(Simulable& obj);
+	/// Lock simulationStepRunningMtx_, world_cs_ and the physical objects first.
+	void internalRemoveEntityNoLock(const std::shared_ptr<Simulable>& obj);
 
 	// -------- World Params ----------
 	/** Gravity acceleration (Default=9.81 m/s^2). Used to evaluate weights for
@@ -1173,6 +1255,9 @@ class World : public mrpt::system::COutputLogger
 			bool startVisible);
 		void free_preview_textures();
 
+		/// Drops the sensor previews and the selection of a removed entity.
+		void forget_entity(const std::string& name);
+
 	   private:
 		World& parent_;
 
@@ -1372,6 +1457,10 @@ class World : public mrpt::system::COutputLogger
 	mvsim_msgs::SrvSetLightStateAnswer srv_set_light_state(const mvsim_msgs::SrvSetLightState& req);
 	mvsim_msgs::SrvGetLightStateAnswer srv_get_light_state(const mvsim_msgs::SrvGetLightState& req);
 	mvsim_msgs::SrvSpawnObjectsAnswer srv_spawn_objects(const mvsim_msgs::SrvSpawnObjects& req);
+	mvsim_msgs::SrvInsertEntitiesAnswer srv_insert_entities(
+		const mvsim_msgs::SrvInsertEntities& req);
+	mvsim_msgs::SrvRemoveEntitiesAnswer srv_remove_entities(
+		const mvsim_msgs::SrvRemoveEntities& req);
 	mvsim_msgs::SrvRemoveObjectsAnswer srv_remove_objects(const mvsim_msgs::SrvRemoveObjects& req);
 	mvsim_msgs::SrvGetAllPosesAnswer srv_get_all_poses(const mvsim_msgs::SrvGetAllPoses& req);
 #endif

@@ -918,9 +918,9 @@ void VehicleBase::internalGuiUpdate(
 		// would be an empty, unused container.
 		if (!childrenOnly)
 		{
-			viz->get().insert(glChassisViz_);
+			insertIntoScene(viz->get(), glChassisViz_);
 		}
-		physical->get().insert(glChassisPhysical_);
+		insertIntoScene(physical->get(), glChassisPhysical_);
 
 		glInit_ = true;
 	}
@@ -978,7 +978,7 @@ void VehicleBase::internalGuiUpdate(
 		glForces_->setColor_u8(0xff, 0xff, 0xff);
 		glForces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
-		viz->get().insert(glForces_);  // forces are in global coords
+		insertIntoScene(viz->get(), glForces_);  // forces are in global coords
 	}
 	if (!glMotorTorques_ && viz)
 	{
@@ -988,7 +988,7 @@ void VehicleBase::internalGuiUpdate(
 		glMotorTorques_->setColor_u8(0xff, 0x00, 0x00);
 		glMotorTorques_->setPose(
 			parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
-		viz->get().insert(glMotorTorques_);	 // torques are in global coords
+		insertIntoScene(viz->get(), glMotorTorques_);	 // torques are in global coords
 	}
 
 	if (!glTrajectory_ && viz)
@@ -1011,7 +1011,7 @@ void VehicleBase::internalGuiUpdate(
 					trajHeight);
 			}
 			glTrajectory_->setVisibility(world_->guiOptions_.show_trajectories);
-			viz->get().insert(glTrajectory_);  // trajectory is in global coords
+			insertIntoScene(viz->get(), glTrajectory_);  // trajectory is in global coords
 		}
 	}
 

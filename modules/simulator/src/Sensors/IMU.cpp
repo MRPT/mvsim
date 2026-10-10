@@ -83,8 +83,8 @@ void IMU::internalGuiUpdate(
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
 		gl_sensor_origin_->setVisibility(false);
-		viz->get().insert(gl_sensor_origin_);
-		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
+		insertIntoScene(viz->get(), gl_sensor_origin_);
+		insertIntoScene(SensorBase::GetAllSensorsOriginViz(), gl_sensor_origin_);
 	}
 
 	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + obs_model_.sensorPose;
