@@ -7,7 +7,7 @@
 # works in both cases (use "/<VEHICLE>/" instead for per-vehicle parameters).
 /**/controller_manager:
   ros__parameters:
-    update_rate: 100  # Hz. Should be a multiple of the simulation time step.
+    update_rate: 100  # Hz. The simulation rate should be a multiple of this.
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster

@@ -147,8 +147,6 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 	bool load_and_initialize_components(
 		const hardware_interface::ResourceManagerParams& params) override
 	{
-		components_are_loaded_and_initialized_ = true;
-
 		std::vector<hardware_interface::HardwareInfo> infos;
 		try
 		{
@@ -199,7 +197,14 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 				get_logger(), "Bound <ros2_control> '%s' (%zu joints) to MVSim vehicle '%s'",
 				info.name.c_str(), info.joints.size(), veh_.getName().c_str());
 		}
-		return numBound > 0;
+		if (numBound == 0)
+		{
+			RCLCPP_ERROR(
+				get_logger(), "No <ros2_control> system could be bound to vehicle '%s'",
+				veh_.getName().c_str());
+		}
+		components_are_loaded_and_initialized_ = numBound > 0;
+		return components_are_loaded_and_initialized_;
 	}
 
    private:
