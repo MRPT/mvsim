@@ -76,6 +76,16 @@ void WheelJointsInterface::setCommands(const std::vector<double>& commands)
 	commands_ = commands;
 }
 
+void WheelJointsInterface::setCommand(size_t wheelIndex, double command)
+{
+	auto lck = std::lock_guard(mtx_);
+	if (commands_.size() <= wheelIndex)
+	{
+		commands_.resize(wheelIndex + 1, 0.0);
+	}
+	commands_[wheelIndex] = command;
+}
+
 std::vector<WheelJointsInterface::JointState> WheelJointsInterface::getStates() const
 {
 	auto lck = std::lock_guard(mtx_);

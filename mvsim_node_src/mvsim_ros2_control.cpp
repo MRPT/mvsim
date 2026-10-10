@@ -9,6 +9,7 @@
 #include <mrpt/core/format.h>
 #include <mvsim/mvsim_ros2_control.h>
 
+#include <algorithm>
 #include <cmath>
 #include <controller_manager/controller_manager.hpp>
 #include <hardware_interface/component_parser.hpp>
@@ -16,6 +17,7 @@
 #include <hardware_interface/system_interface.hpp>
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 #include <limits>
+#include <set>
 #include <sstream>
 
 using namespace mvsim_node;
@@ -35,8 +37,8 @@ const char* commandInterfaceName(WheelJointsInterface::CommandMode mode)
 class MvsimSystem : public hardware_interface::SystemInterface
 {
    public:
-	MvsimSystem(WheelJointsInterface& joints, std::vector<size_t> wheelIndices, size_t numWheels)
-		: joints_(joints), wheelIndices_(std::move(wheelIndices)), numWheels_(numWheels)
+	MvsimSystem(WheelJointsInterface& joints, std::vector<size_t> wheelIndices)
+		: joints_(joints), wheelIndices_(std::move(wheelIndices))
 	{
 	}
 
@@ -103,25 +105,21 @@ class MvsimSystem : public hardware_interface::SystemInterface
 		[[maybe_unused]] const rclcpp::Time& time,
 		[[maybe_unused]] const rclcpp::Duration& period) override
 	{
-		std::vector<double> cmds(numWheels_, 0.0);
+		// Only the wheels of this system, since others may belong to other
+		// systems:
 		const std::string cmdIf = commandInterfaceName(joints_.commandMode());
 		for (size_t k = 0; k < info_.joints.size(); k++)
 		{
 			const auto ifName = info_.joints[k].name + "/" + cmdIf;
-			if (has_command(ifName))
-			{
-				const double c = get_command<double>(ifName);
-				cmds[wheelIndices_[k]] = std::isfinite(c) ? c : 0.0;
-			}
+			const double c = has_command(ifName) ? get_command<double>(ifName) : 0.0;
+			joints_.setCommand(wheelIndices_[k], std::isfinite(c) ? c : 0.0);
 		}
-		joints_.setCommands(cmds);
 		return hardware_interface::return_type::OK;
 	}
 
    private:
 	WheelJointsInterface& joints_;
 	const std::vector<size_t> wheelIndices_;  //!< joint index -> wheel index
-	const size_t numWheels_;
 
 	void setIfExists(const std::string& name, double value)
 	{
@@ -160,10 +158,12 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 		}
 
 		size_t numBound = 0;
+		std::set<size_t> boundWheels;  // each wheel can be in one system only
 		for (const auto& info : infos)
 		{
 			std::vector<size_t> wheelIndices;
 			std::string missing;
+			std::string repeated;
 			for (const auto& j : info.joints)
 			{
 				const auto idx = findWheel(j.name);
@@ -172,19 +172,28 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 					missing += (missing.empty() ? "" : ", ") + j.name;
 					continue;
 				}
+				if (boundWheels.count(*idx) ||
+					std::find(wheelIndices.begin(), wheelIndices.end(), *idx) != wheelIndices.end())
+				{
+					repeated += (repeated.empty() ? "" : ", ") + j.name;
+				}
 				wheelIndices.push_back(*idx);
 			}
-			if (info.type != "system" || info.joints.empty() || !missing.empty())
+			if (info.type != "system" || info.joints.empty() || !missing.empty() ||
+				!repeated.empty())
 			{
 				RCLCPP_WARN(
 					get_logger(),
 					"Ignoring <ros2_control> '%s' (type '%s'): only systems whose joints are "
-					"all wheels of vehicle '%s' are supported. Unknown joints: [%s]",
-					info.name.c_str(), info.type.c_str(), veh_.getName().c_str(), missing.c_str());
+					"all wheels of vehicle '%s', each in one system only, are supported. Unknown "
+					"joints: [%s]. Repeated joints: [%s]",
+					info.name.c_str(), info.type.c_str(), veh_.getName().c_str(), missing.c_str(),
+					repeated.c_str());
 				continue;
 			}
+			boundWheels.insert(wheelIndices.begin(), wheelIndices.end());
 
-			auto system = std::make_unique<MvsimSystem>(joints_, wheelIndices, veh_.getNumWheels());
+			auto system = std::make_unique<MvsimSystem>(joints_, wheelIndices);
 			hardware_interface::HardwareComponentParams hp;
 			hp.hardware_info = info;
 			hp.clock = get_clock();

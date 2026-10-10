@@ -75,6 +75,9 @@ class WheelJointsInterface
 	 * wheel, in the vehicle wheel order. */
 	void setCommands(const std::vector<double>& commands);
 
+	/** Sets the command of one wheel, leaving the others unchanged. */
+	void setCommand(size_t wheelIndex, double command);
+
 	/** Current joint states, in the vehicle wheel order. */
 	std::vector<JointState> getStates() const;
 
