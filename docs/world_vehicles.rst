@@ -239,3 +239,16 @@ Example launch:
 .. code-block:: bash
 
    ros2 launch mvsim demo_warehouse.launch.py realtime_factor:=1.0 headless:=false
+
+Example: run as fast as possible, e.g. to generate datasets or for batch tests:
+
+.. code-block:: bash
+
+   # With ROS 2 (any launch file based on launch_world.launch.py):
+   ros2 launch mvsim demo_warehouse.launch.py realtime_factor:=0 headless:=True use_rviz:=False
+
+   # Without ROS:
+   mvsim launch mvsim_tutorial/demo_warehouse.world.xml --headless --realtime-factor 0
+
+The achieved speed depends on the CPU and on the sensors in the world (OpenGL-based sensors are
+the most expensive).

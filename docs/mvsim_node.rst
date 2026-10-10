@@ -73,6 +73,11 @@ All these parameters apply to both, ROS 1 and ROS 2 launch files above:
          simulation time support was added
          (default: 'False')
 
+      'realtime_factor':
+         Simulation speed: <1 slower, >1 faster than real time, 0 as fast as
+         possible. (ROS 2 only)
+         (default: '1.0')
+
       'use_rviz':
          Whether to launch RViz2
          (default: 'True')
