@@ -88,7 +88,7 @@ Each vehicle type has companion `*_Controller*.cpp` files for its controllers (R
 | `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model |
 | `GNSS.cpp` | GPS/GNSS with configurable noise |
 
-Cameras (`CameraSensor`, `DepthCameraSensor`) open one GUI preview window per sensor showing their live image(s) (RGB and depth side by side, uploaded as GL textures only while visible). The common `SensorBase` XML tag `<preview_win_visible>` (default `true`) controls whether that window starts opened or closed, without affecting the simulated sensor data itself.
+Headless (`headless` world/CLI/ROS option): OpenGL sensors render off-screen through EGL, with no display needed (Mesa llvmpipe without GPU); each `World` creates its own EGL context (`sensor_has_to_create_egl_context()`). Cameras (`CameraSensor`, `DepthCameraSensor`) open one GUI preview window per sensor showing their live image(s) (RGB and depth side by side, uploaded as GL textures only while visible). The common `SensorBase` XML tag `<preview_win_visible>` (default `true`) controls whether that window starts opened or closed, without affecting the simulated sensor data itself.
 
 ### World elements (`src/WorldElements/`)
 
