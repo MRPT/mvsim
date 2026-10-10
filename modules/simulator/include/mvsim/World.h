@@ -531,7 +531,7 @@ class World : public mrpt::system::COutputLogger
 		double window_wall_time = 0;  //!< [s] Wall-clock time of the window
 		double realtime_factor = 0;	 //!< window_simul_time/window_wall_time
 		size_t steps = 0;  //!< Number of physics steps
-		double physics_time = 0;  //!< [s] Wall-clock time in physics steps
+		double physics_time = 0;  //!< [s] Wall-clock time in physics steps, excluding sensors
 		double sensors_wait_time = 0;  //!< [s] Waiting for OpenGL sensors
 
 		struct Sensor
@@ -547,8 +547,11 @@ class World : public mrpt::system::COutputLogger
 	 * time). Thread-safe. */
 	PerformanceStats getPerformanceStats() const;
 
-	/** Internal: accounts the wall-clock processing time of a sensor */
-	void internalAddSensorProcessingTime(const std::string& key, double seconds);
+	/** Internal: accounts the wall-clock processing time of a sensor.
+	 * `inSimulationThread` must be true if it was spent within a physics step
+	 * (CPU-side sensors), so it is not counted as physics time. */
+	void internalAddSensorProcessingTime(
+		const std::string& key, double seconds, bool inSimulationThread);
 
 	/** Calls all registered callbacks: */
 	void dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs);
@@ -1205,6 +1208,7 @@ class World : public mrpt::system::COutputLogger
 	mutable std::mutex perfStatsMtx_;
 	PerformanceStats perfStatsCurrent_, perfStatsLast_;
 	std::optional<double> perfWindowStartSim_, perfWindowStartWall_;
+	double perfSensorTimeInStep_ = 0;  //!< CPU-side sensors, current step
 	void internalUpdatePerformanceStats(double physicsTime, double sensorsWaitTime);
 	std::recursive_mutex copy_of_objects_dynstate_mtx_;
 

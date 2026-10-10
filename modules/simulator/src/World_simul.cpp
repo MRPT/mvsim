@@ -856,7 +856,9 @@ void World::internalUpdatePerformanceStats(double physicsTime, double sensorsWai
 	}
 	auto& cur = perfStatsCurrent_;
 	cur.steps++;
-	cur.physics_time += physicsTime;
+	// Exclude the CPU-side sensors run within the step:
+	cur.physics_time += std::max(0.0, physicsTime - perfSensorTimeInStep_);
+	perfSensorTimeInStep_ = 0;
 	cur.sensors_wait_time += sensorsWaitTime;
 
 	if (tSim - *perfWindowStartSim_ < windowLength)
@@ -880,8 +882,13 @@ World::PerformanceStats World::getPerformanceStats() const
 	return perfStatsLast_;
 }
 
-void World::internalAddSensorProcessingTime(const std::string& key, double seconds)
+void World::internalAddSensorProcessingTime(
+	const std::string& key, double seconds, bool inSimulationThread)
 {
 	auto lck = mrpt::lockHelper(perfStatsMtx_);
 	perfStatsCurrent_.sensors[key].processing_time += seconds;
+	if (inSimulationThread)
+	{
+		perfSensorTimeInStep_ += seconds;
+	}
 }

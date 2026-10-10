@@ -608,7 +608,8 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		if (world_)
 		{
 			world_->internalAddSensorProcessingTime(
-				getName() + "/" + s->getName(), mrpt::Clock::nowDouble() - t0);
+				getName() + "/" + s->getName(), mrpt::Clock::nowDouble() - t0,
+				true /*simulation thread*/);
 		}
 	}
 
