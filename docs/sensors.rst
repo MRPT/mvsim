@@ -539,6 +539,25 @@ For it to work, the ``world`` XML needs to have a :ref:`georeference tag <world-
 		  sensor_vertical_std_noise="2.5"
 		  />
 
+The published ``sensor_msgs/NavSatFix`` has a ``position_covariance`` from the noise parameters,
+and a status from ``fix_type``. For robustness tests, quality changes, outages and position jumps
+can be scheduled in simulation time with ``<event>`` tags inside the ``<sensor>`` tag (all
+attributes but ``start``/``end`` are optional):
+
+.. code-block:: xml
+
+    <!-- Change fix type and noise: -->
+    <event start="10" end="20" fix_type="rtk_float" horizontal_std_noise="0.3" vertical_std_noise="0.5" />
+    <!-- No data at all: -->
+    <event start="30" end="35" outage="true" />
+    <!-- Data without a valid fix: -->
+    <event start="40" end="45" fix_type="no_fix" />
+    <!-- Position jump (East, North, Up offset, in meters): -->
+    <event start="50" end="60" offset="2.0 -1.0 0" />
+
+Outages can also be defined by world regions, with the ``gps_no_coverage`` property of
+property regions.
+
 .. dropdown:: All parameters available in gnss.sensor.xml
 
    File: `mvsim_tutorial/definitions/gnss.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/gnss.sensor.xml>`_

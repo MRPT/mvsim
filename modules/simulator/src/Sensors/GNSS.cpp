@@ -15,6 +15,8 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
+#include <sstream>
+
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -31,6 +33,56 @@ GNSS::GNSS(Simulable& parent, const rapidxml::xml_node<char>* root) : SensorBase
 
 GNSS::~GNSS() {}
 
+namespace
+{
+mrpt::obs::GnssFixType parseFixType(const std::string& s)
+{
+	using mrpt::obs::GnssFixType;
+	if (s == "no_fix")
+	{
+		return GnssFixType::NO_FIX;
+	}
+	if (s == "single")
+	{
+		return GnssFixType::AUTONOMOUS;
+	}
+	if (s == "dgps")
+	{
+		return GnssFixType::DGPS;
+	}
+	if (s == "rtk_float")
+	{
+		return GnssFixType::RTK_FLOAT;
+	}
+	if (s == "rtk_fixed")
+	{
+		return GnssFixType::RTK_FIXED;
+	}
+	THROW_EXCEPTION_FMT(
+		"Invalid GNSS fix_type '%s' (valid: no_fix, single, dgps, rtk_float, rtk_fixed)",
+		s.c_str());
+}
+
+/** NMEA GGA fix quality for a fix type */
+uint8_t ggaFixQuality(mrpt::obs::GnssFixType t)
+{
+	using mrpt::obs::GnssFixType;
+	switch (t)
+	{
+		case GnssFixType::NO_FIX:
+			return 0;
+		case GnssFixType::AUTONOMOUS:
+			return 1;
+		case GnssFixType::RTK_FIXED:
+			return 4;
+		case GnssFixType::RTK_FLOAT:
+			return 5;
+		default:
+			return 2;  // DGPS
+	}
+}
+}  // namespace
+
 void GNSS::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
 	SensorBase::loadConfigFrom(root);
@@ -43,8 +95,54 @@ void GNSS::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["horizontal_std_noise"] = TParamEntry("%lf", &horizontal_std_noise_);
 	params["vertical_std_noise"] = TParamEntry("%lf", &vertical_std_noise_);
 
+	std::string fixType = "dgps";
+	params["fix_type"] = TParamEntry("%s", &fixType);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
+
+	fix_type_ = parseFixType(fixType);
+
+	// Degradation events:
+	events_.clear();
+	for (auto n = root->first_node("event"); n; n = n->next_sibling("event"))
+	{
+		Event ev;
+		std::string evFixType;
+		std::string offset;
+		double hStd = -1;
+		double vStd = -1;
+		TParameterDefinitions attribs;
+		attribs["start"] = TParamEntry("%lf", &ev.start);
+		attribs["end"] = TParamEntry("%lf", &ev.end);
+		attribs["outage"] = TParamEntry("%bool", &ev.outage);
+		attribs["fix_type"] = TParamEntry("%s", &evFixType);
+		attribs["horizontal_std_noise"] = TParamEntry("%lf", &hStd);
+		attribs["vertical_std_noise"] = TParamEntry("%lf", &vStd);
+		attribs["offset"] = TParamEntry("%s", &offset);
+		parse_xmlnode_attribs(*n, attribs, varValues_, "[GNSS]");
+
+		ASSERTMSG_(ev.end > ev.start, "GNSS <event>: 'end' must be greater than 'start'");
+		if (!evFixType.empty())
+		{
+			ev.fix_type = parseFixType(evFixType);
+		}
+		if (hStd >= 0)
+		{
+			ev.horizontal_std_noise = hStd;
+		}
+		if (vStd >= 0)
+		{
+			ev.vertical_std_noise = vStd;
+		}
+		if (!offset.empty())
+		{
+			std::stringstream ss(offset);
+			ss >> ev.offset.x >> ev.offset.y >> ev.offset.z;
+			ASSERTMSG_(!ss.fail(), "GNSS <event>: 'offset' must be 'dx dy dz'");
+		}
+		events_.push_back(ev);
+	}
 
 	// Pass params to the template obj:
 	obs_model_.sensorLabel = name_;
@@ -148,18 +246,43 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 		}
 	}
 
+	// Quality and degradation events:
+	auto fixType = fix_type_;
+	double hStd = horizontal_std_noise_;
+	double vStd = vertical_std_noise_;
+	mrpt::math::TPoint3D offset = {0, 0, 0};
+	const double t = world_->get_simul_time();	// the observation timestamp
+	for (const auto& ev : events_)
+	{
+		if (t < ev.start || t >= ev.end)
+		{
+			continue;
+		}
+		if (ev.outage)
+		{
+			return;	 // no data at all
+		}
+		fixType = ev.fix_type.value_or(fixType);
+		hStd = ev.horizontal_std_noise.value_or(hStd);
+		vStd = ev.vertical_std_noise.value_or(vStd);
+		offset = offset + ev.offset;
+	}
+
 	auto outObs = CObservationGPS::Create(obs_model_);
 
 	outObs->timestamp = world_->get_simul_timestamp();
 	outObs->sensorLabel = name_;
+	outObs->fix_type = fixType;
+	outObs->covariance_enu.emplace();
+	outObs->covariance_enu->setDiagonal(
+		std::vector<double>{mrpt::square(hStd), mrpt::square(hStd), mrpt::square(vStd)});
 
 	// noise:
 	const mrpt::math::TPoint3D noise = {
-		rng_.drawGaussian1D(0.0, horizontal_std_noise_),
-		rng_.drawGaussian1D(0.0, horizontal_std_noise_),
-		rng_.drawGaussian1D(0.0, vertical_std_noise_)};
+		rng_.drawGaussian1D(0.0, hStd), rng_.drawGaussian1D(0.0, hStd),
+		rng_.drawGaussian1D(0.0, vStd)};
 
-	const mrpt::math::TPoint3D sensorPt = sensorPtNoNoise + noise;
+	const mrpt::math::TPoint3D sensorPt = sensorPtNoNoise + noise + offset;
 
 	// convert from ENU (world coordinates) to geodetic:
 	const thread_local auto WGS84 = mrpt::topography::TEllipsoid::Ellipsoid_WGS84();
@@ -191,14 +314,14 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 	mrpt::obs::gnss::Message_NMEA_GGA msgGGA;
 	auto& f = msgGGA.fields;
 	f.thereis_HDOP = true;
-	f.HDOP = mrpt::d2f(horizontal_std_noise_ / 5.0);  // approximation
+	f.HDOP = mrpt::d2f(hStd / 5.0);	 // approximation
 
 	mrpt::system::TTimeParts tp;
 	mrpt::system::timestampToParts(outObs->timestamp, tp);
 	f.UTCTime.hour = tp.hour;
 	f.UTCTime.minute = tp.minute;
 	f.UTCTime.sec = tp.second;
-	f.fix_quality = 2;	// DGPS fix
+	f.fix_quality = ggaFixQuality(fixType);
 
 	f.latitude_degrees = ptCoords.lat.decimal_value;
 	f.longitude_degrees = ptCoords.lon.decimal_value;

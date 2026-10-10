@@ -85,8 +85,8 @@ Each vehicle type has companion `*_Controller*.cpp` files for its controllers (R
 | `Lidar3D.cpp` | 3D LiDAR (Velodyne VLP-16, Ouster OS1, Hesai Helios-32) |
 | `CameraSensor.cpp` | RGB pinhole camera |
 | `DepthCameraSensor.cpp` | RGBD depth + color camera. ROS depth image: optical frame `<label>_depth`, `16UC1` in mm or `32FC1` in m (`ros_depth_image_encoding`) |
-| `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model |
-| `GNSS.cpp` | GPS/GNSS with configurable noise |
+| `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model. The ROS node fills `sensor_msgs/Imu` covariances from its white noise (and orientation noise, if `measure_orientation`) |
+| `GNSS.cpp` | GPS/GNSS with configurable noise, `fix_type`, and `<event>` tags (sim-time quality changes, outages, ENU position jumps) |
 
 Headless (`headless` world/CLI/ROS option): OpenGL sensors render off-screen through EGL, with no display needed (Mesa llvmpipe without GPU); each `World` creates its own EGL context (`sensor_has_to_create_egl_context()`). Cameras (`CameraSensor`, `DepthCameraSensor`) open one GUI preview window per sensor showing their live image(s) (RGB and depth side by side, uploaded as GL textures only while visible). The common `SensorBase` XML tag `<preview_win_visible>` (default `true`) controls whether that window starts opened or closed, without affecting the simulated sensor data itself.
 
