@@ -97,6 +97,9 @@ jobs:
         run: |
           # See bug/issue: https://github.com/orgs/community/discussions/47863
           sudo apt-mark hold grub-efi-amd64-signed
+          # The preinstalled firefox deb-to-snap transitional package fails to
+          # upgrade on runners, breaking "apt-get upgrade" randomly:
+          sudo apt-mark hold firefox || true
 
           sudo apt-get -y update
           sudo apt-get -y upgrade
