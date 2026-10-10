@@ -350,7 +350,8 @@ Ros2ControlVehicle::Ros2ControlVehicle(
 
 	executorThread_ = std::thread([this]() { executor_->spin(); });
 
-	world_.addPostStepCallback([this](double simTime) { onSimulationStep(simTime); });
+	postStepCallbackId_ =
+		world_.addPostStepCallback([this](double simTime) { onSimulationStep(simTime); });
 
 	RCLCPP_INFO(
 		cm_->get_logger(),
@@ -362,6 +363,9 @@ Ros2ControlVehicle::Ros2ControlVehicle(
 
 Ros2ControlVehicle::~Ros2ControlVehicle()
 {
+	// First, make sure the simulation thread does not call us anymore:
+	world_.removePostStepCallback(postStepCallbackId_);
+
 	if (executor_)
 	{
 		executor_->cancel();

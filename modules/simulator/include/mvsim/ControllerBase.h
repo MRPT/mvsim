@@ -74,7 +74,7 @@ class ControllerBaseInterface
 
 	/** Controllers driven by per-wheel (joint) commands from an external
 	 * source (e.g. ros2_control) return their joint interface here.
-	 * eturn nullptr (default) for other controllers. */
+	 * \return nullptr (default) for other controllers. */
 	virtual WheelJointsInterface* wheelJointsInterface() { return nullptr; }
 };
 

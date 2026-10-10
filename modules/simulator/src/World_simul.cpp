@@ -300,9 +300,12 @@ void World::internal_one_timestep(double dt)
 		(tWaitStart - tStepStart) + (tStepEnd - tWaitEnd), tWaitEnd - tWaitStart);
 
 	// 7) User hooks:
-	for (const auto& cb : postStepCallbacks_)
 	{
-		cb(get_simul_time());
+		auto lck = mrpt::lockHelper(postStepCallbacksMtx_);
+		for (const auto& [id, cb] : postStepCallbacks_)
+		{
+			cb(get_simul_time());
+		}
 	}
 
 	const double ts = timer_iteration_.Tac();
