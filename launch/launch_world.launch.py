@@ -39,6 +39,11 @@ def generate_launch_description():
                     'stamp all messages with wall-clock time instead, as done before simulation '
                     'time support was added.')
 
+    publish_sensor_tf_arg = DeclareLaunchArgument(
+        "publish_sensor_tf", default_value='True',
+        description='Publish the TF of each sensor wrt "base_link". Disable it if '
+                    'robot_state_publisher publishes them from the URDF.')
+
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz', default_value='True',
         description='Whether to launch RViz2'
@@ -63,6 +68,7 @@ def generate_launch_description():
                 "force_publish_vehicle_namespace": LaunchConfiguration('force_publish_vehicle_namespace'),
                 "publish_log_topics": LaunchConfiguration('publish_log_topics'),
                 "disable_sim_time_clock": LaunchConfiguration('disable_sim_time_clock'),
+                "publish_sensor_tf": LaunchConfiguration('publish_sensor_tf'),
             }]
     )
 
@@ -83,6 +89,7 @@ def generate_launch_description():
         force_publish_vehicle_namespace_arg,
         publish_log_topics_arg,
         disable_sim_time_clock_arg,
+        publish_sensor_tf_arg,
         use_rviz_arg,
         rviz_config_file_arg,
         mvsim_node,

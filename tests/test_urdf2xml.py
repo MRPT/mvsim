@@ -87,6 +87,18 @@ class TestUrdf2Xml(unittest.TestCase):
         bad = xml.replace('sensor_z="', 'sensor_z="1', 1)
         self.assertTrue(any('lidar' in e for e in u2x.check_xml(model, bad)))
 
+    def test_special_characters_are_escaped(self):
+        mapping = u2x.load_mapping(MAPPING)
+        mapping['vehicle_class'] = 'a&b'
+        mapping['sensors'][0]['args'] = {'topic': 'x"y<z>&w'}
+        model = u2x.Model(u2x.Urdf(open(URDF).read()), mapping)
+        xml = u2x.generate_xml(model)
+        root = u2x.ET.fromstring(xml.replace('vehicle:class', 'vehicle_class'))  # well-formed
+        self.assertEqual(root.attrib['name'], 'a&b')
+        inc = [e for e in root.iter('include') if e.attrib.get('sensor_name') == 'lidar'][0]
+        self.assertEqual(inc.attrib['topic'], 'x"y<z>&w')
+        self.assertEqual(u2x.check_xml(model, xml), [])
+
     def test_cli(self):
         with tempfile.TemporaryDirectory() as d:
             out = os.path.join(d, 'out.vehicle.xml')
