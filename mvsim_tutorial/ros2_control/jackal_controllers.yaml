@@ -2,9 +2,10 @@
 # used with: <controller class="ros2_control">
 #
 # Without vehicle namespaces (one vehicle), the controller manager is
-# "/controller_manager". With several vehicles, it is "/<VEHICLE>/controller_manager"
-# and the node names below must be prefixed with "/<VEHICLE>/".
-controller_manager:
+# "/controller_manager". With several vehicles, it is "/<VEHICLE>/controller_manager".
+# The "/**/" prefix makes these parameters apply in any namespace, so this file
+# works in both cases (use "/<VEHICLE>/" instead for per-vehicle parameters).
+/**/controller_manager:
   ros__parameters:
     update_rate: 100  # Hz. Should be a multiple of the simulation time step.
 
@@ -14,11 +15,11 @@ controller_manager:
     diff_drive_controller:
       type: diff_drive_controller/DiffDriveController
 
-joint_state_broadcaster:
+/**/joint_state_broadcaster:
   ros__parameters:
     use_sim_time: true
 
-diff_drive_controller:
+/**/diff_drive_controller:
   ros__parameters:
     use_sim_time: true
 
