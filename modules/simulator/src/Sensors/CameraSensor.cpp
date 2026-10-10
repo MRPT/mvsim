@@ -17,6 +17,8 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
+#include <cmath>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -300,6 +302,14 @@ void CameraDistortionOptions::declareParams(
 
 void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
 {
+	for (const double k : {k1, k2, p1, p2, k3})
+	{
+		ASSERTMSG_(std::isfinite(k), "Camera distortion coefficients must be finite numbers");
+	}
+	ASSERTMSG_(
+		std::isfinite(imageNoiseStd) && imageNoiseStd >= 0,
+		"<image_noise_std> must be a finite, non-negative number");
+
 	if (distortionModel == "plumb_bob")
 	{
 		cam.distortion = mrpt::img::DistortionModel::plumb_bob;
@@ -314,7 +324,6 @@ void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
 		ASSERTMSG_(distortionModel == "none", "<distortion_model> must be 'none' or 'plumb_bob'");
 		cam.distortion = mrpt::img::DistortionModel::none;
 	}
-	ASSERTMSG_(imageNoiseStd >= 0, "<image_noise_std> must not be negative");
 
 #if MRPT_VERSION < MIN_MRPT_VERSION_CAMERA_DISTORTION
 	ASSERTMSG_(

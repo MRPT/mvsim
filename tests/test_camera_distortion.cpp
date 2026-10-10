@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <cmath>
+#include <exception>
 #include <iostream>
 #include <mutex>
 #include <string>
@@ -87,6 +88,7 @@ std::string worldXml(const std::string& distortion)
 		});
 
 	std::atomic_bool stop = false;
+	std::exception_ptr renderError;
 	std::thread th(
 		[&]()
 		{
@@ -99,12 +101,13 @@ std::string worldXml(const std::string& distortion)
 				}
 				world.internalFreeOpenGLResourcesForSimulation();
 			}
-			catch (const std::exception& e)
+			catch (...)
 			{
-				std::cerr << e.what() << std::endl;
+				renderError = std::current_exception();
+				stop = true;
 			}
 		});
-	for (int i = 0; i < 30 && !world.simulator_must_close(); i++)
+	for (int i = 0; i < 30 && !stop && !world.simulator_must_close(); i++)
 	{
 		world.run_simulation(0.01);
 		std::lock_guard<std::mutex> lck(obsMtx);
@@ -115,6 +118,10 @@ std::string worldXml(const std::string& distortion)
 	}
 	stop = true;
 	th.join();
+	if (renderError)
+	{
+		std::rethrow_exception(renderError);
+	}
 	std::lock_guard<std::mutex> lck(obsMtx);
 	return img;
 }
@@ -146,24 +153,37 @@ std::string worldXml(const std::string& distortion)
 	}
 	return mrpt::img::TPixelCoordf(static_cast<float>(su / n), static_cast<float>(sv / n));
 }
-}  // namespace
-
-int main()
+/** Whether loading the world with these camera options throws an error
+ * containing `msg` */
+bool loadFails(const std::string& cameraOptions, const std::string& msg)
 {
-#if MRPT_VERSION < MIN_MRPT_VERSION_CAMERA_DISTORTION
-	// Not supported: loading must fail with a clear error.
-	bool thrown = false;
 	try
 	{
 		mvsim::World w;
 		w.headless(true);
-		w.load_from_XML(worldXml("<distortion_model>plumb_bob</distortion_model> <k1>-0.3</k1>"));
+		w.load_from_XML(worldXml(cameraOptions));
 	}
 	catch (const std::exception& e)
 	{
-		thrown = std::string(e.what()).find("require MRPT") != std::string::npos;
+		return std::string(e.what()).find(msg) != std::string::npos;
 	}
-	EXPECT_TRUE(thrown);
+	return false;
+}
+}  // namespace
+
+int main()
+{
+	// Invalid values are rejected:
+	EXPECT_TRUE(loadFails("<distortion_model>fisheye</distortion_model>", "must be 'none'"));
+	EXPECT_TRUE(loadFails("<k1>nan</k1>", "must be finite"));
+	EXPECT_TRUE(loadFails("<image_noise_std>inf</image_noise_std>", "non-negative"));
+	EXPECT_TRUE(loadFails("<image_noise_std>-1</image_noise_std>", "non-negative"));
+
+#if MRPT_VERSION < MIN_MRPT_VERSION_CAMERA_DISTORTION
+	// Not supported: loading must fail with a clear error.
+	EXPECT_TRUE(
+		loadFails("<distortion_model>plumb_bob</distortion_model> <k1>-0.3</k1>", "require MRPT"));
+	EXPECT_TRUE(loadFails("<image_noise_std>2</image_noise_std>", "require MRPT"));
 	std::cout << "[SKIPPED] Camera distortion requires a newer MRPT.\n";
 	return g_failures ? 1 : 0;
 #else
@@ -173,11 +193,22 @@ int main()
       <distortion_model>plumb_bob</distortion_model>
       <k1>-0.3</k1> <k2>0.05</k2> <p1>0.002</p1> <p2>-0.001</p2>)";
 
+		// Skip only if off-screen rendering is not available at all:
+		try
+		{
+			mrpt::opengl::CFBORender probe(16, 16);
+		}
+		catch (const std::exception& e)
+		{
+			std::cout << "[SKIPPED] No OpenGL rendering available: " << e.what() << "\n";
+			return 0;
+		}
+
 		const auto obs = getImage(worldXml(distortion));
+		EXPECT_TRUE(obs != nullptr);
 		if (!obs)
 		{
-			std::cout << "[SKIPPED] No OpenGL rendering available.\n";
-			return 0;
+			return 1;
 		}
 		EXPECT_TRUE(obs->image.getWidth() == 160U && obs->image.getHeight() == 120U);
 		EXPECT_TRUE(obs->cameraParams.distortion == mrpt::img::DistortionModel::plumb_bob);
