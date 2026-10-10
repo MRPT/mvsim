@@ -301,7 +301,7 @@ void World::internal_one_timestep(double dt)
 
 	// 7) User hooks:
 	{
-		auto lck = mrpt::lockHelper(postStepCallbacksMtx_);
+		auto lckCb = mrpt::lockHelper(postStepCallbacksMtx_);
 		for (const auto& [id, cb] : postStepCallbacks_)
 		{
 			cb(get_simul_time());
