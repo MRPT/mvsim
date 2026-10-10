@@ -609,8 +609,7 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	const auto& vehs = mvsim_world_->getListOfVehicles();
 	pubsub_vehicles_.clear();
 	pubsub_vehicles_.resize(vehs.size());
-	size_t idx = 0;
-	for (auto it = vehs.begin(); it != vehs.end(); ++it, ++idx)
+	for (auto it = vehs.begin(); it != vehs.end(); ++it)
 	{
 		mvsim::VehicleBase* veh = dynamic_cast<mvsim::VehicleBase*>(it->second.get());
 		if (!veh)
@@ -618,7 +617,8 @@ void MVSimNode::notifyROSWorldIsUpdated()
 			continue;
 		}
 
-		auto& pubsubs = pubsub_vehicles_[idx];
+		// By vehicle index, as used to look them up (the list is sorted by name):
+		auto& pubsubs = pubsub_vehicles_.at(veh->getVehicleIndex());
 
 		initPubSubs(pubsubs, veh);
 		initLoggerTopicCallbacks(pubsubs, veh);
@@ -949,13 +949,12 @@ void MVSimNode::spinNotifyROS()
 	{
 		tim_publish_tf_.Tic();
 
-		size_t i = 0;
 		ASSERT_EQUAL_(pubsub_vehicles_.size(), vehs.size());
 
-		for (auto it = vehs.begin(); it != vehs.end(); ++it, ++i)
+		for (auto it = vehs.begin(); it != vehs.end(); ++it)
 		{
 			const auto& veh = it->second;
-			auto& pubs = pubsub_vehicles_[i];
+			auto& pubs = pubsub_vehicles_.at(veh->getVehicleIndex());
 
 			// 1) Ground-truth pose and velocity
 			// --------------------------------------------
