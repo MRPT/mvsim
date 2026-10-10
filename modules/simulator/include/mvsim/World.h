@@ -1170,6 +1170,9 @@ class World : public mrpt::system::COutputLogger
 	std::map<std::string, mrpt::math::TPose3D> copy_of_objects_dynstate_pose_;
 	std::map<std::string, mrpt::math::TTwist2D> copy_of_objects_dynstate_twist_;
 	std::set<std::string> copy_of_objects_had_collision_;
+
+	/// See sensor_has_to_create_egl_context()
+	bool eglContextCreated_ = false;
 	std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;
