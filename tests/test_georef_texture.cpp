@@ -51,7 +51,7 @@ std::string makeTexture()
 		}
 	}
 	const auto file = mrpt::system::getTempFileName() + ".png";
-	img.saveToFile(file);
+	ASSERT_(img.saveToFile(file));
 	return file;
 }
 
