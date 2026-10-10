@@ -68,6 +68,7 @@ class Ros2ControlVehicle
 	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubDescription_;
 	std::thread executorThread_;
 
+	size_t postStepCallbackId_ = 0;
 	unsigned int stepsPerUpdate_ = 1;
 	unsigned int stepCount_ = 0;
 	double updatePeriod_ = 0.01;

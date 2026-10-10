@@ -526,10 +526,20 @@ class World : public mrpt::system::COutputLogger
 	/** Registers a function to be called at the end of each simulation step,
 	 * from the simulation thread, with the simulation time (seconds) as
 	 * argument. Used for lock-step co-simulation (e.g. ros2_control).
-	 * Register them before the simulation starts. */
-	void addPostStepCallback(const std::function<void(double)>& f)
+	 * \return An ID for removePostStepCallback() */
+	size_t addPostStepCallback(const std::function<void(double)>& f)
 	{
-		postStepCallbacks_.push_back(f);
+		auto lck = mrpt::lockHelper(postStepCallbacksMtx_);
+		postStepCallbacks_.emplace(++postStepCallbacksLastId_, f);
+		return postStepCallbacksLastId_;
+	}
+
+	/** Unregisters a callback. Once it returns, the callback is not running
+	 * and it will not be called again. */
+	void removePostStepCallback(size_t id)
+	{
+		auto lck = mrpt::lockHelper(postStepCallbacksMtx_);
+		postStepCallbacks_.erase(id);
 	}
 
 	/** Calls all registered callbacks: */
@@ -1183,7 +1193,9 @@ class World : public mrpt::system::COutputLogger
 	/// See sensor_has_to_create_egl_context()
 	bool eglContextCreated_ = false;
 
-	std::vector<std::function<void(double)>> postStepCallbacks_;
+	std::map<size_t, std::function<void(double)>> postStepCallbacks_;
+	size_t postStepCallbacksLastId_ = 0;
+	std::mutex postStepCallbacksMtx_;
 	std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;
