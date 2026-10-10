@@ -97,7 +97,8 @@ ground floor or ceiling. Supports textures, collision detection, and shadow rend
 * **<texture_size_x>, <texture_size_y>** - Texture tiling size in world units
 * **<geo_corner_sw>, <geo_corner_ne>** - Optional ``latitude longitude`` (degrees) of the
   south-west and north-east corners of a **north-up** texture image, such as an orthophoto. They
-  replace ``x_min``... ``y_max`` and the texture sizes: the image covers the plane exactly once,
+  replace ``x_min``... ``y_max``, the texture sizes and the plane horizontal position and
+  orientation (only its height is kept): the image covers the plane exactly once,
   aligned with East-North, so it is correctly placed for GNSS-based localization. Requires a
   :ref:`georeference <world-georeference>` tag before the element (also supports
   ``world_to_enu_rotation`` and UTM worlds).

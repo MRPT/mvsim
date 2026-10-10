@@ -29,14 +29,20 @@ int g_failures = 0;
 
 namespace
 {
-constexpr double kLat0 = 36.0, kLon0 = -2.0, kRotDeg = 30.0;
+constexpr double kLat0 = 36.0;
+constexpr double kLon0 = -2.0;
+constexpr double kRotDeg = 30.0;
 constexpr double kHalfDeg = 1e-4;  // ~ +-10 m around the origin
 constexpr double kCamHeight = 40.0;
-constexpr int kW = 200, kH = 200;
+constexpr int kW = 200;
+constexpr int kH = 200;
 constexpr double kF = 100.0;  // => field of view 90 deg
 
 // Quadrant colors of the texture (north-up image):
-const mrpt::img::TColor kNW(255, 0, 0), kNE(0, 255, 0), kSW(0, 0, 255), kSE(255, 255, 0);
+const mrpt::img::TColor kNW(255, 0, 0);
+const mrpt::img::TColor kNE(0, 255, 0);
+const mrpt::img::TColor kSW(0, 0, 255);
+const mrpt::img::TColor kSE(255, 255, 0);
 
 std::string makeTexture()
 {
