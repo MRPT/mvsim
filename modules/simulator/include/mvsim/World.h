@@ -530,6 +530,8 @@ class World : public mrpt::system::COutputLogger
 		double window_simul_time = 0;  //!< [s] Simulated time of the window
 		double window_wall_time = 0;  //!< [s] Wall-clock time of the window
 		double realtime_factor = 0;	 //!< window_simul_time/window_wall_time
+		/// Wall-clock time when the window ended [s] (as mrpt::Clock::nowDouble())
+		double window_end_wall_time = 0;
 		size_t steps = 0;  //!< Number of physics steps
 		double physics_time = 0;  //!< [s] Wall-clock time in physics steps, excluding sensors
 		double sensors_wait_time = 0;  //!< [s] Waiting for OpenGL sensors

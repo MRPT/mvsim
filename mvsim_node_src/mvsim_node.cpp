@@ -214,6 +214,13 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 #if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
 	diagnostics_rate_ = n_->declare_parameter<double>("diagnostics_rate", diagnostics_rate_);
+	if (!std::isfinite(diagnostics_rate_) || diagnostics_rate_ < 0)
+	{
+		RCLCPP_ERROR(
+			n_->get_logger(), "Invalid 'diagnostics_rate' (%f): /diagnostics disabled",
+			diagnostics_rate_);
+		diagnostics_rate_ = 0;
+	}
 #endif
 
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
@@ -2025,7 +2032,18 @@ void MVSimNode::publishDiagnostics()
 		addValue(name + "/rate_hz", static_cast<double>(s.observations) / T);
 	}
 
-	if (realtime_factor_ > 0 && st.realtime_factor < 0.9 * realtime_factor_)
+	// The last window is too old if the current one takes much longer than
+	// it, e.g. if the simulation slowed down a lot or stopped:
+	const double age = mrpt::Clock::nowDouble() - st.window_end_wall_time;
+	if (age > std::max(5.0, 2 * st.window_wall_time))
+	{
+		status.level = diagnostic_msgs::msg::DiagnosticStatus::STALE;
+		status.message = mrpt::format(
+			"No performance data in the last %.1f s: the simulation is much slower than "
+			"before, or stopped",
+			age);
+	}
+	else if (realtime_factor_ > 0 && st.realtime_factor < 0.9 * realtime_factor_)
 	{
 		status.level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
 		status.message = "Simulation slower than the requested real time factor";

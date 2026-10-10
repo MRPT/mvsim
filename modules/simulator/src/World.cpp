@@ -69,6 +69,15 @@ void World::clear_all()
 	blocks_.clear();
 	joints_.clear();
 	actors_.clear();
+
+	{
+		auto lckPerf = mrpt::lockHelper(perfStatsMtx_);
+		perfStatsCurrent_ = {};
+		perfStatsLast_ = {};
+		perfWindowStartSim_.reset();
+		perfWindowStartWall_.reset();
+		perfSensorTimeInStep_ = 0;
+	}
 }
 
 void World::internal_initialize()

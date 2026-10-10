@@ -171,6 +171,16 @@ void World::internal_one_timestep(double dt)
 	}
 	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
 
+	// Start the first performance window right before its first step:
+	{
+		auto lckPerf = mrpt::lockHelper(perfStatsMtx_);
+		if (!perfWindowStartSim_)
+		{
+			perfWindowStartSim_ = get_simul_time();
+			perfWindowStartWall_ = mrpt::Clock::nowDouble();
+		}
+	}
+
 	timer_iteration_.Tic();
 	const double tStepStart = mrpt::Clock::nowDouble();
 
@@ -851,8 +861,7 @@ void World::internalUpdatePerformanceStats(double physicsTime, double sensorsWai
 	auto lck = mrpt::lockHelper(perfStatsMtx_);
 	if (!perfWindowStartSim_)
 	{
-		perfWindowStartSim_ = tSim;
-		perfWindowStartWall_ = tWall;
+		return;	 // reset meanwhile
 	}
 	auto& cur = perfStatsCurrent_;
 	cur.steps++;
@@ -869,6 +878,7 @@ void World::internalUpdatePerformanceStats(double physicsTime, double sensorsWai
 	cur.window_wall_time = tWall - *perfWindowStartWall_;
 	cur.realtime_factor =
 		cur.window_wall_time > 0 ? cur.window_simul_time / cur.window_wall_time : .0;
+	cur.window_end_wall_time = tWall;
 
 	perfStatsLast_ = std::move(cur);
 	perfStatsCurrent_ = {};
