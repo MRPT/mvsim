@@ -1,0 +1,56 @@
+name: CI ROS 2
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ROS 2 ${{ matrix.ros_distro }}
+    runs-on: ubuntu-latest
+    container: ros:${{ matrix.ros_distro }}-ros-base
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ros_distro: [humble, jazzy, lyrical]
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CTEST_OUTPUT_ON_FAILURE: ON
+
+    steps:
+      - name: Use the ros2-testing repository
+        run: |
+          sed -i 's|/ros2/ubuntu|/ros2-testing/ubuntu|' /etc/apt/sources.list.d/ros2*
+          apt-get update
+          apt-get install -y git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src/mvsim
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          rosdep update --rosdistro ${{ matrix.ros_distro }}
+          rosdep install --from-paths src --ignore-src -y --rosdistro ${{ matrix.ros_distro }}
+
+      - name: Build
+        run: |
+          source /opt/ros/${{ matrix.ros_distro }}/setup.bash
+          colcon build --event-handlers console_cohesion+ \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+      - name: Run tests
+        run: |
+          source /opt/ros/${{ matrix.ros_distro }}/setup.bash
+          colcon test --event-handlers console_cohesion+
+          colcon test-result --verbose

@@ -242,6 +242,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 - `cmake/mvsim_cmake_functions.cmake` contains helpers used across targets.
 - Optional features guarded by `MVSIM_HAS_ZMQ` and `MVSIM_HAS_PROTOBUF` compile-time defines.
 - Linux CI (`.github/workflows/build-linux.yml`, `.circleci/config.yml`) installs MRPT 3.x from `ppa:joseluisblancoc/mrpt3-stable` (releases) and `ppa:joseluisblancoc/mrpt3-develop` (nightlies). Both PPAs only cover Ubuntu 24.04 and 26.04. GitHub runs both PPAs; CircleCI runs stable only.
+- ROS 2 CI (`.github/workflows/ci-ros2.yml`): colcon build and tests in `ros:<distro>-ros-base` containers (humble, jazzy, lyrical), with dependencies from `package.xml` via rosdep and the `ros2-testing` apt repository (which carries MRPT 3).
 
 ---
 
