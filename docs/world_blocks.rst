@@ -71,9 +71,10 @@ Visual properties
 
 All parameters from the :ref:`VisualObject <world_visual_object>` interface apply, including:
 
-- **visual_scale**: Per-instance override for 3D model scale. If specified, this overrides 
-  the ``model_scale`` defined in the visual model. Useful for creating size variations of 
-  the same block class.
+- **visual_scale**: Per-instance override for 3D model scale, either one number or three
+  (``SX SY SZ``, per axis). If specified, this overrides the ``model_scale`` defined in the
+  visual model. Useful for creating size variations of the same block class. The collision
+  shape of each block follows its own scale.
 
 Example:
 

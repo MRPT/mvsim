@@ -64,7 +64,7 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 | `RemoteResourcesManager` | `RemoteResourcesManager.h` | Downloads and caches remote assets (maps, meshes). |
 | `CsvLogger` | `CsvLogger.h` | Per-vehicle time-series logging to CSV. |
 | `PID_Controller` | `PID_Controller.h` | Generic discrete PID used by controllers. |
-| `CollisionShapeCache` | `CollisionShapeCache.h` | Caches Box2D collision shapes for mesh reuse. |
+| `CollisionShapeCache` | `CollisionShapeCache.h` | Caches Box2D collision shapes for mesh reuse, keyed by model file plus model pose, per-axis scale and z range (so per-instance `visual_scale` and offsets give each block its own footprint). `model_scale`/`visual_scale` accept `S` or `SX SY SZ` (`%scale3d`). |
 | `PoseTrajectoryFollower` | `PoseTrajectoryFollower.h` | Standalone (no World/Box2D dependency) pure-pursuit tracker for the "exactly reproducible trajectories" feature: evaluates a time-parameterized `(t,x,y)` polyline and computes the `(vx,omega)` twist to follow it. Used by the `trajectory` controller class (differential and Ackermann). |
 
 ### Vehicle dynamics (`src/VehicleDynamics/`)
