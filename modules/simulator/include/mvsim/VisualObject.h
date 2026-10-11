@@ -12,6 +12,7 @@
 #include <mrpt/core/optional_ref.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/math/TBoundingBox.h>
+#include <mrpt/math/TPoint3D.h>
 #include <mrpt/poses/CPose3D.h>
 #include <mrpt/viz/Scene.h>
 #include <mrpt/viz/viz_frwds.h>
@@ -117,10 +118,10 @@ class CVisualObject
 	/// Returns the group that holds the model in the visualization.
 	mrpt::viz::CSetOfObjects::Ptr addCustomVisualization(
 		const mrpt::viz::CVisualObject::Ptr& glModel, const mrpt::poses::CPose3D& modelPose = {},
-		const float modelScale = 1.0f, const std::string& modelName = "group",
+		const mrpt::math::TPoint3Df& modelScale = {1.0f, 1.0f, 1.0f},
+		const std::string& modelName = "group",
 		const std::optional<std::string>& modelURI = std::nullopt,
-		const bool initialShowBoundingBox = false,
-		const std::optional<double>& scaleOverride = std::nullopt);
+		const bool initialShowBoundingBox = false);
 
 	void setCollisionShape(const Shape2p5& cs) { collisionShape_ = cs; }
 

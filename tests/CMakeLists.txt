@@ -122,6 +122,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_model_scale
+	SOURCES test_model_scale.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_drift_on_elevation
 	SOURCES test_drift_on_elevation.cpp
 	LINK_LIBRARIES mvsim::simulator

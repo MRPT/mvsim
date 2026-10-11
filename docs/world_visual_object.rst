@@ -26,8 +26,13 @@ Under the ``<visual> </visual>`` tag group:
 
 - **model_uri**: Path to 3D model file. Can be any file format supported by ASSIMP,
   like ``.dae``, ``.stl``, etc. If empty, the default visual aspect will be used.
-- **model_scale**: (Default=1.0) Scale to apply to the 3D model.
-- **visual_scale**: (Only for blocks) Per-instance override for the model scale. 
+- **model_scale**: (Default=1.0) Scale to apply to the 3D model: either one number
+  (same scale for all axes) or three, ``SX SY SZ``, to scale each axis independently
+  (e.g. ``<model_scale>0.3 0.3 0.7</model_scale>``). Axes are those of the model file,
+  before applying ``model_offset_*`` and the ``model_yaw|pitch|roll`` rotations.
+  The collision shape follows the scaled (and offset) model.
+- **visual_scale**: (Only for blocks) Per-instance override for the model scale, with
+  the same one or three values format as ``model_scale``.
   When specified in a ``<block>`` instance, this value overrides the ``model_scale`` 
   defined in the ``<visual>`` section of the block class. This allows creating size 
   variations of the same block class without defining new classes. If not specified 
