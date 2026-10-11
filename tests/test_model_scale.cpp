@@ -11,6 +11,8 @@
 // when many blocks share the same model file.
 
 #include <mrpt/system/filesystem.h>
+#include <mrpt/viz/CSetOfTriangles.h>
+#include <mvsim/CollisionShapeCache.h>
 #include <mvsim/World.h>
 
 #include <algorithm>
@@ -61,6 +63,32 @@ BBox2D footprintOf(const mvsim::World& world, const std::string& blockName)
 	return bb;
 }
 
+// A model made of separate pieces (like the leaves of a plant) must get a
+// footprint covering all of them, not only one.
+void testSparseModelFootprint()
+{
+	auto glTris = mrpt::viz::CSetOfTriangles::Create();
+	for (const double x0 : {0.0, 1.0})
+	{
+		mrpt::viz::TTriangle t(
+			mrpt::math::TPoint3Df(x0 - 0.1, -0.1, 0), mrpt::math::TPoint3Df(x0 + 0.1, -0.1, 0),
+			mrpt::math::TPoint3Df(x0, 0.1, 0.5));
+		glTris->insertTriangle(t);
+	}
+
+	const auto shape =
+		mvsim::CollisionShapeCache::Instance().get(*glTris, -1.0f, 1.0f, {}, {1.0f, 1.0f, 1.0f});
+
+	BBox2D bb;
+	for (const auto& pt : shape.getContour())
+	{
+		bb.minX = std::min(bb.minX, pt.x);
+		bb.maxX = std::max(bb.maxX, pt.x);
+	}
+	EXPECT_NEAR(bb.minX, -0.1, 0.05);
+	EXPECT_NEAR(bb.maxX, 1.1, 0.05);
+}
+
 std::string worldXml()
 {
 	const std::string model =
@@ -100,6 +128,8 @@ std::string worldXml()
 
 int main()
 {
+	testSparseModelFootprint();
+
 	mvsim::World world;
 	world.headless(true);
 	world.load_from_XML(worldXml());
