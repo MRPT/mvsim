@@ -17,12 +17,48 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
-#include <Eigen/Dense>	// asEigen()
+#include <algorithm>
+#include <array>
 
 #include "xml_utils.h"
 
 using namespace mvsim;
 using namespace rapidxml;
+
+namespace
+{
+// The depth camera looks along +X, the RGB camera (and OpenGL) along +Z:
+mrpt::poses::CPose3D fixedAxisConventionRot()
+{
+	return mrpt::poses::CPose3D::FromYawPitchRoll(-M_PI / 2, 0.0, -M_PI / 2);
+}
+
+// Pixels are converted in blocks of fixed size, which compilers vectorize:
+constexpr size_t DEPTH_BLOCK = 16;
+
+struct DepthToRangeParams
+{
+	float maxRange = 0;
+	float invUnits = 0;
+	int maxRangeInts = 0;
+};
+
+// Depth [m] to range image units, plus noise. Pixels without a return (0) and
+// beyond the maximum range are invalid (0):
+void depthBlockToRanges(
+	const float* __restrict depths, const int16_t* __restrict noise, uint16_t* __restrict ranges,
+	const DepthToRangeParams& p)
+{
+	for (size_t i = 0; i < DEPTH_BLOCK; i++)
+	{
+		const float depth = depths[i] <= p.maxRange ? depths[i] : 0.0f;
+		const int r = static_cast<int>(depth * p.invUnits);
+		const int rNoisy = r + noise[i];
+		const bool useNoisy = (r != 0) & (rNoisy > 0) & (rNoisy <= p.maxRangeInts);
+		ranges[i] = static_cast<uint16_t>(useNoisy ? rNoisy : r);
+	}
+}
+}  // namespace
 
 DepthCameraSensor::DepthCameraSensor(Simulable& parent, const rapidxml::xml_node<char>* root)
 	: SensorBase(parent)
@@ -121,6 +157,18 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 
 	sensor_params_.maxRange = depth_clip_max_;
 	sensor_params_.rangeUnits = depth_resolution_;
+	depthNoiseSeq_.clear();	 // regenerated with the new parameters
+	depthNoiseIdx_ = 0;
+
+	// A single render gives both images if the RGB camera has the depth
+	// camera intrinsics and pose, and a clip range that covers the depth one:
+	const auto relPoseError =
+		(sensor_params_.relativePoseIntensityWRTDepth - fixedAxisConventionRot()).asVectorVal();
+	single_render_pass_ =
+		sense_rgb_ && sense_depth_ && rgbCam.ncols == depthCam.ncols &&
+		rgbCam.nrows == depthCam.nrows && rgbCam.intrinsicParams == depthCam.intrinsicParams &&
+		rgbCam.distortion == mrpt::img::DistortionModel::none && relPoseError.norm() < 1e-6 &&
+		rgbClipMin_ == depth_clip_min_ && rgbClipMax_ >= depth_clip_max_;
 }
 
 void DepthCameraSensor::internalGuiUpdate(
@@ -272,7 +320,7 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		rgbDistortion_.applyTo(*fbo_renderer_rgb_, sensor_params_.cameraParamsIntensity);
 	}
 
-	if (!fbo_renderer_depth_ && sense_depth_)
+	if (!fbo_renderer_depth_ && sense_depth_ && !single_render_pass_)
 	{
 		auto tle2 =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.createFBO");
@@ -298,9 +346,6 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 			fbo_renderer_rgb_->setCamera(mrpt::viz::CCamera());
 	}
 
-	const auto fixedAxisConventionRot =
-		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
-
 	// ----------------------------------------------------------
 	// RGB first with its camera intrinsics & clip distances
 	// ----------------------------------------------------------
@@ -313,7 +358,7 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 
 	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
 
-	const auto depthSensorPose = vehiclePose + curObs.sensorPose + fixedAxisConventionRot;
+	const auto depthSensorPose = vehiclePose + curObs.sensorPose + fixedAxisConventionRot();
 
 	const auto rgbSensorPose =
 		vehiclePose + curObs.sensorPose + curObs.relativePoseIntensityWRTDepth;
@@ -337,7 +382,14 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 			viewport->lightParameters().shadow_cascades =
 				static_cast<uint8_t>(world()->sensor_shadow_cascades());
 
-			fbo_renderer_rgb_->render_RGB(world3DScene, curObs.intensityImage);
+			if (single_render_pass_)
+			{
+				fbo_renderer_rgb_->render_RGBD(world3DScene, curObs.intensityImage, depthImage_);
+			}
+			else
+			{
+				fbo_renderer_rgb_->render_RGB(world3DScene, curObs.intensityImage);
+			}
 		}
 
 		curObs.hasIntensityImage = true;
@@ -366,9 +418,6 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		// viewport->setCustomBackgroundColor({0.3f, 0.3f, 0.3f, 1.0f});
 		viewport->setViewportClipDistances(depth_clip_min_, depth_clip_max_);
 
-		auto tle2c =
-			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderD_core");
-
 		{
 			// Shadows do not affect depth images:
 			const ViewportShadowSettingsGuard shadowGuard(*viewport);
@@ -376,62 +425,16 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 
 			fbo_renderer_depth_->render_depth(world3DScene, depthImage_);
 		}
+	}
 
-		tle2c.stop();
+	if (fbo_renderer_depth_ || (single_render_pass_ && fbo_renderer_rgb_))
+	{
+		auto tle2cnv =
+			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.convertD");
 
-		// Convert depth image:
 		curObs.hasRangeImage = true;
 		curObs.range_is_depth = true;
-
-		auto tle2cnv =
-			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.RGBD.renderD_cast");
-
-		// float -> uint16_t with "curObs.rangeUnits" units:
-		curObs.rangeImage_setSize(depthImage_.rows(), depthImage_.cols());
-		curObs.rangeImage =
-			(depthImage_.asEigen().cwiseMin(curObs.maxRange) / curObs.rangeUnits).cast<uint16_t>();
-
-		tle2cnv.stop();
-
-		// Add random noise:
-		if (depth_noise_sigma_ > 0)
-		{
-			// Each thread must create its own rng:
-			thread_local mrpt::random::CRandomGenerator rng;
-			thread_local std::vector<int16_t> noiseSeq;
-			thread_local size_t noiseIdx = 0;
-			constexpr size_t noiseLen = 7823;  // prime
-			if (noiseSeq.empty())
-			{
-				noiseSeq.reserve(noiseLen);
-				for (size_t i = 0; i < noiseLen; i++)
-				{
-					noiseSeq.push_back(static_cast<int16_t>(mrpt::round(
-						rng.drawGaussian1D(0.0, depth_noise_sigma_) / curObs.rangeUnits)));
-				}
-			}
-
-			auto tle2noise = mrpt::system::CTimeLoggerEntry(
-				world_->getTimeLogger(), "sensor.RGBD.renderD_noise");
-
-			uint16_t* d = curObs.rangeImage.data();
-			const size_t N = curObs.rangeImage.size();
-
-			const int16_t maxRangeInts = static_cast<int16_t>(curObs.maxRange / curObs.rangeUnits);
-
-			for (size_t i = 0; i < N; i++)
-			{
-				if (d[i] == 0) continue;  // it was an invalid ray return.
-
-				const int16_t dNoisy = static_cast<int16_t>(d[i]) + noiseSeq[noiseIdx++];
-
-				if (noiseIdx >= noiseLen) noiseIdx = 0;
-
-				if (dNoisy > maxRangeInts) continue;
-
-				d[i] = static_cast<uint16_t>(dNoisy);
-			}
-		}
+		depthToRangeImage(curObs);
 	}
 	else
 	{
@@ -464,6 +467,67 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 
 		gui_uptodate_ = false;
 		has_to_render_.reset();
+	}
+}
+
+void DepthCameraSensor::depthToRangeImage(mrpt::obs::CObservation3DRangeScan& obs)
+{
+	// Precomputed random noise sequence (all zeros without noise):
+	constexpr size_t noiseLen = 489 * DEPTH_BLOCK;
+	if (depthNoiseSeq_.empty())
+	{
+		mrpt::random::CRandomGenerator rng;
+		depthNoiseSeq_.resize(noiseLen, 0);
+		if (depth_noise_sigma_ > 0)
+		{
+			for (auto& n : depthNoiseSeq_)
+			{
+				n = static_cast<int16_t>(
+					mrpt::round(rng.drawGaussian1D(0.0, depth_noise_sigma_) / obs.rangeUnits));
+			}
+		}
+	}
+
+	obs.rangeImage_setSize(depthImage_.rows(), depthImage_.cols());
+
+	const float* depths = depthImage_.data();
+	uint16_t* ranges = obs.rangeImage.data();
+	const size_t N = obs.rangeImage.size();
+
+	DepthToRangeParams p;
+	p.maxRange = obs.maxRange;
+	p.invUnits = 1.0f / obs.rangeUnits;
+	p.maxRangeInts = static_cast<int>(p.maxRange * p.invUnits);
+
+	size_t i = 0;
+	for (; i + DEPTH_BLOCK <= N; i += DEPTH_BLOCK)
+	{
+		depthBlockToRanges(depths + i, depthNoiseSeq_.data() + depthNoiseIdx_, ranges + i, p);
+		depthNoiseIdx_ = (depthNoiseIdx_ + DEPTH_BLOCK) % noiseLen;
+	}
+	if (i < N)
+	{
+		// Last, incomplete block:
+		std::array<float, DEPTH_BLOCK> lastDepths{};
+		std::array<uint16_t, DEPTH_BLOCK> lastRanges{};
+		std::copy(depths + i, depths + N, lastDepths.begin());
+		depthBlockToRanges(
+			lastDepths.data(), depthNoiseSeq_.data() + depthNoiseIdx_, lastRanges.data(), p);
+		depthNoiseIdx_ = (depthNoiseIdx_ + DEPTH_BLOCK) % noiseLen;
+		std::copy_n(lastRanges.begin(), N - i, ranges + i);
+	}
+
+	// Valid depths can only be below one range unit with a near clip distance
+	// below it. They must not become invalid (0):
+	if (depth_clip_min_ < obs.rangeUnits)
+	{
+		for (size_t k = 0; k < N; k++)
+		{
+			if (ranges[k] == 0 && depths[k] > 0 && depths[k] <= p.maxRange)
+			{
+				ranges[k] = 1;
+			}
+		}
 	}
 }
 
