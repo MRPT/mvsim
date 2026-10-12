@@ -209,8 +209,9 @@ class Block : public CVisualObject, public Simulable
 	/** Damping ("c" viscous friction coefficient) for angular velocities of the chassis on world */
 	float angular_damping_ = 0.1;
 
-	/** If intangible, a block will be rendered visually but will be neither
-	 * detected by sensors, nor collide  */
+	/** If intangible, a block is rendered, so 3D lidars and cameras see it,
+	 * but it neither collides nor acts as terrain elevation (e.g. branches a
+	 * robot can push through). 2D (Box2D-based) sensors don't see it. */
 	bool intangible_ = false;
 
 	/** Per-instance visual scale override, per axis (x,y,z). If NaN, uses the
