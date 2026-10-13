@@ -126,8 +126,13 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 		const size_t actualEdgeCount = oCyl->getSlicesCount();
 		double actualRadius = std::max<double>(oCyl->getTopRadius(), oCyl->getBottomRadius());
 
+		// Its own height, within the given limits:
+		const float z0 = static_cast<float>(modelPose.z());
+		const float z1 = z0 + oCyl->getHeight() * modelScale.z;
+
 		return processCylinderLike(
-			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
+			actualEdgeCount, actualRadius, std::max(zMin, std::min(z0, z1)),
+			std::min(zMax, std::max(z0, z1)), modelPose, modelScale);
 	}
 
 	if (auto oSph = dynamic_cast<const mrpt::viz::CSphere*>(&obj); oSph)
@@ -139,8 +144,13 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 
 		double actualRadius = oSph->getRadius();
 
+		// Its own height, within the given limits:
+		const float zc = static_cast<float>(modelPose.z());
+		const float r = static_cast<float>(actualRadius) * std::abs(modelScale.z);
+
 		return processCylinderLike(
-			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
+			actualEdgeCount, actualRadius, std::max(zMin, zc - r), std::min(zMax, zc + r),
+			modelPose, modelScale);
 	}
 
 	if (auto oBox = dynamic_cast<const mrpt::viz::CBox*>(&obj); oBox)
@@ -169,8 +179,12 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 			contour.emplace_back(corners[i].x, corners[i].y);
 		}
 
+		// Its own height, within the given limits:
+		const float z0 = static_cast<float>(modelPose.z() + std::min(p1.z, p2.z));
+		const float z1 = static_cast<float>(modelPose.z() + std::max(p1.z, p2.z));
+
 		Shape2p5 s;
-		s.setShapeManual(contour, zMin, zMax);
+		s.setShapeManual(contour, std::max(zMin, z0), std::min(zMax, z1));
 		return {s};
 	}
 

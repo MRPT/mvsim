@@ -169,8 +169,9 @@ class Block : public CVisualObject, public Simulable
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
-	/** If true, this block is rendered visually but is neither detected by
-	 * sensors nor collides with anything. */
+	/** If true, this block is rendered, so 3D lidars and cameras see it, but
+	 * 2D (Box2D-based) sensors don't. It neither collides nor acts as terrain
+	 * elevation. */
 	bool isIntangible() const { return intangible_; }
 
    protected:
@@ -209,8 +210,9 @@ class Block : public CVisualObject, public Simulable
 	/** Damping ("c" viscous friction coefficient) for angular velocities of the chassis on world */
 	float angular_damping_ = 0.1;
 
-	/** If intangible, a block will be rendered visually but will be neither
-	 * detected by sensors, nor collide  */
+	/** If intangible, a block is rendered, so 3D lidars and cameras see it,
+	 * but it neither collides nor acts as terrain elevation (e.g. branches a
+	 * robot can push through). 2D (Box2D-based) sensors don't see it. */
 	bool intangible_ = false;
 
 	/** Per-instance visual scale override, per axis (x,y,z). If NaN, uses the

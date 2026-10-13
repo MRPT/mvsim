@@ -322,15 +322,16 @@ void Block::updateMaxRadiusFromPoly()
 /** Create bodies, fixtures, etc. for the dynamical simulation */
 void Block::create_multibody_system(b2World& world)
 {
-	if (intangible_)
-	{
-		return;
-	}
-	// Update collision shape from shape loaded from XML or set manually:
+	// Update collision shape from shape loaded from XML or set manually
+	// (also for intangible blocks, whose shape is still drawn):
 	{
 		Shape2p5 cs;
 		cs.setShapeManual(block_poly_, block_z_min_, block_z_max_);
 		setCollisionShape(cs);
+	}
+	if (intangible_)
+	{
+		return;
 	}
 
 	// Define the dynamic body. We set its position and call the body
@@ -619,6 +620,12 @@ bool Block::default_block_z_min_max() const
 
 std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2D& worldXY) const
 {
+	// Intangible blocks don't affect the dynamics, terrain included:
+	if (intangible_)
+	{
+		return {};
+	}
+
 	// Is the point within the block?
 	const auto& myPose = getCPose3D();
 
