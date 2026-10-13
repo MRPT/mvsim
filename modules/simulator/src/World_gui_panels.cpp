@@ -1214,7 +1214,8 @@ void World::GUI::forget_entity(const std::string& name)
 		}
 		it = sensorPreviews.erase(it);
 	}
-	if (selectedName == name)
+	// Sensors of a vehicle are selected as "<vehicle>.<sensor>":
+	if (selectedName == name || selectedName.rfind(name + ".", 0) == 0)
 	{
 		select({}, nullptr);
 	}

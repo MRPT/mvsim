@@ -19,6 +19,7 @@
 #include <cmath>
 #include <fstream>
 #include <regex>
+#include <set>
 #include <sstream>
 
 namespace
@@ -52,28 +53,32 @@ mrpt::math::TTwist2D toGlobal(const mrpt::math::TTwist2D& l, double yaw)
 	return {c * l.vx - s * l.vy, s * l.vx + c * l.vy, l.omega};
 }
 
-// All named entities: vehicles, blocks, elements, actors and runtime objects.
-std::vector<std::string> allEntityNames(const mvsim::World& w)
+// All named entities: vehicles, blocks, elements, actors and runtime objects,
+// from the live lists (entities inserted since the last step included).
+std::set<std::string> allEntityNames(mvsim::World& w)
 {
-	std::vector<std::string> names;
-	for (const auto& o : w.getGroundTruthSnapshot().objects)
+	std::set<std::string> names;
 	{
-		names.push_back(o.name);
-	}
-	for (const auto& e : w.getListOfWorldElements())
-	{
-		if (!e->getName().empty())
+		auto lck = mrpt::lockHelper(w.getListOfSimulableObjectsMtx());
+		for (const auto& [name, obj] : w.getListOfSimulableObjects())
 		{
-			names.push_back(e->getName());
+			// Skip unnamed and internal ("__"-prefixed) objects:
+			if (!name.empty() && name.compare(0, 2, "__") != 0)
+			{
+				names.insert(name);
+			}
 		}
+	}
+	for (const auto& [name, pose] : w.runtimeObjects().poses())
+	{
+		names.insert(name);
 	}
 	return names;
 }
 
-bool nameInUse(const mvsim::World& w, const std::string& name)
+bool nameInUse(mvsim::World& w, const std::string& name)
 {
-	const auto names = allEntityNames(w);
-	return std::find(names.begin(), names.end(), name) != names.end();
+	return allEntityNames(w).count(name) != 0;
 }
 }  // namespace
 

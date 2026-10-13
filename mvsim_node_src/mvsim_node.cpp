@@ -790,7 +790,25 @@ void MVSimNode::removeVehiclePubSubs(const mvsim::VehicleBase& veh)
 {
 	{
 		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-		pubsub_vehicles_.erase(veh.getVehicleIndex());
+		if (auto it = pubsub_vehicles_.find(veh.getVehicleIndex()); it != pubsub_vehicles_.end())
+		{
+			// Pending observation jobs may keep these pubs/subs alive for a
+			// while, but no more commands must reach the removed vehicle:
+			it->second->sub_cmd_vel.reset();
+			pubsub_vehicles_.erase(it);
+		}
+	}
+	// Same thread as the cmd_vel callbacks and spin(), so no lock needed:
+	for (auto it = lastCmdVelTimestamp_.begin(); it != lastCmdVelTimestamp_.end();)
+	{
+		if (it->first == &veh)
+		{
+			it = lastCmdVelTimestamp_.erase(it);
+		}
+		else
+		{
+			++it;
+		}
 	}
 	auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
 	vehicleUsesNamespace_.erase(veh.getVehicleIndex());
@@ -2309,6 +2327,34 @@ void MVSimNode::onRuntimeObjectMarkers(const Msg_MarkerArray& msg, bool visibleT
 	const std::string prefix = visibleToSensors ? "ros/" : "ros_overlay/";
 
 	std::vector<mvsim::RuntimeObjectDescription> toSpawn;
+
+	// Spawns the pending objects. If the batch is rejected, they are spawned
+	// one by one, so an invalid marker does not discard the valid ones:
+	const auto flush = [&]()
+	{
+		try
+		{
+			ro.spawn(toSpawn);
+		}
+		catch (const std::exception&)
+		{
+			for (const auto& d : toSpawn)
+			{
+				try
+				{
+					ro.spawn({d});
+				}
+				catch (const std::exception& e)
+				{
+					RCLCPP_ERROR(
+						n_->get_logger(), "Error spawning runtime object '%s': %s", d.name.c_str(),
+						e.what());
+				}
+			}
+		}
+		toSpawn.clear();
+	};
+
 	for (const auto& m : msg.markers)
 	{
 		const std::string name = prefix + m.ns + "/" + std::to_string(m.id);
@@ -2316,15 +2362,13 @@ void MVSimNode::onRuntimeObjectMarkers(const Msg_MarkerArray& msg, bool visibleT
 		if (m.action == Marker::DELETEALL)
 		{
 			// Apply the pending ones first, to keep the message order:
-			ro.spawn(toSpawn);
-			toSpawn.clear();
+			flush();
 			ro.removeByPrefix(prefix);
 			continue;
 		}
 		if (m.action == Marker::DELETE)
 		{
-			ro.spawn(toSpawn);
-			toSpawn.clear();
+			flush();
 			ro.remove({name});
 			continue;
 		}
@@ -2350,15 +2394,7 @@ void MVSimNode::onRuntimeObjectMarkers(const Msg_MarkerArray& msg, bool visibleT
 		}
 		toSpawn.push_back(std::move(d));
 	}
-
-	try
-	{
-		ro.spawn(toSpawn);
-	}
-	catch (const std::exception& e)
-	{
-		RCLCPP_ERROR(n_->get_logger(), "Error spawning runtime objects: %s", e.what());
-	}
+	flush();
 }
 
 void MVSimNode::publishObjectsGroundTruth()

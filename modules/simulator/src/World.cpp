@@ -334,26 +334,26 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 		return;
 	}
 	auto lck = mrpt::lockHelper(rawlog_io_mtx_);
-	if (rawlog_io_per_veh_.empty())
-	{
-		for (const auto& v : vehicles_)
-		{
-			const std::string fileName =
-				mrpt::system::fileNameChangeExtension(save_to_rawlog_, v.first + ".rawlog"s);
 
-			MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
+	// One file per vehicle, created on its first observation (vehicles may be
+	// inserted at runtime):
+	auto& out = rawlog_io_per_veh_[veh.getName()];
+	if (!out)
+	{
+		const std::string fileName =
+			mrpt::system::fileNameChangeExtension(save_to_rawlog_, veh.getName() + ".rawlog"s);
+
+		MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
 
 #if MRPT_VERSION >= 0x020f07
-			rawlog_io_per_veh_[v.first] =
-				std::make_shared<mrpt::io::CCompressedOutputStream>(fileName);
+		out = std::make_shared<mrpt::io::CCompressedOutputStream>(fileName);
 #else
-			rawlog_io_per_veh_[v.first] = std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
+		out = std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
 #endif
-		}
 	}
 
 	// Store:
-	auto arch = mrpt::serialization::archiveFrom(*rawlog_io_per_veh_.at(veh.getName()));
+	auto arch = mrpt::serialization::archiveFrom(*out);
 	arch << *obs;
 }
 

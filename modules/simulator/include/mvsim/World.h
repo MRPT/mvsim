@@ -733,6 +733,7 @@ class World : public mrpt::system::COutputLogger
    private:
 	friend class VehicleBase;
 	friend class Block;
+	friend class RuntimeObjects;
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client_{"World"};
@@ -1088,7 +1089,9 @@ class World : public mrpt::system::COutputLogger
 	/** Runs one individual time step */
 	void internal_one_timestep(double dt);
 
-	std::mutex simulationStepRunningMtx_;
+	/// Held while a step runs or the world changes. Recursive, so that code
+	/// called from a step (e.g. callbacks) can also take it.
+	std::recursive_mutex simulationStepRunningMtx_;
 
 	// A 2D-hash table of objects
 	struct lut_2d_coordinates_t

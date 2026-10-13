@@ -16,8 +16,10 @@
 #include <mvsim/World.h>
 
 #include <atomic>
+#include <filesystem>
 #include <iostream>
 #include <mutex>
+#include <random>
 #include <string>
 #include <thread>
 
@@ -136,6 +138,32 @@ void testVehicleInsertRemove()
 	}
 	EXPECT_FALSE(found);
 	EXPECT_TRUE(events.size() == 4 && events.at(2) == "-r2" && events.at(3) == "+r4");
+}
+
+// Vehicles inserted at runtime get their own ground truth and rawlog files:
+void testLogsOfInsertedVehicle()
+{
+	namespace fs = std::filesystem;
+	const fs::path dir = fs::temp_directory_path() /
+						 ("mvsim_test_runtime_logs_" + std::to_string(std::random_device()()));
+	fs::create_directories(dir);
+
+	{
+		mvsim::World w;
+		w.headless(true);
+		w.load_from_XML(worldXml(
+			"<save_ground_truth_trajectory>" + (dir / "gt.txt").string() +
+			"</save_ground_truth_trajectory><save_to_rawlog>" + (dir / "log.rawlog").string() +
+			"</save_to_rawlog>"));
+		drive(w, "r1", 0.5, 0.5);
+
+		w.insertEntitiesFromXML(vehicleXml("r2", 0, 5));
+		drive(w, "r2", 0.5, 0.5);
+	}
+	EXPECT_TRUE(fs::exists(dir / "gt.r1.txt"));
+	EXPECT_TRUE(fs::exists(dir / "gt.r2.txt"));
+	EXPECT_TRUE(fs::exists(dir / "log.r2.rawlog"));
+	fs::remove_all(dir);
 }
 
 void testErrors()
@@ -356,6 +384,7 @@ int main()
 	{
 		testBlockInsertRemove();
 		testVehicleInsertRemove();
+		testLogsOfInsertedVehicle();
 		testErrors();
 		testFromOtherThread();
 		testCameraVisibility();

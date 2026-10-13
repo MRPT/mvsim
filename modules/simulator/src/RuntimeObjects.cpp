@@ -177,17 +177,21 @@ void RuntimeObjects::spawn(const std::vector<RuntimeObjectDescription>& objs)
 		validate(d);
 	}
 
-	// Resolve ground heights outside of our mutex:
+	// Resolve ground heights outside of our mutex. The elevation queries use
+	// world data that only the simulation thread may change while holding the
+	// step mutex:
 	std::vector<RuntimeObjectDescription> resolved = objs;
 	for (auto& d : resolved)
 	{
-		if (d.on_ground)
+		if (!d.on_ground)
 		{
-			const float zGround = parent_.getHighestElevationUnder(mrpt::math::TPoint3Df(
-				static_cast<float>(d.pose.x), static_cast<float>(d.pose.y), kGroundQueryHeight));
-			d.pose.z += zGround;
-			d.on_ground = false;
+			continue;
 		}
+		std::lock_guard lckStep(parent_.simulationStepRunningMtx_);
+		const float zGround = parent_.getHighestElevationUnder(mrpt::math::TPoint3Df(
+			static_cast<float>(d.pose.x), static_cast<float>(d.pose.y), kGroundQueryHeight));
+		d.pose.z += zGround;
+		d.on_ground = false;
 	}
 
 	auto lck = std::lock_guard(mtx_);

@@ -171,7 +171,7 @@ void World::internal_one_timestep(double dt)
 	{
 		return;
 	}
-	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
+	std::lock_guard lck(simulationStepRunningMtx_);
 
 	// Start the first performance window right before its first step:
 	{
@@ -436,31 +436,31 @@ void World::internalPostSimulStepForTrajectory()
 	gt_last_time_ = now;
 
 	// Create one entry per robot.
-	// First, create the output files if this is the first time:
 	auto lck = mrpt::lockHelper(gt_io_mtx_);
-	if (gt_io_per_veh_.empty())
+
+	const double t = mrpt::Clock::toDouble(get_simul_timestamp());
+
+	for (const auto& [vehName, veh] : vehicles_)
 	{
-		for (const auto& [vehName, veh] : vehicles_)
+		// One file per vehicle, created the first time (vehicles may be inserted
+		// at runtime):
+		auto [itOut, isNew] = gt_io_per_veh_.try_emplace(vehName);
+		if (isNew)
 		{
 			const std::string fileName = mrpt::system::fileNameChangeExtension(
 				save_ground_truth_trajectory_, vehName + ".txt"s);
 
 			MRPT_LOG_INFO_STREAM("Creating ground truth file: " << fileName);
 
-			gt_io_per_veh_[vehName] = std::fstream(fileName, std::ios::out);
+			itOut->second = std::fstream(fileName, std::ios::out);
 		}
-	}
 
-	const double t = mrpt::Clock::toDouble(get_simul_timestamp());
-
-	for (const auto& [vehName, veh] : vehicles_)
-	{
 		const auto p = mrpt::poses::CPose3DQuat(veh->getCPose3D());
 
 		// each row contains these elements separated by spaces:
 		// timestamp x y z q_x q_y q_z q_w
 
-		gt_io_per_veh_.at(vehName) << mrpt::format(
+		itOut->second << mrpt::format(
 			"%f %f %f %f %f %f %f %f\n", t, p.x(), p.y(), p.z(), p.quat().x(), p.quat().y(),
 			p.quat().z(), p.quat().w());
 	}
