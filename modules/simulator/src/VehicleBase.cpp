@@ -112,23 +112,23 @@ void VehicleBase::register_vehicle_class(
 
 /** Class factory: Creates a vehicle from XML description of type
  * "<vehicle>...</vehicle>".  */
-VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<char>* root)
+VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<char>* rootIn)
 {
 	register_all_veh_dynamics();
 
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root)
+	if (!rootIn)
 	{
 		throw runtime_error("[VehicleBase::factory] XML node is nullptr");
 	}
-	if (0 != strcmp(root->name(), "vehicle"))
+	if (0 != strcmp(rootIn->name(), "vehicle"))
 	{
 		throw runtime_error(mrpt::format(
 			"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
 			"expected)",
-			root->name()));
+			rootIn->name()));
 	}
 
 	// "class": When a vehicle has a 'class="XXX"' attribute, look for each
@@ -137,53 +137,15 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	// --------------------------------------------------------------------------------
 	JointXMLnode<> nodes;
 
-	std::vector<XML_Doc_Data::Ptr> scopedLifeDocs;
+	// Resolve <include> and <if> tags found at any depth inside the instance
+	// definition. Variables NAME and PARENT_NAME (used in sensors) are kept
+	// until "veh" is constructed and we actually have a name.
+	// The resolved document must exist during this whole function scope.
+	const std::set<std::string> varsRetain = {
+		"NAME" /*sensor name*/, "PARENT_NAME" /*vehicle name*/};
+	const auto [resolvedDoc, root] = xml_node_solving_includes(*parent, rootIn, varsRetain);
+	(void)resolvedDoc;
 
-	// Solve includes:
-	for (auto n = root->first_node(); n; n = n->next_sibling())
-	{
-		if (strcmp(n->name(), "include") != 0)
-		{
-			continue;
-		}
-
-		auto fileAttrb = n->first_attribute("file");
-		ASSERTMSG_(fileAttrb, "XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
-
-		const std::string relFile =
-			mvsim::parse(fileAttrb->value(), parent->user_defined_variables());
-		const auto absFile = parent->local_to_abs_path(relFile);
-		parent->logStr(
-			mrpt::system::LVL_DEBUG,
-			mrpt::format("XML parser: including file: '%s'", absFile.c_str()));
-
-		std::map<std::string, std::string> vars;
-		// Inherit the user-defined variables from parent scope
-		vars = parent->user_defined_variables();
-		// Plus new ones:
-		for (auto attr = n->first_attribute(); attr; attr = attr->next_attribute())
-		{
-			if (strcmp(attr->name(), "file") == 0)
-			{
-				continue;
-			}
-			vars[attr->name()] = attr->value();
-		}
-
-		// Delay the replacement of this variable (used in Sensors) until "veh"
-		// is constructed and we actually have a name:
-		std::set<std::string> varsRetain = {"NAME" /*sensor name*/, "PARENT_NAME" /*vehicle name*/};
-
-		const auto [xml, nRoot] = readXmlAndGetRoot(absFile, vars, varsRetain);
-
-		// the XML document object must exist during this whole function scope
-		scopedLifeDocs.emplace_back(xml);
-
-		// recursive parse:
-		nodes.add(nRoot->parent());
-	}
-
-	// ---
 	// Always search in root. Also in the class root, if any:
 	nodes.add(root);
 

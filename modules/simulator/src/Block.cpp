@@ -61,15 +61,20 @@ void Block::register_block_class(const World& parent, const rapidxml::xml_node<c
 	block_classes_registry.add(xml_to_str_solving_includes(parent, xml_node));
 }
 
-Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
+Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* rootIn)
 {
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[Block::factory] XML node is nullptr");
-	if (0 != strcmp(root->name(), "block"))
+	if (!rootIn) throw runtime_error("[Block::factory] XML node is nullptr");
+	if (0 != strcmp(rootIn->name(), "block"))
 		throw runtime_error(mrpt::format(
-			"[Block::factory] XML root element is '%s' ('block' expected)", root->name()));
+			"[Block::factory] XML root element is '%s' ('block' expected)", rootIn->name()));
+
+	// Resolve <include> and <if> tags found at any depth inside the instance
+	// definition. The resolved document must exist during this whole function scope.
+	const auto [resolvedDoc, root] = xml_node_solving_includes(*parent, rootIn);
+	(void)resolvedDoc;
 
 	// "class": When there is a 'class="XXX"' attribute, look for each parameter
 	//  in the set of "root" + "class_root" XML nodes:

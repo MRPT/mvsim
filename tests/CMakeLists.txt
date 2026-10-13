@@ -161,3 +161,9 @@ target_compile_definitions(test_dataset_gen_e2e PRIVATE
 	MVSIM_TUTORIAL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mvsim_tutorial"
 	)
 add_dependencies(test_dataset_gen_e2e mvsim-dataset-gen)
+
+mvsim_add_test(
+	TARGET test_xml_if_in_instances
+	SOURCES test_xml_if_in_instances.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)

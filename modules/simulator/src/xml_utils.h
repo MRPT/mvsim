@@ -117,6 +117,15 @@ std::string xml_to_str_solving_includes(
 	const World& parent, const rapidxml::xml_node<char>* xml_node,
 	const std::set<std::string>& varsRetain = {});
 
+/** Same as xml_to_str_solving_includes(), but returns the result parsed again
+ * as an XML tree: `<include>` and `<if>` tags found at any depth below the
+ * given node are already resolved in it. The returned document owns the
+ * memory of the returned node, so it must be kept alive while the node is used.
+ */
+std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> xml_node_solving_includes(
+	const World& parent, const rapidxml::xml_node<char>* xml_node,
+	const std::set<std::string>& varsRetain = {});
+
 // Bits:
 
 /** Parses a string like "XXX YYY PHI" with X,Y in meters, PHI in degrees, and
