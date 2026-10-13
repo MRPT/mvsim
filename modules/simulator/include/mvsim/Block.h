@@ -169,8 +169,9 @@ class Block : public CVisualObject, public Simulable
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
-	/** If true, this block is rendered visually but is neither detected by
-	 * sensors nor collides with anything. */
+	/** If true, this block is rendered, so 3D lidars and cameras see it, but
+	 * 2D (Box2D-based) sensors don't. It neither collides nor acts as terrain
+	 * elevation. */
 	bool isIntangible() const { return intangible_; }
 
    protected:
