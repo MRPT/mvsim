@@ -187,7 +187,7 @@ void RuntimeObjects::spawn(const std::vector<RuntimeObjectDescription>& objs)
 		{
 			continue;
 		}
-		std::lock_guard lckStep(parent_.simulationStepRunningMtx_);
+		std::lock_guard<std::recursive_mutex> lckStep(parent_.simulationStepRunningMtx_);
 		const float zGround = parent_.getHighestElevationUnder(mrpt::math::TPoint3Df(
 			static_cast<float>(d.pose.x), static_cast<float>(d.pose.y), kGroundQueryHeight));
 		d.pose.z += zGround;

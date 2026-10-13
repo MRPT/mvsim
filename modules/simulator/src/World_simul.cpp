@@ -171,7 +171,7 @@ void World::internal_one_timestep(double dt)
 	{
 		return;
 	}
-	std::lock_guard lck(simulationStepRunningMtx_);
+	std::lock_guard<std::recursive_mutex> lck(simulationStepRunningMtx_);
 
 	// Start the first performance window right before its first step:
 	{

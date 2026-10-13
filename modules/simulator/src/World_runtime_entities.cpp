@@ -135,7 +135,7 @@ std::vector<std::string> World::insertEntitiesFromXML(
 
 	std::vector<EntityChange> changes;
 	{
-		std::lock_guard lckStep(simulationStepRunningMtx_);
+		std::lock_guard<std::recursive_mutex> lckStep(simulationStepRunningMtx_);
 		auto lckWorld = mrpt::lockHelper(world_cs_);
 		auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 
@@ -329,7 +329,7 @@ bool World::removeEntity(const std::string& name)
 	std::shared_ptr<Simulable> obj;
 	EntityKind kind = EntityKind::Block;
 	{
-		std::lock_guard lckStep(simulationStepRunningMtx_);
+		std::lock_guard<std::recursive_mutex> lckStep(simulationStepRunningMtx_);
 		auto lckWorld = mrpt::lockHelper(world_cs_);
 		auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 

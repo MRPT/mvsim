@@ -158,7 +158,7 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(const mvsim_msgs::SrvGetPose& r
 mvsim_msgs::SrvSetControllerTwistAnswer World::srv_set_controller_twist(
 	const mvsim_msgs::SrvSetControllerTwist& req)
 {
-	std::lock_guard lck(simulationStepRunningMtx_);
+	std::lock_guard<std::recursive_mutex> lck(simulationStepRunningMtx_);
 
 	mvsim_msgs::SrvSetControllerTwistAnswer ans;
 	ans.set_success(false);
