@@ -16,6 +16,7 @@
 #include <mvsim/World.h>
 
 #include <memory>
+#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <string>
@@ -24,6 +25,10 @@
 namespace controller_manager
 {
 class ControllerManager;
+}
+namespace hardware_interface
+{
+class ResourceManager;
 }
 
 namespace mvsim_node
@@ -61,17 +66,28 @@ class Ros2ControlVehicle
 	mvsim::World& world_;
 	mvsim::VehicleBase& veh_;
 	mvsim::WheelJointsInterface& joints_;
+	const std::string ns_;
 
 	std::shared_ptr<rclcpp::Executor> executor_;
-	std::shared_ptr<controller_manager::ControllerManager> cm_;
 	rclcpp::Node::SharedPtr descriptionNode_;
 	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubDescription_;
+	rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subDescription_;
 	std::thread executorThread_;
 
-	size_t postStepCallbackId_ = 0;
+	/// Protects the controller manager and its timing, set when created
+	std::mutex cmMtx_;
+	std::shared_ptr<controller_manager::ControllerManager> cm_;
 	unsigned int stepsPerUpdate_ = 1;
 	unsigned int stepCount_ = 0;
 	double updatePeriod_ = 0.01;
+
+	size_t postStepCallbackId_ = 0;
+
+	void createControllerManager(std::unique_ptr<hardware_interface::ResourceManager> rm);
+
+#if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+	void onRobotDescription(const std::string& robotDescription);
+#endif
 
 	void onSimulationStep(double simTime);
 };
