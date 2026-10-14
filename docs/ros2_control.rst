@@ -10,8 +10,9 @@ hardware layer: same controllers, topics and frames.
 
 .. note::
    Requires the ROS 2 node (``mvsim_node``) built with ``controller_manager`` and
-   ``hardware_interface`` (>= 6.0) available. Currently supported for ``differential``,
-   ``differential_3_wheels`` and ``differential_4_wheels`` (skid steer) vehicles.
+   ``hardware_interface`` available (ROS 2 Humble, Jazzy and newer). Currently supported
+   for ``differential``, ``differential_3_wheels`` and ``differential_4_wheels`` (skid
+   steer) vehicles.
 
 |
 

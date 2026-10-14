@@ -20,6 +20,12 @@
 #include <set>
 #include <sstream>
 
+#if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+#include <array>
+#include <hardware_interface/types/lifecycle_state_names.hpp>
+#include <lifecycle_msgs/msg/state.hpp>
+#endif
+
 using namespace mvsim_node;
 
 namespace
@@ -42,6 +48,44 @@ class MvsimSystem : public hardware_interface::SystemInterface
 	{
 	}
 
+#if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+	CallbackReturn on_init(const hardware_interface::HardwareInfo& info) override
+	{
+		if (SystemInterface::on_init(info) != CallbackReturn::SUCCESS)
+		{
+			return CallbackReturn::ERROR;
+		}
+		states_.assign(info_.joints.size(), {0, 0, 0});
+		commands_.assign(info_.joints.size(), 0);
+		return checkInterfaces();
+	}
+
+	std::vector<hardware_interface::StateInterface> export_state_interfaces() override
+	{
+		std::vector<hardware_interface::StateInterface> ifs;
+		for (size_t k = 0; k < info_.joints.size(); k++)
+		{
+			for (const auto& si : info_.joints[k].state_interfaces)
+			{
+				ifs.emplace_back(info_.joints[k].name, si.name, &states_[k][stateIndex(si.name)]);
+			}
+		}
+		return ifs;
+	}
+
+	std::vector<hardware_interface::CommandInterface> export_command_interfaces() override
+	{
+		std::vector<hardware_interface::CommandInterface> ifs;
+		for (size_t k = 0; k < info_.joints.size(); k++)
+		{
+			for (const auto& ci : info_.joints[k].command_interfaces)
+			{
+				ifs.emplace_back(info_.joints[k].name, ci.name, &commands_[k]);
+			}
+		}
+		return ifs;
+	}
+#else
 	CallbackReturn on_init(
 		const hardware_interface::HardwareComponentInterfaceParams& params) override
 	{
@@ -49,36 +93,9 @@ class MvsimSystem : public hardware_interface::SystemInterface
 		{
 			return CallbackReturn::ERROR;
 		}
-		const std::string cmdIf = commandInterfaceName(joints_.commandMode());
-		for (const auto& j : info_.joints)
-		{
-			for (const auto& ci : j.command_interfaces)
-			{
-				if (ci.name != cmdIf)
-				{
-					RCLCPP_ERROR(
-						get_logger(),
-						"Joint '%s': command interface '%s' does not match the MVSim vehicle "
-						"<command_interface> ('%s')",
-						j.name.c_str(), ci.name.c_str(), cmdIf.c_str());
-					return CallbackReturn::ERROR;
-				}
-			}
-			for (const auto& si : j.state_interfaces)
-			{
-				if (si.name != hardware_interface::HW_IF_POSITION &&
-					si.name != hardware_interface::HW_IF_VELOCITY &&
-					si.name != hardware_interface::HW_IF_EFFORT)
-				{
-					RCLCPP_ERROR(
-						get_logger(), "Joint '%s': unsupported state interface '%s'",
-						j.name.c_str(), si.name.c_str());
-					return CallbackReturn::ERROR;
-				}
-			}
-		}
-		return CallbackReturn::SUCCESS;
+		return checkInterfaces();
 	}
+#endif
 
 	hardware_interface::return_type read(
 		[[maybe_unused]] const rclcpp::Time& time,
@@ -92,11 +109,10 @@ class MvsimSystem : public hardware_interface::SystemInterface
 			{
 				continue;  // no simulation step yet
 			}
-			const auto& name = info_.joints[k].name;
 			const auto& st = states[wi];
-			setIfExists(name + "/" + hardware_interface::HW_IF_POSITION, st.position);
-			setIfExists(name + "/" + hardware_interface::HW_IF_VELOCITY, st.velocity);
-			setIfExists(name + "/" + hardware_interface::HW_IF_EFFORT, st.effort);
+			setState(k, hardware_interface::HW_IF_POSITION, st.position);
+			setState(k, hardware_interface::HW_IF_VELOCITY, st.velocity);
+			setState(k, hardware_interface::HW_IF_EFFORT, st.effort);
 		}
 		return hardware_interface::return_type::OK;
 	}
@@ -107,11 +123,9 @@ class MvsimSystem : public hardware_interface::SystemInterface
 	{
 		// Only the wheels of this system, since others may belong to other
 		// systems:
-		const std::string cmdIf = commandInterfaceName(joints_.commandMode());
 		for (size_t k = 0; k < info_.joints.size(); k++)
 		{
-			const auto ifName = info_.joints[k].name + "/" + cmdIf;
-			const double c = has_command(ifName) ? get_command<double>(ifName) : 0.0;
+			const double c = getCommand(k);
 			joints_.setCommand(wheelIndices_[k], std::isfinite(c) ? c : 0.0);
 		}
 		return hardware_interface::return_type::OK;
@@ -121,14 +135,169 @@ class MvsimSystem : public hardware_interface::SystemInterface
 	WheelJointsInterface& joints_;
 	const std::vector<size_t> wheelIndices_;  //!< joint index -> wheel index
 
-	void setIfExists(const std::string& name, double value)
+	CallbackReturn checkInterfaces()
 	{
-		if (has_state(name))
+		const std::string cmdIf = commandInterfaceName(joints_.commandMode());
+		for (const auto& j : info_.joints)
 		{
-			set_state(name, value);
+			for (const auto& ci : j.command_interfaces)
+			{
+				if (ci.name != cmdIf)
+				{
+					RCLCPP_ERROR(
+						logger(),
+						"Joint '%s': command interface '%s' does not match the MVSim vehicle "
+						"<command_interface> ('%s')",
+						j.name.c_str(), ci.name.c_str(), cmdIf.c_str());
+					return CallbackReturn::ERROR;
+				}
+			}
+			for (const auto& si : j.state_interfaces)
+			{
+				if (si.name != hardware_interface::HW_IF_POSITION &&
+					si.name != hardware_interface::HW_IF_VELOCITY &&
+					si.name != hardware_interface::HW_IF_EFFORT)
+				{
+					RCLCPP_ERROR(
+						logger(), "Joint '%s': unsupported state interface '%s'", j.name.c_str(),
+						si.name.c_str());
+					return CallbackReturn::ERROR;
+				}
+			}
+		}
+		return CallbackReturn::SUCCESS;
+	}
+
+#if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+	// The interfaces point to these values (position, velocity, effort):
+	std::vector<std::array<double, 3>> states_;
+	std::vector<double> commands_;
+
+	static size_t stateIndex(const std::string& name)
+	{
+		if (name == hardware_interface::HW_IF_POSITION)
+		{
+			return 0;
+		}
+		return name == hardware_interface::HW_IF_VELOCITY ? 1 : 2;
+	}
+
+	rclcpp::Logger logger() const { return rclcpp::get_logger("mvsim_system." + info_.name); }
+
+	void setState(size_t joint, const std::string& name, double value)
+	{
+		states_[joint][stateIndex(name)] = value;
+	}
+
+	double getCommand(size_t joint) const { return commands_[joint]; }
+#else
+	rclcpp::Logger logger() const { return get_logger(); }
+
+	void setState(size_t joint, const std::string& name, double value)
+	{
+		const auto ifName = info_.joints[joint].name + "/" + name;
+		if (has_state(ifName))
+		{
+			set_state(ifName, value);
 		}
 	}
+
+	double getCommand(size_t joint) const
+	{
+		const auto ifName =
+			info_.joints[joint].name + "/" + commandInterfaceName(joints_.commandMode());
+		return has_command(ifName) ? get_command<double>(ifName) : 0.0;
+	}
+#endif
 };
+
+/** A <ros2_control> system of the robot description, and the vehicle wheel of
+ * each of its joints */
+struct BoundSystem
+{
+	hardware_interface::HardwareInfo info;
+	std::vector<size_t> wheelIndices;
+};
+
+std::optional<size_t> findWheel(const mvsim::VehicleBase& veh, const std::string& jointName)
+{
+	for (size_t i = 0; i < veh.getNumWheels(); i++)
+	{
+		if (veh.getWheelInfo(i).joint_name == jointName)
+		{
+			return i;
+		}
+	}
+	return std::nullopt;
+}
+
+/** The <ros2_control> systems whose joints are all wheels of the vehicle,
+ * each wheel in one system only. The rest are ignored, with a warning. */
+std::vector<BoundSystem> bindSystemsToWheels(
+	const std::string& robotDescription, const mvsim::VehicleBase& veh,
+	const rclcpp::Logger& logger)
+{
+	std::vector<hardware_interface::HardwareInfo> infos;
+	try
+	{
+		infos = hardware_interface::parse_control_resources_from_urdf(robotDescription);
+	}
+	catch (const std::exception& e)
+	{
+		RCLCPP_ERROR(logger, "Error parsing the robot description: %s", e.what());
+		return {};
+	}
+
+	std::vector<BoundSystem> bound;
+	std::set<size_t> boundWheels;  // each wheel can be in one system only
+	for (const auto& info : infos)
+	{
+		std::vector<size_t> wheelIndices;
+		std::string missing;
+		std::string repeated;
+		for (const auto& j : info.joints)
+		{
+			const auto idx = findWheel(veh, j.name);
+			if (!idx)
+			{
+				missing += (missing.empty() ? "" : ", ") + j.name;
+				continue;
+			}
+			if (boundWheels.count(*idx) ||
+				std::find(wheelIndices.begin(), wheelIndices.end(), *idx) != wheelIndices.end())
+			{
+				repeated += (repeated.empty() ? "" : ", ") + j.name;
+			}
+			wheelIndices.push_back(*idx);
+		}
+		if (info.type != "system" || info.joints.empty() || !missing.empty() || !repeated.empty())
+		{
+			RCLCPP_WARN(
+				logger,
+				"Ignoring <ros2_control> '%s' (type '%s'): only systems whose joints are "
+				"all wheels of vehicle '%s', each in one system only, are supported. Unknown "
+				"joints: [%s]. Repeated joints: [%s]",
+				info.name.c_str(), info.type.c_str(), veh.getName().c_str(), missing.c_str(),
+				repeated.c_str());
+			continue;
+		}
+		boundWheels.insert(wheelIndices.begin(), wheelIndices.end());
+		bound.push_back({info, wheelIndices});
+
+		RCLCPP_INFO(
+			logger, "Bound <ros2_control> '%s' (%zu joints) to MVSim vehicle '%s'",
+			info.name.c_str(), info.joints.size(), veh.getName().c_str());
+	}
+	if (bound.empty())
+	{
+		RCLCPP_ERROR(
+			logger, "No <ros2_control> system could be bound to vehicle '%s'",
+			veh.getName().c_str());
+	}
+	return bound;
+}
+
+#if !defined(MVSIM_ROS2_CONTROL_LEGACY_API)
 
 /** A resource manager that binds <ros2_control> systems to the vehicle
  * wheels (by joint name), whatever hardware plugin they specify. */
@@ -145,74 +314,17 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 	bool load_and_initialize_components(
 		const hardware_interface::ResourceManagerParams& params) override
 	{
-		std::vector<hardware_interface::HardwareInfo> infos;
-		try
+		const auto bound = bindSystemsToWheels(params.robot_description, veh_, get_logger());
+		for (const auto& b : bound)
 		{
-			infos = hardware_interface::parse_control_resources_from_urdf(params.robot_description);
-		}
-		catch (const std::exception& e)
-		{
-			RCLCPP_ERROR(get_logger(), "Error parsing the robot description: %s", e.what());
-			components_are_loaded_and_initialized_ = false;
-			return false;
-		}
-
-		size_t numBound = 0;
-		std::set<size_t> boundWheels;  // each wheel can be in one system only
-		for (const auto& info : infos)
-		{
-			std::vector<size_t> wheelIndices;
-			std::string missing;
-			std::string repeated;
-			for (const auto& j : info.joints)
-			{
-				const auto idx = findWheel(j.name);
-				if (!idx)
-				{
-					missing += (missing.empty() ? "" : ", ") + j.name;
-					continue;
-				}
-				if (boundWheels.count(*idx) ||
-					std::find(wheelIndices.begin(), wheelIndices.end(), *idx) != wheelIndices.end())
-				{
-					repeated += (repeated.empty() ? "" : ", ") + j.name;
-				}
-				wheelIndices.push_back(*idx);
-			}
-			if (info.type != "system" || info.joints.empty() || !missing.empty() ||
-				!repeated.empty())
-			{
-				RCLCPP_WARN(
-					get_logger(),
-					"Ignoring <ros2_control> '%s' (type '%s'): only systems whose joints are "
-					"all wheels of vehicle '%s', each in one system only, are supported. Unknown "
-					"joints: [%s]. Repeated joints: [%s]",
-					info.name.c_str(), info.type.c_str(), veh_.getName().c_str(), missing.c_str(),
-					repeated.c_str());
-				continue;
-			}
-			boundWheels.insert(wheelIndices.begin(), wheelIndices.end());
-
-			auto system = std::make_unique<MvsimSystem>(joints_, wheelIndices);
 			hardware_interface::HardwareComponentParams hp;
-			hp.hardware_info = info;
+			hp.hardware_info = b.info;
 			hp.clock = get_clock();
 			hp.logger = get_logger();
 			hp.executor = executor_;
-			import_component(std::move(system), hp);
-			numBound++;
-
-			RCLCPP_INFO(
-				get_logger(), "Bound <ros2_control> '%s' (%zu joints) to MVSim vehicle '%s'",
-				info.name.c_str(), info.joints.size(), veh_.getName().c_str());
+			import_component(std::make_unique<MvsimSystem>(joints_, b.wheelIndices), hp);
 		}
-		if (numBound == 0)
-		{
-			RCLCPP_ERROR(
-				get_logger(), "No <ros2_control> system could be bound to vehicle '%s'",
-				veh_.getName().c_str());
-		}
-		components_are_loaded_and_initialized_ = numBound > 0;
+		components_are_loaded_and_initialized_ = !bound.empty();
 		return components_are_loaded_and_initialized_;
 	}
 
@@ -220,19 +332,8 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 	mvsim::VehicleBase& veh_;
 	WheelJointsInterface& joints_;
 	rclcpp::Executor::WeakPtr executor_;
-
-	std::optional<size_t> findWheel(const std::string& jointName) const
-	{
-		for (size_t i = 0; i < veh_.getNumWheels(); i++)
-		{
-			if (veh_.getWheelInfo(i).joint_name == jointName)
-			{
-				return i;
-			}
-		}
-		return std::nullopt;
-	}
 };
+#endif
 
 /** Link name for a wheel joint: "<name>_joint" -> "<name>", else "<name>_link" */
 std::string wheelLinkName(const std::string& jointName)
@@ -287,80 +388,39 @@ std::string mvsim_node::generateVehicleUrdf(
 Ros2ControlVehicle::Ros2ControlVehicle(
 	mvsim::World& world, mvsim::VehicleBase& veh, mvsim::WheelJointsInterface& joints,
 	const std::string& ns)
-	: world_(world), veh_(veh), joints_(joints)
+	: world_(world), veh_(veh), joints_(joints), ns_(ns)
 {
 	executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
 
-	// Controller manager node options: sim time and user parameters file
-	auto options = controller_manager::get_cm_node_options();
-	std::vector<std::string> args = {"--ros-args"};
-	if (!joints_.controllersYaml().empty())
-	{
-		args.push_back("--params-file");
-		args.push_back(joints_.controllersYaml());
-	}
-	options.arguments(args);
-	// Do not apply the mvsim node remappings (e.g. its node name) to this node:
-	options.use_global_arguments(false);
-	options.append_parameter_override("use_sim_time", true);
+	descriptionNode_ = std::make_shared<rclcpp::Node>(
+		"mvsim_robot_description", ns, rclcpp::NodeOptions().use_global_arguments(false));
+	const auto qosDescription = rclcpp::QoS(1).transient_local().reliable();
 
+#if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+	// This resource manager version cannot bind the systems by itself: do it
+	// here when the robot description arrives, then create the controller
+	// manager with it.
+	subDescription_ = descriptionNode_->create_subscription<std_msgs::msg::String>(
+		"robot_description", qosDescription,
+		[this](const std_msgs::msg::String& msg) { onRobotDescription(msg.data); });
+#else
 	// The resource manager logs and timing use the (sim) clock of the CM node,
 	// which does not exist yet: use a standalone ROS clock instead.
-	auto rm = std::make_unique<MvsimResourceManager>(
+	createControllerManager(std::make_unique<MvsimResourceManager>(
 		std::make_shared<rclcpp::Clock>(RCL_ROS_TIME),
-		rclcpp::get_logger("mvsim_resource_manager." + veh.getName()), veh, joints, executor_);
+		rclcpp::get_logger("mvsim_resource_manager." + veh.getName()), veh, joints, executor_));
+#endif
 
-	cm_ = std::make_shared<controller_manager::ControllerManager>(
-		std::move(rm), executor_, "controller_manager", ns, options);
-	executor_->add_node(cm_);
-
-	// Let each controller declared in the YAML file (as "<name>.type") read
-	// its parameters from the same file, unless already set:
-	if (!joints_.controllersYaml().empty())
-	{
-		const std::string typeSuffix = ".type";
-		for (const auto& name : cm_->list_parameters({}, 0).names)
-		{
-			if (name.size() <= typeSuffix.size() ||
-				name.compare(name.size() - typeSuffix.size(), typeSuffix.size(), typeSuffix) != 0)
-			{
-				continue;
-			}
-			const auto paramsFile =
-				name.substr(0, name.size() - typeSuffix.size()) + ".params_file";
-			if (!cm_->has_parameter(paramsFile))
-			{
-				cm_->declare_parameter(paramsFile, joints_.controllersYaml());
-			}
-		}
-	}
-
-	const unsigned int rate = cm_->get_update_rate();
-	updatePeriod_ = 1.0 / std::max(1U, rate);
-	const double dt = world_.get_simul_timestep();
-	stepsPerUpdate_ = std::max(1U, static_cast<unsigned int>(std::lround(updatePeriod_ / dt)));
-	if (std::abs(stepsPerUpdate_ * dt - updatePeriod_) > 1e-6)
-	{
-		RCLCPP_WARN(
-			cm_->get_logger(),
-			"Controller manager update period (%.4f s) is not a multiple of the "
-			"simulation time step (%.4f s): using %u steps (%.4f s)",
-			updatePeriod_, dt, stepsPerUpdate_, stepsPerUpdate_ * dt);
-	}
-	updatePeriod_ = stepsPerUpdate_ * dt;
-
-	// Robot description:
+	// Robot description generated from the vehicle:
 	if (!joints_.robotDescriptionFromTopic())
 	{
-		descriptionNode_ = std::make_shared<rclcpp::Node>(
-			"mvsim_robot_description", ns, rclcpp::NodeOptions().use_global_arguments(false));
 		pubDescription_ = descriptionNode_->create_publisher<std_msgs::msg::String>(
-			"robot_description", rclcpp::QoS(1).transient_local().reliable());
+			"robot_description", qosDescription);
 		std_msgs::msg::String msg;
 		msg.data = generateVehicleUrdf(veh_, joints_.commandMode());
 		pubDescription_->publish(msg);
-		executor_->add_node(descriptionNode_);
 	}
+	executor_->add_node(descriptionNode_);
 
 	executorThread_ = std::thread([this]() { executor_->spin(); });
 
@@ -368,10 +428,8 @@ Ros2ControlVehicle::Ros2ControlVehicle(
 		world_.addPostStepCallback([this](double simTime) { onSimulationStep(simTime); });
 
 	RCLCPP_INFO(
-		cm_->get_logger(),
-		"ros2_control for vehicle '%s': controller manager at %.1f Hz (every %u simulation "
-		"steps), robot description from %s",
-		veh_.getName().c_str(), 1.0 / updatePeriod_, stepsPerUpdate_,
+		descriptionNode_->get_logger(), "ros2_control for vehicle '%s': robot description from %s",
+		veh_.getName().c_str(),
 		joints_.robotDescriptionFromTopic() ? "topic" : "the vehicle (generated)");
 }
 
@@ -391,18 +449,129 @@ Ros2ControlVehicle::~Ros2ControlVehicle()
 	// Note: the controller manager shuts down its controllers by itself.
 }
 
+void Ros2ControlVehicle::createControllerManager(
+	std::unique_ptr<hardware_interface::ResourceManager> rm)
+{
+	// Controller manager node options: sim time and user parameters file
+	auto options = controller_manager::get_cm_node_options();
+	std::vector<std::string> args = {"--ros-args"};
+	if (!joints_.controllersYaml().empty())
+	{
+		args.push_back("--params-file");
+		args.push_back(joints_.controllersYaml());
+	}
+	options.arguments(args);
+	// Do not apply the mvsim node remappings (e.g. its node name) to this node:
+	options.use_global_arguments(false);
+	options.append_parameter_override("use_sim_time", true);
+
+	auto cm = std::make_shared<controller_manager::ControllerManager>(
+		std::move(rm), executor_, "controller_manager", ns_, options);
+	executor_->add_node(cm);
+
+	// Let each controller declared in the YAML file (as "<name>.type") read
+	// its parameters from the same file, unless already set:
+	if (!joints_.controllersYaml().empty())
+	{
+		const std::string typeSuffix = ".type";
+		for (const auto& name : cm->list_parameters({}, 0).names)
+		{
+			if (name.size() <= typeSuffix.size() ||
+				name.compare(name.size() - typeSuffix.size(), typeSuffix.size(), typeSuffix) != 0)
+			{
+				continue;
+			}
+			const auto paramsFile =
+				name.substr(0, name.size() - typeSuffix.size()) + ".params_file";
+			if (!cm->has_parameter(paramsFile))
+			{
+				cm->declare_parameter(paramsFile, joints_.controllersYaml());
+			}
+		}
+	}
+
+	const unsigned int rate = cm->get_update_rate();
+	const double period = 1.0 / std::max(1U, rate);
+	const double dt = world_.get_simul_timestep();
+	const unsigned int steps = std::max(1U, static_cast<unsigned int>(std::lround(period / dt)));
+	if (std::abs(steps * dt - period) > 1e-6)
+	{
+		RCLCPP_WARN(
+			cm->get_logger(),
+			"Controller manager update period (%.4f s) is not a multiple of the "
+			"simulation time step (%.4f s): using %u steps (%.4f s)",
+			period, dt, steps, steps * dt);
+	}
+
+	RCLCPP_INFO(
+		cm->get_logger(),
+		"ros2_control for vehicle '%s': controller manager at %.1f Hz (every %u simulation "
+		"steps)",
+		veh_.getName().c_str(), 1.0 / (steps * dt), steps);
+
+	std::lock_guard<std::mutex> lck(cmMtx_);
+	stepsPerUpdate_ = steps;
+	updatePeriod_ = steps * dt;
+	cm_ = cm;
+}
+
+#if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+void Ros2ControlVehicle::onRobotDescription(const std::string& robotDescription)
+{
+	const auto logger = rclcpp::get_logger("mvsim_resource_manager." + veh_.getName());
+	{
+		std::lock_guard<std::mutex> lck(cmMtx_);
+		if (cm_)
+		{
+			RCLCPP_WARN(logger, "Robot description already loaded: ignoring a new one");
+			return;
+		}
+	}
+
+	const auto bound = bindSystemsToWheels(robotDescription, veh_, logger);
+	if (bound.empty())
+	{
+		return;
+	}
+	auto rm = std::make_unique<hardware_interface::ResourceManager>();
+	for (const auto& b : bound)
+	{
+		rm->import_component(std::make_unique<MvsimSystem>(joints_, b.wheelIndices), b.info);
+	}
+	// Only marks the description as loaded (its systems were imported above):
+	rm->load_urdf(robotDescription, false /*validate*/, false /*load components*/);
+
+	for (const auto& entry : rm->get_components_status())
+	{
+		rclcpp_lifecycle::State active(
+			lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE,
+			hardware_interface::lifecycle_state_names::ACTIVE);
+		rm->set_component_state(entry.first, active);
+	}
+
+	createControllerManager(std::move(rm));
+}
+#endif
+
 void Ros2ControlVehicle::onSimulationStep([[maybe_unused]] double simTime)
 {
+	std::lock_guard<std::mutex> lck(cmMtx_);
+	if (!cm_)
+	{
+		return;	 // no robot description yet
+	}
 	if (++stepCount_ < stepsPerUpdate_)
 	{
 		return;
 	}
 	stepCount_ = 0;
 
+#if !defined(MVSIM_ROS2_CONTROL_LEGACY_API)
 	if (!cm_->is_resource_manager_initialized())
 	{
 		return;
 	}
+#endif
 
 	// Simulation time, as ROS time (the clock of all nodes using sim time):
 	const auto t = rclcpp::Time(
