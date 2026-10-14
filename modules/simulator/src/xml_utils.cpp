@@ -872,7 +872,11 @@ std::string mvsim::xml_to_str_solving_includes(
 	// "<vehicle:class name="foo">"
 	ss << "<" << xml_node->name();
 	for (auto a = xml_node->first_attribute(); a; a = a->next_attribute())
-		ss << " " << a->name() << "=\"" << a->value() << "\"";
+	{
+		ss << " " << a->name() << "=\"";
+		xmlEscapeAppend(ss, a->value(), /*isAttribute*/ true);
+		ss << "\"";
+	}
 	ss << ">\n";
 
 	// Solve includes:
@@ -885,6 +889,19 @@ std::string mvsim::xml_to_str_solving_includes(
 	ss << "</" << xml_node->name() << ">\n";
 
 	return ss.str();
+}
+
+std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> mvsim::xml_node_solving_includes(
+	const World& parent, const rapidxml::xml_node<char>* xml_node,
+	const std::set<std::string>& varsRetain)
+{
+	auto docData = std::make_shared<XML_Doc_Data>();
+	docData->documentData = xml_to_str_solving_includes(parent, xml_node, varsRetain);
+
+	auto [doc, root] = readXmlTextAndGetRoot(docData->documentData, xml_node->name());
+	docData->doc = std::move(doc);
+
+	return {docData, root};
 }
 
 void mvsim::parse_trajectory_controller_config(

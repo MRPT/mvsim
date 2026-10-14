@@ -191,7 +191,7 @@ Worlds are XML files. Root element: `<mvsim_world>`. Key child elements:
 
 Sensor and vehicle definitions can be split into reusable files under `definitions/`.
 
-`<include>` resolution (`xml_to_str_solving_includes()` in `xml_utils.cpp`) is recursive at any nesting depth: nodes with no nested `<include>`/`<if>` are serialized verbatim (fast path), but a subtree containing one anywhere underneath (e.g. inside `<vehicle:class><dynamics><controller>`) is rebuilt node-by-node so the nested tag gets resolved too. This is what lets the `trajectory` controller pull in a waypoint list via a nested `<include>`.
+`<include>` resolution (`xml_to_str_solving_includes()` in `xml_utils.cpp`) is recursive at any nesting depth: nodes with no nested `<include>`/`<if>` are serialized verbatim (fast path), but a subtree containing one anywhere underneath (e.g. inside `<vehicle:class><dynamics><controller>`) is rebuilt node-by-node so the nested tag gets resolved too. This is what lets the `trajectory` controller pull in a waypoint list via a nested `<include>`. Instances (`VehicleBase::factory`, `Block::factory`, `HumanActor::factory`) go through the same resolver via `xml_node_solving_includes()`, which re-parses the resolved text (the returned `XML_Doc_Data` must outlive the node), so `<include>`/`<if>` work at any depth inside `<vehicle>`, `<block>` and `<actor>` too. `<for>` is only supported at world level.
 
 ---
 
