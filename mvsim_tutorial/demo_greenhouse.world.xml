@@ -39,10 +39,10 @@
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
 	<variable name="NUM_TILTED_BEAMS_Y" value="10"></variable>
 	
-	<variable name="NUM_CORRIDORS_X" value="5"></variable>
+	<variable name="NUM_CORRIDORS_X" value="10"></variable>
 	
-	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="5"></variable>
-	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="6"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="6"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="7"></variable>
 
 	<variable name="NUM_POLES_X" value="8"></variable>
 	<variable name="NUM_POLES_Y" value="8"></variable>

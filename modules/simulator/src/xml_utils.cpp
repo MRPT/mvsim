@@ -180,6 +180,29 @@ void TParamEntry::parse(
 		pp.y = y;
 		pp.z = z;
 	}
+	// %scale3d
+	else if (std::string(format) == std::string("%scale3d"))
+	{
+		double x = 0, y = 0, z = 0;
+		const int ret = ::sscanf(str.c_str(), "%lf %lf %lf", &x, &y, &z);
+		if (ret == 1)
+		{
+			y = x;
+			z = x;
+		}
+		else if (ret != 3)
+		{
+			throw std::runtime_error(mrpt::format(
+				"%s Error parsing '%s'='%s' (Expected format:'S' or 'SX SY SZ')",
+				functionNameContext, varName.c_str(), str.c_str()));
+		}
+
+		mrpt::math::TPoint3D& pp = *reinterpret_cast<mrpt::math::TPoint3D*>(val);
+
+		pp.x = x;
+		pp.y = y;
+		pp.z = z;
+	}
 	// "%pose3d"
 	else if (!strncmp(format, "%pose3d", strlen("%pose3d")))
 	{

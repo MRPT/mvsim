@@ -74,6 +74,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_rgbd_camera
+	SOURCES test_rgbd_camera.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_wheel_joints
 	SOURCES test_wheel_joints.cpp
 	LINK_LIBRARIES mvsim::simulator
@@ -112,6 +118,18 @@ mvsim_add_test(
 mvsim_add_test(
 	TARGET test_elevation_queries
 	SOURCES test_elevation_queries.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_static_blocks
+	SOURCES test_static_blocks.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_model_scale
+	SOURCES test_model_scale.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
 

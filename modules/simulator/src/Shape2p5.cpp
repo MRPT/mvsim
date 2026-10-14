@@ -22,6 +22,7 @@
 #include <mrpt/viz/stock_objects.h>
 #include <mvsim/Shape2p5.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <queue>
@@ -38,6 +39,46 @@ using mrpt::math::TPoint3Df;
 constexpr uint8_t CELL_UNDEFINED = 0x80;
 constexpr uint8_t CELL_OCCUPIED = 0x00;
 constexpr uint8_t CELL_FREE = 0xff;
+
+namespace
+{
+// Convex hull of a set of 2D points (Andrew's monotone chain), counter-clockwise.
+mrpt::math::TPolygon2D convexHull(std::vector<mrpt::math::TPoint2D> pts)
+{
+	std::sort(
+		pts.begin(), pts.end(),
+		[](const auto& a, const auto& b) { return a.x < b.x || (a.x == b.x && a.y < b.y); });
+	pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
+	if (pts.size() < 3)
+	{
+		return mrpt::math::TPolygon2D(pts);
+	}
+
+	const auto cross = [](const auto& o, const auto& a, const auto& b)
+	{ return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x); };
+
+	std::vector<mrpt::math::TPoint2D> hull(2 * pts.size());
+	size_t k = 0;
+	for (size_t i = 0; i < pts.size(); i++)
+	{
+		while (k >= 2 && cross(hull[k - 2], hull[k - 1], pts[i]) <= 0)
+		{
+			k--;
+		}
+		hull[k++] = pts[i];
+	}
+	for (size_t i = pts.size() - 1, t = k + 1; i > 0; i--)
+	{
+		while (k >= t && cross(hull[k - 2], hull[k - 1], pts[i - 1]) <= 0)
+		{
+			k--;
+		}
+		hull[k++] = pts[i - 1];
+	}
+	hull.resize(k - 1);
+	return mrpt::math::TPolygon2D(hull);
+}
+}  // namespace
 constexpr uint8_t CELL_VISITED = 0x40;
 
 double Shape2p5::volume() const
@@ -185,7 +226,38 @@ void Shape2p5::computeShape() const
 	internalGridFloodFill();
 
 	// 2) Detect the outer contour with full grid resolution:
-	const mrpt::math::TPolygon2D rawGridContour = internalGridContour();
+	mrpt::math::TPolygon2D rawGridContour = internalGridContour();
+
+	// 2b) Sparse models (e.g. foliage) may leave gaps for the flood fill to
+	// split them into several pieces, and the contour above only follows one
+	// of them. If many occupied cells are left out, use the convex hull of
+	// all of them instead:
+	{
+		const double r = grid_->getResolution();
+		std::vector<mrpt::math::TPoint2D> occupied;
+		size_t nOutside = 0;
+		for (size_t cy = 0; cy < grid_->getSizeY(); cy++)
+		{
+			for (size_t cx = 0; cx < grid_->getSizeX(); cx++)
+			{
+				if (*grid_->cellByIndex(cx, cy) != CELL_OCCUPIED)
+				{
+					continue;
+				}
+				const mrpt::math::TPoint2D c(grid_->idx2x(cx), grid_->idx2y(cy));
+				occupied.push_back(c);
+				if (rawGridContour.size() < 3 ||
+					(!rawGridContour.contains(c) && rawGridContour.distance(c) > 1.5 * r))
+				{
+					nOutside++;
+				}
+			}
+		}
+		if (!occupied.empty() && nOutside > occupied.size() / 10)
+		{
+			rawGridContour = convexHull(occupied);
+		}
+	}
 
 	// 3) convex hull:
 	// Eventually, b2Box library will use convex hull anyway, so let's use it

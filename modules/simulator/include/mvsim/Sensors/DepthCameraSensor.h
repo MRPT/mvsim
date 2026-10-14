@@ -16,6 +16,7 @@
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
+#include <vector>
 
 namespace mvsim
 {
@@ -81,6 +82,9 @@ class DepthCameraSensor : public SensorBase
 		sensor_params_.setSensorPose(mrpt::poses::CPose3D(p));
 	}
 
+	/** Converts depthImage_ into the range image of `obs`, with noise */
+	void depthToRangeImage(mrpt::obs::CObservation3DRangeScan& obs);
+
 	// Store here all sensor intrinsic parameters. This obj will be copied as a
 	// "pattern" to fill it with actual scan data.
 	mrpt::obs::CObservation3DRangeScan sensor_params_;
@@ -109,6 +113,10 @@ class DepthCameraSensor : public SensorBase
 	bool sense_depth_ = true;  //!< Simulate the DEPTH sensor part
 	bool sense_rgb_ = true;	 //!< Simulate the RGB sensor part
 
+	/** Both images come from a single render, possible if both cameras see
+	 * the same view (see loadConfigFrom()) */
+	bool single_render_pass_ = false;
+
 	std::string ros_depth_image_encoding_ = "16UC1";
 	bool publish_depth_image_ = true;  //!< Publish depth as 16UC1 image + CameraInfo
 	bool publish_colored_pointcloud_ = false;  //!< Publish XYZRGB instead of XYZ pointcloud
@@ -120,5 +128,7 @@ class DepthCameraSensor : public SensorBase
 	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
 
 	mrpt::math::CMatrixFloat depthImage_;  // to avoid memory allocs
+	std::vector<int16_t> depthNoiseSeq_;  //!< Precomputed noise [range units]
+	size_t depthNoiseIdx_ = 0;
 };
 }  // namespace mvsim

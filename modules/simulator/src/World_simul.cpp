@@ -231,6 +231,11 @@ void World::internal_one_timestep(double dt)
 		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 		const auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
 
+		// Both maps are sorted by name like simulableObjects_, so the position of
+		// each object is the one right after the previous one (hinted inserts):
+		auto hintPose = copy_of_objects_dynstate_pose_.begin();
+		auto hintTwist = copy_of_objects_dynstate_twist_.begin();
+
 		for (auto& e : simulableObjects_)
 		{
 			if (!e.second)
@@ -241,8 +246,10 @@ void World::internal_one_timestep(double dt)
 			e.second->simul_post_timestep(context);
 
 			// save our own copy of the kinematic state:
-			copy_of_objects_dynstate_pose_[e.first] = e.second->getPose();
-			copy_of_objects_dynstate_twist_[e.first] = e.second->getRefVelocityLocal();
+			hintPose = std::next(copy_of_objects_dynstate_pose_.insert_or_assign(
+				hintPose, e.first, e.second->getPose()));
+			hintTwist = std::next(copy_of_objects_dynstate_twist_.insert_or_assign(
+				hintTwist, e.first, e.second->getRefVelocityLocal()));
 
 			if (e.second->hadCollision())
 			{

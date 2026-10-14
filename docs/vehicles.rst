@@ -615,6 +615,9 @@ Generic car-like vehicle with Ackermann steering.
 * Wheelbase: 1.3 m, Track width: 2.0 m
 * Max steering: ±30°
 * Drivetrain: Torsen 4WD
+* Controller: ``twist_front_steer_pid`` by default; select another one (e.g.
+  ``twist_ideal``) with the ``controller`` include variable:
+  ``<include file="ackermann.vehicle.xml" controller="twist_ideal" />``
 
 Pickup Truck
 ~~~~~~~~~~~~

@@ -9,6 +9,7 @@
 
 #include <box2d/b2_settings.h>	// b2_maxPolygonVertices
 #include <mrpt/containers/yaml.h>
+#include <mrpt/core/format.h>
 #include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/version.h>
@@ -18,7 +19,21 @@
 #include <mrpt/viz/CSphere.h>
 #include <mvsim/CollisionShapeCache.h>
 
+#include <algorithm>
+
 using namespace mvsim;
+
+namespace
+{
+mrpt::math::TPoint3Df scaled(const mrpt::math::TPoint3Df& p, const mrpt::math::TPoint3Df& s)
+{
+	return {p.x * s.x, p.y * s.y, p.z * s.z};
+}
+mrpt::math::TPoint3D scaled(const mrpt::math::TPoint3D& p, const mrpt::math::TPoint3Df& s)
+{
+	return {p.x * s.x, p.y * s.y, p.z * s.z};
+}
+}  // namespace
 
 CollisionShapeCache& CollisionShapeCache::Instance()
 {
@@ -28,12 +43,21 @@ CollisionShapeCache& CollisionShapeCache::Instance()
 
 Shape2p5 CollisionShapeCache::get(
 	mrpt::viz::CVisualObject& obj, float zMin, float zMax, const mrpt::poses::CPose3D& modelPose,
-	const float modelScale, const std::optional<std::string>& modelFile)
+	const mrpt::math::TPoint3Df& modelScale, const std::optional<std::string>& modelFile)
 {
-	// already cached?
+	// The same model file may be used with different poses, scales or z ranges:
+	std::optional<std::string> cacheKey;
 	if (modelFile)
 	{
-		if (auto it = cache.find(modelFile.value()); it != cache.end())
+		cacheKey = mrpt::format(
+			"%s|%s|%.9g %.9g %.9g|%.9g %.9g", modelFile->c_str(), modelPose.asString().c_str(),
+			modelScale.x, modelScale.y, modelScale.z, zMin, zMax);
+	}
+
+	// already cached?
+	if (cacheKey)
+	{
+		if (auto it = cache.find(*cacheKey); it != cache.end())
 		{
 			return it->second.shape;
 		}
@@ -41,7 +65,7 @@ Shape2p5 CollisionShapeCache::get(
 
 	// No, it's a new model path, create its placeholder:
 	Shape2p5 retVal;
-	Shape2p5& ret = modelFile ? cache[*modelFile].shape : retVal;
+	Shape2p5& ret = cacheKey ? cache[*cacheKey].shape : retVal;
 
 	// Now, decide whether it's a simple geometry, or an arbitrary model:
 	const auto simpleGeom = processSimpleGeometries(obj, zMin, zMax, modelPose, modelScale);
@@ -84,7 +108,7 @@ Shape2p5 CollisionShapeCache::get(
 
 std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 	const mrpt::viz::CVisualObject& obj, float zMin, float zMax,
-	const mrpt::poses::CPose3D& modelPose, const float modelScale)
+	const mrpt::poses::CPose3D& modelPose, const mrpt::math::TPoint3Df& modelScale)
 {
 	using mrpt::literals::operator""_deg;
 
@@ -102,8 +126,13 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 		const size_t actualEdgeCount = oCyl->getSlicesCount();
 		double actualRadius = std::max<double>(oCyl->getTopRadius(), oCyl->getBottomRadius());
 
+		// Its own height, within the given limits:
+		const float z0 = static_cast<float>(modelPose.z());
+		const float z1 = z0 + oCyl->getHeight() * modelScale.z;
+
 		return processCylinderLike(
-			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
+			actualEdgeCount, actualRadius, std::max(zMin, std::min(z0, z1)),
+			std::min(zMax, std::max(z0, z1)), modelPose, modelScale);
 	}
 
 	if (auto oSph = dynamic_cast<const mrpt::viz::CSphere*>(&obj); oSph)
@@ -115,8 +144,13 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 
 		double actualRadius = oSph->getRadius();
 
+		// Its own height, within the given limits:
+		const float zc = static_cast<float>(modelPose.z());
+		const float r = static_cast<float>(actualRadius) * std::abs(modelScale.z);
+
 		return processCylinderLike(
-			actualEdgeCount, actualRadius, zMin, zMax, modelPose, modelScale);
+			actualEdgeCount, actualRadius, std::max(zMin, zc - r), std::min(zMax, zc + r),
+			modelPose, modelScale);
 	}
 
 	if (auto oBox = dynamic_cast<const mrpt::viz::CBox*>(&obj); oBox)
@@ -132,8 +166,8 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 
 		mrpt::math::TPoint3D p1, p2;
 		oBox->getBoxCorners(p1, p2);
-		p1 *= modelScale;
-		p2 *= modelScale;
+		p1 = scaled(p1, modelScale);
+		p2 = scaled(p2, modelScale);
 
 		const mrpt::math::TPoint3D corners[4] = {
 			modelPose.composePoint({p1.x, p1.y, 0}), modelPose.composePoint({p1.x, p2.y, 0}),
@@ -145,8 +179,12 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 			contour.emplace_back(corners[i].x, corners[i].y);
 		}
 
+		// Its own height, within the given limits:
+		const float z0 = static_cast<float>(modelPose.z() + std::min(p1.z, p2.z));
+		const float z1 = static_cast<float>(modelPose.z() + std::max(p1.z, p2.z));
+
 		Shape2p5 s;
-		s.setShapeManual(contour, zMin, zMax);
+		s.setShapeManual(contour, std::max(zMin, z0), std::min(zMax, z1));
 		return {s};
 	}
 
@@ -156,7 +194,7 @@ std::optional<Shape2p5> CollisionShapeCache::processSimpleGeometries(
 
 Shape2p5 CollisionShapeCache::processGenericGeometry(
 	mrpt::viz::CVisualObject& obj, float zMin, float zMax, const mrpt::poses::CPose3D& modelPose,
-	const float modelScale)
+	const mrpt::math::TPoint3Df& modelScale)
 {
 	Shape2p5 ret;
 
@@ -180,8 +218,13 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 
 	auto rawBB = obj.getBoundingBox();
 	// transform and scale BBox too:
-	rawBB.max *= modelScale;
-	rawBB.min *= modelScale;
+	{
+		// (a negative scale mirrors the model, swapping min and max)
+		const auto a = scaled(rawBB.min, modelScale);
+		const auto b = scaled(rawBB.max, modelScale);
+		rawBB.min = {std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z)};
+		rawBB.max = {std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z)};
+	}
 	const auto coarseBB = rawBB.compose(modelPose);
 	ret.buildInit(
 		mrpt::math::TPoint2Df(coarseBB.min.x, coarseBB.min.y),
@@ -190,7 +233,7 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 	auto lambdaUpdatePt = [&](const mrpt::math::TPoint3Df& orgPt)
 	{
 		numTotalPts++;
-		auto pt = modelPose.composePoint(orgPt * modelScale);
+		auto pt = modelPose.composePoint(scaled(orgPt, modelScale));
 		if (pt.z < zMin || pt.z > zMax)
 		{
 			return;	 // skip
@@ -203,7 +246,8 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 		numTotalPts += 3;
 		// transform the whole triangle, then compare with [z,z] limits:
 		mrpt::viz::TTriangle t = tri;
-		for (int i = 0; i < 3; i++) t.vertex(i) = modelPose.composePoint(t.vertex(i) * modelScale);
+		for (int i = 0; i < 3; i++)
+			t.vertex(i) = modelPose.composePoint(scaled(t.vertex(i), modelScale));
 
 		// does any of the point lie within the valid Z range, or is the
 		// triangle going all the way down to top?
@@ -315,7 +359,7 @@ Shape2p5 CollisionShapeCache::processGenericGeometry(
 
 Shape2p5 CollisionShapeCache::processCylinderLike(
 	const size_t actualEdgeCount, double actualRadius, float zMin, float zMax,
-	const mrpt::poses::CPose3D& modelPose, const float modelScale)
+	const mrpt::poses::CPose3D& modelPose, const mrpt::math::TPoint3Df& modelScale)
 {
 	const size_t maxEdges = b2_maxPolygonVertices;
 
@@ -345,7 +389,7 @@ Shape2p5 CollisionShapeCache::processCylinderLike(
 	{
 		const double ang = i * 2 * M_PI / nFaces;
 		const mrpt::math::TPoint3D localPt = {cos(ang) * actualRadius, sin(ang) * actualRadius, .0};
-		const auto pt = modelPose.composePoint(localPt * modelScale);
+		const auto pt = modelPose.composePoint(scaled(localPt, modelScale));
 		contour.emplace_back(pt.x, pt.y);
 	}
 

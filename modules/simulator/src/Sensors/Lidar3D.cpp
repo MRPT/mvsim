@@ -445,6 +445,8 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	mrpt::math::CMatrixDouble rangeImage(nRows, nCols);
 	rangeImage.setZero();  // 0=invalid (no lidar return)
 
+	curPts.reserve(nRows * nCols);
+
 	auto viewport = world3DScene.getViewport();
 
 	// Disable rendering of shadows for this sensor:
@@ -687,7 +689,9 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 				const mrpt::math::TPoint3D pt_wrt_cam = {
 					d * (u - camModel.cx()) / camModel.fx(),
 					d * (v - camModel.cy()) / camModel.fy(), d};
-				curPts.insertPoint(thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam));
+				const auto pt = thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam);
+				curPts.insertPointFast(
+					static_cast<float>(pt.x), static_cast<float>(pt.y), static_cast<float>(pt.z));
 
 				// Extract intensity from rendered RGB grayscale:
 				float intensity = 1.0f;
@@ -728,6 +732,8 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		}
 		tleStore.stop();
 	}
+	// Points were inserted with insertPointFast():
+	curPts.mark_as_modified();
 
 	if (ignore_parent_body_)
 	{

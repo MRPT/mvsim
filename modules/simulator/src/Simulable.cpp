@@ -59,8 +59,18 @@ void Simulable::simul_pre_timestep([[maybe_unused]] const TSimulContext& context
 
 	// Position of the body reference point:
 	const auto qq = simulable_parent_->applyWorldRenderOffset(q_);
-	b2dBody_->SetTransform(
-		b2Vec2(static_cast<float>(qq.x), static_cast<float>(qq.y)), static_cast<float>(q_.yaw));
+	const b2Vec2 pos(static_cast<float>(qq.x), static_cast<float>(qq.y));
+	const auto angle = static_cast<float>(q_.yaw);
+
+	// Static bodies only move when their pose is set. Moving a body updates the
+	// broad-phase of all its fixtures, which is costly with many objects:
+	if (b2dBody_->GetType() == b2_staticBody && b2dBody_->GetPosition() == pos &&
+		b2dBody_->GetAngle() == angle)
+	{
+		return;
+	}
+
+	b2dBody_->SetTransform(pos, angle);
 
 	// Vel of the center of mass:
 	b2dBody_->SetLinearVelocity(
@@ -80,14 +90,17 @@ void Simulable::simul_post_timestep(const TSimulContext& context)
 		const b2Vec2& pos = b2dBody_->GetPosition();
 		const float angle = b2dBody_->GetAngle();
 		const auto off = simulable_parent_->worldRenderOffset();
+		const auto prevQ = q_;
 		q_.x = pos(0) - off.x;
 		q_.y = pos(1) - off.y;
 		q_.yaw = angle;
 		// The rest (z,pitch,roll) will be always 0, unless other
 		// world-element modifies them! (e.g. elevation map)
 
-		// Update the GUI element **poses** only:
-		if (auto* vo = meAsCVisualObject(); vo)
+		// Update the GUI element **poses** only. Static bodies that did not
+		// move need no update (setPose() already updates them):
+		const bool moved = q_.x != prevQ.x || q_.y != prevQ.y || q_.yaw != prevQ.yaw;
+		if (auto* vo = meAsCVisualObject(); vo && (moved || b2dBody_->GetType() != b2_staticBody))
 		{
 			vo->guiUpdate(std::nullopt, std::nullopt);
 		}
