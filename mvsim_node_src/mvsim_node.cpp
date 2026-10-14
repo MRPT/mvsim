@@ -2104,8 +2104,17 @@ void MVSimNode::initRos2Control()
 		auto* veh = const_cast<mvsim::VehicleBase*>(cveh);
 		auto* joints = veh->getControllerInterface()->wheelJointsInterface();
 		const std::string ns = useNamespaces ? "/" + veh->getName() : std::string();
-		ros2_control_managers_.push_back(
-			std::make_shared<mvsim_node::Ros2ControlVehicle>(*mvsim_world_, *veh, *joints, ns));
+		try
+		{
+			ros2_control_managers_.push_back(
+				std::make_shared<mvsim_node::Ros2ControlVehicle>(*mvsim_world_, *veh, *joints, ns));
+		}
+		catch (const std::exception& e)
+		{
+			RCLCPP_ERROR(
+				n_->get_logger(), "Could not set up ros2_control for vehicle '%s': %s",
+				veh->getName().c_str(), e.what());
+		}
 	}
 #else
 	ROS12_ERROR(
