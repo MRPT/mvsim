@@ -523,6 +523,38 @@ class World : public mrpt::system::COutputLogger
 		callbacksOnObservation_.emplace_back(f);
 	}
 
+	/** Performance statistics, measured over consecutive windows of
+	 * simulated time. \sa getPerformanceStats() */
+	struct PerformanceStats
+	{
+		double window_simul_time = 0;  //!< [s] Simulated time of the window
+		double window_wall_time = 0;  //!< [s] Wall-clock time of the window
+		double realtime_factor = 0;	 //!< window_simul_time/window_wall_time
+		/// Wall-clock time when the window ended [s] (as mrpt::Clock::nowDouble())
+		double window_end_wall_time = 0;
+		size_t steps = 0;  //!< Number of physics steps
+		double physics_time = 0;  //!< [s] Wall-clock time in physics steps, excluding sensors
+		double sensors_wait_time = 0;  //!< [s] Waiting for OpenGL sensors
+
+		struct Sensor
+		{
+			double processing_time = 0;	 //!< [s] Wall-clock time
+			size_t observations = 0;  //!< Number of generated observations
+		};
+		/** Per sensor, by "<vehicle>/<sensor>" */
+		std::map<std::string, Sensor> sensors;
+	};
+
+	/** Statistics of the last completed window (a few seconds of simulated
+	 * time). Thread-safe. */
+	PerformanceStats getPerformanceStats() const;
+
+	/** Internal: accounts the wall-clock processing time of a sensor.
+	 * `inSimulationThread` must be true if it was spent within a physics step
+	 * (CPU-side sensors), so it is not counted as physics time. */
+	void internalAddSensorProcessingTime(
+		const std::string& key, double seconds, bool inSimulationThread);
+
 	/** Registers a function to be called at the end of each simulation step,
 	 * from the simulation thread, with the simulation time (seconds) as
 	 * argument. Used for lock-step co-simulation (e.g. ros2_control).
@@ -1162,6 +1194,7 @@ class World : public mrpt::system::COutputLogger
 		unsigned int dockRightId_ = 0;
 
 		void build_default_layout();
+		void show_performance_tooltip();
 		/// Docks a window in the right column, unless it has saved settings.
 		void dock_new_window_right(const std::string& title);
 	};
@@ -1194,6 +1227,14 @@ class World : public mrpt::system::COutputLogger
 
 	/// See sensor_has_to_create_egl_context()
 	bool eglContextCreated_ = false;
+
+	mutable std::mutex perfStatsMtx_;
+	PerformanceStats perfStatsCurrent_;
+	PerformanceStats perfStatsLast_;
+	std::optional<double> perfWindowStartSim_;
+	std::optional<double> perfWindowStartWall_;
+	double perfSensorTimeInStep_ = 0;  //!< CPU-side sensors, current step
+	void internalUpdatePerformanceStats(double physicsTime, double sensorsWaitTime);
 
 	std::map<size_t, std::function<void(double)>> postStepCallbacks_;
 	size_t postStepCallbacksLastId_ = 0;

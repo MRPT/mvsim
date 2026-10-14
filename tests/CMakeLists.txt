@@ -53,8 +53,38 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_performance_stats
+	SOURCES test_performance_stats.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_tilted_lidar2d
 	SOURCES test_tilted_lidar2d.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_gnss_events
+	SOURCES test_gnss_events.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_georef_texture
+	SOURCES test_georef_texture.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_camera_distortion
+	SOURCES test_camera_distortion.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_rgbd_camera
+	SOURCES test_rgbd_camera.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
 
@@ -97,6 +127,18 @@ mvsim_add_test(
 mvsim_add_test(
 	TARGET test_elevation_queries
 	SOURCES test_elevation_queries.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_static_blocks
+	SOURCES test_static_blocks.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_model_scale
+	SOURCES test_model_scale.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
 

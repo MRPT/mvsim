@@ -232,7 +232,7 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	}
 
 	std::string modelURI;
-	double modelScale = 1.0;
+	mrpt::math::TPoint3D modelScale = {1.0, 1.0, 1.0};
 	mrpt::math::TPose3D modelPose;
 	bool initialShowBoundingBox = false;
 	bool castShadows = true;
@@ -242,7 +242,7 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 	TParameterDefinitions params;
 	params["model_uri"] = TParamEntry("%s", &modelURI);
-	params["model_scale"] = TParamEntry("%lf", &modelScale);
+	params["model_scale"] = TParamEntry("%scale3d", &modelScale);
 	params["model_offset_x"] = TParamEntry("%lf", &modelPose.x);
 	params["model_offset_y"] = TParamEntry("%lf", &modelPose.y);
 	params["model_offset_z"] = TParamEntry("%lf", &modelPose.z);
@@ -294,21 +294,19 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 		g.apply();
 	}
 
-	// Check if this is a Block with a visual_scale override
-	std::optional<double> scaleOverride;
+	// A block visual_scale overrides the model scale:
 	if (const Block* block = dynamic_cast<const Block*>(this))
 	{
-		const double blockScale = block->visual_scale();
-		if (blockScale == blockScale)  // not NaN
+		if (const auto blockScale = block->visual_scale(); blockScale)
 		{
-			scaleOverride = blockScale;
+			modelScale = *blockScale;
 		}
 	}
 
 	// Add the 3D model as custom viz:
 	auto glGroup = addCustomVisualization(
-		glModel, mrpt::poses::CPose3D(modelPose), static_cast<float>(modelScale), objectName,
-		modelURI, initialShowBoundingBox, scaleOverride);
+		glModel, mrpt::poses::CPose3D(modelPose), modelScale.cast<float>(), objectName, modelURI,
+		initialShowBoundingBox);
 	glGroup->castShadows(castShadows);
 
 	return true;  // yes, we have a custom viz model
@@ -341,9 +339,8 @@ bool CVisualObject::customVisualVisible() const
 
 mrpt::viz::CSetOfObjects::Ptr CVisualObject::addCustomVisualization(
 	const mrpt::viz::CVisualObject::Ptr& glModel, const mrpt::poses::CPose3D& modelPose,
-	const float modelScale, const std::string& modelName,
-	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox,
-	const std::optional<double>& scaleOverride)
+	const mrpt::math::TPoint3Df& modelScale, const std::string& modelName,
+	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox)
 {
 	ASSERT_(glModel);
 
@@ -359,10 +356,6 @@ mrpt::viz::CSetOfObjects::Ptr CVisualObject::addCustomVisualization(
 		zMax = static_cast<float>(block->block_z_max() + GeometryEpsilon);
 	}
 
-	// Apply scale override if provided
-	const float effectiveScale =
-		scaleOverride.has_value() ? static_cast<float>(scaleOverride.value()) : modelScale;
-
 #if 0
 	std::cout << "MODEL: " << (modelURI ? *modelURI : "none")
 			  << " glModel: " << glModel->GetRuntimeClass()->className
@@ -371,14 +364,14 @@ mrpt::viz::CSetOfObjects::Ptr CVisualObject::addCustomVisualization(
 #endif
 
 	// Calculate its convex hull:
-	const auto shape = chc.get(*glModel, zMin, zMax, modelPose, effectiveScale, modelURI);
+	const auto shape = chc.get(*glModel, zMin, zMax, modelPose, modelScale, modelURI);
 
 	auto glGroup = mrpt::viz::CSetOfObjects::Create();
 
 	// Note: we cannot apply pose/scale to the original glModel since
 	// it may be shared (many instances of the same object):
 	glGroup->insert(glModel);
-	glGroup->setScale(effectiveScale);
+	glGroup->setScale(modelScale.x, modelScale.y, modelScale.z);
 	glGroup->setPose(modelPose);
 
 	glGroup->setName(modelName);

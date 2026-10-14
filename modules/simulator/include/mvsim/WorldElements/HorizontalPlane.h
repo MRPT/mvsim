@@ -70,6 +70,10 @@ class HorizontalPlane : public WorldElementBase
 	mutable std::shared_mutex cacheMtx_;
 	void updateCachedPose(const mrpt::math::TPose3D& pose);
 
+	/** Sets the plane extent from geodetic corners (see <geo_corner_sw>) */
+	void setGeoreferencedCorners(const std::string& sw, const std::string& ne);
+	bool georeferencedTexture_ = false;
+
 	mrpt::viz::CTexturedPlane::Ptr gl_plane_;
 	mrpt::viz::CSetOfTexturedTriangles::Ptr gl_plane_text_;
 	mrpt::viz::CSetOfObjects::Ptr glGroup_;

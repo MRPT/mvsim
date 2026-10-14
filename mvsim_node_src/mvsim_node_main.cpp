@@ -83,9 +83,12 @@ int main(int argc, char** argv)
 			r.sleep();
 		}
 #else
+		// "As fast as possible" mode (realtime_factor<=0): run back to back.
+		double realtime_factor = 1.0;
+		n->get_parameter("realtime_factor", realtime_factor);
 		const auto ros_clock = rclcpp::Clock::make_shared();
 		const auto timer_ = rclcpp::create_timer(
-			n, ros_clock, std::chrono::microseconds(periodMs),
+			n, ros_clock, std::chrono::microseconds(realtime_factor > 0 ? periodMs : 1),
 			[&node]()
 			{
 				if (rclcpp::ok()) node->spin();

@@ -15,6 +15,11 @@
     <fy>${fy|400}</fy>
     <clip_min>${clip_min|1e-2}</clip_min>
     <clip_max>${clip_max|1e+4}</clip_max>
+    <!-- Optional lens distortion ("none" or "plumb_bob", as OpenCV/ROS camera_info). Requires MRPT >= 3.6.0 -->
+    <distortion_model>${distortion_model|none}</distortion_model>
+    <k1>${k1|0}</k1> <k2>${k2|0}</k2> <p1>${p1|0}</p1> <p2>${p2|0}</p2> <k3>${k3|0}</k3>
+    <!-- Optional Gaussian noise added to each pixel channel [intensity levels, 0-255]. Requires MRPT >= 3.6.0 -->
+    <image_noise_std>${image_noise_std|0}</image_noise_std>
 
     <!-- Whether the GUI preview subwindow for this sensor starts opened (true, default) or minimized (false) -->
     <preview_win_visible>${preview_win_visible|true}</preview_win_visible>

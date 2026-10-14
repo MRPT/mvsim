@@ -95,6 +95,21 @@ ground floor or ceiling. Supports textures, collision detection, and shadow rend
 * **<texture>** - Optional texture image path (local or remote URL)
 * **<normal_map>** - Optional normal map for the texture (OpenGL convention: green points to the image top)
 * **<texture_size_x>, <texture_size_y>** - Texture tiling size in world units
+* **<geo_corner_sw>, <geo_corner_ne>** - Optional ``latitude longitude`` (degrees) of the
+  south-west and north-east corners of a **north-up** texture image, such as an orthophoto. They
+  replace ``x_min``... ``y_max``, the texture sizes and the plane horizontal position and
+  orientation (only its height is kept): the image covers the plane exactly once,
+  aligned with East-North, so it is correctly placed for GNSS-based localization. Requires a
+  :ref:`georeference <world-georeference>` tag before the element (also supports
+  ``world_to_enu_rotation`` and UTM worlds).
+
+.. code-block:: xml
+
+   <element class="horizontal_plane">
+       <texture>orthophoto.jpg</texture>
+       <geo_corner_sw>36.8630 -2.2840</geo_corner_sw>
+       <geo_corner_ne>36.8642 -2.2826</geo_corner_ne>
+   </element>
 
 -------
 

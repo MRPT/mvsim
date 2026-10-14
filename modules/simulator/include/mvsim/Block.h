@@ -26,7 +26,9 @@
 #include <mvsim/VisualObject.h>
 #include <mvsim/basic_types.h>
 
+#include <cmath>
 #include <mutex>
+#include <optional>
 
 namespace mvsim
 {
@@ -142,12 +144,22 @@ class Block : public CVisualObject, public Simulable
 		gl_block_.reset();	// regenerate 3D view
 	}
 
-	double visual_scale() const { return visual_scale_; }
-	void visual_scale(double v)
+	/// Per-instance (x,y,z) scale override of the visual model, if set.
+	std::optional<mrpt::math::TPoint3D> visual_scale() const
+	{
+		if (std::isnan(visual_scale_.x) || std::isnan(visual_scale_.y) ||
+			std::isnan(visual_scale_.z))
+		{
+			return {};
+		}
+		return visual_scale_;
+	}
+	void visual_scale(const mrpt::math::TPoint3D& v)
 	{
 		visual_scale_ = v;
 		gl_block_.reset();	// regenerate 3D view
 	}
+	void visual_scale(double v) { visual_scale({v, v, v}); }
 
 	/// returns true if none of the min/max block z limits has been set
 	/// explicitly yet. Used while parsing the shape_from_visual tag.
@@ -157,8 +169,9 @@ class Block : public CVisualObject, public Simulable
 
 	std::optional<float> getElevationAt(const mrpt::math::TPoint2D& worldXY) const override;
 
-	/** If true, this block is rendered visually but is neither detected by
-	 * sensors nor collides with anything. */
+	/** If true, this block is rendered, so 3D lidars and cameras see it, but
+	 * 2D (Box2D-based) sensors don't. It neither collides nor acts as terrain
+	 * elevation. */
 	bool isIntangible() const { return intangible_; }
 
    protected:
@@ -197,13 +210,16 @@ class Block : public CVisualObject, public Simulable
 	/** Damping ("c" viscous friction coefficient) for angular velocities of the chassis on world */
 	float angular_damping_ = 0.1;
 
-	/** If intangible, a block will be rendered visually but will be neither
-	 * detected by sensors, nor collide  */
+	/** If intangible, a block is rendered, so 3D lidars and cameras see it,
+	 * but it neither collides nor acts as terrain elevation (e.g. branches a
+	 * robot can push through). 2D (Box2D-based) sensors don't see it. */
 	bool intangible_ = false;
 
-	/** Per-instance visual scale override. If NaN, uses the scale from the
-	 * visual model definition */
-	double visual_scale_ = std::numeric_limits<double>::quiet_NaN();
+	/** Per-instance visual scale override, per axis (x,y,z). If NaN, uses the
+	 * scale from the visual model definition */
+	mrpt::math::TPoint3D visual_scale_ = {
+		std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(),
+		std::numeric_limits<double>::quiet_NaN()};
 
 	const TParameterDefinitions params_ = {
 		{"mass", {"%lf", &mass_}},
@@ -215,7 +231,7 @@ class Block : public CVisualObject, public Simulable
 		{"color", {"%color", &block_color_}},
 		{"intangible", {"%bool", &intangible_}},
 		{"static", {"%bool", &isStatic_}},
-		{"visual_scale", {"%lf", &visual_scale_}},
+		{"visual_scale", {"%scale3d", &visual_scale_}},
 		{"linear_damping", {"%f", &linear_damping_}},
 		{"angular_damping", {"%f", &angular_damping_}}
 		//

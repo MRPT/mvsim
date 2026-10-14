@@ -69,6 +69,15 @@ void World::clear_all()
 	blocks_.clear();
 	joints_.clear();
 	actors_.clear();
+
+	{
+		auto lckPerf = mrpt::lockHelper(perfStatsMtx_);
+		perfStatsCurrent_ = {};
+		perfStatsLast_ = {};
+		perfWindowStartSim_.reset();
+		perfWindowStartWall_.reset();
+		perfSensorTimeInStep_ = 0;
+	}
 }
 
 void World::internal_initialize()
@@ -300,6 +309,12 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 
 void World::dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
+	if (obs)
+	{
+		auto lck = mrpt::lockHelper(perfStatsMtx_);
+		perfStatsCurrent_.sensors[veh.getName() + "/" + obs->sensorLabel].observations++;
+	}
+
 	internalOnObservation(veh, obs);
 	for (const auto& cb : callbacksOnObservation_) cb(veh, obs);
 }

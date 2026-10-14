@@ -609,7 +609,14 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	Simulable::simul_post_timestep(context);
 	for (auto& s : sensors_)
 	{
+		const double t0 = mrpt::Clock::nowDouble();
 		s->simul_post_timestep(context);
+		if (world_)
+		{
+			world_->internalAddSensorProcessingTime(
+				getName() + "/" + s->getName(), mrpt::Clock::nowDouble() - t0,
+				true /*simulation thread*/);
+		}
 	}
 
 	// Estimate 2D pose increment as 2D-projected 3D pose increment, plus noise and bias:

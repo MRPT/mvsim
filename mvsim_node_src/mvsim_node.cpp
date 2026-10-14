@@ -14,6 +14,7 @@
 #include <mrpt/system/os.h>	 // kbhit()
 #include <mrpt/version.h>
 #include <mvsim/Sensors/DepthCameraSensor.h>
+#include <mvsim/Sensors/IMU.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/mvsim_node_core.h>
 
@@ -216,6 +217,17 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	disable_sim_time_clock_ =
 		n_->declare_parameter<bool>("disable_sim_time_clock", disable_sim_time_clock_);
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	diagnostics_rate_ = n_->declare_parameter<double>("diagnostics_rate", diagnostics_rate_);
+	if (!std::isfinite(diagnostics_rate_) || diagnostics_rate_ < 0)
+	{
+		RCLCPP_ERROR(
+			n_->get_logger(), "Invalid 'diagnostics_rate' (%f): /diagnostics disabled",
+			diagnostics_rate_);
+		diagnostics_rate_ = 0;
+	}
+#endif
+
 	publish_sensor_tf_ = n_->declare_parameter<bool>("publish_sensor_tf", publish_sensor_tf_);
 
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
@@ -402,6 +414,18 @@ void MVSimNode::spin()
 	const double wall_gap = t_new - t_old_;
 	double incr_time = realtime_factor_ * wall_gap;
 
+	// "As fast as possible" mode: a fixed number of steps per call, with no
+	// skipped sensor data (OpenGL sensors already run in lock-step):
+	if (realtime_factor_ <= 0)
+	{
+		// Back-pressure: let the ROS publishers keep up with the simulation:
+		while (ros_publisher_workers_.pendingTasks() > afapMaxPendingPublications_ && ok())
+		{
+			std::this_thread::sleep_for(std::chrono::microseconds(100));
+		}
+		incr_time = afapStepsPerSpin_ * mvsim_world_->get_simul_timestep();
+	}
+
 	// Just in case the computer is *really fast*...
 	if (incr_time < mvsim_world_->get_simul_timestep())
 	{
@@ -416,7 +440,7 @@ void MVSimNode::spin()
 	// the *next* spin even later -> the simulation publishes odometry/TF/sensors
 	// in multi-hundred-ms bursts instead of smoothly. Capping lets sim time fall
 	// slightly behind wall-clock under load and recover, rather than cascading.
-	if (max_simul_catchup_time_ > 0 && incr_time > max_simul_catchup_time_)
+	if (realtime_factor_ > 0 && max_simul_catchup_time_ > 0 && incr_time > max_simul_catchup_time_)
 	{
 		ROS12_WARN_THROTTLE(
 			10000,
@@ -629,8 +653,7 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	const auto& vehs = mvsim_world_->getListOfVehicles();
 	pubsub_vehicles_.clear();
 	pubsub_vehicles_.resize(vehs.size());
-	size_t idx = 0;
-	for (auto it = vehs.begin(); it != vehs.end(); ++it, ++idx)
+	for (auto it = vehs.begin(); it != vehs.end(); ++it)
 	{
 		mvsim::VehicleBase* veh = dynamic_cast<mvsim::VehicleBase*>(it->second.get());
 		if (!veh)
@@ -638,7 +661,8 @@ void MVSimNode::notifyROSWorldIsUpdated()
 			continue;
 		}
 
-		auto& pubsubs = pubsub_vehicles_[idx];
+		// By vehicle index, as used to look them up (the list is sorted by name):
+		auto& pubsubs = pubsub_vehicles_.at(veh->getVehicleIndex());
 
 		initPubSubs(pubsubs, veh);
 		initLoggerTopicCallbacks(pubsubs, veh);
@@ -661,6 +685,14 @@ void MVSimNode::notifyROSWorldIsUpdated()
 	worldPubs_.pub_map_ros = n_->create_publisher<Msg_OccupancyGrid>("simul_map", qosLatched);
 	worldPubs_.pub_map_metadata =
 		n_->create_publisher<Msg_MapMetaData>("simul_map_metadata", qosLatched);
+
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	if (diagnostics_rate_ > 0)
+	{
+		pub_diagnostics_ =
+			n_->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/diagnostics", 10);
+	}
+#endif
 #endif
 
 	// Publish maps and static stuff:
@@ -968,19 +1000,22 @@ void MVSimNode::spinNotifyROS()
 		pub_clock_->publish(clockMsg);
 	}
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	publishDiagnostics();
+#endif
+
 	// Publish all TFs for each vehicle:
 	// ---------------------------------------------------------------------
 	if (tim_publish_tf_.Tac() > period_ms_publish_tf_ * 1e-3)
 	{
 		tim_publish_tf_.Tic();
 
-		size_t i = 0;
 		ASSERT_EQUAL_(pubsub_vehicles_.size(), vehs.size());
 
-		for (auto it = vehs.begin(); it != vehs.end(); ++it, ++i)
+		for (auto it = vehs.begin(); it != vehs.end(); ++it)
 		{
 			const auto& veh = it->second;
-			auto& pubs = pubsub_vehicles_[i];
+			auto& pubs = pubsub_vehicles_.at(veh->getVehicleIndex());
 
 			// 1) Ground-truth pose and velocity
 			// --------------------------------------------
@@ -1393,6 +1428,32 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 		msg_header.stamp = obsStamp;
 		msg_header.frame_id = obs.sensorLabel;
 		mrpt2ros::toROS(obs, msg_header, msg_imu);
+
+		// Covariances from the actual sensor noise parameters:
+		for (const auto& s : veh.getSensors())
+		{
+			const auto* imu = dynamic_cast<const mvsim::IMU*>(s.get());
+			if (!imu || imu->getName() != obs.sensorLabel)
+			{
+				continue;
+			}
+			const auto setDiagonal = [](auto& cov, double stdDev)
+			{
+				cov.fill(0);
+				cov[0] = cov[4] = cov[8] = stdDev * stdDev;
+			};
+			setDiagonal(
+				msg_imu.angular_velocity_covariance, imu->noiseModel().gyroscope.white_noise_std);
+			setDiagonal(
+				msg_imu.linear_acceleration_covariance,
+				imu->noiseModel().accelerometer.white_noise_std);
+			if (imu->measureOrientation())
+			{
+				setDiagonal(msg_imu.orientation_covariance, imu->orientationStdNoise());
+			}
+			break;
+		}
+
 		pub->publish(mvsim_node::make_shared<Msg_Imu>(msg_imu));
 	}
 }
@@ -1984,6 +2045,75 @@ void MVSimNode::internalOn(
 		pubPts->publish(msg_pts);
 	}
 }
+
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+void MVSimNode::publishDiagnostics()
+{
+	if (!pub_diagnostics_ || tim_publish_diagnostics_.Tac() < 1.0 / diagnostics_rate_)
+	{
+		return;
+	}
+	tim_publish_diagnostics_.Tic();
+
+	const auto st = mvsim_world_->getPerformanceStats();
+	if (st.window_simul_time <= 0)
+	{
+		return;
+	}
+	const double T = st.window_simul_time;
+
+	diagnostic_msgs::msg::DiagnosticStatus status;
+	status.name = "mvsim: performance";
+	status.hardware_id = "mvsim";
+
+	// Times as a percentage of the simulated time (100% = real time):
+	const auto addValue = [&status](const std::string& key, double value)
+	{
+		diagnostic_msgs::msg::KeyValue kv;
+		kv.key = key;
+		kv.value = mrpt::format("%.3f", value);
+		status.values.push_back(kv);
+	};
+	addValue("realtime_factor", st.realtime_factor);
+	addValue("realtime_factor_requested", realtime_factor_);
+	addValue("window_simul_time", T);
+	addValue("physics_steps", static_cast<double>(st.steps));
+	addValue("physics_time_percent", 100.0 * st.physics_time / T);
+	addValue("sensors_wait_time_percent", 100.0 * st.sensors_wait_time / T);
+	for (const auto& [name, s] : st.sensors)
+	{
+		addValue(name + "/time_percent", 100.0 * s.processing_time / T);
+		addValue(name + "/rate_hz", static_cast<double>(s.observations) / T);
+	}
+
+	// The last window is too old if the current one takes much longer than
+	// it, e.g. if the simulation slowed down a lot or stopped:
+	const double age = mrpt::Clock::nowDouble() - st.window_end_wall_time;
+	if (age > std::max(5.0, 2 * st.window_wall_time))
+	{
+		status.level = diagnostic_msgs::msg::DiagnosticStatus::STALE;
+		status.message = mrpt::format(
+			"No performance data in the last %.1f s: the simulation is much slower than "
+			"before, or stopped",
+			age);
+	}
+	else if (realtime_factor_ > 0 && st.realtime_factor < 0.9 * realtime_factor_)
+	{
+		status.level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
+		status.message = "Simulation slower than the requested real time factor";
+	}
+	else
+	{
+		status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+		status.message = "OK";
+	}
+
+	diagnostic_msgs::msg::DiagnosticArray msg;
+	msg.header.stamp = myNow();
+	msg.status.push_back(status);
+	pub_diagnostics_->publish(msg);
+}
+#endif
 
 void MVSimNode::initRos2Control()
 {

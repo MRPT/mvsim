@@ -48,6 +48,8 @@
 		  sensor_x="0.6"  sensor_y="0" sensor_z="0.65"
 		  sensor_period_sec="0.10"
 		  preview_win_visible="true"
+		  distortion_model="$env{MVSIM_CAMERA_DISTORTION|none}" k1="-0.25" k2="0.07"
+		  image_noise_std="$env{MVSIM_CAMERA_NOISE_STD|0}"
 		  />
 
 	</vehicle>

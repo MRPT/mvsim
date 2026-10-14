@@ -6,6 +6,9 @@
     <horizontal_std_noise>${sensor_horizontal_std_noise|2.0}</horizontal_std_noise>
     <vertical_std_noise>${sensor_vertical_std_noise|4.0}</vertical_std_noise>
 
+    <!-- Reported fix type: no_fix, single, dgps, rtk_float, rtk_fixed -->
+    <fix_type>${sensor_fix_type|dgps}</fix_type>
+
     <visual enabled="${sensor_custom_visual|true}">
         <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_imu.dae</model_uri>
     </visual>

@@ -6,7 +6,46 @@ if (NOT MVSIM_WITH_PROTOBUF)
 endif()
 
 # Protobuf messages:
-file(GLOB PROTOBUF_DEFINITION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
+set(PROTOBUF_FILE_NAMES
+  AdvertiseServiceRequest.proto
+  AdvertiseTopicRequest.proto
+  CallService.proto
+  GenericAnswer.proto
+  GenericObservation.proto
+  GetServiceInfoAnswer.proto
+  GetServiceInfoRequest.proto
+  ListNodesAnswer.proto
+  ListNodesRequest.proto
+  ListTopicsAnswer.proto
+  ListTopicsRequest.proto
+  ObservationLidar2D.proto
+  Pose.proto
+  RegisterNodeAnswer.proto
+  RegisterNodeRequest.proto
+  SrvGetLightState.proto
+  SrvGetLightStateAnswer.proto
+  SrvGetPose.proto
+  SrvGetPoseAnswer.proto
+  SrvSetControllerTwist.proto
+  SrvSetControllerTwistAnswer.proto
+  SrvSetLightState.proto
+  SrvSetLightStateAnswer.proto
+  SrvSetPose.proto
+  SrvSetPoseAnswer.proto
+  SrvSetPoseTwist.proto
+  SrvShutdown.proto
+  SrvShutdownAnswer.proto
+  SubscribeAnswer.proto
+  SubscribeRequest.proto
+  TimeStampedPose.proto
+  TopicInfo.proto
+  Twist.proto
+  UnregisterNodeRequest.proto
+)
+set(PROTOBUF_DEFINITION_FILES "")
+foreach(f ${PROTOBUF_FILE_NAMES})
+  list(APPEND PROTOBUF_DEFINITION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/${f}")
+endforeach()
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTOBUF_DEFINITION_FILES})
 protobuf_generate_python(PROTO_PY_FILES ${PROTOBUF_DEFINITION_FILES})
 

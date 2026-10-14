@@ -54,7 +54,8 @@ Command ``mvsim launch``
                            default port is in use, the next free one is used. The
                            environment variable MVSIM_SERVER_PORT also sets it.
    --full-profiler         Enable full profiling (generates file with all timings)
-   --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0
+   --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0,
+                           or as fast as possible if <=0
    -v, --verbosity         Set verbosity level: DEBUG, INFO (default), WARN, ERROR
 
 

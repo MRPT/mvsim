@@ -24,6 +24,10 @@
 #include <mvsim/Comms/Server.h>
 #endif
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
+#endif
+
 #include <atomic>
 #include <memory>
 #include <set>
@@ -166,8 +170,14 @@ class MVSimNode
 	mrpt::WorkerThreadsPool ros_publisher_workers_{
 		4 /*threads*/, mrpt::WorkerThreadsPool::POLICY_FIFO};
 
-	/// (Defaul=1.0) >1: speed-up, <1: slow-down
+	/// Simulation speed wrt real time (default=1.0): >1: speed-up,
+	/// <1: slow-down, <=0: as fast as possible.
 	double realtime_factor_ = 1.0;
+
+	/// "As fast as possible" mode: physics steps per spin() call, and maximum
+	/// number of pending sensor publications before waiting for them.
+	unsigned int afapStepsPerSpin_ = 10;
+	size_t afapMaxPendingPublications_ = 8;
 
 	/// [s] Max wall-time worth of simulation integrated in a single spin()
 	/// catch-up. Bounds the fixed-timestep "spiral of death": if a spin blocks
@@ -237,6 +247,14 @@ class MVSimNode
 	};
 
 	WorldPubs worldPubs_;
+
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	/// Rate (Hz) of performance diagnostics on /diagnostics (0=disabled)
+	double diagnostics_rate_ = 1.0;
+	mrpt::system::CTicTac tim_publish_diagnostics_;
+	rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr pub_diagnostics_;
+	void publishDiagnostics();
+#endif
 
 	struct TPubSubPerVehicle
 	{
