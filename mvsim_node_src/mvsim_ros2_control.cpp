@@ -533,23 +533,34 @@ void Ros2ControlVehicle::onRobotDescription(const std::string& robotDescription)
 	{
 		return;
 	}
-	auto rm = std::make_unique<hardware_interface::ResourceManager>();
-	for (const auto& b : bound)
-	{
-		rm->import_component(std::make_unique<MvsimSystem>(joints_, b.wheelIndices), b.info);
-	}
-	// Only marks the description as loaded (its systems were imported above):
-	rm->load_urdf(robotDescription, false /*validate*/, false /*load components*/);
 
-	for (const auto& entry : rm->get_components_status())
+	// This runs in the executor thread, which must not end with an exception:
+	try
 	{
-		rclcpp_lifecycle::State active(
-			lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE,
-			hardware_interface::lifecycle_state_names::ACTIVE);
-		rm->set_component_state(entry.first, active);
-	}
+		auto rm = std::make_unique<hardware_interface::ResourceManager>();
+		for (const auto& b : bound)
+		{
+			rm->import_component(std::make_unique<MvsimSystem>(joints_, b.wheelIndices), b.info);
+		}
+		// Only marks the description as loaded (its systems were imported above):
+		rm->load_urdf(robotDescription, false /*validate*/, false /*load components*/);
 
-	createControllerManager(std::move(rm));
+		for (const auto& entry : rm->get_components_status())
+		{
+			rclcpp_lifecycle::State active(
+				lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE,
+				hardware_interface::lifecycle_state_names::ACTIVE);
+			rm->set_component_state(entry.first, active);
+		}
+
+		createControllerManager(std::move(rm));
+	}
+	catch (const std::exception& e)
+	{
+		RCLCPP_ERROR(
+			logger, "Could not set up ros2_control for vehicle '%s': %s", veh_.getName().c_str(),
+			e.what());
+	}
 }
 #endif
 
