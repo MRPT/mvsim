@@ -52,6 +52,13 @@
 
     </dynamics>
 
+    <!-- Chassis suspension: springs and dampers between the chassis and the wheels
+         (disabled by default; set the variable suspension="true" to enable it) -->
+    <suspension enabled="${suspension|false}">
+        <frequency_hz>1.4</frequency_hz>  <!-- Heave natural frequency -->
+        <damping_ratio>0.3</damping_ratio>
+    </suspension>
+
     <!-- Friction force simulation -->
     <friction class="default">
         <mu>0.7</mu>

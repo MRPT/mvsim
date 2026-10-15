@@ -731,7 +731,9 @@ The ``VehicleBase`` class provides common functionality:
   Vehicles that cannot stand on their wheels alone (e.g. a semi-trailer) also rest on
   their joint anchors (the load on the anchor is not passed to the other body). Each
   wheel also gets the share of the gravity force along the ground plane proportional to
-  its load. ``VehicleBase::getWheelLoads()`` returns the loads.
+  its load. ``VehicleBase::getWheelLoads()`` returns the loads. With
+  :ref:`suspension <physics-suspension>`, this balance (with no acceleration) gives the
+  static loads, and the springs and dampers add the load transfer.
 
 * **Wheel Velocity Computation:** Calculates each wheel's velocity from vehicle twist
 
@@ -775,6 +777,129 @@ is removed from the chassis velocity estimate and its spin speed restored), so t
 and the chassis reach a consistent solution, also for stiff wheel controllers on light
 robots. The wheel order is reversed on every step to avoid a left/right bias. Ideal
 controllers skip this, since friction forces are not applied to the chassis.
+
+
+.. _physics-suspension:
+
+Chassis Suspension
+~~~~~~~~~~~~~~~~~~
+
+Optionally (see :ref:`vehicles <vehicles-suspension>`), the chassis (the sprung mass
+:math:`m_s`, the chassis mass without the wheels) moves with respect to the body that
+carries the wheels, whose pose is still the one of the 2D dynamics and the terrain. The
+chassis has three degrees of freedom relative to it, measured from the static
+equilibrium: heave :math:`z` (up), roll :math:`\phi` (left side up) and pitch
+:math:`\theta` (nose down), :math:`\delta = (z, \phi, \theta)`. It rotates about a pivot
+point on the ground, under its center of mass, which is at height :math:`h`. Each wheel
+:math:`i`, at :math:`(x_i, y_i)` relative to the pivot, has a spring :math:`k_i` and a
+damper :math:`c_i`, whose deflection (up) is:
+
+.. math::
+
+   s_i = J_i \, \delta, \quad J_i = \begin{bmatrix} 1 & y_i & -x_i \end{bmatrix}
+
+The equations of motion are:
+
+.. math::
+
+   M \ddot{\delta} + C \dot{\delta} + K \delta = F
+
+.. math::
+
+   M = \mathrm{diag}\left(m_s, \; I_{xx} + m_s h^2, \; I_{yy} + m_s h^2\right), \quad
+   K = \sum_i k_i J_i^T J_i - \mathrm{diag}(0, \; m_s g h, \; m_s g h), \quad
+   C = \sum_i c_i J_i^T J_i
+
+.. math::
+
+   F = \begin{bmatrix} 0 & m_s h \, a_y & -m_s h \, a_x \end{bmatrix}^T
+
+with the inertias about the pivot, the destabilizing effect of gravity on a chassis whose
+center of mass is above the pivot (the second term of :math:`K`), and the inertial forces
+of the chassis in the (accelerating) vehicle frame. So, the chassis dives when braking,
+squats when accelerating, and rolls outwards in turns. :math:`(a_x, a_y)` is the vehicle
+acceleration in its frame (limited to :math:`2g`: larger values are spikes, e.g. from
+collisions or the velocity steps of ideal controllers).
+
+**Ground excitation.** The wheels' body moves with the terrain (e.g. over bumps): let
+:math:`\dot{q}_b` be its velocity along its normal and its roll and pitch rates (finite
+differences of its pose between steps). The springs and dampers act on the relative
+motion, while the inertia acts on the absolute one, so with the absolute chassis velocity
+:math:`w = \dot{\delta} + \dot{q}_b` as state:
+
+.. math::
+
+   \dot{\delta} = w - \dot{q}_b, \quad
+   M \dot{w} = -K \delta - C (w - \dot{q}_b) + F
+
+**Exact integration.** This is a linear time-invariant system,
+:math:`\dot{x} = A x + B u`, with :math:`x = (\delta, w)` and :math:`u = (\dot{q}_b, F)`:
+
+.. math::
+
+   A = \begin{bmatrix} 0 & I \\ -M^{-1} K & -M^{-1} C \end{bmatrix}, \quad
+   B = \begin{bmatrix} -I & 0 \\ M^{-1} C & M^{-1} \end{bmatrix}
+
+For inputs constant during a time step :math:`\Delta t`, its exact solution is
+:math:`x_{k+1} = \Phi x_k + \Gamma u_k`, with
+:math:`\exp\left(\begin{bmatrix} A & B \\ 0 & 0 \end{bmatrix} \Delta t\right) =
+\begin{bmatrix} \Phi & \Gamma \\ 0 & I \end{bmatrix}`, computed once for each time step
+value. Hence, it is stable for any time step, and the frequencies and damping of the
+chassis motion do not depend on it.
+
+**Vibration modes.** The undamped modes are the solutions of
+:math:`K v = \omega^2 M v`: natural frequency :math:`f_j = \omega_j / 2\pi`, damping
+ratio :math:`\zeta_j = v_j^T C v_j / (2 \omega_j v_j^T M v_j)` (exact for damping
+proportional to stiffness), and shape :math:`v_j` (heave and pitch are coupled if the
+center of mass is not centered between the axles). They are logged when the vehicle is
+loaded, e.g.: ``Suspension modes: roll 0.96 Hz (zeta=0.24), pitch 1.24 Hz (zeta=0.28),
+heave 1.40 Hz (zeta=0.30)``. The chassis is unstable if a frequency is not positive (the
+springs are too soft for the height of its center of mass), which is reported as an
+error. Rotations without stiffness (e.g. the pitch of a vehicle whose wheels all lie on
+one axle) are locked.
+
+**Spring sizing.** By default, each corner gets the spring and damper that give the
+heave natural frequency :math:`f` and damping ratio :math:`\zeta` to its share of the
+static load, :math:`m_i = N_i / g`:
+
+.. math::
+
+   k_i = m_i (2 \pi f)^2, \quad c_i = 2 \zeta (2 \pi f) m_i
+
+so the heave frequency is :math:`f` regardless of the weight distribution. The roll and
+pitch frequencies follow from the geometry.
+
+**Steady state.** For constant accelerations, :math:`K \delta = F`, e.g. braking at
+:math:`a_x` and turning at :math:`a_y` (with the diagonal terms of :math:`K`, e.g.
+:math:`K_{\theta\theta} = \sum k_i x_i^2 - m_s g h`, if the center of mass is centered
+between the corners):
+
+.. math::
+
+   \theta = \frac{m_s h \, |a_x|}{K_{\theta\theta}}, \quad
+   \phi = \frac{m_s h \, a_y}{K_{\phi\phi}}
+
+**Effects.**
+
+* Wheel loads: :math:`N_i = N_i^0 - k_i s_i - c_i \dot{s}_i` (not negative), with
+  :math:`N_i^0` the static loads. In steady state, they equal the quasi-static load
+  transfer of the chassis; in transients, they include the bounce of the chassis.
+* Sensors and visual models are mounted on the chassis: their pose is
+  ``Simulable::getChassisPose()``, the vehicle pose composed with the chassis pose
+  relative to it (a rotation about the pivot plus the heave). The wheels do not move.
+* IMU: its angular velocity includes the chassis roll and pitch rates (absolute, so also
+  those of the terrain), and its acceleration the one of the chassis at the sensor point,
+  :math:`(z_s \dot{w}_\theta, \; -z_s \dot{w}_\phi, \; \dot{w}_z + y_s \dot{w}_\phi - x_s
+  \dot{w}_\theta)`, and the gravity seen from the tilted chassis.
+* The vehicle pose (e.g. the ``base_link`` frame in ROS) is still the one of the wheels'
+  body, so the relative pose of sensors is constant, as in a real vehicle: the chassis
+  motion appears in their data.
+
+**Limitations.** Linear model of small angles, with no suspension travel limits nor tire
+vertical stiffness (wheel hop); no suspension geometry (roll centers, anti-dive): the
+pivot is on the ground; the load of a semi-trailer on its kingpin is not passed to the
+suspension of the tractor, and vehicles that cannot stand on their wheels alone (e.g.
+semi-trailers) do not support it.
 
 Differential Drive Dynamics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -36,12 +36,19 @@
 			</shape>
 		</chassis>
 
-		<controller class="twist_ideal">  <!-- "twist_ideal" or "twist_front_steer_pid" -->
+		<controller class="${controller|twist_ideal}">  <!-- "twist_ideal" or "twist_front_steer_pid" -->
 			<!-- Params (for twist_front_steer_pid) -->
 			<KP>61200</KP>  <KI>0</KI> <KD>0</KD>
 			<max_torque>2670</max_torque>
 		</controller>
 	</dynamics>
+
+	<!-- Chassis suspension: springs and dampers between the chassis and the wheels
+	     (disabled by default; set the variable suspension="true" to enable it) -->
+	<suspension enabled="${suspension|false}">
+		<frequency_hz>1.5</frequency_hz>  <!-- Heave natural frequency -->
+		<damping_ratio>0.3</damping_ratio>
+	</suspension>
 
 	<friction class="default">
 		<mu>0.7</mu>

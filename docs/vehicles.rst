@@ -795,6 +795,86 @@ Add multiple 3D models to a vehicle:
        <model_offset_z>0.5</model_offset_z>
    </visual>
 
+.. _vehicles-suspension:
+
+Chassis Suspension
+~~~~~~~~~~~~~~~~~~
+
+Vehicles can optionally simulate a suspension: a spring and a damper at each wheel,
+between the chassis and the wheels. The chassis then pitches when accelerating and
+braking, rolls in turns and bounces over bumps, and so do the sensors and visual models
+mounted on it, while the wheels stay on the ground. The suspension also sets the wheel
+loads (dynamic load transfer). It is disabled by default. See
+:ref:`the physics model <physics-suspension>`.
+
+.. code-block:: xml
+
+   <vehicle:class name="my_car">
+       <dynamics class="ackermann"> ... </dynamics>
+
+       <suspension enabled="true">
+           <frequency_hz>1.3</frequency_hz>     <!-- Heave natural frequency -->
+           <damping_ratio>0.3</damping_ratio>
+           <!-- Optional: -->
+           <wheel index="0" stiffness="35000" damping="2500" />  <!-- per-wheel override -->
+           <I_xx>450</I_xx>  <I_yy>1800</I_yy>  <!-- chassis inertia about its COM [kg.m^2] -->
+           <cog_height>0.55</cog_height>         <!-- chassis COM height [m] -->
+       </suspension>
+   </vehicle:class>
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 18 60
+
+   * - Parameter
+     - Default
+     - Description
+   * - ``enabled`` (attribute)
+     - false
+     - Enables the suspension.
+   * - ``frequency_hz``
+     - 1.5
+     - Heave natural frequency [Hz]. Each wheel gets the spring stiffness
+       :math:`k_i = m_i (2 \pi f)^2` for its share :math:`m_i` of the static chassis weight.
+       Typical values: 1-1.5 Hz (cars), 1.5-2.5 Hz (trucks, sports cars).
+   * - ``damping_ratio``
+     - 0.3
+     - Damping ratio of the heave motion: :math:`c_i = 2 \zeta (2 \pi f) m_i`.
+   * - ``<wheel index="i" stiffness="k" damping="c"/>``
+     - (from above)
+     - Spring stiffness [N/m] and damping [N.s/m] of wheel ``i`` (in the order of the
+       dynamics class, e.g. 0=rear left for Ackermann vehicles).
+   * - ``I_xx``, ``I_yy``
+     - box
+     - Chassis inertia about its center of mass, around the longitudinal and lateral axes
+       [kg.m^2]. Default: that of a box with the chassis footprint and height.
+   * - ``cog_height``
+     - (zmin+zmax)/2
+     - Height of the chassis center of mass over the ground [m].
+
+When the vehicle is loaded, the vibration modes of the chassis are logged, e.g.
+``Suspension modes: roll 0.96 Hz (zeta=0.24), pitch 1.24 Hz (zeta=0.28), heave 1.40 Hz
+(zeta=0.30)``. Vehicles with a narrow track and a high center of mass need stiff springs:
+if they are too soft, the chassis would tip over, which is reported as an error.
+
+The predefined Ackermann car, pickup and Scania truck have a suspension block, disabled
+unless the variable ``suspension`` is set to ``true`` where they are included:
+
+.. code-block:: xml
+
+   <include file="../definitions/pickup.vehicle.xml" suspension="true" />
+
+Notes:
+
+* The vehicle pose (e.g. ``base_link`` in ROS) is that of the body with the wheels, so the
+  chassis motion appears in the sensor data, while the sensor poses on the vehicle stay
+  constant, as in a real vehicle. Use ``Simulable::getChassisPose()`` for the chassis
+  pose. IMUs measure the chassis roll and pitch rates and accelerations.
+* Custom visual models are mounted on the chassis. If a model includes the wheels in the
+  same mesh, they will move with the chassis: define the wheels as separate visual models
+  instead (as in the Scania truck).
+* Not supported for vehicles that cannot stand on their wheels alone, e.g. semi-trailers.
+
 9. Debugging and Logging
 -------------------------
 
@@ -806,7 +886,8 @@ Enable vehicle logging for debugging:
 
 This creates CSV files:
 
-* ``mvsim_<name>_pose.csv`` - Vehicle pose and velocity over time
+* ``mvsim_<name>_pose.csv`` - Vehicle pose and velocity over time (and the chassis
+  suspension displacement ``susp_z``, ``susp_roll``, ``susp_pitch``, if enabled)
 * ``mvsim_<name>_wheel_<N>.csv`` - Per-wheel forces, torques, and velocities
 
 10. ROS 2 Topics
