@@ -50,20 +50,20 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 | `World` | `World.h` | Central simulation container. Owns all vehicles, blocks, world elements, Box2D physics world, GUI window, ZMQ comms client. Split across `World.cpp`, `World_gui.cpp` (GUI thread, main loop, scene update, lights), `World_gui_panels.cpp` (Dear ImGui panels), `World_load_xml.cpp`, `World_services.cpp`, `World_simul.cpp`, `World_walls.cpp`. `open_GUI_while_loading()` (used by mvsim-cli and the ROS node) shows the window with a "loading" message during `load_from_XML()` and the first frame. `cpu_usage()` (shown in the GUI) is smoothed over ~1 s from that point; above 100% after 5 s, the XML point/spot lights are turned off. The GUI thread sleeps in `glfwWaitEventsTimeout()` between frames (`refresh_fps`, 60 fps while the user interacts); sensors needing OpenGL wake it up via `internal_wake_up_gui_thread()`. Sensors have priority over frames: a frame that would not finish (measured CPU+GPU cost) before `next_opengl_sensor_time()` is postponed until after them, and while `simulation_busy_fraction()` > 0.9 the frame rate drops (min 5 fps) unless the user interacts. `close_GUI()` only hides the window. Applications add custom panels with `add_gui_panel()` (declarative `gui::WindowDescription` in `GUIPanel.h`, rendered in `World_gui_panels.cpp`) and get mouse events via `set_gui_mouse_callback()`; both run in the GUI thread. |
 | `Simulable` | `Simulable.h` | Base interface for anything that steps through simulation time. Provides `simul_pre_timestep()`, `simul_post_timestep()`, pose access with shared mutex. Static Box2D bodies are only moved (`SetTransform()`) and redrawn when their pose changes, since doing it every step for hundreds of blocks dominated the physics time. |
 | `VisualObject` | `VisualObject.h` | Base interface for anything renderable in the OpenGL GUI. |
-| `VehicleBase` | `VehicleBase.h` | Abstract vehicle. Inherits `VisualObject` and `Simulable`. Holds wheels, sensors, friction model, controller, CSV logger. Created via `ClassFactory`. |
+| `VehicleBase` | `VehicleBase.h` | Abstract vehicle. Inherits `VisualObject` and `Simulable`. Holds wheels, sensors, friction model, controller, CSV logger. Created via `ClassFactory`. Wheel friction is solved wheel by wheel (sequential impulses), updating a chassis velocity estimate after each one and passing each wheel its effective chassis mass at the contact (`lateralMass`/`longitudinalMass`); solving them all from the same velocity made long vehicles jitter forever. |
 | `Block` | `Block.h` | Static or dynamic rigid-body obstacle/object in the world. |
 | `HumanActor` | `HumanActor.h` | Pedestrian/human agent with motion model. |
 | `Wheel` | `Wheel.h` | Per-wheel physical state (torque, slip, contact). `getPhi()` is the spin angle, kept bounded by wrapping whole turns; `getPhiContinuous()` is the unwrapped angle (e.g. for joint positions). |
 | `SensorBase` | `Sensors/SensorBase.h` | Base class for all sensors. |
 | `WorldElementBase` | `WorldElements/WorldElementBase.h` | Base class for ground plane, grids, elevation maps, etc. |
 | `ControllerBase` | `ControllerBase.h` | Abstract controller interface. |
-| `FrictionBase` | `FrictionModels/FrictionBase.h` | Abstract friction model. |
+| `FrictionBase` | `FrictionModels/FrictionBase.h` | Abstract friction model. `solveWheelSpin()` (shared by all models) integrates the wheel spin implicitly with the controller `MotorTorqueModel` (clamped linear torque law reported by PID controllers), so stiff wheel velocity loops are stable for any time step. |
 | `ClassFactory` | `ClassFactory.h` | Template factory that maps XML type strings to C++ constructors. |
 | `TParameterDefinitions` | `TParameterDefinitions.h` | Declares XML-readable parameters with `DECLARE_PARAMETER_*` macros. |
 | `Shape2p5` | `Shape2p5.h` | 2.5D shape (2D footprint + height interval). |
 | `RemoteResourcesManager` | `RemoteResourcesManager.h` | Downloads and caches remote assets (maps, meshes). |
 | `CsvLogger` | `CsvLogger.h` | Per-vehicle time-series logging to CSV. |
-| `PID_Controller` | `PID_Controller.h` | Generic discrete PID used by controllers. |
+| `PID_Controller` | `PID_Controller.h` | Generic discrete PID used by controllers. Also reports its last unsaturated output and its sensitivity, for the implicit wheel spin integration. |
 | `CollisionShapeCache` | `CollisionShapeCache.h` | Caches Box2D collision shapes for mesh reuse, keyed by model file plus model pose, per-axis scale and z range (so per-instance `visual_scale` and offsets give each block its own footprint). `model_scale`/`visual_scale` accept `S` or `SX SY SZ` (`%scale3d`). |
 | `PoseTrajectoryFollower` | `PoseTrajectoryFollower.h` | Standalone (no World/Box2D dependency) pure-pursuit tracker for the "exactly reproducible trajectories" feature: evaluates a time-parameterized `(t,x,y)` polyline and computes the `(vx,omega)` twist to follow it. Used by the `trajectory` controller class (differential and Ackermann). |
 
@@ -76,6 +76,8 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 | `VehicleAckermann_Drivetrain.cpp` | Ackermann + realistic mechanical differentials (open/Torsen, 2WD/4WD) |
 
 Each vehicle type has companion `*_Controller*.cpp` files for its controllers (Raw torque, Twist PID, Ideal twist, Front-steer PID, and — for `differential`/`ackermann` only — `trajectory`, the exactly-reproducible-trajectory controller built on `PoseTrajectoryFollower`).
+
+Twist PID controllers measure the driven wheels own spin (Ackermann: each front wheel; drivetrain: `driveshaftSpeed()`), brake with proportional action only on a zero setpoint (full stop, no rebound), and report a `MotorTorqueModel`. Ideal/trajectory controllers set `idealControllerActive_` on every `control_step()` (the vehicle resets it before each call), so friction is not applied to the chassis. The gains in `definitions/*.vehicle.xml` were tuned for 1-5 ms time steps, with `max_torque` below the wheel traction limit (except skid-steer). Tested in `tests/test_vehicle_motion.cpp` (ideal circle, stopping, rolling resistance, stiff PID on low friction).
 
 ### Sensors (`src/Sensors/`)
 
