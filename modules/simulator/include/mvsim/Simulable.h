@@ -13,9 +13,11 @@
 #include <mrpt/math/TPoint2D.h>
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/poses/CPose2D.h>
+#include <mrpt/poses/CPose3D.h>
 #include <mrpt/poses/CPose3DInterpolator.h>
 #include <mvsim/basic_types.h>
 
+#include <optional>
 #include <shared_mutex>
 
 namespace mvsim
@@ -96,6 +98,18 @@ class Simulable
 
 	/// No thread-safe version. Used internally only.
 	mrpt::math::TPose3D getPoseNoLock() const;
+
+	/** Pose of the body where sensors and visual models are mounted: getPose()
+	 *  composed with chassisRelativePose(), if any (e.g. the chassis of a
+	 *  vehicle with suspension, which moves over its wheels). */
+	mrpt::math::TPose3D getChassisPose() const;
+
+	/// No thread-safe version of getChassisPose(). Used internally only.
+	mrpt::math::TPose3D getChassisPoseNoLock() const;
+
+	/** Pose of the chassis relative to getPose(), if it moves with respect to
+	 *  it (e.g. suspension), or nullopt otherwise. */
+	virtual std::optional<mrpt::poses::CPose3D> chassisRelativePose() const { return std::nullopt; }
 
 	/** Last time-step acceleration of the ref. point (global coords).
 	 * Note this is the "coordinate acceleration" vector, not the proper

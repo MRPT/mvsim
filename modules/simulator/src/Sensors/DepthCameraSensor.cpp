@@ -250,7 +250,7 @@ void DepthCameraSensor::internalGuiUpdate(
 	}
 
 	// Move with vehicle:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
@@ -356,7 +356,7 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	// Note: relativePoseOnVehicle should be (y,p,r)=(-90deg,0,-90deg) to make
 	// the camera to look forward:
 
-	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
+	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 
 	const auto depthSensorPose = vehiclePose + curObs.sensorPose + fixedAxisConventionRot();
 
@@ -542,7 +542,7 @@ void DepthCameraSensor::simul_post_timestep(const TSimulContext& context)
 		world_->mark_as_pending_running_sensors_on_3D_scene();
 	}
 	// Keep sensor global pose up-to-date:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto globalSensorPose = p + sensor_params_.sensorPose.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
@@ -551,7 +551,7 @@ void DepthCameraSensor::notifySimulableSetPose(const mrpt::math::TPose3D& newPos
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	sensor_params_.sensorPose = mrpt::poses::CPose3D(newPose - p);
 }
 

@@ -10,6 +10,7 @@
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/CMatrixFixed.h>
 #include <mrpt/math/TPose2D.h>
+#include <mrpt/math/wrap2pi.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/random.h>
 #include <mrpt/system/filesystem.h>
@@ -250,6 +251,67 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		parse_xmlnode_attribs(*odom_node, attribs, {}, "[VehicleBase::factory]");
 	}
 
+	// <suspension> (optional, at the vehicle level, so an instance can
+	// override the one of its class):
+	if (const xml_node<>* susp_node = nodes.first_node("suspension"); susp_node)
+	{
+		auto& cfg = veh->suspensionConfig_;
+		const std::map<std::string, std::string> varValues = {{"NAME", veh->name_}};
+		const char* ctx = "[VehicleBase::factory] <suspension>";
+
+		TParameterDefinitions attribs;
+		attribs["enabled"] = TParamEntry("%bool", &cfg.enabled);
+		parse_xmlnode_attribs(*susp_node, attribs, varValues, ctx);
+
+		double I_xx = 0;
+		double I_yy = 0;
+		double cogHeight = 0;
+		TParameterDefinitions params;
+		params["frequency_hz"] = TParamEntry("%lf", &cfg.frequency_hz);
+		params["damping_ratio"] = TParamEntry("%lf", &cfg.damping_ratio);
+		params["I_xx"] = TParamEntry("%lf", &I_xx);
+		params["I_yy"] = TParamEntry("%lf", &I_yy);
+		params["cog_height"] = TParamEntry("%lf", &cogHeight);
+		parse_xmlnode_children_as_param(*susp_node, params, varValues, ctx);
+		if (I_xx > 0)
+		{
+			cfg.I_xx = I_xx;
+		}
+		if (I_yy > 0)
+		{
+			cfg.I_yy = I_yy;
+		}
+		if (cogHeight > 0)
+		{
+			cfg.cog_height = cogHeight;
+		}
+
+		// Per-corner overrides: <wheel index="0" stiffness="..." damping="..."/>
+		for (const xml_node<>* n = susp_node->first_node("wheel"); n; n = n->next_sibling("wheel"))
+		{
+			int index = -1;
+			double k = -1;
+			double c = -1;
+			TParameterDefinitions wp;
+			wp["index"] = TParamEntry("%i", &index);
+			wp["stiffness"] = TParamEntry("%lf", &k);
+			wp["damping"] = TParamEntry("%lf", &c);
+			parse_xmlnode_attribs(*n, wp, varValues, ctx);
+			if (index < 0)
+			{
+				THROW_EXCEPTION("<suspension><wheel> requires an 'index' attribute");
+			}
+			if (k > 0)
+			{
+				cfg.stiffness[index] = k;
+			}
+			if (c >= 0)
+			{
+				cfg.damping[index] = c;
+			}
+		}
+	}
+
 	// Initialize class-specific params (chassis shape, etc.)
 	// ---------------------------------------------------------------
 	veh->dynamics_load_params_from_xml(dyn_node);
@@ -376,6 +438,8 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 			veh->sensors_.push_back(SensorBase::Ptr(se));
 		}
 	}
+
+	veh->initSuspension();
 
 	return veh;
 }
@@ -523,6 +587,11 @@ std::vector<double> VehicleBase::computeWheelLoads(const TSimulContext& context)
 		accelForLoads_.y += a * (accLocal.y - accelForLoads_.y);
 	}
 
+	// With suspension, its springs and dampers carry the load transfer, and
+	// the balance below gives their static loads:
+	const mrpt::math::TVector2D acc =
+		suspension_.initialized() ? mrpt::math::TVector2D(0, 0) : accelForLoads_;
+
 	// Force and moment balance (no pitch/roll motion) of the rigid vehicle, in
 	// its frame, with normal forces N_i at the wheel contact points (x_i,y_i):
 	//  sum(N_i)       = M*gz
@@ -533,8 +602,7 @@ std::vector<double> VehicleBase::computeWheelLoads(const TSimulContext& context)
 	const double gy = slopeDir_.y * gravity;
 	const double gz = -slopeDir_.z * gravity;
 	const double b[3] = {
-		M * gz, M * (gz * com.x - h * (accelForLoads_.x - gx)),
-		M * (gz * com.y - h * (accelForLoads_.y - gy))};
+		M * gz, M * (gz * com.x - h * (acc.x - gx)), M * (gz * com.y - h * (acc.y - gy))};
 
 	std::vector<mrpt::math::TPoint2D> supports;
 	for (size_t i = 0; i < nW; i++)
@@ -573,7 +641,140 @@ std::vector<double> VehicleBase::computeWheelLoads(const TSimulContext& context)
 		}
 	}
 	std::copy(sol.begin(), sol.begin() + nW, loads.begin());
+
+	if (suspension_.initialized())
+	{
+		// A wheel cannot pull the ground:
+		const auto dN = suspension_.cornerLoadChanges();
+		for (size_t i = 0; i < nW; i++)
+		{
+			loads[i] = std::max(0.0, loads[i] + dN[i]);
+		}
+	}
 	return loads;
+}
+
+void VehicleBase::initSuspension()
+{
+	const auto& cfg = suspensionConfig_;
+	if (!cfg.enabled)
+	{
+		return;
+	}
+	const size_t nW = getNumWheels();
+	const double g = parent()->get_gravity();
+
+	Suspension::Params p;
+	p.sprungMass = chassis_mass_;
+	p.com = chassis_com_;
+	p.comHeight = cfg.cog_height.value_or(0.5 * (chassis_z_min_ + chassis_z_max_));
+	p.gravity = g;
+
+	// Default inertias: those of a box with the chassis footprint and height
+	mrpt::math::TPoint2D bbMin;
+	mrpt::math::TPoint2D bbMax;
+	chassis_poly_.getBoundingBox(bbMin, bbMax);
+	const double L = bbMax.x - bbMin.x;
+	const double W = bbMax.y - bbMin.y;
+	const double H = chassis_z_max_ - chassis_z_min_;
+	p.I_xx = cfg.I_xx.value_or(chassis_mass_ * (W * W + H * H) / 12.0);
+	p.I_yy = cfg.I_yy.value_or(chassis_mass_ * (L * L + H * H) / 12.0);
+
+	// Static load of each corner, to size its spring and damper for the given
+	// heave frequency and damping ratio (k_i = m_i*w^2, c_i = 2*zeta*w*m_i):
+	std::vector<mrpt::math::TPoint2D> supports;
+	for (size_t i = 0; i < nW; i++)
+	{
+		supports.emplace_back(wheels_info_[i].x, wheels_info_[i].y);
+	}
+	const double mg = chassis_mass_ * g;
+	const double b[3] = {mg, mg * chassis_com_.x, mg * chassis_com_.y};
+	std::vector<double> staticLoads;
+	if (!solveSupportLoads(supports, b, staticLoads))
+	{
+		THROW_EXCEPTION_FMT(
+			"[%s] <suspension> requires a vehicle that stands on its wheels (e.g. not a "
+			"semi-trailer)",
+			name_.c_str());
+	}
+	double sumLoads = 0;
+	for (const double n : staticLoads)
+	{
+		sumLoads += n;
+	}
+
+	const double w = 2 * M_PI * cfg.frequency_hz;
+	for (size_t i = 0; i < nW; i++)
+	{
+		const double m_i = sumLoads > 0 ? chassis_mass_ * staticLoads[i] / sumLoads : 0.0;
+		Suspension::Corner c;
+		c.pos = supports[i];
+		c.stiffness = cfg.stiffness.count(i) ? cfg.stiffness.at(i) : m_i * w * w;
+		c.damping = cfg.damping.count(i) ? cfg.damping.at(i) : 2 * cfg.damping_ratio * w * m_i;
+		p.corners.push_back(c);
+	}
+
+	suspension_.init(p);
+	world_->logFmt(
+		mrpt::system::LVL_INFO, "[%s] Suspension modes: %s", name_.c_str(),
+		suspension_.modesAsString().c_str());
+}
+
+void VehicleBase::updateSuspension(const TSimulContext& context)
+{
+	if (!suspension_.initialized())
+	{
+		return;
+	}
+	const double dt = context.dt;
+	const auto q = getPose();
+
+	// Velocity of the wheels' body at the suspension pivot (under the chassis
+	// center of mass): along its normal, and roll and pitch rates
+	Suspension::Vector3 baseRates = Suspension::Vector3::Zero();
+	if (suspensionPrevBasePose_ && dt > 0)
+	{
+		const auto& q0 = *suspensionPrevBasePose_;
+		const auto R = mrpt::poses::CPose3D(q).getRotationMatrix();
+		const double dzNormal =
+			R(0, 2) * (q.x - q0.x) + R(1, 2) * (q.y - q0.y) + R(2, 2) * (q.z - q0.z);
+		// Ignore teleports (e.g. the vehicle moved by the user):
+		constexpr double maxNormalStep = 0.25;	// [m]
+		if (std::abs(dzNormal) < maxNormalStep)
+		{
+			const double rollRate = mrpt::math::wrapToPi(q.roll - q0.roll) / dt;
+			const double pitchRate = mrpt::math::wrapToPi(q.pitch - q0.pitch) / dt;
+			const auto& c = suspension_.params().com;
+			baseRates[Suspension::HEAVE] = dzNormal / dt + c.y * rollRate - c.x * pitchRate;
+			baseRates[Suspension::ROLL] = rollRate;
+			baseRates[Suspension::PITCH] = pitchRate;
+		}
+	}
+	suspensionPrevBasePose_ = q;
+
+	// Acceleration in the vehicle frame. The tires cannot exceed ~1g, so larger
+	// values are spikes (e.g. collisions, or the velocity steps of ideal
+	// controllers) that would kick the chassis:
+	const auto acc = getLinearAcceleration();
+	mrpt::math::TVector2D accLocal(
+		std::cos(q.yaw) * acc.x + std::sin(q.yaw) * acc.y,
+		-std::sin(q.yaw) * acc.x + std::cos(q.yaw) * acc.y);
+	const double maxAcc = 2.0 * parent()->get_gravity();
+	if (const double n = accLocal.norm(); n > maxAcc)
+	{
+		accLocal *= maxAcc / n;
+	}
+
+	suspension_.step(dt, baseRates, accLocal);
+
+	std::lock_guard<std::mutex> lck(chassisRelPoseMtx_);
+	chassisRelPose_ = suspension_.relativePose();
+}
+
+std::optional<mrpt::poses::CPose3D> VehicleBase::chassisRelativePose() const
+{
+	std::lock_guard<std::mutex> lck(chassisRelPoseMtx_);
+	return chassisRelPose_;
 }
 
 void VehicleBase::simul_pre_timestep(const TSimulContext& context)
@@ -824,6 +1025,10 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 
 	// Common part (update q_, dq_)
 	Simulable::simul_post_timestep(context);
+
+	// Before the sensors, which are mounted on the chassis:
+	updateSuspension(context);
+
 	for (auto& s : sensors_)
 	{
 		const double t0 = mrpt::Clock::nowDouble();
@@ -875,6 +1080,13 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		logger.updateColumn(PL_ODO_X, odometry_.x());
 		logger.updateColumn(PL_ODO_Y, odometry_.y());
 		logger.updateColumn(PL_ODO_YAW, odometry_.phi());
+		if (suspension_.initialized())
+		{
+			const auto& d = suspension_.displacement();
+			logger.updateColumn(PL_SUSP_Z, d[Suspension::HEAVE]);
+			logger.updateColumn(PL_SUSP_ROLL, d[Suspension::ROLL]);
+			logger.updateColumn(PL_SUSP_PITCH, d[Suspension::PITCH]);
+		}
 	}
 
 	writeLogStrings();
@@ -1160,8 +1372,14 @@ void VehicleBase::internalGuiUpdate(
 	// If "viz" does not have a value, it's because we are already inside a
 	// setPose() change event, so my caller already holds the mutex and we don't
 	// need/can't acquire it again:
-	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
+	const auto objectPose = viz.has_value() ? getChassisPose() : getChassisPoseNoLock();
 	const auto pp = parent()->applyWorldRenderOffset(objectPose);
+
+	// The wheels are children of the chassis visuals, but they do not move
+	// with its suspension:
+	const auto chassisRel = chassisRelativePose();
+	const auto onWheelsBody = [&](const mrpt::math::TPose3D& p)
+	{ return chassisRel ? (mrpt::poses::CPose3D(p) - *chassisRel).asTPose() : p; };
 
 	if (glInit_)
 	{
@@ -1176,10 +1394,10 @@ void VehicleBase::internalGuiUpdate(
 		for (size_t i = 0; i < nWs; i++)
 		{
 			const Wheel& w = getWheelInfo(i);
-			glWheelsPhysical_[i]->setPose(
+			const auto wheelPose = onWheelsBody(
 				mrpt::math::TPose3D(w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
-			glWheelsViz_[i]->setPose(
-				mrpt::math::TPose3D(w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+			glWheelsPhysical_[i]->setPose(wheelPose);
+			glWheelsViz_[i]->setPose(wheelPose);
 
 			if (!w.linked_yaw_object_name.empty())
 			{
@@ -1192,9 +1410,13 @@ void VehicleBase::internalGuiUpdate(
 						"with that name.",
 						i, w.linked_yaw_object_name.c_str(), name_.c_str());
 				}
-				auto p = glLinked->getPose();
+				if (!linkedObjectsPose0_.count(w.linked_yaw_object_name))
+				{
+					linkedObjectsPose0_[w.linked_yaw_object_name] = glLinked->getPose();
+				}
+				auto p = linkedObjectsPose0_.at(w.linked_yaw_object_name);
 				p.yaw = w.yaw + w.linked_yaw_offset;
-				glLinked->setPose(p);
+				glLinked->setPose(onWheelsBody(p));
 			}
 		}
 	}

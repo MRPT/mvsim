@@ -60,6 +60,10 @@ void CVisualObject::guiUpdate(
 	// need/can't acquire it again:
 	const auto objectPoseOrg = viz.has_value() ? meSim->getPose() : meSim->getPoseNoLock();
 	const auto objectPose = parent()->applyWorldRenderOffset(objectPoseOrg);
+	// Visual models and lights are mounted on the chassis, which may move
+	// with respect to objectPose (e.g. suspension):
+	const auto chassisPose = parent()->applyWorldRenderOffset(
+		viz.has_value() ? meSim->getChassisPose() : meSim->getChassisPoseNoLock());
 
 	if (glCustomVisual_ && viz.has_value() && physical.has_value())
 	{
@@ -85,7 +89,7 @@ void CVisualObject::guiUpdate(
 		}
 
 		// Update pose:
-		glCustomVisual_->setPose(objectPose);
+		glCustomVisual_->setPose(chassisPose);
 	}
 
 	if (glCollision_ && viz.has_value())
@@ -168,7 +172,7 @@ void CVisualObject::guiUpdate(
 			// Always in the physical scene, so camera sensors see the lights:
 			physical->get().insert(glLightGroups_);
 		}
-		glLightGroups_->setPose(objectPose);
+		glLightGroups_->setPose(chassisPose);
 	}
 
 	const bool childrenOnly = !!glCustomVisual_;

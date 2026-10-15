@@ -159,7 +159,8 @@ void Lidar3D::internalGuiUpdate(
 		gui_uptodate_ = true;
 	}
 
-	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + sensorPoseOnVeh_;
+	const mrpt::poses::CPose3D p =
+		mrpt::poses::CPose3D(vehicle_.getChassisPose()) + sensorPoseOnVeh_;
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
 	if (glPoints_)
@@ -206,7 +207,7 @@ void Lidar3D::simul_post_timestep(const TSimulContext& context)
 	}
 
 	// Keep sensor global pose up-to-date:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto globalSensorPose = p + sensorPoseOnVeh_.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
@@ -215,7 +216,7 @@ void Lidar3D::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	sensorPoseOnVeh_ = mrpt::poses::CPose3D(newPose - p);
 }
 
@@ -460,7 +461,7 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
 
-	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
+	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 
 	// ----------------------------------------------------------
 	// Decompose the horizontal lidar FOV into "n" depth images,

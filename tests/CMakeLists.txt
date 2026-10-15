@@ -98,6 +98,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_suspension
+	SOURCES test_suspension.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_pose_trajectory_follower
 	SOURCES test_pose_trajectory_follower.cpp
 	LINK_LIBRARIES mvsim::simulator
