@@ -29,7 +29,9 @@ const char* kSkidSteer = R"(
 		<rf_wheel pos=" 0.13 -0.16" mass="1.0" width="0.03" diameter="0.20" />
 		<lr_wheel pos="-0.13  0.16" mass="1.0" width="0.03" diameter="0.20" />
 		<rr_wheel pos="-0.13 -0.16" mass="1.0" width="0.03" diameter="0.20" />
-		<chassis mass="10.0" zmin="0.05" zmax="0.25" />
+		<chassis mass="10.0" zmin="0.05" zmax="0.25">
+			<shape> <pt>-0.25 -0.2</pt> <pt>0.25 -0.2</pt> <pt>0.25 0.2</pt> <pt>-0.25 0.2</pt> </shape>
+		</chassis>
 		CONTROLLER
 	</dynamics>
 )";
@@ -95,6 +97,17 @@ struct Sim
 								"</init_vel></vehicle>";
 		veh = mvsim::VehicleBase::factory(&world, xml);
 		world.insert_vehicle(veh);
+	}
+
+	// From a complete world XML, with a vehicle named "veh":
+	Sim(const std::string& worldXml, double timestep) : dt(timestep)
+	{
+		world.headless(true);
+		world.setMinLoggingLevel(mrpt::system::LVL_WARN);
+		world.load_from_XML(
+			"<mvsim_world version=\"1.0\"><simul_timestep>" + std::to_string(dt) +
+			"</simul_timestep>" + worldXml + "</mvsim_world>");
+		veh = world.getListOfVehicles().find("veh")->second;
 	}
 
 	void run(double seconds, const mrpt::math::TTwist2D& cmd)
@@ -209,6 +222,194 @@ void test_stiff_pid_low_friction()
 	EXPECT_LT(s.speed(), 1e-3);
 }
 
+// With isotropic Coulomb friction, a skid-steer robot whose wheels spin at the
+// commanded speeds turns slower: the yaw moment balance of the sliding wheels
+// at (+-a, +-b) gives w = w_cmd * b^2 / (a^2 + b^2).
+void test_skid_steer_spin_rate()
+{
+	std::cout << "[TEST] skid-steer spin rate (Coulomb friction)\n";
+	Sim s(
+		kSkidSteer,
+		"<controller class=\"twist_pid\"><KP>18</KP><KI>470</KI><max_torque>100</max_torque>"
+		"</controller>",
+		friction("default", "0.8"), 5e-3);
+	s.run(4.0, {0, 0, 1.0});
+	const double expected = 0.16 * 0.16 / (0.13 * 0.13 + 0.16 * 0.16);
+	std::cout << "  w=" << s.veh->getRefVelocityLocal().omega << " expected=" << expected << "\n";
+	EXPECT_NEAR(s.veh->getRefVelocityLocal().omega, expected, 0.02);
+}
+
+// A caster wheel swivels, so it must not resist turning: same turn rate as
+// without it.
+double turn_rate_with_and_without_caster(bool withCaster)
+{
+	std::string dyn = R"(
+	<dynamics class="DYN">
+		<l_wheel pos="0.0  0.5" mass="4.0" width="0.20" diameter="0.40" />
+		<r_wheel pos="0.0 -0.5" mass="4.0" width="0.20" diameter="0.40" />
+		CASTER
+		<chassis mass="15.0" zmin="0.05" zmax="0.6" />
+		CONTROLLER
+	</dynamics>
+)";
+	dyn.replace(dyn.find("DYN"), 3, withCaster ? "differential_3_wheels" : "differential");
+	dyn.replace(
+		dyn.find("CASTER"), 6,
+		withCaster ? R"(<caster_wheel pos="0.5 0.0" mass="0.5" width="0.05" diameter="0.10" />)"
+				   : "");
+	Sim s(
+		dyn,
+		"<controller class=\"twist_pid\"><KP>64</KP><KI>100</KI><max_torque>14.44</max_torque>"
+		"</controller>",
+		friction("default", "0.7"), 5e-3);
+	s.run(6.0, {0.5, 0, 0.5});
+	return s.veh->getRefVelocityLocal().omega;
+}
+
+void test_caster()
+{
+	std::cout << "[TEST] differential_3_wheels: the caster does not resist turning\n";
+	const double w3 = turn_rate_with_and_without_caster(true);
+	const double w2 = turn_rate_with_and_without_caster(false);
+	std::cout << "  w (caster)=" << w3 << " w (no caster)=" << w2 << "\n";
+	EXPECT_NEAR(w3, w2, 0.02 * w2);
+}
+
+// With one driven wheel on ice, a Torsen differential transfers more torque to
+// the other one than an open differential.
+double drivetrain_speed_one_wheel_on_ice(const std::string& diffType)
+{
+	const std::string xml = R"(
+	<element class="property_region">
+		<property_name>friction_mu</property_name> <value_double>0.05</value_double>
+		<x_min>-100</x_min> <y_min>0</y_min> <z_min>-10</z_min>
+		<x_max>100</x_max> <y_max>100</y_max> <z_max>10</z_max>
+	</element>
+	<vehicle name="veh">
+	<dynamics class="ackermann_drivetrain">
+		<rl_wheel pos="0  0.20" mass="5.35" width="0.164" diameter="0.406" />
+		<rr_wheel pos="0 -0.20" mass="5.35" width="0.164" diameter="0.406" />
+		<fl_wheel mass="5.35" width="0.164" diameter="0.406" />
+		<fr_wheel mass="5.35" width="0.164" diameter="0.406" />
+		<f_wheels_x>0.62</f_wheels_x>
+		<f_wheels_d>0.40</f_wheels_d>
+		<chassis mass="97.0" zmin="0" zmax="1.20" />
+		<drivetrain type=")" +
+							diffType +
+							R"(" ><rear_left_right_bias>3.0</rear_left_right_bias></drivetrain>
+		<controller class="twist_front_steer_pid">
+			<KP>800</KP><KI>100</KI><max_torque>100</max_torque>
+		</controller>
+	</dynamics>
+	<friction class="default"><mu>0.9</mu></friction>
+	<init_pose>0 0 0</init_pose>
+	</vehicle>
+	)";
+	Sim s(xml, 5e-3);
+	s.run(2.0, {1.0, 0, 0});
+	return s.veh->getRefVelocityLocal().vx;
+}
+
+void test_torsen()
+{
+	std::cout << "[TEST] Torsen vs open differential, one wheel on ice\n";
+	const double vOpen = drivetrain_speed_one_wheel_on_ice("open_rear");
+	const double vTorsen = drivetrain_speed_one_wheel_on_ice("torsen_rear");
+	std::cout << "  vx: open=" << vOpen << " torsen=" << vTorsen << "\n";
+	EXPECT_GT(vTorsen, 1.5 * vOpen);
+}
+
+// The steering angle follows the commands at the configured rate.
+void test_steering_rate()
+{
+	std::cout << "[TEST] Ackermann steering rate limit\n";
+	std::string dyn = kAckermann;
+	dyn.replace(dyn.find("<max_steer_ang_deg>"), 0, "<max_steer_rate_deg>30</max_steer_rate_deg>");
+	Sim s(dyn, "<controller class=\"twist_ideal\" />", friction("default", "0.7"), 5e-3);
+	s.run(0.5, {2.0, 0, 0.5});
+	// 30 deg/s during 0.5 s: the equivalent (central) steering angle is 15 deg
+	const double fl = s.veh->getWheelInfo(2).yaw;
+	const double fr = s.veh->getWheelInfo(3).yaw;
+	std::cout << "  front wheels yaw: " << mrpt::RAD2DEG(fl) << " " << mrpt::RAD2DEG(fr)
+			  << " deg\n";
+	EXPECT_GT(mrpt::RAD2DEG(fl), 14.0);
+	EXPECT_LT(mrpt::RAD2DEG(fr), 15.0);
+}
+
+// Bearing damping is integrated implicitly: no blow-up for large values.
+void test_large_wheel_damping()
+{
+	std::cout << "[TEST] large wheel bearing damping\n";
+	Sim s(
+		kSkidSteer,
+		"<controller class=\"twist_pid\"><KP>18</KP><KI>470</KI><max_torque>100</max_torque>"
+		"</controller>",
+		friction("default", "0.8", "<C_damping>50</C_damping>"), 5e-3);
+	s.run(4.0, {1.0, 0, 0});
+	const double vx = s.veh->getRefVelocityLocal().vx;
+	std::cout << "  vx=" << vx << "\n";
+	// Limited by the damping: max_torque/C_damping*R = 100/50*0.1
+	EXPECT_TRUE(std::isfinite(vx));
+	EXPECT_NEAR(vx, 0.2, 0.01);
+}
+
+// Wheel loads from the force and moment balance; a semi-trailer rests on its
+// kingpin.
+void test_wheel_loads()
+{
+	std::cout << "[TEST] wheel loads\n";
+	{
+		Sim s(kAckermann, "<controller class=\"twist_ideal\" />", friction("default", "0.7"), 5e-3);
+		s.run(0.1, {0, 0, 0});
+		const auto& n = s.veh->getWheelLoads();
+		const auto* b = s.veh->getBox2DChassisBody();
+		const double W = b->GetMass() * 9.81;
+		// Rear (0,1) at x=-1.8, front (2,3) at x=1.7: moments about the COM
+		const double xc = b->GetLocalCenter().x;
+		const double expectedFront = W * (xc + 1.8) / 3.5;
+		std::cout << "  ackermann loads: " << n[0] << " " << n[1] << " " << n[2] << " " << n[3]
+				  << " (expected front axle: " << expectedFront << ")\n";
+		EXPECT_NEAR(n[0] + n[1] + n[2] + n[3], W, 1e-3 * W);
+		EXPECT_NEAR(n[2] + n[3], expectedFront, 1e-3 * W);
+	}
+	{
+		const std::string xml = R"(
+		<vehicle name="tractor">
+			<dynamics class="differential">
+				<l_wheel pos="0  0.9" mass="10" width="0.3" diameter="0.8" />
+				<r_wheel pos="0 -0.9" mass="10" width="0.3" diameter="0.8" />
+				<chassis mass="1000" zmin="0.3" zmax="2.0" />
+				<controller class="twist_ideal" />
+			</dynamics>
+			<init_pose>0 0 0</init_pose>
+		</vehicle>
+		<vehicle name="veh">
+			<dynamics class="differential_4_wheels">
+				<lf_wheel pos="-4.25  0.8" mass="10" width="0.35" diameter="0.75" />
+				<rf_wheel pos="-4.25 -0.8" mass="10" width="0.35" diameter="0.75" />
+				<lr_wheel pos="-5.25  0.8" mass="10" width="0.35" diameter="0.75" />
+				<rr_wheel pos="-5.25 -0.8" mass="10" width="0.35" diameter="0.75" />
+				<chassis mass="4000" zmin="0.5" zmax="4.0">
+					<shape> <pt>-6.2 1.25</pt> <pt>0.5 1.25</pt> <pt>0.5 -1.25</pt> <pt>-6.2 -1.25</pt> </shape>
+				</chassis>
+				<controller class="raw" />
+			</dynamics>
+			<init_pose>-0.2 0 0</init_pose>
+		</vehicle>
+		<joint type="revolute" body_a="tractor" anchor_a="-0.2 0" body_b="veh" anchor_b="0 0" />
+		)";
+		Sim s(xml, 5e-3);
+		s.run(0.1, {0, 0, 0});
+		const auto& n = s.veh->getWheelLoads();
+		const double W = s.veh->getBox2DChassisBody()->GetMass() * 9.81;
+		const double sum = n[0] + n[1] + n[2] + n[3];
+		std::cout << "  trailer loads: " << n[0] << " " << n[1] << " " << n[2] << " " << n[3]
+				  << " (weight: " << W << ")\n";
+		EXPECT_LT(sum, 0.9 * W);  // the rest is on the kingpin
+		EXPECT_GT(sum, 0.1 * W);
+	}
+}
+
 }  // namespace
 
 int main()
@@ -236,6 +437,12 @@ int main()
 		test_ward_iagnemma_coast_down();
 		test_ellipse_pid();
 		test_stiff_pid_low_friction();
+		test_skid_steer_spin_rate();
+		test_caster();
+		test_torsen();
+		test_steering_rate();
+		test_large_wheel_damping();
+		test_wheel_loads();
 	}
 	catch (const std::exception& e)
 	{
