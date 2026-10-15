@@ -491,6 +491,10 @@ int main(int argc, char** argv)
 							? info.xmlMaxTorque
 							: (skidSteer ? 3.0 : 0.9) * info.tractionTorque;
 		}
+		if (!std::isfinite(maxTorque))
+		{
+			THROW_EXCEPTION("No driven wheel has a load: set max_torque with --max-torque.");
+		}
 
 		std::printf(
 			"  Dynamics: %s, %zu wheels. Traction limit per driven wheel: %.4g N.m\n",
@@ -528,6 +532,12 @@ int main(int argc, char** argv)
 		std::printf("\nCoarse search (%zu candidates):\n", candidates.size());
 		auto results = evaluateAll(
 			candidates, xmlFile, cls, profiles, conditions, info.halfLength, numThreads);
+
+		if (!std::isfinite(results.front().cost))
+		{
+			THROW_EXCEPTION(
+				"All candidates were unstable: check max_torque and the vehicle definition.");
+		}
 
 		// Refinement around the best one:
 		const Gains best0 = results.front().gains;
