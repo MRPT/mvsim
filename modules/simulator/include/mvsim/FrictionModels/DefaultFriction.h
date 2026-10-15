@@ -29,6 +29,8 @@ class DefaultFriction : public FrictionBase
 	virtual mrpt::math::TVector2D evaluate_friction(
 		const FrictionBase::TFrictionInput& input) const override;
 
+	double peakFrictionCoefficient() const override { return mu_; }
+
    private:
 	double mu_ = 0.8;  //!< friction coefficient (non-dimensional)
 	double C_damping_ = 0.01;  //!< For wheels "internal friction" (N*m*s/rad)

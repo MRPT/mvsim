@@ -53,68 +53,42 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 	const double partial_mass = input.Fz / gravity + input.wheel.mass;
 	const double max_friction = mu * partial_mass * gravity;
 
-	// 1) Lateral friction (decoupled sub-problem)
-	// --------------------------------------------
-	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
-	{
-		// Impulse to cancel lateral velocity + counteract gravity slope:
-		wheel_lateral_friction = -vel_w.y *
-									 (input.lateralMass > 0 ? input.lateralMass : partial_mass) /
-									 input.context.dt -
-								 gravSlope_w.y;
-
-		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
-	}
-
-	// 2) Longitudinal friction (decoupled sub-problem)
-	// -------------------------------------------------
-	double wheel_long_friction = 0.0;  // direction: +x local wrt the wheel
-
-	// (eq. 1)==> desired impulse in wheel spinning speed.
-	// wheel_C_lon_vel = vel_w.x - input.wheel.w * 0.5*input.wheel.diameter
-
-	// It should be = 0 for no slippage (nonholonomic constraint): find out
-	// required wheel \omega:case '4':
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
-	const double lon_constraint_desired_wheel_w = vel_w.x / R;
+	const double dt = input.context.dt;
+	const double w = input.wheel.getW();
 
-	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w - input.wheel.getW());
+	// Wheel spin acceleration for rolling without slipping within the step:
+	const double desired_wheel_alpha = (vel_w.x / R - w) / dt;
 
-	const double desired_wheel_alpha = desired_wheel_w_impulse / input.context.dt;
+	// Lateral force to cancel the lateral velocity + counteract gravity slope:
+	const double latForceToStick =
+		-vel_w.y * (input.lateralMass > 0 ? input.lateralMass : partial_mass) / dt - gravSlope_w.y;
 
-	// (eq. 3)==> Find out F_r
-	// Iyy_w * \Delta\omega_w = dt*\tau-  R*dt*Fri    -C_damp * \omega_w * dt
-	// "Damping" / internal friction of the wheel's shaft, etc.
-	const double C_damping = C_damping_;
+	// Bearing damping and rolling resistance (both integrated implicitly):
+	double T_rolling_resistance = 0;
+	double dTrr_dw = 0;
+	rollingResistance(
+		input.C_rr_override.value_or(C_rr_), partial_mass * gravity, R, w, T_rolling_resistance,
+		dTrr_dw);
+	const double otherTorque = -C_damping_ * w - T_rolling_resistance;
 
-	// Rolling resistance: constant-magnitude torque opposing wheel rotation,
-	// proportional to normal force: T_rr = C_rr * F_normal * R
-	// Uses a smooth tanh approximation near zero to avoid sign discontinuity.
-	const double F_normal = partial_mass * gravity;
-	const double C_rr = input.C_rr_override.value_or(C_rr_);
-	const double T_rolling_resistance =
-		(C_rr > 0 && std::abs(input.wheel.getW()) > 1e-4)
-			? C_rr * F_normal * R * std::tanh(input.wheel.getW() * 100.0)
-			: 0.0;
-
-	// Bearing damping and rolling resistance:
-	const double otherTorque = -C_damping * input.wheel.getW() - T_rolling_resistance;
-
-	double F_friction_lon = 0;
+	// Coulomb friction (friction circle):
+	double wheel_long_friction = 0;	 // direction: +x local wrt the wheel
+	double wheel_lateral_friction = 0;	// direction: +y local wrt the wheel
 	double actual_wheel_alpha = 0;
-	solveWheelSpin(
-		input, otherTorque, desired_wheel_alpha, R, max_friction, F_friction_lon,
+	solveContact(
+		input, otherTorque, C_damping_ + dTrr_dw, desired_wheel_alpha, R, latForceToStick,
+		{vel_w.x - w * R, vel_w.y}, max_friction, wheel_long_friction, wheel_lateral_friction,
 		actual_wheel_alpha);
 
 	// Add slope gravity force to the contact-patch friction (acts on chassis,
 	// not on wheel spin). Clamped by remaining friction capacity.
-	const double remaining_lon = max_friction - std::abs(F_friction_lon);
-	F_friction_lon -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
+	const double remaining_lon =
+		remainingLongitudinalForce(max_friction, wheel_long_friction, wheel_lateral_friction);
+	wheel_long_friction -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
-	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
-
-	wheel_long_friction = F_friction_lon;
+	input.wheel.setW(w + actual_wheel_alpha * dt);
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------
@@ -130,8 +104,6 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 
 		logger->updateColumn("desired_wheel_alpha", desired_wheel_alpha);
 		logger->updateColumn("wheel_lateral_friction", wheel_lateral_friction);
-		logger->updateColumn("desired_wheel_w_impulse", desired_wheel_w_impulse);
-		logger->updateColumn("F_friction_lon", F_friction_lon);
 		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
 		logger->updateColumn("motor_torque", input.motorTorque);
 		logger->updateColumn("wheel_long_friction", wheel_long_friction);
