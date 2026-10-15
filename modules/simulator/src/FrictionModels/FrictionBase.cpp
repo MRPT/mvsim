@@ -13,6 +13,8 @@
 #include <mvsim/FrictionModels/WardIagnemmaFriction.h>
 #include <mvsim/VehicleBase.h>
 
+#include <algorithm>
+#include <cmath>
 #include <rapidxml.hpp>
 
 using namespace mvsim;
@@ -68,3 +70,40 @@ FrictionBase::Ptr FrictionBase::factory(
 }
 
 void FrictionBase::setLogger(const std::weak_ptr<CSVLogger>& logger) { logger_ = logger; }
+
+void FrictionBase::solveWheelSpin(
+	const TFrictionInput& input, double otherTorque, double desiredAlpha, double R, double maxF,
+	double& F, double& alpha)
+{
+	const double dt = input.context.dt;
+	const auto solve = [&](double motorTorque, double motorDamping)
+	{
+		// Effective inertia includes the motor reaction to the spin change:
+		const double I = input.wheel.Iyy + dt * motorDamping;
+		const double torque = motorTorque + otherTorque;
+		// No-slip force, reduced by the chassis reaction within the step: the
+		// ground point speed changes by F*dt/longitudinalMass while the wheel
+		// spins up by -R*F*dt/I.
+		const double k =
+			input.longitudinalMass > 0 ? 1.0 / (1.0 + I / (input.longitudinalMass * R * R)) : 1.0;
+		F = std::clamp(k * (torque - I * desiredAlpha) / R, -maxF, maxF);
+		alpha = (torque - R * F) / I;
+	};
+
+	const auto& m = input.motor;
+	if (m.damping <= 0)
+	{
+		solve(input.motorTorque, 0);
+		return;
+	}
+
+	solve(m.unsaturated, m.damping);
+
+	// If the motor would end up saturated, it applies its limit all along the
+	// step (exact, since the torque law is monotonic):
+	const double endTorque = m.unsaturated - m.damping * dt * alpha;
+	if (m.limit > 0 && std::abs(endTorque) > m.limit)
+	{
+		solve(endTorque > 0 ? m.limit : -m.limit, 0);
+	}
+}

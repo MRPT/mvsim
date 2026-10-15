@@ -14,6 +14,7 @@
 #include <mvsim/Wheel.h>
 #include <mvsim/basic_types.h>	// fwrd decls.
 
+#include <limits>
 #include <optional>
 
 namespace mvsim
@@ -21,6 +22,21 @@ namespace mvsim
 /** @addtogroup friction_module  Friction simulation module
  * \ingroup mvsim_simulator_module
  */
+
+/** Linear model of a closed-loop motor controller (e.g. a wheel velocity PID)
+ *  around the current wheel spin speed w. The torque it applies (forward
+ *  positive) if the wheel spin becomes w' is:
+ *  `clamp(unsaturated - damping * (w' - w), -limit, limit)`.
+ *  Friction models use it to integrate the wheel spin implicitly, so stiff
+ *  controllers remain stable for any simulation time step.
+ * \ingroup friction_module
+ */
+struct MotorTorqueModel
+{
+	double damping = 0;	 //!< [N.m.s/rad], >=0. 0 means a constant torque
+	double unsaturated = 0;	 //!< [N.m] torque at the current w, before clamping
+	double limit = std::numeric_limits<double>::infinity();	 //!< [N.m] (<=0: none)
+};
 
 /** Virtual base class for all friction models
  * \ingroup friction_module
@@ -50,6 +66,18 @@ class FrictionBase
 		/** The force applied by the motor to the wheel (Nm). Negative means
 		 * backwards, which makes the vehicle go forwards. */
 		double motorTorque = 0;
+
+		/** Effective mass of the chassis at the wheel contact point along the
+		 *  wheel lateral and longitudinal directions [kg], for the friction
+		 *  impulses that cancel the wheel slip in one time step. If 0, the wheel
+		 *  share of the vehicle mass is used laterally, and the chassis is
+		 *  assumed not to react to the longitudinal force within the step. */
+		double lateralMass = 0;
+		double longitudinalMass = 0;
+
+		/** Optional closed-loop motor model, only used if its damping is >0.
+		 *  Then, it replaces motorTorque in the wheel spin dynamics. */
+		MotorTorqueModel motor;
 
 		/** Instantaneous velocity vector (in vehicle local coordinates) of the wheel
 		 *  center of gravity (cog) point. */
@@ -84,6 +112,20 @@ class FrictionBase
    protected:
 	World* world_;
 	VehicleBase& myVehicle_;
+
+	/** Solves the wheel spin dynamics in one time step:
+	 *  `Iyy * alpha = motor_torque + otherTorque - R * F`, where the motor
+	 *  torque comes from input.motor (implicit) or input.motorTorque, and F is
+	 *  the longitudinal ground force, the one making the wheel roll without
+	 *  slipping at the end of the step (also accounting for the chassis
+	 *  reaction, see input.longitudinalMass) unless it exceeds maxF in
+	 *  magnitude.
+	 *  \param[out] F Longitudinal friction force on the wheel [N]
+	 *  \param[out] alpha Wheel angular acceleration [rad/s^2]
+	 */
+	static void solveWheelSpin(
+		const TFrictionInput& input, double otherTorque, double desiredAlpha, double R, double maxF,
+		double& F, double& alpha);
 
 	std::optional<std::weak_ptr<CSVLogger>> logger_;
 };

@@ -198,7 +198,17 @@ class VehicleBase : public CVisualObject, public Simulable
 	 * block. */
 	virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node) = 0;
 
+	/** Runs the controller and returns the motor torque for each wheel. It may
+	 *  also fill wheelMotors_. */
 	virtual std::vector<double> invoke_motor_controllers(const TSimulContext& context) = 0;
+
+	/// Alternates the order in which wheel friction is solved, see simul_pre_timestep()
+	bool reverseWheelOrder_ = false;
+
+	/** For each wheel, the optional closed-loop motor model reported by the
+	 *  controller in invoke_motor_controllers() (see MotorTorqueModel).
+	 *  Empty means constant torques. */
+	std::vector<MotorTorqueModel> wheelMotors_;
 
 	virtual void invoke_motor_controllers_post_step([[maybe_unused]] const TSimulContext& context)
 	{

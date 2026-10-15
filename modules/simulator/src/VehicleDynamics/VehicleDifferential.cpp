@@ -142,6 +142,12 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 		TControllerOutput co;
 		controller_->control_step(ci, co);
 
+		// Only the wheels whose spin is measured by the controller (L,R) react
+		// to their own speed:
+		wheelMotors_.assign(getNumWheels(), MotorTorqueModel());
+		wheelMotors_[WHEEL_L] = co.motor_l;
+		wheelMotors_[WHEEL_R] = co.motor_r;
+
 		// Take its output:
 		switch (getNumWheels())
 		{

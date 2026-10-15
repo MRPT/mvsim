@@ -61,8 +61,18 @@ struct PID_Controller
 	 * unmodified) */
 	void reset();
 
+	/** Output of the last compute() call before saturation (clamping) */
+	double lastUnsaturatedOutput() const { return lastUnsaturatedOutput_; }
+
+	/** Derivative of the unsaturated output of the last compute() call with
+	 *  respect to its error input. Used to integrate the controlled plant
+	 *  implicitly. */
+	double lastOutputSensitivity() const { return lastSensitivity_; }
+
    private:
 	double lastOutput_ = 0;
+	double lastSensitivity_ = 0;
+	double lastUnsaturatedOutput_ = 0;
 	double i_state_ = 0;  //!< Integrator accumulator
 	double d_state_ = 0;  //!< Filtered derivative state
 	double e_prev_ = 0;	 //!< Previous error (for unfiltered derivative)

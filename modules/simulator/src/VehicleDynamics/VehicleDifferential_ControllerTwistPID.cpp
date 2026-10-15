@@ -11,6 +11,9 @@
 #include <mrpt/core/lock_helper.h>
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 
+#include <algorithm>
+#include <limits>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -78,49 +81,51 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	const double followErrorR = spVelR - actVelR;
 
 	const double zero_threshold = 0.001;  // m/s
-	const double stop_threshold = 0.05;	 // m/s , wider threshold for stop detection
 
 	const bool setpointIsZero =
 		std::abs(spVelL) < zero_threshold && std::abs(spVelR) < zero_threshold;
 
-	if (setpointIsZero && std::abs(actVelL) < stop_threshold && std::abs(actVelR) < stop_threshold)
+	double sensL = 0;  // d(torque)/d(velocity error)
+	double sensR = 0;
+	if (setpointIsZero)
 	{
-		// Near-zero velocity with zero setpoint: full stop, reset PIDs
-		co.wheel_torque_l = 0;
-		co.wheel_torque_r = 0;
+		// (max_torque<=0 means no limit, as in PID_Controller)
+		const double maxT = max_torque > 0 ? max_torque : std::numeric_limits<double>::infinity();
+		// Braking toward a full stop: proportional action only, which always
+		// opposes the current motion and vanishes at zero speed, so the vehicle
+		// neither coasts nor rebounds due to the integral term.
 		for (auto& pid : PIDs_)
 		{
 			pid.reset();
 		}
+		co.wheel_torque_l = std::clamp(KP * actVelL - ff, -maxT, maxT);
+		co.wheel_torque_r = std::clamp(KP * actVelR - ff, -maxT, maxT);
+		co.motor_l.unsaturated = ff - KP * actVelL;
+		co.motor_r.unsaturated = ff - KP * actVelR;
+		sensL = KP;
+		sensR = KP;
 	}
 	else
 	{
 		co.wheel_torque_l = -PIDs_[0].compute(followErrorL, ci.context.dt, ff);
 		co.wheel_torque_r = -PIDs_[1].compute(followErrorR, ci.context.dt, ff);
+		co.motor_l.unsaturated = PIDs_[0].lastUnsaturatedOutput();
+		co.motor_r.unsaturated = PIDs_[1].lastUnsaturatedOutput();
+		sensL = PIDs_[0].lastOutputSensitivity();
+		sensR = PIDs_[1].lastOutputSensitivity();
+	}
 
-		if (setpointIsZero)
-		{
-			// Braking toward zero: clamp torque so it can only oppose current
-			// motion direction, preventing the PID integral from causing rebound.
-			// Sign convention: positive co.wheel_torque = backward motor force.
-			if (actVelL > 0)
-			{
-				co.wheel_torque_l = std::max(0.0, co.wheel_torque_l);
-			}
-			else if (actVelL < 0)
-			{
-				co.wheel_torque_l = std::min(0.0, co.wheel_torque_l);
-			}
-
-			if (actVelR > 0)
-			{
-				co.wheel_torque_r = std::max(0.0, co.wheel_torque_r);
-			}
-			else if (actVelR < 0)
-			{
-				co.wheel_torque_r = std::min(0.0, co.wheel_torque_r);
-			}
-		}
+	// Motor models, for the implicit integration of the wheel spin. Their
+	// reaction to each wheel own spin speed is d(actVel)/d(w) (from the
+	// odometry equations) times the controller sensitivity:
+	{
+		const auto& wL = veh_.wheels_info_[WHEEL_L];
+		const auto& wR = veh_.wheels_info_[WHEEL_R];
+		const double yMeanRel = 0.5 * (wL.y + wR.y) / distWheels_;
+		co.motor_l.damping = sensL * 0.5 * wL.diameter * (1.0 - yMeanRel);
+		co.motor_r.damping = sensR * 0.5 * wR.diameter * (1.0 + yMeanRel);
+		co.motor_l.limit = max_torque;
+		co.motor_r.limit = max_torque;
 	}
 
 	// Log controller stats via CsvLogger (LOGGER_IDX_WHEELS = 1):

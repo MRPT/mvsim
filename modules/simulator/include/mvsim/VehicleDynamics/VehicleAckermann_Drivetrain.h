@@ -13,6 +13,8 @@
 #include <mvsim/PID_Controller.h>
 #include <mvsim/VehicleBase.h>
 
+#include <array>
+
 namespace mvsim
 {
 /** Implementation of 4 wheels Ackermann-driven vehicles with drivetrain
@@ -67,6 +69,9 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	{
 		double drive_torque;
 		double steer_ang;  //!< Equivalent Ackermann steering angle
+		/// Optional closed-loop model of the drive motor (forward positive),
+		/// with its damping per unit of driveshaftSpeed() [N.m.s/m]
+		MotorTorqueModel drive_motor;
 		TControllerOutput() : drive_torque(0), steer_ang(0) {}
 	};
 
@@ -163,6 +168,11 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	/** @} */  // end controllers
 
 	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const override;
+
+	/** Mean longitudinal speed of the driven axles [m/s], from the wheels own
+	 *  spin (as an encoder in the driveshaft would measure it). Optionally
+	 *  returns its derivative with respect to each wheel spin speed. */
+	double driveshaftSpeed(std::array<double, 4>* dSpeed_dw = nullptr) const;
 
 	/** Computes the exact angles of the front wheels required to have an
 	 * equivalent central steering angle.
