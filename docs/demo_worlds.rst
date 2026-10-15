@@ -59,6 +59,15 @@ chassis pitch when accelerating and braking, roll in turns, and bounce over the 
             mvsim launch mvsim_tutorial/demo_suspension.world.xml
 
 
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_suspension.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
 .. dropdown:: World XML code
 
    File: `mvsim_tutorial/demo_suspension.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_suspension.world.xml>`_

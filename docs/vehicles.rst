@@ -807,6 +807,14 @@ mounted on it, while the wheels stay on the ground. The suspension also sets the
 loads (dynamic load transfer). It is disabled by default. See
 :ref:`the physics model <physics-suspension>`.
 
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_suspension.mp4" type="video/mp4">
+     </video>
+   </div>
+
 .. code-block:: xml
 
    <vehicle:class name="my_car">
