@@ -32,6 +32,7 @@
 
         <!-- Ackermann front wheels maximum angle to each side (so, the overall range will be twice this value)  -->
         <max_steer_ang_deg>35.0</max_steer_ang_deg>
+        <max_steer_rate_deg>90</max_steer_rate_deg>  <!-- 0: instantaneous steering -->
 
         <chassis mass="97.0" zmin="0" zmax="1.20">
             <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
@@ -40,7 +41,7 @@
         <!--   Motor controller -->
         <controller class="twist_front_steer_pid">
             <!-- Params -->
-            <KP>800</KP>  <KI>100</KI> <KD>0</KD>
+            <KP>1360</KP>  <KI>272</KI> <KD>0</KD>
             <V>0.0</V><W>0</W>
             <max_torque>100</max_torque>  <!-- Below the rear wheels traction limit -->
         </controller>

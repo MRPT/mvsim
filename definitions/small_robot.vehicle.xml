@@ -18,8 +18,8 @@
         <!--   Motor controller -->
         <controller class="twist_pid">
             <!-- Params -->
-            <KP>64</KP>
-            <KI>10</KI>
+            <KP>368</KP>
+            <KI>7.4</KI>
             <KD>0.0000</KD>
             <max_torque>14.44</max_torque>
             <V>0.0</V><W>0</W>
