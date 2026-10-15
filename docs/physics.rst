@@ -231,7 +231,7 @@ The wheel angular acceleration :math:`\alpha` is computed from torque balance:
 
 .. math::
 
-   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w − T_{rr}}{I_{eff}}
+   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w - T_{rr}}{I_{eff}}
 
 Closed-loop motor controllers (the PID ones) react to the wheel spin they measure, which
 makes the wheel dynamics stiff: integrated explicitly, a wheel velocity loop becomes
