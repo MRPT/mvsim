@@ -83,6 +83,9 @@ class DynamicsDifferential : public VehicleBase
 
 		double wheel_torque_l = 0;
 		double wheel_torque_r = 0;
+
+		/// Optional closed-loop models of the L/R motors (forward positive)
+		MotorTorqueModel motor_l, motor_r;
 	};
 
 	/** Virtual base for controllers of vehicles of type DynamicsDifferential */

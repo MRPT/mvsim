@@ -442,23 +442,51 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	const double massPerWheel = getChassisMass() / static_cast<double>(nW);
 	const double weightPerWheel = massPerWheel * gravity;
 
-	const std::vector<mrpt::math::TVector2D> wheelLocalVels =
-		getWheelsVelocityLocal(getRefVelocityLocal());
-
-	ASSERT_EQUAL_(wheelLocalVels.size(), nW);
+	// The friction impulses are solved wheel by wheel (sequential impulses),
+	// updating an estimate of the chassis velocity after each one: computing
+	// all of them from the same velocity over-corrects it (and ends up in a
+	// limit cycle) when the wheels are far from the center of mass compared to
+	// the yaw radius of gyration. The order is reversed on every step to
+	// avoid a left/right bias.
+	mrpt::math::TTwist2D vel = getRefVelocityLocal();  // body frame
+	const double M = b2dBody_->GetMass();
+	const b2Vec2 com = b2dBody_->GetLocalCenter();
+	const double Icom = b2dBody_->GetInertia() - M * (com.x * com.x + com.y * com.y);
+	const bool sequentialImpulses = M > 0 && Icom > 0 && !idealControllerActive_;
+	// Effective chassis mass at point r along direction n:
+	const auto effectiveMass = [&](const mrpt::math::TVector2D& r, double nx, double ny)
+	{
+		const double rxn = r.x * ny - r.y * nx;
+		return 1.0 / (1.0 / M + rxn * rxn / Icom);
+	};
+	reverseWheelOrder_ = !reverseWheelOrder_;
 
 	// For visualization only
 	std::vector<mrpt::math::TSegment3D> forceVectors, torqueVectors;
 
-	for (size_t i = 0; i < nW; i++)
+	for (size_t k = 0; k < nW; k++)
 	{
+		const size_t i = reverseWheelOrder_ ? nW - 1 - k : k;
+
 		// prepare data:
 		Wheel& w = getWheelInfo(i);
+		const mrpt::math::TVector2D r(w.x - com.x, w.y - com.y);  // from the COM
 
 		FrictionBase::TFrictionInput fi(context, w);
 		fi.motorTorque = -wheelTorque[i];  // "-" => Forwards is negative
+		if (i < wheelMotors_.size())
+		{
+			fi.motor = wheelMotors_[i];
+		}
 		fi.Fz = weightPerWheel;
-		fi.wheelCogLocalVel = wheelLocalVels[i];
+		fi.wheelCogLocalVel = {vel.vx - vel.omega * w.y, vel.vy + vel.omega * w.x};
+		if (sequentialImpulses)
+		{
+			const double c = std::cos(w.yaw);
+			const double sn = std::sin(w.yaw);
+			fi.longitudinalMass = effectiveMass(r, c, sn);
+			fi.lateralMass = effectiveMass(r, -sn, c);
+		}
 
 		// Gravity slope force per wheel (in vehicle-local coords).
 		// Total mass per wheel = chassis share + wheel own mass.
@@ -509,6 +537,18 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 			const b2Vec2 wGravForce =
 				b2dBody_->GetWorldVector(b2Vec2(fi.gravSlopeForce.x, fi.gravSlopeForce.y));
 			b2dBody_->ApplyForce(wGravForce, wPt, true /*wake up*/);
+		}
+
+		// Update the chassis velocity estimate with this wheel impulse:
+		if (sequentialImpulses)
+		{
+			const double Fx = F_r.x + fi.gravSlopeForce.x;
+			const double Fy = F_r.y + fi.gravSlopeForce.y;
+			const double dOmega = (r.x * Fy - r.y * Fx) * context.dt / Icom;
+			// Velocity of the reference point (origin) = COM velocity + w x (-com)
+			vel.vx += Fx * context.dt / M + dOmega * com.y;
+			vel.vy += Fy * context.dt / M - dOmega * com.x;
+			vel.omega += dOmega;
 		}
 
 		// log

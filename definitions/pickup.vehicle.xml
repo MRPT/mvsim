@@ -26,9 +26,9 @@
         <!--   Motor controller -->
         <controller class="twist_front_steer_pid">
             <!-- Params -->
-            <KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+            <KP>8000</KP>  <KI>100</KI> <KD>0</KD>
             <V>0.0</V><W>0</W>
-            <max_torque>600</max_torque>
+            <max_torque>1250</max_torque>
         </controller>
 
         <!-- Available types: 

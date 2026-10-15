@@ -346,9 +346,18 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 		}
 
 		ASSERT_(out_torque_per_wheel.size() == 4);
+		std::array<double, 4> dSpeed_dw;
+		driveshaftSpeed(&dSpeed_dw);
+		wheelMotors_.assign(4, MotorTorqueModel());
 		for (int i = 0; i < 4; i++)
 		{
-			out_torque_per_wheel[i] = co.drive_torque * torque_split_per_wheel[i];
+			const double split = torque_split_per_wheel[i];
+			out_torque_per_wheel[i] = co.drive_torque * split;
+			// Each wheel reaction to its own spin only (the rest are neglected):
+			auto& m = wheelMotors_[i];
+			m.damping = co.drive_motor.damping * split * dSpeed_dw[i];
+			m.unsaturated = co.drive_motor.unsaturated * split;
+			m.limit = co.drive_motor.limit * split;
 		}
 
 		// Kinematically-driven steering wheels:
@@ -438,4 +447,40 @@ mrpt::math::TTwist2D DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate() 
 	odo_vel.omega = w_veh;
 
 	return odo_vel;
+}
+
+double DynamicsAckermannDrivetrain::driveshaftSpeed(std::array<double, 4>* dSpeed_dw) const
+{
+	double wFront = 0;
+	double wRear = 0;
+	switch (diff_type_)
+	{
+		case DIFF_OPEN_FRONT:
+		case DIFF_TORSEN_FRONT:
+			wFront = 1.0;
+			break;
+		case DIFF_OPEN_REAR:
+		case DIFF_TORSEN_REAR:
+			wRear = 1.0;
+			break;
+		default:
+			wFront = 0.5;
+			wRear = 0.5;
+			break;
+	};
+
+	double speed = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		const auto& w = wheels_info_[i];
+		const double axleWeight = (i == WHEEL_FL || i == WHEEL_FR) ? wFront : wRear;
+		// Each wheel contributes half of its axle speed:
+		const double d = axleWeight * 0.5 * 0.5 * w.diameter * std::cos(w.yaw);
+		speed += d * w.getW();
+		if (dSpeed_dw)
+		{
+			(*dSpeed_dw)[i] = d;
+		}
+	}
+	return speed;
 }

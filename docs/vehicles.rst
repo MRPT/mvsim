@@ -128,11 +128,10 @@ differential speeds. Common in mobile robots like TurtleBot.
        <chassis mass="15.0" zmin="0.05" zmax="0.6" />
 
        <controller class="twist_pid">
-           <KP>5</KP>
+           <KP>64</KP>
            <KI>10</KI>
-           <I_MAX>1</I_MAX>
            <KD>0</KD>
-           <max_torque>100</max_torque>
+           <max_torque>14.44</max_torque>
        </controller>
    </dynamics>
 
@@ -184,11 +183,10 @@ steer the vehicle, while rear wheels remain parallel to the chassis axis.
        <chassis mass="800.0" zmin="0.15" zmax="1.00" />
 
        <controller class="twist_front_steer_pid">
-           <KP>1500</KP>
+           <KP>4000</KP>
            <KI>50</KI>
-           <I_MAX>20</I_MAX>
            <KD>0</KD>
-           <max_torque>600</max_torque>
+           <max_torque>400</max_torque>
        </controller>
    </dynamics>
 
@@ -307,10 +305,10 @@ torques to achieve desired twist commands.
 .. code-block:: xml
 
    <controller class="twist_pid">
-       <KP>5</KP>           <!-- Proportional gain -->
+       <KP>64</KP>          <!-- Proportional gain [N.m/(m/s)] -->
        <KI>10</KI>          <!-- Integral gain -->
-       <I_MAX>1</I_MAX>     <!-- Integral windup limit -->
        <KD>0</KD>           <!-- Derivative gain -->
+       <enable_antiwindup>false</enable_antiwindup>  <!-- Optional -->
        <V>0.0</V>           <!-- Initial linear velocity setpoint -->
        <W>0</W>             <!-- Initial angular velocity setpoint -->
        <max_torque>100</max_torque>
@@ -330,10 +328,20 @@ Desired wheel velocities are computed from commanded twist :math:`(\nu, \omega)`
 
 where :math:`w` is the lateral distance between wheels.
 
+**Stopping:** with a zero setpoint, the controller brakes with its proportional action
+only (the integral term is reset), so the vehicle comes to a full stop without coasting
+or rebounding.
+
+**Tuning:** keep ``max_torque`` below the traction limit of the driven wheels
+(:math:`\mu \, m_{wheel} \, g \, R`, with :math:`m_{wheel}` the vehicle mass share on
+each wheel), except for skid-steer vehicles, which need wheel slip to turn. The gains of
+the predefined vehicle classes were tuned for fast, overshoot-free tracking with time
+steps from 1 to 5 ms.
+
 **For Ackermann:**
 
-Steering angle is computed from turn radius, and PID controls wheel torques
-to achieve desired speed while accounting for different wheel speeds in turns.
+Steering angle is computed from turn radius, and PID controls the front (driven) wheel
+torques to achieve the desired speed of each wheel, measured from its own spin.
 
 Ideal Controllers
 ~~~~~~~~~~~~~~~~~
@@ -342,6 +350,9 @@ Ideal Controllers
 
 Perfect velocity control without dynamics. Instantly achieves commanded velocities.
 Useful for testing high-level algorithms without worrying about low-level control.
+Available for ``differential`` and ``ackermann`` vehicles. Note that it imposes the
+twist at the vehicle frame origin, even if it is not kinematically feasible (e.g. an
+Ackermann vehicle whose origin is not on the rear axle).
 
 .. code-block:: xml
 
@@ -534,6 +545,7 @@ slip ratio effects, suitable for vehicle dynamics research.
    </friction>
 
 **Slip Angle** :math:`\alpha` - Angle between wheel heading and velocity direction
+(computed in the wheel frame)
 
 **Slip Ratio** :math:`s`:
 
@@ -679,7 +691,6 @@ Create a new XML file in the ``definitions/`` directory:
            <controller class="twist_pid">
                <KP>10</KP>
                <KI>5</KI>
-               <I_MAX>2</I_MAX>
                <max_torque>50</max_torque>
            </controller>
        </dynamics>

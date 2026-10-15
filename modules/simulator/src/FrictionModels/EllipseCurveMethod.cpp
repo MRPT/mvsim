@@ -10,6 +10,7 @@
 
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/math/TPose2D.h>
+#include <mrpt/math/wrap2pi.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/viz/CPolyhedron.h>
@@ -78,9 +79,6 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	mrpt::math::TPoint2D gravSlope_w;
 	wRotInv.composePoint(input.gravSlopeForce, gravSlope_w);
 
-	// wheel angle around the vertical axis (wrt the vehicle frame):
-	const double wheel_delta = input.wheel.yaw;
-
 	const double gravity = myVehicle_.parent()->get_gravity();
 	const double partial_mass = input.Fz / gravity + input.wheel.mass;
 
@@ -88,15 +86,14 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
 
-	// Slip angle (α)
-	const double wheel_velocity_angle =
+	// Slip angle (α): vel_w is already in the wheel frame, so the angle of the
+	// velocity vector is the slip angle itself (folded into [-pi/2,pi/2] so
+	// rolling backwards is not taken as a large slip).
+	double slip_angle =
 		(std::abs(vel_w.y) > 1e-3 || std::abs(vel_w.x) > 1e-3) ? std::atan2(vel_w.y, vel_w.x) : .0;
-	double slip_angle = mrpt::math::angDistance(wheel_velocity_angle, wheel_delta);
 	if (std::abs(slip_angle) > M_PI_2)
 	{
-		// We could check for wheel vx sign, but that would not include some cases like sliding
-		// sideways on a slope, etc.
-		slip_angle = mrpt::math::angDistance(wheel_velocity_angle, wheel_delta + M_PI);
+		slip_angle = mrpt::math::wrapToPi(slip_angle + M_PI);
 	}
 
 	const double wheel_ground_point_vel =
@@ -111,12 +108,13 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	const double alpha_s = slip_angle_saturation_;
 	const double ss = slip_ratio_saturation_;
 
+	// Both are magnitudes (used as clamping bounds), whatever the slip sign:
 	const double max_friction_longitudinal_Fx =
-		Fz * C_s_ * saturation(slip_ratio, ss) *
+		Fz * C_s_ * std::abs(saturation(slip_ratio, ss)) *
 		sqrt(1.0 - C_s_alpha_ * mrpt::square(saturation(slip_angle, alpha_s) / alpha_s));
 
 	const double max_friction_lateral_Fy =
-		Fz * C_alpha_ * saturation(slip_angle, alpha_s) *
+		Fz * C_alpha_ * std::abs(saturation(slip_angle, alpha_s)) *
 		sqrt(1.0 - C_alpha_s_ * mrpt::square(saturation(slip_ratio, ss) / ss));
 
 	// 1) Lateral friction (decoupled sub-problem)
@@ -124,7 +122,10 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
 	{
 		// Impulse to cancel lateral velocity + counteract gravity slope:
-		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
+		wheel_lateral_friction = -vel_w.y *
+									 (input.lateralMass > 0 ? input.lateralMass : partial_mass) /
+									 input.context.dt -
+								 gravSlope_w.y;
 
 		wheel_lateral_friction =
 			std::clamp(wheel_lateral_friction, -max_friction_lateral_Fy, max_friction_lateral_Fy);
@@ -146,20 +147,14 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 											? C_rr * Fz * R * std::tanh(input.wheel.getW() * 100.0)
 											: 0.0;
 
-	const double I_yy = input.wheel.Iyy;
+	// Bearing damping and rolling resistance:
+	const double otherTorque = -C_damping_ * input.wheel.getW() - T_rolling_resistance;
 
-	// Effective motor torque after subtracting bearing damping and rolling resistance:
-	const double effectiveTorque =
-		input.motorTorque - C_damping_ * input.wheel.getW() - T_rolling_resistance;
-
-	double wheel_long_friction = (effectiveTorque - I_yy * desired_wheel_alpha) / R;
-
-	// Slippage: The friction with the ground is not infinite:
-	wheel_long_friction = std::clamp(
-		wheel_long_friction, -max_friction_longitudinal_Fx, max_friction_longitudinal_Fx);
-
-	// Recalc wheel ang. velocity impulse with this reduced force:
-	const double actual_wheel_alpha = (effectiveTorque - R * wheel_long_friction) / I_yy;
+	double wheel_long_friction = 0;
+	double actual_wheel_alpha = 0;
+	solveWheelSpin(
+		input, otherTorque, desired_wheel_alpha, R, max_friction_longitudinal_Fx,
+		wheel_long_friction, actual_wheel_alpha);
 
 	// Add slope gravity force to the contact-patch friction (acts on chassis,
 	// not on wheel spin). Clamped by remaining friction capacity.

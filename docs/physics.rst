@@ -231,9 +231,29 @@ The wheel angular acceleration :math:`\alpha` is computed from torque balance:
 
 .. math::
 
-   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w − T_{rr}}{I_{yy}}
+   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w - T_{rr}}{I_{eff}}
 
-The angular velocity is updated using explicit Euler integration:
+Closed-loop motor controllers (the PID ones) react to the wheel spin they measure, which
+makes the wheel dynamics stiff: integrated explicitly, a wheel velocity loop becomes
+unstable as soon as the wheel slips, unless :math:`K_P R \Delta t / I_{yy} < 2`. To avoid
+that time step dependency, controllers also report a linear model of their torque around
+the current spin speed (``MotorTorqueModel``):
+
+.. math::
+
+   \tau_{motor}(\omega_w') = \text{clamp}\left(\tau_{unsat} - d \cdot (\omega_w' - \omega_w),
+   -\tau_{max}, \tau_{max}\right)
+
+where :math:`d` (e.g. :math:`K_P R` for a wheel velocity PID) is the motor damping. The
+wheel spin is then integrated implicitly with respect to the motor torque, which amounts
+to using an effective inertia :math:`I_{eff} = I_{yy} + \Delta t \cdot d` with
+:math:`\tau_{motor} = \tau_{unsat}`. If the motor would end the step saturated, the step
+is solved again with the constant torque :math:`\pm\tau_{max}` and :math:`I_{eff} = I_{yy}`
+(exact, since the torque law is monotonic). Controllers without feedback (``raw``,
+``twist_ideal``) report :math:`d = 0`, so :math:`I_{eff} = I_{yy}`. This is implemented
+once, in ``FrictionBase::solveWheelSpin()``, and used by all friction models.
+
+The angular velocity is then updated with:
 
 .. math::
 
@@ -333,7 +353,13 @@ interaction suitable for indoor robots and general applications.
 
    .. math::
 
-      F_{y,desired} = -\frac{v_{wy} \cdot m_{wp}}{\Delta t}
+      F_{y,desired} = -\frac{v_{wy} \cdot m_{lat}}{\Delta t}
+
+   where :math:`m_{lat}` is the effective mass of the chassis at the wheel contact point
+   along the wheel lateral direction :math:`\vec{n}`,
+   :math:`m_{lat} = \left(1/M + (\vec{r} \times \vec{n})^2 / I_{zz}\right)^{-1}`, with
+   :math:`\vec{r}` the wheel position with respect to the center of mass (see
+   `Sequential Friction Impulses`_). If not provided, :math:`m_{wp}` is used.
 
    Clamped to maximum friction:
 
@@ -365,8 +391,14 @@ interaction suitable for indoor robots and general applications.
 
    .. math::
 
-      F_{x,desired} = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega_w - T_{rr}}{R}
+      F_{x,desired} = k \cdot \frac{\tau_{motor} - I_{eff} \alpha_{desired} - C_{damp} \omega_w - T_{rr}}{R},
+      \quad k = \frac{1}{1 + I_{eff} / (m_{lon} R^2)}
 
+   with :math:`I_{eff}` the effective wheel inertia (see `Wheel State Update`_), and
+   :math:`m_{lon}` the effective chassis mass at the contact point along the wheel
+   longitudinal direction. The factor :math:`k` accounts for the chassis reaction within
+   the step, so the wheel rolls without slipping at the end of it (:math:`k=1` for an
+   infinitely heavy chassis).
    Clamped to maximum friction:
 
    .. math::
@@ -377,7 +409,7 @@ interaction suitable for indoor robots and general applications.
 
    .. math::
 
-      \alpha_{actual} = \frac{\tau_{motor} - R \cdot F_x - C_{damp} \omega_w}{I_{yy}}
+      \alpha_{actual} = \frac{\tau_{motor} - R \cdot F_x - C_{damp} \omega_w - T_{rr}}{I_{eff}}
 
 7. Update wheel angular velocity:
 
@@ -455,11 +487,16 @@ where:
 
 **Implementation:**
 
-The rolling resistance force is added to the longitudinal friction calculation:
+The rolling resistance acts as an equivalent torque :math:`R \cdot F_{rr}` opposing the
+wheel spin, so a free-rolling wheel transmits it to the chassis as a longitudinal force:
 
 .. math::
 
-   F_x = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega_w}{R} + F_{rr}
+   F_x = \frac{\tau_{motor} - I_{eff} \alpha_{desired} - C_{damp} \omega_w - T_{rr} + R F_{rr}}{R}
+
+(Adding :math:`F_{rr}` directly as a contact force would instead spin the wheel up, and
+the wheel would give that momentum back to the chassis in the next steps, cancelling most
+of the resistance.)
 
 The lateral friction is calculated identically to the default model.
 
@@ -478,8 +515,8 @@ These can be tuned for different terrains (asphalt, dirt, sand, etc.).
 This model supports two independent sources of rolling resistance that may be combined:
 
 1. **Ground-contact force** (:math:`F_{rr}`) from ``R1``, ``R2``, ``A_roll`` — models
-   terrain/ground contact drag (velocity-dependent force added to the longitudinal friction
-   equation).
+   terrain/ground contact drag (velocity-dependent, applied as an equivalent torque
+   opposing the wheel spin).
 
 2. **Tire deformation torque** (:math:`T_{rr}`) from ``C_rr`` — models tire hysteresis as
    a shaft-level torque opposing wheel spin, using the same formula as the default friction model:
@@ -522,14 +559,15 @@ driving simulation.
 
 **Slip Angle** :math:`\alpha`:
 
-The angle between the wheel's velocity direction and its heading direction:
+The angle between the wheel's velocity direction and its heading direction. Since the
+velocity :math:`(v_{wx}, v_{wy})` is already expressed in the (possibly steered) wheel
+frame:
 
 .. math::
 
-   \alpha = \arctan2(v_y, v_x) - \delta
+   \alpha = \arctan2(v_{wy}, v_{wx})
 
-where :math:`\delta` is the wheel steering angle. Special handling for reverse motion
-ensures :math:`|\alpha| \leq \pi/2`.
+folded into :math:`|\alpha| \leq \pi/2` for reverse motion.
 
 **Slip Ratio** :math:`s`:
 
@@ -566,7 +604,8 @@ The ellipse method computes maximum available forces based on the friction ellip
 
    F_y^{max} = F_z C_\alpha \text{sat}(\alpha, \alpha_s) \sqrt{1 - C_{\alpha s} \left(\frac{\text{sat}(s, s_s)}{s_s}\right)^2}
 
-where:
+Both are magnitudes, used as the clamping bounds of the forces (the slip signs only
+determine the force directions through the impulse computation). Where:
 
 * :math:`F_z` - Normal force [N]
 * :math:`C_s` - Longitudinal stiffness coefficient
@@ -697,6 +736,26 @@ The ``VehicleBase`` class provides common functionality:
      v_{w,y} = v_y + \omega \cdot x_w
 
 * **Force Application:** Applies wheel friction forces to vehicle body through Box2D
+
+Sequential Friction Impulses
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Friction forces are computed as the impulses that cancel the slip of each wheel within
+one time step. Computing them for all wheels from the same chassis velocity (a Jacobi
+iteration) over-corrects the yaw rate when the wheels are far from the center of mass
+compared to the yaw radius of gyration (e.g. long vehicles), ending up in a limit cycle
+(a jittering vehicle that never comes to rest). Instead, the wheels are solved one after
+another (sequential impulses, i.e. a Gauss-Seidel iteration): the chassis velocity used
+for each wheel includes the impulses of the previous ones,
+
+.. math::
+
+   \Delta \vec{v}_{com} = \frac{\vec{F} \Delta t}{M}, \quad
+   \Delta \omega = \frac{(\vec{r} \times \vec{F}) \Delta t}{I_{zz}}
+
+and each wheel uses the effective chassis mass at its contact point. The wheel order is
+reversed on every step to avoid a left/right bias. Ideal controllers skip this, since
+friction forces are not applied to the chassis.
 
 Differential Drive Dynamics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -930,7 +989,8 @@ velocity setpoints.
 **Ideal Controllers:**
 
 Perfect tracking (kinematic control). Instantly achieves desired velocities without
-dynamics.
+dynamics. The wheel friction forces are still evaluated (for wheel spin and logging), but
+not applied to the chassis.
 
 Differential Twist PID Controller
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -946,7 +1006,7 @@ regulators on each wheel.
 
       v_l^{des} = v - \frac{\omega w}{2}, \quad v_r^{des} = v + \frac{\omega w}{2}
 
-2. Compute actual wheel velocities from odometry:
+2. Compute actual wheel velocities from odometry (i.e. from the wheels spin):
 
    .. math::
 
@@ -962,24 +1022,30 @@ regulators on each wheel.
 
       \tau_i = K_P e_i + K_I \int e_i \, dt + K_D \frac{de_i}{dt}
 
-   With integral windup protection:
-
-   .. math::
-
-      \int e_i \, dt = \text{clamp}\left(\int e_i \, dt, -I_{MAX}, I_{MAX}\right)
-
 4. Apply torque limits:
 
    .. math::
 
       \tau_i = \text{clamp}(\tau_i, -\tau_{max}, \tau_{max})
 
+   With ``<enable_antiwindup>true</enable_antiwindup>``, the integral term is corrected
+   by back-calculation while the output is saturated.
+
+5. Zero setpoint (stopping): the integral term is dropped and only the proportional
+   action brakes the wheels, :math:`\tau_i = \text{clamp}(-K_P v_i^{act})`. It always
+   opposes the current motion and vanishes at zero speed, so the vehicle neither coasts
+   nor rebounds.
+
 **Tuning Guidelines:**
 
 * :math:`K_P` - Proportional gain: Higher values → faster response, may cause oscillation
 * :math:`K_I` - Integral gain: Eliminates steady-state error, may cause overshoot
 * :math:`K_D` - Derivative gain: Damping, rarely needed for velocity control
-* :math:`I_{MAX}` - Prevents integral windup during saturation
+* :math:`\tau_{max}` - Keep it below the traction limit of the driven wheels,
+  :math:`\mu \, m_{wheel} \, g \, R`, so the controller cannot spin them (skid-steer
+  vehicles are the exception: turning in place requires the wheels to slip)
+
+The ``mvsim-pid-tuner`` tool proposes gains automatically.
 
 Ackermann Twist Controller
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1006,7 +1072,13 @@ Controls forward velocity and steering angle to achieve desired twist.
 
 4. Rotate desired velocity vector by steering angle
 
-5. Use PID to control wheel speeds accounting for different radii in turns
+5. Use PID to control each front (driven) wheel speed, accounting for different radii
+   in turns. The actual speed of each wheel is measured from its own spin (as a motor
+   encoder would), so the loop also limits the slip of the driven wheels.
+
+The ``ackermann_drivetrain`` twist controller is similar, but it controls the
+driveshaft speed (the mean longitudinal speed of the driven axles) with a single PID,
+whose torque is then split among the wheels by the differentials.
 
 **Special Cases:**
 

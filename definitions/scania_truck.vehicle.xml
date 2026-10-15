@@ -34,7 +34,10 @@
 			</shape>
 		</chassis>
 
-		<controller class="twist_ideal">
+		<controller class="twist_ideal">  <!-- "twist_ideal" or "twist_front_steer_pid" -->
+			<!-- Params (for twist_front_steer_pid) -->
+			<KP>16000</KP>  <KI>200</KI> <KD>0</KD>
+			<max_torque>2500</max_torque>
 		</controller>
 	</dynamics>
 

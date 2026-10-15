@@ -21,10 +21,6 @@ DynamicsAckermann::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsAckermann&
 	// (vx, omega) twist setpoint:  steer_ang = atan(omega * L / vx)
 	r2f_L_ = veh_.wheels_info_[WHEEL_FL].x - veh_.wheels_info_[WHEEL_RL].x;
 	ASSERT_(r2f_L_ > 0.0);
-
-	// Signal that friction reaction forces must not be applied to the
-	// chassis body , the twist is imposed directly by this controller.
-	veh_.idealControllerActive_ = true;
 }
 
 void DynamicsAckermann::ControllerTwistIdeal::control_step(
@@ -38,6 +34,11 @@ void DynamicsAckermann::ControllerTwistIdeal::control_step(
 	co.fr_torque = 0;
 	co.rl_torque = 0;
 	co.rr_torque = 0;
+
+	// Friction reaction forces must not be applied to the chassis body, the
+	// twist is imposed directly by this controller. Set on every step, since
+	// the vehicle resets it before invoking the controller.
+	veh_.idealControllerActive_ = true;
 
 	const auto sp = setpoint();
 

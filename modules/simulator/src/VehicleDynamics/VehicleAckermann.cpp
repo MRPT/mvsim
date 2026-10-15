@@ -187,6 +187,10 @@ std::vector<double> DynamicsAckermann::invoke_motor_controllers(const TSimulCont
 		out_torque_per_wheel[WHEEL_FL] = co.fl_torque;
 		out_torque_per_wheel[WHEEL_FR] = co.fr_torque;
 
+		wheelMotors_.assign(4, MotorTorqueModel());
+		wheelMotors_[WHEEL_FL] = co.fl_motor;
+		wheelMotors_[WHEEL_FR] = co.fr_motor;
+
 		// Kinematically-driven steering wheels:
 		// Ackermann formulas for inner&outer weels turning angles wrt the
 		// equivalent (central) one:
