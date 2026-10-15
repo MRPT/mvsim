@@ -593,6 +593,18 @@ mrpt::math::TPose3D Simulable::getPose() const
 
 mrpt::math::TPose3D Simulable::getPoseNoLock() const { return q_; }
 
+mrpt::math::TPose3D Simulable::getChassisPose() const
+{
+	const auto rel = chassisRelativePose();
+	return rel ? (mrpt::poses::CPose3D(getPose()) + *rel).asTPose() : getPose();
+}
+
+mrpt::math::TPose3D Simulable::getChassisPoseNoLock() const
+{
+	const auto rel = chassisRelativePose();
+	return rel ? (mrpt::poses::CPose3D(getPoseNoLock()) + *rel).asTPose() : getPoseNoLock();
+}
+
 mrpt::math::TVector3D Simulable::getLinearAcceleration() const
 {
 	std::shared_lock lck(q_mtx_);
