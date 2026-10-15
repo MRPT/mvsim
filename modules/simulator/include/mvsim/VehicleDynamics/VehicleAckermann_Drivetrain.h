@@ -213,6 +213,8 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	 *  equivalent steering angle, and returns the resulting one. */
 	double rateLimitedSteering(double desired, double dt)
 	{
+		// The wheels cannot go beyond their limit, so neither does the state:
+		desired = std::clamp(desired, -max_steer_ang_, max_steer_ang_);
 		if (max_steer_rate_ > 0)
 		{
 			const double maxDelta = max_steer_rate_ * dt;

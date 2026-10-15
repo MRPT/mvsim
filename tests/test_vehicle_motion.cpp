@@ -334,6 +334,21 @@ void test_steering_rate()
 			  << " deg\n";
 	EXPECT_GT(mrpt::RAD2DEG(fl), 14.0);
 	EXPECT_LT(mrpt::RAD2DEG(fr), 15.0);
+
+	// Commands beyond the steering limit must not delay a later reversal:
+	std::string dt = kDrivetrain;
+	dt.replace(dt.find("<max_steer_ang_deg>"), 0, "<max_steer_rate_deg>30</max_steer_rate_deg>");
+	Sim s2(
+		dt,
+		"<controller class=\"twist_front_steer_pid\"><KP>800</KP><KI>100</KI>"
+		"<max_torque>100</max_torque></controller>",
+		friction("default", "0.9"), 5e-3);
+	s2.run(3.0, {0.3, 0, 3.0});	 // asks for ~80 deg, the limit is 35 deg
+	s2.run(1.0, {0.3, 0, -3.0});
+	// From full lock at 30 deg/s, the equivalent angle is now ~5 deg
+	const double fl2 = mrpt::RAD2DEG(s2.veh->getWheelInfo(2).yaw);
+	std::cout << "  after reversal, front left wheel yaw: " << fl2 << " deg\n";
+	EXPECT_LT(fl2, 10.0);
 }
 
 // Bearing damping is integrated implicitly: no blow-up for large values.
