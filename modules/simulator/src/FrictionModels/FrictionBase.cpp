@@ -145,14 +145,13 @@ void FrictionBase::solveContact(
 	// Sliding: Coulomb friction opposes the slip velocity (or, if it is
 	// negligible, points along the force needed to stick):
 	const double slipNorm = slipVel.norm();
-	double dx = Fx / Fnorm;
-	double dy = Fy / Fnorm;
-	if (slipNorm > 1e-4)
-	{
-		dx = -slipVel.x / slipNorm;
-		dy = -slipVel.y / slipNorm;
-	}
+	const double dy = slipNorm > 1e-4 ? -slipVel.y / slipNorm : Fy / Fnorm;
 	Fy = maxF * dy;
-	solveWheelSpin(
-		input, otherTorque, spinDamping, desiredAlpha, R, maxF * std::abs(dx), Fx, alpha);
+	// Friction cannot reverse the lateral slip within the step:
+	if ((Fy - latForceToStick) * Fy > 0)
+	{
+		Fy = std::clamp(latForceToStick, -maxF, maxF);
+	}
+	const double maxFx = std::sqrt(std::max(0.0, maxF * maxF - Fy * Fy));
+	solveWheelSpin(input, otherTorque, spinDamping, desiredAlpha, R, maxFx, Fx, alpha);
 }

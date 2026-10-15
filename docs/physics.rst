@@ -400,8 +400,10 @@ interaction suitable for indoor robots and general applications.
 6. **Coulomb friction** (friction circle): if the forces to stick fit in the friction
    circle, :math:`\| (F_{x,stick}, F_{y,stick}) \| \leq F_{max}`, they are used. Otherwise
    the wheel slides, and the friction force has magnitude :math:`F_{max}` and opposes the
-   slip velocity of the contact point, :math:`(v_{wx} - \omega_w R, \; v_{wy})`. The wheel
-   angular acceleration is then:
+   slip velocity of the contact point, :math:`(v_{wx} - \omega_w R, \; v_{wy})`. Its lateral
+   component is limited to :math:`F_{y,stick}`, so it cannot reverse the lateral slip within
+   the step, and the rest of the friction circle is left for :math:`F_x`. The wheel angular
+   acceleration is then:
 
    .. math::
 
