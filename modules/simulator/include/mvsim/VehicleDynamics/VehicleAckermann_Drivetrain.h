@@ -13,6 +13,7 @@
 #include <mvsim/PID_Controller.h>
 #include <mvsim/VehicleBase.h>
 
+#include <algorithm>
 #include <array>
 
 namespace mvsim
@@ -182,11 +183,14 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	void computeFrontWheelAngles(
 		const double desired_equiv_steer_ang, double& out_fl_ang, double& out_fr_ang) const;
 
-	/** Computes differential split for Torsen-like limited slip differentials.
-	 */
-	void computeDiffTorqueSplit(
-		const double w1, const double w2, const double diffBias, const double defaultSplitRatio,
-		double& t1, double& t2);
+	/** Torque transferred by a Torsen differential from its output "a" to "b"
+	 *  (forward positive), given their spin speeds: it locks both outputs
+	 *  together (stiffness k=inertia/dt, removing their speed difference in one
+	 *  step) until the torque ratio reaches the bias ratio. Returns whether the
+	 *  bias limit was reached. */
+	static bool torsenLockTorque(
+		double wa, double wb, double inputTorque, double split, double biasRatio, double k,
+		double& lockTorque);
 
    protected:
 	// See base class docs
@@ -199,6 +203,24 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 
 	double max_steer_ang_;	//!< The maximum steering angle (rad). Determines
 							//! min turning radius
+
+	/** Maximum steering rate (rad/s) of the equivalent steering angle, 0 means
+	 *  instantaneous steering. XML: <max_steer_rate_deg> */
+	double max_steer_rate_ = 0;
+	double steer_ang_ = 0;	//!< Current equivalent steering angle (rad)
+
+	/** Limits the steering rate (see max_steer_rate_) towards the desired
+	 *  equivalent steering angle, and returns the resulting one. */
+	double rateLimitedSteering(double desired, double dt)
+	{
+		if (max_steer_rate_ > 0)
+		{
+			const double maxDelta = max_steer_rate_ * dt;
+			desired = steer_ang_ + std::clamp(desired - steer_ang_, -maxDelta, maxDelta);
+		}
+		steer_ang_ = desired;
+		return desired;
+	}
 
 	DifferentialType diff_type_;
 

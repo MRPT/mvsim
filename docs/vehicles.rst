@@ -195,6 +195,8 @@ steer the vehicle, while rear wheels remain parallel to the chassis axis.
 * **f_wheels_x** - Distance from rear to front axle (wheelbase) [meters]
 * **f_wheels_d** - Distance between front wheel centers (track width) [meters]
 * **max_steer_ang_deg** - Maximum steering angle for each front wheel [degrees]
+* **max_steer_rate_deg** - Maximum steering rate [degrees/s] of the equivalent steering
+  angle (optional, also for ``ackermann_drivetrain``). Default: 0, instantaneous steering.
 
 **Steering Geometry:**
 
@@ -264,14 +266,11 @@ Torque is split according to the split coefficients:
 
 **Torsen Differential:**
 
-Self-locking behavior based on wheel speed differences. The bias ratio :math:`b`
-(default 1.5) determines locking strength:
-
-.. math::
-
-   \delta_{lock} = \omega_{max} - b \cdot \omega_{min}
-
-Torque distribution changes dynamically to favor the wheel with more traction.
+Torque-sensing differential: both outputs turn together (locked) until the ratio of
+their torques reaches the bias ratio :math:`b` (``xxx_bias``, default 1.5), and then they
+slip. So, when one wheel loses traction (e.g. on ice), the other one can still get up to
+:math:`b` times its torque, instead of the same torque as with an open differential. See
+:ref:`physics` for the equations.
 
 4. Motor Controllers
 ----------------------
@@ -332,11 +331,17 @@ where :math:`w` is the lateral distance between wheels.
 only (the integral term is reset), so the vehicle comes to a full stop without coasting
 or rebounding.
 
+**Skid-steer robots** (``differential_4_wheels``) turn slower than their wheel speeds imply,
+since their wheels must slide sideways to turn (e.g. ~60% of the commanded rate for the
+Jackal, spinning in place). As in ROS ``diff_drive_controller``, the optional
+``<wheel_separation_multiplier>`` (default 1) multiplies the wheel separation used to
+compute the wheel speed setpoints to compensate it.
+
 **Tuning:** keep ``max_torque`` below the traction limit of the driven wheels
-(:math:`\mu \, m_{wheel} \, g \, R`, with :math:`m_{wheel}` the vehicle mass share on
-each wheel), except for skid-steer vehicles, which need wheel slip to turn. The gains of
-the predefined vehicle classes were tuned for fast, overshoot-free tracking with time
-steps from 1 to 5 ms.
+(:math:`\mu \, N \, R`, with :math:`N` the wheel load), except for skid-steer vehicles,
+which need wheel slip to turn. The gains of the predefined vehicle classes were tuned with
+:ref:`mvsim-pid-tuner` for fast, overshoot-free tracking with time steps from 1 to 5 ms, and
+on low-friction ground.
 
 **For Ackermann:**
 
@@ -625,8 +630,9 @@ Generic car-like vehicle with Ackermann steering.
 * Mass: 800.0 kg
 * Wheel diameter: 0.62 m
 * Wheelbase: 1.3 m, Track width: 2.0 m
-* Max steering: ±30°
-* Drivetrain: Torsen 4WD
+* Max steering: ±30°, at up to 60°/s
+* Front-wheel drive (its ``<drivetrain>`` block, Torsen 4WD, only applies if the dynamics
+  class is changed to ``ackermann_drivetrain``)
 * Controller: ``twist_front_steer_pid`` by default; select another one (e.g.
   ``twist_ideal``) with the ``controller`` include variable:
   ``<include file="ackermann.vehicle.xml" controller="twist_ideal" />``
@@ -644,7 +650,7 @@ Large Ackermann vehicle representing a pickup truck.
 * Mass: 2000.0 kg
 * Wheel diameter: 0.8 m
 * Wheelbase: 3.5 m
-* Max steering: ±40°
+* Max steering: ±40°, at up to 45°/s
 
 AgriCobiot2
 ~~~~~~~~~~~
@@ -659,6 +665,7 @@ Agricultural robot with custom 3D model and Ackermann drivetrain.
 * Mass: 97.0 kg
 * Wheel diameter: 0.406 m
 * Wheelbase: 0.62 m
+* Max steering: ±35°, at up to 90°/s
 * Open rear-wheel drive
 
 7. Creating Custom Vehicles

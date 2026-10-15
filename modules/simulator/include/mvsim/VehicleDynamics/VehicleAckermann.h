@@ -15,6 +15,8 @@
 #include <mvsim/PoseTrajectoryFollower.h>
 #include <mvsim/VehicleBase.h>
 
+#include <algorithm>
+
 namespace mvsim
 {
 /** Implementation of 4 wheels Ackermann-driven vehicles.
@@ -276,5 +278,23 @@ class DynamicsAckermann : public VehicleBase
 
 	/** The maximum steering angle (rad). Determines min turning radius */
 	double max_steer_ang_ = mrpt::DEG2RAD(30);
+
+	/** Maximum steering rate (rad/s) of the equivalent steering angle, 0 means
+	 *  instantaneous steering. XML: <max_steer_rate_deg> */
+	double max_steer_rate_ = 0;
+	double steer_ang_ = 0;	//!< Current equivalent steering angle (rad)
+
+	/** Limits the steering rate (see max_steer_rate_) towards the desired
+	 *  equivalent steering angle, and returns the resulting one. */
+	double rateLimitedSteering(double desired, double dt)
+	{
+		if (max_steer_rate_ > 0)
+		{
+			const double maxDelta = max_steer_rate_ * dt;
+			desired = steer_ang_ + std::clamp(desired - steer_ang_, -maxDelta, maxDelta);
+		}
+		steer_ang_ = desired;
+		return desired;
+	}
 };
 }  // namespace mvsim

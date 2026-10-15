@@ -18,6 +18,7 @@
         <f_wheels_x>1.7</f_wheels_x>
         <f_wheels_d>1.85</f_wheels_d>
         <max_steer_ang_deg>40.0</max_steer_ang_deg>
+        <max_steer_rate_deg>45</max_steer_rate_deg>  <!-- 0: instantaneous steering -->
 
         <chassis mass="2000.0" zmin="0.01" zmax="1.9">
             <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
@@ -26,7 +27,7 @@
         <!--   Motor controller -->
         <controller class="twist_front_steer_pid">
             <!-- Params -->
-            <KP>8000</KP>  <KI>100</KI> <KD>0</KD>
+            <KP>16200</KP>  <KI>324</KI> <KD>0</KD>
             <V>0.0</V><W>0</W>
             <max_torque>1250</max_torque>
         </controller>

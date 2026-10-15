@@ -38,8 +38,9 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	// For each wheel:
 	// 1) Compute desired velocity set-point (in m/s)
 	// 2) Run the PI/PID for that wheel independently (in newtons)
-	double spVelL = sp.vx - 0.5 * sp.omega * distWheels_;
-	double spVelR = sp.vx + 0.5 * sp.omega * distWheels_;
+	const double spTrack = distWheels_ * wheel_separation_multiplier;
+	double spVelL = sp.vx - 0.5 * sp.omega * spTrack;
+	double spVelR = sp.vx + 0.5 * sp.omega * spTrack;
 
 	// Compute each wheel actual velocity (from an "odometry" estimation of
 	// velocity, not ground-truth!):
@@ -154,6 +155,7 @@ void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_n
 	params["KD"] = TParamEntry("%lf", &KD);
 	params["N"] = TParamEntry("%lf", &N);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
+	params["wheel_separation_multiplier"] = TParamEntry("%lf", &wheel_separation_multiplier);
 	params["enable_antiwindup"] = TParamEntry("%bool", &enable_antiwindup);
 	params["enable_feedforward"] = TParamEntry("%bool", &enable_feedforward);
 	params["feedforward_gain"] = TParamEntry("%lf", &feedforward_gain);

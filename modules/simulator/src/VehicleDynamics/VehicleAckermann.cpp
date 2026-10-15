@@ -100,6 +100,7 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 		ack_ps["f_wheels_d"] = TParamEntry("%lf", &front_d);
 		// other params:
 		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &max_steer_ang_);
+		ack_ps["max_steer_rate_deg"] = TParamEntry("%lf_deg", &max_steer_rate_);
 
 		parse_xmlnode_children_as_param(
 			*xml_node, ack_ps, varValues, "[DynamicsAckermann::dynamics_load_params_from_xml]");
@@ -195,7 +196,8 @@ std::vector<double> DynamicsAckermann::invoke_motor_controllers(const TSimulCont
 		// Ackermann formulas for inner&outer weels turning angles wrt the
 		// equivalent (central) one:
 		computeFrontWheelAngles(
-			co.steer_ang, wheels_info_[WHEEL_FL].yaw, wheels_info_[WHEEL_FR].yaw);
+			rateLimitedSteering(co.steer_ang, context.dt), wheels_info_[WHEEL_FL].yaw,
+			wheels_info_[WHEEL_FR].yaw);
 	}
 	return out_torque_per_wheel;
 }

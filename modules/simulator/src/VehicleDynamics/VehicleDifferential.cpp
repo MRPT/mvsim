@@ -11,6 +11,7 @@
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 
+#include <cmath>
 #include <rapidxml.hpp>
 
 #include "xml_utils.h"
@@ -156,10 +157,23 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 				otpw[WHEEL_R] = co.wheel_torque_r;
 				break;
 			case 3:
+			{
 				otpw[WHEEL_L] = co.wheel_torque_l;
 				otpw[WHEEL_R] = co.wheel_torque_r;
 				otpw[WHEEL_CASTER_FRONT] = 0;
-				break;
+
+				// The caster swivels freely: align it with the velocity of its
+				// contact point (keeping its heading while almost stopped):
+				Wheel& caster = wheels_info_[WHEEL_CASTER_FRONT];
+				const auto v = getRefVelocityLocal();
+				const double vx = v.vx - v.omega * caster.y;
+				const double vy = v.vy + v.omega * caster.x;
+				if (std::hypot(vx, vy) > 1e-3)
+				{
+					caster.yaw = std::atan2(vy, vx);
+				}
+			}
+			break;
 			case 4:
 				otpw[WHEEL_LR] = co.wheel_torque_l;
 				otpw[WHEEL_RR] = co.wheel_torque_r;

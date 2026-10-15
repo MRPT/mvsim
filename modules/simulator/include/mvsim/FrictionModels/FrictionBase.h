@@ -14,6 +14,8 @@
 #include <mvsim/Wheel.h>
 #include <mvsim/basic_types.h>	// fwrd decls.
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 #include <optional>
 
@@ -106,6 +108,10 @@ class FrictionBase
 	virtual mrpt::math::TVector2D evaluate_friction(
 		const FrictionBase::TFrictionInput& input) const = 0;
 
+	/** Peak friction coefficient of the model (ratio of maximum friction force
+	 *  to normal force), e.g. to estimate traction limits. */
+	virtual double peakFrictionCoefficient() const = 0;
+
 	bool hasLogger() const { return logger_.has_value(); }
 	void setLogger(const std::weak_ptr<CSVLogger>& logger);
 
@@ -120,12 +126,44 @@ class FrictionBase
 	 *  slipping at the end of the step (also accounting for the chassis
 	 *  reaction, see input.longitudinalMass) unless it exceeds maxF in
 	 *  magnitude.
+	 *  \param[in] otherTorque Torques other than the motor one (bearing
+	 *  damping, rolling resistance) at the current spin speed [N.m]
+	 *  \param[in] spinDamping Decrease of otherTorque per unit increase of the
+	 *  spin speed [N.m.s/rad], >=0, so it is integrated implicitly too.
 	 *  \param[out] F Longitudinal friction force on the wheel [N]
 	 *  \param[out] alpha Wheel angular acceleration [rad/s^2]
 	 */
 	static void solveWheelSpin(
-		const TFrictionInput& input, double otherTorque, double desiredAlpha, double R, double maxF,
-		double& F, double& alpha);
+		const TFrictionInput& input, double otherTorque, double spinDamping, double desiredAlpha,
+		double R, double maxF, double& F, double& alpha);
+
+	/** Longitudinal friction force still available within the friction circle
+	 *  of radius maxF, given the current forces Fx, Fy [N]. */
+	static double remainingLongitudinalForce(double maxF, double Fx, double Fy)
+	{
+		return std::max(0.0, std::sqrt(std::max(0.0, maxF * maxF - Fy * Fy)) - std::abs(Fx));
+	}
+
+	/** Rolling resistance torque opposing the wheel spin w [rad/s]:
+	 *  `T = C_rr * Fnormal * R * tanh(100 w)` (smooth near w=0), and its
+	 *  derivative with respect to w, for implicit integration. */
+	static void rollingResistance(
+		double C_rr, double Fnormal, double R, double w, double& T, double& dT_dw);
+
+	/** Solves the longitudinal (wheel spin, see solveWheelSpin()) and lateral
+	 *  friction forces of a wheel with Coulomb's law: if the forces that cancel
+	 *  the wheel slip within the step (latForceToStick for the lateral one) fit
+	 *  in the friction circle of radius maxF, they are used (sticking);
+	 *  otherwise the wheel slides with a force of magnitude maxF opposing its
+	 *  slip velocity (in the wheel frame).
+	 *  \param[out] Fx Longitudinal friction force [N]
+	 *  \param[out] Fy Lateral friction force [N]
+	 *  \param[out] alpha Wheel angular acceleration [rad/s^2]
+	 */
+	static void solveContact(
+		const TFrictionInput& input, double otherTorque, double spinDamping, double desiredAlpha,
+		double R, double latForceToStick, const mrpt::math::TVector2D& slipVel, double maxF,
+		double& Fx, double& Fy, double& alpha);
 
 	std::optional<std::weak_ptr<CSVLogger>> logger_;
 };
