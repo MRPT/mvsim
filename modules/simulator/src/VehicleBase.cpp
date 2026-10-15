@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/math/CMatrixFixed.h>
 #include <mrpt/math/TPose2D.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/random.h>
@@ -21,8 +22,10 @@
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 
+#include <algorithm>
 #include <cmath>
 #include <map>
+#include <optional>
 #include <rapidxml.hpp>
 #include <string>
 
@@ -399,6 +402,180 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const std::string& xml_text
 	return VehicleBase::factory(parent, xml.first_node());
 }
 
+namespace
+{
+// Vertical loads N_i at the support points p_i satisfying the force and moment
+// balance A*N = b, A rows: (1, x_i, y_i). Statically indeterminate for more
+// than 3 points: minimum-norm solution N = A^T (A A^T)^-1 b, removing points
+// that would need negative loads (the body would tip over them).
+// Returns false if the balance cannot be satisfied with non-negative loads.
+bool solveSupportLoads(
+	const std::vector<mrpt::math::TPoint2D>& p, const double b[3], std::vector<double>& loads)
+{
+	const size_t n = p.size();
+	loads.assign(n, 0.0);
+	std::vector<bool> active(n, true);
+	for (size_t iter = 0; iter < n; iter++)
+	{
+		mrpt::math::CMatrixDouble33 AAt;
+		AAt.setZero();
+		for (size_t i = 0; i < n; i++)
+		{
+			if (!active[i])
+			{
+				continue;
+			}
+			const double row[3] = {1.0, p[i].x, p[i].y};
+			for (int r = 0; r < 3; r++)
+			{
+				for (int c = 0; c < 3; c++)
+				{
+					AAt(r, c) += row[r] * row[c];
+				}
+			}
+		}
+		// Regularization: ignores the equations with no support (e.g. the
+		// pitch balance of a 2-wheel differential robot)
+		const double eps = 1e-9 * (AAt(0, 0) + AAt(1, 1) + AAt(2, 2));
+		for (int r = 0; r < 3; r++)
+		{
+			AAt(r, r) += eps;
+		}
+		const mrpt::math::CMatrixDouble33 AAtInv = AAt.inverse_LLt();
+		double lambda[3];
+		for (int r = 0; r < 3; r++)
+		{
+			lambda[r] = AAtInv(r, 0) * b[0] + AAtInv(r, 1) * b[1] + AAtInv(r, 2) * b[2];
+		}
+
+		std::optional<size_t> mostNegative;
+		for (size_t i = 0; i < n; i++)
+		{
+			loads[i] = active[i] ? lambda[0] + lambda[1] * p[i].x + lambda[2] * p[i].y : 0.0;
+			if (loads[i] < 0 && (!mostNegative || loads[i] < loads[*mostNegative]))
+			{
+				mostNegative = i;
+			}
+		}
+		if (!mostNegative)
+		{
+			break;
+		}
+		active[*mostNegative] = false;
+	}
+
+	// Check the balance, skipping the equations with no support:
+	double sum[3] = {0, 0, 0};
+	double spread[2] = {0, 0};
+	for (size_t i = 0; i < n; i++)
+	{
+		loads[i] = std::max(0.0, loads[i]);
+		sum[0] += loads[i];
+		sum[1] += loads[i] * p[i].x;
+		sum[2] += loads[i] * p[i].y;
+		spread[0] = std::max(spread[0], std::abs(p[i].x - p[0].x));
+		spread[1] = std::max(spread[1], std::abs(p[i].y - p[0].y));
+	}
+	const double tol = 1e-3 * std::abs(b[0]);
+	bool ok = std::abs(sum[0] - b[0]) < tol;
+	for (int k = 0; k < 2; k++)
+	{
+		if (spread[k] > 1e-6)
+		{
+			ok = ok && std::abs(sum[k + 1] - b[k + 1]) < tol * (1.0 + spread[k]);
+		}
+	}
+	return ok;
+}
+}  // namespace
+
+std::vector<double> VehicleBase::computeWheelLoads(const TSimulContext& context)
+{
+	const size_t nW = getNumWheels();
+	const double gravity = parent()->get_gravity();
+	const double M = b2dBody_ ? b2dBody_->GetMass() : 0;
+	std::vector<double> loads(nW, 0.0);
+	if (nW == 0 || M <= 0)
+	{
+		return loads;
+	}
+
+	// Center of mass (chassis + wheels), and its height over the ground:
+	const b2Vec2 com = b2dBody_->GetLocalCenter();
+	double h = chassis_mass_ * 0.5 * (chassis_z_min_ + chassis_z_max_);
+	for (size_t i = 0; i < nW; i++)
+	{
+		h += wheels_info_[i].mass * 0.5 * wheels_info_[i].diameter;
+	}
+	h /= M;
+
+	// Acceleration in the vehicle frame (low-pass filtered, to avoid a
+	// feedback loop with the friction forces it depends on):
+	{
+		const auto acc = getLinearAcceleration();
+		const double yaw = getPose().yaw;
+		const mrpt::math::TVector2D accLocal(
+			std::cos(yaw) * acc.x + std::sin(yaw) * acc.y,
+			-std::sin(yaw) * acc.x + std::cos(yaw) * acc.y);
+		constexpr double tau = 0.05;  // [s]
+		const double a = context.dt / (tau + context.dt);
+		accelForLoads_.x += a * (accLocal.x - accelForLoads_.x);
+		accelForLoads_.y += a * (accLocal.y - accelForLoads_.y);
+	}
+
+	// Force and moment balance (no pitch/roll motion) of the rigid vehicle, in
+	// its frame, with normal forces N_i at the wheel contact points (x_i,y_i):
+	//  sum(N_i)       = M*gz
+	//  sum(N_i * x_i) = M*(gz*xc - h*(ax - gx))
+	//  sum(N_i * y_i) = M*(gz*yc - h*(ay - gy))
+	// with (gx,gy,gz) the gravity in the vehicle frame (gz>0 downwards).
+	const double gx = slopeDir_.x * gravity;
+	const double gy = slopeDir_.y * gravity;
+	const double gz = -slopeDir_.z * gravity;
+	const double b[3] = {
+		M * gz, M * (gz * com.x - h * (accelForLoads_.x - gx)),
+		M * (gz * com.y - h * (accelForLoads_.y - gy))};
+
+	std::vector<mrpt::math::TPoint2D> supports;
+	for (size_t i = 0; i < nW; i++)
+	{
+		supports.emplace_back(wheels_info_[i].x, wheels_info_[i].y);
+	}
+	std::vector<double> sol;
+	if (!solveSupportLoads(supports, b, sol))
+	{
+		// It cannot stand on its wheels (e.g. a semi-trailer): it also rests
+		// on its joint anchors (whose load is not passed to the other body):
+		for (const auto& j : world_->getListOfJoints())
+		{
+			if (j.bodyA_name == name_)
+			{
+				supports.emplace_back(j.anchorA);
+			}
+			else if (j.bodyB_name == name_)
+			{
+				supports.emplace_back(j.anchorB);
+			}
+		}
+		if (!solveSupportLoads(supports, b, sol))
+		{
+			// Still not balanced (e.g. a parked trailer, resting on its legs):
+			// best effort, keep the distribution but carry the whole weight:
+			double sum = 0;
+			for (size_t i = 0; i < nW; i++)
+			{
+				sum += sol[i];
+			}
+			for (size_t i = 0; sum > 0 && i < nW; i++)
+			{
+				sol[i] *= b[0] / sum;
+			}
+		}
+	}
+	std::copy(sol.begin(), sol.begin() + nW, loads.begin());
+	return loads;
+}
+
 void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 {
 	Simulable::simul_pre_timestep(context);
@@ -434,89 +611,145 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	const size_t nW = getNumWheels();
 	ASSERT_EQUAL_(wheelTorque.size(), nW);
 
-	// Part of the vehicle weight on each wheel:
 	const double gravity = parent()->get_gravity();
+	const double dt = context.dt;
 
-	// TODO: Use chassis cog point to estimate load on each wheel, caching it.
-	// TODO-TODO: Use dynamic load transfer too!
-	const double massPerWheel = getChassisMass() / static_cast<double>(nW);
-	const double weightPerWheel = massPerWheel * gravity;
+	// Normal force on each wheel, and its share of the in-plane gravity force:
+	wheelLoads_ = computeWheelLoads(context);
+	const std::vector<double>& wheelLoads = wheelLoads_;
+	double sumLoads = 0;
+	for (const double n : wheelLoads)
+	{
+		sumLoads += n;
+	}
 
-	// The friction impulses are solved wheel by wheel (sequential impulses),
-	// updating an estimate of the chassis velocity after each one: computing
-	// all of them from the same velocity over-corrects it (and ends up in a
-	// limit cycle) when the wheels are far from the center of mass compared to
-	// the yaw radius of gyration. The order is reversed on every step to
-	// avoid a left/right bias.
-	mrpt::math::TTwist2D vel = getRefVelocityLocal();  // body frame
+	// The friction impulses are solved wheel by wheel (sequential impulses, a
+	// Gauss-Seidel iteration), with the chassis velocity estimate including
+	// the impulses of the rest of wheels: computing all of them from the same
+	// velocity over-corrects it (and ends up in a limit cycle) when the wheels
+	// are far from the center of mass compared to the yaw radius of gyration.
+	// A few sweeps make the chassis and wheels reach a consistent solution
+	// within the step. The order is reversed on every step to avoid a
+	// left/right bias.
 	const double M = b2dBody_->GetMass();
 	const b2Vec2 com = b2dBody_->GetLocalCenter();
 	const double Icom = b2dBody_->GetInertia() - M * (com.x * com.x + com.y * com.y);
 	const bool sequentialImpulses = M > 0 && Icom > 0 && !idealControllerActive_;
+	constexpr int numSweeps = 4;
+	reverseWheelOrder_ = !reverseWheelOrder_;
+
 	// Effective chassis mass at point r along direction n:
 	const auto effectiveMass = [&](const mrpt::math::TVector2D& r, double nx, double ny)
 	{
 		const double rxn = r.x * ny - r.y * nx;
 		return 1.0 / (1.0 / M + rxn * rxn / Icom);
 	};
-	reverseWheelOrder_ = !reverseWheelOrder_;
-
-	// For visualization only
-	std::vector<mrpt::math::TSegment3D> forceVectors, torqueVectors;
-
-	for (size_t k = 0; k < nW; k++)
+	// Adds the velocity change of the chassis reference point due to force F
+	// (vehicle frame) at point r (from the COM) during dt, times "sign":
+	const auto addImpulse = [&](mrpt::math::TTwist2D& v, const mrpt::math::TVector2D& r,
+								const mrpt::math::TVector2D& F, double sign)
 	{
-		const size_t i = reverseWheelOrder_ ? nW - 1 - k : k;
+		const double dOmega = sign * (r.x * F.y - r.y * F.x) * dt / Icom;
+		// Velocity of the reference point (origin) = COM velocity + w x (-com)
+		v.vx += sign * F.x * dt / M + dOmega * com.y;
+		v.vy += sign * F.y * dt / M - dOmega * com.x;
+		v.omega += dOmega;
+	};
 
-		// prepare data:
+	// Inputs that do not change during the solve:
+	std::vector<FrictionBase::TFrictionInput> inputs;
+	inputs.reserve(nW);
+	std::vector<double> wheelSpin0(nW);
+	std::vector<mrpt::math::TVector2D> rFromCom(nW);
+	for (size_t i = 0; i < nW; i++)
+	{
 		Wheel& w = getWheelInfo(i);
-		const mrpt::math::TVector2D r(w.x - com.x, w.y - com.y);  // from the COM
+		auto& fi = inputs.emplace_back(context, w);
+		wheelSpin0[i] = w.getW();
+		rFromCom[i] = {w.x - com.x, w.y - com.y};
 
-		FrictionBase::TFrictionInput fi(context, w);
 		fi.motorTorque = -wheelTorque[i];  // "-" => Forwards is negative
 		if (i < wheelMotors_.size())
 		{
 			fi.motor = wheelMotors_[i];
 		}
-		fi.Fz = weightPerWheel;
-		fi.wheelCogLocalVel = {vel.vx - vel.omega * w.y, vel.vy + vel.omega * w.x};
+		// Fz excludes the wheel own weight:
+		fi.Fz = wheelLoads[i] - w.mass * gravity;
 		if (sequentialImpulses)
 		{
 			const double c = std::cos(w.yaw);
 			const double sn = std::sin(w.yaw);
-			fi.longitudinalMass = effectiveMass(r, c, sn);
-			fi.lateralMass = effectiveMass(r, -sn, c);
+			fi.longitudinalMass = effectiveMass(rFromCom[i], c, sn);
+			fi.lateralMass = effectiveMass(rFromCom[i], -sn, c);
 		}
 
-		// Gravity slope force per wheel (in vehicle-local coords).
-		// Total mass per wheel = chassis share + wheel own mass.
-		const double totalMassPerWheel = massPerWheel + w.mass;
-		fi.gravSlopeForce = {
-			slopeDir_.x * totalMassPerWheel * gravity, slopeDir_.y * totalMassPerWheel * gravity};
+		// Share of the gravity force along the ground plane (vehicle frame):
+		const double share = sumLoads > 0 ? wheelLoads[i] / sumLoads : 1.0 / nW;
+		fi.gravSlopeForce = {slopeDir_.x * M * gravity * share, slopeDir_.y * M * gravity * share};
 
 		// Query per-region friction overrides at the wheel's world position:
+		const b2Vec2 wPtQuery = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
+		const mrpt::math::TPoint3D wheelWorldPos(wPtQuery.x, wPtQuery.y, 0);
+		if (auto prop = world_->getPropertyAt("friction_mu", wheelWorldPos))
 		{
-			const b2Vec2 wPtQuery = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
-			const mrpt::math::TPoint3D wheelWorldPos(wPtQuery.x, wPtQuery.y, 0);
-
-			if (auto prop = world_->getPropertyAt("friction_mu", wheelWorldPos))
+			if (auto* val = std::any_cast<double>(&*prop))
 			{
-				if (auto* val = std::any_cast<double>(&*prop))
-				{
-					fi.mu_override = *val;
-				}
-			}
-			if (auto prop = world_->getPropertyAt("friction_C_rr", wheelWorldPos))
-			{
-				if (auto* val = std::any_cast<double>(&*prop))
-				{
-					fi.C_rr_override = *val;
-				}
+				fi.mu_override = *val;
 			}
 		}
+		if (auto prop = world_->getPropertyAt("friction_C_rr", wheelWorldPos))
+		{
+			if (auto* val = std::any_cast<double>(&*prop))
+			{
+				fi.C_rr_override = *val;
+			}
+		}
+	}
 
-		// eval friction (in the frame of the vehicle):
-		const mrpt::math::TPoint2D F_r = frictions_.at(i)->evaluate_friction(fi);
+	// Solve: friction forces (vehicle frame) at each wheel
+	std::vector<mrpt::math::TVector2D> frictionForces(nW, mrpt::math::TVector2D(0, 0));
+	mrpt::math::TTwist2D vel = getRefVelocityLocal();  // body frame
+	for (int sweep = 0; sweep < (sequentialImpulses ? numSweeps : 1); sweep++)
+	{
+		for (size_t k = 0; k < nW; k++)
+		{
+			const size_t i = reverseWheelOrder_ ? nW - 1 - k : k;
+			auto& fi = inputs[i];
+			Wheel& w = fi.wheel;
+
+			// Solve this wheel against the impulses of the rest of them:
+			const mrpt::math::TVector2D netForce(
+				frictionForces[i].x + fi.gravSlopeForce.x,
+				frictionForces[i].y + fi.gravSlopeForce.y);
+			if (sequentialImpulses && sweep > 0)
+			{
+				addImpulse(vel, rFromCom[i], netForce, -1.0);
+			}
+			w.setW(wheelSpin0[i]);
+			fi.wheelCogLocalVel = {vel.vx - vel.omega * w.y, vel.vy + vel.omega * w.x};
+
+			// eval friction (in the frame of the vehicle):
+			frictionForces[i] = frictions_.at(i)->evaluate_friction(fi);
+
+			if (sequentialImpulses)
+			{
+				addImpulse(
+					vel, rFromCom[i],
+					{frictionForces[i].x + fi.gravSlopeForce.x,
+					 frictionForces[i].y + fi.gravSlopeForce.y},
+					+1.0);
+			}
+		}
+	}
+
+	// For visualization only
+	std::vector<mrpt::math::TSegment3D> forceVectors, torqueVectors;
+
+	for (size_t i = 0; i < nW; i++)
+	{
+		const auto& fi = inputs[i];
+		const Wheel& w = fi.wheel;
+		const mrpt::math::TVector2D& F_r = frictionForces[i];
 
 		// Force vector -> world coords
 		const b2Vec2 wForce = b2dBody_->GetWorldVector(b2Vec2(F_r.x, F_r.y));
@@ -537,18 +770,6 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 			const b2Vec2 wGravForce =
 				b2dBody_->GetWorldVector(b2Vec2(fi.gravSlopeForce.x, fi.gravSlopeForce.y));
 			b2dBody_->ApplyForce(wGravForce, wPt, true /*wake up*/);
-		}
-
-		// Update the chassis velocity estimate with this wheel impulse:
-		if (sequentialImpulses)
-		{
-			const double Fx = F_r.x + fi.gravSlopeForce.x;
-			const double Fy = F_r.y + fi.gravSlopeForce.y;
-			const double dOmega = (r.x * Fy - r.y * Fx) * context.dt / Icom;
-			// Velocity of the reference point (origin) = COM velocity + w x (-com)
-			vel.vx += Fx * context.dt / M + dOmega * com.y;
-			vel.vy += Fy * context.dt / M - dOmega * com.x;
-			vel.omega += dOmega;
 		}
 
 		// log

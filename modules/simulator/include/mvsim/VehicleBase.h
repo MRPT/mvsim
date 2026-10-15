@@ -166,6 +166,13 @@ class VehicleBase : public CVisualObject, public Simulable
 	 *  elevation module. On flat ground this is (0,0,-1). On a slope,
 	 *  the x/y components indicate the gravity slope force direction. */
 	const mrpt::math::TPoint3D& getSlopeDirection() const { return slopeDir_; }
+
+	/** Normal force on each wheel [N] (including the weight of the wheel) in
+	 *  the last simulation step, see computeWheelLoads(). */
+	const std::vector<double>& getWheelLoads() const { return wheelLoads_; }
+
+	/// The friction model of each wheel
+	const std::vector<FrictionBase::Ptr>& getFrictionModels() const { return frictions_; }
 	void setSlopeDirection(const mrpt::math::TPoint3D& d) { slopeDir_ = d; }
 
 	/** Gets the noisy, biased, odometry estimation.
@@ -204,6 +211,16 @@ class VehicleBase : public CVisualObject, public Simulable
 
 	/// Alternates the order in which wheel friction is solved, see simul_pre_timestep()
 	bool reverseWheelOrder_ = false;
+
+	std::vector<double> wheelLoads_;  //!< See getWheelLoads()
+
+	/// Low-pass filtered chassis acceleration (vehicle frame) for load transfer
+	mrpt::math::TVector2D accelForLoads_{0, 0};
+
+	/** Normal force on each wheel [N] (including the weight of the wheel),
+	 *  from the force and moment balance of the rigid vehicle: center of mass,
+	 *  slope and (quasi-static) load transfer due to its acceleration. */
+	std::vector<double> computeWheelLoads(const TSimulContext& context);
 
 	/** For each wheel, the optional closed-loop motor model reported by the
 	 *  controller in invoke_motor_controllers() (see MotorTorqueModel).
