@@ -134,6 +134,7 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 		ack_ps["f_wheels_d"] = TParamEntry("%lf", &front_d);
 		// other params:
 		ack_ps["max_steer_ang_deg"] = TParamEntry("%lf_deg", &max_steer_ang_);
+		ack_ps["max_steer_rate_deg"] = TParamEntry("%lf_deg", &max_steer_rate_);
 
 		parse_xmlnode_children_as_param(
 			*xml_node, ack_ps, {}, "[DynamicsAckermannDrivetrain::dynamics_load_params_from_xml]");
@@ -236,7 +237,6 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 	// Longitudinal forces at each wheel:
 	std::vector<double> out_torque_per_wheel;
 	out_torque_per_wheel.assign(4, 0.0);
-	double torque_split_per_wheel[4] = {0.0};
 
 	if (controller_)
 	{
@@ -250,100 +250,78 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 		controller_->control_step(ci, co);
 		// Take its output:
 
-		switch (diff_type_)
+		const bool torsen = diff_type_ == DIFF_TORSEN_FRONT || diff_type_ == DIFF_TORSEN_REAR ||
+							diff_type_ == DIFF_TORSEN_4WD;
+		const bool frontDriven = diff_type_ != DIFF_OPEN_REAR && diff_type_ != DIFF_TORSEN_REAR;
+		const bool rearDriven = diff_type_ != DIFF_OPEN_FRONT && diff_type_ != DIFF_TORSEN_FRONT;
+		const double frontSplit =
+			frontDriven && rearDriven ? FrontRearSplit_ : (frontDriven ? 1.0 : 0.0);
+
+		// Locking stiffness of Torsen differentials: inertia of each output / dt
+		double Iwheel = 0;
+		for (const auto& w : wheels_info_)
 		{
-			case DIFF_OPEN_FRONT:
-			{
-				torque_split_per_wheel[WHEEL_FL] = FrontLRSplit_;
-				torque_split_per_wheel[WHEEL_FR] = 1. - FrontLRSplit_;
-				torque_split_per_wheel[WHEEL_RL] = 0.0;
-				torque_split_per_wheel[WHEEL_RR] = 0.0;
-			}
-			break;
-			case DIFF_OPEN_REAR:
-			{
-				torque_split_per_wheel[WHEEL_FL] = 0.0;
-				torque_split_per_wheel[WHEEL_FR] = 0.0;
-				torque_split_per_wheel[WHEEL_RL] = RearLRSplit_;
-				torque_split_per_wheel[WHEEL_RR] = 1. - RearLRSplit_;
-			}
-			break;
-			case DIFF_OPEN_4WD:
-			{
-				const double front = FrontRearSplit_;
-				const double rear = 1. - FrontRearSplit_;
-
-				torque_split_per_wheel[WHEEL_FL] = front * FrontLRSplit_;
-				torque_split_per_wheel[WHEEL_FR] = front * (1. - FrontLRSplit_);
-				torque_split_per_wheel[WHEEL_RL] = rear * RearLRSplit_;
-				torque_split_per_wheel[WHEEL_RR] = rear * (1. - RearLRSplit_);
-			}
-			break;
-			case DIFF_TORSEN_FRONT:
-			{
-				// no torque to rear
-				torque_split_per_wheel[WHEEL_RL] = 0.0;
-				torque_split_per_wheel[WHEEL_RR] = 0.0;
-
-				computeDiffTorqueSplit(
-					wheels_info_[WHEEL_FL].getW(), wheels_info_[WHEEL_FR].getW(), FrontLRBias_,
-					FrontLRSplit_, torque_split_per_wheel[WHEEL_FL],
-					torque_split_per_wheel[WHEEL_FR]);
-			}
-			break;
-			case DIFF_TORSEN_REAR:
-			{
-				// no torque to front
-				torque_split_per_wheel[WHEEL_FL] = 0.0;
-				torque_split_per_wheel[WHEEL_FR] = 0.0;
-
-				computeDiffTorqueSplit(
-					wheels_info_[WHEEL_RL].getW(), wheels_info_[WHEEL_RR].getW(), RearLRBias_,
-					RearLRSplit_, torque_split_per_wheel[WHEEL_RL],
-					torque_split_per_wheel[WHEEL_RR]);
-			}
-			break;
-			case DIFF_TORSEN_4WD:
-			{
-				// here we have magic
-				const double w_FL = wheels_info_[WHEEL_FL].getW();
-				const double w_FR = wheels_info_[WHEEL_FR].getW();
-				const double w_RL = wheels_info_[WHEEL_RL].getW();
-				const double w_RR = wheels_info_[WHEEL_RR].getW();
-				const double w_F = w_FL + w_FR;
-				const double w_R = w_RL + w_RR;
-
-				double t_F = 0.0;
-				double t_R = 0.0;
-				// front-rear
-				computeDiffTorqueSplit(w_F, w_R, FrontRearBias_, FrontRearSplit_, t_F, t_R);
-
-				double t_FL = 0.0;
-				double t_FR = 0.0;
-				// front left-right
-				computeDiffTorqueSplit(w_FL, w_FR, FrontLRBias_, FrontLRSplit_, t_FL, t_FR);
-
-				double t_RL = 0.0;
-				double t_RR = 0.0;
-				// rear left-right
-				computeDiffTorqueSplit(w_RL, w_RR, RearLRBias_, RearLRSplit_, t_RL, t_RR);
-
-				torque_split_per_wheel[WHEEL_FL] = t_F * t_FL;
-				torque_split_per_wheel[WHEEL_FR] = t_F * t_FR;
-				torque_split_per_wheel[WHEEL_RL] = t_R * t_RL;
-				torque_split_per_wheel[WHEEL_RR] = t_R * t_RR;
-			}
-			break;
-			default:
-			{
-				// fatal - unknown diff!
-				ASSERTMSG_(
-					0,
-					"DynamicsAckermannDrivetrain::invoke_motor_controllers: \
-				       Unknown differential type!");
-			}
-			break;
+			Iwheel += 0.25 * w.Iyy;
 		}
+		const double kAxle = Iwheel / context.dt;
+		const double kCenter = 2 * Iwheel / context.dt;
+
+		// Drive torque, forward positive:
+		const double T = -co.drive_torque;
+		double fwd[4] = {0, 0, 0, 0};  // wheel torques, forward positive
+		double split[4] = {0, 0, 0, 0};	 // d(wheel torque)/d(drive torque)
+		double extraDamping[4] = {0, 0, 0, 0};	// from the Torsen locking
+
+		// Center differential:
+		double Tfront = frontSplit * T;
+		double Trear = (1 - frontSplit) * T;
+		if (torsen && frontDriven && rearDriven)
+		{
+			const auto axleW = [this](int l, int r)
+			{ return 0.5 * (wheels_info_[l].getW() + wheels_info_[r].getW()); };
+			double lock = 0;
+			const bool sat = torsenLockTorque(
+				axleW(WHEEL_FL, WHEEL_FR), axleW(WHEEL_RL, WHEEL_RR), T, FrontRearSplit_,
+				FrontRearBias_, kCenter, lock);
+			Tfront -= lock;
+			Trear += lock;
+			if (!sat)
+			{
+				extraDamping[WHEEL_FL] += 0.25 * kCenter;
+				extraDamping[WHEEL_FR] += 0.25 * kCenter;
+				extraDamping[WHEEL_RL] += 0.25 * kCenter;
+				extraDamping[WHEEL_RR] += 0.25 * kCenter;
+			}
+		}
+
+		// Axle differentials:
+		const auto axle = [&](int l, int r, double Taxle, double axleSplit, double lrSplit,
+							  double bias, bool driven)
+		{
+			if (!driven)
+			{
+				return;
+			}
+			double lock = 0;
+			bool sat = true;
+			if (torsen)
+			{
+				sat = torsenLockTorque(
+					wheels_info_[l].getW(), wheels_info_[r].getW(), Taxle, lrSplit, bias, kAxle,
+					lock);
+			}
+			fwd[l] = lrSplit * Taxle - lock;
+			fwd[r] = (1 - lrSplit) * Taxle + lock;
+			split[l] = axleSplit * lrSplit;
+			split[r] = axleSplit * (1 - lrSplit);
+			if (!sat)
+			{
+				extraDamping[l] += kAxle;
+				extraDamping[r] += kAxle;
+			}
+		};
+		axle(WHEEL_FL, WHEEL_FR, Tfront, frontSplit, FrontLRSplit_, FrontLRBias_, frontDriven);
+		axle(WHEEL_RL, WHEEL_RR, Trear, 1 - frontSplit, RearLRSplit_, RearLRBias_, rearDriven);
 
 		ASSERT_(out_torque_per_wheel.size() == 4);
 		std::array<double, 4> dSpeed_dw;
@@ -351,20 +329,22 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 		wheelMotors_.assign(4, MotorTorqueModel());
 		for (int i = 0; i < 4; i++)
 		{
-			const double split = torque_split_per_wheel[i];
-			out_torque_per_wheel[i] = co.drive_torque * split;
+			out_torque_per_wheel[i] = -fwd[i];
+
 			// Each wheel reaction to its own spin only (the rest are neglected):
+			const double lockPart = fwd[i] - split[i] * T;
 			auto& m = wheelMotors_[i];
-			m.damping = co.drive_motor.damping * split * dSpeed_dw[i];
-			m.unsaturated = co.drive_motor.unsaturated * split;
-			m.limit = co.drive_motor.limit * split;
+			m.damping = co.drive_motor.damping * split[i] * dSpeed_dw[i] + extraDamping[i];
+			m.unsaturated = co.drive_motor.unsaturated * split[i] + lockPart;
+			m.limit = co.drive_motor.limit * split[i] + std::abs(lockPart);
 		}
 
 		// Kinematically-driven steering wheels:
 		// Ackermann formulas for inner&outer weels turning angles wrt the
 		// equivalent (central) one:
 		computeFrontWheelAngles(
-			co.steer_ang, wheels_info_[WHEEL_FL].yaw, wheels_info_[WHEEL_FR].yaw);
+			rateLimitedSteering(co.steer_ang, context.dt), wheels_info_[WHEEL_FL].yaw,
+			wheels_info_[WHEEL_FR].yaw);
 	}
 	return out_torque_per_wheel;
 }
@@ -390,33 +370,21 @@ void DynamicsAckermannDrivetrain::computeFrontWheelAngles(
 	(delta_neg ? out_fl_ang : out_fr_ang) = atan(1.0 / cot_do) * (delta_neg ? -1.0 : 1.0);
 }
 
-void DynamicsAckermannDrivetrain::computeDiffTorqueSplit(
-	const double w1, const double w2, const double diffBias, const double splitRatio, double& t1,
-	double& t2)
+bool DynamicsAckermannDrivetrain::torsenLockTorque(
+	double wa, double wb, double inputTorque, double split, double biasRatio, double k,
+	double& lockTorque)
 {
-	if (mrpt::signWithZero(w1) == 0.0 || mrpt::signWithZero(w2) == 0.0)
+	// Bias ratio B = max/min output torques. With outputs split*T - lock and
+	// (1-split)*T + lock, this limits |lock| to beta*2*min(split,1-split)*|T|:
+	const double beta = (std::max(1.0, biasRatio) - 1.0) / (std::max(1.0, biasRatio) + 1.0);
+	const double maxLock = beta * 2 * std::min(split, 1 - split) * std::abs(inputTorque);
+	lockTorque = k * (wa - wb);
+	if (std::abs(lockTorque) > maxLock)
 	{
-		t1 = splitRatio;
-		t2 = 1.0 - splitRatio;
-		return;
+		lockTorque = lockTorque > 0 ? maxLock : -maxLock;
+		return true;
 	}
-
-	const double w1Abs = std::abs(w1);
-	const double w2Abs = std::abs(w2);
-	const double omegaMax = std::max(w1Abs, w2Abs);
-	const double omegaMin = std::min(w1Abs, w2Abs);
-
-	const double delta = omegaMax - diffBias * omegaMin;
-
-	const double deltaTorque = (delta > 0) ? delta / omegaMax : 0.0f;
-	const double f1 =
-		(w1Abs - w2Abs > 0) ? splitRatio * (1.0f - deltaTorque) : splitRatio * (1.0f + deltaTorque);
-	const double f2 = (w1Abs - w2Abs > 0) ? (1.0f - splitRatio) * (1.0f + deltaTorque)
-										  : (1.0f - splitRatio) * (1.0f - deltaTorque);
-	const double denom = 1.0f / (f1 + f2);
-
-	t1 = f1 * denom;
-	t2 = f2 * denom;
+	return false;
 }
 
 // See docs in base class:
