@@ -155,6 +155,9 @@ class Simulable
 	/** Resets the condition reported by hadCollision() to false */
 	void resetCollisionFlag();
 
+	/** Whether the object moves along a keyframes <animation> path */
+	bool isAnimated() const { return anim_keyframes_path_.has_value(); }
+
 	virtual void registerOnServer(mvsim::Client& c);
 
 	const b2Body* b2d_body() const { return b2dBody_; }

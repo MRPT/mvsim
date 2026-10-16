@@ -165,6 +165,7 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 - `server` — start headless server
 - `topic list/echo/pub` — inspect/inject ZMQ topics
 - `node list` — list connected nodes
+- `slice <world.xml>` — `mvsim-cli-slice.cpp`: loads a world (no simulation) and writes the 2D grid cells (`x y z` .txt) where the geometry sensors see (world elements and non-animated blocks; no vehicles/actors) crosses a height or band, by clipping the CPU-side triangle buffers of the physical scene (built with `guiUpdate()`), e.g. for static navigation maps.
 
 ---
 
