@@ -36,6 +36,10 @@
 		<light_elevation_deg>40.0</light_elevation_deg>
 	</lights>
 
+	<!-- ensure reproducible randomized numbers from the same seed (e.g. plant poses
+	     match those of static maps generated with "mvsim slice") -->
+	<variable name="dummy" value="$f{randomize(1)}"></variable>
+
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
 	<variable name="NUM_TILTED_BEAMS_Y" value="10"></variable>
 	
