@@ -939,6 +939,7 @@ Published when ``do_fake_localization`` parameter is enabled:
 
 * ``<VEH>/amcl_pose`` (geometry_msgs/PoseWithCovarianceStamped) - Fake AMCL localization output
 * ``<VEH>/particlecloud`` (geometry_msgs/PoseArray) - Single-particle fake particle filter
+* TF ``map`` → ``odom``, such that ``map`` → ``base_link`` is the ground truth pose (even with noisy odometry, or a vehicle not starting at the origin)
 
 Sensor Topics
 ~~~~~~~~~~~~~
