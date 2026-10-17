@@ -76,6 +76,9 @@
     <visual>
         <name>support-right-front-wheel</name>
         <model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/wheel-support.dae</model_uri>
+        <!-- Its pose with straight wheels (yaw = wheel yaw + linked_yaw_offset_deg),
+             so the collision shape from the visual is right -->
+        <model_yaw>-90</model_yaw>
         <model_offset_x>0.62</model_offset_x>
         <model_offset_y>-0.2</model_offset_y>
         <model_offset_z>0.203</model_offset_z>
@@ -84,6 +87,7 @@
     <visual>
         <name>support-left-front-wheel</name>
         <model_uri>https://mrpt.github.io/mvsim-models/robot-agricobiot2/wheel-support.dae</model_uri>
+        <model_yaw>-90</model_yaw>
         <model_offset_x>0.62</model_offset_x>
         <model_offset_y>0.2</model_offset_y>
         <model_offset_z>0.203</model_offset_z>
