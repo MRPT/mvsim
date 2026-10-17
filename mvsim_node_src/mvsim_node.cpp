@@ -1037,13 +1037,18 @@ void MVSimNode::spinNotifyROS()
 					}
 
 					// TF(namespace <Ri>): /map -> /odom
+					// Such that map -> base_link is the ground truth pose, even
+					// with noisy odometry or a vehicle not starting at the origin.
 					{
+						const auto mapToOdom = mrpt::poses::CPose3D(gh_veh_pose) +
+											   (-mrpt::poses::CPose3D(veh_odom_pose));
+
 						Msg_TransformStamped tx;
 						tx.header.frame_id = "map";
 						tx.child_frame_id = "odom";
 						tx.header.stamp =
 							myNow() + std::chrono::milliseconds(50);  // Fix deay Fernando
-						tx.transform = tf2::toMsg(tf2::Transform::getIdentity());
+						tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(mapToOdom));
 
 						Msg_TFMessage tfMsg;
 						tfMsg.transforms.push_back(tx);
