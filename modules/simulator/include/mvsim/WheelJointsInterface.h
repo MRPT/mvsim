@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/PID_Controller.h>
 
 #include <mutex>
@@ -29,7 +30,8 @@ class VehicleBase;
  * independent of ROS.
  *
  * Joint conventions: positive joint velocity, position and effort make the
- * vehicle move forward.
+ * vehicle move forward. A non-finite (NaN) command means no command: the
+ * wheel rolls freely.
  *
  * Commands and states are exchanged under a mutex, so they can be accessed
  * from any thread.
@@ -82,9 +84,12 @@ class WheelJointsInterface
 	std::vector<JointState> getStates() const;
 
 	/** Called by the vehicle controller at each simulation step.
+	 * \param[out] motors Models of the wheel motors (forward positive), for
+	 * the implicit integration of the wheel spin.
 	 * \return The wheel torques, one per wheel, in mvsim sign convention
 	 * (positive means backwards). */
-	std::vector<double> computeWheelTorques(const VehicleBase& veh, double dt);
+	std::vector<double> computeWheelTorques(
+		const VehicleBase& veh, double dt, std::vector<MotorTorqueModel>& motors);
 
 	/** Called by the vehicle controller after each simulation step, to update
 	 * the joint states */

@@ -25,7 +25,8 @@ How it works
 - With ``velocity`` commands, an inner per-wheel PID (``KP``, ``KI``, ``KD``,
   ``max_torque``, same units as the ``twist_pid`` controller) produces the wheel
   torques, so wheels may lag and slip realistically. With ``effort`` commands, torques
-  are applied directly.
+  are applied directly. Wheels without a command (``NaN``, e.g. a caster joint not
+  claimed by any controller) roll freely.
 - ``mvsim_node`` creates one controller manager per such vehicle, named
   ``controller_manager``, in the vehicle namespace (only if there are several vehicles or
   ``force_publish_vehicle_namespace`` is set).
@@ -64,6 +65,8 @@ Vehicle XML
   Relative paths are relative to the world file. Each controller declared there with
   ``<name>.type`` reads its parameters from the same file, unless ``<name>.params_file``
   is given. Controllers should also set ``use_sim_time: true``.
+- **Vehicles inserted at runtime** (see :ref:`dynamic-worlds`) get their controller
+  manager too, always in their namespace, and it is destroyed when they are removed.
 - **Several vehicles:** each one gets its own controller manager in its namespace
   (``/<vehicle>/controller_manager``), and its controllers are spawned with
   ``--controller-manager /<vehicle>/controller_manager``. Prefix node names in the YAML

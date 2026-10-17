@@ -62,6 +62,12 @@ class Ros2ControlVehicle
 	Ros2ControlVehicle(const Ros2ControlVehicle&) = delete;
 	Ros2ControlVehicle& operator=(const Ros2ControlVehicle&) = delete;
 
+	/** Stops the interaction with the simulation and the ROS executor, so the
+	 * world can be destroyed before this object (whose controller manager
+	 * must not be destroyed from a ROS shutdown callback). Called by the
+	 * destructor too. */
+	void detach();
+
    private:
 	mvsim::World& world_;
 	mvsim::VehicleBase& veh_;
@@ -82,6 +88,7 @@ class Ros2ControlVehicle
 	double updatePeriod_ = 0.01;
 
 	size_t postStepCallbackId_ = 0;
+	bool detached_ = false;
 
 	void createControllerManager(std::unique_ptr<hardware_interface::ResourceManager> rm);
 

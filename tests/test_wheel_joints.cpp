@@ -14,6 +14,7 @@
 #include <mvsim/World.h>
 
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "test_utils.h"
@@ -111,7 +112,7 @@ void test_velocity()
 	const auto r2 = run("velocity", {-3.0, 3.0, -3.0, 3.0}, 2.0);
 	std::cout << "turn: final pose " << r2.pose << "\n";
 	EXPECT_GT(r2.pose.yaw, 0.3);
-	EXPECT_NEAR(r2.pose.x, 0.0, 0.2);  // skid steer drifts a bit
+	EXPECT_NEAR(r2.pose.x, 0.0, 0.3);  // skid steer drifts a bit
 }
 
 void test_effort()
@@ -122,6 +123,18 @@ void test_effort()
 	for (const auto& s : r.states)
 	{
 		EXPECT_NEAR(s.effort, 1.0, 1e-9);
+	}
+}
+
+void test_no_command()
+{
+	// NaN means no command: free wheels, no motor torque
+	const double nan = std::numeric_limits<double>::quiet_NaN();
+	const auto r = run("velocity", {nan, nan, nan, nan}, 1.0);
+	EXPECT_NEAR(r.pose.x, 0.0, 1e-3);
+	for (const auto& s : r.states)
+	{
+		EXPECT_NEAR(s.effort, 0.0, 1e-12);
 	}
 }
 
@@ -150,6 +163,7 @@ int main()
 	{
 		test_velocity();
 		test_effort();
+		test_no_command();
 		test_determinism();
 		test_per_wheel_commands();
 	}

@@ -374,18 +374,22 @@ void MVSimNode::terminateSimulation()
 	{
 		return;
 	}
-	// Before the world, since they use its vehicles:
+#if defined(MVSIM_HAS_ROS2_CONTROL)
+	// Before the world, since they use its vehicles. Only detached here, since
+	// this may run from a ROS shutdown callback, where destroying a controller
+	// manager deadlocks: they are destroyed with pubsub_vehicles_.
 	{
-		std::vector<std::shared_ptr<void>> ros2Controls;
+		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+		for (auto& [idx, pubsubs] : pubsub_vehicles_)
 		{
-			auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-			for (auto& [idx, pubsubs] : pubsub_vehicles_)
+			if (pubsubs->ros2_control)
 			{
-				ros2Controls.push_back(std::move(pubsubs->ros2_control));
+				std::static_pointer_cast<mvsim_node::Ros2ControlVehicle>(pubsubs->ros2_control)
+					->detach();
 			}
 		}
-		ros2Controls.clear();
 	}
+#endif
 	mvsim_world_->simulator_must_close(true);
 
 	thread_params_.closing = true;

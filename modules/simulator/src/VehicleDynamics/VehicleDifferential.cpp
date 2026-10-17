@@ -158,11 +158,6 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 		wheelMotors_[WHEEL_R] = co.motor_r;
 
 		// Take its output:
-		if (!co.wheel_torques.empty())
-		{
-			ASSERT_EQUAL_(co.wheel_torques.size(), getNumWheels());
-			return co.wheel_torques;
-		}
 		switch (getNumWheels())
 		{
 			case 2:
@@ -196,6 +191,19 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 			default:
 				THROW_EXCEPTION("Unexpected number of wheels!");
 		};
+
+		// Per-wheel torques (e.g. joint commands), overriding the above:
+		if (!co.wheel_torques.empty())
+		{
+			ASSERT_EQUAL_(co.wheel_torques.size(), getNumWheels());
+			otpw = co.wheel_torques;
+			wheelMotors_.assign(getNumWheels(), MotorTorqueModel());
+			if (!co.wheel_motors.empty())
+			{
+				ASSERT_EQUAL_(co.wheel_motors.size(), getNumWheels());
+				wheelMotors_ = co.wheel_motors;
+			}
+		}
 	}
 	return otpw;
 }
