@@ -56,7 +56,7 @@ All these parameters apply to both, ROS 1 and ROS 2 launch files above:
          (default: 'False')
 
       'do_fake_localization':
-         publish fake identity tf "map" -> "odom"
+         Publish tf "map" -> "odom" from the ground truth (fake localization)
          (default: 'True')
 
       'publish_tf_odom2baselink':

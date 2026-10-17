@@ -56,8 +56,7 @@ def generate_launch_description():
     spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=['joint_state_broadcaster', 'diff_drive_controller'],
-        parameters=[{'use_sim_time': True}])
+        arguments=['joint_state_broadcaster', 'diff_drive_controller'])
 
     rviz2_node = Node(
         condition=IfCondition(LaunchConfiguration('use_rviz')),

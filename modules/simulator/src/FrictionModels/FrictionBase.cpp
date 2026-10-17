@@ -13,6 +13,9 @@
 #include <mvsim/FrictionModels/WardIagnemmaFriction.h>
 #include <mvsim/VehicleBase.h>
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <rapidxml.hpp>
 
 using namespace mvsim;
@@ -68,3 +71,87 @@ FrictionBase::Ptr FrictionBase::factory(
 }
 
 void FrictionBase::setLogger(const std::weak_ptr<CSVLogger>& logger) { logger_ = logger; }
+
+void FrictionBase::solveWheelSpin(
+	const TFrictionInput& input, double otherTorque, double spinDamping, double desiredAlpha,
+	double R, double maxF, double& F, double& alpha)
+{
+	const double dt = input.context.dt;
+	const auto solve = [&](double motorTorque, double motorDamping)
+	{
+		// Effective inertia includes the reaction of the motor and the other
+		// torques to the spin change (linearly-implicit integration):
+		const double I = input.wheel.Iyy + dt * (motorDamping + spinDamping);
+		const double torque = motorTorque + otherTorque;
+		// No-slip force, reduced by the chassis reaction within the step: the
+		// ground point speed changes by F*dt/longitudinalMass while the wheel
+		// spins up by -R*F*dt/I.
+		const double k =
+			input.longitudinalMass > 0 ? 1.0 / (1.0 + I / (input.longitudinalMass * R * R)) : 1.0;
+		F = std::clamp(k * (torque - I * desiredAlpha) / R, -maxF, maxF);
+		alpha = (torque - R * F) / I;
+	};
+
+	const auto& m = input.motor;
+	if (m.damping <= 0)
+	{
+		solve(input.motorTorque, 0);
+		return;
+	}
+
+	solve(m.unsaturated, m.damping);
+
+	// If the motor would end up saturated, it applies its limit all along the
+	// step (exact, since the torque law is monotonic):
+	const double endTorque = m.unsaturated - m.damping * dt * alpha;
+	if (m.limit > 0 && std::abs(endTorque) > m.limit)
+	{
+		solve(endTorque > 0 ? m.limit : -m.limit, 0);
+	}
+}
+
+void FrictionBase::rollingResistance(
+	double C_rr, double Fnormal, double R, double w, double& T, double& dT_dw)
+{
+	T = 0;
+	dT_dw = 0;
+	if (C_rr <= 0)
+	{
+		return;
+	}
+	constexpr double k = 100.0;	 // [s/rad] sharpness of the tanh() sign approximation
+	const double th = std::tanh(k * w);
+	T = C_rr * Fnormal * R * th;
+	dT_dw = C_rr * Fnormal * R * k * (1.0 - th * th);
+}
+
+void FrictionBase::solveContact(
+	const TFrictionInput& input, double otherTorque, double spinDamping, double desiredAlpha,
+	double R, double latForceToStick, const mrpt::math::TVector2D& slipVel, double maxF, double& Fx,
+	double& Fy, double& alpha)
+{
+	// Forces to stick:
+	solveWheelSpin(
+		input, otherTorque, spinDamping, desiredAlpha, R, std::numeric_limits<double>::infinity(),
+		Fx, alpha);
+	Fy = latForceToStick;
+
+	const double Fnorm = std::hypot(Fx, Fy);
+	if (Fnorm <= maxF)
+	{
+		return;
+	}
+
+	// Sliding: Coulomb friction opposes the slip velocity (or, if it is
+	// negligible, points along the force needed to stick):
+	const double slipNorm = slipVel.norm();
+	const double dy = slipNorm > 1e-4 ? -slipVel.y / slipNorm : Fy / Fnorm;
+	Fy = maxF * dy;
+	// Friction cannot reverse the lateral slip within the step:
+	if ((Fy - latForceToStick) * Fy > 0)
+	{
+		Fy = std::clamp(latForceToStick, -maxF, maxF);
+	}
+	const double maxFx = std::sqrt(std::max(0.0, maxF * maxF - Fy * Fy));
+	solveWheelSpin(input, otherTorque, spinDamping, desiredAlpha, R, maxFx, Fx, alpha);
+}

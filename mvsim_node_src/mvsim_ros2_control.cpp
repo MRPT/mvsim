@@ -56,7 +56,8 @@ class MvsimSystem : public hardware_interface::SystemInterface
 			return CallbackReturn::ERROR;
 		}
 		states_.assign(info_.joints.size(), {0, 0, 0});
-		commands_.assign(info_.joints.size(), 0);
+		// NaN: no command yet, as ros2_control does in newer versions
+		commands_.assign(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
 		return checkInterfaces();
 	}
 
@@ -125,8 +126,8 @@ class MvsimSystem : public hardware_interface::SystemInterface
 		// systems:
 		for (size_t k = 0; k < info_.joints.size(); k++)
 		{
-			const double c = getCommand(k);
-			joints_.setCommand(wheelIndices_[k], std::isfinite(c) ? c : 0.0);
+			// NaN (e.g. not claimed by any controller) leaves the wheel free:
+			joints_.setCommand(wheelIndices_[k], getCommand(k));
 		}
 		return hardware_interface::return_type::OK;
 	}
@@ -435,6 +436,18 @@ Ros2ControlVehicle::Ros2ControlVehicle(
 
 Ros2ControlVehicle::~Ros2ControlVehicle()
 {
+	detach();
+	// Note: the controller manager shuts down its controllers by itself.
+}
+
+void Ros2ControlVehicle::detach()
+{
+	if (detached_)
+	{
+		return;
+	}
+	detached_ = true;
+
 	// First, make sure the simulation thread does not call us anymore:
 	world_.removePostStepCallback(postStepCallbackId_);
 
@@ -446,7 +459,6 @@ Ros2ControlVehicle::~Ros2ControlVehicle()
 	{
 		executorThread_.join();
 	}
-	// Note: the controller manager shuts down its controllers by itself.
 }
 
 void Ros2ControlVehicle::createControllerManager(

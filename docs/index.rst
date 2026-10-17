@@ -20,6 +20,8 @@ MVSim: a lightweight MultiVehicle Simulator
    demo_worlds
    teleoperation
    ros2_control
+   dynamic_worlds
+   runtime_objects
    mvsim-cli
    mvsim_node
    mvsim-pid-tuner

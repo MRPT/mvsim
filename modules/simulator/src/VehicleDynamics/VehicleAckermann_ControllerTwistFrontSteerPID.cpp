@@ -9,6 +9,9 @@
 
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
 
+#include <algorithm>
+#include <limits>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -76,31 +79,12 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 		vel_fr = vel_w.x;
 	}
 
-	// Compute each wheel actual velocity (from an "odometry" estimation of
-	// velocity, not ground-truth!):
-	double act_vel_fl, act_vel_fr;
-	{
-		// In local vehicle frame:
-		const std::vector<mrpt::math::TVector2D> odo_wheel_vels =
-			veh_.getWheelsVelocityLocal(veh_.getVelocityLocalOdoEstimate());
-		ASSERT_(odo_wheel_vels.size() == 4);
-
-		const double actual_fl_steer_ang = veh_.getWheelInfo(DynamicsAckermann::WHEEL_FL).yaw;
-		const double actual_fr_steer_ang = veh_.getWheelInfo(DynamicsAckermann::WHEEL_FR).yaw;
-
-		{
-			const mrpt::poses::CPose2D wRotInv(0, 0, -actual_fl_steer_ang);
-			mrpt::math::TPoint2D vel_w;
-			wRotInv.composePoint(odo_wheel_vels[DynamicsAckermann::WHEEL_FL], vel_w);
-			act_vel_fl = vel_w.x;
-		}
-		{
-			const mrpt::poses::CPose2D wRotInv(0, 0, -actual_fr_steer_ang);
-			mrpt::math::TPoint2D vel_w;
-			wRotInv.composePoint(odo_wheel_vels[DynamicsAckermann::WHEEL_FR], vel_w);
-			act_vel_fr = vel_w.x;
-		}
-	}
+	// Each driven wheel actual velocity, from its own spin (as a motor encoder
+	// would measure it), so the loop also limits the wheel slip:
+	const auto& wFL = veh_.getWheelInfo(DynamicsAckermann::WHEEL_FL);
+	const auto& wFR = veh_.getWheelInfo(DynamicsAckermann::WHEEL_FR);
+	const double act_vel_fl = wFL.getW() * 0.5 * wFL.diameter;
+	const double act_vel_fr = wFR.getW() * 0.5 * wFR.diameter;
 
 	// Apply controller:
 	for (int i = 0; i < 2; i++)
@@ -136,45 +120,33 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::control_step(
 	const bool setpointIsZero =
 		std::abs(vel_fl) < zero_threshold && std::abs(vel_fr) < zero_threshold;
 
-	if (setpointIsZero && std::abs(act_vel_fl) < stop_threshold &&
-		std::abs(act_vel_fr) < stop_threshold)
+	if (setpointIsZero)
 	{
-		// Near-zero velocity with zero setpoint: full stop, reset PIDs
-		co.fl_torque = 0;
-		co.fr_torque = 0;
+		// (max_torque<=0 means no limit, as in PID_Controller)
+		const double maxT = max_torque > 0 ? max_torque : std::numeric_limits<double>::infinity();
+		// Braking toward a full stop: proportional action only, which always
+		// opposes the current motion and vanishes at zero speed, so the vehicle
+		// neither coasts nor rebounds due to the integral term.
 		for (auto& pid : PID_)
 		{
 			pid.reset();
 		}
+		co.fl_torque = std::clamp(KP * act_vel_fl - ff, -maxT, maxT);
+		co.fr_torque = std::clamp(KP * act_vel_fr - ff, -maxT, maxT);
+		co.fl_motor = {KP * 0.5 * wFL.diameter, ff - KP * act_vel_fl, max_torque};
+		co.fr_motor = {KP * 0.5 * wFR.diameter, ff - KP * act_vel_fr, max_torque};
 	}
 	else
 	{
 		// "-" because \tau<0 makes robot moves forwards.
 		co.fl_torque = -PID_[0].compute(vel_fl - act_vel_fl, ci.context.dt, ff);
 		co.fr_torque = -PID_[1].compute(vel_fr - act_vel_fr, ci.context.dt, ff);
-
-		if (setpointIsZero)
-		{
-			// Braking toward zero: clamp torque so it can only oppose current
-			// motion direction, preventing the PID integral from causing rebound.
-			if (act_vel_fl > 0)
-			{
-				co.fl_torque = std::max(0.0, co.fl_torque);
-			}
-			else if (act_vel_fl < 0)
-			{
-				co.fl_torque = std::min(0.0, co.fl_torque);
-			}
-
-			if (act_vel_fr > 0)
-			{
-				co.fr_torque = std::max(0.0, co.fr_torque);
-			}
-			else if (act_vel_fr < 0)
-			{
-				co.fr_torque = std::min(0.0, co.fr_torque);
-			}
-		}
+		co.fl_motor = {
+			PID_[0].lastOutputSensitivity() * 0.5 * wFL.diameter, PID_[0].lastUnsaturatedOutput(),
+			max_torque};
+		co.fr_motor = {
+			PID_[1].lastOutputSensitivity() * 0.5 * wFR.diameter, PID_[1].lastUnsaturatedOutput(),
+			max_torque};
 	}
 }
 
@@ -188,7 +160,6 @@ void DynamicsAckermann::ControllerTwistFrontSteerPID::load_config(
 	params["N"] = TParamEntry("%lf", &N);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
 	params["zero_threshold"] = TParamEntry("%lf", &zero_threshold);
-	params["stop_threshold"] = TParamEntry("%lf", &stop_threshold);
 	params["enable_antiwindup"] = TParamEntry("%bool", &enable_antiwindup);
 	params["enable_feedforward"] = TParamEntry("%bool", &enable_feedforward);
 	params["feedforward_gain"] = TParamEntry("%lf", &feedforward_gain);

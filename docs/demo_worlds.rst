@@ -44,6 +44,38 @@ the patches to observe the effects.
       :language: xml
 
 
+demo_suspension
+----------------------
+
+A Scania truck with :ref:`chassis suspension <vehicles-suspension>` on a flat area with two
+speed bumps: one across the lane, and one only under the left wheels. Drive it to see the
+chassis pitch when accelerating and braking, roll in turns, and bounce over the bumps.
+
+.. tab-set::
+    .. tab-item:: Standalone MVSim build
+
+        .. code-block:: bash
+
+            mvsim launch mvsim_tutorial/demo_suspension.world.xml
+
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_suspension.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
+.. dropdown:: World XML code
+
+   File: `mvsim_tutorial/demo_suspension.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_suspension.world.xml>`_
+
+   .. literalinclude:: ../mvsim_tutorial/demo_suspension.world.xml
+      :language: xml
+
+
 demo_warehouse
 ---------------------
 

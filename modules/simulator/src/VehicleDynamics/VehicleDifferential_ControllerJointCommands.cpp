@@ -13,7 +13,7 @@ using namespace mvsim;
 void DynamicsDifferential::ControllerJointCommands::control_step(
 	const DynamicsDifferential::TControllerInput& ci, DynamicsDifferential::TControllerOutput& co)
 {
-	co.wheel_torques = joints_.computeWheelTorques(veh_, ci.context.dt);
+	co.wheel_torques = joints_.computeWheelTorques(veh_, ci.context.dt, co.wheel_motors);
 }
 
 void DynamicsDifferential::ControllerJointCommands::on_post_step(

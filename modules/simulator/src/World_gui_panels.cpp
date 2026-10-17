@@ -1195,6 +1195,32 @@ void World::GUI::update_preview_texture(
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void World::GUI::forget_entity(const std::string& name)
+{
+	const std::string prefix = name + "/";
+	for (auto it = sensorPreviews.begin(); it != sensorPreviews.end();)
+	{
+		if (it->first.compare(0, prefix.size(), prefix) != 0)
+		{
+			++it;
+			continue;
+		}
+		for (auto& tex : it->second.tex)
+		{
+			if (tex != 0)
+			{
+				glDeleteTextures(1, &tex);
+			}
+		}
+		it = sensorPreviews.erase(it);
+	}
+	// Sensors of a vehicle are selected as "<vehicle>.<sensor>":
+	if (selectedName == name || selectedName.rfind(name + ".", 0) == 0)
+	{
+		select({}, nullptr);
+	}
+}
+
 void World::GUI::free_preview_textures()
 {
 	for (auto& [name, p] : sensorPreviews)

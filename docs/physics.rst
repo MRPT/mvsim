@@ -231,9 +231,32 @@ The wheel angular acceleration :math:`\alpha` is computed from torque balance:
 
 .. math::
 
-   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w − T_{rr}}{I_{yy}}
+   \alpha = \frac{\tau_{motor} - R \cdot F_{friction,lon} - C_{damp} \cdot \omega_w - T_{rr}}{I_{eff}}
 
-The angular velocity is updated using explicit Euler integration:
+Closed-loop motor controllers (the PID ones) react to the wheel spin they measure, which
+makes the wheel dynamics stiff: integrated explicitly, a wheel velocity loop becomes
+unstable as soon as the wheel slips, unless :math:`K_P R \Delta t / I_{yy} < 2`. To avoid
+that time step dependency, controllers also report a linear model of their torque around
+the current spin speed (``MotorTorqueModel``):
+
+.. math::
+
+   \tau_{motor}(\omega_w') = \text{clamp}\left(\tau_{unsat} - d \cdot (\omega_w' - \omega_w),
+   -\tau_{max}, \tau_{max}\right)
+
+where :math:`d` (e.g. :math:`K_P R` for a wheel velocity PID) is the motor damping. The
+wheel spin is then integrated implicitly with respect to the motor torque, which amounts
+to using an effective inertia :math:`I_{eff} = I_{yy} + \Delta t \cdot d` with
+:math:`\tau_{motor} = \tau_{unsat}`. If the motor would end the step saturated, the step
+is solved again with the constant torque :math:`\pm\tau_{max}` and :math:`I_{eff} = I_{yy}`
+(exact, since the torque law is monotonic). Controllers without feedback (``raw``,
+``twist_ideal``) report :math:`d = 0`. The bearing damping :math:`C_{damp}` and the slope of
+the rolling resistance torque :math:`T_{rr}` (see below) are integrated implicitly in the
+same way, so :math:`I_{eff} = I_{yy} + \Delta t \, (d + C_{damp} + \partial T_{rr}/\partial \omega_w)`:
+large damping values do not make the simulation unstable. This is implemented once, in
+``FrictionBase::solveWheelSpin()``, and used by all friction models.
+
+The angular velocity is then updated with:
 
 .. math::
 
@@ -333,13 +356,13 @@ interaction suitable for indoor robots and general applications.
 
    .. math::
 
-      F_{y,desired} = -\frac{v_{wy} \cdot m_{wp}}{\Delta t}
+      F_{y,stick} = -\frac{v_{wy} \cdot m_{lat}}{\Delta t}
 
-   Clamped to maximum friction:
-
-   .. math::
-
-      F_y = \text{clamp}(F_{y,desired}, -F_{max}, F_{max})
+   where :math:`m_{lat}` is the effective mass of the chassis at the wheel contact point
+   along the wheel lateral direction :math:`\vec{n}`,
+   :math:`m_{lat} = \left(1/M + (\vec{r} \times \vec{n})^2 / I_{zz}\right)^{-1}`, with
+   :math:`\vec{r}` the wheel position with respect to the center of mass (see
+   `Sequential Friction Impulses`_). If not provided, :math:`m_{wp}` is used.
 
 5. **Longitudinal friction** (rolling resistance and traction):
 
@@ -361,23 +384,37 @@ interaction suitable for indoor robots and general applications.
 
       \alpha_{desired} = \frac{\Delta\omega_{desired}}{\Delta t}
 
-   From torque balance, the friction force is:
+   From torque balance, the friction force to roll without slipping is:
 
    .. math::
 
-      F_{x,desired} = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega_w - T_{rr}}{R}
+      F_{x,stick} = k \cdot \frac{\tau_{motor} - I_{eff} \alpha_{desired} - C_{damp} \omega_w - T_{rr}}{R},
+      \quad k = \frac{1}{1 + I_{eff} / (m_{lon} R^2)}
 
-   Clamped to maximum friction:
+   with :math:`I_{eff}` the effective wheel inertia (see `Wheel State Update`_), and
+   :math:`m_{lon}` the effective chassis mass at the contact point along the wheel
+   longitudinal direction. The factor :math:`k` accounts for the chassis reaction within
+   the step, so the wheel rolls without slipping at the end of it (:math:`k=1` for an
+   infinitely heavy chassis).
+
+6. **Coulomb friction** (friction circle): if the forces to stick fit in the friction
+   circle, :math:`\| (F_{x,stick}, F_{y,stick}) \| \leq F_{max}`, they are used. Otherwise
+   the wheel slides, and the friction force has magnitude :math:`F_{max}` and opposes the
+   slip velocity of the contact point, :math:`(v_{wx} - \omega_w R, \; v_{wy})`. Its lateral
+   component is limited to :math:`F_{y,stick}`, so it cannot reverse the lateral slip within
+   the step, and the rest of the friction circle is left for :math:`F_x`. The wheel angular
+   acceleration is then:
 
    .. math::
 
-      F_x = \text{clamp}(F_{x,desired}, -F_{max}, F_{max})
+      \alpha_{actual} = \frac{\tau_{motor} - R \cdot F_x - C_{damp} \omega_w - T_{rr}}{I_{eff}}
 
-6. Recompute actual wheel angular acceleration with limited friction:
-
-   .. math::
-
-      \alpha_{actual} = \frac{\tau_{motor} - R \cdot F_x - C_{damp} \omega_w}{I_{yy}}
+   (Steps 5 and 6 are implemented in ``FrictionBase::solveContact()``.) Since lateral and
+   longitudinal forces share the same friction budget, a skid-steer robot (whose wheels must
+   slide sideways to turn) turns slower than its wheel speeds imply: e.g. for wheels at
+   :math:`(\pm a, \pm b)` and equal loads, spinning in place at
+   :math:`\omega = \omega_{cmd} \, b^2 / (a^2 + b^2)`. This is a well-known behavior of
+   real skid-steer robots, see ``wheel_separation_multiplier`` in :doc:`vehicles`.
 
 7. Update wheel angular velocity:
 
@@ -455,11 +492,16 @@ where:
 
 **Implementation:**
 
-The rolling resistance force is added to the longitudinal friction calculation:
+The rolling resistance acts as an equivalent torque :math:`R \cdot F_{rr}` opposing the
+wheel spin, so a free-rolling wheel transmits it to the chassis as a longitudinal force:
 
 .. math::
 
-   F_x = \frac{\tau_{motor} - I_{yy} \alpha_{desired} - C_{damp} \omega_w}{R} + F_{rr}
+   F_x = \frac{\tau_{motor} - I_{eff} \alpha_{desired} - C_{damp} \omega_w - T_{rr} + R F_{rr}}{R}
+
+(Adding :math:`F_{rr}` directly as a contact force would instead spin the wheel up, and
+the wheel would give that momentum back to the chassis in the next steps, cancelling most
+of the resistance.)
 
 The lateral friction is calculated identically to the default model.
 
@@ -478,8 +520,8 @@ These can be tuned for different terrains (asphalt, dirt, sand, etc.).
 This model supports two independent sources of rolling resistance that may be combined:
 
 1. **Ground-contact force** (:math:`F_{rr}`) from ``R1``, ``R2``, ``A_roll`` — models
-   terrain/ground contact drag (velocity-dependent force added to the longitudinal friction
-   equation).
+   terrain/ground contact drag (velocity-dependent, applied as an equivalent torque
+   opposing the wheel spin).
 
 2. **Tire deformation torque** (:math:`T_{rr}`) from ``C_rr`` — models tire hysteresis as
    a shaft-level torque opposing wheel spin, using the same formula as the default friction model:
@@ -522,14 +564,15 @@ driving simulation.
 
 **Slip Angle** :math:`\alpha`:
 
-The angle between the wheel's velocity direction and its heading direction:
+The angle between the wheel's velocity direction and its heading direction. Since the
+velocity :math:`(v_{wx}, v_{wy})` is already expressed in the (possibly steered) wheel
+frame:
 
 .. math::
 
-   \alpha = \arctan2(v_y, v_x) - \delta
+   \alpha = \arctan2(v_{wy}, v_{wx})
 
-where :math:`\delta` is the wheel steering angle. Special handling for reverse motion
-ensures :math:`|\alpha| \leq \pi/2`.
+folded into :math:`|\alpha| \leq \pi/2` for reverse motion.
 
 **Slip Ratio** :math:`s`:
 
@@ -566,7 +609,8 @@ The ellipse method computes maximum available forces based on the friction ellip
 
    F_y^{max} = F_z C_\alpha \text{sat}(\alpha, \alpha_s) \sqrt{1 - C_{\alpha s} \left(\frac{\text{sat}(s, s_s)}{s_s}\right)^2}
 
-where:
+Both are magnitudes, used as the clamping bounds of the forces (the slip signs only
+determine the force directions through the impulse computation). Where:
 
 * :math:`F_z` - Normal force [N]
 * :math:`C_s` - Longitudinal stiffness coefficient
@@ -652,7 +696,7 @@ modifying vehicle definitions.
 
 * ``friction_mu`` (double) — Overrides the Coulomb friction coefficient :math:`\mu`.
   Applies to the Default and Ward-Iagnemma friction models. The Ellipse Curve method
-  does not use :math:`\mu` (it uses slip-based curves instead).
+  scales its slip-based curves so their peak equals it.
 
 * ``friction_C_rr`` (double) — Overrides the rolling resistance coefficient :math:`C_{rr}`.
   Applies to all three friction models.
@@ -668,15 +712,28 @@ Vehicle Base Class
 
 The ``VehicleBase`` class provides common functionality:
 
-* **Weight Distribution:** Computes normal force on each wheel
+* **Weight Distribution:** Computes the normal force :math:`N_i` on each wheel at
+  :math:`(x_i, y_i)` (vehicle frame) from the force and moment balance of the rigid
+  vehicle (no pitch nor roll motion): center of mass :math:`(x_c, y_c)` (from the chassis
+  shape and wheels, as in Box2D) at height :math:`h` (from the chassis ``zmin``/``zmax``
+  and the wheel radii), gravity :math:`(g_x, g_y, g_z)` in the vehicle frame (slopes), and
+  the (low-pass filtered) chassis acceleration :math:`(a_x, a_y)` for the load transfer
+  when accelerating, braking or turning:
 
   .. math::
 
-     F_{z,i} = \frac{m_{chassis}}{N_{wheels}} \cdot g
+     \sum N_i = M g_z, \quad
+     \sum N_i x_i = M \left(g_z x_c - h (a_x - g_x)\right), \quad
+     \sum N_i y_i = M \left(g_z y_c - h (a_y - g_y)\right)
 
-  .. note::
-     Current implementation uses uniform weight distribution. Future versions will
-     include dynamic weight transfer based on acceleration and chassis center of mass.
+  With more than 3 wheels this is statically indeterminate: the minimum-norm solution is
+  used, removing wheels that would need negative loads (the vehicle would tip over them).
+  Vehicles that cannot stand on their wheels alone (e.g. a semi-trailer) also rest on
+  their joint anchors (the load on the anchor is not passed to the other body). Each
+  wheel also gets the share of the gravity force along the ground plane proportional to
+  its load. ``VehicleBase::getWheelLoads()`` returns the loads. With
+  :ref:`suspension <physics-suspension>`, this balance (with no acceleration) gives the
+  static loads, and the springs and dampers add the load transfer.
 
 * **Wheel Velocity Computation:** Calculates each wheel's velocity from vehicle twist
 
@@ -698,6 +755,152 @@ The ``VehicleBase`` class provides common functionality:
 
 * **Force Application:** Applies wheel friction forces to vehicle body through Box2D
 
+Sequential Friction Impulses
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Friction forces are computed as the impulses that cancel the slip of each wheel within
+one time step. Computing them for all wheels from the same chassis velocity (a Jacobi
+iteration) over-corrects the yaw rate when the wheels are far from the center of mass
+compared to the yaw radius of gyration (e.g. long vehicles), ending up in a limit cycle
+(a jittering vehicle that never comes to rest). Instead, the wheels are solved one after
+another (sequential impulses, i.e. a Gauss-Seidel iteration): the chassis velocity used
+for each wheel includes the impulses of the previous ones,
+
+.. math::
+
+   \Delta \vec{v}_{com} = \frac{\vec{F} \Delta t}{M}, \quad
+   \Delta \omega = \frac{(\vec{r} \times \vec{F}) \Delta t}{I_{zz}}
+
+and each wheel uses the effective chassis mass at its contact point. Several sweeps over
+all wheels are done on each time step (before solving a wheel again, its previous impulse
+is removed from the chassis velocity estimate and its spin speed restored), so the wheels
+and the chassis reach a consistent solution, also for stiff wheel controllers on light
+robots. The wheel order is reversed on every step to avoid a left/right bias. Ideal
+controllers skip this, since friction forces are not applied to the chassis.
+
+
+.. _physics-suspension:
+
+Chassis Suspension
+~~~~~~~~~~~~~~~~~~
+
+Optionally (see :ref:`vehicles <vehicles-suspension>`), the chassis (the sprung mass
+:math:`m_s`, the chassis mass without the wheels) moves with respect to the body that
+carries the wheels, whose pose is still the one of the 2D dynamics and the terrain. The
+chassis has three degrees of freedom relative to it, measured from the static
+equilibrium: heave :math:`z` (up), roll :math:`\phi` (left side up) and pitch
+:math:`\theta` (nose down), :math:`\delta = (z, \phi, \theta)`. It rotates about a pivot
+point on the ground, under its center of mass, which is at height :math:`h`. Each wheel
+:math:`i`, at :math:`(x_i, y_i)` relative to the pivot, has a spring :math:`k_i` and a
+damper :math:`c_i`, whose deflection (up) is:
+
+.. math::
+
+   s_i = J_i \, \delta, \quad J_i = \begin{bmatrix} 1 & y_i & -x_i \end{bmatrix}
+
+The equations of motion are:
+
+.. math::
+
+   M \ddot{\delta} + C \dot{\delta} + K \delta = F
+
+.. math::
+
+   M = \mathrm{diag}\left(m_s, \; I_{xx} + m_s h^2, \; I_{yy} + m_s h^2\right), \quad
+   K = \sum_i k_i J_i^T J_i - \mathrm{diag}(0, \; m_s g h, \; m_s g h), \quad
+   C = \sum_i c_i J_i^T J_i
+
+.. math::
+
+   F = \begin{bmatrix} 0 & m_s h \, a_y & -m_s h \, a_x \end{bmatrix}^T
+
+with the inertias about the pivot, the destabilizing effect of gravity on a chassis whose
+center of mass is above the pivot (the second term of :math:`K`), and the inertial forces
+of the chassis in the (accelerating) vehicle frame. So, the chassis dives when braking,
+squats when accelerating, and rolls outwards in turns. :math:`(a_x, a_y)` is the vehicle
+acceleration in its frame (limited to :math:`2g`: larger values are spikes, e.g. from
+collisions or the velocity steps of ideal controllers).
+
+**Ground excitation.** The wheels' body moves with the terrain (e.g. over bumps): let
+:math:`\dot{q}_b` be its velocity along its normal and its roll and pitch rates (finite
+differences of its pose between steps). The springs and dampers act on the relative
+motion, while the inertia acts on the absolute one, so with the absolute chassis velocity
+:math:`w = \dot{\delta} + \dot{q}_b` as state:
+
+.. math::
+
+   \dot{\delta} = w - \dot{q}_b, \quad
+   M \dot{w} = -K \delta - C (w - \dot{q}_b) + F
+
+**Exact integration.** This is a linear time-invariant system,
+:math:`\dot{x} = A x + B u`, with :math:`x = (\delta, w)` and :math:`u = (\dot{q}_b, F)`:
+
+.. math::
+
+   A = \begin{bmatrix} 0 & I \\ -M^{-1} K & -M^{-1} C \end{bmatrix}, \quad
+   B = \begin{bmatrix} -I & 0 \\ M^{-1} C & M^{-1} \end{bmatrix}
+
+For inputs constant during a time step :math:`\Delta t`, its exact solution is
+:math:`x_{k+1} = \Phi x_k + \Gamma u_k`, with
+:math:`\exp\left(\begin{bmatrix} A & B \\ 0 & 0 \end{bmatrix} \Delta t\right) =
+\begin{bmatrix} \Phi & \Gamma \\ 0 & I \end{bmatrix}`, computed once for each time step
+value. Hence, it is stable for any time step, and the frequencies and damping of the
+chassis motion do not depend on it.
+
+**Vibration modes.** The undamped modes are the solutions of
+:math:`K v = \omega^2 M v`: natural frequency :math:`f_j = \omega_j / 2\pi`, damping
+ratio :math:`\zeta_j = v_j^T C v_j / (2 \omega_j v_j^T M v_j)` (exact for damping
+proportional to stiffness), and shape :math:`v_j` (heave and pitch are coupled if the
+center of mass is not centered between the axles). They are logged when the vehicle is
+loaded, e.g.: ``Suspension modes: roll 0.96 Hz (zeta=0.24), pitch 1.24 Hz (zeta=0.28),
+heave 1.40 Hz (zeta=0.30)``. The chassis is unstable if a frequency is not positive (the
+springs are too soft for the height of its center of mass), which is reported as an
+error. Rotations without stiffness (e.g. the pitch of a vehicle whose wheels all lie on
+one axle) are locked.
+
+**Spring sizing.** By default, each corner gets the spring and damper that give the
+heave natural frequency :math:`f` and damping ratio :math:`\zeta` to its share of the
+static load, :math:`m_i = N_i / g`:
+
+.. math::
+
+   k_i = m_i (2 \pi f)^2, \quad c_i = 2 \zeta (2 \pi f) m_i
+
+so the heave frequency is :math:`f` regardless of the weight distribution. The roll and
+pitch frequencies follow from the geometry.
+
+**Steady state.** For constant accelerations, :math:`K \delta = F`, e.g. braking at
+:math:`a_x` and turning at :math:`a_y` (with the diagonal terms of :math:`K`, e.g.
+:math:`K_{\theta\theta} = \sum k_i x_i^2 - m_s g h`, if the center of mass is centered
+between the corners):
+
+.. math::
+
+   \theta = \frac{m_s h \, |a_x|}{K_{\theta\theta}}, \quad
+   \phi = \frac{m_s h \, a_y}{K_{\phi\phi}}
+
+**Effects.**
+
+* Wheel loads: :math:`N_i = N_i^0 - k_i s_i - c_i \dot{s}_i` (not negative), with
+  :math:`N_i^0` the static loads. In steady state, they equal the quasi-static load
+  transfer of the chassis; in transients, they include the bounce of the chassis.
+* Sensors and visual models are mounted on the chassis: their pose is
+  ``Simulable::getChassisPose()``, the vehicle pose composed with the chassis pose
+  relative to it (a rotation about the pivot plus the heave). The wheels do not move.
+* IMU: its angular velocity includes the chassis roll and pitch rates (absolute, so also
+  those of the terrain), and its acceleration the one of the chassis at the sensor point,
+  :math:`(z_s \dot{w}_\theta, \; -z_s \dot{w}_\phi, \; \dot{w}_z + y_s \dot{w}_\phi - x_s
+  \dot{w}_\theta)`, and the gravity seen from the tilted chassis.
+* The vehicle pose (e.g. the ``base_link`` frame in ROS) is still the one of the wheels'
+  body, so the relative pose of sensors is constant, as in a real vehicle: the chassis
+  motion appears in their data.
+
+**Limitations.** Linear model of small angles, with no suspension travel limits nor tire
+vertical stiffness (wheel hop); no suspension geometry (roll centers, anti-dive): the
+pivot is on the ground; the load of a semi-trailer on its kingpin is not passed to the
+suspension of the tractor, and vehicles that cannot stand on their wheels alone (e.g.
+semi-trailers) do not support it.
+
 Differential Drive Dynamics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -707,7 +910,8 @@ differential wheel speeds.
 **Variants:**
 
 * ``differential`` - Two wheels (basic configuration)
-* ``differential_3_wheels`` - Three wheels (two driven + one caster)
+* ``differential_3_wheels`` - Three wheels (two driven + one caster). The caster swivels
+  freely: on every step, it is aligned with the velocity of its contact point.
 * ``differential_4_wheels`` - Four wheels (two driven pairs)
 
 **Kinematics:**
@@ -749,7 +953,9 @@ Given desired :math:`v_{desired}, \omega_{desired}`, compute wheel velocities:
 
    v_r = v + \frac{\omega \cdot w}{2}
 
-where :math:`w = |y_r - y_l|` is the wheel track width.
+where :math:`w = |y_r - y_l|` is the wheel track width, times the optional
+``wheel_separation_multiplier`` of the ``twist_pid`` controller (default 1), which
+compensates the slower turning of skid-steer robots (see the friction models).
 
 Ackermann Steering Dynamics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -765,7 +971,9 @@ front wheels steer.
 **Steering Geometry:**
 
 To prevent wheel slip during turns, inner and outer wheels must have different
-steering angles. Given desired steering angle :math:`\delta`:
+steering angles. The equivalent steering angle :math:`\delta` follows the one commanded by
+the controller at a maximum rate ``max_steer_rate_deg`` (0, the default, means
+instantaneous steering). Given :math:`\delta`:
 
 .. math::
 
@@ -843,62 +1051,31 @@ where :math:`K_f` is front/rear split and :math:`K_{fL}, K_{rL}` are left/right 
 Self-locking differential that distributes more torque to the wheel with better
 traction, based on the Torsen (torque-sensing) design :cite:`chocholek1988development`.
 
-**Algorithm:**
+It locks both outputs together until the ratio of their torques reaches the bias ratio
+:math:`B` (e.g. :math:`B=2` lets one output get up to twice the torque of the other), and
+then they slip. With an input torque :math:`\tau_{in}` and split :math:`K_s`, the outputs
+are:
 
-For two output shafts with angular velocities :math:`\omega_1, \omega_2`:
+.. math::
 
-1. Identify fast and slow wheels:
+   \tau_1 = K_s \tau_{in} - \tau_{lock}, \quad \tau_2 = (1 - K_s) \tau_{in} + \tau_{lock}
 
-   .. math::
+.. math::
 
-      \omega_{max} = \max(|\omega_1|, |\omega_2|)
+   \tau_{lock} = \text{clamp}\left(k (\omega_1 - \omega_2), \; \pm \beta \cdot 2 \min(K_s, 1-K_s) |\tau_{in}| \right),
+   \quad \beta = \frac{B - 1}{B + 1}
 
-   .. math::
-
-      \omega_{min} = \min(|\omega_1|, |\omega_2|)
-
-2. Compute locking parameter:
-
-   .. math::
-
-      \delta_{lock} = \omega_{max} - b \cdot \omega_{min}
-
-   where :math:`b` is the bias ratio (typically 1.5-3.0)
-
-3. Calculate torque bias:
-
-   .. math::
-
-      \delta_t = \begin{cases}
-      \delta_{lock} / \omega_{max} & \text{if } \delta_{lock} > 0 \\
-      0 & \text{otherwise}
-      \end{cases}
-
-4. Distribute torque:
-
-   If :math:`|\omega_1| > |\omega_2|` (wheel 1 is faster):
-
-   .. math::
-
-      f_1 = K_s (1 - \delta_t), \quad f_2 = (1 - K_s)(1 + \delta_t)
-
-   Otherwise:
-
-   .. math::
-
-      f_1 = K_s (1 + \delta_t), \quad f_2 = (1 - K_s)(1 - \delta_t)
-
-5. Normalize and apply:
-
-   .. math::
-
-      \tau_1 = \frac{f_1}{f_1 + f_2} \tau_{in}, \quad \tau_2 = \frac{f_2}{f_1 + f_2} \tau_{in}
+where the locking stiffness :math:`k = I/\Delta t` (:math:`I` the inertia of each output)
+removes the speed difference within one step, i.e. the outputs stay locked. The locking
+torque is integrated implicitly together with the wheel spin (it is part of the wheel
+``MotorTorqueModel``). With no input torque there is no locking, as in a real Torsen.
 
 **Physical Meaning:**
 
-* When :math:`\omega_1 \approx \omega_2`: Acts like open differential (50/50 split)
-* When one wheel slips: More torque goes to slower (gripping) wheel
-* Bias ratio: Maximum torque ratio between wheels (e.g., b=2 means 2:1 max ratio)
+* While both outputs have traction: they turn together (locked), and the torque goes to
+  where it is needed, up to the bias ratio.
+* When one wheel slips (e.g. on ice): the other one gets up to :math:`B` times its torque,
+  instead of the same torque as with an open differential.
 
 **4WD Configuration:**
 
@@ -930,7 +1107,8 @@ velocity setpoints.
 **Ideal Controllers:**
 
 Perfect tracking (kinematic control). Instantly achieves desired velocities without
-dynamics.
+dynamics. The wheel friction forces are still evaluated (for wheel spin and logging), but
+not applied to the chassis.
 
 Differential Twist PID Controller
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -946,7 +1124,7 @@ regulators on each wheel.
 
       v_l^{des} = v - \frac{\omega w}{2}, \quad v_r^{des} = v + \frac{\omega w}{2}
 
-2. Compute actual wheel velocities from odometry:
+2. Compute actual wheel velocities from odometry (i.e. from the wheels spin):
 
    .. math::
 
@@ -962,24 +1140,30 @@ regulators on each wheel.
 
       \tau_i = K_P e_i + K_I \int e_i \, dt + K_D \frac{de_i}{dt}
 
-   With integral windup protection:
-
-   .. math::
-
-      \int e_i \, dt = \text{clamp}\left(\int e_i \, dt, -I_{MAX}, I_{MAX}\right)
-
 4. Apply torque limits:
 
    .. math::
 
       \tau_i = \text{clamp}(\tau_i, -\tau_{max}, \tau_{max})
 
+   With ``<enable_antiwindup>true</enable_antiwindup>``, the integral term is corrected
+   by back-calculation while the output is saturated.
+
+5. Zero setpoint (stopping): the integral term is dropped and only the proportional
+   action brakes the wheels, :math:`\tau_i = \text{clamp}(-K_P v_i^{act})`. It always
+   opposes the current motion and vanishes at zero speed, so the vehicle neither coasts
+   nor rebounds.
+
 **Tuning Guidelines:**
 
 * :math:`K_P` - Proportional gain: Higher values → faster response, may cause oscillation
 * :math:`K_I` - Integral gain: Eliminates steady-state error, may cause overshoot
 * :math:`K_D` - Derivative gain: Damping, rarely needed for velocity control
-* :math:`I_{MAX}` - Prevents integral windup during saturation
+* :math:`\tau_{max}` - Keep it below the traction limit of the driven wheels,
+  :math:`\mu \, m_{wheel} \, g \, R`, so the controller cannot spin them (skid-steer
+  vehicles are the exception: turning in place requires the wheels to slip)
+
+The ``mvsim-pid-tuner`` tool proposes gains automatically.
 
 Ackermann Twist Controller
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1006,7 +1190,13 @@ Controls forward velocity and steering angle to achieve desired twist.
 
 4. Rotate desired velocity vector by steering angle
 
-5. Use PID to control wheel speeds accounting for different radii in turns
+5. Use PID to control each front (driven) wheel speed, accounting for different radii
+   in turns. The actual speed of each wheel is measured from its own spin (as a motor
+   encoder would), so the loop also limits the slip of the driven wheels.
+
+The ``ackermann_drivetrain`` twist controller is similar, but it controls the
+driveshaft speed (the mean longitudinal speed of the driven axles) with a single PID,
+whose torque is then split among the wheels by the differentials.
 
 **Special Cases:**
 

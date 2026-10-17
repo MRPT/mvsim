@@ -230,6 +230,11 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 
 	publish_sensor_tf_ = n_->declare_parameter<bool>("publish_sensor_tf", publish_sensor_tf_);
 
+	objects_ground_truth_rate_ =
+		n_->declare_parameter<double>("objects_ground_truth_rate", objects_ground_truth_rate_);
+
+	world_frame_id_ = n_->declare_parameter<std::string>("world_frame_id", world_frame_id_);
+
 	// mvsim is the ROS *time source*: it publishes "/clock" and stamps all
 	// outgoing messages with simulation time. The mvsim node itself therefore
 	// normally runs with use_sim_time:=false (it drives the clock); it is the
@@ -269,6 +274,9 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 	base_last_cmd_ = rclcpp::Time(0);
 #endif
 
+	mvsim_world_->registerCallbackOnEntityChange([this](const mvsim::World::EntityChange& c)
+												 { onWorldEntityChange(c); });
+
 	mvsim_world_->registerCallbackOnObservation(
 		[this](const mvsim::Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 		{
@@ -278,14 +286,25 @@ MVSimNode::MVSimNode(rclcpp::Node::SharedPtr& n)
 			}
 			mrpt::system::CTimeLoggerEntry tle(profiler_, "lambda_onNewObservation");
 
-			const mvsim::Simulable* vehPtr = &veh;
+			// Only vehicles have ROS interfaces. Keep the vehicle alive until
+			// published, even if it is removed at runtime meanwhile:
+			std::shared_ptr<TPubSubPerVehicle> pubsPtr;
+			if (const auto* v = dynamic_cast<const mvsim::VehicleBase*>(&veh); v)
+			{
+				auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+				pubsPtr = findPubSubs(*v);
+			}
+			if (!pubsPtr)
+			{
+				return;
+			}
 			const mrpt::obs::CObservation::Ptr obsCopy = obs;
 			const auto fut = ros_publisher_workers_.enqueue(
-				[this, vehPtr, obsCopy]()
+				[this, pubsPtr, obsCopy]()
 				{
 					try
 					{
-						onNewObservation(*vehPtr, obsCopy);
+						onNewObservation(*pubsPtr->vehicle, obsCopy);
 					}
 					catch (const std::exception& e)
 					{
@@ -358,8 +377,22 @@ void MVSimNode::terminateSimulation()
 	{
 		return;
 	}
-	// Before the world, since they use its vehicles:
-	ros2_control_managers_.clear();
+#if defined(MVSIM_HAS_ROS2_CONTROL)
+	// Before the world, since they use its vehicles. Only detached here, since
+	// this may run from a ROS shutdown callback, where destroying a controller
+	// manager deadlocks: they are destroyed with pubsub_vehicles_.
+	{
+		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+		for (auto& [idx, pubsubs] : pubsub_vehicles_)
+		{
+			if (pubsubs->ros2_control)
+			{
+				std::static_pointer_cast<mvsim_node::Ros2ControlVehicle>(pubsubs->ros2_control)
+					->detach();
+			}
+		}
+	}
+#endif
 	mvsim_world_->simulator_must_close(true);
 
 	thread_params_.closing = true;
@@ -637,38 +670,16 @@ void MVSimNode::notifyROSWorldIsUpdated()
 {
 	mvsim_world_->runVisitorOnVehicles([this](mvsim::VehicleBase& v) { publishVehicles(v); });
 
-	// Vehicles driven by ros2_control:
-	ros2_controlled_vehicles_.clear();
-	for (const auto& [name, v] : mvsim_world_->getListOfVehicles())
-	{
-		auto* ctrl = v->getControllerInterface();
-		if (ctrl && ctrl->wheelJointsInterface())
-		{
-			ros2_controlled_vehicles_.insert(v.get());
-		}
-	}
-
 	// Create subscribers & publishers for each vehicle's stuff:
 	// ----------------------------------------------------
-	const auto& vehs = mvsim_world_->getListOfVehicles();
-	pubsub_vehicles_.clear();
-	pubsub_vehicles_.resize(vehs.size());
-	for (auto it = vehs.begin(); it != vehs.end(); ++it)
 	{
-		mvsim::VehicleBase* veh = dynamic_cast<mvsim::VehicleBase*>(it->second.get());
-		if (!veh)
-		{
-			continue;
-		}
-
-		// By vehicle index, as used to look them up (the list is sorted by name):
-		auto& pubsubs = pubsub_vehicles_.at(veh->getVehicleIndex());
-
-		initPubSubs(pubsubs, veh);
-		initLoggerTopicCallbacks(pubsubs, veh);
+		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+		pubsub_vehicles_.clear();
 	}
-
-	initRos2Control();
+	for (const auto& [name, veh] : mvsim_world_->getListOfVehicles())
+	{
+		addVehiclePubSubs(veh, false);
+	}
 
 #if PACKAGE_ROS_VERSION == 1
 	// pub: simul_map, simul_map_metadata
@@ -692,6 +703,27 @@ void MVSimNode::notifyROSWorldIsUpdated()
 		pub_diagnostics_ =
 			n_->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/diagnostics", 10);
 	}
+#endif
+
+	// pub: objects_ground_truth
+	if (objects_ground_truth_rate_ > 0)
+	{
+		pub_objects_ground_truth_ =
+			n_->create_publisher<Msg_TFMessage>("objects_ground_truth", publisher_history_len_);
+	}
+
+	// sub: runtime_objects, runtime_overlays
+	// Keep all messages, since each one may add or delete objects:
+	const auto qosMarkers = rclcpp::QoS(rclcpp::KeepLast(100)).reliable();
+	sub_runtime_objects_ = n_->create_subscription<Msg_MarkerArray>(
+		"runtime_objects", qosMarkers,
+		[this](const Msg_MarkerArray& msg) { onRuntimeObjectMarkers(msg, true); });
+	sub_runtime_overlays_ = n_->create_subscription<Msg_MarkerArray>(
+		"runtime_overlays", qosMarkers,
+		[this](const Msg_MarkerArray& msg) { onRuntimeObjectMarkers(msg, false); });
+
+#if defined(MVSIM_HAS_SIMULATION_INTERFACES)
+	initSimulationInterfacesServices();
 #endif
 #endif
 
@@ -747,6 +779,97 @@ ros_Time MVSimNode::myObsStamp(const mrpt::system::TTimeStamp& obsTimestamp) con
 	return mrpt2ros::toROS(obsTimestamp);
 }
 
+std::shared_ptr<MVSimNode::TPubSubPerVehicle> MVSimNode::findPubSubs(const mvsim::VehicleBase& veh)
+{
+	const auto it = pubsub_vehicles_.find(veh.getVehicleIndex());
+	if (it == pubsub_vehicles_.end() || it->second->vehicle.get() != &veh)
+	{
+		return {};
+	}
+	return it->second;
+}
+
+void MVSimNode::addVehiclePubSubs(const std::shared_ptr<mvsim::VehicleBase>& veh, bool atRuntime)
+{
+	ASSERT_(veh);
+	{
+		// Fixed from now on, so topics do not change if vehicles are inserted
+		// or removed later:
+		auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
+		vehicleUsesNamespace_[veh->getVehicleIndex()] =
+			atRuntime || force_publish_vehicle_namespace_ ||
+			mvsim_world_->getListOfVehicles().size() > 1;
+	}
+	auto pubsubs = std::make_shared<TPubSubPerVehicle>();
+	pubsubs->vehicle = veh;
+	initPubSubs(*pubsubs, veh.get());
+	initLoggerTopicCallbacks(pubsubs, veh.get());
+	initRos2Control(*pubsubs, *veh);
+
+	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+	pubsub_vehicles_[veh->getVehicleIndex()] = pubsubs;
+}
+
+void MVSimNode::removeVehiclePubSubs(const mvsim::VehicleBase& veh)
+{
+	std::shared_ptr<void> ros2Control;
+	{
+		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+		if (auto it = pubsub_vehicles_.find(veh.getVehicleIndex()); it != pubsub_vehicles_.end())
+		{
+			// Pending observation jobs may keep these pubs/subs alive for a
+			// while, but no more commands must reach the removed vehicle:
+			it->second->sub_cmd_vel.reset();
+			ros2Control = std::move(it->second->ros2_control);
+			pubsub_vehicles_.erase(it);
+		}
+	}
+	// Destroyed out of the lock, since it waits for the simulation step:
+	ros2Control.reset();
+	// Same thread as the cmd_vel callbacks and spin(), so no lock needed:
+	for (auto it = lastCmdVelTimestamp_.begin(); it != lastCmdVelTimestamp_.end();)
+	{
+		if (it->first == &veh)
+		{
+			it = lastCmdVelTimestamp_.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+	auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
+	vehicleUsesNamespace_.erase(veh.getVehicleIndex());
+}
+
+void MVSimNode::onWorldEntityChange(const mvsim::World::EntityChange& c)
+{
+	using Kind = mvsim::World::EntityKind;
+	if (c.kind == Kind::Vehicle)
+	{
+		const auto veh = std::dynamic_pointer_cast<mvsim::VehicleBase>(c.object);
+		if (!veh)
+		{
+			return;
+		}
+		if (c.added)
+		{
+			addVehiclePubSubs(veh, true);
+		}
+		else
+		{
+			removeVehiclePubSubs(*veh);
+		}
+	}
+	else if (c.kind == Kind::Element && c.added)
+	{
+		if (const auto e = std::dynamic_pointer_cast<mvsim::WorldElementBase>(c.object); e)
+		{
+			publishWorldElements(*e);
+		}
+	}
+}
+
 /** Initialize all pub/subs required for each vehicle, for the specific vehicle
  * \a veh */
 void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
@@ -757,7 +880,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		vehVarName("cmd_vel", *veh), 10,
 		[this, veh](Msg_Twist_CSPtr msg) { return this->onROSMsgCmdVel(msg, veh); }));
 #else
-	if (!isRos2Controlled(veh))
+	if (!isRos2Controlled(*veh))
 	{
 		pubsubs.sub_cmd_vel = n_->create_subscription<Msg_Twist>(
 			vehVarName("cmd_vel", *veh), 10,
@@ -1003,6 +1126,9 @@ void MVSimNode::spinNotifyROS()
 #if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
 	publishDiagnostics();
 #endif
+#if PACKAGE_ROS_VERSION == 2
+	publishObjectsGroundTruth();
+#endif
 
 	// Publish all TFs for each vehicle:
 	// ---------------------------------------------------------------------
@@ -1010,12 +1136,15 @@ void MVSimNode::spinNotifyROS()
 	{
 		tim_publish_tf_.Tic();
 
-		ASSERT_EQUAL_(pubsub_vehicles_.size(), vehs.size());
-
 		for (auto it = vehs.begin(); it != vehs.end(); ++it)
 		{
 			const auto& veh = it->second;
-			auto& pubs = pubsub_vehicles_.at(veh->getVehicleIndex());
+			const auto pubsPtr = findPubSubs(*veh);
+			if (!pubsPtr)
+			{
+				continue;
+			}
+			auto& pubs = *pubsPtr;
 
 			// 1) Ground-truth pose and velocity
 			// --------------------------------------------
@@ -1042,7 +1171,7 @@ void MVSimNode::spinNotifyROS()
 
 				// ros2_control vehicles: their localization and odometry come
 				// from the controllers.
-				const bool ros2Controlled = isRos2Controlled(veh.get());
+				const bool ros2Controlled = isRos2Controlled(*veh);
 
 				if (do_fake_localization_ && !ros2Controlled)
 				{
@@ -1066,13 +1195,18 @@ void MVSimNode::spinNotifyROS()
 					}
 
 					// TF(namespace <Ri>): /map -> /odom
+					// Such that map -> base_link is the ground truth pose, even
+					// with noisy odometry or a vehicle not starting at the origin.
 					{
+						const auto mapToOdom = mrpt::poses::CPose3D(gh_veh_pose) +
+											   (-mrpt::poses::CPose3D(veh_odom_pose));
+
 						Msg_TransformStamped tx;
 						tx.header.frame_id = "map";
 						tx.child_frame_id = "odom";
 						tx.header.stamp =
 							myNow() + std::chrono::milliseconds(50);  // Fix deay Fernando
-						tx.transform = tf2::toMsg(tf2::Transform::getIdentity());
+						tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(mapToOdom));
 
 						Msg_TFMessage tfMsg;
 						tfMsg.transforms.push_back(tx);
@@ -1108,7 +1242,7 @@ void MVSimNode::spinNotifyROS()
 
 			// 3) odometry transform
 			// --------------------------------------------
-			if (!isRos2Controlled(veh.get()))
+			if (!isRos2Controlled(*veh))
 			{
 				// TF(namespace <Ri>): /odom -> /base_link
 				if (publish_tf_odom2baselink_)
@@ -1167,12 +1301,13 @@ void MVSimNode::spinNotifyROS()
 
 #if PACKAGE_ROS_VERSION == 1
 void MVSimNode::initLoggerTopicCallbacks(
-	TPubSubPerVehicle& /*pubsubs*/, mvsim::VehicleBase* /*veh*/)
+	const std::shared_ptr<TPubSubPerVehicle>& /*pubsubs*/, mvsim::VehicleBase* /*veh*/)
 {
 	// Log-topic publishing is only supported in ROS2.
 }
 #else
-void MVSimNode::initLoggerTopicCallbacks(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
+void MVSimNode::initLoggerTopicCallbacks(
+	const std::shared_ptr<TPubSubPerVehicle>& pubsubs, mvsim::VehicleBase* veh)
 {
 	if (!publish_log_topics_)
 	{
@@ -1206,15 +1341,19 @@ void MVSimNode::initLoggerTopicCallbacks(TPubSubPerVehicle& pubsubs, mvsim::Vehi
 		const size_t loggerIdx = li;
 
 		// Register callback that publishes every column as a Float64 topic.
-		// Pointers captured here remain valid because:
-		//  - pubsubs lives in pubsub_vehicles_ (resized once, never again)
-		//  - veh lives in mvsim_world_ vehicle list (stable after load)
+		// The logger belongs to the vehicle, so "veh" outlives it.
+		const std::weak_ptr<TPubSubPerVehicle> weakPubSubs = pubsubs;
 		logger->registerOnRowCallback(
-			[this, &pubsubs, veh, loggerLabel,
+			[this, weakPubSubs, veh, loggerLabel,
 			 loggerIdx](const std::map<std::string_view, double>& columns)
 			{
+				const auto pubsubsPtr = weakPubSubs.lock();
+				if (!pubsubsPtr)
+				{
+					return;	 // removed at runtime
+				}
 				auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-				auto& pubMap = pubsubs.pub_log_topics[loggerIdx];
+				auto& pubMap = pubsubsPtr->pub_log_topics[loggerIdx];
 
 				for (const auto& [colName, value] : columns)
 				{
@@ -1315,7 +1454,17 @@ void MVSimNode::onNewObservation(
  * vehicle in the World, or "/<VAR_NAME>" otherwise. */
 std::string MVSimNode::vehVarName(const std::string& sVarName, const mvsim::VehicleBase& veh) const
 {
-	if (mvsim_world_->getListOfVehicles().size() == 1 && !force_publish_vehicle_namespace_)
+	bool useNamespace =
+		force_publish_vehicle_namespace_ || mvsim_world_->getListOfVehicles().size() > 1;
+	{
+		auto lck = mrpt::lockHelper(vehicleUsesNamespaceMtx_);
+		if (auto it = vehicleUsesNamespace_.find(veh.getVehicleIndex());
+			it != vehicleUsesNamespace_.end())
+		{
+			useNamespace = it->second;
+		}
+	}
+	if (!useNamespace)
 	{
 		return sVarName;
 	}
@@ -1326,7 +1475,12 @@ void MVSimNode::internalOn(
 	const mvsim::VehicleBase& veh, const mrpt::obs::CObservation2DRangeScan& obs)
 {
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub = pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
@@ -1381,7 +1535,12 @@ void MVSimNode::internalOn(
 void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObservationIMU& obs)
 {
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub = pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
@@ -1467,7 +1626,12 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	}
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	// Create the publisher the first time an observation arrives:
 	const bool is_1st_pub = pubs.pub_sensors.find(obs.sensorLabel) == pubs.pub_sensors.end();
@@ -1621,7 +1785,12 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 	using namespace std::string_literals;
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	const std::string img_topic = obs.sensorLabel + "/image_raw"s;
 	const std::string camInfo_topic = obs.sensorLabel + "/camera_info"s;
@@ -1698,7 +1867,12 @@ void MVSimNode::internalOn(
 	const bool wantColoredPc = depthSensor ? depthSensor->publishColoredPointcloud() : false;
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
 	const auto lbImage = obs.sensorLabel + "_rgb/image_raw"s;
@@ -1959,7 +2133,12 @@ void MVSimNode::internalOn(
 	using namespace std::string_literals;
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
-	auto& pubs = pubsub_vehicles_[veh.getVehicleIndex()];
+	const auto pubsPtr = findPubSubs(veh);
+	if (!pubsPtr)
+	{
+		return;	 // removed at runtime
+	}
+	auto& pubs = *pubsPtr;
 
 	const auto lbPoints = obs.sensorLabel + "_points"s;
 
@@ -2115,37 +2294,243 @@ void MVSimNode::publishDiagnostics()
 }
 #endif
 
-void MVSimNode::initRos2Control()
+#if PACKAGE_ROS_VERSION == 2
+namespace
 {
-	ros2_control_managers_.clear();
-	if (ros2_controlled_vehicles_.empty())
+mrpt::img::TColor toColor(const std_msgs::msg::ColorRGBA& c)
+{
+	const auto f2u8 = [](float v)
+	{ return static_cast<uint8_t>(std::clamp(v, 0.0f, 1.0f) * 255.0f + 0.5f); };
+	return {f2u8(c.r), f2u8(c.g), f2u8(c.b), f2u8(c.a)};
+}
+
+/** Converts a marker into a runtime object. Returns false if the marker
+ * type is not supported. */
+bool markerToRuntimeObject(
+	const visualization_msgs::msg::Marker& m, mvsim::RuntimeObjectDescription& d)
+{
+	using Shape = mvsim::RuntimeObjectDescription::Shape;
+	using visualization_msgs::msg::Marker;
+
+	auto pose = mrpt::ros2bridge::fromROS(m.pose);
+	d.size = {m.scale.x, m.scale.y, m.scale.z};
+	d.color = toColor(m.color);
+
+	const auto scaled = [&m](const geometry_msgs::msg::Point& p)
+	{ return mrpt::math::TPoint3D(p.x * m.scale.x, p.y * m.scale.y, p.z * m.scale.z); };
+
+	switch (m.type)
+	{
+		case Marker::CUBE:
+			// A zero-height cube is a flat decal:
+			d.shape = m.scale.z == 0 ? Shape::Rectangle : Shape::Box;
+			break;
+		case Marker::SPHERE:
+			d.shape = Shape::Sphere;
+			break;
+		case Marker::CYLINDER:
+			// A zero-height cylinder is a flat disk decal:
+			if (m.scale.z == 0)
+			{
+				d.shape = Shape::Disk;
+			}
+			else
+			{
+				// Markers are centered, mvsim cylinders start at their base:
+				d.shape = Shape::Cylinder;
+				pose = pose + mrpt::poses::CPose3D(0, 0, -0.5 * m.scale.z, 0, 0, 0);
+			}
+			break;
+		case Marker::TRIANGLE_LIST:
+			d.shape = Shape::Triangles;
+			for (const auto& p : m.points)
+			{
+				d.points.push_back(scaled(p));
+			}
+			for (const auto& c : m.colors)
+			{
+				d.point_colors.push_back(toColor(c));
+			}
+			if (d.point_colors.size() != d.points.size())
+			{
+				d.point_colors.clear();
+			}
+			break;
+		case Marker::LINE_LIST:
+		case Marker::LINE_STRIP:
+			d.shape = Shape::Lines;
+			for (size_t i = 0; i < m.points.size(); i++)
+			{
+				if (m.type == Marker::LINE_STRIP && i >= 2)
+				{
+					d.points.push_back(d.points.back());
+				}
+				d.points.push_back(
+					mrpt::math::TPoint3D(m.points[i].x, m.points[i].y, m.points[i].z));
+			}
+			d.size.x = 2.0;	 // line width (pixels)
+			break;
+		default:
+			return false;
+	};
+	d.pose = pose.asTPose();
+	return true;
+}
+}  // namespace
+
+void MVSimNode::onRuntimeObjectMarkers(const Msg_MarkerArray& msg, bool visibleToSensors)
+{
+	using visualization_msgs::msg::Marker;
+
+	if (!mvsim_world_)
+	{
+		return;
+	}
+	auto& ro = mvsim_world_->runtimeObjects();
+
+	// Separate name spaces for each topic:
+	const std::string prefix = visibleToSensors ? "ros/" : "ros_overlay/";
+
+	std::vector<mvsim::RuntimeObjectDescription> toSpawn;
+
+	// Spawns the pending objects. If the batch is rejected, they are spawned
+	// one by one, so an invalid marker does not discard the valid ones:
+	const auto flush = [&]()
+	{
+		try
+		{
+			ro.spawn(toSpawn);
+		}
+		catch (const std::exception&)
+		{
+			for (const auto& d : toSpawn)
+			{
+				try
+				{
+					ro.spawn({d});
+				}
+				catch (const std::exception& e)
+				{
+					RCLCPP_ERROR(
+						n_->get_logger(), "Error spawning runtime object '%s': %s", d.name.c_str(),
+						e.what());
+				}
+			}
+		}
+		toSpawn.clear();
+	};
+
+	for (const auto& m : msg.markers)
+	{
+		const std::string name = prefix + m.ns + "/" + std::to_string(m.id);
+
+		if (m.action == Marker::DELETEALL)
+		{
+			// Apply the pending ones first, to keep the message order:
+			flush();
+			ro.removeByPrefix(prefix);
+			continue;
+		}
+		if (m.action == Marker::DELETE)
+		{
+			flush();
+			ro.remove({name});
+			continue;
+		}
+		if (!m.header.frame_id.empty() && m.header.frame_id != world_frame_id_)
+		{
+			RCLCPP_WARN_THROTTLE(
+				n_->get_logger(), *clock_, 5000,
+				"Runtime object markers must be given in the '%s' frame (got '%s')",
+				world_frame_id_.c_str(), m.header.frame_id.c_str());
+		}
+
+		mvsim::RuntimeObjectDescription d;
+		d.name = name;
+		d.visible_to_sensors = visibleToSensors;
+		if (!markerToRuntimeObject(m, d))
+		{
+			RCLCPP_WARN_THROTTLE(
+				n_->get_logger(), *clock_, 5000,
+				"Unsupported marker type %d for runtime objects (supported: CUBE, SPHERE, "
+				"CYLINDER, TRIANGLE_LIST, LINE_LIST, LINE_STRIP)",
+				m.type);
+			continue;
+		}
+		toSpawn.push_back(std::move(d));
+	}
+	flush();
+}
+
+void MVSimNode::publishObjectsGroundTruth()
+{
+	if (!pub_objects_ground_truth_ || !mvsim_world_->has_simul_timestamp())
+	{
+		return;
+	}
+	if (tim_publish_objects_gt_.Tac() < 1.0 / objects_ground_truth_rate_)
+	{
+		return;
+	}
+	tim_publish_objects_gt_.Tic();
+
+	const auto snap = mvsim_world_->getGroundTruthSnapshot();
+	const auto stamp =
+		disable_sim_time_clock_
+			? myNow()
+			: mrpt2ros::toROS(mvsim_world_->simul_time_to_timestamp(snap.simul_time));
+
+	Msg_TFMessage msg;
+	msg.transforms.reserve(snap.objects.size());
+	for (const auto& o : snap.objects)
+	{
+		const auto p = mrpt2ros::toROS_Pose(o.pose);
+		Msg_TransformStamped tx;
+		tx.header.frame_id = world_frame_id_;
+		tx.header.stamp = stamp;
+		tx.child_frame_id = o.name;
+		tx.transform.translation.x = p.position.x;
+		tx.transform.translation.y = p.position.y;
+		tx.transform.translation.z = p.position.z;
+		tx.transform.rotation = p.orientation;
+		msg.transforms.push_back(std::move(tx));
+	}
+	pub_objects_ground_truth_->publish(msg);
+}
+#endif
+
+bool MVSimNode::isRos2Controlled(const mvsim::VehicleBase& veh)
+{
+	auto* ctrl = const_cast<mvsim::VehicleBase&>(veh).getControllerInterface();
+	return ctrl && ctrl->wheelJointsInterface();
+}
+
+void MVSimNode::initRos2Control(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase& veh)
+{
+	if (!isRos2Controlled(veh))
 	{
 		return;
 	}
 #if defined(MVSIM_HAS_ROS2_CONTROL)
-	const bool useNamespaces =
-		force_publish_vehicle_namespace_ || mvsim_world_->getListOfVehicles().size() > 1;
-
-	for (const auto* cveh : ros2_controlled_vehicles_)
+	auto* joints = veh.getControllerInterface()->wheelJointsInterface();
+	// The vehicle namespace, if its topics use it:
+	const std::string ns = vehVarName("", veh).empty() ? std::string() : "/" + veh.getName();
+	try
 	{
-		auto* veh = const_cast<mvsim::VehicleBase*>(cveh);
-		auto* joints = veh->getControllerInterface()->wheelJointsInterface();
-		const std::string ns = useNamespaces ? "/" + veh->getName() : std::string();
-		try
-		{
-			ros2_control_managers_.push_back(
-				std::make_shared<mvsim_node::Ros2ControlVehicle>(*mvsim_world_, *veh, *joints, ns));
-		}
-		catch (const std::exception& e)
-		{
-			RCLCPP_ERROR(
-				n_->get_logger(), "Could not set up ros2_control for vehicle '%s': %s",
-				veh->getName().c_str(), e.what());
-		}
+		pubsubs.ros2_control =
+			std::make_shared<mvsim_node::Ros2ControlVehicle>(*mvsim_world_, veh, *joints, ns);
+	}
+	catch (const std::exception& e)
+	{
+		RCLCPP_ERROR(
+			n_->get_logger(), "Could not set up ros2_control for vehicle '%s': %s",
+			veh.getName().c_str(), e.what());
 	}
 #else
-	ROS12_ERROR(
-		"Some vehicles use the 'ros2_control' controller, but mvsim_node was built without "
-		"ros2_control support (controller_manager not found): they will not move.");
+	(void)pubsubs;
+	ROS12_ERROR_STREAM(
+		"Vehicle '" << veh.getName()
+					<< "' uses the 'ros2_control' controller, but mvsim_node was built without "
+					   "ros2_control support (controller_manager not found): it will not move.");
 #endif
 }

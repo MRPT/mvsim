@@ -11,6 +11,7 @@
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 
+#include <cmath>
 #include <rapidxml.hpp>
 
 #include "xml_utils.h"
@@ -150,12 +151,13 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 		TControllerOutput co;
 		controller_->control_step(ci, co);
 
+		// Only the wheels whose spin is measured by the controller (L,R) react
+		// to their own speed:
+		wheelMotors_.assign(getNumWheels(), MotorTorqueModel());
+		wheelMotors_[WHEEL_L] = co.motor_l;
+		wheelMotors_[WHEEL_R] = co.motor_r;
+
 		// Take its output:
-		if (!co.wheel_torques.empty())
-		{
-			ASSERT_EQUAL_(co.wheel_torques.size(), getNumWheels());
-			return co.wheel_torques;
-		}
 		switch (getNumWheels())
 		{
 			case 2:
@@ -163,10 +165,23 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 				otpw[WHEEL_R] = co.wheel_torque_r;
 				break;
 			case 3:
+			{
 				otpw[WHEEL_L] = co.wheel_torque_l;
 				otpw[WHEEL_R] = co.wheel_torque_r;
 				otpw[WHEEL_CASTER_FRONT] = 0;
-				break;
+
+				// The caster swivels freely: align it with the velocity of its
+				// contact point (keeping its heading while almost stopped):
+				Wheel& caster = wheels_info_[WHEEL_CASTER_FRONT];
+				const auto v = getRefVelocityLocal();
+				const double vx = v.vx - v.omega * caster.y;
+				const double vy = v.vy + v.omega * caster.x;
+				if (std::hypot(vx, vy) > 1e-3)
+				{
+					caster.yaw = std::atan2(vy, vx);
+				}
+			}
+			break;
 			case 4:
 				otpw[WHEEL_LR] = co.wheel_torque_l;
 				otpw[WHEEL_RR] = co.wheel_torque_r;
@@ -176,6 +191,19 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 			default:
 				THROW_EXCEPTION("Unexpected number of wheels!");
 		};
+
+		// Per-wheel torques (e.g. joint commands), overriding the above:
+		if (!co.wheel_torques.empty())
+		{
+			ASSERT_EQUAL_(co.wheel_torques.size(), getNumWheels());
+			otpw = co.wheel_torques;
+			wheelMotors_.assign(getNumWheels(), MotorTorqueModel());
+			if (!co.wheel_motors.empty())
+			{
+				ASSERT_EQUAL_(co.wheel_motors.size(), getNumWheels());
+				wheelMotors_ = co.wheel_motors;
+			}
+		}
 	}
 	return otpw;
 }

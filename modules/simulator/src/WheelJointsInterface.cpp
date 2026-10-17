@@ -92,7 +92,8 @@ std::vector<WheelJointsInterface::JointState> WheelJointsInterface::getStates() 
 	return states_;
 }
 
-std::vector<double> WheelJointsInterface::computeWheelTorques(const VehicleBase& veh, double dt)
+std::vector<double> WheelJointsInterface::computeWheelTorques(
+	const VehicleBase& veh, double dt, std::vector<MotorTorqueModel>& motors)
 {
 	const size_t nW = veh.getNumWheels();
 
@@ -101,16 +102,25 @@ std::vector<double> WheelJointsInterface::computeWheelTorques(const VehicleBase&
 	commands_.resize(nW, 0.0);
 	pids_.resize(nW);
 	lastTorques_.assign(nW, 0.0);
+	motors.assign(nW, MotorTorqueModel());
 
 	for (size_t i = 0; i < nW; i++)
 	{
 		const auto& wheel = veh.getWheelInfo(i);
-		const double cmd = std::isfinite(commands_[i]) ? commands_[i] : 0.0;
+		const double cmd = commands_[i];
+		auto& pid = pids_[i];
+		auto& motor = motors[i];
 
 		double torque = 0;	// positive = forward (joint convention)
-		if (commandMode_ == CommandMode::Effort)
+		if (!std::isfinite(cmd))
+		{
+			// No command: free wheel
+			pid.reset();
+		}
+		else if (commandMode_ == CommandMode::Effort)
 		{
 			torque = cmd;
+			motor.unsaturated = cmd;
 		}
 		else
 		{
@@ -119,7 +129,6 @@ std::vector<double> WheelJointsInterface::computeWheelTorques(const VehicleBase&
 			const double spVel = cmd * R;
 			const double actVel = wheel.getW() * R;
 
-			auto& pid = pids_[i];
 			pid.KP = KP;
 			pid.KI = KI;
 			pid.KD = KD;
@@ -136,8 +145,12 @@ std::vector<double> WheelJointsInterface::computeWheelTorques(const VehicleBase&
 			else
 			{
 				torque = pid.compute(spVel - actVel, dt);
+				// Its reaction to the wheel own spin, d(torque)/d(w):
+				motor.unsaturated = pid.lastUnsaturatedOutput();
+				motor.damping = pid.lastOutputSensitivity() * R;
 			}
 		}
+		motor.limit = max_torque;
 
 		if (max_torque > 0)
 		{

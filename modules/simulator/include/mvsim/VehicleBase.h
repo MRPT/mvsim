@@ -22,11 +22,13 @@
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/Sensors/SensorBase.h>
 #include <mvsim/Simulable.h>
+#include <mvsim/Suspension.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/Wheel.h>
 #include <mvsim/basic_types.h>
 
 #include <atomic>
+#include <map>
 #include <mutex>
 #include <string>
 
@@ -156,6 +158,14 @@ class VehicleBase : public CVisualObject, public Simulable
 			sensor->freeOpenGLResources();
 		}
 	}
+	void removeFromScenes() override
+	{
+		CVisualObject::removeFromScenes();
+		for (auto& sensor : sensors_)
+		{
+			sensor->removeFromScenes();
+		}
+	}
 	void chassisAndWheelsVisible(bool visible);
 
 	double chassisZMin() const { return chassis_z_min_; }
@@ -166,6 +176,13 @@ class VehicleBase : public CVisualObject, public Simulable
 	 *  elevation module. On flat ground this is (0,0,-1). On a slope,
 	 *  the x/y components indicate the gravity slope force direction. */
 	const mrpt::math::TPoint3D& getSlopeDirection() const { return slopeDir_; }
+
+	/** Normal force on each wheel [N] (including the weight of the wheel) in
+	 *  the last simulation step, see computeWheelLoads(). */
+	const std::vector<double>& getWheelLoads() const { return wheelLoads_; }
+
+	/// The friction model of each wheel
+	const std::vector<FrictionBase::Ptr>& getFrictionModels() const { return frictions_; }
 	void setSlopeDirection(const mrpt::math::TPoint3D& d) { slopeDir_ = d; }
 
 	/** Gets the noisy, biased, odometry estimation.
@@ -177,6 +194,14 @@ class VehicleBase : public CVisualObject, public Simulable
 		odometry_ = mrpt::poses::CPose2D();
 		odometry_pre_simul_pose_.reset();
 	}
+
+	/// The chassis suspension model, or nullptr if it is disabled
+	const Suspension* getSuspension() const
+	{
+		return suspension_.initialized() ? &suspension_ : nullptr;
+	}
+
+	std::optional<mrpt::poses::CPose3D> chassisRelativePose() const override;
 
    protected:
 	std::vector<CSVLogger::Ptr> loggers_;
@@ -198,7 +223,35 @@ class VehicleBase : public CVisualObject, public Simulable
 	 * block. */
 	virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node) = 0;
 
+	/** Runs the controller and returns the motor torque for each wheel. It may
+	 *  also fill wheelMotors_. */
 	virtual std::vector<double> invoke_motor_controllers(const TSimulContext& context) = 0;
+
+	/// Alternates the order in which wheel friction is solved, see simul_pre_timestep()
+	bool reverseWheelOrder_ = false;
+
+	std::vector<double> wheelLoads_;  //!< See getWheelLoads()
+
+	/// Low-pass filtered chassis acceleration (vehicle frame) for load transfer
+	mrpt::math::TVector2D accelForLoads_{0, 0};
+
+	/** Normal force on each wheel [N] (including the weight of the wheel),
+	 *  from the force and moment balance of the rigid vehicle: center of mass,
+	 *  slope and (quasi-static) load transfer due to its acceleration. */
+	std::vector<double> computeWheelLoads(const TSimulContext& context);
+
+	Suspension::Config suspensionConfig_;  //!< From the <suspension> XML block
+	Suspension suspension_;
+
+	/// Builds suspension_ from suspensionConfig_, if enabled
+	void initSuspension();
+	/// Advances suspension_ with the motion of the vehicle in the last step
+	void updateSuspension(const TSimulContext& context);
+
+	/** For each wheel, the optional closed-loop motor model reported by the
+	 *  controller in invoke_motor_controllers() (see MotorTorqueModel).
+	 *  Empty means constant torques. */
+	std::vector<MotorTorqueModel> wheelMotors_;
 
 	virtual void invoke_motor_controllers_post_step([[maybe_unused]] const TSimulContext& context)
 	{
@@ -306,6 +359,13 @@ class VehicleBase : public CVisualObject, public Simulable
 	std::vector<mrpt::math::TSegment3D> torqueSegmentsForRendering_;
 	std::mutex forceSegmentsForRenderingMtx_;
 
+	/// Suspension: last pose of the wheels' body, and chassis pose relative to it
+	std::optional<mrpt::math::TPose3D> suspensionPrevBasePose_;
+	std::optional<mrpt::poses::CPose3D> chassisRelPose_;
+	mutable std::mutex chassisRelPoseMtx_;
+	/// Original poses of the custom visual parts linked to wheels
+	std::map<std::string, mrpt::math::TPose3D> linkedObjectsPose0_;
+
 	///  Accumulated noisy odometry.
 	mrpt::poses::CPose2D odometry_;
 	/// Temporary variable to detect pose change.
@@ -330,6 +390,9 @@ class VehicleBase : public CVisualObject, public Simulable
 	static constexpr std::string_view PL_ODO_X = "odo_x";
 	static constexpr std::string_view PL_ODO_Y = "odo_y";
 	static constexpr std::string_view PL_ODO_YAW = "odo_yaw";
+	static constexpr std::string_view PL_SUSP_Z = "susp_z";
+	static constexpr std::string_view PL_SUSP_ROLL = "susp_roll";
+	static constexpr std::string_view PL_SUSP_PITCH = "susp_pitch";
 
 	static constexpr std::string_view WL_TORQUE = "torque";
 	static constexpr std::string_view WL_FORCE_Z = "force_z";

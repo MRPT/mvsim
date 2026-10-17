@@ -128,11 +128,10 @@ differential speeds. Common in mobile robots like TurtleBot.
        <chassis mass="15.0" zmin="0.05" zmax="0.6" />
 
        <controller class="twist_pid">
-           <KP>5</KP>
+           <KP>64</KP>
            <KI>10</KI>
-           <I_MAX>1</I_MAX>
            <KD>0</KD>
-           <max_torque>100</max_torque>
+           <max_torque>14.44</max_torque>
        </controller>
    </dynamics>
 
@@ -184,11 +183,10 @@ steer the vehicle, while rear wheels remain parallel to the chassis axis.
        <chassis mass="800.0" zmin="0.15" zmax="1.00" />
 
        <controller class="twist_front_steer_pid">
-           <KP>1500</KP>
+           <KP>4000</KP>
            <KI>50</KI>
-           <I_MAX>20</I_MAX>
            <KD>0</KD>
-           <max_torque>600</max_torque>
+           <max_torque>400</max_torque>
        </controller>
    </dynamics>
 
@@ -197,6 +195,8 @@ steer the vehicle, while rear wheels remain parallel to the chassis axis.
 * **f_wheels_x** - Distance from rear to front axle (wheelbase) [meters]
 * **f_wheels_d** - Distance between front wheel centers (track width) [meters]
 * **max_steer_ang_deg** - Maximum steering angle for each front wheel [degrees]
+* **max_steer_rate_deg** - Maximum steering rate [degrees/s] of the equivalent steering
+  angle (optional, also for ``ackermann_drivetrain``). Default: 0, instantaneous steering.
 
 **Steering Geometry:**
 
@@ -266,14 +266,11 @@ Torque is split according to the split coefficients:
 
 **Torsen Differential:**
 
-Self-locking behavior based on wheel speed differences. The bias ratio :math:`b`
-(default 1.5) determines locking strength:
-
-.. math::
-
-   \delta_{lock} = \omega_{max} - b \cdot \omega_{min}
-
-Torque distribution changes dynamically to favor the wheel with more traction.
+Torque-sensing differential: both outputs turn together (locked) until the ratio of
+their torques reaches the bias ratio :math:`b` (``xxx_bias``, default 1.5), and then they
+slip. So, when one wheel loses traction (e.g. on ice), the other one can still get up to
+:math:`b` times its torque, instead of the same torque as with an open differential. See
+:ref:`physics` for the equations.
 
 4. Motor Controllers
 ----------------------
@@ -307,10 +304,10 @@ torques to achieve desired twist commands.
 .. code-block:: xml
 
    <controller class="twist_pid">
-       <KP>5</KP>           <!-- Proportional gain -->
+       <KP>64</KP>          <!-- Proportional gain [N.m/(m/s)] -->
        <KI>10</KI>          <!-- Integral gain -->
-       <I_MAX>1</I_MAX>     <!-- Integral windup limit -->
        <KD>0</KD>           <!-- Derivative gain -->
+       <enable_antiwindup>false</enable_antiwindup>  <!-- Optional -->
        <V>0.0</V>           <!-- Initial linear velocity setpoint -->
        <W>0</W>             <!-- Initial angular velocity setpoint -->
        <max_torque>100</max_torque>
@@ -330,10 +327,26 @@ Desired wheel velocities are computed from commanded twist :math:`(\nu, \omega)`
 
 where :math:`w` is the lateral distance between wheels.
 
+**Stopping:** with a zero setpoint, the controller brakes with its proportional action
+only (the integral term is reset), so the vehicle comes to a full stop without coasting
+or rebounding.
+
+**Skid-steer robots** (``differential_4_wheels``) turn slower than their wheel speeds imply,
+since their wheels must slide sideways to turn (e.g. ~60% of the commanded rate for the
+Jackal, spinning in place). As in ROS ``diff_drive_controller``, the optional
+``<wheel_separation_multiplier>`` (default 1) multiplies the wheel separation used to
+compute the wheel speed setpoints to compensate it.
+
+**Tuning:** keep ``max_torque`` below the traction limit of the driven wheels
+(:math:`\mu \, N \, R`, with :math:`N` the wheel load), except for skid-steer vehicles,
+which need wheel slip to turn. The gains of the predefined vehicle classes were tuned with
+:ref:`mvsim-pid-tuner` for fast, overshoot-free tracking with time steps from 1 to 5 ms, and
+on low-friction ground.
+
 **For Ackermann:**
 
-Steering angle is computed from turn radius, and PID controls wheel torques
-to achieve desired speed while accounting for different wheel speeds in turns.
+Steering angle is computed from turn radius, and PID controls the front (driven) wheel
+torques to achieve the desired speed of each wheel, measured from its own spin.
 
 Ideal Controllers
 ~~~~~~~~~~~~~~~~~
@@ -342,6 +355,9 @@ Ideal Controllers
 
 Perfect velocity control without dynamics. Instantly achieves commanded velocities.
 Useful for testing high-level algorithms without worrying about low-level control.
+Available for ``differential`` and ``ackermann`` vehicles. Note that it imposes the
+twist at the vehicle frame origin, even if it is not kinematically feasible (e.g. an
+Ackermann vehicle whose origin is not on the rear axle).
 
 .. code-block:: xml
 
@@ -534,6 +550,7 @@ slip ratio effects, suitable for vehicle dynamics research.
    </friction>
 
 **Slip Angle** :math:`\alpha` - Angle between wheel heading and velocity direction
+(computed in the wheel frame)
 
 **Slip Ratio** :math:`s`:
 
@@ -613,8 +630,9 @@ Generic car-like vehicle with Ackermann steering.
 * Mass: 800.0 kg
 * Wheel diameter: 0.62 m
 * Wheelbase: 1.3 m, Track width: 2.0 m
-* Max steering: ±30°
-* Drivetrain: Torsen 4WD
+* Max steering: ±30°, at up to 60°/s
+* Front-wheel drive (its ``<drivetrain>`` block, Torsen 4WD, only applies if the dynamics
+  class is changed to ``ackermann_drivetrain``)
 * Controller: ``twist_front_steer_pid`` by default; select another one (e.g.
   ``twist_ideal``) with the ``controller`` include variable:
   ``<include file="ackermann.vehicle.xml" controller="twist_ideal" />``
@@ -632,7 +650,7 @@ Large Ackermann vehicle representing a pickup truck.
 * Mass: 2000.0 kg
 * Wheel diameter: 0.8 m
 * Wheelbase: 3.5 m
-* Max steering: ±40°
+* Max steering: ±40°, at up to 45°/s
 
 AgriCobiot2
 ~~~~~~~~~~~
@@ -647,6 +665,7 @@ Agricultural robot with custom 3D model and Ackermann drivetrain.
 * Mass: 97.0 kg
 * Wheel diameter: 0.406 m
 * Wheelbase: 0.62 m
+* Max steering: ±35°, at up to 90°/s
 * Open rear-wheel drive
 
 7. Creating Custom Vehicles
@@ -679,7 +698,6 @@ Create a new XML file in the ``definitions/`` directory:
            <controller class="twist_pid">
                <KP>10</KP>
                <KI>5</KI>
-               <I_MAX>2</I_MAX>
                <max_torque>50</max_torque>
            </controller>
        </dynamics>
@@ -777,6 +795,94 @@ Add multiple 3D models to a vehicle:
        <model_offset_z>0.5</model_offset_z>
    </visual>
 
+.. _vehicles-suspension:
+
+Chassis Suspension
+~~~~~~~~~~~~~~~~~~
+
+Vehicles can optionally simulate a suspension: a spring and a damper at each wheel,
+between the chassis and the wheels. The chassis then pitches when accelerating and
+braking, rolls in turns and bounces over bumps, and so do the sensors and visual models
+mounted on it, while the wheels stay on the ground. The suspension also sets the wheel
+loads (dynamic load transfer). It is disabled by default. See
+:ref:`the physics model <physics-suspension>`.
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_suspension.mp4" type="video/mp4">
+     </video>
+   </div>
+
+.. code-block:: xml
+
+   <vehicle:class name="my_car">
+       <dynamics class="ackermann"> ... </dynamics>
+
+       <suspension enabled="true">
+           <frequency_hz>1.3</frequency_hz>     <!-- Heave natural frequency -->
+           <damping_ratio>0.3</damping_ratio>
+           <!-- Optional: -->
+           <wheel index="0" stiffness="35000" damping="2500" />  <!-- per-wheel override -->
+           <I_xx>450</I_xx>  <I_yy>1800</I_yy>  <!-- chassis inertia about its COM [kg.m^2] -->
+           <cog_height>0.55</cog_height>         <!-- chassis COM height [m] -->
+       </suspension>
+   </vehicle:class>
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 18 60
+
+   * - Parameter
+     - Default
+     - Description
+   * - ``enabled`` (attribute)
+     - false
+     - Enables the suspension.
+   * - ``frequency_hz``
+     - 1.5
+     - Heave natural frequency [Hz]. Each wheel gets the spring stiffness
+       :math:`k_i = m_i (2 \pi f)^2` for its share :math:`m_i` of the static chassis weight.
+       Typical values: 1-1.5 Hz (cars), 1.5-2.5 Hz (trucks, sports cars).
+   * - ``damping_ratio``
+     - 0.3
+     - Damping ratio of the heave motion: :math:`c_i = 2 \zeta (2 \pi f) m_i`.
+   * - ``<wheel index="i" stiffness="k" damping="c"/>``
+     - (from above)
+     - Spring stiffness [N/m] and damping [N.s/m] of wheel ``i`` (in the order of the
+       dynamics class, e.g. 0=rear left for Ackermann vehicles).
+   * - ``I_xx``, ``I_yy``
+     - box
+     - Chassis inertia about its center of mass, around the longitudinal and lateral axes
+       [kg.m^2]. Default: that of a box with the chassis footprint and height.
+   * - ``cog_height``
+     - (zmin+zmax)/2
+     - Height of the chassis center of mass over the ground [m].
+
+When the vehicle is loaded, the vibration modes of the chassis are logged, e.g.
+``Suspension modes: roll 0.96 Hz (zeta=0.24), pitch 1.24 Hz (zeta=0.28), heave 1.40 Hz
+(zeta=0.30)``. Vehicles with a narrow track and a high center of mass need stiff springs:
+if they are too soft, the chassis would tip over, which is reported as an error.
+
+The predefined Ackermann car, pickup and Scania truck have a suspension block, disabled
+unless the variable ``suspension`` is set to ``true`` where they are included:
+
+.. code-block:: xml
+
+   <include file="../definitions/pickup.vehicle.xml" suspension="true" />
+
+Notes:
+
+* The vehicle pose (e.g. ``base_link`` in ROS) is that of the body with the wheels, so the
+  chassis motion appears in the sensor data, while the sensor poses on the vehicle stay
+  constant, as in a real vehicle. Use ``Simulable::getChassisPose()`` for the chassis
+  pose. IMUs measure the chassis roll and pitch rates and accelerations.
+* Custom visual models are mounted on the chassis. If a model includes the wheels in the
+  same mesh, they will move with the chassis: define the wheels as separate visual models
+  instead (as in the Scania truck).
+* Not supported for vehicles that cannot stand on their wheels alone, e.g. semi-trailers.
+
 9. Debugging and Logging
 -------------------------
 
@@ -788,7 +894,8 @@ Enable vehicle logging for debugging:
 
 This creates CSV files:
 
-* ``mvsim_<name>_pose.csv`` - Vehicle pose and velocity over time
+* ``mvsim_<name>_pose.csv`` - Vehicle pose and velocity over time (and the chassis
+  suspension displacement ``susp_z``, ``susp_roll``, ``susp_pitch``, if enabled)
 * ``mvsim_<name>_wheel_<N>.csv`` - Per-wheel forces, torques, and velocities
 
 10. ROS 2 Topics
@@ -832,6 +939,7 @@ Published when ``do_fake_localization`` parameter is enabled:
 
 * ``<VEH>/amcl_pose`` (geometry_msgs/PoseWithCovarianceStamped) - Fake AMCL localization output
 * ``<VEH>/particlecloud`` (geometry_msgs/PoseArray) - Single-particle fake particle filter
+* TF ``map`` → ``odom``, such that ``map`` → ``base_link`` is the ground truth pose (even with noisy odometry, or a vehicle not starting at the origin)
 
 Sensor Topics
 ~~~~~~~~~~~~~
