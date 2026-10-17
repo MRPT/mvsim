@@ -65,12 +65,12 @@ Motion controllers
 Each dynamics class has one or more controllers. The available controller
 ``class`` names are:
 
--  ``raw`` — control raw wheel torques directly (available for all dynamics)
--  ``twist_pid`` — [differential only] control with ``(v, omega)`` twist messages via PID
--  ``twist_ideal`` — [differential only] ideal twist tracking (no PID, instantaneous)
--  ``twist_front_steer_pid`` — [Ackermann / Ackermann-drivetrain] control with
-   ``(v, steer_angle)`` via PID
--  ``front_steer_pid`` — [Ackermann / Ackermann-drivetrain] control with PID for
+-  ``raw`` - control raw wheel torques directly (available for all dynamics)
+-  ``twist_pid`` - [differential only] control with ``(v, omega)`` twist messages via PID
+-  ``twist_ideal`` - [differential / Ackermann] ideal twist tracking (no PID, instantaneous)
+-  ``twist_front_steer_pid`` - [Ackermann / Ackermann-drivetrain] control with
+   ``(v, omega)`` twist messages via PID
+-  ``front_steer_pid`` - [Ackermann / Ackermann-drivetrain] control with PID for
    velocity and raw steering angles
 
 Controllers with *pid* in their names use a PID regulator that needs to

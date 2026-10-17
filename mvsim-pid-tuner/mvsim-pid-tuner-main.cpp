@@ -6,704 +6,606 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-// mvsim-pid-tuner: Automatic PID parameter tuning tool for MVSim vehicles.
+// mvsim-pid-tuner: tunes the twist PID controller of a vehicle definition.
 //
-// Given a vehicle definition XML file, this tool:
-// 1. Runs open-loop step response tests (linear and rotational)
-// 2. Identifies the first-order plant models: G(s) = K / (τs + 1)
-// 3. Proposes optimal PID parameters using IMC (Internal Model Control) tuning
-// 4. Validates the proposed parameters with closed-loop simulations
+// Each candidate set of gains drives the vehicle (in an empty world) through
+// twist command profiles (stop-and-go, S-curve, forward/backward, and spinning
+// in place for differential robots), at the requested time steps and also on a
+// low-friction ground. The cost is the velocity tracking error (integral of
+// the absolute error of the actual chassis velocity), penalizing overshoot,
+// vehicles that do not stop, and instability. The best gains of a coarse grid
+// are then refined around.
 
 #include <mrpt/core/exceptions.h>
-#include <mrpt/math/TPose3D.h>
 #include <mrpt/math/TTwist2D.h>
-#include <mvsim/CsvLogger.h>
+#include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
+#include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 
 #include <CLI/CLI.hpp>
 #include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <cstdio>
+#include <limits>
+#include <mutex>
+#include <optional>
+#include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
-// ========================================================
-// Data structures for step response recording
-// ========================================================
-struct TimeVelSample
+namespace
 {
-	double time = 0;
-	double value = 0;  // velocity (m/s) or angular velocity (rad/s)
-};
-
-struct PlantModel
-{
-	double K = 0;  // steady-state gain
-	double tau = 0;	 // time constant (s)
-	double v_ss = 0;  // steady-state value
-	double torque_applied = 0;	// torque used for identification
-};
-
-struct PIDParams
+struct Gains
 {
 	double KP = 0;
 	double KI = 0;
-	double KD = 0;
 	double max_torque = 0;
+	double separation_multiplier = 1.0;	 // skid-steer robots only
 };
 
-// ========================================================
-// Helper: create world + vehicle
-// ========================================================
-static std::pair<std::shared_ptr<mvsim::World>, std::shared_ptr<mvsim::VehicleBase>>
-	create_world_and_vehicle(
-		const std::string& vehicle_xml_path, const std::string& vehicle_class, double sim_step)
+struct Segment
+{
+	double duration;
+	double vx;
+	double w;
+};
+
+struct Profile
+{
+	std::string name;
+	std::vector<Segment> segments;
+};
+
+struct Condition
+{
+	double dt;
+	std::optional<double> mu;  // ground friction override
+};
+
+struct RunResult
+{
+	double iaeVx = 0;  // integral of |vx - vx_cmd|
+	double iaeW = 0;  // integral of |w - w_cmd|
+	double overshoot = 0;  // max relative overshoot in the vx steps
+	double endSpeed = 0;  // |v| + |w|*halfLength at the end (stopped?)
+	bool valid = true;	// false on NaN or exceptions
+};
+
+struct Evaluation
+{
+	Gains gains;
+	double cost = std::numeric_limits<double>::infinity();
+	double trackingCost = 0;
+	double worstOvershoot = 0;
+	double worstEndSpeed = 0;
+};
+
+struct VehicleInfo
+{
+	std::string dynClass;  // "differential", "ackermann" or "ackermann_drivetrain"
+	size_t numWheels = 0;
+	double halfLength = 0;	// half track (differential) or wheelbase (Ackermann) [m]
+	double minTurnRadius = 0;  // Ackermann only [m]
+	double xmlKP = 0;
+	double xmlKI = 0;
+	double xmlMaxTorque = 0;
+	double xmlSeparationMultiplier = 1.0;
+	bool xmlHasTwistPid = false;
+	double kpEstimate = 0;	// [N.m/(m/s)]
+	double tractionTorque = 0;	// per driven wheel [N.m]
+};
+
+// World loading touches shared caches: done one at a time.
+std::mutex worldLoadMtx;
+
+std::string worldXml(
+	const std::string& vehicleXmlFile, const std::string& vehicleClass, double dt,
+	const std::optional<double>& mu)
+{
+	std::ostringstream ss;
+	ss << "<mvsim_world version=\"1.0\">\n"
+	   << "<simul_timestep>" << dt << "</simul_timestep>\n"
+	   << "<include file=\"" << vehicleXmlFile
+	   << "\" default_sensors=\"false\" headlights=\"false\" />\n";
+	if (mu)
+	{
+		ss << "<element class=\"property_region\">"
+		   << "<property_name>friction_mu</property_name>"
+		   << "<value_double>" << *mu << "</value_double>"
+		   << "<x_min>-1e4</x_min><y_min>-1e4</y_min><z_min>-1e4</z_min>"
+		   << "<x_max>1e4</x_max><y_max>1e4</y_max><z_max>1e4</z_max>"
+		   << "</element>\n";
+	}
+	ss << "<vehicle name=\"veh\" class=\"" << vehicleClass
+	   << "\"><init_pose>0 0 0</init_pose></vehicle>\n"
+	   << "</mvsim_world>\n";
+	return ss.str();
+}
+
+std::shared_ptr<mvsim::World> loadWorld(
+	const std::string& vehicleXmlFile, const std::string& vehicleClass, double dt,
+	const std::optional<double>& mu)
 {
 	auto world = std::make_shared<mvsim::World>();
 	world->headless(true);
-	world->set_gravity(9.81);
-	world->set_simul_timestep(sim_step);
-
-	{
-		std::string world_xml =
-			"<mvsim_world version=\"1.0\">"
-			"  <include file=\"" +
-			vehicle_xml_path +
-			"\" default_sensors=\"false\" />"
-			"</mvsim_world>";
-		world->load_from_XML(world_xml, vehicle_xml_path);
-	}
-
-	std::string veh_xml = "<vehicle name=\"tuner_veh\" class=\"" + vehicle_class +
-						  "\">"
-						  "  <init_pose>0 0 0</init_pose>"
-						  "</vehicle>";
-
-	auto veh = mvsim::VehicleBase::factory(world.get(), veh_xml);
-	return {world, veh};
+	world->setMinLoggingLevel(mrpt::system::LVL_ERROR);
+	std::lock_guard<std::mutex> lck(worldLoadMtx);
+	world->load_from_XML(worldXml(vehicleXmlFile, vehicleClass, dt, mu), vehicleXmlFile);
+	return world;
 }
 
-// ========================================================
-// Helper: compute vehicle params
-// ========================================================
-struct VehicleParams
+mvsim::VehicleBase::Ptr theVehicle(mvsim::World& world)
 {
-	double total_mass = 0;
-	double partial_mass = 0;
-	double R = 0;  // wheel radius
-	double max_friction_torque = 0;
-	double distWheels = 0;	// distance between left and right wheels
-	size_t nWheels = 0;
-};
-
-static VehicleParams get_vehicle_params(const mvsim::VehicleBase& veh)
-{
-	VehicleParams p;
-	p.nWheels = veh.getNumWheels();
-	p.total_mass = veh.getChassisMass();
-	for (size_t i = 0; i < p.nWheels; i++) p.total_mass += veh.getWheelInfo(i).mass;
-
-	p.partial_mass = p.total_mass / static_cast<double>(p.nWheels);
-	p.R = veh.getWheelInfo(0).diameter * 0.5;
-
-	const double mu = 0.8;
-	p.max_friction_torque = mu * p.partial_mass * 9.81 * p.R;
-
-	// Wheel track (for differential drive)
-	if (p.nWheels >= 2) p.distWheels = std::abs(veh.getWheelInfo(0).y - veh.getWheelInfo(1).y);
-
-	return p;
+	auto& vehs = world.getListOfVehicles();
+	ASSERT_(!vehs.empty());
+	return vehs.begin()->second;
 }
 
-// ========================================================
-// Plant identification from samples
-// ========================================================
-static PlantModel identify_plant(
-	const std::vector<TimeVelSample>& samples, double test_input, double sim_duration,
-	double sim_step, const char* label)
+// Installs (if needed) the twist PID controller and sets its gains (if g is
+// given). Fills info with the controller defined in the XML (if given).
+template <class VEH, class CTRL>
+bool setupPid(mvsim::VehicleBase& v, const Gains* g, VehicleInfo* info)
 {
-	PlantModel plant;
-	plant.torque_applied = test_input;
-
-	if (samples.size() < 10)
+	auto* veh = dynamic_cast<VEH*>(&v);
+	if (!veh)
 	{
-		std::fprintf(
-			stderr, "Error: Too few samples recorded (%zu) for %s\n", samples.size(), label);
-		return plant;
+		return false;
 	}
-
-	// Steady-state value (average of last 20%)
-	const size_t ss_start = samples.size() * 80 / 100;
-	double ss_sum = 0;
-	for (size_t i = ss_start; i < samples.size(); i++) ss_sum += samples[i].value;
-
-	plant.v_ss = ss_sum / static_cast<double>(samples.size() - ss_start);
-	plant.K = plant.v_ss / test_input;
-
-	// Time constant τ: time to reach 63.2% of v_ss
-	const double v_63 = plant.v_ss * 0.632;
-	plant.tau = sim_duration;  // fallback
-	for (const auto& s : samples)
+	auto ctrl = std::dynamic_pointer_cast<CTRL>(veh->getController());
+	if (info)
 	{
-		if (s.value >= v_63)
+		info->xmlHasTwistPid = static_cast<bool>(ctrl);
+		if (ctrl)
 		{
-			plant.tau = s.time;
-			break;
+			info->xmlKP = ctrl->KP;
+			info->xmlKI = ctrl->KI;
+			info->xmlMaxTorque = ctrl->max_torque;
 		}
 	}
-
-	// Sanity check: if tau is very small, use 95% method
-	if (plant.tau < 2 * sim_step)
+	if (!g)
 	{
-		const double v_95 = plant.v_ss * 0.95;
-		for (const auto& s : samples)
+		return true;
+	}
+	if (!ctrl)
+	{
+		ctrl = std::make_shared<CTRL>(*veh);
+		veh->getController() = ctrl;
+	}
+	ctrl->KP = g->KP;
+	ctrl->KI = g->KI;
+	ctrl->KD = 0;
+	ctrl->max_torque = g->max_torque;
+	return true;
+}
+
+bool setupController(mvsim::VehicleBase& v, const Gains* g, VehicleInfo* info)
+{
+	using namespace mvsim;
+	if (setupPid<DynamicsDifferential, DynamicsDifferential::ControllerTwistPID>(v, g, info))
+	{
+		auto& veh = dynamic_cast<DynamicsDifferential&>(v);
+		auto ctrl = std::dynamic_pointer_cast<DynamicsDifferential::ControllerTwistPID>(
+			veh.getController());
+		if (info && ctrl)
 		{
-			if (s.value >= v_95)
+			info->xmlSeparationMultiplier = ctrl->wheel_separation_multiplier;
+		}
+		if (g && ctrl)
+		{
+			ctrl->wheel_separation_multiplier = g->separation_multiplier;
+		}
+		return true;
+	}
+	return setupPid<DynamicsAckermann, DynamicsAckermann::ControllerTwistFrontSteerPID>(
+			   v, g, info) ||
+		   setupPid<
+			   DynamicsAckermannDrivetrain,
+			   DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID>(v, g, info);
+}
+
+RunResult runProfile(
+	const std::string& vehicleXmlFile, const std::string& vehicleClass, const Gains& g,
+	const Profile& profile, const Condition& cond, double halfLength)
+{
+	RunResult res;
+	try
+	{
+		auto world = loadWorld(vehicleXmlFile, vehicleClass, cond.dt, cond.mu);
+		auto veh = theVehicle(*world);
+		setupController(*veh, &g, nullptr);
+		auto* ctrl = veh->getControllerInterface();
+
+		for (const auto& s : profile.segments)
+		{
+			ctrl->setTwistCommand(mrpt::math::TTwist2D(s.vx, 0, s.w));
+			const double step = s.vx - veh->getRefVelocityLocal().vx;
+			const int n = static_cast<int>(std::round(s.duration / cond.dt));
+			for (int k = 0; k < n; k++)
 			{
-				plant.tau = -s.time / std::log(0.05);
-				break;
+				world->run_simulation(cond.dt);
+				const auto vel = veh->getRefVelocityLocal();
+				if (!std::isfinite(vel.vx) || !std::isfinite(vel.omega))
+				{
+					res.valid = false;
+					return res;
+				}
+				res.iaeVx += std::abs(vel.vx - s.vx) * cond.dt;
+				res.iaeW += std::abs(vel.omega - s.w) * cond.dt;
+				if (std::abs(step) > 0.05)
+				{
+					res.overshoot = std::max(res.overshoot, (vel.vx - s.vx) / step);
+				}
 			}
 		}
+		const auto vel = veh->getRefVelocityLocal();
+		res.endSpeed = std::hypot(vel.vx, vel.vy) + std::abs(vel.omega) * halfLength;
 	}
-
-	return plant;
+	catch (const std::exception&)
+	{
+		res.valid = false;
+	}
+	return res;
 }
 
-// ========================================================
-// Run open-loop step response with "raw" controller
-// ========================================================
-static PlantModel run_open_loop_step(
-	const std::string& vehicle_xml_path, const std::string& vehicle_class, double test_torque,
-	double sim_duration, double sim_step, bool rotation_mode)
+Evaluation evaluate(
+	const std::string& xmlFile, const std::string& cls, const Gains& g,
+	const std::vector<Profile>& profiles, const std::vector<Condition>& conditions,
+	double halfLength)
 {
-	auto [world, veh] = create_world_and_vehicle(vehicle_xml_path, vehicle_class, sim_step);
-
-	// Replace the controller with "raw" for open-loop torque control
-	if (auto* diffVeh = dynamic_cast<mvsim::DynamicsDifferential*>(veh.get()))
+	Evaluation ev;
+	ev.gains = g;
+	for (const auto& cond : conditions)
 	{
-		diffVeh->getController() =
-			std::make_shared<mvsim::DynamicsDifferential::ControllerRawForces>(*diffVeh);
+		for (const auto& p : profiles)
+		{
+			const auto r = runProfile(xmlFile, cls, g, p, cond, halfLength);
+			if (!r.valid)
+			{
+				return ev;	// infinite cost
+			}
+			ev.trackingCost += r.iaeVx + halfLength * r.iaeW;
+			ev.worstOvershoot = std::max(ev.worstOvershoot, r.overshoot);
+			ev.worstEndSpeed = std::max(ev.worstEndSpeed, r.endSpeed);
+		}
 	}
-	else if (auto* ackVeh = dynamic_cast<mvsim::DynamicsAckermann*>(veh.get()))
+	// Penalties: overshoot above 5%, and not coming to a full stop
+	ev.cost = ev.trackingCost * (1.0 + 10.0 * std::max(0.0, ev.worstOvershoot - 0.05));
+	if (ev.worstEndSpeed > 1e-3)
 	{
-		ackVeh->getController() =
-			std::make_shared<mvsim::DynamicsAckermann::ControllerRawForces>(*ackVeh);
+		ev.cost += 1e3;
+	}
+	return ev;
+}
+
+std::vector<Evaluation> evaluateAll(
+	const std::vector<Gains>& candidates, const std::string& xmlFile, const std::string& cls,
+	const std::vector<Profile>& profiles, const std::vector<Condition>& conditions,
+	double halfLength, unsigned numThreads)
+{
+	std::vector<Evaluation> results(candidates.size());
+	std::atomic<size_t> next{0};
+	std::atomic<size_t> done{0};
+	std::mutex printMtx;
+	const auto worker = [&]()
+	{
+		for (size_t i = next++; i < candidates.size(); i = next++)
+		{
+			results[i] = evaluate(xmlFile, cls, candidates[i], profiles, conditions, halfLength);
+			std::lock_guard<std::mutex> lck(printMtx);
+			std::printf("\r  Evaluated %zu/%zu", ++done, candidates.size());
+			std::fflush(stdout);
+		}
+	};
+	std::vector<std::thread> threads;
+	for (unsigned t = 0; t < std::max(1u, numThreads); t++)
+	{
+		threads.emplace_back(worker);
+	}
+	for (auto& t : threads)
+	{
+		t.join();
+	}
+	std::printf("\n");
+	std::sort(
+		results.begin(), results.end(),
+		[](const Evaluation& a, const Evaluation& b) { return a.cost < b.cost; });
+	return results;
+}
+
+VehicleInfo inspectVehicle(const std::string& xmlFile, const std::string& cls, double dt)
+{
+	VehicleInfo info;
+	auto world = loadWorld(xmlFile, cls, dt, std::nullopt);
+	auto veh = theVehicle(*world);
+	if (!setupController(*veh, nullptr, &info))
+	{
+		THROW_EXCEPTION(
+			"Unsupported vehicle dynamics: differential, ackermann and "
+			"ackermann_drivetrain are supported.");
+	}
+	info.numWheels = veh->getNumWheels();
+	world->run_simulation(dt);	// computes the wheel loads
+
+	std::vector<size_t> driven;
+	if (dynamic_cast<mvsim::DynamicsDifferential*>(veh.get()))
+	{
+		info.dynClass = "differential";
+		info.halfLength = 0.5 * std::abs(veh->getWheelInfo(0).y - veh->getWheelInfo(1).y);
+		driven = {0, 1};
+		if (info.numWheels == 4)
+		{
+			driven = {0, 1, 2, 3};
+		}
 	}
 	else
 	{
-		THROW_EXCEPTION("Unsupported vehicle dynamics type for PID tuning.");
-	}
-
-	world->insert_vehicle(veh);
-
-	auto params = get_vehicle_params(*veh);
-
-	if (!rotation_mode)
-	{
-		// Print vehicle info (only once, during linear test)
-		std::printf("Vehicle: %s (%zu wheels)\n", vehicle_class.c_str(), params.nWheels);
-		for (size_t i = 0; i < params.nWheels; i++)
+		double maxSteer = 0;
+		if (auto* a = dynamic_cast<mvsim::DynamicsAckermann*>(veh.get()); a)
 		{
-			const auto& w = veh->getWheelInfo(i);
-			std::printf(
-				"  Wheel %zu: pos=(%.3f, %.3f) R=%.3f mass=%.2f\n", i, w.x, w.y, w.diameter * 0.5,
-				w.mass);
+			info.dynClass = "ackermann";
+			maxSteer = a->getMaxSteeringAngle();
+			driven = {2, 3};  // front wheels
 		}
-		std::printf("  Chassis mass: %.1f kg\n", veh->getChassisMass());
-		std::printf("  Wheel track: %.3f m\n", params.distWheels);
-		std::printf(
-			"  Estimated max friction torque per wheel: %.2f Nm "
-			"(mu=0.8, partial_mass=%.1f kg, R=%.3f m)\n",
-			params.max_friction_torque, params.partial_mass, params.R);
+		else
+		{
+			auto& b = dynamic_cast<mvsim::DynamicsAckermannDrivetrain&>(*veh);
+			info.dynClass = "ackermann_drivetrain";
+			maxSteer = b.getMaxSteeringAngle();
+			driven = {0, 1, 2, 3};
+		}
+		const double L = veh->getWheelInfo(2).x - veh->getWheelInfo(0).x;
+		info.halfLength = 0.5 * L;
+		info.minTurnRadius = L / std::tan(std::max(1e-3, maxSteer));
 	}
 
-	// Choose test torque
-	if (test_torque <= 0) test_torque = params.max_friction_torque * 0.5;
+	// Traction limit of the driven wheels, and a first estimate of KP (a
+	// closed-loop time constant of ~0.1 s for the vehicle mass share of each
+	// driven wheel):
+	const auto& loads = veh->getWheelLoads();
+	double minTraction = std::numeric_limits<double>::infinity();
+	for (const size_t i : driven)
+	{
+		const double mu = veh->getFrictionModels().at(i)->peakFrictionCoefficient();
+		if (loads.at(i) > 0)
+		{
+			minTraction =
+				std::min(minTraction, mu * loads.at(i) * 0.5 * veh->getWheelInfo(i).diameter);
+		}
+	}
+	info.tractionTorque = minTraction;
+	const double mass = veh->getBox2DChassisBody()->GetMass();
+	const double R = 0.5 * veh->getWheelInfo(driven.front()).diameter;
+	info.kpEstimate = R * mass / static_cast<double>(driven.size()) / 0.1;
+	return info;
+}
 
+std::vector<Profile> makeProfiles(const VehicleInfo& info, double v, double radius, double spinRate)
+{
+	const double w = v / radius;
+	const double tq = 0.25 * 2 * M_PI / w;	// quarter of a turn
+	std::vector<Profile> profiles = {
+		{"stop_go",
+		 {{3.0, v, 0}, {2.0, 0, 0}, {3.0, v, 0}, {2.0, 0, 0}, {3.0, -v, 0}, {3.0, 0, 0}}},
+		{"s_curve",
+		 {{2.0, v, 0}, {tq, v, w}, {2 * tq, v, -w}, {tq, v, w}, {2.0, v, 0}, {3.0, 0, 0}}},
+		{"fwd_back", {{4.0, v, 0}, {4.0, -v, 0}, {3.0, 0, 0}}}};
+	if (info.dynClass == "differential")
+	{
+		profiles.push_back({"spin", {{2 * M_PI / spinRate, 0, spinRate}, {3.0, 0, 0}}});
+	}
+	return profiles;
+}
+
+void printEvaluation(const char* label, const Evaluation& e, bool skidSteer)
+{
 	std::printf(
-		"  Test torque: %.2f Nm (%s)\n\n", test_torque, rotation_mode ? "rotation" : "linear");
-
-	// Setup data recording
-	std::vector<TimeVelSample> samples;
-	double current_avg_vel = 0;
-	int wheel_count = 0;
-
-	for (auto& logger : veh->getLoggers())
+		"  %-9s KP=%-9.4g KI=%-9.4g max_torque=%-8.4g", label, e.gains.KP, e.gains.KI,
+		e.gains.max_torque);
+	if (skidSteer)
 	{
-		if (!logger) continue;
-		logger->setRecording(true);
-		logger->setFileWritingEnabled(false);
-		logger->registerOnRowCallback(
-			[&current_avg_vel, &wheel_count](const std::map<std::string_view, double>& cols)
-			{
-				auto it = cols.find(mvsim::VehicleBase::WL_VEL_X);
-				if (it != cols.end())
-				{
-					current_avg_vel += it->second;
-					wheel_count++;
-				}
-			});
+		std::printf(" sep_mult=%-5.3g", e.gains.separation_multiplier);
 	}
-
-	const int steps = static_cast<int>(sim_duration / sim_step);
-
-	for (int i = 0; i < steps; i++)
+	if (!std::isfinite(e.cost))
 	{
-		// For linear: both wheels get same torque (forward)
-		// For rotation: opposite torques (spin in place)
-		if (auto* diffVeh = dynamic_cast<mvsim::DynamicsDifferential*>(veh.get()))
-		{
-			auto* rawCtrl = dynamic_cast<mvsim::DynamicsDifferential::ControllerRawForces*>(
-				diffVeh->getController().get());
-			if (rawCtrl)
-			{
-				if (rotation_mode)
-				{
-					// Opposite torques: L forward, R backward → positive omega
-					rawCtrl->setpoint_wheel_torque_l = -test_torque;
-					rawCtrl->setpoint_wheel_torque_r = test_torque;
-				}
-				else
-				{
-					rawCtrl->setpoint_wheel_torque_l = -test_torque;
-					rawCtrl->setpoint_wheel_torque_r = -test_torque;
-				}
-			}
-		}
-		else if (auto* ackVeh = dynamic_cast<mvsim::DynamicsAckermann*>(veh.get()))
-		{
-			auto* rawCtrl = dynamic_cast<mvsim::DynamicsAckermann::ControllerRawForces*>(
-				ackVeh->getController().get());
-			if (rawCtrl)
-			{
-				if (rotation_mode)
-				{
-					rawCtrl->setpoint_wheel_torque_l = -test_torque;
-					rawCtrl->setpoint_wheel_torque_r = test_torque;
-				}
-				else
-				{
-					rawCtrl->setpoint_wheel_torque_l = -test_torque;
-					rawCtrl->setpoint_wheel_torque_r = -test_torque;
-				}
-				rawCtrl->setpoint_steer_ang = 0;
-			}
-		}
-
-		current_avg_vel = 0;
-		wheel_count = 0;
-
-		world->run_simulation(sim_step);
-
-		if (wheel_count > 0)
-		{
-			if (rotation_mode)
-			{
-				// For rotation, measure the difference in wheel velocities
-				// The callback accumulates all wheel vels. For differential with 2 wheels:
-				// omega = (v_R - v_L) / distWheels
-				// But we measure via odometry estimate instead for robustness
-				// Actually, let's use the per-wheel approach:
-				// With opposite torques, L goes forward (+vel_x) and R goes backward (-vel_x)
-				// avg_vel_x will be ~0, but we want the differential.
-				// Better: read omega from the vehicle's velocity estimate.
-			}
-			else
-			{
-				samples.push_back({i * sim_step, current_avg_vel / wheel_count});
-			}
-		}
-
-		if (rotation_mode)
-		{
-			// Use vehicle's odometry estimate for angular velocity
-			mrpt::math::TTwist2D vel;
-			if (auto* diffVeh = dynamic_cast<mvsim::DynamicsDifferential*>(veh.get()))
-				vel = diffVeh->getVelocityLocalOdoEstimate();
-			else if (auto* ackVeh = dynamic_cast<mvsim::DynamicsAckermann*>(veh.get()))
-				vel = ackVeh->getVelocityLocalOdoEstimate();
-
-			samples.push_back({i * sim_step, std::abs(vel.omega)});
-		}
+		std::printf(" | UNSTABLE\n");
+		return;
 	}
-
-	const char* label = rotation_mode ? "rotation" : "linear";
-	PlantModel plant = identify_plant(samples, test_torque, sim_duration, sim_step, label);
-
-	std::printf("=== Open-Loop Step Response Analysis (%s) ===\n", label);
-	std::printf("Applied torque:        %.3f Nm\n", test_torque);
-	if (rotation_mode)
-	{
-		std::printf("Steady-state omega:    %.4f rad/s\n", plant.v_ss);
-		std::printf("Plant gain K:          %.4f (rad/s)/Nm\n", plant.K);
-	}
-	else
-	{
-		std::printf("Steady-state velocity: %.4f m/s\n", plant.v_ss);
-		std::printf("Plant gain K:          %.4f (m/s)/Nm\n", plant.K);
-	}
-	std::printf("Time constant tau:     %.4f s\n", plant.tau);
-
-	return plant;
+	std::printf(
+		" | cost=%-8.4g tracking=%-8.4g overshoot=%4.1f%%%s\n", e.cost, e.trackingCost,
+		100 * e.worstOvershoot, e.worstEndSpeed > 1e-3 ? " DOES NOT STOP" : "");
 }
 
-// ========================================================
-// Compute PID parameters using IMC tuning
-// ========================================================
-static PIDParams compute_pid_imc(
-	const PlantModel& plant, double max_friction_torque, double aggressiveness)
+std::vector<double> parseList(const std::string& s)
 {
-	PIDParams pid;
-
-	// IMC tuning for first-order plant G(s) = K / (τs + 1):
-	//   Desired closed-loop time constant: τ_cl = τ * aggressiveness
-	//   PI controller:
-	//     KP = τ / (K * τ_cl)
-	//     KI = KP / τ = 1 / (K * τ_cl)
-	//     KD = 0
-
-	const double tau_cl = plant.tau * aggressiveness;
-
-	pid.KP = plant.tau / (plant.K * tau_cl);
-	pid.KI = pid.KP / plant.tau;
-	pid.KD = 0;
-
-	pid.max_torque = max_friction_torque * 0.8;
-
-	return pid;
+	std::vector<double> out;
+	std::stringstream ss(s);
+	std::string item;
+	while (std::getline(ss, item, ','))
+	{
+		out.push_back(std::stod(item));
+	}
+	return out;
 }
 
-// ========================================================
-// Validate proposed PID with closed-loop simulation
-// ========================================================
-struct ValidationResult
-{
-	double rise_time = 0;
-	double settling_time = 0;
-	double overshoot_pct = 0;
-	double steady_state_error = 0;
-	double stop_settling_time = 0;
-	double stop_overshoot = 0;
-};
+}  // namespace
 
-static ValidationResult validate_pid(
-	const std::string& vehicle_xml_path, const std::string& vehicle_class, const PIDParams& pid,
-	double sim_step, bool rotation_mode)
-{
-	ValidationResult result;
-
-	auto [world, veh] = create_world_and_vehicle(vehicle_xml_path, vehicle_class, sim_step);
-
-	// Set proposed PID parameters on the controller
-	if (auto* diffVeh = dynamic_cast<mvsim::DynamicsDifferential*>(veh.get()))
-	{
-		auto pidCtrl = std::make_shared<mvsim::DynamicsDifferential::ControllerTwistPID>(*diffVeh);
-		pidCtrl->KP = pid.KP;
-		pidCtrl->KI = pid.KI;
-		pidCtrl->KD = pid.KD;
-		pidCtrl->max_torque = pid.max_torque;
-		diffVeh->getController() = pidCtrl;
-	}
-	else if (auto* ackVeh = dynamic_cast<mvsim::DynamicsAckermann*>(veh.get()))
-	{
-		auto pidCtrl =
-			std::make_shared<mvsim::DynamicsAckermann::ControllerTwistFrontSteerPID>(*ackVeh);
-		pidCtrl->KP = pid.KP;
-		pidCtrl->KI = pid.KI;
-		pidCtrl->KD = pid.KD;
-		pidCtrl->max_torque = pid.max_torque;
-		ackVeh->getController() = pidCtrl;
-	}
-
-	world->insert_vehicle(veh);
-
-	// Phase 1: Step-up, Phase 2: Step-down
-	// For linear: 1.0 m/s
-	// For rotation: 1.0 rad/s (~57 deg/s)
-	const double setpoint = 1.0;
-	const double step_up_time = 3.0;
-	const double step_down_time = 3.0;
-
-	const mrpt::math::TTwist2D cmd_active =
-		rotation_mode ? mrpt::math::TTwist2D(0, 0, setpoint) : mrpt::math::TTwist2D(setpoint, 0, 0);
-	const mrpt::math::TTwist2D cmd_stop(0, 0, 0);
-
-	veh->getControllerInterface()->setTwistCommand(cmd_active);
-
-	int total_steps = static_cast<int>((step_up_time + step_down_time) / sim_step);
-	int step_down_at = static_cast<int>(step_up_time / sim_step);
-	double max_val = 0;
-
-	std::vector<TimeVelSample> samples;
-
-	for (int i = 0; i < total_steps; i++)
-	{
-		if (i == step_down_at) veh->getControllerInterface()->setTwistCommand(cmd_stop);
-
-		world->run_simulation(sim_step);
-
-		// Read actual velocity
-		mrpt::math::TTwist2D vel;
-		if (auto* diffVeh = dynamic_cast<mvsim::DynamicsDifferential*>(veh.get()))
-			vel = diffVeh->getVelocityLocalOdoEstimate();
-		else if (auto* ackVeh = dynamic_cast<mvsim::DynamicsAckermann*>(veh.get()))
-			vel = ackVeh->getVelocityLocalOdoEstimate();
-
-		double measured = rotation_mode ? vel.omega : vel.vx;
-		samples.push_back({i * sim_step, measured});
-
-		if (i < step_down_at) max_val = std::max(max_val, measured);
-	}
-
-	// Rise time: time to reach 90% of setpoint
-	result.rise_time = step_up_time;
-	for (const auto& s : samples)
-	{
-		if (s.time > step_up_time) break;
-		if (s.value >= 0.9 * setpoint)
-		{
-			result.rise_time = s.time;
-			break;
-		}
-	}
-
-	// Overshoot
-	result.overshoot_pct = std::max(0.0, (max_val - setpoint) / setpoint * 100.0);
-
-	// Steady-state error
-	{
-		const size_t ss_start = step_down_at * 80 / 100;
-		double ss_sum = 0;
-		int ss_count = 0;
-		for (size_t i = ss_start; i < static_cast<size_t>(step_down_at); i++)
-		{
-			ss_sum += samples[i].value;
-			ss_count++;
-		}
-		if (ss_count > 0) result.steady_state_error = std::abs(setpoint - ss_sum / ss_count);
-	}
-
-	// Settling time
-	{
-		const double band = 0.02 * setpoint;
-		result.settling_time = step_up_time;
-		for (int i = step_down_at - 1; i >= 0; i--)
-		{
-			if (std::abs(samples[i].value - setpoint) > band)
-			{
-				if (i + 1 < step_down_at) result.settling_time = samples[i + 1].time;
-				break;
-			}
-		}
-	}
-
-	// Step-down analysis
-	{
-		const double stop_band = 0.02 * setpoint;
-		result.stop_settling_time = step_down_time;
-		double min_val = setpoint;
-		for (size_t i = step_down_at; i < samples.size(); i++)
-		{
-			min_val = std::min(min_val, samples[i].value);
-			if (std::abs(samples[i].value) <= stop_band)
-			{
-				result.stop_settling_time = samples[i].time - step_up_time;
-				break;
-			}
-		}
-		result.stop_overshoot = std::max(0.0, -min_val);
-	}
-
-	return result;
-}
-
-// ========================================================
-// Print validation results
-// ========================================================
-static bool print_validation(
-	const ValidationResult& val, const char* label, double setpoint, const char* unit)
-{
-	std::printf("\nStep-up (0 -> %.1f %s):\n", setpoint, unit);
-	std::printf("  Rise time (90%%):       %.3f s\n", val.rise_time);
-	std::printf("  Settling time (2%%):    %.3f s\n", val.settling_time);
-	std::printf("  Overshoot:             %.1f %%\n", val.overshoot_pct);
-	std::printf("  Steady-state error:    %.4f %s\n", val.steady_state_error, unit);
-
-	std::printf("\nStep-down (%.1f -> 0 %s):\n", setpoint, unit);
-	std::printf("  Settling time (2%%):    %.3f s\n", val.stop_settling_time);
-	if (val.stop_overshoot > 0.001)
-	{
-		std::printf(
-			"  Rebound: %.4f %s  *** WARNING: vehicle reverses!\n", val.stop_overshoot, unit);
-	}
-	else
-	{
-		std::printf("  Rebound:               none\n");
-	}
-
-	bool good = true;
-	if (val.overshoot_pct > 20)
-	{
-		std::printf(
-			"WARNING [%s]: High overshoot (%.1f%%). Consider increasing aggressiveness.\n", label,
-			val.overshoot_pct);
-		good = false;
-	}
-	if (val.steady_state_error > 0.05)
-	{
-		std::printf(
-			"WARNING [%s]: Large steady-state error (%.4f). KI may need to be higher.\n", label,
-			val.steady_state_error);
-		good = false;
-	}
-	if (val.stop_overshoot > 0.01)
-	{
-		std::printf("WARNING [%s]: Vehicle rebounds when stopping. KI may be too high.\n", label);
-		good = false;
-	}
-	if (val.rise_time > 2.0)
-	{
-		std::printf(
-			"WARNING [%s]: Slow rise time (%.1fs). Consider decreasing aggressiveness.\n", label,
-			val.rise_time);
-		good = false;
-	}
-	return good;
-}
-
-// ========================================================
-// Main
-// ========================================================
 int main(int argc, char** argv)
 {
 	try
 	{
-		CLI::App app("mvsim-pid-tuner: Automatic PID tuning for MVSim vehicles");
+		CLI::App app(
+			"mvsim-pid-tuner: tunes the twist PID controller of an MVSim vehicle definition");
 
-		std::string vehicle_xml;
-		app.add_option("vehicle_xml", vehicle_xml, "Path to vehicle definition XML file")
+		std::string xmlFile;
+		app.add_option("vehicle_xml", xmlFile, "Vehicle definition XML file")->required();
+		std::string cls;
+		app.add_option("vehicle_class", cls, "Vehicle class name, as defined in the XML")
 			->required();
 
-		std::string vehicle_class;
-		app.add_option("vehicle_class", vehicle_class, "Vehicle class name as defined in the XML")
-			->required();
-
-		double test_torque = -1.0;
+		double speed = 1.0;
+		app.add_option("-v,--speed", speed, "Linear speed of the test profiles [m/s]");
+		double radius = 0;
 		app.add_option(
-			"-t,--torque", test_torque,
-			"Test torque (Nm) for open-loop identification. "
-			"Default: 50% of estimated friction limit.");
-
-		double sim_duration = 5.0;
-		app.add_option("-d,--duration", sim_duration, "Open-loop step duration (s).");
-
-		double sim_step = 0.001;
-		app.add_option("-s,--sim-step", sim_step, "Simulation time step (s).");
-
-		double aggressiveness = 0.25;
+			"-r,--radius", radius,
+			"Turn radius of the S-curve profile [m]. Default: 2 times the minimum turn radius "
+			"(Ackermann) or 1.5 m (differential).");
+		double spinRate = 1.0;
 		app.add_option(
-			"-a,--aggressiveness", aggressiveness,
-			"Closed-loop aggressiveness factor (0.1=very aggressive, 1.0=conservative).");
+			"--spin-rate", spinRate, "Angular speed of the spin profile (differential) [rad/s]");
+		std::string dts = "0.001,0.005";
+		app.add_option(
+			"-s,--sim-steps", dts, "Comma-separated simulation time steps to evaluate [s]");
+		double lowMu = 0.3;
+		app.add_option(
+			"--low-mu", lowMu,
+			"Friction coefficient of the extra low-friction evaluation (0: disabled)");
+		double maxTorque = 0;
+		app.add_option(
+			"--max-torque", maxTorque,
+			"Fixed max_torque [N.m]. Default: the one of the XML twist PID controller, or 90% of "
+			"the traction limit if there is none (3 times it for skid-steer robots).");
+		unsigned numThreads = std::max(1u, std::thread::hardware_concurrency());
+		app.add_option("-j,--threads", numThreads, "Number of parallel threads");
 
 		CLI11_PARSE(app, argc, argv);
 
-		if (aggressiveness <= 0)
+		const std::vector<double> simSteps = parseList(dts);
+		ASSERT_(!simSteps.empty());
+
+		std::printf("Vehicle '%s' from '%s'\n", cls.c_str(), xmlFile.c_str());
+		const VehicleInfo info = inspectVehicle(xmlFile, cls, simSteps.front());
+		const bool skidSteer = info.dynClass == "differential" && info.numWheels == 4;
+
+		if (radius <= 0)
 		{
-			std::fprintf(stderr, "Error: aggressiveness must be > 0.\n");
-			return 1;
+			radius = info.dynClass == "differential" ? 1.5 : 2.0 * info.minTurnRadius;
+		}
+		if (maxTorque <= 0)
+		{
+			maxTorque = info.xmlHasTwistPid && info.xmlMaxTorque > 0
+							? info.xmlMaxTorque
+							: (skidSteer ? 3.0 : 0.9) * info.tractionTorque;
+		}
+		if (!std::isfinite(maxTorque))
+		{
+			THROW_EXCEPTION("No driven wheel has a load: set max_torque with --max-torque.");
 		}
 
 		std::printf(
-			"======================================\n"
-			" MVSim PID Auto-Tuner\n"
-			"======================================\n\n");
+			"  Dynamics: %s, %zu wheels. Traction limit per driven wheel: %.4g N.m\n",
+			info.dynClass.c_str(), info.numWheels, info.tractionTorque);
+		std::printf(
+			"  Profiles: speed=%.3g m/s, turn radius=%.3g m%s. max_torque=%.4g N.m\n", speed,
+			radius, info.dynClass == "differential" ? ", spin" : "", maxTorque);
 
-		// Phase 1a: Open-loop linear identification
-		std::printf("--- Phase 1a: Open-loop LINEAR plant identification ---\n");
-		PlantModel plantLin = run_open_loop_step(
-			vehicle_xml, vehicle_class, test_torque, sim_duration, sim_step, false);
-
-		if (plantLin.K <= 0 || plantLin.tau <= 0)
+		const auto profiles = makeProfiles(info, speed, radius, spinRate);
+		std::vector<Condition> conditions;
+		for (const double dt : simSteps)
 		{
-			std::fprintf(stderr, "\nError: Could not identify linear plant model.\n");
-			return 1;
+			conditions.push_back({dt, std::nullopt});
+		}
+		if (lowMu > 0)
+		{
+			conditions.push_back({*std::max_element(simSteps.begin(), simSteps.end()), lowMu});
 		}
 
-		// Phase 1b: Open-loop rotation identification
-		std::printf("\n--- Phase 1b: Open-loop ROTATION plant identification ---\n");
-		PlantModel plantRot = run_open_loop_step(
-			vehicle_xml, vehicle_class, test_torque, sim_duration, sim_step, true);
-
-		if (plantRot.K <= 0 || plantRot.tau <= 0)
+		// Coarse grid:
+		std::vector<Gains> candidates;
+		const std::vector<double> sepMults =
+			skidSteer ? std::vector<double>{1.0, 1.4, 1.8, 2.2} : std::vector<double>{1.0};
+		for (int i = -2; i <= 5; i++)
 		{
-			std::fprintf(stderr, "\nError: Could not identify rotation plant model.\n");
-			return 1;
+			const double kp = info.kpEstimate * std::pow(2.0, i);
+			for (const double kiRatio : {0.0, 0.02, 0.1, 0.5, 2.5, 12.5, 62.5})
+			{
+				for (const double sm : sepMults)
+				{
+					candidates.push_back({kp, kp * kiRatio, maxTorque, sm});
+				}
+			}
+		}
+		std::printf("\nCoarse search (%zu candidates):\n", candidates.size());
+		auto results = evaluateAll(
+			candidates, xmlFile, cls, profiles, conditions, info.halfLength, numThreads);
+
+		if (!std::isfinite(results.front().cost))
+		{
+			THROW_EXCEPTION(
+				"All candidates were unstable: check max_torque and the vehicle definition.");
 		}
 
-		// Get vehicle params for max_torque computation
-		auto [tmpWorld, tmpVeh] = create_world_and_vehicle(vehicle_xml, vehicle_class, sim_step);
-		auto vehParams = get_vehicle_params(*tmpVeh);
+		// Refinement around the best one:
+		const Gains best0 = results.front().gains;
+		candidates.clear();
+		const double f = std::sqrt(2.0);
+		const std::vector<double> sepFactors =
+			skidSteer ? std::vector<double>{0.9, 1.0, 1.1} : std::vector<double>{1.0};
+		const std::vector<double> kiFactors =
+			best0.KI > 0 ? std::vector<double>{0.5, 1 / f, 1.0, f, 2.0} : std::vector<double>{1.0};
+		for (const double kpf : {1 / f, 1.0, f})
+		{
+			for (const double kif : kiFactors)
+			{
+				for (const double smf : sepFactors)
+				{
+					candidates.push_back(
+						{best0.KP * kpf, best0.KI * kif, maxTorque,
+						 best0.separation_multiplier * smf});
+				}
+			}
+		}
+		std::printf("Refinement (%zu candidates):\n", candidates.size());
+		const auto refined = evaluateAll(
+			candidates, xmlFile, cls, profiles, conditions, info.halfLength, numThreads);
+		results.insert(results.end(), refined.begin(), refined.end());
+		std::sort(
+			results.begin(), results.end(),
+			[](const Evaluation& a, const Evaluation& b) { return a.cost < b.cost; });
 
-		// Phase 2: Compute PID parameters
-		// Since the twist_pid controller uses the same KP/KI/KD for both wheels,
-		// and rotation dynamics differ from linear dynamics, we need to find
-		// parameters that work well for both.
-		//
-		// Strategy: compute PID for both linear and rotation plants, then pick
-		// the more conservative (slower) parameters to ensure stability for both.
-		std::printf("\n--- Phase 2: IMC PID tuning (aggressiveness=%.2f) ---\n", aggressiveness);
+		// Among the candidates within 2% of the best cost, prefer the smallest
+		// gains (tracking is often limited by max_torque, so larger gains only
+		// make the controller stiffer):
+		size_t selected = 0;
+		for (size_t i = 0; i < results.size(); i++)
+		{
+			if (results[i].cost <= 1.02 * results.front().cost &&
+				results[i].gains.KP < results[selected].gains.KP)
+			{
+				selected = i;
+			}
+		}
 
-		PIDParams pidLin = compute_pid_imc(plantLin, vehParams.max_friction_torque, aggressiveness);
-		PIDParams pidRot = compute_pid_imc(plantRot, vehParams.max_friction_torque, aggressiveness);
+		std::printf("\nBest candidates:\n");
+		for (size_t i = 0; i < std::min<size_t>(5, results.size()); i++)
+		{
+			printEvaluation("", results[i], skidSteer);
+		}
+		printEvaluation("SELECTED", results[selected], skidSteer);
+		if (info.xmlHasTwistPid)
+		{
+			const Gains xmlGains{
+				info.xmlKP, info.xmlKI, info.xmlMaxTorque, info.xmlSeparationMultiplier};
+			printEvaluation(
+				"XML", evaluate(xmlFile, cls, xmlGains, profiles, conditions, info.halfLength),
+				skidSteer);
+		}
 
-		std::printf("\n  Linear-only PID:  KP=%.4f  KI=%.4f\n", pidLin.KP, pidLin.KI);
-		std::printf("  Rotation-only PID: KP=%.4f  KI=%.4f\n", pidRot.KP, pidRot.KI);
-
-		// Use the geometric mean of both to balance linear and rotation performance.
-		// This ensures neither mode is overly aggressive.
-		PIDParams pid;
-		pid.KP = std::sqrt(pidLin.KP * pidRot.KP);
-		pid.KI = std::sqrt(pidLin.KI * pidRot.KI);
-		pid.KD = 0;
-		pid.max_torque = vehParams.max_friction_torque * 0.8;
-
-		std::printf("\nProposed PID parameters (balanced linear + rotation):\n");
-		std::printf("  KP:         %.4f\n", pid.KP);
-		std::printf("  KI:         %.4f\n", pid.KI);
-		std::printf("  KD:         %.4f\n", pid.KD);
-		std::printf("  max_torque: %.2f Nm\n", pid.max_torque);
+		const auto& best = results[selected].gains;
 		std::printf("\nXML snippet:\n");
 		std::printf(
-			"  <KP>%.4f</KP>\n"
-			"  <KI>%.4f</KI>\n"
-			"  <KD>%.4f</KD>\n"
-			"  <max_torque>%.2f</max_torque>\n",
-			pid.KP, pid.KI, pid.KD, pid.max_torque);
-
-		// Phase 3: Validate with closed-loop simulation
-		std::printf("\n--- Phase 3: Closed-loop validation ---\n");
-
-		std::printf("\n[Linear] Step-up (1.0 m/s, 3s) then step-down (stop, 3s)...\n");
-		ValidationResult valLin = validate_pid(vehicle_xml, vehicle_class, pid, sim_step, false);
-		bool goodLin = print_validation(valLin, "linear", 1.0, "m/s");
-
-		std::printf("\n[Rotation] Step-up (1.0 rad/s, 3s) then step-down (stop, 3s)...\n");
-		ValidationResult valRot = validate_pid(vehicle_xml, vehicle_class, pid, sim_step, true);
-		bool goodRot = print_validation(valRot, "rotation", 1.0, "rad/s");
-
-		std::printf("\n--- Assessment ---\n");
-		if (goodLin && goodRot)
-			std::printf("All metrics look good for both linear and rotation!\n");
-		else if (goodLin)
-			std::printf("Linear metrics OK, but rotation has warnings (see above).\n");
-		else if (goodRot)
-			std::printf("Rotation metrics OK, but linear has warnings (see above).\n");
-		else
-			std::printf("Both linear and rotation have warnings (see above).\n");
-
-		std::printf("\n");
+			"  <KP>%.4g</KP>\n  <KI>%.4g</KI>\n  <KD>0</KD>\n  <max_torque>%.4g</max_torque>\n",
+			best.KP, best.KI, best.max_torque);
+		if (skidSteer)
+		{
+			std::printf(
+				"  <wheel_separation_multiplier>%.3g</wheel_separation_multiplier>\n",
+				best.separation_multiplier);
+		}
 		return 0;
 	}
 	catch (const std::exception& e)

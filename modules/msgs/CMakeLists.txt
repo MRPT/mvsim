@@ -22,10 +22,19 @@ set(PROTOBUF_FILE_NAMES
   Pose.proto
   RegisterNodeAnswer.proto
   RegisterNodeRequest.proto
+  RuntimeObject.proto
+  SrvGetAllPoses.proto
+  SrvGetAllPosesAnswer.proto
   SrvGetLightState.proto
   SrvGetLightStateAnswer.proto
   SrvGetPose.proto
   SrvGetPoseAnswer.proto
+  SrvInsertEntities.proto
+  SrvInsertEntitiesAnswer.proto
+  SrvRemoveEntities.proto
+  SrvRemoveEntitiesAnswer.proto
+  SrvRemoveObjects.proto
+  SrvRemoveObjectsAnswer.proto
   SrvSetControllerTwist.proto
   SrvSetControllerTwistAnswer.proto
   SrvSetLightState.proto
@@ -35,6 +44,8 @@ set(PROTOBUF_FILE_NAMES
   SrvSetPoseTwist.proto
   SrvShutdown.proto
   SrvShutdownAnswer.proto
+  SrvSpawnObjects.proto
+  SrvSpawnObjectsAnswer.proto
   SubscribeAnswer.proto
   SubscribeRequest.proto
   TimeStampedPose.proto

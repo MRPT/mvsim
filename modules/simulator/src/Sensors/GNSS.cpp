@@ -188,11 +188,12 @@ void GNSS::internalGuiUpdate(
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
 		gl_sensor_origin_->setVisibility(false);
-		viz->get().insert(gl_sensor_origin_);
-		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
+		insertIntoScene(viz->get(), gl_sensor_origin_);
+		insertIntoScene(SensorBase::GetAllSensorsOriginViz(), gl_sensor_origin_);
 	}
 
-	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + obs_model_.sensorPose;
+	const mrpt::poses::CPose3D p =
+		mrpt::poses::CPose3D(vehicle_.getChassisPose()) + obs_model_.sensorPose;
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
 	if (gl_sensor_origin_)
@@ -218,7 +219,7 @@ void GNSS::simul_post_timestep(const TSimulContext& context)
 	}
 
 	// Keep sensor global pose up-to-date:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto globalSensorPose = p + obs_model_.sensorPose.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
@@ -230,7 +231,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.GNSS");
 
 	// Where the GPS sensor is in the world frame:
-	mrpt::poses::CPose3D vehPoseInWorld = vehicle().getCPose3D();
+	mrpt::poses::CPose3D vehPoseInWorld = mrpt::poses::CPose3D(vehicle().getChassisPose());
 	const auto& georef = world()->georeferenceOptions();
 	if (georef.world_is_utm)
 	{
@@ -365,7 +366,7 @@ void GNSS::notifySimulableSetPose(const mrpt::math::TPose3D&)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
-	// const auto& p = vehicle_.getPose();
+	// const auto& p = vehicle_.getChassisPose();
 	// sensor_params_.sensorPose = mrpt::poses::CPose3D(newPose - p);
 }
 

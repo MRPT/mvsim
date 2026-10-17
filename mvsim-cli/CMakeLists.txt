@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME}
 	mvsim-cli-topic.cpp
 	mvsim-cli-launch.cpp
 	mvsim-cli-server.cpp
+	mvsim-cli-slice.cpp
 	mvsim-cli.h
 )
 target_link_libraries(

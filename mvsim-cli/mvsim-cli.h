@@ -16,6 +16,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -34,6 +35,11 @@ struct cli_flags
 	int argPort = mvsim::MVSIM_PORTNO_MAIN_REP;
 #endif
 	double argRealTimeFactor = 1.0;
+	std::string argOutput;
+	double argSliceZ = 0.5;
+	std::optional<double> argSliceZMax;
+	double argSliceResolution = 0.05;
+	bool argSliceStaticOnly = false;
 
 	cli_flags()
 	{
@@ -63,6 +69,11 @@ struct cli_flags
 			"--realtime-factor", argRealTimeFactor,
 			"Realtime modification factor: <1 slower than real-time, >1 faster than real-time, "
 			"<=0 as fast as possible");
+		cmd.add_option("-o,--output", argOutput, "Output file");
+		cmd.add_option("--slice-z", argSliceZ, "slice: height of the slice [m]");
+		cmd.add_option("--slice-z-max", argSliceZMax, "slice: top of the height band [m]");
+		cmd.add_option("--slice-resolution", argSliceResolution, "slice: cell size [m]");
+		cmd.add_flag("--slice-static-only", argSliceStaticOnly, "slice: skip movable blocks");
 	}
 };
 
@@ -76,6 +87,7 @@ int launchStandAloneServer();  // "server"
 int launchSimulation();	 // "launch"
 int commandNode();	// "node"
 int commandTopic();	 // "topic"
+int commandSlice();	 // "slice"
 
 void setConsoleErrorColor();
 void setConsoleNormalColor();

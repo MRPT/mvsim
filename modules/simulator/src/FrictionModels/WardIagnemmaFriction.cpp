@@ -70,43 +70,24 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	const double partial_mass = input.Fz / gravity + input.wheel.mass;
 	const double max_friction = mu * partial_mass * gravity;
 
-	// 1) Lateral friction (decoupled sub-problem)
-	// --------------------------------------------
-	double wheel_lateral_friction = 0.0;  // direction: +y local wrt the wheel
-	{
-		// Impulse to cancel lateral velocity + counteract gravity slope:
-		wheel_lateral_friction = -vel_w.y * partial_mass / input.context.dt - gravSlope_w.y;
-
-		wheel_lateral_friction = std::clamp(wheel_lateral_friction, -max_friction, max_friction);
-	}
-
-	// 2) Longitudinal friction (decoupled sub-problem)
-	// -------------------------------------------------
-	double wheel_long_friction = 0.0;  // direction: +x local wrt the wheel
-
-	// (eq. 1)==> desired impulse in wheel spinning speed.
-	// wheel_C_lon_vel = vel_w.x - input.wheel.w * 0.5*input.wheel.diameter
-
-	// It should be = 0 for no slippage (non-holonomic constraint): find out
-	// required wheel \omega:case '4':
 	const double R = 0.5 * input.wheel.diameter;  // Wheel radius
-	const double lon_constraint_desired_wheel_w = vel_w.x / R;
-	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w - input.wheel.getW());
-	const double desired_wheel_alpha = desired_wheel_w_impulse / input.context.dt;
+	const double dt = input.context.dt;
+	const double w = input.wheel.getW();
 
-	// (eq. 3)==> Find out F_r
-	// Iyy_w * \Delta\omega_w = dt*\tau-  R*dt*Fri    -C_damp * \omega_w * dt
-	// "Damping" / internal friction of the wheel's shaft, etc.
-	const double C_damping = C_damping_;
+	// Wheel spin acceleration for rolling without slipping within the step:
+	const double desired_wheel_alpha = (vel_w.x / R - w) / dt;
 
-	// const mrpt::math::TPoint2D wheel_damping(- C_damping *
-	// input.wheel_speed.x, 0.0);
+	// Lateral force to cancel the lateral velocity + counteract gravity slope:
+	const double latForceToStick =
+		-vel_w.y * (input.lateralMass > 0 ? input.lateralMass : partial_mass) / dt - gravSlope_w.y;
 
 	// Two independent rolling-resistance models coexist here:
 	//
 	// 1) F_rr (ground-contact): Ward-Iagnemma terrain interaction model using
-	//    params R1_, R2_, A_roll_. Velocity-dependent force added directly to
-	//    the longitudinal friction equation.
+	//    params R1_, R2_, A_roll_. Velocity-dependent resistance, applied as an
+	//    equivalent torque (F_rr * R) opposing the wheel spin: adding it as a
+	//    contact force instead would spin the wheel up, and the wheel would give
+	//    that momentum back to the chassis in the next steps.
 	//
 	// 2) T_rolling_resistance (tire deformation): torque-based model using
 	//    C_rr_. Opposes wheel spin as a shaft-level torque subtracted from
@@ -116,40 +97,35 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// drag (F_rr) and tire hysteresis (T_rolling_resistance) are distinct
 	// effects. If only one source of rolling resistance is desired, configure
 	// either {R1_, R2_, A_roll_} or C_rr_, not both.
-
-	const double F_rr = -sign(vel_w.x) * partial_mass * gravity *
+	const double F_normal = partial_mass * gravity;
+	const double F_rr = -sign(vel_w.x) * F_normal *
 						(R1_ * (1 - exp(-A_roll_ * fabs(vel_w.x))) + R2_ * fabs(vel_w.x));
 
-	const double F_normal = partial_mass * gravity;
-	const double C_rr = input.C_rr_override.value_or(C_rr_);
-	const double T_rolling_resistance =
-		(C_rr > 0 && std::abs(input.wheel.getW()) > 1e-4)
-			? C_rr * F_normal * R * std::tanh(input.wheel.getW() * 100.0)
-			: 0.0;
+	double T_rolling_resistance = 0;
+	double dTrr_dw = 0;
+	rollingResistance(
+		input.C_rr_override.value_or(C_rr_), F_normal, R, w, T_rolling_resistance, dTrr_dw);
 
-	const double I_yy = input.wheel.Iyy;
+	// Bearing damping and rolling resistance (both models):
+	const double otherTorque = -C_damping_ * w - T_rolling_resistance + F_rr * R;
 
-	// Effective motor torque after subtracting bearing damping and rolling resistance:
-	const double effectiveTorque =
-		input.motorTorque - C_damping * input.wheel.getW() - T_rolling_resistance;
-
-	double F_friction_lon = (effectiveTorque - I_yy * desired_wheel_alpha) / R + F_rr;
-
-	// Slippage: The friction with the ground is not infinite:
-	F_friction_lon = std::clamp(F_friction_lon, -max_friction, max_friction);
-
-	// Recalc wheel ang. velocity impulse with this reduced force:
-	const double actual_wheel_alpha = (effectiveTorque - R * F_friction_lon) / I_yy;
+	// Coulomb friction (friction circle):
+	double wheel_long_friction = 0;	 // direction: +x local wrt the wheel
+	double wheel_lateral_friction = 0;	// direction: +y local wrt the wheel
+	double actual_wheel_alpha = 0;
+	solveContact(
+		input, otherTorque, C_damping_ + dTrr_dw, desired_wheel_alpha, R, latForceToStick,
+		{vel_w.x - w * R, vel_w.y}, max_friction, wheel_long_friction, wheel_lateral_friction,
+		actual_wheel_alpha);
 
 	// Add slope gravity force to the contact-patch friction (acts on chassis,
 	// not on wheel spin). Clamped by remaining friction capacity.
-	const double remaining_lon = max_friction - std::abs(F_friction_lon);
-	F_friction_lon -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
+	const double remaining_lon =
+		remainingLongitudinalForce(max_friction, wheel_long_friction, wheel_lateral_friction);
+	wheel_long_friction -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
-	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);
-
-	wheel_long_friction = F_friction_lon;
+	input.wheel.setW(w + actual_wheel_alpha * dt);
 
 	// Resultant force: In local (x,y) coordinates (Newtons) wrt the Wheel
 	// -----------------------------------------------------------------------

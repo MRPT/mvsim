@@ -194,7 +194,7 @@ void World::insert_vehicle(const VehicleBase::Ptr& veh)
 	auto lck = mrpt::lockHelper(world_cs_);
 
 	// Assign each vehicle a unique "index" number
-	veh->setVehicleIndex(vehicles_.size());
+	veh->setVehicleIndex(nextVehicleIndex_++);
 
 	ASSERTMSG_(
 		vehicles_.count(veh->getName()) == 0,
@@ -210,7 +210,16 @@ void World::parse_tag_vehicle(const XmlParserContext& ctx)
 {
 	// <vehicle> entries:
 	VehicleBase::Ptr veh = VehicleBase::factory(this, ctx.node);
-	insert_vehicle(veh);
+	try
+	{
+		insert_vehicle(veh);
+	}
+	catch (...)
+	{
+		// Do not leave its physics bodies behind (e.g. a duplicated name):
+		veh->destroyBox2DBodies(*box2d_world_);
+		throw;
+	}
 }
 
 void World::parse_tag_vehicle_class(const XmlParserContext& ctx)
@@ -236,7 +245,16 @@ void World::parse_tag_block(const XmlParserContext& ctx)
 {
 	// <block> entries:
 	Block::Ptr block = Block::factory(this, ctx.node);
-	insertBlock(block);
+	try
+	{
+		insertBlock(block);
+	}
+	catch (...)
+	{
+		// Do not leave its physics body behind (e.g. a duplicated name):
+		block->destroyBox2DBodies(*box2d_world_);
+		throw;
+	}
 	lut2d_objects_is_up_to_date_ = false;
 }
 
@@ -373,7 +391,7 @@ void World::parse_tag_for(const XmlParserContext& ctx)
 		for (int curVal = std::stoi(fromStr); curVal <= std::stoi(toStr); curVal++)
 		{
 			userDefinedVariables_[varName] = std::to_string(curVal);
-			internal_recursive_parse_XML({childNode, basePath_});
+			internal_recursive_parse_XML({childNode, ctx.currentBasePath});
 		}
 	}
 
@@ -395,7 +413,7 @@ void World::parse_tag_if(const XmlParserContext& ctx)
 	}
 	for (auto childNode = ctx.node->first_node(); childNode; childNode = childNode->next_sibling())
 	{
-		internal_recursive_parse_XML({childNode, basePath_});
+		internal_recursive_parse_XML({childNode, ctx.currentBasePath});
 	}
 }
 

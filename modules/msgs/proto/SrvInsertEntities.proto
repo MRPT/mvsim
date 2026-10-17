@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+// Inserts entities into the running simulation, given as world XML: the same
+// tags as in a world file (<vehicle>, <block>, <element>, <include>...),
+// optionally enclosed in a <mvsim_world> root tag.
+message SrvInsertEntities {
+  required string xml = 1;
+  // Directory for relative paths in the XML (default: that of the world file)
+  optional string basePath = 2;
+}

@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+// Ground truth poses of all named objects: vehicles, blocks, actors and
+// runtime objects.
+message SrvGetAllPoses {
+  // If set, only objects whose name starts with this prefix are returned.
+  optional string prefix = 1;
+}
