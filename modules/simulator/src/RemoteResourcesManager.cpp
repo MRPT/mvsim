@@ -106,8 +106,11 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 		// Usage stats, only for this message: it runs a process, too slow for
 		// every resource.
 		cacheUsageLogged_ = true;
-		mrpt::system::executeCommand(
-			mrpt::format("du -sh0 \"%s\"", localDir.c_str()), &cacheUsageStats);
+		if (0 != mrpt::system::executeCommand(
+					 mrpt::format("du -sh0 \"%s\"", localDir.c_str()), &cacheUsageStats))
+		{
+			cacheUsageStats = "unknown";
+		}
 		MRPT_LOG_INFO(
 			"Using local storage directory: '"s + localDir + "' (Usage: "s + cacheUsageStats +
 			")"s);
