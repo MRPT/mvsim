@@ -1,0 +1,44 @@
+# Mapping file for mvsim-urdf2xml: generates "jackal_from_urdf.vehicle.xml"
+# from ../ros2_control/jackal.urdf. Regenerate it with:
+#   mvsim-urdf2xml ../ros2_control/jackal.urdf jackal_mapping.yaml -o jackal_from_urdf.vehicle.xml
+
+vehicle_class: jackal_from_urdf
+
+# URDF link used as the MVSim vehicle frame. It must be on the ground plane
+# (MVSim vehicle frames are on the ground), e.g. "base_footprint".
+base_link: base_link
+
+dynamics: differential_4_wheels
+
+# MVSim wheel tag -> URDF wheel joint
+wheels:
+  lf_wheel: lf_wheel_joint
+  rf_wheel: rf_wheel_joint
+  lr_wheel: lr_wheel_joint
+  rr_wheel: rr_wheel_joint
+
+chassis:
+  link: chassis_link  # chassis footprint and height from its box geometry
+  mass: 10.0          # overrides the sum of URDF link masses
+
+# Optional, copied verbatim:
+controller: |
+  <controller class="${controller|twist_pid}">
+    <KP>18.2909</KP> <KI>474.4889</KI> <KD>0</KD> <max_torque>100</max_torque>
+    <controllers_yaml>${controllers_yaml|}</controllers_yaml>
+    <robot_description>${robot_description|generated}</robot_description>
+  </controller>
+friction: |
+  <friction class="default">
+    <mu>0.8</mu>
+    <C_damping>0.05</C_damping>
+  </friction>
+
+# Sensors: URDF link (it becomes the sensor name and TF frame_id) and the MVSim
+# sensor definition to include (relative to the generated file), plus optional
+# extra include arguments. The sensor pose comes from the URDF.
+sensors:
+  - link: laser1
+    include: ${MVSIM_CURRENT_FILE_DIRECTORY}/../../definitions/lidar2d.sensor.xml
+    args:
+      sensor_period_sec: 0.05

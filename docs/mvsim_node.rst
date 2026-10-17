@@ -78,6 +78,11 @@ All these parameters apply to both, ROS 1 and ROS 2 launch files above:
          possible. (ROS 2 only)
          (default: '1.0')
 
+      'publish_sensor_tf':
+         Publish the TF of each sensor wrt "base_link". Disable it if
+         robot_state_publisher publishes them from the URDF.
+         (default: 'True')
+
       'use_rviz':
          Whether to launch RViz2
          (default: 'True')
@@ -261,3 +266,12 @@ Example (C++):
    {
        std::cout << name << ": " << s.observations / st.window_simul_time << " Hz\n";
    }
+
+|
+
+Sensor TFs
+------------
+By default, ``mvsim_node`` publishes the TF from ``base_link`` to each sensor frame. If another
+node already publishes them (e.g. ``robot_state_publisher`` from a URDF, see
+:ref:`mvsim-urdf2xml`), set the node parameter ``publish_sensor_tf`` to ``false``, e.g.
+``ros2 launch mvsim launch_world.launch.py world_file:=... publish_sensor_tf:=False``.

@@ -26,6 +26,7 @@ MVSim: a lightweight MultiVehicle Simulator
    mvsim_node
    mvsim-pid-tuner
    mvsim-dataset-gen
+   mvsim-urdf2xml
    physics
    extending
    bibliography

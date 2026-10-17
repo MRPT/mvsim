@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!-- Test fixture for mvsim-urdf2xml: a skid-steer robot whose base_link is
+     above the ground (base_footprint is on the ground), with a tilted LiDAR
+     mounted through a chain of fixed joints. -->
+<robot name="test_robot">
+  <link name="base_footprint"/>
+  <link name="base_link">
+    <inertial><mass value="20.0"/><inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/></inertial>
+    <collision><origin xyz="0 0 0.1" rpy="0 0 0"/><geometry><box size="0.8 0.5 0.2"/></geometry></collision>
+  </link>
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/><child link="base_link"/>
+    <origin xyz="0 0 0.15" rpy="0 0 0"/>
+  </joint>
+  <link name="fl_wheel"><inertial><mass value="1.5"/><inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/></inertial>
+    <collision><origin rpy="1.5708 0 0"/><geometry><cylinder radius="0.15" length="0.08"/></geometry></collision></link>
+  <link name="fr_wheel"><collision><geometry><cylinder radius="0.15" length="0.08"/></geometry></collision></link>
+  <link name="rl_wheel"><collision><geometry><cylinder radius="0.15" length="0.08"/></geometry></collision></link>
+  <link name="rr_wheel"><collision><geometry><cylinder radius="0.15" length="0.08"/></geometry></collision></link>
+  <joint name="front_left_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="fl_wheel"/><origin xyz="0.3 0.3 0"/><axis xyz="0 1 0"/>
+  </joint>
+  <joint name="front_right_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="fr_wheel"/><origin xyz="0.3 -0.3 0"/><axis xyz="0 1 0"/>
+  </joint>
+  <joint name="rear_left_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="rl_wheel"/><origin xyz="-0.3 0.3 0"/><axis xyz="0 1 0"/>
+  </joint>
+  <joint name="rear_right_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="rr_wheel"/><origin xyz="-0.3 -0.3 0"/><axis xyz="0 1 0"/>
+  </joint>
+  <link name="lidar_mount"/>
+  <joint name="lidar_mount_joint" type="fixed">
+    <parent link="base_link"/><child link="lidar_mount"/>
+    <origin xyz="0.2 0 0.3" rpy="0 0.3 0"/>
+  </joint>
+  <link name="lidar"/>
+  <joint name="lidar_joint" type="fixed">
+    <parent link="lidar_mount"/><child link="lidar"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0.5"/>
+  </joint>
+</robot>
