@@ -172,6 +172,7 @@ void testErrors()
 	w.headless(true);
 	w.load_from_XML(worldXml(blockXml("b1", 5, 5)));
 	const auto nBlocks = w.getListOfBlocks().size();
+	const auto nBodies = w.getBox2DWorld()->GetBodyCount();
 
 	// Duplicated name: nothing is inserted, not even the valid one before it.
 	bool thrown = false;
@@ -185,6 +186,27 @@ void testErrors()
 	}
 	EXPECT_TRUE(thrown);
 	EXPECT_TRUE(w.getListOfBlocks().size() == nBlocks);
+	EXPECT_TRUE(w.getBox2DWorld()->GetBodyCount() == nBodies);
+
+	// Same for a duplicated vehicle name, and for a block named as a vehicle.
+	// No physics body must be left behind (e.g. an invisible obstacle):
+	for (const auto& xml :
+		 {vehicleXml("r1", 2.0, 0.0), blockXml("r1", 2.0, 0.0), blockXml("b1", 2.0, 0.0)})
+	{
+		thrown = false;
+		try
+		{
+			w.insertEntitiesFromXML(xml);
+		}
+		catch (const std::exception&)
+		{
+			thrown = true;
+		}
+		EXPECT_TRUE(thrown);
+		EXPECT_TRUE(w.getBox2DWorld()->GetBodyCount() == nBodies);
+	}
+	drive(w, "r1", 1.0, 4.0);
+	EXPECT_GT(poseX(w, "r1"), 3.0);
 
 	thrown = false;
 	try

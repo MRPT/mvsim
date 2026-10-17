@@ -703,11 +703,19 @@ void World::GUI::handle_mouse_operations()
 			clickedPt.z -= dp.z;
 
 			// Find out the "z": get first elevation if many exist.
-			const auto zs =
-				parent_.getElevationsAt(mrpt::math::TPoint2Df(clickedPt.x, clickedPt.y));
-			if (!zs.empty())
+			// Its data may be rebuilt by other threads under the step mutex.
+			// Never wait for it, since a step may be waiting for this thread
+			// to render sensors:
+			std::unique_lock<std::recursive_mutex> lckStep(
+				parent_.simulationStepRunningMtx_, std::try_to_lock);
+			if (lckStep.owns_lock())
 			{
-				clickedPt.z = *zs.begin();
+				const auto zs =
+					parent_.getElevationsAt(mrpt::math::TPoint2Df(clickedPt.x, clickedPt.y));
+				if (!zs.empty())
+				{
+					clickedPt.z = *zs.begin();
+				}
 			}
 		}
 	}

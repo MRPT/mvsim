@@ -210,7 +210,16 @@ void World::parse_tag_vehicle(const XmlParserContext& ctx)
 {
 	// <vehicle> entries:
 	VehicleBase::Ptr veh = VehicleBase::factory(this, ctx.node);
-	insert_vehicle(veh);
+	try
+	{
+		insert_vehicle(veh);
+	}
+	catch (...)
+	{
+		// Do not leave its physics bodies behind (e.g. a duplicated name):
+		veh->destroyBox2DBodies(*box2d_world_);
+		throw;
+	}
 }
 
 void World::parse_tag_vehicle_class(const XmlParserContext& ctx)
@@ -236,7 +245,16 @@ void World::parse_tag_block(const XmlParserContext& ctx)
 {
 	// <block> entries:
 	Block::Ptr block = Block::factory(this, ctx.node);
-	insertBlock(block);
+	try
+	{
+		insertBlock(block);
+	}
+	catch (...)
+	{
+		// Do not leave its physics body behind (e.g. a duplicated name):
+		block->destroyBox2DBodies(*box2d_world_);
+		throw;
+	}
 	lut2d_objects_is_up_to_date_ = false;
 }
 

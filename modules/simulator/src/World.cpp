@@ -198,10 +198,13 @@ void World::connectToServer()
 
 void World::insertBlock(const Block::Ptr& block)
 {
+	ASSERTMSG_(
+		blocks_.count(block->getName()) == 0,
+		mrpt::format("Duplicated block name: '%s'", block->getName().c_str()));
+
 	// Assign each block an "index" number
 	block->setBlockIndex(nextBlockIndex_++);
 
-	// make sure the name is not duplicated:
 	blocks_.insert(BlockList::value_type(block->getName(), block));
 
 	auto lckListObjs = mrpt::lockHelper(simulableObjectsMtx_);
