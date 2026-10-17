@@ -79,12 +79,12 @@ void CVisualObject::guiUpdate(
 			// Add to the 3D scene:
 			if (insertCustomVizIntoViz_)
 			{
-				viz->get().insert(glCustomVisual_);
+				insertIntoScene(viz->get(), glCustomVisual_);
 			}
 
 			if (insertCustomVizIntoPhysical_)
 			{
-				physical->get().insert(glCustomVisual_);
+				insertIntoScene(physical->get(), glCustomVisual_);
 			}
 		}
 
@@ -155,7 +155,7 @@ void CVisualObject::guiUpdate(
 
 			glCollision_->insert(glCS);
 			glCollision_->setVisibility(false);
-			viz->get().insert(glCollision_);
+			insertIntoScene(viz->get(), glCollision_);
 		}
 		glCollision_->setPose(objectPose);
 	}
@@ -167,10 +167,10 @@ void CVisualObject::guiUpdate(
 			glLightGroupsInserted_ = true;
 			if (insertCustomVizIntoViz_)
 			{
-				viz->get().insert(glLightGroups_);
+				insertIntoScene(viz->get(), glLightGroups_);
 			}
 			// Always in the physical scene, so camera sensors see the lights:
-			physical->get().insert(glLightGroups_);
+			insertIntoScene(physical->get(), glLightGroups_);
 		}
 		glLightGroups_->setPose(chassisPose);
 	}
@@ -181,6 +181,52 @@ void CVisualObject::guiUpdate(
 }
 
 void CVisualObject::FreeOpenGLResources() { ModelsCache::Instance().clear(); }
+
+void CVisualObject::insertIntoScene(
+	mrpt::viz::Scene& scene, const std::shared_ptr<mrpt::viz::CVisualObject>& obj)
+{
+	scene.insert(obj);
+	auto lck = mrpt::lockHelper(sceneInsertionsMtx_);
+	SceneInsertion si;
+	si.scene = &scene;
+	si.obj = obj;
+	sceneInsertions_.push_back(si);
+}
+
+void CVisualObject::insertIntoScene(
+	const std::shared_ptr<mrpt::viz::CSetOfObjects>& group,
+	const std::shared_ptr<mrpt::viz::CVisualObject>& obj)
+{
+	ASSERT_(group);
+	group->insert(obj);
+	auto lck = mrpt::lockHelper(sceneInsertionsMtx_);
+	SceneInsertion si;
+	si.group = group;
+	si.obj = obj;
+	sceneInsertions_.push_back(si);
+}
+
+void CVisualObject::removeFromScenes()
+{
+	auto lck = mrpt::lockHelper(sceneInsertionsMtx_);
+	for (const auto& si : sceneInsertions_)
+	{
+		const auto obj = si.obj.lock();
+		if (!obj)
+		{
+			continue;
+		}
+		if (si.scene)
+		{
+			si.scene->removeObject(obj);
+		}
+		else if (const auto group = si.group.lock(); group)
+		{
+			group->removeObject(obj);
+		}
+	}
+	sceneInsertions_.clear();
+}
 
 bool CVisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
 {

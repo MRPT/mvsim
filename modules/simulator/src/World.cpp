@@ -78,6 +78,11 @@ void World::clear_all()
 		perfWindowStartWall_.reset();
 		perfSensorTimeInStep_ = 0;
 	}
+
+	obstacles_for_each_obj_.clear();  // their bodies belonged to the old b2World
+	nextVehicleIndex_ = 0;
+	nextBlockIndex_ = 0;
+	nextRuntimeElementId_ = 0;
 }
 
 void World::internal_initialize()
@@ -193,10 +198,13 @@ void World::connectToServer()
 
 void World::insertBlock(const Block::Ptr& block)
 {
-	// Assign each block an "index" number
-	block->setBlockIndex(blocks_.size());
+	ASSERTMSG_(
+		blocks_.count(block->getName()) == 0,
+		mrpt::format("Duplicated block name: '%s'", block->getName().c_str()));
 
-	// make sure the name is not duplicated:
+	// Assign each block an "index" number
+	block->setBlockIndex(nextBlockIndex_++);
+
 	blocks_.insert(BlockList::value_type(block->getName(), block));
 
 	auto lckListObjs = mrpt::lockHelper(simulableObjectsMtx_);
@@ -329,26 +337,26 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 		return;
 	}
 	auto lck = mrpt::lockHelper(rawlog_io_mtx_);
-	if (rawlog_io_per_veh_.empty())
-	{
-		for (const auto& v : vehicles_)
-		{
-			const std::string fileName =
-				mrpt::system::fileNameChangeExtension(save_to_rawlog_, v.first + ".rawlog"s);
 
-			MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
+	// One file per vehicle, created on its first observation (vehicles may be
+	// inserted at runtime):
+	auto& out = rawlog_io_per_veh_[veh.getName()];
+	if (!out)
+	{
+		const std::string fileName =
+			mrpt::system::fileNameChangeExtension(save_to_rawlog_, veh.getName() + ".rawlog"s);
+
+		MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
 
 #if MRPT_VERSION >= 0x020f07
-			rawlog_io_per_veh_[v.first] =
-				std::make_shared<mrpt::io::CCompressedOutputStream>(fileName);
+		out = std::make_shared<mrpt::io::CCompressedOutputStream>(fileName);
 #else
-			rawlog_io_per_veh_[v.first] = std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
+		out = std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
 #endif
-		}
 	}
 
 	// Store:
-	auto arch = mrpt::serialization::archiveFrom(*rawlog_io_per_veh_.at(veh.getName()));
+	auto arch = mrpt::serialization::archiveFrom(*out);
 	arch << *obs;
 }
 
@@ -519,4 +527,44 @@ std::optional<bool> World::lightGroupState(
 		return {};
 	}
 	return obj->lightGroupState(groupName);
+}
+
+World::GroundTruthSnapshot World::getGroundTruthSnapshot(const std::string& prefix) const
+{
+	// Skip unnamed and internal ("__"-prefixed) objects:
+	const auto startsWithPrefix = [&prefix](const std::string& name)
+	{
+		return !name.empty() && name.compare(0, 2, "__") != 0 &&
+			   name.compare(0, prefix.size(), prefix) == 0;
+	};
+
+	GroundTruthSnapshot snap;
+	{
+		auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
+		snap.simul_time = copy_of_objects_dynstate_time_;
+		for (const auto& [name, pose] : copy_of_objects_dynstate_pose_)
+		{
+			if (!startsWithPrefix(name))
+			{
+				continue;
+			}
+			ObjectGroundTruth o;
+			o.name = name;
+			o.pose = pose;
+			if (auto it = copy_of_objects_dynstate_twist_.find(name);
+				it != copy_of_objects_dynstate_twist_.end())
+			{
+				o.twist = it->second;
+			}
+			snap.objects.push_back(std::move(o));
+		}
+	}
+	for (const auto& [name, pose] : runtimeObjects_.poses())
+	{
+		if (startsWithPrefix(name))
+		{
+			snap.objects.push_back({name, pose, {}});
+		}
+	}
+	return snap;
 }

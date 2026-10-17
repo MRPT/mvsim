@@ -1,0 +1,44 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+import "Pose.proto";
+
+// A visual-only object (no physics) spawned at runtime.
+// See mvsim::RuntimeObjectDescription for the meaning of each field.
+message RuntimeObject {
+  enum Shape {
+    BOX = 0;
+    CYLINDER = 1;
+    SPHERE = 2;
+    RECTANGLE = 3;  // flat decal
+    DISK = 4;       // flat decal
+    POLYGON = 5;    // flat decal (convex)
+    TRIANGLES = 6;
+    LINES = 7;
+  }
+
+  required string name = 1;
+  optional Shape shape = 2 [default = BOX];
+  optional Pose pose = 3;
+
+  optional double sizeX = 4 [default = 0.1];
+  optional double sizeY = 5 [default = 0.1];
+  optional double sizeZ = 6 [default = 0.1];
+
+  // RGBA color, as 0xRRGGBBAA
+  optional uint32 color = 7 [default = 0xff0000ff];
+
+  // POLYGON vertices: x0,y0,x1,y1,...
+  repeated double polygonXY = 8 [packed = true];
+
+  // TRIANGLES and LINES points: x0,y0,z0,x1,y1,z1,...
+  repeated double pointsXYZ = 9 [packed = true];
+
+  // Optional per-point colors for TRIANGLES (0xRRGGBBAA)
+  repeated uint32 pointColors = 10 [packed = true];
+
+  optional string texture = 11;
+  optional bool visibleToSensors = 12 [default = true];
+  optional bool onGround = 13 [default = false];
+}
