@@ -34,9 +34,9 @@ def onMessage(msgType, msg):
     scanRanges = list(p.scanRanges)
     validRanges = list(p.validRanges)
 
-    # TODO: Fix wildly different ranges between u20.04 and u22.04!
+    # The first ray points to a wall 10 m away:
     if (len(scanRanges) == 181) and \
-        (abs(scanRanges[0]-9.0) < 1.5) and \
+        (abs(scanRanges[0]-10.0) < 0.3) and \
             (validRanges[0] == True):
         TEST_PASSED = True
 

@@ -34,6 +34,7 @@ You can get a list of available commands with:
       mvsim server              Start a standalone communication server.
       mvsim node                List connected nodes, etc.
       mvsim topic               Inspect, publish, etc. topics.
+      mvsim slice <WORLD.xml>   Export a 2D slice of the world obstacles to a .txt file.
       mvsim --version           Shows program version.
       mvsim --help              Shows this information.
 
@@ -116,3 +117,37 @@ Command ``mvsim topic``
 
 Can be used to list or inspect the publication of MVSim (not ROS!) topics with sensor and pose data.
 These topics are accessible via the provided Python API, refer to examples: https://github.com/MRPT/mvsim/tree/develop/examples_python
+
+
+Command ``mvsim slice``
+--------------------------
+
+.. code-block:: console
+
+   $ mvsim slice --help
+   Usage: mvsim slice <WORLD_MODEL.xml> -o <OUTPUT.txt> [options]
+
+   Available options:
+   -o, --output <FILE>          Output .txt file (mandatory).
+   --slice-z <0.5>              Height of the slice [m].
+   --slice-z-max <z>            If given, the cells of all geometry between
+                                --slice-z and this height [m] are reported.
+   --slice-resolution <0.05>    Cell size [m].
+   --slice-static-only          Skip blocks that are not <static> (movable).
+   -v, --verbosity              Set verbosity level: DEBUG, INFO (default), WARN, ERROR
+
+Loads a world (without simulating it) and writes the occupied cells of a 2D grid where
+its geometry crosses a given height, or a height band, as 3D sensors would see it at t=0:
+the actual triangles of 3D models, walls with their doors and windows, primitives, point
+clouds and occupancy grid elements. Vehicles, actors and animated blocks are skipped,
+since they move. The output has one ``x y z`` line per occupied cell center, e.g. to build
+a static obstacle map for path planning. For example, as an ``mp2p_icp`` metric map:
+
+.. code-block:: console
+
+   $ mvsim slice demo_warehouse.world.xml -o obstacles.txt --slice-z 0.1 --slice-z-max 1.5
+   $ txt2mm -i obstacles.txt -o obstacles.mm -f xyz
+
+Random expressions in the world file (e.g. ``$f{rand()}``) give the same values as in a
+simulation only if the world fixes the random seed first, e.g. with
+``<variable name="dummy" value="$f{randomize(1)}"></variable>``.

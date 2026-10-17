@@ -104,6 +104,18 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_vehicle_motion
+	SOURCES test_vehicle_motion.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_suspension
+	SOURCES test_suspension.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_pose_trajectory_follower
 	SOURCES test_pose_trajectory_follower.cpp
 	LINK_LIBRARIES mvsim::simulator
@@ -173,3 +185,9 @@ target_compile_definitions(test_dataset_gen_e2e PRIVATE
 	MVSIM_TUTORIAL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mvsim_tutorial"
 	)
 add_dependencies(test_dataset_gen_e2e mvsim-dataset-gen)
+
+mvsim_add_test(
+	TARGET test_xml_if_in_instances
+	SOURCES test_xml_if_in_instances.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)

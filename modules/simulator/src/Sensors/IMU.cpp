@@ -87,7 +87,8 @@ void IMU::internalGuiUpdate(
 		insertIntoScene(SensorBase::GetAllSensorsOriginViz(), gl_sensor_origin_);
 	}
 
-	const mrpt::poses::CPose3D p = vehicle_.getCPose3D() + obs_model_.sensorPose;
+	const mrpt::poses::CPose3D p =
+		mrpt::poses::CPose3D(vehicle_.getChassisPose()) + obs_model_.sensorPose;
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
 	if (gl_sensor_origin_)
@@ -112,7 +113,7 @@ void IMU::simul_post_timestep(const TSimulContext& context)
 		internal_simulate_imu(context);
 	}
 	// Keep sensor global pose up-to-date:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto globalSensorPose = p + obs_model_.sensorPose.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
@@ -130,9 +131,19 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 
 	const double dt = context.dt;
 
+	// Chassis suspension, if any:
+	const auto* veh = dynamic_cast<const VehicleBase*>(&vehicle_);
+	const Suspension* susp = veh ? veh->getSuspension() : nullptr;
+
 	// --- Angular velocity ---
-	// Ground-truth: only yaw-rate from the 2D dynamics for now.
-	const mrpt::math::TVector3D trueW(0.0, 0.0, vehicle_.getRefVelocityLocal().omega);
+	// Ground-truth: yaw-rate from the 2D dynamics, plus the roll and pitch
+	// rates of the chassis with suspension.
+	mrpt::math::TVector3D trueW(0.0, 0.0, vehicle_.getRefVelocityLocal().omega);
+	if (susp)
+	{
+		trueW.x = susp->absoluteVelocity()[Suspension::ROLL];
+		trueW.y = susp->absoluteVelocity()[Suspension::PITCH];
+	}
 
 	const mrpt::math::TVector3D w = noiseModel_.applyGyroscope(trueW, dt);
 
@@ -146,12 +157,26 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 	// Rotate the global-frame acceleration vector into the vehicle's
 	// local frame.
 	const auto globalAcc = vehicle_.getLinearAcceleration() - g;
-	const auto R = vehicle_.getCPose3D().getRotationMatrix();  // 3×3
+	const auto R = mrpt::poses::CPose3D(vehicle_.getChassisPose()).getRotationMatrix();	 // 3×3
 
-	const mrpt::math::TVector3D trueAccLocal(
+	mrpt::math::TVector3D trueAccLocal(
 		R(0, 0) * globalAcc.x + R(1, 0) * globalAcc.y + R(2, 0) * globalAcc.z,
 		R(0, 1) * globalAcc.x + R(1, 1) * globalAcc.y + R(2, 1) * globalAcc.z,
 		R(0, 2) * globalAcc.x + R(1, 2) * globalAcc.y + R(2, 2) * globalAcc.z);
+
+	if (susp)
+	{
+		// Acceleration of the sensor point due to the chassis heave, roll and
+		// pitch about its pivot (on the ground, under its center of mass):
+		const auto& a = susp->absoluteAcceleration();
+		const auto& com = susp->params().com;
+		const double x = obs_model_.sensorPose.x() - com.x;
+		const double y = obs_model_.sensorPose.y() - com.y;
+		const double z = obs_model_.sensorPose.z();
+		trueAccLocal.x += z * a[Suspension::PITCH];
+		trueAccLocal.y -= z * a[Suspension::ROLL];
+		trueAccLocal.z += a[Suspension::HEAVE] + y * a[Suspension::ROLL] - x * a[Suspension::PITCH];
+	}
 
 	const mrpt::math::TVector3D linAccLocal = noiseModel_.applyAccelerometer(trueAccLocal, dt);
 
@@ -166,7 +191,7 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 		const auto& w2enu = parent()->georeferenceOptions().world_to_enu_rotation;
 
 		// Get vehicle pose on the world:
-		const auto& p = vehicle_.getCPose3D();
+		const auto& p = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 
 		// compose with sensor pose + orientation noise:
 		auto& rng = mrpt::random::getRandomGenerator();
@@ -203,7 +228,7 @@ void IMU::notifySimulableSetPose(const mrpt::math::TPose3D&)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
-	// const auto& p = vehicle_.getPose();
+	// const auto& p = vehicle_.getChassisPose();
 	// sensor_params_.sensorPose = mrpt::poses::CPose3D(newPose - p);
 }
 

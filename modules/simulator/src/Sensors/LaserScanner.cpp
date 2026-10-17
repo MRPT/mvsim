@@ -185,7 +185,7 @@ void LaserScanner::internalGuiUpdate(
 		gui_uptodate_ = true;
 	}
 
-	const mrpt::poses::CPose3D p = vehicle_.getCPose3D();
+	const mrpt::poses::CPose3D p = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
 	const double z_incrs = 1e-3;  // for z_order_
@@ -246,7 +246,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	}
 
 	// Keep sensor global pose up-to-date:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto globalSensorPose = p + scan_model_.sensorPose.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
@@ -255,7 +255,7 @@ void LaserScanner::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	scan_model_.sensorPose = mrpt::poses::CPose3D(newPose - p);
 }
 
@@ -525,7 +525,7 @@ void LaserScanner::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
 
-	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
+	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 
 	// ----------------------------------------------------------
 	// Decompose the 2D lidar FOV into "n" depth camera images,

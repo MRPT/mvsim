@@ -56,21 +56,26 @@ void HumanActor::register_actor_class(const World& parent, const rapidxml::xml_n
 // Factory
 // ============================================================================
 
-HumanActor::Ptr HumanActor::factory(World* parent, const rapidxml::xml_node<char>* root)
+HumanActor::Ptr HumanActor::factory(World* parent, const rapidxml::xml_node<char>* rootIn)
 {
 	using namespace rapidxml;
 
-	if (!root)
+	if (!rootIn)
 	{
 		throw runtime_error("[HumanActor::factory] XML node is nullptr");
 	}
-	if (0 != strcmp(root->name(), "actor"))
+	if (0 != strcmp(rootIn->name(), "actor"))
 	{
 		throw runtime_error(mrpt::format(
 			"[HumanActor::factory] XML root element is '%s' "
 			"('actor' expected)",
-			root->name()));
+			rootIn->name()));
 	}
+
+	// Resolve <include> and <if> tags found at any depth inside the instance
+	// definition. The resolved document must exist during this whole function scope.
+	const auto [resolvedDoc, root] = xml_node_solving_includes(*parent, rootIn);
+	(void)resolvedDoc;
 
 	// ----- Combine class definition + instance definition -----
 	JointXMLnode<> nodes;

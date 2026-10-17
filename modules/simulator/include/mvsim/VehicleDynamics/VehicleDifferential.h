@@ -83,6 +83,9 @@ class DynamicsDifferential : public VehicleBase
 
 		double wheel_torque_l = 0;
 		double wheel_torque_r = 0;
+
+		/// Optional closed-loop models of the L/R motors (forward positive)
+		MotorTorqueModel motor_l, motor_r;
 	};
 
 	/** Virtual base for controllers of vehicles of type DynamicsDifferential */
@@ -130,6 +133,12 @@ class DynamicsDifferential : public VehicleBase
 
 		/// Maximum abs. value torque (for clamp) [Nm]
 		double max_torque = 100;
+
+		/** Multiplier of the distance between wheels used to compute the wheel
+		 *  speed setpoints, as in ROS diff_drive_controller. Skid-steer robots
+		 *  turn slower than their wheel speeds imply (their wheels slip), and
+		 *  values >1 compensate it. */
+		double wheel_separation_multiplier = 1.0;
 
 		bool enable_antiwindup = false;
 

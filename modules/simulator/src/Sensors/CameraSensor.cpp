@@ -146,7 +146,7 @@ void CameraSensor::internalGuiUpdate(
 	}
 
 	// Move with vehicle:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
 	gl_sensor_fov_->setPose(pp);
@@ -218,7 +218,7 @@ void CameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	// Note: relativePoseOnVehicle should be (y,p,r)=(-90deg,0,-90deg) to make
 	// the camera to look forward:
 
-	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
+	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 	const auto rgbSensorPose = vehiclePose + curObs->cameraPose;
 
 	cam.setPose(world()->applyWorldRenderOffset(rgbSensorPose));
@@ -273,7 +273,7 @@ void CameraSensor::simul_post_timestep(const TSimulContext& context)
 	}
 
 	// Keep sensor global pose up-to-date:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto globalSensorPose = p + sensor_params_.cameraPose.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
@@ -282,7 +282,7 @@ void CameraSensor::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	sensor_params_.cameraPose = mrpt::poses::CPose3D(newPose - p);
 }
 

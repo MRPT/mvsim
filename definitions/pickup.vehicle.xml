@@ -18,6 +18,7 @@
         <f_wheels_x>1.7</f_wheels_x>
         <f_wheels_d>1.85</f_wheels_d>
         <max_steer_ang_deg>40.0</max_steer_ang_deg>
+        <max_steer_rate_deg>45</max_steer_rate_deg>  <!-- 0: instantaneous steering -->
 
         <chassis mass="2000.0" zmin="0.01" zmax="1.9">
             <shape_from_visual/> <!-- automatic shape,zmin,zmax from 3D mesh-->
@@ -26,9 +27,9 @@
         <!--   Motor controller -->
         <controller class="twist_front_steer_pid">
             <!-- Params -->
-            <KP>1500</KP>  <KI>50</KI> <I_MAX>20</I_MAX> <KD>0</KD>
+            <KP>16200</KP>  <KI>324</KI> <KD>0</KD>
             <V>0.0</V><W>0</W>
-            <max_torque>600</max_torque>
+            <max_torque>1250</max_torque>
         </controller>
 
         <!-- Available types: 
@@ -50,6 +51,13 @@
         </drivetrain>
 
     </dynamics>
+
+    <!-- Chassis suspension: springs and dampers between the chassis and the wheels
+         (disabled by default; set the variable suspension="true" to enable it) -->
+    <suspension enabled="${suspension|false}">
+        <frequency_hz>1.4</frequency_hz>  <!-- Heave natural frequency -->
+        <damping_ratio>0.3</damping_ratio>
+    </suspension>
 
     <!-- Friction force simulation -->
     <friction class="default">

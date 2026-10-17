@@ -594,6 +594,18 @@ mrpt::math::TPose3D Simulable::getPose() const
 
 mrpt::math::TPose3D Simulable::getPoseNoLock() const { return q_; }
 
+mrpt::math::TPose3D Simulable::getChassisPose() const
+{
+	const auto rel = chassisRelativePose();
+	return rel ? (mrpt::poses::CPose3D(getPose()) + *rel).asTPose() : getPose();
+}
+
+mrpt::math::TPose3D Simulable::getChassisPoseNoLock() const
+{
+	const auto rel = chassisRelativePose();
+	return rel ? (mrpt::poses::CPose3D(getPoseNoLock()) + *rel).asTPose() : getPoseNoLock();
+}
+
 mrpt::math::TVector3D Simulable::getLinearAcceleration() const
 {
 	std::shared_lock lck(q_mtx_);
@@ -606,7 +618,9 @@ void Simulable::setRefVelocityLocal(const mrpt::math::TTwist2D& dq)
 
 	if (b2dBody_)
 	{
-		const double currentYaw = q_.yaw;
+		// Use the body angle, not q_.yaw: when called after a physics step (e.g.
+		// from ideal controllers), q_ has not been updated yet.
+		const double currentYaw = b2dBody_->GetAngle();
 
 		// Compute COM velocity in body frame first:
 		// v_com_body = v_ref_body + ω × r_ref→com

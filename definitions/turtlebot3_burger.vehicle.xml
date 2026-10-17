@@ -20,9 +20,9 @@
         <!--   Motor controller -->
         <controller class="twist_ideal"> <!-- or "twist_pid" -->
             <!-- Params -->
-            <KP>1.0</KP>  <KI>1.0</KI> <I_MAX>1.0</I_MAX> <KD>0</KD>
+            <KP>4.5</KP>  <KI>16</KI> <KD>0</KD>
             <V>0.0</V><W>0</W>
-            <max_torque>5</max_torque>
+            <max_torque>0.14</max_torque>  <!-- Below the wheel traction limit -->
         </controller>
     </dynamics>
 

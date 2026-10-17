@@ -28,7 +28,7 @@ def generate_launch_description():
     do_fake_localization_arg = DeclareLaunchArgument(
         'do_fake_localization',
         default_value='True',
-        description='Publish fake identity tf "map" -> "odom"'
+        description='Publish tf "map" -> "odom" from the ground truth (fake localization)'
     )
     publish_log_topics_arg = DeclareLaunchArgument(
         'publish_log_topics',

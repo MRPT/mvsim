@@ -8,7 +8,9 @@
   +-------------------------------------------------------------------------+ */
 
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/math/CMatrixFixed.h>
 #include <mrpt/math/TPose2D.h>
+#include <mrpt/math/wrap2pi.h>
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/random.h>
 #include <mrpt/system/filesystem.h>
@@ -21,8 +23,10 @@
 #include <mvsim/VehicleDynamics/VehicleDifferential.h>
 #include <mvsim/World.h>
 
+#include <algorithm>
 #include <cmath>
 #include <map>
+#include <optional>
 #include <rapidxml.hpp>
 #include <string>
 
@@ -112,23 +116,23 @@ void VehicleBase::register_vehicle_class(
 
 /** Class factory: Creates a vehicle from XML description of type
  * "<vehicle>...</vehicle>".  */
-VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<char>* root)
+VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<char>* rootIn)
 {
 	register_all_veh_dynamics();
 
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root)
+	if (!rootIn)
 	{
 		throw runtime_error("[VehicleBase::factory] XML node is nullptr");
 	}
-	if (0 != strcmp(root->name(), "vehicle"))
+	if (0 != strcmp(rootIn->name(), "vehicle"))
 	{
 		throw runtime_error(mrpt::format(
 			"[VehicleBase::factory] XML root element is '%s' ('vehicle' "
 			"expected)",
-			root->name()));
+			rootIn->name()));
 	}
 
 	// "class": When a vehicle has a 'class="XXX"' attribute, look for each
@@ -137,53 +141,15 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	// --------------------------------------------------------------------------------
 	JointXMLnode<> nodes;
 
-	std::vector<XML_Doc_Data::Ptr> scopedLifeDocs;
+	// Resolve <include> and <if> tags found at any depth inside the instance
+	// definition. Variables NAME and PARENT_NAME (used in sensors) are kept
+	// until "veh" is constructed and we actually have a name.
+	// The resolved document must exist during this whole function scope.
+	const std::set<std::string> varsRetain = {
+		"NAME" /*sensor name*/, "PARENT_NAME" /*vehicle name*/};
+	const auto [resolvedDoc, root] = xml_node_solving_includes(*parent, rootIn, varsRetain);
+	(void)resolvedDoc;
 
-	// Solve includes:
-	for (auto n = root->first_node(); n; n = n->next_sibling())
-	{
-		if (strcmp(n->name(), "include") != 0)
-		{
-			continue;
-		}
-
-		auto fileAttrb = n->first_attribute("file");
-		ASSERTMSG_(fileAttrb, "XML tag '<include />' must have a 'file=\"xxx\"' attribute)");
-
-		const std::string relFile =
-			mvsim::parse(fileAttrb->value(), parent->user_defined_variables());
-		const auto absFile = parent->local_to_abs_path(relFile);
-		parent->logStr(
-			mrpt::system::LVL_DEBUG,
-			mrpt::format("XML parser: including file: '%s'", absFile.c_str()));
-
-		std::map<std::string, std::string> vars;
-		// Inherit the user-defined variables from parent scope
-		vars = parent->user_defined_variables();
-		// Plus new ones:
-		for (auto attr = n->first_attribute(); attr; attr = attr->next_attribute())
-		{
-			if (strcmp(attr->name(), "file") == 0)
-			{
-				continue;
-			}
-			vars[attr->name()] = attr->value();
-		}
-
-		// Delay the replacement of this variable (used in Sensors) until "veh"
-		// is constructed and we actually have a name:
-		std::set<std::string> varsRetain = {"NAME" /*sensor name*/, "PARENT_NAME" /*vehicle name*/};
-
-		const auto [xml, nRoot] = readXmlAndGetRoot(absFile, vars, varsRetain);
-
-		// the XML document object must exist during this whole function scope
-		scopedLifeDocs.emplace_back(xml);
-
-		// recursive parse:
-		nodes.add(nRoot->parent());
-	}
-
-	// ---
 	// Always search in root. Also in the class root, if any:
 	nodes.add(root);
 
@@ -285,6 +251,67 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		attribs["yaw_multiplier"] = TParamEntry("%f", &odoParam.yaw_multiplier);
 
 		parse_xmlnode_attribs(*odom_node, attribs, {}, "[VehicleBase::factory]");
+	}
+
+	// <suspension> (optional, at the vehicle level, so an instance can
+	// override the one of its class):
+	if (const xml_node<>* susp_node = nodes.first_node("suspension"); susp_node)
+	{
+		auto& cfg = veh->suspensionConfig_;
+		const std::map<std::string, std::string> varValues = {{"NAME", veh->name_}};
+		const char* ctx = "[VehicleBase::factory] <suspension>";
+
+		TParameterDefinitions attribs;
+		attribs["enabled"] = TParamEntry("%bool", &cfg.enabled);
+		parse_xmlnode_attribs(*susp_node, attribs, varValues, ctx);
+
+		double I_xx = 0;
+		double I_yy = 0;
+		double cogHeight = 0;
+		TParameterDefinitions params;
+		params["frequency_hz"] = TParamEntry("%lf", &cfg.frequency_hz);
+		params["damping_ratio"] = TParamEntry("%lf", &cfg.damping_ratio);
+		params["I_xx"] = TParamEntry("%lf", &I_xx);
+		params["I_yy"] = TParamEntry("%lf", &I_yy);
+		params["cog_height"] = TParamEntry("%lf", &cogHeight);
+		parse_xmlnode_children_as_param(*susp_node, params, varValues, ctx);
+		if (I_xx > 0)
+		{
+			cfg.I_xx = I_xx;
+		}
+		if (I_yy > 0)
+		{
+			cfg.I_yy = I_yy;
+		}
+		if (cogHeight > 0)
+		{
+			cfg.cog_height = cogHeight;
+		}
+
+		// Per-corner overrides: <wheel index="0" stiffness="..." damping="..."/>
+		for (const xml_node<>* n = susp_node->first_node("wheel"); n; n = n->next_sibling("wheel"))
+		{
+			int index = -1;
+			double k = -1;
+			double c = -1;
+			TParameterDefinitions wp;
+			wp["index"] = TParamEntry("%i", &index);
+			wp["stiffness"] = TParamEntry("%lf", &k);
+			wp["damping"] = TParamEntry("%lf", &c);
+			parse_xmlnode_attribs(*n, wp, varValues, ctx);
+			if (index < 0)
+			{
+				THROW_EXCEPTION("<suspension><wheel> requires an 'index' attribute");
+			}
+			if (k > 0)
+			{
+				cfg.stiffness[index] = k;
+			}
+			if (c >= 0)
+			{
+				cfg.damping[index] = c;
+			}
+		}
 	}
 
 	// Initialize class-specific params (chassis shape, etc.)
@@ -414,6 +441,8 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		}
 	}
 
+	veh->initSuspension();
+
 	return veh;
 }
 
@@ -437,6 +466,317 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const std::string& xml_text
 			e.what()));
 	}
 	return VehicleBase::factory(parent, xml.first_node());
+}
+
+namespace
+{
+// Vertical loads N_i at the support points p_i satisfying the force and moment
+// balance A*N = b, A rows: (1, x_i, y_i). Statically indeterminate for more
+// than 3 points: minimum-norm solution N = A^T (A A^T)^-1 b, removing points
+// that would need negative loads (the body would tip over them).
+// Returns false if the balance cannot be satisfied with non-negative loads.
+bool solveSupportLoads(
+	const std::vector<mrpt::math::TPoint2D>& p, const double b[3], std::vector<double>& loads)
+{
+	const size_t n = p.size();
+	loads.assign(n, 0.0);
+	std::vector<bool> active(n, true);
+	for (size_t iter = 0; iter < n; iter++)
+	{
+		mrpt::math::CMatrixDouble33 AAt;
+		AAt.setZero();
+		for (size_t i = 0; i < n; i++)
+		{
+			if (!active[i])
+			{
+				continue;
+			}
+			const double row[3] = {1.0, p[i].x, p[i].y};
+			for (int r = 0; r < 3; r++)
+			{
+				for (int c = 0; c < 3; c++)
+				{
+					AAt(r, c) += row[r] * row[c];
+				}
+			}
+		}
+		// Regularization: ignores the equations with no support (e.g. the
+		// pitch balance of a 2-wheel differential robot)
+		const double eps = 1e-9 * (AAt(0, 0) + AAt(1, 1) + AAt(2, 2));
+		for (int r = 0; r < 3; r++)
+		{
+			AAt(r, r) += eps;
+		}
+		const mrpt::math::CMatrixDouble33 AAtInv = AAt.inverse_LLt();
+		double lambda[3];
+		for (int r = 0; r < 3; r++)
+		{
+			lambda[r] = AAtInv(r, 0) * b[0] + AAtInv(r, 1) * b[1] + AAtInv(r, 2) * b[2];
+		}
+
+		std::optional<size_t> mostNegative;
+		for (size_t i = 0; i < n; i++)
+		{
+			loads[i] = active[i] ? lambda[0] + lambda[1] * p[i].x + lambda[2] * p[i].y : 0.0;
+			if (loads[i] < 0 && (!mostNegative || loads[i] < loads[*mostNegative]))
+			{
+				mostNegative = i;
+			}
+		}
+		if (!mostNegative)
+		{
+			break;
+		}
+		active[*mostNegative] = false;
+	}
+
+	// Check the balance, skipping the equations with no support:
+	double sum[3] = {0, 0, 0};
+	double spread[2] = {0, 0};
+	for (size_t i = 0; i < n; i++)
+	{
+		loads[i] = std::max(0.0, loads[i]);
+		sum[0] += loads[i];
+		sum[1] += loads[i] * p[i].x;
+		sum[2] += loads[i] * p[i].y;
+		spread[0] = std::max(spread[0], std::abs(p[i].x - p[0].x));
+		spread[1] = std::max(spread[1], std::abs(p[i].y - p[0].y));
+	}
+	const double tol = 1e-3 * std::abs(b[0]);
+	bool ok = std::abs(sum[0] - b[0]) < tol;
+	for (int k = 0; k < 2; k++)
+	{
+		if (spread[k] > 1e-6)
+		{
+			ok = ok && std::abs(sum[k + 1] - b[k + 1]) < tol * (1.0 + spread[k]);
+		}
+	}
+	return ok;
+}
+}  // namespace
+
+std::vector<double> VehicleBase::computeWheelLoads(const TSimulContext& context)
+{
+	const size_t nW = getNumWheels();
+	const double gravity = parent()->get_gravity();
+	const double M = b2dBody_ ? b2dBody_->GetMass() : 0;
+	std::vector<double> loads(nW, 0.0);
+	if (nW == 0 || M <= 0)
+	{
+		return loads;
+	}
+
+	// Center of mass (chassis + wheels), and its height over the ground:
+	const b2Vec2 com = b2dBody_->GetLocalCenter();
+	double h = chassis_mass_ * 0.5 * (chassis_z_min_ + chassis_z_max_);
+	for (size_t i = 0; i < nW; i++)
+	{
+		h += wheels_info_[i].mass * 0.5 * wheels_info_[i].diameter;
+	}
+	h /= M;
+
+	// Acceleration in the vehicle frame (low-pass filtered, to avoid a
+	// feedback loop with the friction forces it depends on):
+	{
+		const auto acc = getLinearAcceleration();
+		const double yaw = getPose().yaw;
+		const mrpt::math::TVector2D accLocal(
+			std::cos(yaw) * acc.x + std::sin(yaw) * acc.y,
+			-std::sin(yaw) * acc.x + std::cos(yaw) * acc.y);
+		constexpr double tau = 0.05;  // [s]
+		const double a = context.dt / (tau + context.dt);
+		accelForLoads_.x += a * (accLocal.x - accelForLoads_.x);
+		accelForLoads_.y += a * (accLocal.y - accelForLoads_.y);
+	}
+
+	// With suspension, its springs and dampers carry the load transfer, and
+	// the balance below gives their static loads:
+	const mrpt::math::TVector2D acc =
+		suspension_.initialized() ? mrpt::math::TVector2D(0, 0) : accelForLoads_;
+
+	// Force and moment balance (no pitch/roll motion) of the rigid vehicle, in
+	// its frame, with normal forces N_i at the wheel contact points (x_i,y_i):
+	//  sum(N_i)       = M*gz
+	//  sum(N_i * x_i) = M*(gz*xc - h*(ax - gx))
+	//  sum(N_i * y_i) = M*(gz*yc - h*(ay - gy))
+	// with (gx,gy,gz) the gravity in the vehicle frame (gz>0 downwards).
+	const double gx = slopeDir_.x * gravity;
+	const double gy = slopeDir_.y * gravity;
+	const double gz = -slopeDir_.z * gravity;
+	const double b[3] = {
+		M * gz, M * (gz * com.x - h * (acc.x - gx)), M * (gz * com.y - h * (acc.y - gy))};
+
+	std::vector<mrpt::math::TPoint2D> supports;
+	for (size_t i = 0; i < nW; i++)
+	{
+		supports.emplace_back(wheels_info_[i].x, wheels_info_[i].y);
+	}
+	std::vector<double> sol;
+	if (!solveSupportLoads(supports, b, sol))
+	{
+		// It cannot stand on its wheels (e.g. a semi-trailer): it also rests
+		// on its joint anchors (whose load is not passed to the other body):
+		for (const auto& j : world_->getListOfJoints())
+		{
+			if (j.bodyA_name == name_)
+			{
+				supports.emplace_back(j.anchorA);
+			}
+			else if (j.bodyB_name == name_)
+			{
+				supports.emplace_back(j.anchorB);
+			}
+		}
+		if (!solveSupportLoads(supports, b, sol))
+		{
+			// Still not balanced (e.g. a parked trailer, resting on its legs):
+			// best effort, keep the distribution but carry the whole weight:
+			double sum = 0;
+			for (size_t i = 0; i < nW; i++)
+			{
+				sum += sol[i];
+			}
+			for (size_t i = 0; sum > 0 && i < nW; i++)
+			{
+				sol[i] *= b[0] / sum;
+			}
+		}
+	}
+	std::copy(sol.begin(), sol.begin() + nW, loads.begin());
+
+	if (suspension_.initialized())
+	{
+		// A wheel cannot pull the ground:
+		const auto dN = suspension_.cornerLoadChanges();
+		for (size_t i = 0; i < nW; i++)
+		{
+			loads[i] = std::max(0.0, loads[i] + dN[i]);
+		}
+	}
+	return loads;
+}
+
+void VehicleBase::initSuspension()
+{
+	const auto& cfg = suspensionConfig_;
+	if (!cfg.enabled)
+	{
+		return;
+	}
+	const size_t nW = getNumWheels();
+	const double g = parent()->get_gravity();
+
+	Suspension::Params p;
+	p.sprungMass = chassis_mass_;
+	p.com = chassis_com_;
+	p.comHeight = cfg.cog_height.value_or(0.5 * (chassis_z_min_ + chassis_z_max_));
+	p.gravity = g;
+
+	// Default inertias: those of a box with the chassis footprint and height
+	mrpt::math::TPoint2D bbMin;
+	mrpt::math::TPoint2D bbMax;
+	chassis_poly_.getBoundingBox(bbMin, bbMax);
+	const double L = bbMax.x - bbMin.x;
+	const double W = bbMax.y - bbMin.y;
+	const double H = chassis_z_max_ - chassis_z_min_;
+	p.I_xx = cfg.I_xx.value_or(chassis_mass_ * (W * W + H * H) / 12.0);
+	p.I_yy = cfg.I_yy.value_or(chassis_mass_ * (L * L + H * H) / 12.0);
+
+	// Static load of each corner, to size its spring and damper for the given
+	// heave frequency and damping ratio (k_i = m_i*w^2, c_i = 2*zeta*w*m_i):
+	std::vector<mrpt::math::TPoint2D> supports;
+	for (size_t i = 0; i < nW; i++)
+	{
+		supports.emplace_back(wheels_info_[i].x, wheels_info_[i].y);
+	}
+	const double mg = chassis_mass_ * g;
+	const double b[3] = {mg, mg * chassis_com_.x, mg * chassis_com_.y};
+	std::vector<double> staticLoads;
+	if (!solveSupportLoads(supports, b, staticLoads))
+	{
+		THROW_EXCEPTION_FMT(
+			"[%s] <suspension> requires a vehicle that stands on its wheels (e.g. not a "
+			"semi-trailer)",
+			name_.c_str());
+	}
+	double sumLoads = 0;
+	for (const double n : staticLoads)
+	{
+		sumLoads += n;
+	}
+
+	const double w = 2 * M_PI * cfg.frequency_hz;
+	for (size_t i = 0; i < nW; i++)
+	{
+		const double m_i = sumLoads > 0 ? chassis_mass_ * staticLoads[i] / sumLoads : 0.0;
+		Suspension::Corner c;
+		c.pos = supports[i];
+		c.stiffness = cfg.stiffness.count(i) ? cfg.stiffness.at(i) : m_i * w * w;
+		c.damping = cfg.damping.count(i) ? cfg.damping.at(i) : 2 * cfg.damping_ratio * w * m_i;
+		p.corners.push_back(c);
+	}
+
+	suspension_.init(p);
+	world_->logFmt(
+		mrpt::system::LVL_INFO, "[%s] Suspension modes: %s", name_.c_str(),
+		suspension_.modesAsString().c_str());
+}
+
+void VehicleBase::updateSuspension(const TSimulContext& context)
+{
+	if (!suspension_.initialized())
+	{
+		return;
+	}
+	const double dt = context.dt;
+	const auto q = getPose();
+
+	// Velocity of the wheels' body at the suspension pivot (under the chassis
+	// center of mass): along its normal, and roll and pitch rates
+	Suspension::Vector3 baseRates = Suspension::Vector3::Zero();
+	if (suspensionPrevBasePose_ && dt > 0)
+	{
+		const auto& q0 = *suspensionPrevBasePose_;
+		const auto R = mrpt::poses::CPose3D(q).getRotationMatrix();
+		const double dzNormal =
+			R(0, 2) * (q.x - q0.x) + R(1, 2) * (q.y - q0.y) + R(2, 2) * (q.z - q0.z);
+		// Ignore teleports (e.g. the vehicle moved by the user):
+		constexpr double maxNormalStep = 0.25;	// [m]
+		if (std::abs(dzNormal) < maxNormalStep)
+		{
+			const double rollRate = mrpt::math::wrapToPi(q.roll - q0.roll) / dt;
+			const double pitchRate = mrpt::math::wrapToPi(q.pitch - q0.pitch) / dt;
+			const auto& c = suspension_.params().com;
+			baseRates[Suspension::HEAVE] = dzNormal / dt + c.y * rollRate - c.x * pitchRate;
+			baseRates[Suspension::ROLL] = rollRate;
+			baseRates[Suspension::PITCH] = pitchRate;
+		}
+	}
+	suspensionPrevBasePose_ = q;
+
+	// Acceleration in the vehicle frame. The tires cannot exceed ~1g, so larger
+	// values are spikes (e.g. collisions, or the velocity steps of ideal
+	// controllers) that would kick the chassis:
+	const auto acc = getLinearAcceleration();
+	mrpt::math::TVector2D accLocal(
+		std::cos(q.yaw) * acc.x + std::sin(q.yaw) * acc.y,
+		-std::sin(q.yaw) * acc.x + std::cos(q.yaw) * acc.y);
+	const double maxAcc = 2.0 * parent()->get_gravity();
+	if (const double n = accLocal.norm(); n > maxAcc)
+	{
+		accLocal *= maxAcc / n;
+	}
+
+	suspension_.step(dt, baseRates, accLocal);
+
+	std::lock_guard<std::mutex> lck(chassisRelPoseMtx_);
+	chassisRelPose_ = suspension_.relativePose();
+}
+
+std::optional<mrpt::poses::CPose3D> VehicleBase::chassisRelativePose() const
+{
+	std::lock_guard<std::mutex> lck(chassisRelPoseMtx_);
+	return chassisRelPose_;
 }
 
 void VehicleBase::simul_pre_timestep(const TSimulContext& context)
@@ -474,61 +814,145 @@ void VehicleBase::simul_pre_timestep(const TSimulContext& context)
 	const size_t nW = getNumWheels();
 	ASSERT_EQUAL_(wheelTorque.size(), nW);
 
-	// Part of the vehicle weight on each wheel:
 	const double gravity = parent()->get_gravity();
+	const double dt = context.dt;
 
-	// TODO: Use chassis cog point to estimate load on each wheel, caching it.
-	// TODO-TODO: Use dynamic load transfer too!
-	const double massPerWheel = getChassisMass() / static_cast<double>(nW);
-	const double weightPerWheel = massPerWheel * gravity;
+	// Normal force on each wheel, and its share of the in-plane gravity force:
+	wheelLoads_ = computeWheelLoads(context);
+	const std::vector<double>& wheelLoads = wheelLoads_;
+	double sumLoads = 0;
+	for (const double n : wheelLoads)
+	{
+		sumLoads += n;
+	}
 
-	const std::vector<mrpt::math::TVector2D> wheelLocalVels =
-		getWheelsVelocityLocal(getRefVelocityLocal());
+	// The friction impulses are solved wheel by wheel (sequential impulses, a
+	// Gauss-Seidel iteration), with the chassis velocity estimate including
+	// the impulses of the rest of wheels: computing all of them from the same
+	// velocity over-corrects it (and ends up in a limit cycle) when the wheels
+	// are far from the center of mass compared to the yaw radius of gyration.
+	// A few sweeps make the chassis and wheels reach a consistent solution
+	// within the step. The order is reversed on every step to avoid a
+	// left/right bias.
+	const double M = b2dBody_->GetMass();
+	const b2Vec2 com = b2dBody_->GetLocalCenter();
+	const double Icom = b2dBody_->GetInertia() - M * (com.x * com.x + com.y * com.y);
+	const bool sequentialImpulses = M > 0 && Icom > 0 && !idealControllerActive_;
+	constexpr int numSweeps = 4;
+	reverseWheelOrder_ = !reverseWheelOrder_;
 
-	ASSERT_EQUAL_(wheelLocalVels.size(), nW);
+	// Effective chassis mass at point r along direction n:
+	const auto effectiveMass = [&](const mrpt::math::TVector2D& r, double nx, double ny)
+	{
+		const double rxn = r.x * ny - r.y * nx;
+		return 1.0 / (1.0 / M + rxn * rxn / Icom);
+	};
+	// Adds the velocity change of the chassis reference point due to force F
+	// (vehicle frame) at point r (from the COM) during dt, times "sign":
+	const auto addImpulse = [&](mrpt::math::TTwist2D& v, const mrpt::math::TVector2D& r,
+								const mrpt::math::TVector2D& F, double sign)
+	{
+		const double dOmega = sign * (r.x * F.y - r.y * F.x) * dt / Icom;
+		// Velocity of the reference point (origin) = COM velocity + w x (-com)
+		v.vx += sign * F.x * dt / M + dOmega * com.y;
+		v.vy += sign * F.y * dt / M - dOmega * com.x;
+		v.omega += dOmega;
+	};
+
+	// Inputs that do not change during the solve:
+	std::vector<FrictionBase::TFrictionInput> inputs;
+	inputs.reserve(nW);
+	std::vector<double> wheelSpin0(nW);
+	std::vector<mrpt::math::TVector2D> rFromCom(nW);
+	for (size_t i = 0; i < nW; i++)
+	{
+		Wheel& w = getWheelInfo(i);
+		auto& fi = inputs.emplace_back(context, w);
+		wheelSpin0[i] = w.getW();
+		rFromCom[i] = {w.x - com.x, w.y - com.y};
+
+		fi.motorTorque = -wheelTorque[i];  // "-" => Forwards is negative
+		if (i < wheelMotors_.size())
+		{
+			fi.motor = wheelMotors_[i];
+		}
+		// Fz excludes the wheel own weight:
+		fi.Fz = wheelLoads[i] - w.mass * gravity;
+		if (sequentialImpulses)
+		{
+			const double c = std::cos(w.yaw);
+			const double sn = std::sin(w.yaw);
+			fi.longitudinalMass = effectiveMass(rFromCom[i], c, sn);
+			fi.lateralMass = effectiveMass(rFromCom[i], -sn, c);
+		}
+
+		// Share of the gravity force along the ground plane (vehicle frame):
+		const double share = sumLoads > 0 ? wheelLoads[i] / sumLoads : 1.0 / nW;
+		fi.gravSlopeForce = {slopeDir_.x * M * gravity * share, slopeDir_.y * M * gravity * share};
+
+		// Query per-region friction overrides at the wheel's world position:
+		const b2Vec2 wPtQuery = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
+		const mrpt::math::TPoint3D wheelWorldPos(wPtQuery.x, wPtQuery.y, 0);
+		if (auto prop = world_->getPropertyAt("friction_mu", wheelWorldPos))
+		{
+			if (auto* val = std::any_cast<double>(&*prop))
+			{
+				fi.mu_override = *val;
+			}
+		}
+		if (auto prop = world_->getPropertyAt("friction_C_rr", wheelWorldPos))
+		{
+			if (auto* val = std::any_cast<double>(&*prop))
+			{
+				fi.C_rr_override = *val;
+			}
+		}
+	}
+
+	// Solve: friction forces (vehicle frame) at each wheel
+	std::vector<mrpt::math::TVector2D> frictionForces(nW, mrpt::math::TVector2D(0, 0));
+	mrpt::math::TTwist2D vel = getRefVelocityLocal();  // body frame
+	for (int sweep = 0; sweep < (sequentialImpulses ? numSweeps : 1); sweep++)
+	{
+		for (size_t k = 0; k < nW; k++)
+		{
+			const size_t i = reverseWheelOrder_ ? nW - 1 - k : k;
+			auto& fi = inputs[i];
+			Wheel& w = fi.wheel;
+
+			// Solve this wheel against the impulses of the rest of them:
+			const mrpt::math::TVector2D netForce(
+				frictionForces[i].x + fi.gravSlopeForce.x,
+				frictionForces[i].y + fi.gravSlopeForce.y);
+			if (sequentialImpulses && sweep > 0)
+			{
+				addImpulse(vel, rFromCom[i], netForce, -1.0);
+			}
+			w.setW(wheelSpin0[i]);
+			fi.wheelCogLocalVel = {vel.vx - vel.omega * w.y, vel.vy + vel.omega * w.x};
+
+			// eval friction (in the frame of the vehicle):
+			frictionForces[i] = frictions_.at(i)->evaluate_friction(fi);
+
+			if (sequentialImpulses)
+			{
+				addImpulse(
+					vel, rFromCom[i],
+					{frictionForces[i].x + fi.gravSlopeForce.x,
+					 frictionForces[i].y + fi.gravSlopeForce.y},
+					+1.0);
+			}
+		}
+	}
 
 	// For visualization only
 	std::vector<mrpt::math::TSegment3D> forceVectors, torqueVectors;
 
 	for (size_t i = 0; i < nW; i++)
 	{
-		// prepare data:
-		Wheel& w = getWheelInfo(i);
-
-		FrictionBase::TFrictionInput fi(context, w);
-		fi.motorTorque = -wheelTorque[i];  // "-" => Forwards is negative
-		fi.Fz = weightPerWheel;
-		fi.wheelCogLocalVel = wheelLocalVels[i];
-
-		// Gravity slope force per wheel (in vehicle-local coords).
-		// Total mass per wheel = chassis share + wheel own mass.
-		const double totalMassPerWheel = massPerWheel + w.mass;
-		fi.gravSlopeForce = {
-			slopeDir_.x * totalMassPerWheel * gravity, slopeDir_.y * totalMassPerWheel * gravity};
-
-		// Query per-region friction overrides at the wheel's world position:
-		{
-			const b2Vec2 wPtQuery = b2dBody_->GetWorldPoint(b2Vec2(w.x, w.y));
-			const mrpt::math::TPoint3D wheelWorldPos(wPtQuery.x, wPtQuery.y, 0);
-
-			if (auto prop = world_->getPropertyAt("friction_mu", wheelWorldPos))
-			{
-				if (auto* val = std::any_cast<double>(&*prop))
-				{
-					fi.mu_override = *val;
-				}
-			}
-			if (auto prop = world_->getPropertyAt("friction_C_rr", wheelWorldPos))
-			{
-				if (auto* val = std::any_cast<double>(&*prop))
-				{
-					fi.C_rr_override = *val;
-				}
-			}
-		}
-
-		// eval friction (in the frame of the vehicle):
-		const mrpt::math::TPoint2D F_r = frictions_.at(i)->evaluate_friction(fi);
+		const auto& fi = inputs[i];
+		const Wheel& w = fi.wheel;
+		const mrpt::math::TVector2D& F_r = frictionForces[i];
 
 		// Force vector -> world coords
 		const b2Vec2 wForce = b2dBody_->GetWorldVector(b2Vec2(F_r.x, F_r.y));
@@ -603,6 +1027,10 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 
 	// Common part (update q_, dq_)
 	Simulable::simul_post_timestep(context);
+
+	// Before the sensors, which are mounted on the chassis:
+	updateSuspension(context);
+
 	for (auto& s : sensors_)
 	{
 		const double t0 = mrpt::Clock::nowDouble();
@@ -654,6 +1082,13 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		logger.updateColumn(PL_ODO_X, odometry_.x());
 		logger.updateColumn(PL_ODO_Y, odometry_.y());
 		logger.updateColumn(PL_ODO_YAW, odometry_.phi());
+		if (suspension_.initialized())
+		{
+			const auto& d = suspension_.displacement();
+			logger.updateColumn(PL_SUSP_Z, d[Suspension::HEAVE]);
+			logger.updateColumn(PL_SUSP_ROLL, d[Suspension::ROLL]);
+			logger.updateColumn(PL_SUSP_PITCH, d[Suspension::PITCH]);
+		}
 	}
 
 	writeLogStrings();
@@ -939,8 +1374,14 @@ void VehicleBase::internalGuiUpdate(
 	// If "viz" does not have a value, it's because we are already inside a
 	// setPose() change event, so my caller already holds the mutex and we don't
 	// need/can't acquire it again:
-	const auto objectPose = viz.has_value() ? getPose() : getPoseNoLock();
+	const auto objectPose = viz.has_value() ? getChassisPose() : getChassisPoseNoLock();
 	const auto pp = parent()->applyWorldRenderOffset(objectPose);
+
+	// The wheels are children of the chassis visuals, but they do not move
+	// with its suspension:
+	const auto chassisRel = chassisRelativePose();
+	const auto onWheelsBody = [&](const mrpt::math::TPose3D& p)
+	{ return chassisRel ? (mrpt::poses::CPose3D(p) - *chassisRel).asTPose() : p; };
 
 	if (glInit_)
 	{
@@ -955,10 +1396,10 @@ void VehicleBase::internalGuiUpdate(
 		for (size_t i = 0; i < nWs; i++)
 		{
 			const Wheel& w = getWheelInfo(i);
-			glWheelsPhysical_[i]->setPose(
+			const auto wheelPose = onWheelsBody(
 				mrpt::math::TPose3D(w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
-			glWheelsViz_[i]->setPose(
-				mrpt::math::TPose3D(w.x, w.y, 0.5 * w.diameter, w.yaw, w.getPhi(), 0.0));
+			glWheelsPhysical_[i]->setPose(wheelPose);
+			glWheelsViz_[i]->setPose(wheelPose);
 
 			if (!w.linked_yaw_object_name.empty())
 			{
@@ -971,9 +1412,13 @@ void VehicleBase::internalGuiUpdate(
 						"with that name.",
 						i, w.linked_yaw_object_name.c_str(), name_.c_str());
 				}
-				auto p = glLinked->getPose();
+				if (!linkedObjectsPose0_.count(w.linked_yaw_object_name))
+				{
+					linkedObjectsPose0_[w.linked_yaw_object_name] = glLinked->getPose();
+				}
+				auto p = linkedObjectsPose0_.at(w.linked_yaw_object_name);
 				p.yaw = w.yaw + w.linked_yaw_offset;
-				glLinked->setPose(p);
+				glLinked->setPose(onWheelsBody(p));
 			}
 		}
 	}
