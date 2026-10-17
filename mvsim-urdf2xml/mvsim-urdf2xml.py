@@ -38,6 +38,8 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
+YAML_ERRORS = (yaml.YAMLError,) if yaml else ()
+
 
 # --------------------------------------------------------------------------
 # Minimal 3D math (4x4 homogeneous matrices as nested lists)
@@ -110,8 +112,8 @@ class Urdf:
         self.root = ET.fromstring(text)
         if self.root.tag != 'robot':
             raise ValueError('Not a URDF file: root element must be <robot>')
-        if self.root.find('.//{http://www.ros.org/wiki/xacro}macro') is not None or \
-                'xacro:' in text:
+        xacro_ns = '{http://www.ros.org/wiki/xacro}'
+        if any(e.tag.startswith(xacro_ns) for e in self.root.iter()):
             raise ValueError(
                 'This looks like a xacro file: expand it first (e.g. "xacro robot.urdf.xacro")')
         self.name = self.root.attrib.get('name', 'robot')
@@ -492,10 +494,12 @@ def main(argv=None):
                          'against the URDF and report mismatches (exit code 1 if any)')
     args = ap.parse_args(argv)
 
-    urdf_text = sys.stdin.read() if args.urdf == '-' else open(args.urdf).read()
+    # Input errors exit with status 2 (1 means mismatches in --check mode):
     try:
+        urdf_text = sys.stdin.read() if args.urdf == '-' else open(args.urdf).read()
         model = Model(Urdf(urdf_text), load_mapping(args.mapping))
-    except (ValueError, KeyError) as e:
+        check_text = open(args.check).read() if args.check else None
+    except (ValueError, KeyError, OSError, ET.ParseError) + YAML_ERRORS as e:
         print(f'Error: {e}', file=sys.stderr)
         return 2
 
@@ -503,7 +507,11 @@ def main(argv=None):
         print(f'Warning: {w}', file=sys.stderr)
 
     if args.check:
-        errors = check_xml(model, open(args.check).read())
+        try:
+            errors = check_xml(model, check_text)
+        except ET.ParseError as e:
+            print(f'Error: {args.check}: {e}', file=sys.stderr)
+            return 2
         for e in errors:
             print(f'Mismatch: {e}')
         if not errors:

@@ -111,6 +111,12 @@ class TestUrdf2Xml(unittest.TestCase):
         with self.assertRaises(ValueError):
             u2x.Urdf('<robot xmlns:xacro="http://www.ros.org/wiki/xacro">'
                      '<xacro:macro name="a"/></robot>')
+        # An expanded URDF may still declare the xacro namespace or mention it:
+        u2x.Urdf('<robot name="r" xmlns:xacro="http://www.ros.org/wiki/xacro">'
+                 '<!-- xacro: generated --><link name="base_link"/></robot>')
+        # Input errors: exit status 2, not 1 (mismatches)
+        self.assertEqual(u2x.main(['/nonexistent.urdf', MAPPING]), 2)
+        self.assertEqual(u2x.main([URDF, MAPPING, '--check', '/nonexistent.xml']), 2)
 
 
 if __name__ == '__main__':
