@@ -83,6 +83,8 @@ class RemoteResourcesManager : public mrpt::system::COutputLogger
 
 	std::string handle_remote_uri(const std::string& uri);
 
+	bool cacheUsageLogged_ = false;
+
 	/// Returns the local file that internalURI refers to, possibly
 	/// decompressing the ZIP package first if it is the first time.
 	std::string handle_local_zip_package(

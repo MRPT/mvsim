@@ -762,7 +762,9 @@ For Ackermann vehicles with visible steering mechanisms:
    </fl_wheel>
 
 The ``linked_yaw`` attribute names a visual object whose yaw angle will track the
-wheel's steering angle, offset by ``linked_yaw_offset_deg``.
+wheel's steering angle, offset by ``linked_yaw_offset_deg``. Since the collision shape
+from ``<shape_from_visual/>`` uses the pose of each visual given in the XML, set the
+``model_yaw`` of that visual to its yaw with straight wheels (``linked_yaw_offset_deg``).
 
 Shape from Visual Model
 ~~~~~~~~~~~~~~~~~~~~~~~
