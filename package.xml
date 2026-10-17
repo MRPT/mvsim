@@ -36,6 +36,7 @@
   <depend>pybind11-dev</depend>
   <depend>python3-pip</depend>
   <depend>python3-protobuf</depend>
+  <exec_depend>python3-yaml</exec_depend>  <!-- mvsim-urdf2xml -->
   <depend>python3-venv</depend>
   <depend>sensor_msgs</depend>
   <depend>stereo_msgs</depend>
