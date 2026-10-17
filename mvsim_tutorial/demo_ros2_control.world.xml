@@ -1,0 +1,37 @@
+<mvsim_world version="1.0">
+	<!--
+	  A skid-steer robot driven by ros2_control controllers (diff_drive_controller),
+	  instead of MVSim built-in controllers. Launch with:
+	    ros2 launch mvsim demo_ros2_control.launch.py
+	-->
+	<simul_timestep>0.005</simul_timestep>
+
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>15</cam_distance>
+		<fov_deg>60</fov_deg>
+		<follow_vehicle>r1</follow_vehicle>
+	</gui>
+
+	<element class="occupancy_grid">
+		<file>demo_world1.png</file>
+		<resolution>0.1</resolution>
+		<centerpixel_x>100</centerpixel_x>
+		<centerpixel_y>100</centerpixel_y>
+	</element>
+
+	<include file="../definitions/jackal.vehicle.xml"
+		default_sensors="false"
+		controller="ros2_control"
+		controllers_yaml="ros2_control/jackal_controllers.yaml"
+		robot_description="$env{MVSIM_ROBOT_DESCRIPTION|generated}"
+	/>
+
+	<vehicle name="r1" class="jackal">
+		<init_pose>0 0 0</init_pose>
+		<include file="../definitions/lidar2d.sensor.xml"
+		  sensor_x="0.15" sensor_z="0.33" sensor_yaw="0" sensor_name="laser1"
+		/>
+	</vehicle>
+</mvsim_world>

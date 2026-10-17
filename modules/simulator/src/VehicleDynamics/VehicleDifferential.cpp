@@ -73,6 +73,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			wheels_info_[i].x = cpw.pos.x;
 			wheels_info_[i].y = cpw.pos.y;
 		}
+		if (wheels_info_[i].joint_name.empty())
+		{
+			wheels_info_[i].joint_name = cpw.name + "_joint";
+		}
 	}
 
 	// Vehicle controller:
@@ -105,6 +109,10 @@ void DynamicsDifferential::dynamics_load_params_from_xml(const rapidxml::xml_nod
 			else if (sCtrlClass == ControllerTrajectory::class_name())
 			{
 				controller_ = std::make_shared<ControllerTrajectory>(*this);
+			}
+			else if (sCtrlClass == ControllerJointCommands::class_name())
+			{
+				controller_ = std::make_shared<ControllerJointCommands>(*this);
 			}
 			else
 			{
@@ -183,6 +191,19 @@ std::vector<double> DynamicsDifferential::invoke_motor_controllers(const TSimulC
 			default:
 				THROW_EXCEPTION("Unexpected number of wheels!");
 		};
+
+		// Per-wheel torques (e.g. joint commands), overriding the above:
+		if (!co.wheel_torques.empty())
+		{
+			ASSERT_EQUAL_(co.wheel_torques.size(), getNumWheels());
+			otpw = co.wheel_torques;
+			wheelMotors_.assign(getNumWheels(), MotorTorqueModel());
+			if (!co.wheel_motors.empty())
+			{
+				ASSERT_EQUAL_(co.wheel_motors.size(), getNumWheels());
+				wheelMotors_ = co.wheel_motors;
+			}
+		}
 	}
 	return otpw;
 }

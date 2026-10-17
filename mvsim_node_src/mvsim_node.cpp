@@ -18,6 +18,10 @@
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 #include <mvsim/mvsim_node_core.h>
 
+#if defined(MVSIM_HAS_ROS2_CONTROL)
+#include <mvsim/mvsim_ros2_control.h>
+#endif
+
 #if MRPT_VERSION < 0x020f00	 // 2.15.0 support legacy classes
 #include <mrpt/maps/CPointsMapXYZI.h>
 #include <mrpt/maps/CPointsMapXYZIRT.h>
@@ -370,6 +374,22 @@ void MVSimNode::terminateSimulation()
 	{
 		return;
 	}
+#if defined(MVSIM_HAS_ROS2_CONTROL)
+	// Before the world, since they use its vehicles. Only detached here, since
+	// this may run from a ROS shutdown callback, where destroying a controller
+	// manager deadlocks: they are destroyed with pubsub_vehicles_.
+	{
+		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
+		for (auto& [idx, pubsubs] : pubsub_vehicles_)
+		{
+			if (pubsubs->ros2_control)
+			{
+				std::static_pointer_cast<mvsim_node::Ros2ControlVehicle>(pubsubs->ros2_control)
+					->detach();
+			}
+		}
+	}
+#endif
 	mvsim_world_->simulator_must_close(true);
 
 	thread_params_.closing = true;
@@ -781,6 +801,7 @@ void MVSimNode::addVehiclePubSubs(const std::shared_ptr<mvsim::VehicleBase>& veh
 	pubsubs->vehicle = veh;
 	initPubSubs(*pubsubs, veh.get());
 	initLoggerTopicCallbacks(pubsubs, veh.get());
+	initRos2Control(*pubsubs, *veh);
 
 	auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 	pubsub_vehicles_[veh->getVehicleIndex()] = pubsubs;
@@ -788,6 +809,7 @@ void MVSimNode::addVehiclePubSubs(const std::shared_ptr<mvsim::VehicleBase>& veh
 
 void MVSimNode::removeVehiclePubSubs(const mvsim::VehicleBase& veh)
 {
+	std::shared_ptr<void> ros2Control;
 	{
 		auto lck = mrpt::lockHelper(pubsub_vehicles_mtx_);
 		if (auto it = pubsub_vehicles_.find(veh.getVehicleIndex()); it != pubsub_vehicles_.end())
@@ -795,9 +817,12 @@ void MVSimNode::removeVehiclePubSubs(const mvsim::VehicleBase& veh)
 			// Pending observation jobs may keep these pubs/subs alive for a
 			// while, but no more commands must reach the removed vehicle:
 			it->second->sub_cmd_vel.reset();
+			ros2Control = std::move(it->second->ros2_control);
 			pubsub_vehicles_.erase(it);
 		}
 	}
+	// Destroyed out of the lock, since it waits for the simulation step:
+	ros2Control.reset();
 	// Same thread as the cmd_vel callbacks and spin(), so no lock needed:
 	for (auto it = lastCmdVelTimestamp_.begin(); it != lastCmdVelTimestamp_.end();)
 	{
@@ -852,9 +877,12 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		vehVarName("cmd_vel", *veh), 10,
 		[this, veh](Msg_Twist_CSPtr msg) { return this->onROSMsgCmdVel(msg, veh); }));
 #else
-	pubsubs.sub_cmd_vel = n_->create_subscription<Msg_Twist>(
-		vehVarName("cmd_vel", *veh), 10,
-		[this, veh](Msg_Twist_CSPtr msg) { return this->onROSMsgCmdVel(msg, veh); });
+	if (!isRos2Controlled(*veh))
+	{
+		pubsubs.sub_cmd_vel = n_->create_subscription<Msg_Twist>(
+			vehVarName("cmd_vel", *veh), 10,
+			[this, veh](Msg_Twist_CSPtr msg) { return this->onROSMsgCmdVel(msg, veh); });
+	}
 #endif
 
 #if PACKAGE_ROS_VERSION == 1
@@ -1138,7 +1166,11 @@ void MVSimNode::spinNotifyROS()
 
 				pubs.pub_ground_truth->publish(gtOdoMsg);
 
-				if (do_fake_localization_)
+				// ros2_control vehicles: their localization and odometry come
+				// from the controllers.
+				const bool ros2Controlled = isRos2Controlled(*veh);
+
+				if (do_fake_localization_ && !ros2Controlled)
 				{
 					Msg_PoseWithCovarianceStamped currentPos;
 					Msg_PoseArray particleCloud;
@@ -1207,6 +1239,7 @@ void MVSimNode::spinNotifyROS()
 
 			// 3) odometry transform
 			// --------------------------------------------
+			if (!isRos2Controlled(*veh))
 			{
 				// TF(namespace <Ri>): /odom -> /base_link
 				if (publish_tf_odom2baselink_)
@@ -2438,3 +2471,39 @@ void MVSimNode::publishObjectsGroundTruth()
 	pub_objects_ground_truth_->publish(msg);
 }
 #endif
+
+bool MVSimNode::isRos2Controlled(const mvsim::VehicleBase& veh)
+{
+	auto* ctrl = const_cast<mvsim::VehicleBase&>(veh).getControllerInterface();
+	return ctrl && ctrl->wheelJointsInterface();
+}
+
+void MVSimNode::initRos2Control(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase& veh)
+{
+	if (!isRos2Controlled(veh))
+	{
+		return;
+	}
+#if defined(MVSIM_HAS_ROS2_CONTROL)
+	auto* joints = veh.getControllerInterface()->wheelJointsInterface();
+	// The vehicle namespace, if its topics use it:
+	const std::string ns = vehVarName("", veh).empty() ? std::string() : "/" + veh.getName();
+	try
+	{
+		pubsubs.ros2_control =
+			std::make_shared<mvsim_node::Ros2ControlVehicle>(*mvsim_world_, veh, *joints, ns);
+	}
+	catch (const std::exception& e)
+	{
+		RCLCPP_ERROR(
+			n_->get_logger(), "Could not set up ros2_control for vehicle '%s': %s",
+			veh.getName().c_str(), e.what());
+	}
+#else
+	(void)pubsubs;
+	ROS12_ERROR_STREAM(
+		"Vehicle '" << veh.getName()
+					<< "' uses the 'ros2_control' controller, but mvsim_node was built without "
+					   "ros2_control support (controller_manager not found): it will not move.");
+#endif
+}

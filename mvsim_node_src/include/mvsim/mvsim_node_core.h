@@ -29,6 +29,7 @@
 #endif
 
 #include <atomic>
+#include <memory>
 #include <thread>
 
 #if defined(MVSIM_HAS_SIMULATION_INTERFACES)
@@ -358,6 +359,10 @@ class MVSimNode
 		std::map<size_t, std::map<std::string, rclcpp::Publisher<Msg_Float64>::SharedPtr>>
 			pub_log_topics;
 #endif
+
+		/// ros2_control manager of this vehicle, if it uses the ros2_control
+		/// controller (opaque here, see mvsim_ros2_control.h)
+		std::shared_ptr<void> ros2_control;
 	};
 
 	/// Pubs/Subs for each vehicle, by its vehicle index. Created by
@@ -379,6 +384,13 @@ class MVSimNode
 	std::map<size_t, bool> vehicleUsesNamespace_;
 	mutable std::mutex vehicleUsesNamespaceMtx_;
 	void removeVehiclePubSubs(const mvsim::VehicleBase& veh);
+
+	/// Vehicles driven by ros2_control: MVSim does not subscribe to their
+	/// cmd_vel nor publishes their odometry.
+	static bool isRos2Controlled(const mvsim::VehicleBase& veh);
+
+	/// Creates the ros2_control manager of a vehicle, if it uses it.
+	void initRos2Control(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase& veh);
 
 	/// Creates or removes ROS interfaces of entities inserted or removed at
 	/// runtime.

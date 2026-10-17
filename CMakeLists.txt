@@ -366,6 +366,47 @@ if (BUILD_FOR_ROS)
       target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_DIAGNOSTIC_MSGS)
     endif()
 
+    # Optional ros2_control integration:
+    option(MVSIM_WITH_ROS2_CONTROL "Build ros2_control support, if found" ON)
+    if (MVSIM_WITH_ROS2_CONTROL)
+      find_package(controller_manager QUIET)
+      find_package(hardware_interface QUIET)
+    endif()
+    # Supported ros2_control APIs: the legacy one of hardware_interface 2.x
+    # (Humble), and the one with hardware component parameter structs (Jazzy
+    # updates and newer).
+    set(MVSIM_ROS2_CONTROL_API "")
+    if (controller_manager_FOUND AND hardware_interface_FOUND)
+      if ("${hardware_interface_VERSION}" VERSION_LESS "3.0.0")
+        set(MVSIM_ROS2_CONTROL_API "legacy")
+      else()
+        get_target_property(_hwi_includes hardware_interface::hardware_interface INTERFACE_INCLUDE_DIRECTORIES)
+        find_file(MVSIM_HWI_PARAMS_HEADER
+          NAMES hardware_interface/types/hardware_component_params.hpp
+          PATHS ${_hwi_includes} PATH_SUFFIXES hardware_interface NO_DEFAULT_PATH)
+        if (MVSIM_HWI_PARAMS_HEADER)
+          set(MVSIM_ROS2_CONTROL_API "current")
+        endif()
+      endif()
+    endif()
+    if (MVSIM_ROS2_CONTROL_API)
+      message(STATUS "mvsim_node: ros2_control support enabled (hardware_interface ${hardware_interface_VERSION}, ${MVSIM_ROS2_CONTROL_API} API)")
+      target_sources(mvsim_node PRIVATE
+        mvsim_node_src/mvsim_ros2_control.cpp
+        mvsim_node_src/include/mvsim/mvsim_ros2_control.h
+      )
+      target_link_libraries(mvsim_node
+        controller_manager::controller_manager
+        hardware_interface::hardware_interface
+      )
+      target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_ROS2_CONTROL)
+      if (MVSIM_ROS2_CONTROL_API STREQUAL "legacy")
+        target_compile_definitions(mvsim_node PRIVATE MVSIM_ROS2_CONTROL_LEGACY_API)
+      endif()
+    else()
+      message(STATUS "mvsim_node: ros2_control support disabled (needs controller_manager and hardware_interface 2.x, or a version with hardware_component_params.hpp)")
+    endif()
+
     # We need this to handle this backwards-incompatible change: https://github.com/ros2/geometry2/pull/416
     if("${tf2_geometry_msgs_VERSION}" VERSION_GREATER_EQUAL "0.18.0")
       target_compile_definitions(mvsim_node PRIVATE MVSIM_HAS_TF2_GEOMETRY_MSGS_HPP)

@@ -80,6 +80,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_wheel_joints
+	SOURCES test_wheel_joints.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_runtime_objects
 	SOURCES test_runtime_objects.cpp
 	LINK_LIBRARIES mvsim::simulator

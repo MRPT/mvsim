@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<!--
+  Example URDF of the "jackal" MVSim vehicle, as it could be used for Gazebo or
+  real hardware: its <ros2_control> block names another hardware plugin, but
+  MVSim binds its joints to the simulated wheels by name.
+  Used by demo_ros2_control.launch.py with robot_description:=urdf
+-->
+<robot name="jackal">
+  <link name="base_link"/>
+  <link name="chassis_link">
+    <visual><geometry><box size="0.42 0.31 0.18"/></geometry></visual>
+  </link>
+  <joint name="chassis_joint" type="fixed">
+    <parent link="base_link"/><child link="chassis_link"/>
+    <origin xyz="0 0 0.15" rpy="0 0 0"/>
+  </joint>
+  <link name="lf_wheel">
+    <visual><origin xyz="0 0 0" rpy="1.5708 0 0"/><geometry><cylinder radius="0.1" length="0.03"/></geometry></visual>
+  </link>
+  <joint name="lf_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="lf_wheel"/>
+    <origin xyz="0.13 0.16 0.1" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <link name="rf_wheel">
+    <visual><origin xyz="0 0 0" rpy="1.5708 0 0"/><geometry><cylinder radius="0.1" length="0.03"/></geometry></visual>
+  </link>
+  <joint name="rf_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="rf_wheel"/>
+    <origin xyz="0.13 -0.16 0.1" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <link name="lr_wheel">
+    <visual><origin xyz="0 0 0" rpy="1.5708 0 0"/><geometry><cylinder radius="0.1" length="0.03"/></geometry></visual>
+  </link>
+  <joint name="lr_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="lr_wheel"/>
+    <origin xyz="-0.13 0.16 0.1" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <link name="rr_wheel">
+    <visual><origin xyz="0 0 0" rpy="1.5708 0 0"/><geometry><cylinder radius="0.1" length="0.03"/></geometry></visual>
+  </link>
+  <joint name="rr_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="rr_wheel"/>
+    <origin xyz="-0.13 -0.16 0.1" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <link name="laser1"/>
+  <joint name="laser1_joint" type="fixed">
+    <parent link="base_link"/><child link="laser1"/>
+    <origin xyz="0.15 0 0.33" rpy="0 0 0"/>
+  </joint>
+  <ros2_control name="GazeboSimSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <joint name="lf_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rf_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="lr_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rr_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+</robot>
