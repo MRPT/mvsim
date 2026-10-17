@@ -627,8 +627,8 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 	scene.saveToFile(mrpt::format("collision_grid_%05i.3Dscene", i++));
 }
 
-std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
-	size_t i, const mrpt::math::TPolygon2D& p, bool allowApproxEdges) const
+std::optional<double> Shape2p5::lossOfRemovingVertex(
+	size_t i, const mrpt::math::TPolygon2D& p, double area, bool allowApproxEdges) const
 {
 	// 1st: check if removing that vertex leads to edges crossing
 	// CELL_UNDEFINED or CELL_OCCUPIED cells:
@@ -645,28 +645,35 @@ std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
 	{
 		const auto pt = pt_im1 + d * k;
 		const auto* c = grid_->cellByPos(pt.x, pt.y);
-		if (!c) return {};	// should never happen (!)
+		if (!c)
+		{
+			return {};	// should never happen (!)
+		}
 
 		if (!allowApproxEdges)
 		{
 			// removing this vertex leads to unacceptable approximation:
-			if (*c == CELL_UNDEFINED || *c == CELL_OCCUPIED) return {};
+			if (*c == CELL_UNDEFINED || *c == CELL_OCCUPIED)
+			{
+				return {};
+			}
 		}
 	}
 
 	// ok, removing the vertex is ok.
-	// now, let's quantify the increase in area ("loss"):
-	Shape2p5::RemovalCandidate rc;
-	rc.next = p;
-	rc.next.erase(rc.next.begin() + i);
+	// now, let's quantify the increase in area ("loss"). Removing the vertex
+	// subtracts the signed area of the triangle it forms with its neighbors:
+	const auto& pt_i = p[i];
+	const double triArea = 0.5 * ((pt_i.x - pt_im1.x) * (pt_ip1.y - pt_im1.y) -
+								  (pt_ip1.x - pt_im1.x) * (pt_i.y - pt_im1.y));
+	double loss = std::abs(area - triArea) - std::abs(area);
 
-	const double originalArea = std::abs(mrpt::math::signedArea(p));
-	const double newArea = std::abs(mrpt::math::signedArea(rc.next));
-	rc.loss = newArea - originalArea;
+	if (allowApproxEdges)
+	{
+		loss = -loss;
+	}
 
-	if (allowApproxEdges) rc.loss = -rc.loss;
-
-	return rc;
+	return loss;
 }
 
 mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(const mrpt::math::TPolygon2D& poly) const
@@ -684,20 +691,29 @@ mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(const mrpt::math::TPolygon
 	{
 		while (p.size() > b2_maxPolygonVertices)
 		{
-			std::optional<RemovalCandidate> best;
+			const double area = mrpt::math::signedArea(p);
+			std::optional<size_t> best;
+			double bestLoss = 0;
 
 			for (size_t i = 0; i < p.size(); i++)
 			{
-				std::optional<RemovalCandidate> rc = lossOfRemovingVertex(i, p, pass == 1);
-				if (rc && (!best || rc->loss < best->loss)) best = *rc;
+				const auto loss = lossOfRemovingVertex(i, p, area, pass == 1);
+				if (loss && (!best || *loss < bestLoss))
+				{
+					best = i;
+					bestLoss = *loss;
+				}
 			}
 
-			if (!best) break;  // No more vertices found to remove
+			if (!best)
+			{
+				break;	// No more vertices found to remove
+			}
 
-			p = best->next;
+			p.erase(p.begin() + *best);
 
 #ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-			debugSaveGridTo3DSceneFile(p, mrpt::format("pass #%i loss=%f", pass, best->loss));
+			debugSaveGridTo3DSceneFile(p, mrpt::format("pass #%i loss=%f", pass, bestLoss));
 #endif
 		}
 	}
