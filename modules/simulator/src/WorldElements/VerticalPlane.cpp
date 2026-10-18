@@ -363,6 +363,8 @@ void VerticalPlane::createVisualRepresentation(
 
 	gl_plane_text_ = mrpt::viz::CSetOfTexturedTriangles::Create();
 	gl_plane_text_->setName("VerticalPlane_"s + getName());
+	// Smooth (not blocky) texture close to the camera:
+	gl_plane_text_->enableTextureLinearInterpolation(true);
 	gl_plane_text_->enableLight(enableShadows_);
 
 	// Render both front and back faces

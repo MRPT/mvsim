@@ -423,6 +423,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Build mesh:
 	gl_mesh_ = mrpt::viz::CMesh::Create();
 	gl_mesh_->enableTransparency(false);
+	// Smooth (not blocky) texture close to the camera:
+	gl_mesh_->enableTextureLinearInterpolation(true);
 
 	if (mesh_image)
 	{
