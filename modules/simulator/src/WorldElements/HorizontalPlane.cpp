@@ -128,6 +128,8 @@ void HorizontalPlane::internalGuiUpdate(
 
 		gl_plane_text_ = mrpt::viz::CSetOfTexturedTriangles::Create();
 		gl_plane_text_->setName("HorizontalPlane_"s + getName());
+		// Smooth (not blocky) texture close to the camera:
+		gl_plane_text_->enableTextureLinearInterpolation(true);
 
 		gl_plane_text_->enableLight(enableShadows_);
 
