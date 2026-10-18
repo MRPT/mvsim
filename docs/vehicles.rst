@@ -817,6 +817,8 @@ loads (dynamic load transfer). It is disabled by default. See
      </video>
    </div>
 
+See also :ref:`videos comparing two damping ratios <physics-suspension-damping>`.
+
 .. code-block:: xml
 
    <vehicle:class name="my_car">

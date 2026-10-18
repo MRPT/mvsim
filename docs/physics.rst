@@ -869,6 +869,35 @@ static load, :math:`m_i = N_i / g`:
 so the heave frequency is :math:`f` regardless of the weight distribution. The roll and
 pitch frequencies follow from the geometry.
 
+.. _physics-suspension-damping:
+
+**Effect of the damping ratio.** The videos below compare the same vehicle over a 10 cm
+speed bump with worn dampers (:math:`\zeta = 0.1`, left) and firm ones
+(:math:`\zeta = 0.6`, right), with the same springs. With little damping, the chassis
+keeps oscillating at its natural frequencies for seconds after the bump; with firm
+dampers, it settles almost at once, at the cost of harder jolts (larger peak vertical
+accelerations). The plots are the readings of an IMU on the chassis, and the insets the
+images of a camera on it, which move with the chassis as in a real vehicle.
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_suspension_truck.mp4" type="video/mp4">
+     </video>
+   </div>
+
+|
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_suspension_pickup.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
 **Steady state.** For constant accelerations, :math:`K \delta = F`, e.g. braking at
 :math:`a_x` and turning at :math:`a_y` (with the diagonal terms of :math:`K`, e.g.
 :math:`K_{\theta\theta} = \sum k_i x_i^2 - m_s g h`, if the center of mass is centered
