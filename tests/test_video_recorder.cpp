@@ -216,6 +216,25 @@ void testInvalidOptions()
 	}
 	EXPECT_TRUE(failed);
 	EXPECT_TRUE(!rec.isRecording());
+
+	// Output file names are printf formats for image sequences: only one
+	// integer conversion (and "%%") is accepted.
+	for (const char* name : {"img_%s.png", "img_%d_%d.png", "img_%f.png", "img_%"})
+	{
+		o = mvsim::VideoRecorder::Options();
+		o.output_file = name;
+		bool rejected = false;
+		try
+		{
+			rec.start(o);
+		}
+		catch (const std::exception&)
+		{
+			rejected = true;
+		}
+		EXPECT_TRUE(rejected);
+		EXPECT_TRUE(!rec.isRecording());
+	}
 }
 }  // namespace
 

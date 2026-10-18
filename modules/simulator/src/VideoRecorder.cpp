@@ -17,6 +17,7 @@
 #include <mvsim/VideoRecorder.h>
 
 #include <atomic>
+#include <cctype>
 #include <cmath>
 #include <condition_variable>
 #include <ctime>
@@ -49,9 +50,44 @@ namespace
 // simulation) waits for the encoder:
 constexpr size_t MAX_QUEUED_FRAMES = 16;
 
+/** Number of integer conversions ("%d", "%06d"...) in the output file name,
+ * which is used as a printf format for image sequences. Only those and "%%"
+ * are accepted. */
+size_t count_frame_number_conversions(const std::string& outputFile)
+{
+	size_t n = 0;
+	for (size_t i = 0; i < outputFile.size(); i++)
+	{
+		if (outputFile[i] != '%')
+		{
+			continue;
+		}
+		size_t j = i + 1;
+		if (j < outputFile.size() && outputFile[j] == '%')
+		{
+			i = j;
+			continue;
+		}
+		while (j < outputFile.size() && std::isdigit(static_cast<unsigned char>(outputFile[j])))
+		{
+			j++;
+		}
+		if (j >= outputFile.size() || outputFile[j] != 'd')
+		{
+			THROW_EXCEPTION_FMT(
+				"Invalid output file name '%s': the only conversions allowed are one '%%d' (or "
+				"e.g. '%%06d') for the frame number, and '%%%%'",
+				outputFile.c_str());
+		}
+		n++;
+		i = j;
+	}
+	return n;
+}
+
 bool is_image_sequence(const std::string& outputFile)
 {
-	return outputFile.find('%') != std::string::npos;
+	return count_frame_number_conversions(outputFile) > 0;
 }
 
 std::string default_output_file()
@@ -185,6 +221,11 @@ class VideoRecorder::Encoder
 		std::string cmd;
 		for (const auto& a : ffmpegArgs())
 		{
+			// The command goes through the shell: options and file names
+			// (e.g. from ZMQ requests) must not be able to run other commands.
+			ASSERTMSG_(
+				a.find_first_of("&|<>^\"%!;`$()\n\r") == std::string::npos,
+				mrpt::format("Characters not allowed in ffmpeg arguments: '%s'", a.c_str()));
 			cmd += (a.find(' ') != std::string::npos) ? "\"" + a + "\" " : a + " ";
 		}
 		pipe_ = _popen(cmd.c_str(), "wb");
@@ -416,6 +457,9 @@ void VideoRecorder::start(const Options& opts)
 		std::isfinite(o.duration) && o.duration >= 0, "Video duration must be a number >= 0");
 	ASSERTMSG_(
 		o.camera == "gui" || o.camera == "orbit", "Video camera must be either 'gui' or 'orbit'");
+	ASSERTMSG_(
+		count_frame_number_conversions(o.output_file) <= 1,
+		"The output file name can only have one frame number conversion (e.g. '%06d')");
 	if (!is_image_sequence(o.output_file))
 	{
 		// Most video codecs (e.g. yuv420p) require even sizes:

@@ -1086,13 +1086,18 @@ void World::internalFreeOpenGLResourcesForSimulation()
 {
 	// Complete the video file, if recording:
 	videoRecorder_.stop();
-	videoRecorder_.freeOpenGLResources();
 
-	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-	for (auto& obj : getListOfSimulableObjects())
 	{
-		obj.second->freeOpenGLResources();
+		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+		for (auto& obj : getListOfSimulableObjects())
+		{
+			obj.second->freeOpenGLResources();
+		}
 	}
+
+	// Last: in headless mode, its renderer may own the OpenGL context of all
+	// sensors.
+	videoRecorder_.freeOpenGLResources();
 }
 
 void World::internalGraphicsLoopTasksForSimulation()
