@@ -29,6 +29,8 @@ set(PROTOBUF_FILE_NAMES
   SrvGetLightStateAnswer.proto
   SrvGetPose.proto
   SrvGetPoseAnswer.proto
+  SrvGetVideoRecordingStatus.proto
+  SrvGetVideoRecordingStatusAnswer.proto
   SrvInsertEntities.proto
   SrvInsertEntitiesAnswer.proto
   SrvRemoveEntities.proto
@@ -46,6 +48,10 @@ set(PROTOBUF_FILE_NAMES
   SrvShutdownAnswer.proto
   SrvSpawnObjects.proto
   SrvSpawnObjectsAnswer.proto
+  SrvStartVideoRecording.proto
+  SrvStartVideoRecordingAnswer.proto
+  SrvStopVideoRecording.proto
+  SrvStopVideoRecordingAnswer.proto
   SubscribeAnswer.proto
   SubscribeRequest.proto
   TimeStampedPose.proto

@@ -1084,11 +1084,20 @@ void World::internal_gui_on_observation_image(
 
 void World::internalFreeOpenGLResourcesForSimulation()
 {
-	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
-	for (auto& obj : getListOfSimulableObjects())
+	// Complete the video file, if recording:
+	videoRecorder_.stop();
+
 	{
-		obj.second->freeOpenGLResources();
+		auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+		for (auto& obj : getListOfSimulableObjects())
+		{
+			obj.second->freeOpenGLResources();
+		}
 	}
+
+	// Last: in headless mode, its renderer may own the OpenGL context of all
+	// sensors.
+	videoRecorder_.freeOpenGLResources();
 }
 
 void World::internalGraphicsLoopTasksForSimulation()
@@ -1104,6 +1113,17 @@ void World::internalGraphicsLoopTasksForSimulation()
 
 		internalUpdate3DSceneObjects(*worldVisual_, worldPhysical_);
 
+		// handle user custom 3D visual objects, before rendering them:
+		{
+			const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
+			// replace list of smart pointers (fast):
+			if (guiUserObjectsPhysical_) *glUserObjsPhysical_ = *guiUserObjectsPhysical_;
+			if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
+		}
+
+		// Before the sensors, which clear the flag the simulation waits for:
+		internalRenderVideoFrame();
+
 		internalRunSensorsOn3DScene(worldPhysical_);
 
 		lckPhys.unlock();
@@ -1111,14 +1131,6 @@ void World::internalGraphicsLoopTasksForSimulation()
 		if (headless() && worldReadyWallclock_ == 0)
 		{
 			worldReadyWallclock_ = mrpt::Clock::nowDouble();
-		}
-
-		// handle user custom 3D visual objects:
-		{
-			const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
-			// replace list of smart pointers (fast):
-			if (guiUserObjectsPhysical_) *glUserObjsPhysical_ = *guiUserObjectsPhysical_;
-			if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
 		}
 	}
 	catch (const std::exception& e)

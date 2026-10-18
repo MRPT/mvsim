@@ -37,6 +37,7 @@
 #include <mvsim/RuntimeObjects.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
+#include <mvsim/VideoRecorder.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 //
@@ -97,6 +98,12 @@ class SrvRemoveObjects;
 class SrvRemoveObjectsAnswer;
 class SrvGetAllPoses;
 class SrvGetAllPosesAnswer;
+class SrvStartVideoRecording;
+class SrvStartVideoRecordingAnswer;
+class SrvStopVideoRecording;
+class SrvStopVideoRecordingAnswer;
+class SrvGetVideoRecordingStatus;
+class SrvGetVideoRecordingStatusAnswer;
 }  // namespace mvsim_msgs
 #endif
 
@@ -589,6 +596,12 @@ class World : public mrpt::system::COutputLogger
 	std::optional<bool> lightGroupState(
 		const std::string& objectName, const std::string& groupName) const;
 
+	/** Video recording of the 3D view, in simulation time: start(), stop()
+	 * and status() can be called from any thread. It is also controlled from
+	 * the GUI, the `<video_recording>` world XML block, and ZMQ services. */
+	VideoRecorder& videoRecorder() { return videoRecorder_; }
+	const VideoRecorder& videoRecorder() const { return videoRecorder_; }
+
 	/** Replace macros, prefix the base_path if input filename is relative, etc.
 	 *  \sa xmlPathToActualPath
 	 */
@@ -817,6 +830,17 @@ class World : public mrpt::system::COutputLogger
 	/** If non-empty, the ground truth trajectory of all vehicles will be saved
 	 * to a text file in the TUM trajectory format */
 	std::string save_ground_truth_trajectory_;
+
+	VideoRecorder videoRecorder_;
+
+	/// Simulation thread, after each step (physical_objects_mtx() locked):
+	void internalPostSimulStepForVideo();
+
+	/// Rendering thread (physical_objects_mtx() locked):
+	void internalRenderVideoFrame();
+
+	/// Camera for the video frames, from the recording options:
+	mrpt::viz::CCamera internalVideoCamera(const VideoRecorder::Options& opts) const;
 
 	double ground_truth_rate_ = 50.0;  //!< In Hz.
 
@@ -1300,6 +1324,10 @@ class World : public mrpt::system::COutputLogger
 		void draw_messages_panel();
 		void draw_sensor_previews();
 
+		/// With the world file options; an empty file name keeps theirs:
+		void start_video_recording(const std::string& outputFile);
+		void stop_video_recording();
+
 		void handle_mouse_operations();
 
 		/// Custom panels (see add_gui_panel()). Only accessed from the GUI thread.
@@ -1470,6 +1498,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_block_class(const XmlParserContext& ctx);
 	void parse_tag_gui(const XmlParserContext& ctx);
 	void parse_tag_lights(const XmlParserContext& ctx);
+	void parse_tag_video_recording(const XmlParserContext& ctx);
 	void parse_tag_georeference(const XmlParserContext& ctx);
 	void parse_tag_walls(const XmlParserContext& ctx);
 	void parse_tag_include(const XmlParserContext& ctx);
@@ -1545,6 +1574,12 @@ class World : public mrpt::system::COutputLogger
 		const mvsim_msgs::SrvRemoveEntities& req);
 	mvsim_msgs::SrvRemoveObjectsAnswer srv_remove_objects(const mvsim_msgs::SrvRemoveObjects& req);
 	mvsim_msgs::SrvGetAllPosesAnswer srv_get_all_poses(const mvsim_msgs::SrvGetAllPoses& req);
+	mvsim_msgs::SrvStartVideoRecordingAnswer srv_start_video_recording(
+		const mvsim_msgs::SrvStartVideoRecording& req);
+	mvsim_msgs::SrvStopVideoRecordingAnswer srv_stop_video_recording(
+		const mvsim_msgs::SrvStopVideoRecording& req);
+	mvsim_msgs::SrvGetVideoRecordingStatusAnswer srv_get_video_recording_status(
+		const mvsim_msgs::SrvGetVideoRecordingStatus& req);
 #endif
 };
 }  // namespace mvsim

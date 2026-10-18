@@ -259,6 +259,9 @@ void World::internal_one_timestep(double dt)
 				copy_of_objects_had_collision_.insert(e.first);
 			}
 		}
+
+		// Video frames, under the same lock as the sensors that need OpenGL:
+		internalPostSimulStepForVideo();
 	}
 	{
 		const auto lckCollis = mrpt::lockHelper(reset_collision_flags_mtx_);

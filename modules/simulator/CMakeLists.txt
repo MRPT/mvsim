@@ -23,6 +23,7 @@ add_library(${PROJECT_NAME}
 	src/Simulable.cpp
 	src/Suspension.cpp
 	src/VehicleBase.cpp
+	src/VideoRecorder.cpp
 	src/VisualObject.cpp
 	src/Wheel.cpp
 	src/World_gui.cpp
@@ -31,6 +32,7 @@ add_library(${PROJECT_NAME}
 	src/World_runtime_entities.cpp
 	src/World_services.cpp
 	src/World_simul.cpp
+	src/World_video.cpp
 	src/World_walls.cpp
 	src/World.cpp
 	src/xml_utils.cpp
@@ -58,6 +60,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/Suspension.h
 	include/mvsim/TParameterDefinitions.h
 	include/mvsim/VehicleBase.h
+	include/mvsim/VideoRecorder.h
 	include/mvsim/VisualObject.h
 	include/mvsim/Wheel.h
 	include/mvsim/World.h

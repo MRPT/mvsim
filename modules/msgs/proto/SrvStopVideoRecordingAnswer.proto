@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SrvStopVideoRecordingAnswer {
+  /* false if not recording, or if the encoder failed */
+  required bool success = 1;
+
+  optional string errorMessage = 2;
+
+  optional string outputFile = 3;
+
+  optional uint64 frames = 4;
+
+  /* Simulated time recorded [s] */
+  optional double duration = 5;
+}
