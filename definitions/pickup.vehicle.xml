@@ -8,15 +8,25 @@
 <vehicle:class name="pickup">
     <!--  Dynamical model -->
     <dynamics class="ackermann">
+        <!-- Wheels: positions and sizes from the 3D model. Its left wheel is the
+             model of all of them (rotated 180 deg on the right side). -->
         <!-- Rear wheels -->
-        <rl_wheel pos="-1.8  0.9" mass="6.0" width="0.20" diameter="0.8" />
-        <rr_wheel pos="-1.8 -0.9" mass="6.0" width="0.20" diameter="0.8" />
-        
+        <rl_wheel pos="-1.777  0.919" mass="6.0" width="0.31" diameter="0.844">
+            <visual> <model_uri>https://mrpt.github.io/mvsim-models/vehicle_pickup_v2.zip/vehicle_pickup/pickup_wheel.dae</model_uri> <model_yaw>-90.0</model_yaw> <model_roll>90.0</model_roll> </visual>
+        </rl_wheel>
+        <rr_wheel pos="-1.777 -0.919" mass="6.0" width="0.31" diameter="0.844">
+            <visual> <model_uri>https://mrpt.github.io/mvsim-models/vehicle_pickup_v2.zip/vehicle_pickup/pickup_wheel.dae</model_uri> <model_yaw>90.0</model_yaw> <model_roll>90.0</model_roll> </visual>
+        </rr_wheel>
+
         <!-- Front wheels -->
-        <fl_wheel mass="6.0" width="0.20" diameter="0.8" />
-        <fr_wheel mass="6.0" width="0.20" diameter="0.8" />
-        <f_wheels_x>1.7</f_wheels_x>
-        <f_wheels_d>1.85</f_wheels_d>
+        <fl_wheel mass="6.0" width="0.31" diameter="0.844">
+            <visual> <model_uri>https://mrpt.github.io/mvsim-models/vehicle_pickup_v2.zip/vehicle_pickup/pickup_wheel.dae</model_uri> <model_yaw>-90.0</model_yaw> <model_roll>90.0</model_roll> </visual>
+        </fl_wheel>
+        <fr_wheel mass="6.0" width="0.31" diameter="0.844">
+            <visual> <model_uri>https://mrpt.github.io/mvsim-models/vehicle_pickup_v2.zip/vehicle_pickup/pickup_wheel.dae</model_uri> <model_yaw>90.0</model_yaw> <model_roll>90.0</model_roll> </visual>
+        </fr_wheel>
+        <f_wheels_x>1.776</f_wheels_x>
+        <f_wheels_d>1.838</f_wheels_d>
         <max_steer_ang_deg>40.0</max_steer_ang_deg>
         <max_steer_rate_deg>45</max_steer_rate_deg>  <!-- 0: instantaneous steering -->
 
@@ -82,10 +92,10 @@
         <R2>0.02</R2>
     </friction>-->
 
-    <!--  Custom vehicle visualization model -->
+    <!--  Custom vehicle visualization model: the body, without the wheels -->
     <!-- 3D model filename to load (local or remote http://uri ) -->
     <visual>
-        <model_uri>https://mrpt.github.io/mvsim-models/vehicle_pickup.zip/vehicle_pickup/pickup.dae</model_uri>
+        <model_uri>https://mrpt.github.io/mvsim-models/vehicle_pickup_v2.zip/vehicle_pickup/pickup_body.dae</model_uri>
         <model_yaw>-90.0</model_yaw>
         <model_roll>90.0</model_roll>
     </visual>

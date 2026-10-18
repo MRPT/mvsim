@@ -648,9 +648,10 @@ Large Ackermann vehicle representing a pickup truck.
 
 * Dynamics: Ackermann steering
 * Mass: 2000.0 kg
-* Wheel diameter: 0.8 m
-* Wheelbase: 3.5 m
+* Wheel diameter: 0.844 m
+* Wheelbase: 3.55 m, track width: 1.84 m
 * Max steering: ±40°, at up to 45°/s
+* Separate body and wheel 3D models: the wheels spin and steer
 
 AgriCobiot2
 ~~~~~~~~~~~
