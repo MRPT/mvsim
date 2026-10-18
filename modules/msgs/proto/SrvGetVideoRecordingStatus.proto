@@ -1,0 +1,6 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SrvGetVideoRecordingStatus {
+}

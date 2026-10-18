@@ -234,7 +234,7 @@ void World::free_opengl_resources()
 
 std::optional<double> World::next_opengl_sensor_time() const
 {
-	std::optional<double> t;
+	std::optional<double> t = videoRecorder_.nextFrameTime();
 	for (const auto& v : vehicles_)
 	{
 		for (const auto& s : v.second->getSensors())

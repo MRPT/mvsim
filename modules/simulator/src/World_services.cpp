@@ -18,6 +18,8 @@
 #include <mvsim/mvsim-msgs/SrvGetLightStateAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPoseAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetVideoRecordingStatus.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetVideoRecordingStatusAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvInsertEntities.pb.h>
 #include <mvsim/mvsim-msgs/SrvInsertEntitiesAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvRemoveEntities.pb.h>
@@ -34,6 +36,10 @@
 #include <mvsim/mvsim-msgs/SrvShutdownAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSpawnObjects.pb.h>
 #include <mvsim/mvsim-msgs/SrvSpawnObjectsAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvStartVideoRecording.pb.h>
+#include <mvsim/mvsim-msgs/SrvStartVideoRecordingAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvStopVideoRecording.pb.h>
+#include <mvsim/mvsim-msgs/SrvStopVideoRecordingAnswer.pb.h>
 #endif
 
 #include <map>
@@ -465,6 +471,142 @@ mvsim_msgs::SrvGetAllPosesAnswer World::srv_get_all_poses(const mvsim_msgs::SrvG
 	return ans;
 }
 
+mvsim_msgs::SrvStartVideoRecordingAnswer World::srv_start_video_recording(
+	const mvsim_msgs::SrvStartVideoRecording& req)
+{
+	mvsim_msgs::SrvStartVideoRecordingAnswer ans;
+
+	// Defaults from the world file:
+	auto o = videoRecorder_.defaultOptions();
+	if (req.has_outputfile())
+	{
+		o.output_file = req.outputfile();
+	}
+	if (req.has_fps())
+	{
+		o.fps = req.fps();
+	}
+	if (req.has_width())
+	{
+		o.width = req.width();
+	}
+	if (req.has_height())
+	{
+		o.height = req.height();
+	}
+	if (req.has_duration())
+	{
+		o.duration = req.duration();
+	}
+	if (req.has_camera())
+	{
+		o.camera = req.camera();
+	}
+	if (req.has_followvehicle())
+	{
+		o.follow_vehicle = req.followvehicle();
+	}
+	if (req.has_followheading())
+	{
+		o.follow_heading = req.followheading();
+	}
+	if (req.has_camdistance())
+	{
+		o.cam_distance = req.camdistance();
+	}
+	if (req.has_camazimuthdeg())
+	{
+		o.cam_azimuth = req.camazimuthdeg();
+	}
+	if (req.has_camelevationdeg())
+	{
+		o.cam_elevation = req.camelevationdeg();
+	}
+	if (req.has_campointtox())
+	{
+		o.cam_point_to.x = req.campointtox();
+	}
+	if (req.has_campointtoy())
+	{
+		o.cam_point_to.y = req.campointtoy();
+	}
+	if (req.has_campointtoz())
+	{
+		o.cam_point_to.z = req.campointtoz();
+	}
+	if (req.has_fovdeg())
+	{
+		o.fov_deg = req.fovdeg();
+	}
+	if (req.has_ffmpegoptions())
+	{
+		o.ffmpeg_options = req.ffmpegoptions();
+	}
+	// Not when started from here:
+	o.start_time = 0;
+	o.close_simulator_when_done = false;
+
+	try
+	{
+		videoRecorder_.start(o);
+		ans.set_success(true);
+		if (const auto cur = videoRecorder_.currentOptions(); cur)
+		{
+			ans.set_outputfile(cur->output_file);
+			MRPT_LOG_INFO_STREAM("Recording video to: " << cur->output_file);
+		}
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(mrpt::exception_to_str(e));
+	}
+	return ans;
+}
+
+mvsim_msgs::SrvStopVideoRecordingAnswer World::srv_stop_video_recording(
+	[[maybe_unused]] const mvsim_msgs::SrvStopVideoRecording& req)
+{
+	mvsim_msgs::SrvStopVideoRecordingAnswer ans;
+
+	if (!videoRecorder_.isRecording())
+	{
+		ans.set_success(false);
+		ans.set_errormessage("Not recording");
+		return ans;
+	}
+	const auto st = videoRecorder_.stop();
+	ans.set_success(st.error.empty());
+	if (!st.error.empty())
+	{
+		ans.set_errormessage(st.error);
+	}
+	ans.set_outputfile(st.output_file);
+	ans.set_frames(st.frames);
+	ans.set_duration(st.duration);
+	MRPT_LOG_INFO_STREAM(
+		"Video saved: " << st.output_file << " (" << st.frames << " frames, " << st.duration
+						<< " s)");
+	return ans;
+}
+
+mvsim_msgs::SrvGetVideoRecordingStatusAnswer World::srv_get_video_recording_status(
+	[[maybe_unused]] const mvsim_msgs::SrvGetVideoRecordingStatus& req)
+{
+	mvsim_msgs::SrvGetVideoRecordingStatusAnswer ans;
+
+	const auto st = videoRecorder_.status();
+	ans.set_recording(st.recording);
+	ans.set_outputfile(st.output_file);
+	ans.set_frames(st.frames);
+	ans.set_duration(st.duration);
+	if (!st.error.empty())
+	{
+		ans.set_errormessage(st.error);
+	}
+	return ans;
+}
+
 #endif	// MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 
 void World::internal_advertiseServices()
@@ -504,6 +646,20 @@ void World::internal_advertiseServices()
 
 	client_.advertiseService<mvsim_msgs::SrvGetAllPoses, mvsim_msgs::SrvGetAllPosesAnswer>(
 		"get_all_poses", [this](const auto& req) { return srv_get_all_poses(req); });
+
+	client_.advertiseService<
+		mvsim_msgs::SrvStartVideoRecording, mvsim_msgs::SrvStartVideoRecordingAnswer>(
+		"start_video_recording",
+		[this](const auto& req) { return srv_start_video_recording(req); });
+
+	client_.advertiseService<
+		mvsim_msgs::SrvStopVideoRecording, mvsim_msgs::SrvStopVideoRecordingAnswer>(
+		"stop_video_recording", [this](const auto& req) { return srv_stop_video_recording(req); });
+
+	client_.advertiseService<
+		mvsim_msgs::SrvGetVideoRecordingStatus, mvsim_msgs::SrvGetVideoRecordingStatusAnswer>(
+		"get_video_recording_status",
+		[this](const auto& req) { return srv_get_video_recording_status(req); });
 
 #endif
 }

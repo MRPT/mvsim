@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+/* Stops the video recording, once the video file is complete */
+message SrvStopVideoRecording {
+}

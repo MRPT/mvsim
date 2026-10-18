@@ -127,6 +127,7 @@ void World::register_standard_xml_tag_parsers()
 	register_tag_parser("gui", &World::parse_tag_gui);
 	register_tag_parser("georeference", &World::parse_tag_georeference);
 	register_tag_parser("lights", &World::parse_tag_lights);
+	register_tag_parser("video_recording", &World::parse_tag_video_recording);
 	register_tag_parser("walls", &World::parse_tag_walls);
 	register_tag_parser("include", &World::parse_tag_include);
 	register_tag_parser("variable", &World::parse_tag_variable);

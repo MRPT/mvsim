@@ -472,6 +472,30 @@ void World::GUI::draw_menu_bar()
 			}
 		}
 		ImGui::Separator();
+		const bool recording = parent_.videoRecorder_.isRecording();
+		if (ImGui::MenuItem(
+				ICON_MS_FIBER_MANUAL_RECORD " Record video", nullptr, false, !recording))
+		{
+			start_video_recording({});
+		}
+		if (ImGui::MenuItem(
+				ICON_MS_FIBER_MANUAL_RECORD " Record video as...", nullptr, false, !recording))
+		{
+			const std::string outFile =
+				pfd::save_file(
+					"Record video", "mvsim_video.mp4",
+					{"Video files (*.mp4 *.mkv *.avi)", "*.mp4 *.mkv *.avi", "All files", "*"})
+					.result();
+			if (!outFile.empty())
+			{
+				start_video_recording(outFile);
+			}
+		}
+		if (ImGui::MenuItem(ICON_MS_STOP " Stop recording", nullptr, false, recording))
+		{
+			stop_video_recording();
+		}
+		ImGui::Separator();
 		if (ImGui::MenuItem(ICON_MS_CLOSE " Quit"))
 		{
 			parent_.simulator_must_close(true);
@@ -584,6 +608,45 @@ void World::GUI::draw_menu_bar()
 	ImGui::EndMainMenuBar();
 }
 
+void World::GUI::start_video_recording(const std::string& outputFile)
+{
+	auto opts = parent_.videoRecorder_.defaultOptions();
+	if (!outputFile.empty())
+	{
+		opts.output_file = outputFile;
+	}
+	// Those are for recordings started from the world file:
+	opts.start_time = 0;
+	opts.close_simulator_when_done = false;
+	try
+	{
+		parent_.videoRecorder_.start(opts);
+		if (const auto cur = parent_.videoRecorder_.currentOptions(); cur)
+		{
+			parent_.logFmt(
+				mrpt::system::LVL_INFO, "Recording video to: %s", cur->output_file.c_str());
+		}
+	}
+	catch (const std::exception& e)
+	{
+		parent_.logFmt(
+			mrpt::system::LVL_ERROR, "Could not start video recording: %s",
+			mrpt::exception_to_str(e).c_str());
+	}
+}
+
+void World::GUI::stop_video_recording()
+{
+	const auto st = parent_.videoRecorder_.stop();
+	if (!st.error.empty())
+	{
+		parent_.logFmt(mrpt::system::LVL_ERROR, "Video recording failed: %s", st.error.c_str());
+	}
+	parent_.logFmt(
+		mrpt::system::LVL_INFO, "Video saved: %s (%zu frames, %.02f s)", st.output_file.c_str(),
+		st.frames, st.duration);
+}
+
 void World::GUI::draw_status_bar()
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
@@ -598,6 +661,44 @@ void World::GUI::draw_status_bar()
 			ImGui::Text(
 				ICON_MS_ACCESS_TIME " %s",
 				mrpt::system::formatTimeInterval(parent_.get_simul_time()).c_str());
+			ImGui::Separator();
+
+			// Video recording:
+			const auto rec = parent_.videoRecorder_.status();
+			if (rec.recording)
+			{
+				if (ImGui::SmallButton(ICON_MS_STOP "##stop_video"))
+				{
+					stop_video_recording();
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("Stop recording: %s", rec.output_file.c_str());
+				}
+				const ImVec4 red(1.0f, 0.3f, 0.3f, 1.0f);
+				if (rec.error.empty())
+				{
+					ImGui::TextColored(
+						red, ICON_MS_FIBER_MANUAL_RECORD " REC %s",
+						mrpt::system::formatTimeInterval(rec.duration).c_str());
+				}
+				else
+				{
+					ImGui::TextColored(red, ICON_MS_FIBER_MANUAL_RECORD " REC error");
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("%s", rec.error.c_str());
+					}
+				}
+			}
+			else if (ImGui::SmallButton(ICON_MS_FIBER_MANUAL_RECORD "##start_video"))
+			{
+				start_video_recording({});
+			}
+			else if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Record a video of the 3D view (see File menu)");
+			}
 			ImGui::Separator();
 
 			const double cpu = parent_.cpu_usage();

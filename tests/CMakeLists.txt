@@ -83,6 +83,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_video_recorder
+	SOURCES test_video_recorder.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_rgbd_camera
 	SOURCES test_rgbd_camera.cpp
 	LINK_LIBRARIES mvsim::simulator

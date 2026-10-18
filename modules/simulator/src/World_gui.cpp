@@ -1084,6 +1084,10 @@ void World::internal_gui_on_observation_image(
 
 void World::internalFreeOpenGLResourcesForSimulation()
 {
+	// Complete the video file, if recording:
+	videoRecorder_.stop();
+	videoRecorder_.freeOpenGLResources();
+
 	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
 	for (auto& obj : getListOfSimulableObjects())
 	{
@@ -1103,6 +1107,9 @@ void World::internalGraphicsLoopTasksForSimulation()
 		internalProcessRemovedEntitiesInGui();
 
 		internalUpdate3DSceneObjects(*worldVisual_, worldPhysical_);
+
+		// Before the sensors, which clear the flag the simulation waits for:
+		internalRenderVideoFrame();
 
 		internalRunSensorsOn3DScene(worldPhysical_);
 
