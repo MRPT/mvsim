@@ -1113,6 +1113,14 @@ void World::internalGraphicsLoopTasksForSimulation()
 
 		internalUpdate3DSceneObjects(*worldVisual_, worldPhysical_);
 
+		// handle user custom 3D visual objects, before rendering them:
+		{
+			const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
+			// replace list of smart pointers (fast):
+			if (guiUserObjectsPhysical_) *glUserObjsPhysical_ = *guiUserObjectsPhysical_;
+			if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
+		}
+
 		// Before the sensors, which clear the flag the simulation waits for:
 		internalRenderVideoFrame();
 
@@ -1123,14 +1131,6 @@ void World::internalGraphicsLoopTasksForSimulation()
 		if (headless() && worldReadyWallclock_ == 0)
 		{
 			worldReadyWallclock_ = mrpt::Clock::nowDouble();
-		}
-
-		// handle user custom 3D visual objects:
-		{
-			const auto lck = mrpt::lockHelper(guiUserObjectsMtx_);
-			// replace list of smart pointers (fast):
-			if (guiUserObjectsPhysical_) *glUserObjsPhysical_ = *guiUserObjectsPhysical_;
-			if (guiUserObjectsViz_) *glUserObjsViz_ = *guiUserObjectsViz_;
 		}
 	}
 	catch (const std::exception& e)
