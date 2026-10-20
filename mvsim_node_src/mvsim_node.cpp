@@ -122,12 +122,14 @@ namespace mrpt2ros = mrpt::ros2bridge;
 #define ROS12_WARN_THROTTLE(...) ROS_WARN_THROTTLE(__VA_ARGS__)
 #define ROS12_WARN_STREAM_THROTTLE(...) ROS_WARN_STREAM_THROTTLE(__VA_ARGS__)
 #define ROS12_ERROR(...) ROS_ERROR(__VA_ARGS__)
+#define ROS12_ERROR_STREAM(...) ROS_ERROR_STREAM(__VA_ARGS__)
 #else
 #define ROS12_INFO(...) RCLCPP_INFO(n_->get_logger(), __VA_ARGS__)
 #define ROS12_WARN_THROTTLE(...) RCLCPP_WARN_THROTTLE(n_->get_logger(), *clock_, __VA_ARGS__)
 #define ROS12_WARN_STREAM_THROTTLE(...) \
 	RCLCPP_WARN_STREAM_THROTTLE(n_->get_logger(), *clock_, __VA_ARGS__)
 #define ROS12_ERROR(...) RCLCPP_ERROR(n_->get_logger(), __VA_ARGS__)
+#define ROS12_ERROR_STREAM(...) RCLCPP_ERROR_STREAM(n_->get_logger(), __VA_ARGS__)
 #endif
 
 const double MAX_CMD_VEL_AGE_SECONDS = 1.0;
