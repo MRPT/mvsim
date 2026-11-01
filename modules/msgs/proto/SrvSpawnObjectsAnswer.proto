@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+message SrvSpawnObjectsAnswer {
+  /* Should be checked */
+  required bool success = 1;
+  optional string errorMessage = 2;
+}

@@ -28,12 +28,87 @@ if(MVSIM_WITH_PYTHON AND MVSIM_WITH_ZMQ)
   #    LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/modules/comms/lib/:${CMAKE_BINARY_DIR}/modules/simulator/lib/:${CMAKE_BINARY_DIR}/modules/msgs/lib/:$ENV{LD_LIBRARY_PATH}
 endif()
 
+# Python tool tests (no ZMQ needed):
+find_program(MVSIM_PYTHON3_EXE NAMES python3)
+if (MVSIM_PYTHON3_EXE)
+  add_test(
+    NAME test_urdf2xml
+    COMMAND ${MVSIM_PYTHON3_EXE} ${TESTS_DIR}/test_urdf2xml.py
+  )
+endif()
+
 # ----------------------------------------------------------
 # C++ tests
 # ----------------------------------------------------------
 mvsim_add_test(
 	TARGET test_shape2p5
 	SOURCES test_shape2p5.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_wheel_spin
+	SOURCES test_wheel_spin.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_performance_stats
+	SOURCES test_performance_stats.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_tilted_lidar2d
+	SOURCES test_tilted_lidar2d.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_gnss_events
+	SOURCES test_gnss_events.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_georef_texture
+	SOURCES test_georef_texture.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_camera_distortion
+	SOURCES test_camera_distortion.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_video_recorder
+	SOURCES test_video_recorder.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_rgbd_camera
+	SOURCES test_rgbd_camera.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_wheel_joints
+	SOURCES test_wheel_joints.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_runtime_objects
+	SOURCES test_runtime_objects.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_runtime_entities
+	SOURCES test_runtime_entities.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
 
@@ -50,6 +125,18 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_vehicle_motion
+	SOURCES test_vehicle_motion.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_suspension
+	SOURCES test_suspension.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_pose_trajectory_follower
 	SOURCES test_pose_trajectory_follower.cpp
 	LINK_LIBRARIES mvsim::simulator
@@ -62,8 +149,26 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_light_groups
+	SOURCES test_light_groups.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_elevation_queries
 	SOURCES test_elevation_queries.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_static_blocks
+	SOURCES test_static_blocks.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_model_scale
+	SOURCES test_model_scale.cpp
 	LINK_LIBRARIES mvsim::simulator
 	)
 
@@ -101,3 +206,9 @@ target_compile_definitions(test_dataset_gen_e2e PRIVATE
 	MVSIM_TUTORIAL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mvsim_tutorial"
 	)
 add_dependencies(test_dataset_gen_e2e mvsim-dataset-gen)
+
+mvsim_add_test(
+	TARGET test_xml_if_in_instances
+	SOURCES test_xml_if_in_instances.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)

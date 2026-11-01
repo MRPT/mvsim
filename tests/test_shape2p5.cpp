@@ -28,7 +28,7 @@ void shape_test_sphere()
 	const float radius = 0.5f;
 	auto glSphere = mrpt::viz::CSphere::Create(radius);
 
-	const Shape2p5 shape = csc.get(*glSphere, -radius, +radius, {}, 1.0f);
+	const Shape2p5 shape = csc.get(*glSphere, -radius, +radius, {}, {1.0f, 1.0f, 1.0f});
 
 	std::cout << "Sphere:\n" << shape.getContour() << std::endl;
 }
@@ -40,7 +40,7 @@ void shape_test_cylinder()
 	const float radius = 0.5f, L = 2.0f;
 	auto glCyl = mrpt::viz::CCylinder::Create(radius, radius, L);
 
-	const Shape2p5 shape = csc.get(*glCyl, 0, L, {}, 1.0f);
+	const Shape2p5 shape = csc.get(*glCyl, 0, L, {}, {1.0f, 1.0f, 1.0f});
 
 	std::cout << "Cylinder:\n" << shape.getContour() << std::endl;
 }
@@ -52,11 +52,11 @@ void shape_test_merge()
 	const float radius = 0.5f, L = 2.0f;
 	auto glCyl = mrpt::viz::CCylinder::Create(radius, radius, L);
 
-	const Shape2p5 s1 =
-		csc.get(*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(-0.15, 0, 0), 1.0f);
+	const Shape2p5 s1 = csc.get(
+		*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(-0.15, 0, 0), {1.0f, 1.0f, 1.0f});
 
-	const Shape2p5 s2 =
-		csc.get(*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(0.15, 0, 0), 1.0f);
+	const Shape2p5 s2 = csc.get(
+		*glCyl, 0, L, mrpt::poses::CPose3D::FromTranslation(0.15, 0, 0), {1.0f, 1.0f, 1.0f});
 
 	Shape2p5 s = s1;
 	s.mergeWith(s2);
@@ -73,7 +73,7 @@ void shape_test_simplecamera()
 	auto glModel = mrpt::viz::CAssimpModel::Create();
 	glModel->loadScene(mrpt::system::pathJoin({MVSIM_TEST_DIR, "../models/simple_camera.dae"}));
 
-	const Shape2p5 shape = csc.get(*glModel, 0, 1.0, {}, 1.0f);
+	const Shape2p5 shape = csc.get(*glModel, 0, 1.0, {}, {1.0f, 1.0f, 1.0f});
 
 	std::cout << "SimpleCamera .DAE:\n" << shape.getContour() << std::endl;
 }

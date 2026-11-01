@@ -43,6 +43,7 @@ class LaserScanner : public SensorBase
 
 	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 	void freeOpenGLResources() override;
+	bool rendersWithOpenGL() const override { return raytrace_3d_; }
 
 	void registerOnServer(mvsim::Client& c) override;
 

@@ -76,7 +76,7 @@ void GroundGrid::internalGuiUpdate(
 		gl_groundgrid_->setColor_u8(color_);
 		gl_groundgrid_->setLineWidth(line_width_);
 
-		viz->get().insert(gl_groundgrid_);
+		insertIntoScene(viz->get(), gl_groundgrid_);
 	}
 
 	// Update:

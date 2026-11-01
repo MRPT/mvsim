@@ -1,9 +1,18 @@
 set(MODULE_NAME "raytracer")
 project(mvsim-${MODULE_NAME} LANGUAGES CXX VERSION ${MVSIM_VERSION})
 
-file(GLOB RayTracer_SRCS
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/mvsim/raytracer/*.h"
+set(RayTracer_SRCS
+	src/BVH.cpp
+	src/Lidar3DModel.cpp
+	src/Primitive.cpp
+	src/RayScene.cpp
+	src/VecOps.h
+	include/mvsim/raytracer/AABB.h
+	include/mvsim/raytracer/BVH.h
+	include/mvsim/raytracer/Lidar3DModel.h
+	include/mvsim/raytracer/Primitive.h
+	include/mvsim/raytracer/Ray.h
+	include/mvsim/raytracer/RayScene.h
 )
 
 # Declare the target (a library). No Box2D, no GUI, no ZMQ, no Protobuf:
@@ -17,8 +26,8 @@ mvsim_set_target_build_options(${PROJECT_NAME})
 source_group(RayTracer FILES ${RayTracer_SRCS})
 
 set(PACKAGE_DEPENDENCIES
-  mrpt-math
-  mrpt-poses
+  mrpt_math
+  mrpt_poses
   )
 mvsim_common_target_settings(${MODULE_NAME})
 

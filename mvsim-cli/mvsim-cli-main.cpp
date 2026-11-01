@@ -25,7 +25,7 @@ std::unique_ptr<cli_flags> cli;
 const std::map<std::string, cmd_t> cliCommands = {
 	{"help", cmd_t(&printListCommands)},  {"server", cmd_t(&launchStandAloneServer)},
 	{"launch", cmd_t(&launchSimulation)}, {"node", cmd_t(&commandNode)},
-	{"topic", cmd_t(&commandTopic)},
+	{"topic", cmd_t(&commandTopic)},	  {"slice", cmd_t(&commandSlice)},
 };
 
 void setConsoleErrorColor()
@@ -108,6 +108,7 @@ Available commands:
     mvsim server              Start a standalone communication server.
     mvsim node                List connected nodes, etc.
     mvsim topic               Inspect, publish, etc. topics.
+    mvsim slice <WORLD.xml>   Export a 2D slice of the world obstacles to a .txt file.
     mvsim --version           Shows program version.
     mvsim --help              Shows this information.
 

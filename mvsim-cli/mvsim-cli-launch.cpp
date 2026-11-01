@@ -12,6 +12,7 @@
 #include <mrpt/system/os.h>	 // consoleColorAndStyle()
 #include <mvsim/World.h>
 
+#include <atomic>
 #include <csignal>	// sigaction
 #include <rapidxml_utils.hpp>
 #include <thread>
@@ -83,12 +84,14 @@ void mvsim_launch_shutdown()
 	app.reset();  // destroy all
 }
 
-void mvsim_signal_handler(int s)
+namespace
 {
-	std::cerr << "Caught signal " << s << ". Shutting down..." << std::endl;
-	mvsim_launch_shutdown();
-	exit(0);
-}
+// Set by the signal handler, which may run in any thread: the actual shutdown
+// is done by the main thread.
+std::atomic_int g_signalCount{0};
+}  // namespace
+
+void mvsim_signal_handler(int /*s*/) { g_signalCount++; }
 
 void mvsim_install_signal_handler()
 {
@@ -186,7 +189,8 @@ Available options:
                          default port is in use, the next free one is used. The
                          environment variable MVSIM_SERVER_PORT also sets it.
  --full-profiler         Enable full profiling (generates file with all timings)
- --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0
+ --realtime-factor <1.0> Run slower (<1) or faster (>1) than real time if !=1.0,
+                          or as fast as possible if <=0
  -v, --verbosity         Set verbosity level: DEBUG, INFO (default), WARN, ERROR
 )XXX");
 		return 0;
@@ -226,6 +230,11 @@ Available options:
 	{
 		app->world.headless(true);
 	}
+	else
+	{
+		// Give feedback while loading the world:
+		app->world.open_GUI_while_loading();
+	}
 
 	// Load from XML:
 	try
@@ -254,10 +263,12 @@ Available options:
 	}
 
 	// Attach world as a mvsim communications node:
+#if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	if (serverPort != 0)
 	{
 		app->world.commsClient().serverPort(serverPort);
 	}
+#endif
 	app->world.connectToServer();
 
 	// Launch GUI thread, unless we are in headless mode (from the command line
@@ -282,9 +293,13 @@ Available options:
 
 	while (!doExit)
 	{
-		// was the quit button hit in the GUI?
-		if (app->world.simulator_must_close())
+		// was the quit button hit in the GUI, or Ctrl+C pressed?
+		if (app->world.simulator_must_close() || g_signalCount > 0)
 		{
+			if (g_signalCount > 0)
+			{
+				std::cerr << "Caught signal. Shutting down..." << std::endl;
+			}
 			break;
 		}
 
@@ -296,13 +311,23 @@ Available options:
 		int incrTimeSteps =
 			static_cast<int>(std::floor(incrTime / app->world.get_simul_timestep()));
 
+		// "As fast as possible" mode:
+		const bool asFastAsPossible = rtFactor <= 0;
+		if (asFastAsPossible)
+		{
+			incrTimeSteps = 10;
+		}
+
 		// Simulate:
 		if (incrTimeSteps > 0)
 		{
 			app->world.run_simulation(incrTimeSteps * app->world.get_simul_timestep());
 		}
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		if (!asFastAsPossible)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
 
 		// GUI msgs, teleop, etc.
 		// ====================================================
@@ -316,7 +341,7 @@ Available options:
 			default:
 				break;
 
-			case GLFW_KEY_ESCAPE:
+			case World::GUIKeyEvent::KEY_ESCAPE:
 				doExit = true;
 				break;
 			case '1':
@@ -402,6 +427,9 @@ void mvsim_server_thread_headless(TThreadParams& thread_params)
 
 		// in case we are here due to simulator_must_close()
 		thread_params.closing(true);
+
+		// OpenGL resources must be freed from the thread that created them:
+		thread_params.world->internalFreeOpenGLResourcesForSimulation();
 	}
 	catch (const std::exception& e)
 	{

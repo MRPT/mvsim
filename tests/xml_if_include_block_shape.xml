@@ -1,0 +1,7 @@
+<!-- Fragment included by test_xml_if_in_instances -->
+<shape>
+  <pt>-${half_size} -${half_size}</pt>
+  <pt>-${half_size}  ${half_size}</pt>
+  <pt> ${half_size}  ${half_size}</pt>
+  <pt> ${half_size} -${half_size}</pt>
+</shape>

@@ -65,12 +65,12 @@ Motion controllers
 Each dynamics class has one or more controllers. The available controller
 ``class`` names are:
 
--  ``raw`` — control raw wheel torques directly (available for all dynamics)
--  ``twist_pid`` — [differential only] control with ``(v, omega)`` twist messages via PID
--  ``twist_ideal`` — [differential only] ideal twist tracking (no PID, instantaneous)
--  ``twist_front_steer_pid`` — [Ackermann / Ackermann-drivetrain] control with
-   ``(v, steer_angle)`` via PID
--  ``front_steer_pid`` — [Ackermann / Ackermann-drivetrain] control with PID for
+-  ``raw`` - control raw wheel torques directly (available for all dynamics)
+-  ``twist_pid`` - [differential only] control with ``(v, omega)`` twist messages via PID
+-  ``twist_ideal`` - [differential / Ackermann] ideal twist tracking (no PID, instantaneous)
+-  ``twist_front_steer_pid`` - [Ackermann / Ackermann-drivetrain] control with
+   ``(v, omega)`` twist messages via PID
+-  ``front_steer_pid`` - [Ackermann / Ackermann-drivetrain] control with PID for
    velocity and raw steering angles
 
 Controllers with *pid* in their names use a PID regulator that needs to
@@ -225,7 +225,9 @@ ROS 2 Launch Parameters
 
 Key parameters when launching the mvsim_node:
 
-* ``realtime_factor`` — Simulation speed multiplier (default: 1.0)
+* ``realtime_factor`` — Simulation speed multiplier (default: 1.0). Use ``0`` to run **as fast as
+  possible**: sensors and controllers stay in lock-step with simulation time (no sensor
+  frames are skipped), and downstream nodes must use ``use_sim_time:=true``.
 * ``headless`` — Run without GUI (default: false)  
 * ``period_ms_publish_tf`` — Transform publication rate in milliseconds (default: 20)
 * ``do_fake_localization`` — Enable fake AMCL output (default: false)
@@ -237,3 +239,16 @@ Example launch:
 .. code-block:: bash
 
    ros2 launch mvsim demo_warehouse.launch.py realtime_factor:=1.0 headless:=false
+
+Example: run as fast as possible, e.g. to generate datasets or for batch tests:
+
+.. code-block:: bash
+
+   # With ROS 2 (any launch file based on launch_world.launch.py):
+   ros2 launch mvsim demo_warehouse.launch.py realtime_factor:=0 headless:=True use_rviz:=False
+
+   # Without ROS:
+   mvsim launch mvsim_tutorial/demo_warehouse.world.xml --headless --realtime-factor 0
+
+The achieved speed depends on the CPU and on the sensors in the world (OpenGL-based sensors are
+the most expensive).

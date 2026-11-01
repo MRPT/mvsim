@@ -15,10 +15,24 @@
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
+#include <optional>
+#include <vector>
 
 namespace mvsim
 {
 /** A Global Navigation Satellite System (GNSS) sensor (GPS).
+ *
+ * XML parameters: `horizontal_std_noise`, `vertical_std_noise` [m], and
+ * `fix_type` (`no_fix`, `single`, `dgps` (default), `rtk_float`,
+ * `rtk_fixed`).
+ *
+ * Optional degradation events, in simulation time, for robustness tests:
+ * \code
+ * <event start="10" end="20" fix_type="rtk_float" horizontal_std_noise="0.5" />
+ * <event start="30" end="35" outage="true" />       <!-- no data at all -->
+ * <event start="40" end="45" fix_type="no_fix" />   <!-- data without fix -->
+ * <event start="50" end="60" offset="2.0 -1.0 0" /> <!-- ENU position jump [m] -->
+ * \endcode
  *
  * \sa See the property `gps_no_coverage` in `property_region` world elements.
  *
@@ -63,6 +77,18 @@ class GNSS : public SensorBase
 
 	double horizontal_std_noise_ = 2.0;	 //!< [m]
 	double vertical_std_noise_ = 4.0;  //!< [m]
+	mrpt::obs::GnssFixType fix_type_ = mrpt::obs::GnssFixType::DGPS;
+
+	/** A time interval with modified GNSS quality */
+	struct Event
+	{
+		double start = 0, end = 0;	//!< [s] simulation time
+		bool outage = false;
+		std::optional<mrpt::obs::GnssFixType> fix_type;
+		std::optional<double> horizontal_std_noise, vertical_std_noise;
+		mrpt::math::TPoint3D offset = {0, 0, 0};  //!< ENU [m]
+	};
+	std::vector<Event> events_;
 
 	// Store here all default parameters. This obj will be copied as a
 	// "pattern" to fill it with actual data.

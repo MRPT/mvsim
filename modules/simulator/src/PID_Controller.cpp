@@ -51,6 +51,7 @@ double PID_Controller::compute(double err, double dt, double feedforward)
 
 	// Derivative (with optional filtering):
 	double D = 0;
+	double dD_derr = 0;
 	if (N > 0)
 	{
 		// Filtered derivative: d_state tracks the error through a first-order
@@ -61,11 +62,13 @@ double PID_Controller::compute(double err, double dt, double feedforward)
 		//   D_dot = N * (KD * e - D) => D[k] = D[k-1] + dt*N*(KD*err - D[k-1])
 		d_state_ += dt * N * (KD * err - d_state_);
 		D = d_state_;
+		dD_derr = dt * N * KD;
 	}
 	else if (!firstCall_)
 	{
 		// Standard unfiltered derivative:
 		D = KD * (err - e_prev_) / dt;
+		dD_derr = KD / dt;
 	}
 
 	e_prev_ = err;
@@ -94,12 +97,16 @@ double PID_Controller::compute(double err, double dt, double feedforward)
 	}
 
 	lastOutput_ = u_sat;
+	lastUnsaturatedOutput_ = u_unsat;
+	lastSensitivity_ = KP + KI * dt + dD_derr;
 	return u_sat;
 }
 
 void PID_Controller::reset()
 {
 	lastOutput_ = 0.0;
+	lastSensitivity_ = 0.0;
+	lastUnsaturatedOutput_ = 0.0;
 	i_state_ = 0.0;
 	d_state_ = 0.0;
 	e_prev_ = 0.0;

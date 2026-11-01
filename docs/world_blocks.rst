@@ -57,7 +57,7 @@ Physical properties
 - **ground_friction**: Friction coefficient with the ground (Default: 0.5)
 - **lateral_friction**: Lateral friction coefficient (Default: 0.5)
 - **restitution**: Coefficient of restitution for collisions (Default: 0.01)
-- **intangible**: If true, the block is rendered but doesn't collide or affect sensors (Default: false)
+- **intangible**: If true, the block is rendered (so 3D lidars and cameras see it) but it neither collides nor acts as terrain elevation; 2D laser scanners don't see it (Default: false)
 
 Geometry properties
 ^^^^^^^^^^^^^^^^^^^^^
@@ -71,9 +71,10 @@ Visual properties
 
 All parameters from the :ref:`VisualObject <world_visual_object>` interface apply, including:
 
-- **visual_scale**: Per-instance override for 3D model scale. If specified, this overrides 
-  the ``model_scale`` defined in the visual model. Useful for creating size variations of 
-  the same block class.
+- **visual_scale**: Per-instance override for 3D model scale, either one number or three
+  (``SX SY SZ``, per axis). If specified, this overrides the ``model_scale`` defined in the
+  visual model. Useful for creating size variations of the same block class. The collision
+  shape of each block follows its own scale.
 
 Example:
 
@@ -272,7 +273,8 @@ and can be pushed, moved, or affected by forces:
 Intangible blocks
 ^^^^^^^^^^^^^^^^^^^
 
-Blocks with ``intangible="true"`` are rendered visually but don't collide:
+Blocks with ``intangible="true"`` are rendered visually but don't collide, nor act as
+terrain elevation under the wheels of vehicles:
 
 .. code-block:: xml
 
@@ -284,6 +286,8 @@ Blocks with ``intangible="true"`` are rendered visually but don't collide:
     </block>
 
 This is useful for decorative elements, visual markers, or semi-transparent objects.
+Since 3D lidars and cameras render the scene, they do see intangible blocks, which also
+makes them a simple model of obstacles a robot can push through, like plant branches.
 
 
 Tips and best practices

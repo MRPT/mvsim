@@ -5,7 +5,7 @@
   <description>A lightweight multivehicle simulation framework.</description>
 
   <!-- All version numbers in CMake scripts are taken from this line: -->
-  <version>1.6.0</version>
+  <version>2.0.0</version>
 
   <maintainer email="jlblanco@ual.es">Jose-Luis Blanco-Claraco</maintainer>
   <license>BSD</license>
@@ -26,8 +26,10 @@
 
   <!-- COMMON DEPS for all ROS versions -->
   <depend>cli11</depend>
+  <depend>eigen</depend>
   <depend>libzmq3-dev</depend>
-  <depend>mrpt_gui</depend>
+  <depend>mrpt_imgui</depend>
+  <depend>mrpt_imgui_vendor</depend>
   <depend>mrpt_libros_bridge</depend>
   <depend>mrpt_maps</depend>
   <depend>mrpt_topography</depend>
@@ -37,6 +39,7 @@
   <depend>pybind11-dev</depend>
   <depend>python3-pip</depend>
   <depend>python3-protobuf</depend>
+  <exec_depend>python3-yaml</exec_depend>  <!-- mvsim-urdf2xml -->
   <depend>python3-venv</depend>
   <depend>sensor_msgs</depend>
   <depend>stereo_msgs</depend>
@@ -59,6 +62,16 @@
   <build_depend     condition="$ROS_VERSION == 2">ament_cmake_xmllint</build_depend>
   <!-- to recognize launch files -->
   <exec_depend      condition="$ROS_VERSION == 2">ros2launch</exec_depend>
+  <!-- Optional: /diagnostics publisher (built only if found): -->
+  <depend           condition="$ROS_VERSION == 2">diagnostic_msgs</depend>
+  <!-- Optional ros2_control integration (built only if found): -->
+  <depend           condition="$ROS_VERSION == 2">controller_manager</depend>
+  <depend           condition="$ROS_VERSION == 2">hardware_interface</depend>
+  <exec_depend      condition="$ROS_VERSION == 2">diff_drive_controller</exec_depend>
+  <exec_depend      condition="$ROS_VERSION == 2">joint_state_broadcaster</exec_depend>
+  <exec_depend      condition="$ROS_VERSION == 2">robot_state_publisher</exec_depend>
+  <!-- Optional: standard simulator services (built only if found): -->
+  <depend           condition="$ROS_VERSION == 2">simulation_interfaces</depend>
 
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>

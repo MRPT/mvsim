@@ -3,10 +3,9 @@
 mvsim-pid-tuner
 ===============
 
-``mvsim-pid-tuner`` is a command-line tool for automatic PID parameter tuning of MVSim
-vehicle controllers. It identifies the vehicle's dynamic response (both linear and
-rotational) and proposes optimal PID gains using the IMC (Internal Model Control)
-tuning method.
+``mvsim-pid-tuner`` is a command-line tool that tunes the twist PID controller of an MVSim
+vehicle definition, by simulating the vehicle with many candidate gains and keeping the ones
+that track twist commands best.
 
 .. contents::
    :depth: 1
@@ -16,69 +15,33 @@ tuning method.
 Overview
 --------
 
-Tuning PID controllers for simulated vehicles can be tedious. This tool automates the
-process by:
+Each candidate set of gains drives the vehicle, in an empty world, through these twist
+command profiles:
 
-1. Running **open-loop step response** tests for both linear and rotational motion
-2. **Identifying the plant models** as first-order systems: :math:`G(s) = K / (\tau s + 1)`
-3. Computing **optimal PID parameters** using IMC tuning rules, balanced for both modes
-4. **Validating** the proposed parameters with closed-loop step-up/step-down simulations
-   for both linear velocity and angular velocity
+* **stop_go**: forward, stop, forward, stop, backward, stop.
+* **s_curve**: straight, left turn, right turn, left turn, straight, stop.
+* **fwd_back**: forward, then backward, then stop.
+* **spin** (differential robots only): turn in place, then stop.
 
-Algorithm
----------
+The candidates are evaluated at each requested simulation time step (by default 1 ms and
+5 ms, the latter being the automatic time step of most worlds), and also on a low-friction
+ground (by default :math:`\mu=0.3`, through a ``friction_mu`` property region covering the
+world), so the gains are robust to both.
 
-**Phase 1a: Linear Plant Identification**
+The cost of a candidate is the velocity tracking error: the integral of the absolute error of
+the actual chassis linear and angular velocities (not the wheel odometry), the latter
+weighted by half the wheel track (differential) or wheelbase (Ackermann). It is increased if
+the linear velocity overshoots more than 5%, if the vehicle does not come to a full stop, and
+candidates that become unstable are discarded.
 
-A constant torque is applied equally to all wheels (via a ``raw`` controller) and the
-average wheel velocity is recorded over time. The steady-state velocity :math:`v_{ss}`
-is computed from the last 20% of samples, and the plant gain and time constant are:
+The search starts with a coarse grid: ``KP`` values in powers of 2 around an estimate from
+the vehicle mass and wheel radius, times several ``KI/KP`` ratios (and several
+``wheel_separation_multiplier`` values for skid-steer robots). It is then refined around the
+best candidate. Among the candidates within 2% of the best cost, the one with the smallest
+``KP`` is selected: tracking is often limited by ``max_torque``, so larger gains would only
+make the controller stiffer.
 
-.. math::
-
-   K_{lin} = \frac{v_{ss}}{\tau_{applied}}, \quad \tau_{lin} = \text{time to reach } 63.2\% \text{ of } v_{ss}
-
-**Phase 1b: Rotation Plant Identification**
-
-Opposite torques are applied to left and right wheels (left forward, right backward)
-to induce pure rotation. The angular velocity :math:`\omega` is recorded from the
-vehicle's odometry estimate. The rotational plant model is identified analogously:
-
-.. math::
-
-   K_{rot} = \frac{\omega_{ss}}{\tau_{applied}}, \quad \tau_{rot} = \text{time to reach } 63.2\% \text{ of } \omega_{ss}
-
-**Phase 2: IMC PID Tuning**
-
-For each first-order plant (linear and rotational), the IMC method yields a PI controller:
-
-.. math::
-
-   K_P = \frac{\tau}{K \cdot \tau_{cl}}, \quad K_I = \frac{K_P}{\tau}, \quad K_D = 0
-
-where :math:`\tau_{cl} = \tau \cdot \alpha` is the desired closed-loop time constant and
-:math:`\alpha` is the aggressiveness factor (smaller = faster response).
-
-Since the ``twist_pid`` controller uses the same PID gains for both wheels, the tool
-computes PID parameters for both linear and rotational plants independently, then uses
-the **geometric mean** to balance performance across both modes.
-
-The ``max_torque`` is set to 80% of the estimated friction limit to avoid wheel slip.
-
-**Phase 3: Closed-Loop Validation**
-
-The proposed PID parameters are validated with two separate tests:
-
-* **Linear test**: step-up to 1.0 m/s (3 seconds) followed by step-down to 0 m/s (3 seconds)
-* **Rotation test**: step-up to 1.0 rad/s (3 seconds) followed by step-down to 0 rad/s (3 seconds)
-
-For each test, the tool reports:
-
-* Rise time (time to 90% of setpoint)
-* Settling time (time to enter 2% band)
-* Overshoot percentage
-* Steady-state error
-* Stop settling time and rebound
+Candidates are evaluated in parallel threads.
 
 Usage
 -----
@@ -98,105 +61,84 @@ Usage
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 65
+   :widths: 22 15 63
 
    * - Flag
      - Default
      - Description
-   * - ``-t``, ``--torque``
+   * - ``-v``, ``--speed``
+     - 1.0
+     - Linear speed of the test profiles [m/s]. Use a typical speed of the vehicle.
+   * - ``-r``, ``--radius``
      - auto
-     - Test torque (Nm) for open-loop identification. Default: 50% of estimated friction limit.
-   * - ``-d``, ``--duration``
-     - 5.0
-     - Open-loop step duration in seconds.
-   * - ``-s``, ``--sim-step``
-     - 0.001
-     - Simulation time step in seconds.
-   * - ``-a``, ``--aggressiveness``
-     - 0.25
-     - Closed-loop aggressiveness factor. Range: 0.1 (very aggressive) to 1.0 (conservative).
+     - Turn radius of the S-curve profile [m]. Default: 2 times the minimum turn radius
+       (Ackermann) or 1.5 m (differential).
+   * - ``--spin-rate``
+     - 1.0
+     - Angular speed of the spin profile [rad/s] (differential robots).
+   * - ``-s``, ``--sim-steps``
+     - 0.001,0.005
+     - Comma-separated simulation time steps to evaluate [s].
+   * - ``--low-mu``
+     - 0.3
+     - Friction coefficient of the extra low-friction evaluation (0 to disable it).
+   * - ``--max-torque``
+     - auto
+     - Fixed ``max_torque`` [N.m]. Default: the one of the twist PID controller in the XML, or
+       90% of the traction limit of the driven wheels if there is none (3 times it for
+       skid-steer robots, which need their wheels to slip to turn).
+   * - ``-j``, ``--threads``
+     - all cores
+     - Number of parallel threads.
 
 Example
 -------
 
 .. code-block:: bash
 
-   mvsim-pid-tuner definitions/small_robot.vehicle.xml small_robot
+   mvsim-pid-tuner definitions/agricobiot2.vehicle.xml agricobiot2 -v 0.5
 
 Sample output:
 
 .. code-block:: text
 
-   ======================================
-    MVSim PID Auto-Tuner
-   ======================================
+   Vehicle 'agricobiot2' from 'definitions/agricobiot2.vehicle.xml'
+     Dynamics: ackermann_drivetrain, 4 wheels. Traction limit per driven wheel: 50.11 N.m
+     Profiles: speed=0.5 m/s, turn radius=1.77 m. max_torque=100 N.m
 
-   --- Phase 1a: Open-loop LINEAR plant identification ---
-   Vehicle: small_robot (2 wheels)
-     Wheel 0: pos=(0.000, 0.500) R=0.200 mass=4.00
-     Wheel 1: pos=(0.000, -0.500) R=0.200 mass=4.00
-     Chassis mass: 15.0 kg
-     Wheel track: 1.000 m
-     Estimated max friction torque per wheel: 18.10 Nm (mu=0.8)
-     Test torque: 9.05 Nm (linear)
+   Coarse search (56 candidates):
+     Evaluated 56/56
+   Refinement (15 candidates):
+     Evaluated 15/15
 
-   === Open-Loop Step Response Analysis (linear) ===
-   Applied torque:        9.050 Nm
-   Steady-state velocity: 1.2345 m/s
-   Plant gain K:          0.1364 (m/s)/Nm
-   Time constant tau:     0.1500 s
+   Best candidates:
+               KP=2719      KI=192.3     max_torque=100      | cost=2.791    tracking=2.791    overshoot= 0.0%
+               KP=2719      KI=271.9     max_torque=100      | cost=2.792    tracking=2.792    overshoot= 0.2%
+               KP=1923      KI=271.9     max_torque=100      | cost=2.806    tracking=2.806    overshoot= 0.3%
+               KP=2719      KI=384.6     max_torque=100      | cost=2.807    tracking=2.807    overshoot= 0.5%
+               KP=1923      KI=192.3     max_torque=100      | cost=2.807    tracking=2.807    overshoot= 0.1%
+     SELECTED  KP=1360      KI=271.9     max_torque=100      | cost=2.818    tracking=2.818    overshoot= 0.5%
+     XML       KP=800       KI=100       max_torque=100      | cost=3.044    tracking=3.044    overshoot= 0.0%
 
-   --- Phase 1b: Open-loop ROTATION plant identification ---
-     Test torque: 9.05 Nm (rotation)
+   XML snippet:
+     <KP>1360</KP>
+     <KI>271.9</KI>
+     <KD>0</KD>
+     <max_torque>100</max_torque>
 
-   === Open-Loop Step Response Analysis (rotation) ===
-   Applied torque:        9.050 Nm
-   Steady-state omega:    2.5000 rad/s
-   Plant gain K:          0.2762 (rad/s)/Nm
-   Time constant tau:     0.0800 s
-
-   --- Phase 2: IMC PID tuning (aggressiveness=0.25) ---
-
-     Linear-only PID:  KP=29.3200  KI=195.4667
-     Rotation-only PID: KP=14.4800  KI=181.0000
-
-   Proposed PID parameters (balanced linear + rotation):
-     KP:         20.6000
-     KI:         188.0000
-     KD:         0.0000
-     max_torque: 14.48 Nm
-
-   --- Phase 3: Closed-loop validation ---
-
-   [Linear] Step-up (1.0 m/s, 3s) then step-down (stop, 3s)...
-   Step-up (0 -> 1.0 m/s):
-     Rise time (90%):       0.150 s
-     Settling time (2%):    0.300 s
-     Overshoot:             3.2 %
-     Steady-state error:    0.0015 m/s
-   Step-down (1.0 -> 0 m/s):
-     Settling time (2%):    0.350 s
-     Rebound:               none
-
-   [Rotation] Step-up (1.0 rad/s, 3s) then step-down (stop, 3s)...
-   Step-up (0 -> 1.0 rad/s):
-     Rise time (90%):       0.120 s
-     Settling time (2%):    0.250 s
-     Overshoot:             2.8 %
-     Steady-state error:    0.0020 rad/s
-   Step-down (1.0 -> 0 rad/s):
-     Settling time (2%):    0.300 s
-     Rebound:               none
-
-   --- Assessment ---
-   All metrics look good for both linear and rotation!
-
-The tool prints an XML snippet with the proposed PID values that can be pasted directly
-into the vehicle's ``<controller>`` block.
+The ``XML`` line evaluates the gains currently in the vehicle definition, if its controller
+is a twist PID. The XML snippet can be pasted into the vehicle ``<controller>`` block.
 
 Supported Vehicle Types
 -----------------------
 
 * **Differential drive** (``differential``, ``differential_3_wheels``, ``differential_4_wheels``)
-  -- tunes the ``twist_pid`` controller
-* **Ackermann steering** (``ackermann``) -- tunes the ``twist_front_steer_pid`` controller
+  -- tunes the ``twist_pid`` controller. For skid-steer robots (4 wheels), it also tunes
+  ``wheel_separation_multiplier``.
+* **Ackermann steering** (``ackermann``) -- tunes the ``twist_front_steer_pid`` controller.
+* **Ackermann with drivetrain** (``ackermann_drivetrain``) -- tunes its
+  ``twist_front_steer_pid`` controller.
+
+If the vehicle definition uses another controller (e.g. ``twist_ideal``), the twist PID one is
+installed for the tests. Other parameters in the XML (e.g. steering rate limits, drivetrain
+settings) are kept.

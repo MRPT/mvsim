@@ -17,6 +17,8 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
+#include <cmath>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -70,11 +72,17 @@ void CameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["clip_min"] = TParamEntry("%f", &rgbClipMin_);
 	params["clip_max"] = TParamEntry("%f", &rgbClipMax_);
 
+	// Lens distortion and noise:
+	distortion_ = CameraDistortionOptions();
+	distortion_.declareParams(params);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
 
 	rgbCam.ncols = rgb_ncols;
 	rgbCam.nrows = rgb_nrows;
+
+	distortion_.applyTo(rgbCam);
 
 	// save sensor label here too:
 	sensor_params_.sensorLabel = name_;
@@ -94,15 +102,15 @@ void CameraSensor::internalGuiUpdate(
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
 		gl_sensor_origin_->setVisibility(false);
-		viz->get().insert(gl_sensor_origin_);
-		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
+		insertIntoScene(viz->get(), gl_sensor_origin_);
+		insertIntoScene(SensorBase::GetAllSensorsOriginViz(), gl_sensor_origin_);
 	}
 	if (!gl_sensor_fov_ && viz)
 	{
 		gl_sensor_fov_ = mrpt::viz::CSetOfObjects::Create();
 		gl_sensor_fov_->setVisibility(false);
-		viz->get().insert(gl_sensor_fov_);
-		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
+		insertIntoScene(viz->get(), gl_sensor_fov_);
+		insertIntoScene(SensorBase::GetAllSensorsFOVViz(), gl_sensor_fov_);
 	}
 
 	if (!gui_uptodate_)
@@ -138,7 +146,7 @@ void CameraSensor::internalGuiUpdate(
 	}
 
 	// Move with vehicle:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
 	gl_sensor_fov_->setPose(pp);
@@ -187,6 +195,7 @@ void CameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		fbo_renderer_rgb_ = std::make_shared<mrpt::opengl::CFBORender>(p);
+		distortion_.applyTo(*fbo_renderer_rgb_, sensor_params_.cameraParams);
 	}
 
 	auto viewport = world3DScene.getViewport();
@@ -209,7 +218,7 @@ void CameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	// Note: relativePoseOnVehicle should be (y,p,r)=(-90deg,0,-90deg) to make
 	// the camera to look forward:
 
-	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
+	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 	const auto rgbSensorPose = vehiclePose + curObs->cameraPose;
 
 	cam.setPose(world()->applyWorldRenderOffset(rgbSensorPose));
@@ -264,7 +273,7 @@ void CameraSensor::simul_post_timestep(const TSimulContext& context)
 	}
 
 	// Keep sensor global pose up-to-date:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto globalSensorPose = p + sensor_params_.cameraPose.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
@@ -273,8 +282,63 @@ void CameraSensor::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	sensor_params_.cameraPose = mrpt::poses::CPose3D(newPose - p);
 }
 
 void CameraSensor::freeOpenGLResources() { fbo_renderer_rgb_.reset(); }
+
+void CameraDistortionOptions::declareParams(
+	TParameterDefinitions& params, const std::string& prefix)
+{
+	params[prefix + "distortion_model"] = TParamEntry("%s", &distortionModel);
+	params[prefix + "k1"] = TParamEntry("%lf", &k1);
+	params[prefix + "k2"] = TParamEntry("%lf", &k2);
+	params[prefix + "p1"] = TParamEntry("%lf", &p1);
+	params[prefix + "p2"] = TParamEntry("%lf", &p2);
+	params[prefix + "k3"] = TParamEntry("%lf", &k3);
+	params[prefix + "image_noise_std"] = TParamEntry("%lf", &imageNoiseStd);
+}
+
+void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
+{
+	for (const double k : {k1, k2, p1, p2, k3})
+	{
+		ASSERTMSG_(std::isfinite(k), "Camera distortion coefficients must be finite numbers");
+	}
+	ASSERTMSG_(
+		std::isfinite(imageNoiseStd) && imageNoiseStd >= 0,
+		"<image_noise_std> must be a finite, non-negative number");
+
+	if (distortionModel == "plumb_bob")
+	{
+		cam.distortion = mrpt::img::DistortionModel::plumb_bob;
+		cam.k1(k1);
+		cam.k2(k2);
+		cam.p1(p1);
+		cam.p2(p2);
+		cam.k3(k3);
+	}
+	else
+	{
+		ASSERTMSG_(distortionModel == "none", "<distortion_model> must be 'none' or 'plumb_bob'");
+		cam.distortion = mrpt::img::DistortionModel::none;
+	}
+
+#if MRPT_VERSION < MIN_MRPT_VERSION_CAMERA_DISTORTION
+	ASSERTMSG_(
+		cam.distortion == mrpt::img::DistortionModel::none && imageNoiseStd == 0,
+		"Camera lens distortion and image noise require MRPT >= 3.6.0");
+#endif
+}
+
+void CameraDistortionOptions::applyTo(
+	[[maybe_unused]] mrpt::opengl::CFBORender& renderer,
+	[[maybe_unused]] const mrpt::img::TCamera& cam) const
+{
+#if MRPT_VERSION >= MIN_MRPT_VERSION_CAMERA_DISTORTION
+	// Both are applied on the GPU:
+	renderer.setLensDistortion(cam);
+	renderer.setRGBNoise(static_cast<float>(imageNoiseStd));
+#endif
+}

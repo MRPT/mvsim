@@ -64,6 +64,11 @@ class WorldElementBase : public CVisualObject, public Simulable
 	 * queried everywhere). */
 	virtual std::optional<mrpt::math::TBoundingBox> elevationBoundingBox() const { return {}; }
 
+	/** Called after vehicles or blocks are inserted or removed at runtime, so
+	 * caches indexed by object are rebuilt. Called with no simulation step
+	 * running. */
+	virtual void onSimulableObjectsChanged() {}
+
    protected:
 	void notifySimulableSetPose(const mrpt::math::TPose3D& newPose) override;
 };

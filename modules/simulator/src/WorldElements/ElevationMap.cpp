@@ -14,6 +14,7 @@
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/ElevationMap.h>
 
+#include <Eigen/Dense>	// asEigen()
 #include <limits>
 #include <rapidxml.hpp>
 
@@ -422,6 +423,8 @@ void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Build mesh:
 	gl_mesh_ = mrpt::viz::CMesh::Create();
 	gl_mesh_->enableTransparency(false);
+	// Smooth (not blocky) texture close to the camera:
+	gl_mesh_->enableTextureLinearInterpolation(true);
 
 	if (mesh_image)
 	{
@@ -456,8 +459,8 @@ void ElevationMap::internalGuiUpdate(
 		firstSceneRendering_ = false;
 		gl_mesh_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
-		viz->get().insert(gl_mesh_);
-		physical->get().insert(gl_mesh_);
+		insertIntoScene(viz->get(), gl_mesh_);
+		insertIntoScene(physical->get(), gl_mesh_);
 	}
 }
 

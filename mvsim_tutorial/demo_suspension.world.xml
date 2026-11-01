@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<mvsim_world version="1.0">
+	<!--
+	  Suspension Demo
+
+	  A vehicle with chassis suspension (springs and dampers between its
+	  chassis and its wheels) on a flat area with two speed bumps: one across
+	  the whole lane, and one only under the left wheels.
+
+	  Drive the truck to see its chassis pitch when accelerating and braking,
+	  roll in turns, and bounce over the bumps. Its sensors would move with
+	  the chassis.
+	-->
+
+	<simul_timestep>0</simul_timestep>
+	<joystick_enabled>true</joystick_enabled>
+
+	<!-- GUI options -->
+	<gui>
+		<ortho>false</ortho>
+		<cam_distance>8</cam_distance>
+		<cam_elevation>20</cam_elevation>
+		<fov_deg>60</fov_deg>
+		<refresh_fps>40</refresh_fps>
+		<follow_vehicle>r1</follow_vehicle>
+	</gui>
+
+	<!-- Light parameters -->
+	<lights>
+		<enable_shadows>true</enable_shadows>
+		<light_azimuth_deg>-24.0</light_azimuth_deg>
+		<light_elevation_deg>33.0</light_elevation_deg>
+		<light_ambient>0.20</light_ambient>
+	</lights>
+
+	<!-- A SkyBox decoration -->
+	<element class='skybox'>
+		<textures>https://mrpt.github.io/mvsim-models/skyboxes/SunSet.zip/SunSet/SunSet%s.jpg</textures>
+	</element>
+
+	<!-- Ground -->
+	<element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-25</x_min>
+		<y_min>-25</y_min>
+		<x_max>25</x_max>
+		<y_max>25</y_max>
+		<z>0.0</z>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Asphalt01_1K_NormalGL.png</normal_map>
+		<texture_size_x>4.0</texture_size_x>
+		<texture_size_y>4.0</texture_size_y>
+	</element>
+
+	<!-- Speed bump across the lane, at x=0, 4 m wide (rows: x, columns: y) -->
+	<element class='elevation_map'>
+		<resolution>0.2</resolution>
+		<elevation_data_matrix>[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03; 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05; 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]</elevation_data_matrix>
+		<corner_min_x>-0.4</corner_min_x>
+		<corner_min_y>-2.0</corner_min_y>
+		<mesh_color>#e0c020</mesh_color>
+	</element>
+
+	<!-- Speed bump only under the left wheels, at x=6, from y=0.1 to y=1.5 -->
+	<element class='elevation_map'>
+		<resolution>0.2</resolution>
+		<elevation_data_matrix>[0 0 0 0 0 0 0 0; 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03; 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05; 0.03 0.03 0.03 0.03 0.03 0.03 0.03 0.03; 0 0 0 0 0 0 0 0]</elevation_data_matrix>
+		<corner_min_x>5.6</corner_min_x>
+		<corner_min_y>0.1</corner_min_y>
+		<mesh_color>#e0c020</mesh_color>
+	</element>
+
+	<!-- Vehicle class, with its suspension enabled -->
+	<include file="../definitions/scania_truck.vehicle.xml"
+		suspension="true"
+		controller="twist_front_steer_pid"
+	/>
+
+	<vehicle name="r1" class="scania_truck">
+		<init_pose>-12 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+	</vehicle>
+</mvsim_world>

@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+/* Starts recording a video of the 3D view, in simulation time (see the
+   <video_recording> world XML block). Fields not set take their value from
+   that block, if any, or the defaults. Any recording in progress is stopped. */
+message SrvStartVideoRecording {
+  /* Output video file. With a printf pattern (e.g. "img_%06d.png"), one image
+     per frame. Default: "mvsim_video_<date>_<time>.mp4" */
+  optional string outputFile = 1;
+
+  optional double fps = 2;
+  optional uint32 width = 3;
+  optional uint32 height = 4;
+
+  /* Simulated time to record [s] (0=until stopped) */
+  optional double duration = 5;
+
+  /* "gui": the GUI view; "orbit": the camera fields below */
+  optional string camera = 6;
+  optional string followVehicle = 7;
+  optional bool followHeading = 8;
+  optional double camDistance = 9;
+  optional double camAzimuthDeg = 10;
+  optional double camElevationDeg = 11;
+  optional double camPointToX = 12;
+  optional double camPointToY = 13;
+  optional double camPointToZ = 14;
+  optional double fovDeg = 15;
+
+  optional string ffmpegOptions = 16;
+}

@@ -22,6 +22,7 @@
 #include <mrpt/viz/stock_objects.h>
 #include <mvsim/Shape2p5.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <queue>
@@ -38,6 +39,46 @@ using mrpt::math::TPoint3Df;
 constexpr uint8_t CELL_UNDEFINED = 0x80;
 constexpr uint8_t CELL_OCCUPIED = 0x00;
 constexpr uint8_t CELL_FREE = 0xff;
+
+namespace
+{
+// Convex hull of a set of 2D points (Andrew's monotone chain), counter-clockwise.
+mrpt::math::TPolygon2D convexHull(std::vector<mrpt::math::TPoint2D> pts)
+{
+	std::sort(
+		pts.begin(), pts.end(),
+		[](const auto& a, const auto& b) { return a.x < b.x || (a.x == b.x && a.y < b.y); });
+	pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
+	if (pts.size() < 3)
+	{
+		return mrpt::math::TPolygon2D(pts);
+	}
+
+	const auto cross = [](const auto& o, const auto& a, const auto& b)
+	{ return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x); };
+
+	std::vector<mrpt::math::TPoint2D> hull(2 * pts.size());
+	size_t k = 0;
+	for (size_t i = 0; i < pts.size(); i++)
+	{
+		while (k >= 2 && cross(hull[k - 2], hull[k - 1], pts[i]) <= 0)
+		{
+			k--;
+		}
+		hull[k++] = pts[i];
+	}
+	for (size_t i = pts.size() - 1, t = k + 1; i > 0; i--)
+	{
+		while (k >= t && cross(hull[k - 2], hull[k - 1], pts[i - 1]) <= 0)
+		{
+			k--;
+		}
+		hull[k++] = pts[i - 1];
+	}
+	hull.resize(k - 1);
+	return mrpt::math::TPolygon2D(hull);
+}
+}  // namespace
 constexpr uint8_t CELL_VISITED = 0x40;
 
 double Shape2p5::volume() const
@@ -185,7 +226,38 @@ void Shape2p5::computeShape() const
 	internalGridFloodFill();
 
 	// 2) Detect the outer contour with full grid resolution:
-	const mrpt::math::TPolygon2D rawGridContour = internalGridContour();
+	mrpt::math::TPolygon2D rawGridContour = internalGridContour();
+
+	// 2b) Sparse models (e.g. foliage) may leave gaps for the flood fill to
+	// split them into several pieces, and the contour above only follows one
+	// of them. If many occupied cells are left out, use the convex hull of
+	// all of them instead:
+	{
+		const double r = grid_->getResolution();
+		std::vector<mrpt::math::TPoint2D> occupied;
+		size_t nOutside = 0;
+		for (size_t cy = 0; cy < grid_->getSizeY(); cy++)
+		{
+			for (size_t cx = 0; cx < grid_->getSizeX(); cx++)
+			{
+				if (*grid_->cellByIndex(cx, cy) != CELL_OCCUPIED)
+				{
+					continue;
+				}
+				const mrpt::math::TPoint2D c(grid_->idx2x(cx), grid_->idx2y(cy));
+				occupied.push_back(c);
+				if (rawGridContour.size() < 3 ||
+					(!rawGridContour.contains(c) && rawGridContour.distance(c) > 1.5 * r))
+				{
+					nOutside++;
+				}
+			}
+		}
+		if (!occupied.empty() && nOutside > occupied.size() / 10)
+		{
+			rawGridContour = convexHull(occupied);
+		}
+	}
 
 	// 3) convex hull:
 	// Eventually, b2Box library will use convex hull anyway, so let's use it
@@ -555,8 +627,8 @@ void Shape2p5::debugSaveGridTo3DSceneFile(
 	scene.saveToFile(mrpt::format("collision_grid_%05i.3Dscene", i++));
 }
 
-std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
-	size_t i, const mrpt::math::TPolygon2D& p, bool allowApproxEdges) const
+std::optional<double> Shape2p5::lossOfRemovingVertex(
+	size_t i, const mrpt::math::TPolygon2D& p, double area, bool allowApproxEdges) const
 {
 	// 1st: check if removing that vertex leads to edges crossing
 	// CELL_UNDEFINED or CELL_OCCUPIED cells:
@@ -573,28 +645,35 @@ std::optional<Shape2p5::RemovalCandidate> Shape2p5::lossOfRemovingVertex(
 	{
 		const auto pt = pt_im1 + d * k;
 		const auto* c = grid_->cellByPos(pt.x, pt.y);
-		if (!c) return {};	// should never happen (!)
+		if (!c)
+		{
+			return {};	// should never happen (!)
+		}
 
 		if (!allowApproxEdges)
 		{
 			// removing this vertex leads to unacceptable approximation:
-			if (*c == CELL_UNDEFINED || *c == CELL_OCCUPIED) return {};
+			if (*c == CELL_UNDEFINED || *c == CELL_OCCUPIED)
+			{
+				return {};
+			}
 		}
 	}
 
 	// ok, removing the vertex is ok.
-	// now, let's quantify the increase in area ("loss"):
-	Shape2p5::RemovalCandidate rc;
-	rc.next = p;
-	rc.next.erase(rc.next.begin() + i);
+	// now, let's quantify the increase in area ("loss"). Removing the vertex
+	// subtracts the signed area of the triangle it forms with its neighbors:
+	const auto& pt_i = p[i];
+	const double triArea = 0.5 * ((pt_i.x - pt_im1.x) * (pt_ip1.y - pt_im1.y) -
+								  (pt_ip1.x - pt_im1.x) * (pt_i.y - pt_im1.y));
+	double loss = std::abs(area - triArea) - std::abs(area);
 
-	const double originalArea = std::abs(mrpt::math::signedArea(p));
-	const double newArea = std::abs(mrpt::math::signedArea(rc.next));
-	rc.loss = newArea - originalArea;
+	if (allowApproxEdges)
+	{
+		loss = -loss;
+	}
 
-	if (allowApproxEdges) rc.loss = -rc.loss;
-
-	return rc;
+	return loss;
 }
 
 mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(const mrpt::math::TPolygon2D& poly) const
@@ -612,20 +691,29 @@ mrpt::math::TPolygon2D Shape2p5::internalPrunePolygon(const mrpt::math::TPolygon
 	{
 		while (p.size() > b2_maxPolygonVertices)
 		{
-			std::optional<RemovalCandidate> best;
+			const double area = mrpt::math::signedArea(p);
+			std::optional<size_t> best;
+			double bestLoss = 0;
 
 			for (size_t i = 0; i < p.size(); i++)
 			{
-				std::optional<RemovalCandidate> rc = lossOfRemovingVertex(i, p, pass == 1);
-				if (rc && (!best || rc->loss < best->loss)) best = *rc;
+				const auto loss = lossOfRemovingVertex(i, p, area, pass == 1);
+				if (loss && (!best || *loss < bestLoss))
+				{
+					best = i;
+					bestLoss = *loss;
+				}
 			}
 
-			if (!best) break;  // No more vertices found to remove
+			if (!best)
+			{
+				break;	// No more vertices found to remove
+			}
 
-			p = best->next;
+			p.erase(p.begin() + *best);
 
 #ifdef DEBUG_DUMP_ALL_TEMPORARY_GRIDS
-			debugSaveGridTo3DSceneFile(p, mrpt::format("pass #%i loss=%f", pass, best->loss));
+			debugSaveGridTo3DSceneFile(p, mrpt::format("pass #%i loss=%f", pass, bestLoss));
 #endif
 		}
 	}

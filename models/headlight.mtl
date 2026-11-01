@@ -1,0 +1,14 @@
+# Simple headlight materials (generated, public domain)
+newmtl housing
+Ka 0 0 0
+Kd 0.08 0.08 0.08
+Ks 0.3 0.3 0.3
+Ns 40
+Ke 0 0 0
+
+newmtl lens
+Ka 0 0 0
+Kd 0.9 0.9 0.85
+Ks 1 1 1
+Ns 120
+Ke 1 0.95 0.8

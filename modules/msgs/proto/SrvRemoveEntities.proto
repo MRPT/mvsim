@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+// Removes vehicles, blocks, world elements or runtime objects by name.
+message SrvRemoveEntities {
+  repeated string names = 1;
+}

@@ -43,7 +43,10 @@ All those defined by standard ``sscanf``, plus these extensions:
      - Expects ``X Y Z YAW_DEG PITCH_DEG ROLL_DEG``
    * - ``%point3d``
      - ``mrpt::math::TPoint3D``
-     - Expects ``X Y Z YAW_DEG PITCH_DEG ROLL_DEG``
+     - Expects ``X Y [Z]``
+   * - ``%scale3d``
+     - ``mrpt::math::TPoint3D``
+     - Expects ``S`` (same scale for all axes) or ``SX SY SZ``
    * - ``%bool``
      - ``bool``
      - Expects ``true``, ``false``, ``1``, or ``0`` (case-insensitive)

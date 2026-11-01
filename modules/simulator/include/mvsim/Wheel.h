@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <mrpt/core/bits_math.h>
 #include <mrpt/img/TColor.h>
 #include <mrpt/math/TPoint2D.h>
 #include <mrpt/math/TPolygon2D.h>
@@ -17,6 +18,8 @@
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VisualObject.h>
 #include <mvsim/basic_types.h>
+
+#include <cstdint>
 
 namespace mvsim
 {
@@ -60,6 +63,11 @@ class Wheel : public CVisualObject
 	std::string linked_yaw_object_name;
 	double linked_yaw_offset = .0;
 
+	/** Name of the joint of this wheel, for joint-level interfaces (e.g.
+	 * ros2_control). If not set in the XML, it defaults to the wheel XML tag
+	 * name plus "_joint" (e.g. "l_wheel_joint"). */
+	std::string joint_name;
+
 	const TParameterDefinitions params_ = {
 		{"mass", {"%lf", &mass}},
 		{"width", {"%lf", &width}},
@@ -67,7 +75,8 @@ class Wheel : public CVisualObject
 		{"color", {"%color", &color}},
 		{"inertia", {"%lf", &Iyy}},
 		{"linked_yaw", {"%s", &linked_yaw_object_name}},
-		{"linked_yaw_offset_deg", {"%lf_deg", &linked_yaw_offset}}};
+		{"linked_yaw_offset_deg", {"%lf_deg", &linked_yaw_offset}},
+		{"joint_name", {"%s", &joint_name}}};
 
 	/** Generates a human-readable description of the wheel parameters and
 	 * kinematic status */
@@ -82,8 +91,25 @@ class Wheel : public CVisualObject
 		const mrpt::optional_ref<mrpt::viz::Scene>& viz,
 		const mrpt::optional_ref<mrpt::viz::Scene>& physical, bool childrenOnly) override;
 
-	double getPhi() const { return phi; }  //!< Orientation (rad) wrt vehicle local frame
-	void setPhi(double val) { phi = val; }	//!< Orientation (rad) wrt vehicle local frame
+	/** Spin angle (rad) around the wheel shaft, kept bounded: it is
+	 * periodically wrapped by whole turns, see getPhiContinuous() */
+	double getPhi() const { return phi; }
+	/** Sets the spin angle (rad) and resets the turns counter */
+	void setPhi(double val)
+	{
+		phi = val;
+		phi_turns = 0;
+	}
+
+	/** Unwrapped, continuous spin angle (rad) since the start of the
+	 * simulation (e.g. a joint "position" for wheel odometry) */
+	double getPhiContinuous() const { return phi + 2 * M_PI * static_cast<double>(phi_turns); }
+
+	/** Integrates the spin angle with the current angular velocity over a
+	 * time step `dt` (seconds), wrapping it by whole turns when it grows
+	 * too large so double accuracy is not lost. */
+	void integrateSpin(double dt);
+
 	double getW() const { return w; }  //!< Spinning velocity (rad/s) wrt shaft
 	void setW(double val) { w = val; }	//!< Spinning velocity (rad/s) wrt shaft
 	void recalcInertia();  //!< Recompute Iyy from mass, diameter and height.
@@ -91,5 +117,8 @@ class Wheel : public CVisualObject
 	/** Angular position and velocity of the wheel as it spins over its shaft
 	 * (rad, rad/s) */
 	double phi = 0, w = 0;
+
+	/** Number of whole turns removed from `phi` while wrapping it */
+	int64_t phi_turns = 0;
 };
 }  // namespace mvsim

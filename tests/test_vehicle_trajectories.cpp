@@ -197,8 +197,10 @@ int main()
 	// Ackermann tests
 	run_single_test("ackermann", "twist_ideal", true, "Straight", straight_cmd, gt_straight);
 	run_single_test("ackermann", "twist_ideal", true, "Curve", curve_cmd, gt_curve);
+	// Front-wheel drive with the default (rear-heavy) chassis: the acceleration
+	// is limited by the traction of the front wheels.
 	run_single_test(
-		"ackermann", "twist_front_steer_pid", false, "Straight", straight_cmd, gt_straight);
+		"ackermann", "twist_front_steer_pid", false, "Straight", straight_cmd, gt_straight, 0.3);
 	run_single_test("ackermann", "twist_front_steer_pid", false, "Curve", curve_cmd, gt_curve);
 
 	if (g_failures == 0)

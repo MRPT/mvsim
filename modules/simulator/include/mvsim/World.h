@@ -15,9 +15,9 @@
 #include <box2d/b2_world.h>
 #include <mrpt/core/bits_math.h>
 #include <mrpt/core/format.h>
-#include <mrpt/gui/CDisplayWindowGUI.h>
 #include <mrpt/img/CImage.h>
 #include <mrpt/img/TColor.h>
+#include <mrpt/math/TLine3D.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/obs/CObservation.h>
 #include <mrpt/obs/CObservationImage.h>
@@ -26,13 +26,18 @@
 #include <mrpt/system/CTicTac.h>
 #include <mrpt/system/CTimeLogger.h>
 #include <mrpt/topography/data_types.h>
+#include <mrpt/viz/CSetOfObjects.h>
+#include <mrpt/viz/Scene.h>
 #include <mrpt/viz/TLightParameters.h>
 #include <mvsim/Block.h>
+#include <mvsim/GUIPanel.h>
 #include <mvsim/HumanActor.h>
 #include <mvsim/Joystick.h>
 #include <mvsim/RemoteResourcesManager.h>
+#include <mvsim/RuntimeObjects.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/VehicleBase.h>
+#include <mvsim/VideoRecorder.h>
 #include <mvsim/WorldElements/WorldElementBase.h>
 
 //
@@ -50,14 +55,25 @@
 #include <any>
 #include <atomic>
 #include <functional>
+#include <future>
 #include <list>
 #include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <set>
 #include <shared_mutex>
+#include <thread>
 #include <unordered_map>
 
-#if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 // forward declarations:
+struct GLFWwindow;
+namespace mrpt::imgui
+{
+class CImGuiSceneView;
+}
+
+#if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 namespace mvsim_msgs
 {
 class SrvGetPose;
@@ -68,6 +84,26 @@ class SrvSetControllerTwist;
 class SrvSetControllerTwistAnswer;
 class SrvShutdown;
 class SrvShutdownAnswer;
+class SrvSetLightState;
+class SrvSetLightStateAnswer;
+class SrvGetLightState;
+class SrvGetLightStateAnswer;
+class SrvSpawnObjects;
+class SrvSpawnObjectsAnswer;
+class SrvInsertEntities;
+class SrvInsertEntitiesAnswer;
+class SrvRemoveEntities;
+class SrvRemoveEntitiesAnswer;
+class SrvRemoveObjects;
+class SrvRemoveObjectsAnswer;
+class SrvGetAllPoses;
+class SrvGetAllPosesAnswer;
+class SrvStartVideoRecording;
+class SrvStartVideoRecordingAnswer;
+class SrvStopVideoRecording;
+class SrvStopVideoRecordingAnswer;
+class SrvGetVideoRecordingStatus;
+class SrvGetVideoRecordingStatusAnswer;
 }  // namespace mvsim_msgs
 #endif
 
@@ -199,6 +235,15 @@ class World : public mrpt::system::COutputLogger
 		return mrpt::Clock::fromDouble(simulTime_ + simul_start_wallclock_time_.value());
 	}
 
+	/** Converts a simulation time (seconds since start) into a full
+	 * timestamp, as in get_simul_timestamp() */
+	mrpt::Clock::time_point simul_time_to_timestamp(double simulTime) const
+	{
+		auto lck = mrpt::lockHelper(simul_time_mtx_);
+		ASSERT_(simul_start_wallclock_time_.has_value());
+		return mrpt::Clock::fromDouble(simulTime + simul_start_wallclock_time_.value());
+	}
+
 	/** Returns true once the simulation has an established wall-clock time
 	 *  origin (i.e. run_simulation() has been called at least once), so that
 	 *  get_simul_timestamp() can be safely queried. */
@@ -212,6 +257,15 @@ class World : public mrpt::system::COutputLogger
 	 *  wall-clock time elapsed. 1.0 means real time; below 1.0 means the
 	 *  simulation is running slower than real time. \sa run_simulation() */
 	double get_realtime_factor_achieved() const { return achievedRealtimeFactor_.load(); }
+
+	/** Smoothed fraction of the wall-clock time spent inside run_simulation().
+	 * Close to 1.0 means the simulation can not keep up with the requested
+	 * speed, e.g. because it waits for OpenGL sensors. */
+	double simulation_busy_fraction() const;
+
+	/** Simulation time of the next sensor reading that needs OpenGL
+	 * rendering (cameras, 3D lidars...), or nullopt if there are none. */
+	std::optional<double> next_opengl_sensor_time() const;
 
 	/// Simulation fixed-time interval for numerical integration
 	double get_simul_timestep() const;
@@ -241,7 +295,12 @@ class World : public mrpt::system::COutputLogger
 	/** For usage in TUpdateGUIParams and \a update_GUI() */
 	struct GUIKeyEvent
 	{
-		int keycode = 0;  //!< 0=no Key. Otherwise, ASCII code.
+		/// Same value as GLFW_KEY_ESCAPE
+		static constexpr int KEY_ESCAPE = 256;
+
+		/// 0=no Key. Otherwise, the GLFW key code, which is the ASCII code
+		/// for (uppercase) letters and digits.
+		int keycode = 0;
 		bool modifierShift = false;
 		bool modifierCtrl = false;
 		bool modifierAlt = false;
@@ -267,12 +326,37 @@ class World : public mrpt::system::COutputLogger
 	 */
 	void update_GUI(TUpdateGUIParams* params = nullptr);
 
-	const mrpt::gui::CDisplayWindowGUI::Ptr& gui_window() const { return gui_.gui_win; }
+	/** Opens the GUI window right away, with a "loading" message until the
+	 * world is loaded by load_from_XML() and its first frame is rendered.
+	 * Otherwise, the window opens in the first call to update_GUI().
+	 * Call it before load_from_XML(). It does nothing in headless mode.
+	 */
+	void open_GUI_while_loading();
+
+	/** Smoothed ratio of the wall-clock time spent in run_simulation() to the
+	 * simulated time: above 1.0, the simulation runs slower than real time.
+	 * It is measured since the world is ready (loaded, and its first frame
+	 * rendered), and mostly reflects the last couple of seconds. */
+	double cpu_usage() const { return cpuUsage_.load(); }
+
+	/// The GUI window, or nullptr if it is not open.
+	GLFWwindow* gui_window() const { return gui_.window; }
 
 	const mrpt::math::TPoint3D& gui_mouse_point() const { return gui_.clickedPt; }
 
+	/** Adds a custom dockable panel to the GUI. It can be called from any
+	 * thread, before or after the GUI window opens. Its callbacks run in the
+	 * GUI thread. Panels are listed in the "Window" menu, and docked in the
+	 * right column the first time the default layout is built. */
+	void add_gui_panel(const gui::WindowDescription& panel);
+
+	/** Sets a function called from the GUI thread once per GUI frame, with the
+	 * state of the mouse over the 3D view. Replaces any previous one. */
+	void set_gui_mouse_callback(const std::function<void(const gui::MouseState&)>& callback);
+
 	/** If !=null, a set of objects to be rendered merged with the default
-	 * visualization. Lock the mutex gui_user_objects_mtx_ while writing.
+	 * visualization. Lock the mutex guiUserObjectsMtx_ while writing to these
+	 * objects or their children: the GUI and sensors hold it while rendering.
 	 * There are two sets of objects: "viz" for visualization only, "physical"
 	 * for objects which should be detected by sensors.
 	 */
@@ -283,6 +367,10 @@ class World : public mrpt::system::COutputLogger
 	/// Called from World_gui thread in normal mode, or mvsim-cli in headless
 	/// mode.
 	void internalGraphicsLoopTasksForSimulation();
+
+	/// Frees the sensors OpenGL resources. Must be called from the same thread
+	/// that called internalGraphicsLoopTasksForSimulation(), before exiting it.
+	void internalFreeOpenGLResourcesForSimulation();
 
 	void internalRunSensorsOn3DScene(mrpt::viz::Scene& physicalObjects);
 
@@ -295,9 +383,24 @@ class World : public mrpt::system::COutputLogger
 
 	void mark_as_pending_running_sensors_on_3D_scene()
 	{
-		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
-		pendingRunSensorsOn3DScene_ = true;
+		{
+			std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
+			pendingRunSensorsOn3DScene_ = true;
+		}
+		internal_wake_up_gui_thread();
 	}
+
+	/// Makes the GUI thread attend pending tasks right away, instead of
+	/// waiting for its next frame.
+	void internal_wake_up_gui_thread();
+
+	/// Called from the GUI window input callbacks:
+	void internal_on_gui_key(int key, int action, int mods);
+	void internal_on_gui_input_event();
+	void internal_on_gui_focus(bool focused);
+
+	/// Sets the GUI camera from the world file <gui> options.
+	void internal_apply_initial_camera();
 	void clear_pending_running_sensors_on_3D_scene()
 	{
 		std::lock_guard<std::mutex> lck(pendingRunSensorsOn3DSceneMtx_);
@@ -329,14 +432,14 @@ class World : public mrpt::system::COutputLogger
 		simulator_must_close_ = value;
 	}
 
-	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f)
+	void enqueue_task_to_run_in_gui_thread(const std::function<void(void)>& f) const
 	{
 		std::lock_guard<std::mutex> lck(guiUserPendingTasksMtx_);
 		guiUserPendingTasks_.emplace_back(f);
 	}
 
-	std::vector<std::function<void(void)>> guiUserPendingTasks_;
-	std::mutex guiUserPendingTasksMtx_;
+	mutable std::vector<std::function<void(void)>> guiUserPendingTasks_;
+	mutable std::mutex guiUserPendingTasksMtx_;
 
 	GUIKeyEvent lastKeyEvent_;
 	std::atomic_bool lastKeyEventValid_ = false;
@@ -377,6 +480,95 @@ class World : public mrpt::system::COutputLogger
 	b2Body* getBox2DGroundBody() { return b2_ground_body_; }
 	const VehicleList& getListOfVehicles() const { return vehicles_; }
 	VehicleList& getListOfVehicles() { return vehicles_; }
+	/** Ground truth of one named object (see getGroundTruthSnapshot()) */
+	struct ObjectGroundTruth
+	{
+		std::string name;
+		mrpt::math::TPose3D pose;
+		mrpt::math::TTwist2D twist;	 //!< In local coordinates
+	};
+	struct GroundTruthSnapshot
+	{
+		double simul_time = 0;	//!< Simulation time of the poses [s]
+		std::vector<ObjectGroundTruth> objects;
+	};
+
+	/** Thread-safe copy of the poses and velocities of all named objects
+	 * (vehicles, blocks, actors, and runtime objects), as of the end of the
+	 * last simulation step. Optionally, only for names starting with `prefix`.
+	 */
+	GroundTruthSnapshot getGroundTruthSnapshot(const std::string& prefix = {}) const;
+
+	/** Visual-only objects (and ground decals) that can be spawned, moved
+	 * and removed at runtime from any thread. */
+	RuntimeObjects& runtimeObjects() { return runtimeObjects_; }
+	const RuntimeObjects& runtimeObjects() const { return runtimeObjects_; }
+
+	/** @name Insertion and removal of entities at runtime
+	 * @{ */
+
+	enum class EntityKind : uint8_t
+	{
+		Vehicle = 0,
+		Block,
+		Element
+	};
+
+	/** An entity added to or removed from the world at runtime. */
+	struct EntityChange
+	{
+		std::string name;
+		EntityKind kind = EntityKind::Block;
+		bool added = true;	//!< false if it was removed
+		std::shared_ptr<Simulable> object;
+	};
+	using on_entity_change_callback_t = std::function<void(const EntityChange&)>;
+
+	/** Registers a function to be called after an entity is inserted or
+	 * removed at runtime, from the thread that did it. */
+	void registerCallbackOnEntityChange(const on_entity_change_callback_t& f);
+
+	/** Inserts entities into the running simulation, given as world XML:
+	 * the same tags as in a world file (`<vehicle>`, `<block>`, `<element>`,
+	 * `<include>`, classes, variables...), optionally enclosed in a
+	 * `<mvsim_world>` root tag. Relative paths are resolved wrt `basePath`
+	 * (default: the directory of the loaded world file). Unnamed elements get
+	 * a unique `element_<N>` name.
+	 *
+	 * It must not run concurrently with run_simulation(): call it from the
+	 * thread that runs the simulation, or through runInSimulationThread().
+	 *
+	 * \return Names of the new vehicles, blocks and elements.
+	 * \exception std::exception On errors (e.g. invalid XML, or a name
+	 * already in use). Entities inserted before the error are removed.
+	 */
+	std::vector<std::string> insertEntitiesFromXML(
+		const std::string& xmlText, const std::string& basePath = {});
+
+	/** Options of insertEntitiesFromXML(). Both overrides require the XML to
+	 * define exactly one entity, with a top-level `<vehicle>`, `<block>` or
+	 * `<element>` tag. */
+	struct InsertOptions
+	{
+		std::string basePath;  //!< See insertEntitiesFromXML()
+		std::optional<std::string> name;  //!< Overrides the entity name
+		std::optional<mrpt::math::TPose3D> pose;  //!< Overrides its initial pose
+	};
+
+	std::vector<std::string> insertEntitiesFromXML(
+		const std::string& xmlText, const InsertOptions& options);
+
+	/** Removes a vehicle, block or world element by name, with its sensors,
+	 * physics bodies, joints and 3D visualization. Same threading rules as
+	 * insertEntitiesFromXML(). \return false if there is no such entity. */
+	bool removeEntity(const std::string& name);
+
+	/** Runs `task` in the simulation thread, at the start of the next
+	 * run_simulation() call. Exceptions are forwarded to the future. */
+	std::future<void> runInSimulationThread(const std::function<void()>& task);
+
+	/** @} */
+
 	const BlockList& getListOfBlocks() const { return blocks_; }
 	BlockList& getListOfBlocks() { return blocks_; }
 	const WorldElementList& getListOfWorldElements() const { return worldElements_; }
@@ -392,6 +584,23 @@ class World : public mrpt::system::COutputLogger
 	auto& getListOfSimulableObjectsMtx() { return simulableObjectsMtx_; }
 
 	mrpt::system::CTimeLogger& getTimeLogger() { return timlogger_; }
+
+	/** Switches a light group (`<light_group>` XML tags) of a vehicle, block,
+	 * etc. on or off. It can be called from any thread.
+	 * \return false if there is no such object or light group.
+	 * \sa CVisualObject::setLightGroupState() */
+	bool setLightGroupState(const std::string& objectName, const std::string& groupName, bool on);
+
+	/** Whether a light group of an object is on, or empty if there is no such
+	 * object or light group. */
+	std::optional<bool> lightGroupState(
+		const std::string& objectName, const std::string& groupName) const;
+
+	/** Video recording of the 3D view, in simulation time: start(), stop()
+	 * and status() can be called from any thread. It is also controlled from
+	 * the GUI, the `<video_recording>` world XML block, and ZMQ services. */
+	VideoRecorder& videoRecorder() { return videoRecorder_; }
+	const VideoRecorder& videoRecorder() const { return videoRecorder_; }
 
 	/** Replace macros, prefix the base_path if input filename is relative, etc.
 	 *  \sa xmlPathToActualPath
@@ -435,6 +644,59 @@ class World : public mrpt::system::COutputLogger
 	void registerCallbackOnObservation(const on_observation_callback_t& f)
 	{
 		callbacksOnObservation_.emplace_back(f);
+	}
+
+	/** Performance statistics, measured over consecutive windows of
+	 * simulated time. \sa getPerformanceStats() */
+	struct PerformanceStats
+	{
+		double window_simul_time = 0;  //!< [s] Simulated time of the window
+		double window_wall_time = 0;  //!< [s] Wall-clock time of the window
+		double realtime_factor = 0;	 //!< window_simul_time/window_wall_time
+		/// Wall-clock time when the window ended [s] (as mrpt::Clock::nowDouble())
+		double window_end_wall_time = 0;
+		size_t steps = 0;  //!< Number of physics steps
+		double physics_time = 0;  //!< [s] Wall-clock time in physics steps, excluding sensors
+		double sensors_wait_time = 0;  //!< [s] Waiting for OpenGL sensors
+
+		struct Sensor
+		{
+			double processing_time = 0;	 //!< [s] Wall-clock time
+			size_t observations = 0;  //!< Number of generated observations
+		};
+		/** Per sensor, by "<vehicle>/<sensor>" */
+		std::map<std::string, Sensor> sensors;
+	};
+
+	/** Statistics of the last completed window (a few seconds of simulated
+	 * time). Thread-safe. */
+	PerformanceStats getPerformanceStats() const;
+
+	/** Internal: accounts the wall-clock processing time of a sensor.
+	 * `inSimulationThread` must be true if it was spent within a physics step
+	 * (CPU-side sensors), so it is not counted as physics time. */
+	void internalAddSensorProcessingTime(
+		const std::string& key, double seconds, bool inSimulationThread);
+
+	/** Registers a function to be called at the end of each simulation step,
+	 * from the simulation thread, with the simulation time (seconds) as
+	 * argument. Used for lock-step co-simulation (e.g. ros2_control).
+	 * Callbacks may add or remove callbacks, but must not wait for other
+	 * threads that do so, since that would deadlock.
+	 * \return An ID for removePostStepCallback() */
+	size_t addPostStepCallback(const std::function<void(double)>& f)
+	{
+		auto lck = mrpt::lockHelper(postStepCallbacksMtx_);
+		postStepCallbacks_.emplace(++postStepCallbacksLastId_, f);
+		return postStepCallbacksLastId_;
+	}
+
+	/** Unregisters a callback. Once it returns, the callback is not running
+	 * and it will not be called again. */
+	void removePostStepCallback(size_t id)
+	{
+		auto lck = mrpt::lockHelper(postStepCallbacksMtx_);
+		postStepCallbacks_.erase(id);
 	}
 
 	/** Calls all registered callbacks: */
@@ -505,12 +767,38 @@ class World : public mrpt::system::COutputLogger
    private:
 	friend class VehicleBase;
 	friend class Block;
+	friend class RuntimeObjects;
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
 	mvsim::Client client_{"World"};
 #endif
 
 	std::vector<on_observation_callback_t> callbacksOnObservation_;
+
+	std::vector<on_entity_change_callback_t> callbacksOnEntityChange_;
+	std::mutex callbacksOnEntityChangeMtx_;
+
+	/// Tasks to run at the start of the next run_simulation() call:
+	std::vector<std::packaged_task<void()>> simulationThreadTasks_;
+	std::mutex simulationThreadTasksMtx_;
+	void internalRunSimulationThreadTasks();
+
+	/// Removed entities, whose 3D objects must be removed by the thread that
+	/// renders the scenes (see internalGraphicsLoopTasksForSimulation()):
+	std::vector<std::shared_ptr<Simulable>> removedEntitiesPendingGui_;
+	std::mutex removedEntitiesPendingGuiMtx_;
+	void internalProcessRemovedEntitiesInGui();
+
+	/// Used to give unique indices to vehicles and blocks inserted at runtime:
+	size_t nextVehicleIndex_ = 0;
+	size_t nextBlockIndex_ = 0;
+	size_t nextRuntimeElementId_ = 0;
+
+	void internalNotifyEntityChange(const EntityChange& c);
+	void internalResetPerObjectCollisionCaches();
+	void internalDestroyBox2DBodiesOf(Simulable& obj);
+	/// Lock simulationStepRunningMtx_, world_cs_ and the physical objects first.
+	void internalRemoveEntityNoLock(const std::shared_ptr<Simulable>& obj);
 
 	// -------- World Params ----------
 	/** Gravity acceleration (Default=9.81 m/s^2). Used to evaluate weights for
@@ -542,6 +830,17 @@ class World : public mrpt::system::COutputLogger
 	/** If non-empty, the ground truth trajectory of all vehicles will be saved
 	 * to a text file in the TUM trajectory format */
 	std::string save_ground_truth_trajectory_;
+
+	VideoRecorder videoRecorder_;
+
+	/// Simulation thread, after each step (physical_objects_mtx() locked):
+	void internalPostSimulStepForVideo();
+
+	/// Rendering thread (physical_objects_mtx() locked):
+	void internalRenderVideoFrame();
+
+	/// Camera for the video frames, from the recording options:
+	mrpt::viz::CCamera internalVideoCamera(const VideoRecorder::Options& opts) const;
 
 	double ground_truth_rate_ = 50.0;  //!< In Hz.
 
@@ -578,7 +877,27 @@ class World : public mrpt::system::COutputLogger
 	 * second), exponentially smoothed. 1.0 = real time; below 1.0 = running
 	 * slower than real time (e.g. CPU-bound). Updated by run_simulation(). */
 	std::atomic<double> achievedRealtimeFactor_{1.0};
+	/// See simulation_busy_fraction()
+	std::atomic<double> simulBusyFraction_{0.0};
+	/// Wall-clock start of the run_simulation() call in progress, or 0.
+	std::atomic<double> runSimulStartWallclock_{0.0};
+	static constexpr double BUSY_FRACTION_TIME_CONSTANT = 1.0;	// [s]
 	std::optional<double> lastRunSimulWallclock_;
+
+	/// Set by open_GUI_while_loading(), until load_from_XML() ends.
+	std::atomic_bool guiWaitsForWorldLoad_ = false;
+
+	/// Wall-clock time when the world got ready: loaded, and its first frame
+	/// rendered (or, in headless mode, its sensors first updated). 0=not yet.
+	std::atomic<double> worldReadyWallclock_{0};
+
+	/// See cpu_usage(). Updated by run_simulation():
+	std::atomic<double> cpuUsage_{0};
+	double cpuUsageSumCpuTime_ = 0;
+	double cpuUsageSumSimulTime_ = 0;
+	bool highCpuUsageChecked_ = false;
+
+	void updateCpuUsage(double simulTime, double cpuTime);
 
 	/** Path from which to take relative directories. */
 	std::string basePath_{"."};
@@ -651,6 +970,10 @@ class World : public mrpt::system::COutputLogger
 		bool enable_shadows = true;
 		int shadow_map_size = 2048;
 
+		/// Turn off the point and spot lights if the simulation is slower
+		/// than real time during its first seconds:
+		bool disable_lights_on_high_cpu_usage = true;
+
 		/// Cascaded shadow map splits (1-4) for the GUI view.
 		int shadow_cascades = 4;
 
@@ -686,6 +1009,7 @@ class World : public mrpt::system::COutputLogger
 
 		const TParameterDefinitions params = {
 			{"enable_shadows", {"%bool", &enable_shadows}},
+			{"disable_lights_on_high_cpu_usage", {"%bool", &disable_lights_on_high_cpu_usage}},
 			{"shadow_map_size", {"%i", &shadow_map_size}},
 			{"shadow_cascades", {"%i", &shadow_cascades}},
 			{"sensor_shadow_cascades", {"%i", &sensor_shadow_cascades}},
@@ -792,6 +1116,8 @@ class World : public mrpt::system::COutputLogger
 	VehicleList vehicles_;
 	WorldElementList worldElements_;
 	BlockList blocks_;
+
+	RuntimeObjects runtimeObjects_{*this};
 	ActorList actors_;
 
 	/// Inter-body joints (distance / revolute)
@@ -803,12 +1129,14 @@ class World : public mrpt::system::COutputLogger
 	// shared_ptr to their Simulable interfaces, so we can easily iterate on
 	// this list only for common tasks:
 	SimulableList simulableObjects_;
-	std::mutex simulableObjectsMtx_;
+	mutable std::mutex simulableObjectsMtx_;
 
 	/** Runs one individual time step */
 	void internal_one_timestep(double dt);
 
-	std::mutex simulationStepRunningMtx_;
+	/// Held while a step runs or the world changes. Recursive, so that code
+	/// called from a step (e.g. callbacks) can also take it.
+	std::recursive_mutex simulationStepRunningMtx_;
 
 	// A 2D-hash table of objects
 	struct lut_2d_coordinates_t
@@ -882,35 +1210,164 @@ class World : public mrpt::system::COutputLogger
 	/** GUI stuff  */
 	struct GUI
 	{
-		GUI(World& parent) : parent_(parent) {}
+		explicit GUI(World& parent);
+		~GUI();
 
-		mrpt::gui::CDisplayWindowGUI::Ptr gui_win;
-		nanogui::Label* lbCpuUsage = nullptr;
-		std::vector<nanogui::Label*> lbStatuses;
-		nanogui::Button* btnReplaceObject = nullptr;
+		GLFWwindow* window = nullptr;
+		/// Set while `window` exists, so other threads can wake up the GUI.
+		/// Both protected by windowMtx.
+		bool windowReady = false;
+		std::mutex windowMtx;
 
-		struct InfoPerObject
-		{
-			nanogui::CheckBox* cb = nullptr;
-			Simulable::Ptr simulable;
-			CVisualObject* visual = nullptr;
-		};
+		/// Set by close_GUI(): the window gets hidden, but the GUI thread
+		/// keeps running the OpenGL sensors.
+		std::atomic_bool hideRequested = false;
+		bool hidden = false;
 
-		// Buttons that must be {dis,en}abled when there is a selected object:
-		std::vector<nanogui::Widget*> btns_selectedOps;
-		std::vector<InfoPerObject> gui_cbObjects;
-		InfoPerObject gui_selectedObject;
+		/// Renders worldVisual_ behind all panels:
+		std::unique_ptr<mrpt::imgui::CImGuiSceneView> sceneView;
 
+		/// Mouse over the 3D view, and the ray (scene coordinates) under it:
+		bool scene_hovered() const;
+		std::optional<mrpt::math::TLine3D> scene_mouse_ray() const;
+		/// For MRPT versions without CImGuiSceneView::mouseRay(): the 3D view
+		/// widget, from the last frame.
+		bool legacySceneHovered = false;
+		float legacySceneX = 0;
+		float legacySceneY = 0;
+
+		/// Ground point under the mouse cursor:
 		mrpt::math::TPoint3D clickedPt{0, 0, 0};
 
-		void prepare_control_window();
-		void prepare_status_window();
-		void prepare_editor_window();
+		/// Set from GLFW input callbacks; used to raise the frame rate while
+		/// the user interacts with the window.
+		std::atomic_bool gotInputEvents = false;
+		bool windowFocused = false;
+
+		/// Smoothed time a frame occupies the GUI thread and the GPU [s]
+		double frameCost = 0.02;
+		/// GPU time stamp queries: two alternating [begin,end] pairs
+		unsigned int gpuQueries[2][2] = {{0, 0}, {0, 0}};
+		bool gpuQueriesIssued[2] = {false, false};
+		int gpuQueryIdx = 0;
+		double lastGpuFrameTime = 0;  //!< [s]
+
+		// Panels visibility:
+		bool showWorld = true;
+		bool showInspector = true;
+		bool showLighting = true;
+		bool showMessages = true;
+		bool resetLayoutRequested = false;
+
+		// View options (others are in guiOptions_):
+		bool showSensorPoses = false;
+		bool showSensorFOVs = false;
+		bool showCollisionShapes = false;
+		float sunIntensity = 1.0f;
+
+		std::string worldFilter;  //!< "World" panel search box
+
+		/// Snapshot of the world objects shown in the panels. Only refreshed
+		/// while the simulation thread does not hold the list of objects, so
+		/// the GUI thread (which also renders the OpenGL sensors) never waits
+		/// for a simulation step.
+		struct ObjectsSnapshot
+		{
+			using List = std::vector<std::pair<std::string, Simulable::Ptr>>;
+			List vehicles;
+			List blocks;
+			List actors;
+			List elements;
+
+			struct LightGroup
+			{
+				std::string label;
+				Simulable::Ptr owner;  //!< keeps `visual` alive
+				CVisualObject* visual = nullptr;
+				std::string group;
+			};
+			std::vector<LightGroup> lightGroups;
+		};
+		ObjectsSnapshot objects;
+		void refresh_objects_snapshot();
+
+		// Selected object in the "World" panel:
+		Simulable::Ptr selected;
+		std::string selectedName;
+		CVisualObject* selectedVisual = nullptr;
+		/// If true, the selected object follows the mouse until clicking:
+		bool placingWithMouse = false;
+
+		/// Live camera/depth images, one window per sensor:
+		struct SensorPreview
+		{
+			std::string title;	//!< "vehicle/sensor"
+			bool open = true;
+			bool visible = false;  //!< Not collapsed nor hidden, last frame
+			/// [0]=RGB, [1]=depth. GL textures (0=none yet).
+			unsigned int tex[2] = {0, 0};
+			int width[2] = {0, 0};
+			int height[2] = {0, 0};
+		};
+		std::map<std::string, SensorPreview> sensorPreviews;
+
+		void select(const std::string& name, const Simulable::Ptr& obj);
+
+		void draw_frame();
+		void draw_loading_frame();
+		void draw_menu_bar();
+		void draw_status_bar();
+		void draw_dockspace_and_background();
+		void draw_world_panel();
+		void draw_inspector_panel();
+		void draw_lighting_panel();
+		void draw_messages_panel();
+		void draw_sensor_previews();
+
+		/// With the world file options; an empty file name keeps theirs:
+		void start_video_recording(const std::string& outputFile);
+		void stop_video_recording();
 
 		void handle_mouse_operations();
 
+		/// Custom panels (see add_gui_panel()). Only accessed from the GUI thread.
+		struct UserPanel
+		{
+			gui::WindowDescription desc;
+			/// Unique ImGui ID: the title, plus a suffix for repeated titles.
+			/// Stable across runs, so the saved layout applies.
+			std::string id;
+			bool open = true;
+			std::map<std::string, bool> checkStates;  //!< By widget id
+		};
+		std::vector<UserPanel> userPanels;
+		std::function<void(const gui::MouseState&)> mouseCallback;
+		void draw_user_panels();
+
+		/// False if the preview exists but is not visible, so the image
+		/// does not need to be prepared.
+		bool preview_needs_update(const std::string& previewName, int slot) const;
+		void update_preview_texture(
+			const std::string& previewName, int slot, const mrpt::img::CImage& im,
+			bool startVisible);
+		void free_preview_textures();
+
+		/// Drops the sensor previews and the selection of a removed entity.
+		void forget_entity(const std::string& name);
+
 	   private:
 		World& parent_;
+
+		unsigned int dockspaceId_ = 0;
+		unsigned int dockLeftTopId_ = 0;
+		unsigned int dockLeftMiddleId_ = 0;
+		unsigned int dockLeftBottomId_ = 0;
+		unsigned int dockRightId_ = 0;
+
+		void build_default_layout();
+		void show_performance_tooltip();
+		/// Docks a window in the right column, unless it has saved settings.
+		void dock_new_window_right(const std::string& title);
 	};
 	GUI gui_{*this};  //!< gui state
 
@@ -938,7 +1395,23 @@ class World : public mrpt::system::COutputLogger
 	std::map<std::string, mrpt::math::TPose3D> copy_of_objects_dynstate_pose_;
 	std::map<std::string, mrpt::math::TTwist2D> copy_of_objects_dynstate_twist_;
 	std::set<std::string> copy_of_objects_had_collision_;
-	std::recursive_mutex copy_of_objects_dynstate_mtx_;
+
+	/// See sensor_has_to_create_egl_context()
+	bool eglContextCreated_ = false;
+
+	mutable std::mutex perfStatsMtx_;
+	PerformanceStats perfStatsCurrent_;
+	PerformanceStats perfStatsLast_;
+	std::optional<double> perfWindowStartSim_;
+	std::optional<double> perfWindowStartWall_;
+	double perfSensorTimeInStep_ = 0;  //!< CPU-side sensors, current step
+	void internalUpdatePerformanceStats(double physicsTime, double sensorsWaitTime);
+
+	std::map<size_t, std::function<void(double)>> postStepCallbacks_;
+	size_t postStepCallbacksLastId_ = 0;
+	std::recursive_mutex postStepCallbacksMtx_;
+	double copy_of_objects_dynstate_time_ = 0;
+	mutable std::recursive_mutex copy_of_objects_dynstate_mtx_;
 
 	std::set<std::string> reset_collision_flags_;
 	std::mutex reset_collision_flags_mtx_;
@@ -949,19 +1422,32 @@ class World : public mrpt::system::COutputLogger
 	void internal_gui_on_observation_image(
 		const Simulable& veh, const std::shared_ptr<mrpt::obs::CObservationImage>& obs);
 
-	mrpt::math::TPoint2D internal_gui_on_image(
-		const std::string& label, const mrpt::img::CImage& im, int winPosX, bool startVisible);
-
 	/** Looks up, among veh's sensors, the one with the given sensorLabel
 	 * (nullptr if not found). */
 	static const SensorBase* internal_gui_find_sensor(
 		const Simulable& veh, const std::string& sensorLabel);
 
-	std::map<std::string, nanogui::Window*> guiObsViz_;	 //!< by sensorLabel
-
 	/** Changes the light source direction from azimuth and elevation angles (in
 	 * radians) */
 	void setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation);
+
+	/** Scales the diffuse and specular intensities of the directional light
+	 * (from the world XML options) by the given factor. */
+	void setLightIntensityFactor(const float factor);
+
+	/** Changes the ambient light intensity (both viewports). */
+	void setLightAmbient(const float ambient);
+
+	/// Applies lightOptions_ to the visual and physical world viewports.
+	void applyLightOptions();
+
+	/** Turns on or off the point and spot lights from the world XML <lights>
+	 * tag (both viewports). */
+	void setPointAndSpotLightsEnabled(bool enabled);
+	bool pointAndSpotLightsEnabled_ = true;
+
+	/// The point and spot lights from the world XML, in rendering coordinates.
+	std::vector<mrpt::viz::TLight> pointAndSpotLightsForRendering() const;
 
 	/** @} */  // end GUI stuff
 
@@ -1012,6 +1498,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_block_class(const XmlParserContext& ctx);
 	void parse_tag_gui(const XmlParserContext& ctx);
 	void parse_tag_lights(const XmlParserContext& ctx);
+	void parse_tag_video_recording(const XmlParserContext& ctx);
 	void parse_tag_georeference(const XmlParserContext& ctx);
 	void parse_tag_walls(const XmlParserContext& ctx);
 	void parse_tag_include(const XmlParserContext& ctx);
@@ -1078,6 +1565,21 @@ class World : public mrpt::system::COutputLogger
 	mvsim_msgs::SrvSetControllerTwistAnswer srv_set_controller_twist(
 		const mvsim_msgs::SrvSetControllerTwist& req);
 	mvsim_msgs::SrvShutdownAnswer srv_shutdown(const mvsim_msgs::SrvShutdown& req);
+	mvsim_msgs::SrvSetLightStateAnswer srv_set_light_state(const mvsim_msgs::SrvSetLightState& req);
+	mvsim_msgs::SrvGetLightStateAnswer srv_get_light_state(const mvsim_msgs::SrvGetLightState& req);
+	mvsim_msgs::SrvSpawnObjectsAnswer srv_spawn_objects(const mvsim_msgs::SrvSpawnObjects& req);
+	mvsim_msgs::SrvInsertEntitiesAnswer srv_insert_entities(
+		const mvsim_msgs::SrvInsertEntities& req);
+	mvsim_msgs::SrvRemoveEntitiesAnswer srv_remove_entities(
+		const mvsim_msgs::SrvRemoveEntities& req);
+	mvsim_msgs::SrvRemoveObjectsAnswer srv_remove_objects(const mvsim_msgs::SrvRemoveObjects& req);
+	mvsim_msgs::SrvGetAllPosesAnswer srv_get_all_poses(const mvsim_msgs::SrvGetAllPoses& req);
+	mvsim_msgs::SrvStartVideoRecordingAnswer srv_start_video_recording(
+		const mvsim_msgs::SrvStartVideoRecording& req);
+	mvsim_msgs::SrvStopVideoRecordingAnswer srv_stop_video_recording(
+		const mvsim_msgs::SrvStopVideoRecording& req);
+	mvsim_msgs::SrvGetVideoRecordingStatusAnswer srv_get_video_recording_status(
+		const mvsim_msgs::SrvGetVideoRecordingStatus& req);
 #endif
 };
 }  // namespace mvsim

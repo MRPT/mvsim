@@ -17,15 +17,22 @@ add_library(${PROJECT_NAME}
 	src/PID_Controller.cpp
 	src/PoseTrajectoryFollower.cpp
 	src/RemoteResourcesManager.cpp
+	src/RuntimeObjects.cpp
+	src/WheelJointsInterface.cpp
 	src/Shape2p5.cpp
 	src/Simulable.cpp
+	src/Suspension.cpp
 	src/VehicleBase.cpp
+	src/VideoRecorder.cpp
 	src/VisualObject.cpp
 	src/Wheel.cpp
 	src/World_gui.cpp
+	src/World_gui_panels.cpp
 	src/World_load_xml.cpp
+	src/World_runtime_entities.cpp
 	src/World_services.cpp
 	src/World_simul.cpp
+	src/World_video.cpp
 	src/World_walls.cpp
 	src/World.cpp
 	src/xml_utils.cpp
@@ -38,6 +45,7 @@ add_library(${PROJECT_NAME}
 	include/mvsim/CollisionShapeCache.h
 	include/mvsim/ControllerBase.h
 	include/mvsim/CsvLogger.h
+	include/mvsim/GUIPanel.h
 	include/mvsim/HumanActor.h
 	include/mvsim/Joystick.h
 	include/mvsim/mvsim_version.h
@@ -45,10 +53,14 @@ add_library(${PROJECT_NAME}
 	include/mvsim/PID_Controller.h
 	include/mvsim/PoseTrajectoryFollower.h
 	include/mvsim/RemoteResourcesManager.h
+	include/mvsim/RuntimeObjects.h
+	include/mvsim/WheelJointsInterface.h
 	include/mvsim/Shape2p5.h
 	include/mvsim/Simulable.h
+	include/mvsim/Suspension.h
 	include/mvsim/TParameterDefinitions.h
 	include/mvsim/VehicleBase.h
+	include/mvsim/VideoRecorder.h
 	include/mvsim/VisualObject.h
 	include/mvsim/Wheel.h
 	include/mvsim/World.h
@@ -95,6 +107,7 @@ add_library(${PROJECT_NAME}
 	src/VehicleDynamics/VehicleAckermann_Drivetrain_ControllerRaw.cpp
 	src/VehicleDynamics/Vehicleackermann_Drivetrain_ControllerTwistFrontSteerPID.cpp
 	src/VehicleDynamics/VehicleAckermann_Drivetrain.cpp
+	src/VehicleDynamics/VehicleDifferential_ControllerJointCommands.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerRaw.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerTrajectory.cpp
 	src/VehicleDynamics/VehicleDifferential_ControllerTwistIdeal.cpp
@@ -144,9 +157,12 @@ if (TARGET mvsim::msgs)
 endif()
 
 set(PACKAGE_DEPENDENCIES
-  mrpt-maps
-  mrpt-gui
-  mrpt-topography
+  mrpt_obs
+  mrpt_opengl
+  mrpt_maps
+  mrpt_imgui
+  mrpt_imgui_vendor
+  mrpt_topography
   ${DEP_MVSIM_COMMS_PKG}
   box2d
   )
@@ -156,11 +172,13 @@ mvsim_common_target_settings(${MODULE_NAME})
 target_link_libraries(${PROJECT_NAME}
 PRIVATE
 	${DEP_MVSIM_MSGS_TRG}
+	mrpt::mrpt_imgui
+	mrpt::mrpt_imgui_vendor
+	Eigen3::Eigen
 PUBLIC
 	mrpt::mrpt_obs
 	mrpt::mrpt_opengl
 	mrpt::mrpt_maps
-	mrpt::mrpt_gui
 	mrpt::mrpt_topography
 	${DEP_MVSIM_COMMS_TRG}
 	${BOX2D_LIBRARIES}

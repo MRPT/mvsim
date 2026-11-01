@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+/* Switches a light group (<light_group> XML tags) of an object on or off */
+message SrvSetLightState {
+  required string objectId = 1;
+
+  required string lightGroup = 2;
+
+  required bool on = 3;
+}

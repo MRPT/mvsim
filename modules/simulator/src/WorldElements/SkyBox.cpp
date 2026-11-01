@@ -86,8 +86,8 @@ void SkyBox::internalGuiUpdate(
 	if (!glSkyBox_ && viz && physical && glSkyBoxPrepared_)
 	{
 		glSkyBox_ = glSkyBoxPrepared_;
-		viz->get().insert(glSkyBox_);
-		physical->get().insert(glSkyBox_);
+		insertIntoScene(viz->get(), glSkyBox_);
+		insertIntoScene(physical->get(), glSkyBox_);
 	}
 
 	// No need to update, this is a static, "background" entity.

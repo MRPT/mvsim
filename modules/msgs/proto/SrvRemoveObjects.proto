@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+// Removes runtime objects by name, and/or all those whose name starts with
+// "prefix" (if "prefix" is set; an empty prefix removes all of them).
+message SrvRemoveObjects {
+  repeated string names = 1;
+  optional string prefix = 2;
+}

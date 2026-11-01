@@ -15,6 +15,8 @@
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/Wheel.h>
 
+#include <algorithm>
+
 namespace mvsim
 {
 /** Friction model based on the "Ellipse Curve Method".
@@ -33,6 +35,11 @@ class EllipseCurveMethod : public FrictionBase
 	// See docs in base class.
 	virtual mrpt::math::TVector2D evaluate_friction(
 		const FrictionBase::TFrictionInput& input) const override;
+
+	double peakFrictionCoefficient() const override
+	{
+		return std::max(C_s_ * slip_ratio_saturation_, C_alpha_ * slip_angle_saturation_);
+	}
 
    private:
 	// TODO:  Move to VehicleBase

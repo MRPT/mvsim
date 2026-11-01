@@ -9,6 +9,9 @@
 
 #include <mvsim/VehicleDynamics/VehicleAckermann_Drivetrain.h>
 
+#include <algorithm>
+#include <limits>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
@@ -58,7 +61,9 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	PID_.reference_filter_tau = reference_filter_tau;
 	PID_.reference_filter_order = reference_filter_order;
 
-	const double vel_act = veh_.getVelocityLocalOdoEstimate().vx;
+	// Driveshaft speed (from the driven wheels spin), so the loop also limits
+	// the slip of the driven wheels:
+	const double vel_act = veh_.driveshaftSpeed();
 	double vel_des = setpoint_lin_speed;
 
 	if (enable_reference_filter)
@@ -75,34 +80,23 @@ void DynamicsAckermannDrivetrain::ControllerTwistFrontSteerPID::control_step(
 	}
 
 	const double zero_threshold = 0.001;  // m/s
-	const double stop_threshold = 0.05;	 // m/s , wider threshold for stop detection
 
-	const bool setpointIsZero = std::abs(vel_des) < zero_threshold;
-
-	if (setpointIsZero && std::abs(vel_act) < stop_threshold)
+	if (std::abs(vel_des) < zero_threshold)
 	{
-		// Near-zero velocity with zero setpoint: full stop, reset PID
-		co.drive_torque = 0;
+		// (max_torque<=0 means no limit, as in PID_Controller)
+		const double maxT = max_torque > 0 ? max_torque : std::numeric_limits<double>::infinity();
+		// Braking toward a full stop: proportional action only, which always
+		// opposes the current motion and vanishes at zero speed, so the vehicle
+		// neither coasts nor rebounds due to the integral term.
 		PID_.reset();
+		co.drive_torque = std::clamp(KP * vel_act - ff, -maxT, maxT);
+		co.drive_motor = {KP, ff - KP * vel_act, max_torque};
 	}
 	else
 	{
 		// "-" because \tau<0 makes robot moves forwards.
 		co.drive_torque = -PID_.compute(vel_des - vel_act, ci.context.dt, ff);
-
-		if (setpointIsZero)
-		{
-			// Braking toward zero: clamp torque so it can only oppose current
-			// motion direction, preventing the PID integral from causing rebound.
-			if (vel_act > 0)
-			{
-				co.drive_torque = std::max(0.0, co.drive_torque);
-			}
-			else if (vel_act < 0)
-			{
-				co.drive_torque = std::min(0.0, co.drive_torque);
-			}
-		}
+		co.drive_motor = {PID_.lastOutputSensitivity(), PID_.lastUnsaturatedOutput(), max_torque};
 	}
 }
 

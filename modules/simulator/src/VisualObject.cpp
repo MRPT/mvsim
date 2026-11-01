@@ -7,10 +7,15 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/core/lock_helper.h>
 #include <mrpt/version.h>
 #include <mrpt/viz/CPolyhedron.h>
 #include <mrpt/viz/CSetOfObjects.h>
 #include <mrpt/viz/Scene.h>
+#include <mrpt/viz/TLightParameters.h>	// MRPT_VIZ_HAS_CLIGHT
+#if defined(MRPT_VIZ_HAS_CLIGHT)
+#include <mrpt/viz/CLight.h>
+#endif
 #include <mvsim/Block.h>
 #include <mvsim/CollisionShapeCache.h>
 #include <mvsim/Simulable.h>
@@ -55,6 +60,10 @@ void CVisualObject::guiUpdate(
 	// need/can't acquire it again:
 	const auto objectPoseOrg = viz.has_value() ? meSim->getPose() : meSim->getPoseNoLock();
 	const auto objectPose = parent()->applyWorldRenderOffset(objectPoseOrg);
+	// Visual models and lights are mounted on the chassis, which may move
+	// with respect to objectPose (e.g. suspension):
+	const auto chassisPose = parent()->applyWorldRenderOffset(
+		viz.has_value() ? meSim->getChassisPose() : meSim->getChassisPoseNoLock());
 
 	if (glCustomVisual_ && viz.has_value() && physical.has_value())
 	{
@@ -70,17 +79,17 @@ void CVisualObject::guiUpdate(
 			// Add to the 3D scene:
 			if (insertCustomVizIntoViz_)
 			{
-				viz->get().insert(glCustomVisual_);
+				insertIntoScene(viz->get(), glCustomVisual_);
 			}
 
 			if (insertCustomVizIntoPhysical_)
 			{
-				physical->get().insert(glCustomVisual_);
+				insertIntoScene(physical->get(), glCustomVisual_);
 			}
 		}
 
 		// Update pose:
-		glCustomVisual_->setPose(objectPose);
+		glCustomVisual_->setPose(chassisPose);
 	}
 
 	if (glCollision_ && viz.has_value())
@@ -146,9 +155,24 @@ void CVisualObject::guiUpdate(
 
 			glCollision_->insert(glCS);
 			glCollision_->setVisibility(false);
-			viz->get().insert(glCollision_);
+			insertIntoScene(viz->get(), glCollision_);
 		}
 		glCollision_->setPose(objectPose);
+	}
+
+	if (glLightGroups_ && viz.has_value() && physical.has_value())
+	{
+		if (!glLightGroupsInserted_)
+		{
+			glLightGroupsInserted_ = true;
+			if (insertCustomVizIntoViz_)
+			{
+				insertIntoScene(viz->get(), glLightGroups_);
+			}
+			// Always in the physical scene, so camera sensors see the lights:
+			insertIntoScene(physical->get(), glLightGroups_);
+		}
+		glLightGroups_->setPose(chassisPose);
 	}
 
 	const bool childrenOnly = !!glCustomVisual_;
@@ -158,9 +182,60 @@ void CVisualObject::guiUpdate(
 
 void CVisualObject::FreeOpenGLResources() { ModelsCache::Instance().clear(); }
 
+void CVisualObject::insertIntoScene(
+	mrpt::viz::Scene& scene, const std::shared_ptr<mrpt::viz::CVisualObject>& obj)
+{
+	scene.insert(obj);
+	auto lck = mrpt::lockHelper(sceneInsertionsMtx_);
+	SceneInsertion si;
+	si.scene = &scene;
+	si.obj = obj;
+	sceneInsertions_.push_back(si);
+}
+
+void CVisualObject::insertIntoScene(
+	const std::shared_ptr<mrpt::viz::CSetOfObjects>& group,
+	const std::shared_ptr<mrpt::viz::CVisualObject>& obj)
+{
+	ASSERT_(group);
+	group->insert(obj);
+	auto lck = mrpt::lockHelper(sceneInsertionsMtx_);
+	SceneInsertion si;
+	si.group = group;
+	si.obj = obj;
+	sceneInsertions_.push_back(si);
+}
+
+void CVisualObject::removeFromScenes()
+{
+	auto lck = mrpt::lockHelper(sceneInsertionsMtx_);
+	for (const auto& si : sceneInsertions_)
+	{
+		const auto obj = si.obj.lock();
+		if (!obj)
+		{
+			continue;
+		}
+		if (si.scene)
+		{
+			si.scene->removeObject(obj);
+		}
+		else if (const auto group = si.group.lock(); group)
+		{
+			group->removeObject(obj);
+		}
+	}
+	sceneInsertions_.clear();
+}
+
 bool CVisualObject::parseVisual(const rapidxml::xml_node<char>& rootNode)
 {
 	MRPT_TRY_START
+
+	for (auto n = rootNode.first_node("light_group"); n; n = n->next_sibling("light_group"))
+	{
+		implParseLightGroup(*n);
+	}
 
 	bool any = false;
 	for (auto n = rootNode.first_node("visual"); n; n = n->next_sibling("visual"))
@@ -192,10 +267,12 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 {
 	MRPT_TRY_START
 
+	std::string lightGroupName;
 	{
 		bool visualEnabled = true;
 		TParameterDefinitions auxPar;
 		auxPar["enabled"] = TParamEntry("%bool", &visualEnabled);
+		auxPar["light_group"] = TParamEntry("%s", &lightGroupName);
 		parse_xmlnode_attribs(visNode, auxPar);
 		if (!visualEnabled)
 		{
@@ -205,16 +282,17 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	}
 
 	std::string modelURI;
-	double modelScale = 1.0;
+	mrpt::math::TPoint3D modelScale = {1.0, 1.0, 1.0};
 	mrpt::math::TPose3D modelPose;
 	bool initialShowBoundingBox = false;
+	bool castShadows = true;
 	std::string objectName = "group";
 
 	ModelsCache::Options opts;
 
 	TParameterDefinitions params;
 	params["model_uri"] = TParamEntry("%s", &modelURI);
-	params["model_scale"] = TParamEntry("%lf", &modelScale);
+	params["model_scale"] = TParamEntry("%scale3d", &modelScale);
 	params["model_offset_x"] = TParamEntry("%lf", &modelPose.x);
 	params["model_offset_y"] = TParamEntry("%lf", &modelPose.y);
 	params["model_offset_z"] = TParamEntry("%lf", &modelPose.z);
@@ -224,6 +302,8 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 	params["show_bounding_box"] = TParamEntry("%bool", &initialShowBoundingBox);
 	params["model_cull_faces"] = TParamEntry("%s", &opts.modelCull);
 	params["model_color"] = TParamEntry("%color", &opts.modelColor);
+	params["model_emissive"] = TParamEntry("%color", &opts.modelEmissive);
+	params["cast_shadows"] = TParamEntry("%bool", &castShadows);
 	params["name"] = TParamEntry("%s", &objectName);
 
 	// Parse XML params:
@@ -245,23 +325,39 @@ bool CVisualObject::implParseVisual(const rapidxml::xml_node<char>& visNode)
 
 	auto& gModelsCache = ModelsCache::Instance();
 
+	// Models that glow while a light group is on are switched per instance:
+	opts.shared = lightGroupName.empty();
+
 	auto glModel = gModelsCache.get(localFileName, opts);
 
-	// Check if this is a Block with a visual_scale override
-	std::optional<double> scaleOverride;
+	if (!lightGroupName.empty())
+	{
+		auto lck = mrpt::lockHelper(lightGroupsMtx_);
+		auto& g = lightGroup(lightGroupName);
+		for (const auto& part : *glModel)
+		{
+			if (part)
+			{
+				g.emissiveParts.emplace_back(part, part->materialEmissive());
+			}
+		}
+		g.apply();
+	}
+
+	// A block visual_scale overrides the model scale:
 	if (const Block* block = dynamic_cast<const Block*>(this))
 	{
-		const double blockScale = block->visual_scale();
-		if (blockScale == blockScale)  // not NaN
+		if (const auto blockScale = block->visual_scale(); blockScale)
 		{
-			scaleOverride = blockScale;
+			modelScale = *blockScale;
 		}
 	}
 
 	// Add the 3D model as custom viz:
-	addCustomVisualization(
-		glModel, mrpt::poses::CPose3D(modelPose), static_cast<float>(modelScale), objectName,
-		modelURI, initialShowBoundingBox, scaleOverride);
+	auto glGroup = addCustomVisualization(
+		glModel, mrpt::poses::CPose3D(modelPose), modelScale.cast<float>(), objectName, modelURI,
+		initialShowBoundingBox);
+	glGroup->castShadows(castShadows);
 
 	return true;  // yes, we have a custom viz model
 
@@ -291,11 +387,10 @@ bool CVisualObject::customVisualVisible() const
 	return glCustomVisual_ && glCustomVisual_->isVisible();
 }
 
-void CVisualObject::addCustomVisualization(
+mrpt::viz::CSetOfObjects::Ptr CVisualObject::addCustomVisualization(
 	const mrpt::viz::CVisualObject::Ptr& glModel, const mrpt::poses::CPose3D& modelPose,
-	const float modelScale, const std::string& modelName,
-	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox,
-	const std::optional<double>& scaleOverride)
+	const mrpt::math::TPoint3Df& modelScale, const std::string& modelName,
+	const std::optional<std::string>& modelURI, const bool initialShowBoundingBox)
 {
 	ASSERT_(glModel);
 
@@ -311,10 +406,6 @@ void CVisualObject::addCustomVisualization(
 		zMax = static_cast<float>(block->block_z_max() + GeometryEpsilon);
 	}
 
-	// Apply scale override if provided
-	const float effectiveScale =
-		scaleOverride.has_value() ? static_cast<float>(scaleOverride.value()) : modelScale;
-
 #if 0
 	std::cout << "MODEL: " << (modelURI ? *modelURI : "none")
 			  << " glModel: " << glModel->GetRuntimeClass()->className
@@ -323,14 +414,14 @@ void CVisualObject::addCustomVisualization(
 #endif
 
 	// Calculate its convex hull:
-	const auto shape = chc.get(*glModel, zMin, zMax, modelPose, effectiveScale, modelURI);
+	const auto shape = chc.get(*glModel, zMin, zMax, modelPose, modelScale, modelURI);
 
 	auto glGroup = mrpt::viz::CSetOfObjects::Create();
 
 	// Note: we cannot apply pose/scale to the original glModel since
 	// it may be shared (many instances of the same object):
 	glGroup->insert(glModel);
-	glGroup->setScale(effectiveScale);
+	glGroup->setScale(modelScale.x, modelScale.y, modelScale.z);
 	glGroup->setPose(modelPose);
 
 	glGroup->setName(modelName);
@@ -358,4 +449,117 @@ void CVisualObject::addCustomVisualization(
 		// ... or update collision volume:
 		collisionShape_->mergeWith(shape);
 	}
+
+	return glGroup;
+}
+
+void CVisualObject::LightGroup::apply() const
+{
+	glLights->setVisibility(on);
+	for (const auto& [part, emissive] : emissiveParts)
+	{
+		part->materialEmissive(on ? emissive : mrpt::img::TColorf(0, 0, 0, 0));
+	}
+}
+
+CVisualObject::LightGroup& CVisualObject::lightGroup(const std::string& name)
+{
+	if (auto it = lightGroups_.find(name); it != lightGroups_.end())
+	{
+		return it->second;
+	}
+
+	if (!glLightGroups_)
+	{
+		glLightGroups_ = mrpt::viz::CSetOfObjects::Create();
+		glLightGroups_->setName("light_groups");
+	}
+	auto& g = lightGroups_[name];
+	g.glLights = mrpt::viz::CSetOfObjects::Create();
+	g.glLights->setName(name);
+	glLightGroups_->insert(g.glLights);
+	return g;
+}
+
+void CVisualObject::implParseLightGroup(const rapidxml::xml_node<char>& node)
+{
+	const std::map<std::string, std::string> noVars;
+	const auto& vars = world_ ? world_->user_defined_variables() : noVars;
+
+	std::string name;
+	bool initiallyOn = true;
+	TParameterDefinitions attribs;
+	attribs["name"] = TParamEntry("%s", &name);
+	attribs["initially_on"] = TParamEntry("%bool", &initiallyOn);
+	parse_xmlnode_attribs(node, attribs, vars, "[CVisualObject::light_group]");
+	if (name.empty())
+	{
+		THROW_EXCEPTION("<light_group> tags must have a 'name' attribute");
+	}
+
+	std::vector<mrpt::viz::TLight> lights;
+	for (auto* n = node.first_node(); n; n = n->next_sibling())
+	{
+		if (n->type() == rapidxml::node_element)
+		{
+			lights.push_back(parse_light_xml_node(*n, vars));
+		}
+	}
+
+#if !defined(MRPT_VIZ_HAS_CLIGHT)
+	if (!lights.empty() && world_)
+	{
+		world_->logFmt(
+			mrpt::system::LVL_WARN,
+			"The lights of light group '%s' are ignored: they need a newer MRPT version (only its "
+			"emissive models are switched)",
+			name.c_str());
+	}
+#endif
+
+	auto lck = mrpt::lockHelper(lightGroupsMtx_);
+	auto& g = lightGroup(name);
+	g.on = initiallyOn;
+#if defined(MRPT_VIZ_HAS_CLIGHT)
+	for (const auto& l : lights)
+	{
+		g.glLights->insert(mrpt::viz::CLight::Create(l));
+	}
+#endif
+	g.apply();
+}
+
+std::vector<std::string> CVisualObject::lightGroupNames() const
+{
+	auto lck = mrpt::lockHelper(lightGroupsMtx_);
+	std::vector<std::string> names;
+	for (const auto& [name, g] : lightGroups_)
+	{
+		names.push_back(name);
+	}
+	return names;
+}
+
+bool CVisualObject::setLightGroupState(const std::string& groupName, bool on)
+{
+	auto lck = mrpt::lockHelper(lightGroupsMtx_);
+	auto it = lightGroups_.find(groupName);
+	if (it == lightGroups_.end())
+	{
+		return false;
+	}
+	it->second.on = on;
+	it->second.apply();
+	return true;
+}
+
+std::optional<bool> CVisualObject::lightGroupState(const std::string& groupName) const
+{
+	auto lck = mrpt::lockHelper(lightGroupsMtx_);
+	auto it = lightGroups_.find(groupName);
+	if (it == lightGroups_.end())
+	{
+		return {};
+	}
+	return it->second.on;
 }

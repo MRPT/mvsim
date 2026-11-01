@@ -11,7 +11,7 @@ jobs:
             export DEBIAN_FRONTEND=noninteractive
             apt install software-properties-common -yq
             add-apt-repository ppa:joseluisblancoc/mrpt3-stable -y
-            apt install build-essential g++ cmake libbox2d-dev libmrpt-dev libcli11-dev libnanoflann-dev libmrpt-nanogui-dev -yq
+            apt install build-essential g++ cmake libbox2d-dev libmrpt-dev libcli11-dev libnanoflann-dev libmrpt-imgui-dev libmrpt-imgui-vendor-dev libglfw3-dev -yq
             apt install protobuf-compiler libprotobuf-dev libzmq3-dev -yq
             apt install git -yq
       - checkout
@@ -34,7 +34,7 @@ jobs:
             export DEBIAN_FRONTEND=noninteractive
             apt install software-properties-common -yq
             add-apt-repository ppa:joseluisblancoc/mrpt3-stable -y
-            apt install build-essential clang cmake libbox2d-dev libmrpt-dev libcli11-dev libnanoflann-dev libmrpt-nanogui-dev -yq
+            apt install build-essential clang cmake libbox2d-dev libmrpt-dev libcli11-dev libnanoflann-dev libmrpt-imgui-dev libmrpt-imgui-vendor-dev libglfw3-dev -yq
             apt install protobuf-compiler libprotobuf-dev libzmq3-dev -yq
             apt install git -yq
       - checkout

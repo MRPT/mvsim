@@ -25,8 +25,9 @@ mvsim/
 │   └── raytracer/         # Exact analytic ray casting (no Box2D/GUI/ZMQ)
 ├── mvsim_node_src/        # ROS 2 node wrapper
 ├── mvsim-cli/             # Command-line tool (mvsim launch/topic/node/server)
-├── mvsim-pid-tuner/       # GUI tool for tuning PID controllers
+├── mvsim-pid-tuner/       # CLI tool: tunes twist PID gains by simulation (grid search)
 ├── mvsim-dataset-gen/     # Offline ray-traced LiDAR/IMU/odometry dataset generator
+├── mvsim-urdf2xml/        # Standalone Python tool: URDF -> MVSim vehicle XML (and --check)
 ├── mvsim_tutorial/        # Demo world XML files + launch files + RViz configs
 ├── definitions/           # Reusable vehicle and sensor XML definitions
 ├── examples_cpp/          # C++ subscriber and service-caller examples
@@ -47,24 +48,28 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 
 | Class | Header | Role |
 |---|---|---|
-| `World` | `World.h` | Central simulation container. Owns all vehicles, blocks, world elements, Box2D physics world, GUI window, ZMQ comms client. Split across `World.cpp`, `World_gui.cpp`, `World_load_xml.cpp`, `World_services.cpp`, `World_simul.cpp`, `World_walls.cpp`. |
-| `Simulable` | `Simulable.h` | Base interface for anything that steps through simulation time. Provides `simul_pre_timestep()`, `simul_post_timestep()`, pose access with shared mutex. |
+| `World` | `World.h` | Central simulation container. Owns all vehicles, blocks, world elements, Box2D physics world, GUI window, ZMQ comms client. Split across `World.cpp`, `World_gui.cpp` (GUI thread, main loop, scene update, lights), `World_gui_panels.cpp` (Dear ImGui panels), `World_load_xml.cpp`, `World_services.cpp`, `World_simul.cpp`, `World_video.cpp`, `World_walls.cpp`. `open_GUI_while_loading()` (used by mvsim-cli and the ROS node) shows the window with a "loading" message during `load_from_XML()` and the first frame. `cpu_usage()` (shown in the GUI) is smoothed over ~1 s from that point; above 100% after 5 s, the XML point/spot lights are turned off. The GUI thread sleeps in `glfwWaitEventsTimeout()` between frames (`refresh_fps`, 60 fps while the user interacts); sensors needing OpenGL wake it up via `internal_wake_up_gui_thread()`. Sensors have priority over frames: a frame that would not finish (measured CPU+GPU cost) before `next_opengl_sensor_time()` is postponed until after them, and while `simulation_busy_fraction()` > 0.9 the frame rate drops (min 5 fps) unless the user interacts. `close_GUI()` only hides the window. Applications add custom panels with `add_gui_panel()` (declarative `gui::WindowDescription` in `GUIPanel.h`, rendered in `World_gui_panels.cpp`) and get mouse events via `set_gui_mouse_callback()`; both run in the GUI thread. |
+| `Simulable` | `Simulable.h` | Base interface for anything that steps through simulation time. Provides `simul_pre_timestep()`, `simul_post_timestep()`, pose access with shared mutex. Static Box2D bodies are only moved (`SetTransform()`) and redrawn when their pose changes, since doing it every step for hundreds of blocks dominated the physics time. |
 | `VisualObject` | `VisualObject.h` | Base interface for anything renderable in the OpenGL GUI. |
-| `VehicleBase` | `VehicleBase.h` | Abstract vehicle. Inherits `VisualObject` and `Simulable`. Holds wheels, sensors, friction model, controller, CSV logger. Created via `ClassFactory`. |
+| `VehicleBase` | `VehicleBase.h` | Abstract vehicle. Inherits `VisualObject` and `Simulable`. Holds wheels, sensors, friction model, controller, CSV logger. Created via `ClassFactory`. Wheel friction is solved wheel by wheel (sequential impulses, several sweeps per step), updating a chassis velocity estimate after each one and passing each wheel its effective chassis mass at the contact (`lateralMass`/`longitudinalMass`); solving them all from the same velocity made long vehicles jitter forever. `computeWheelLoads()` gives each wheel its normal force from the force/moment balance (COM, slope, filtered-acceleration load transfer; minimum norm with active set; jointed bodies that cannot stand on their wheels also rest on the joint anchors), see `getWheelLoads()`. Optional `<suspension>` (`Suspension.h`, disabled by default): linear heave/roll/pitch of the chassis on per-wheel springs/dampers, integrated exactly (matrix exponential, any dt), excited by inertia and terrain; it adds the load transfer to the static loads. Sensors and visuals use `Simulable::getChassisPose()` (pose + `chassisRelativePose()`); wheels do not move; IMU gets the chassis rates/accelerations. Tested in `tests/test_suspension.cpp`. |
 | `Block` | `Block.h` | Static or dynamic rigid-body obstacle/object in the world. |
 | `HumanActor` | `HumanActor.h` | Pedestrian/human agent with motion model. |
-| `Wheel` | `Wheel.h` | Per-wheel physical state (torque, slip, contact). |
+| `Wheel` | `Wheel.h` | Per-wheel physical state (torque, slip, contact). `getPhi()` is the spin angle, kept bounded by wrapping whole turns; `getPhiContinuous()` is the unwrapped angle (e.g. for joint positions). |
 | `SensorBase` | `Sensors/SensorBase.h` | Base class for all sensors. |
 | `WorldElementBase` | `WorldElements/WorldElementBase.h` | Base class for ground plane, grids, elevation maps, etc. |
 | `ControllerBase` | `ControllerBase.h` | Abstract controller interface. |
-| `FrictionBase` | `FrictionModels/FrictionBase.h` | Abstract friction model. |
+| `FrictionBase` | `FrictionModels/FrictionBase.h` | Abstract friction model. `solveWheelSpin()` (shared by all models) integrates the wheel spin implicitly with the controller `MotorTorqueModel` (clamped linear torque law reported by PID controllers), so stiff wheel velocity loops are stable for any time step (bearing damping and rolling resistance slope too). `solveContact()` (default and Ward-Iagnemma) applies Coulomb's law on a friction circle: stick if the forces cancelling the slip fit, else slide opposing the slip velocity (never reversing the lateral slip within a step). |
 | `ClassFactory` | `ClassFactory.h` | Template factory that maps XML type strings to C++ constructors. |
 | `TParameterDefinitions` | `TParameterDefinitions.h` | Declares XML-readable parameters with `DECLARE_PARAMETER_*` macros. |
 | `Shape2p5` | `Shape2p5.h` | 2.5D shape (2D footprint + height interval). |
 | `RemoteResourcesManager` | `RemoteResourcesManager.h` | Downloads and caches remote assets (maps, meshes). |
 | `CsvLogger` | `CsvLogger.h` | Per-vehicle time-series logging to CSV. |
-| `PID_Controller` | `PID_Controller.h` | Generic discrete PID used by controllers. |
-| `CollisionShapeCache` | `CollisionShapeCache.h` | Caches Box2D collision shapes for mesh reuse. |
+| `PID_Controller` | `PID_Controller.h` | Generic discrete PID used by controllers. Also reports its last unsaturated output and its sensitivity, for the implicit wheel spin integration. |
+| `CollisionShapeCache` | `CollisionShapeCache.h` | Caches Box2D collision shapes for mesh reuse, keyed by model file plus model pose, per-axis scale and z range (so per-instance `visual_scale` and offsets give each block its own footprint). `model_scale`/`visual_scale` accept `S` or `SX SY SZ` (`%scale3d`). |
+| `WheelJointsInterface` | `WheelJointsInterface.h` | ROS-agnostic, thread-safe per-wheel joint commands (velocity with inner PID, or effort) and states (continuous position, velocity, effort) for external joint-level controllers. Exposed by controllers via `ControllerBaseInterface::wheelJointsInterface()`; implemented by the `ros2_control` controller class (`DynamicsDifferential::ControllerJointCommands`), which reports per-wheel `MotorTorqueModel`s. A NaN command leaves the wheel free. Wheels have a `joint_name` (default `<wheel tag>_joint`). |
+| (World) | `World.h`, `World_runtime_entities.cpp` | Entities inserted/removed at runtime: `World::insertEntitiesFromXML()` (world XML fragment, same tags as world files; all-or-nothing; optional name/pose override via `InsertOptions`), `removeEntity()`, `registerCallbackOnEntityChange()`, `runInSimulationThread()` (the first two must run in the simulation thread). Visuals are inserted through `CVisualObject::insertIntoScene()`, so `removeFromScenes()` can undo them; removed entities release their 3D objects and OpenGL resources in the rendering thread. Docs: `docs/dynamic_worlds.rst`. |
+| `RuntimeObjects` | `RuntimeObjects.h` | Thread-safe container (`World::runtimeObjects()`) of visual-only objects spawned/moved/removed at runtime (boxes, cylinders, flat ground decals, meshes, lines; `RuntimeObjectDescription`), applied to the 3D scenes by the rendering thread before sensors render. Optionally GUI-only (not seen by sensors). Docs: `docs/runtime_objects.rst`. |
+| `VideoRecorder` | `VideoRecorder.h` | Video of the 3D view (`World::videoRecorder()`), in simulation time: after each step (`internalPostSimulStepForVideo()`, under the physical objects lock) a due frame is marked as a pending OpenGL "sensor", so the simulation waits for it; the rendering thread renders `worldVisual_` off-screen (`CFBORender`, fixed size; camera = GUI view, `<gui>` options in headless, or an "orbit" camera following a vehicle) before running the sensors, and a writer thread pipes raw RGB to `ffmpeg` (`posix_spawnp`, own process group) or saves images (printf output pattern). Frames are repeated if dt > 1/fps. Controlled by the GUI (status bar button, File menu), `<video_recording>` XML (autostart, duration, `close_simulator_when_done`), ZMQ services and C++. Docs: `docs/video_recording.rst`. Tested in `tests/test_video_recorder.cpp`. |
 | `PoseTrajectoryFollower` | `PoseTrajectoryFollower.h` | Standalone (no World/Box2D dependency) pure-pursuit tracker for the "exactly reproducible trajectories" feature: evaluates a time-parameterized `(t,x,y)` polyline and computes the `(vx,omega)` twist to follow it. Used by the `trajectory` controller class (differential and Ackermann). |
 
 ### Vehicle dynamics (`src/VehicleDynamics/`)
@@ -77,28 +82,34 @@ The simulation engine. Headers live in `modules/simulator/include/mvsim/`.
 
 Each vehicle type has companion `*_Controller*.cpp` files for its controllers (Raw torque, Twist PID, Ideal twist, Front-steer PID, and — for `differential`/`ackermann` only — `trajectory`, the exactly-reproducible-trajectory controller built on `PoseTrajectoryFollower`).
 
+Twist PID controllers measure the driven wheels own spin (Ackermann: each front wheel; drivetrain: `driveshaftSpeed()`), brake with proportional action only on a zero setpoint (full stop, no rebound), and report a `MotorTorqueModel`. Ideal/trajectory controllers set `idealControllerActive_` on every `control_step()` (the vehicle resets it before each call), so friction is not applied to the chassis. The gains in `definitions/*.vehicle.xml` were tuned for 1-5 ms time steps, with `max_torque` below the wheel traction limit (except skid-steer). `twist_pid` has `wheel_separation_multiplier` (as ROS diff_drive_controller) for skid-steer robots. The `differential_3_wheels` caster swivels (aligned with its contact velocity each step). Ackermann classes have `max_steer_rate_deg`. Torsen differentials lock their outputs (stiffness inertia/dt, part of the wheel `MotorTorqueModel`) up to the bias ratio (`torsenLockTorque()`). Tested in `tests/test_vehicle_motion.cpp` (ideal circle, stopping, rolling resistance, stiff PID on low friction, skid-steer spin rate, caster, Torsen, steering rate, wheel loads).
+
 ### Sensors (`src/Sensors/`)
 
 | File | Sensor |
 |---|---|
-| `LaserScanner.cpp` | 2D LiDAR (generic + RPLidar A2) |
+| `LaserScanner.cpp` | 2D LiDAR (generic + RPLidar A2). 2D mode: planar ray tracing (ignores pitch/roll); `raytrace_3d=true`: OpenGL depth renders of up to 150 deg each, supports tilted scan planes |
 | `Lidar3D.cpp` | 3D LiDAR (Velodyne VLP-16, Ouster OS1, Hesai Helios-32) |
-| `CameraSensor.cpp` | RGB pinhole camera |
-| `DepthCameraSensor.cpp` | RGBD depth + color camera |
-| `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model |
-| `GNSS.cpp` | GPS/GNSS with configurable noise |
+| `CameraSensor.cpp` | RGB pinhole camera. Optional plumb_bob lens distortion and Gaussian pixel noise, applied by the MRPT GPU renderer (requires MRPT >= 3.6.0, `MIN_MRPT_VERSION_CAMERA_DISTORTION`; with older MRPT, using them fails at load time); `camera_info` carries the distortion. `CameraDistortionOptions` is shared with `DepthCameraSensor` (`rgb_*` tags, RGB image only). Off by default; all tutorial worlds/vehicles with RGB or RGB-D cameras enable them with env vars `MVSIM_CAMERA_DISTORTION=plumb_bob` and `MVSIM_CAMERA_NOISE_STD` |
+| `DepthCameraSensor.cpp` | RGBD depth + color camera. ROS depth image: optical frame `<label>_depth`, `16UC1` in mm or `32FC1` in m (`ros_depth_image_encoding`). Both images come from one render if the RGB camera has the depth intrinsics and pose, no distortion, the same near clip and a far clip >= the depth one (`single_render_pass_`); otherwise depth uses its own renderer |
+| `IMU.cpp` / `ImuNoiseModel.cpp` | IMU with Forster 2016 noise model. The ROS node fills `sensor_msgs/Imu` covariances from its white noise (and orientation noise, if `measure_orientation`) |
+| `GNSS.cpp` | GPS/GNSS with configurable noise, `fix_type`, and `<event>` tags (sim-time quality changes, outages, ENU position jumps) |
 
-Cameras (`CameraSensor`, `DepthCameraSensor`) open a GUI preview subwindow showing their live image(s). The common `SensorBase` XML tag `<preview_win_visible>` (default `true`) controls whether that subwindow starts opened or minimized, without affecting the simulated sensor data itself.
+Headless (`headless` world/CLI/ROS option): OpenGL sensors render off-screen through EGL, with no display needed (Mesa llvmpipe without GPU); each `World` creates its own EGL context (`sensor_has_to_create_egl_context()`). Cameras (`CameraSensor`, `DepthCameraSensor`) open one GUI preview window per sensor showing their live image(s) (RGB and depth side by side, uploaded as GL textures only while visible). The common `SensorBase` XML tag `<preview_win_visible>` (default `true`) controls whether that window starts opened or closed, without affecting the simulated sensor data itself.
 
 ### World elements (`src/WorldElements/`)
 
-`OccupancyGridMap`, `ElevationMap`, `HorizontalPlane`, `VerticalPlane`, `GroundGrid`, `PointCloud`, `SkyBox`, `PropertyRegion` (friction zones).
+`OccupancyGridMap`, `ElevationMap`, `HorizontalPlane` (optionally a north-up texture placed by geodetic corners, `geo_corner_sw`/`geo_corner_ne`), `VerticalPlane`, `GroundGrid`, `PointCloud`, `SkyBox`, `PropertyRegion` (friction zones).
 
 Elevation queries (`World::getHighestElevationUnder()`, run for every wheel and chassis contour point each step) use a 2D grid index: world elements providing elevation must override `elevationBoundingBox()` to be indexed (otherwise they are queried everywhere), and the index is rebuilt when elements are added or moved (`World::invalidateElevationIndex()`).
 
+### Switchable lights
+
+`<light_group name=".." initially_on="..">` tags (point/spot lights in the object frame) are parsed by `CVisualObject::parseVisual()`, so vehicles and blocks support them; `<visual light_group="..">` models (loaded unshared from `ModelsCache`) glow only while their group is on. Lights are `mrpt::viz::CLight` objects, only built if `MRPT_VIZ_HAS_CLIGHT` is defined (newer MRPT; otherwise ignored with a warning), and always go into the physical scene so camera sensors see them. Switched with `World::setLightGroupState()`, the ZMQ services `set_light_state`/`get_light_state`, or the GUI "Lighting"/"Inspector" panels. Point/spot XML parsing is shared with the world `<lights>` in `parse_light_xml_node()` (`xml_utils.h`).
+
 ### Friction models (`src/FrictionModels/`)
 
-Default Coulomb, Ward-Iagnemma (off-road), Ellipse (slip angle + slip ratio).
+Default Coulomb, Ward-Iagnemma (off-road), Ellipse (slip angle + slip ratio; static lateral grip below 0.1 m/s; `friction_mu` regions scale its peak). `peakFrictionCoefficient()` gives each model's peak mu.
 
 ---
 
@@ -124,7 +135,11 @@ Key headers in `modules/comms/include/mvsim/Comms/`:
 - `CallService` / `GenericAnswer` — RPC
 - `ObservationLidar2D` / `GenericObservation` — sensor data
 - `Pose` / `TimeStampedPose` — pose data
-- `SrvGetPose` / `SrvSetPose` / `SrvSetControllerTwist` / `SrvShutdown` — services
+- `SrvGetPose` / `SrvSetPose` / `SrvSetControllerTwist` / `SrvShutdown` / `SrvSetLightState` / `SrvGetLightState` — services
+- `SrvSpawnObjects` (`RuntimeObject`) / `SrvRemoveObjects` — runtime visual objects (services `spawn_objects`, `remove_objects`; `set_pose`/`get_pose` also accept them)
+- `SrvInsertEntities` / `SrvRemoveEntities` — insert world XML entities / remove entities at runtime (services `insert_entities`, `remove_entities`, run in the simulation thread)
+- `SrvGetAllPoses` — ground truth of all named objects (service `get_all_poses`, from `World::getGroundTruthSnapshot()`)
+- `SrvStartVideoRecording` / `SrvStopVideoRecording` / `SrvGetVideoRecordingStatus` — video recording (services `start_video_recording`, `stop_video_recording`, `get_video_recording_status`)
 
 ---
 
@@ -144,6 +159,17 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 - `mvsim_node.cpp` — `MvSimNode` class wrapping `World`, publishing sensor observations as ROS topics, subscribing to `cmd_vel`, advertising TF transforms and ROS 2 parameters.
 - `mvsim_node_src/include/` — node header
 
+**As fast as possible:** `realtime_factor<=0` (node parameter and `launch_world.launch.py` argument) or `--realtime-factor 0` (`mvsim launch`) runs fixed chunks of physics steps back to back; OpenGL sensors already block the simulation until rendered, and the node also waits for its sensor publication queue (back-pressure), so no sensor data is skipped.
+
+**Fake localization** (`do_fake_localization`): `<VEH>/amcl_pose`, `<VEH>/particlecloud` and a `map`->`odom` TF making `map`->`base_link` the ground truth pose (odometry starts at the origin, with noise).
+
+**Performance diagnostics:** `World::getPerformanceStats()` (2 s windows of sim time: achieved RTF, physics time, OpenGL sensors wait, per-sensor `<veh>/<sensor>` processing time and observation rate), shown in the GUI status bar tooltip and published by the node (ROS 2) on `/diagnostics` at `diagnostics_rate` Hz.
+
+**ros2_control (ROS 2, optional):** `mvsim_ros2_control.cpp/.h`, built only if `controller_manager` and `hardware_interface` are found (`MVSIM_HAS_ROS2_CONTROL`). Two API flavors from the same sources: Jazzy and newer (`hardware_component_params.hpp` found), and Humble 2.x (`MVSIM_ROS2_CONTROL_LEGACY_API`: the systems are imported into a plain `ResourceManager` when the description arrives, then the CM is created). For each vehicle with `<controller class="ros2_control">` (also inserted at runtime), `Ros2ControlVehicle`, owned by its `TPubSubPerVehicle`, creates a `controller_manager::ControllerManager` (vehicle namespace if needed) with a custom `ResourceManager` that binds the `<ros2_control>` systems of the robot description (topic `robot_description`: generated from the vehicle, or user URDF) to the wheels by joint name, via an in-process `MvsimSystem` (no pluginlib). Lock-step: read/update/write run from `World::addPostStepCallback()` every N physics steps, in sim time. Such vehicles get no `cmd_vel` subscription, odometry or fake localization from MVSim. `terminateSimulation()` only `detach()`es them, since destroying a CM from an rclcpp on_shutdown callback deadlocks. Demo: `mvsim_tutorial/demo_ros2_control.launch.py`. Docs: `docs/ros2_control.rst`.
+**Runtime objects and ground truth (ROS 2 only):** subscribes to `runtime_objects` / `runtime_overlays` (`visualization_msgs/MarkerArray`, world frame `world_frame_id`, default `map`) to spawn/remove runtime objects; publishes `objects_ground_truth` (`tf2_msgs/TFMessage`, all named objects) if `objects_ground_truth_rate` > 0.
+
+**Runtime entities (ROS 2 only):** `simulation_interfaces` services (optional dependency, `mvsim_node_sim_interfaces.cpp`): `spawn_entity` (MVSim world XML), `delete_entity`, `get_entities`, `get_entity_state`, `set_entity_state`, `get_simulator_features`. Per-vehicle pubs/subs live in `pubsub_vehicles_` (by vehicle index, shared_ptr) and are created/removed on entity change callbacks; vehicles inserted at runtime always use their name as topic namespace.
+
 **Simulation time:** the node is the ROS time source. It publishes `/clock` and stamps every header with *simulation* time (`World::get_simul_timestamp()`); sensor messages use the observation's own `obs.timestamp` so stamps are immune to publisher-thread latency. `myNow()`/`myNowSec()` return sim time (wall-clock fallback before the first step). Downstream nodes should set `use_sim_time:=true`; the node itself runs with `use_sim_time:=false` (only warns if set true). The `disable_sim_time_clock` parameter (default `false`) opts out of all of the above: no `/clock` publication, and every header stamp (via `myNow()`/`myObsStamp()`) uses wall-clock time instead, matching pre-simulation-clock behavior.
 
 ---
@@ -155,6 +181,7 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 - `server` — start headless server
 - `topic list/echo/pub` — inspect/inject ZMQ topics
 - `node list` — list connected nodes
+- `slice <world.xml>` — `mvsim-cli-slice.cpp`: loads a world (no simulation) and writes the 2D grid cells (`x y z` .txt) where the geometry sensors see (world elements and non-animated blocks; no vehicles/actors) crosses a height or band, by clipping the CPU-side triangle buffers of the physical scene (built with `guiUpdate()`), e.g. for static navigation maps.
 
 ---
 
@@ -166,6 +193,12 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 - `TrajectorySource.h/.cpp` — `.tum` and 2D-waypoints-with-terrain-following loading via `CPose3DInterpolator`.
 - `LidarSimulator.h/.cpp`, `ImuSimulator.h/.cpp`, `OdometrySimulator.h/.cpp` — per-sensor observation generators. `LidarSimulator` ray-casts each sweep's columns in parallel with TBB (`tbb::parallel_for`) when available, falling back to a serial `for` loop otherwise (`MVSIM_HAS_TBB` compile-time define); each column gets its own RNG stream, seeded up front from the caller's `std::mt19937`, so a given `--seed` produces a byte-identical `.rawlog` regardless of thread scheduling or TBB availability.
 - `main.cpp` — CLI11 wiring and a min-heap scheduler merging all sensor streams into strict chronological order; prints a live progress bar with ETA (`mrpt::system::progress()` / `formatTimeInterval()`) while the merge loop runs.
+
+---
+
+## URDF to vehicle XML (`mvsim-urdf2xml/`)
+
+`mvsim-urdf2xml` (single Python file, stdlib + PyYAML): generates a `<vehicle:class>` XML from an expanded URDF plus a YAML mapping file (dynamics class, wheel tag -> joint, chassis link, sensor link -> MVSim sensor include), or `--check`s an existing XML against the URDF. Sensor poses come from the chain of joints from the mapped base frame (must be on the ground). The simulator never reads URDF. Tests: `tests/test_urdf2xml.py` (+ `tests/urdf2xml/` fixture). Example: `mvsim_tutorial/urdf2xml/`. Docs: `docs/mvsim-urdf2xml.rst`. Node param `publish_sensor_tf` (default true) disables MVSim sensor TFs when robot_state_publisher publishes them.
 
 ---
 
@@ -183,7 +216,7 @@ Worlds are XML files. Root element: `<mvsim_world>`. Key child elements:
 
 Sensor and vehicle definitions can be split into reusable files under `definitions/`.
 
-`<include>` resolution (`xml_to_str_solving_includes()` in `xml_utils.cpp`) is recursive at any nesting depth: nodes with no nested `<include>`/`<if>` are serialized verbatim (fast path), but a subtree containing one anywhere underneath (e.g. inside `<vehicle:class><dynamics><controller>`) is rebuilt node-by-node so the nested tag gets resolved too. This is what lets the `trajectory` controller pull in a waypoint list via a nested `<include>`.
+`<include>` resolution (`xml_to_str_solving_includes()` in `xml_utils.cpp`) is recursive at any nesting depth: nodes with no nested `<include>`/`<if>` are serialized verbatim (fast path), but a subtree containing one anywhere underneath (e.g. inside `<vehicle:class><dynamics><controller>`) is rebuilt node-by-node so the nested tag gets resolved too. This is what lets the `trajectory` controller pull in a waypoint list via a nested `<include>`. Instances (`VehicleBase::factory`, `Block::factory`, `HumanActor::factory`) go through the same resolver via `xml_node_solving_includes()`, which re-parses the resolved text (the returned `XML_Doc_Data` must outlive the node), so `<include>`/`<if>` work at any depth inside `<vehicle>`, `<block>` and `<actor>` too. `<for>` is only supported at world level.
 
 ---
 
@@ -199,15 +232,15 @@ Ready-to-include vehicle and sensor snippets:
 
 ## Demo worlds (`mvsim_tutorial/`)
 
-`demo_warehouse.world.xml`, `demo_2robots.world.xml`, `demo_greenhouse.world.xml`, `demo_elevation_map.world.xml`, `demo_road_circuit1.world.xml`, `demo_multistorey.world.xml`, `demo_logistics_center.world.xml`, `demo_articulated_vehicle.world.xml`, `demo_friction_zones.world.xml`, `demo_camera.world.xml`, `demo_depth_camera.world.xml`, `demo_jackal.world.xml`, `demo_many_robots.world.xml`, `demo_indoor_outdoor.world.xml`, `demo_outdoor.world.xml`, `demo_walls.world.xml`, `demo_turtlebot_world.world.xml`, `mvsim_slam.world.xml`, `demo_trajectory.world.xml`, `demo_trajectory_ackermann.world.xml`.
+`demo_warehouse.world.xml`, `demo_2robots.world.xml`, `demo_greenhouse.world.xml`, `demo_elevation_map.world.xml`, `demo_road_circuit1.world.xml`, `demo_multistorey.world.xml`, `demo_logistics_center.world.xml`, `demo_articulated_vehicle.world.xml`, `demo_friction_zones.world.xml`, `demo_camera.world.xml`, `demo_depth_camera.world.xml`, `demo_jackal.world.xml`, `demo_many_robots.world.xml`, `demo_indoor_outdoor.world.xml`, `demo_outdoor.world.xml`, `demo_walls.world.xml`, `demo_turtlebot_world.world.xml`, `mvsim_slam.world.xml`, `demo_trajectory.world.xml`, `demo_trajectory_ackermann.world.xml`, `demo_ros2_control.world.xml` (+ `ros2_control/` controllers YAML and example URDF).
 
-**Exactly reproducible trajectories** (`trajectory` controller class, `PoseTrajectoryFollower`): drives a `differential`/`ackermann` vehicle along a closed-form, time-parameterized `(t,x,y)` polyline given directly in `<waypoint>` XML tags, using a pure-pursuit strategy (speed from waypoint distance/time, heading from a lookahead point, with `max_angular_speed` slowing `vx` down — not just capping `omega` — to round sharp corners realistically). Supports `loop="true"` (repeats forever) and `loop="false"` (runs once and stops). `demo_trajectory.world.xml`/`demo_trajectory_ackermann.world.xml` select between the 3 predefined `definitions/trajectories/*.trajectory.xml` presets via a top-level `TRAJECTORY` `<variable>` and `<include>`; both carry a 3D LiDAR + GNSS sensor. Tested in `tests/test_pose_trajectory_follower.cpp` (pure algorithm, no World) and `tests/test_trajectory_controller.cpp` (full World + Box2D). The path polyline can also be drawn in the 3D GUI (a `mrpt::viz::CSetOfLines` at a configurable `viz_height`, default 0.5m) via `ControllerBaseInterface::getTrajectoryPlotPoints()`, toggled by the "View trajectories" checkbox / `<gui><show_trajectories>` option; both demo worlds enable it by default.
+**Exactly reproducible trajectories** (`trajectory` controller class, `PoseTrajectoryFollower`): drives a `differential`/`ackermann` vehicle along a closed-form, time-parameterized `(t,x,y)` polyline given directly in `<waypoint>` XML tags, using a pure-pursuit strategy (speed from waypoint distance/time, heading from a lookahead point, with `max_angular_speed` slowing `vx` down — not just capping `omega` — to round sharp corners realistically). Supports `loop="true"` (repeats forever) and `loop="false"` (runs once and stops). `demo_trajectory.world.xml`/`demo_trajectory_ackermann.world.xml` select between the 3 predefined `definitions/trajectories/*.trajectory.xml` presets via a top-level `TRAJECTORY` `<variable>` and `<include>`; both carry a 3D LiDAR + GNSS sensor. Tested in `tests/test_pose_trajectory_follower.cpp` (pure algorithm, no World) and `tests/test_trajectory_controller.cpp` (full World + Box2D). The path polyline can also be drawn in the 3D GUI (a `mrpt::viz::CSetOfLines` at a configurable `viz_height`, default 0.5m) via `ControllerBaseInterface::getTrajectoryPlotPoints()`, toggled by the "View > Trajectories" menu item / `<gui><show_trajectories>` option; both demo worlds enable it by default.
 
 ---
 
 ## Python API (`examples_python/`)
 
-Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`, `simple-obstacle-avoidance.py`, `move-object-example.py`, `call-shutdown.py`, `plot-log-files-4-wheels.py`.
+Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`, `simple-obstacle-avoidance.py`, `move-object-example.py`, `spawn-objects-example.py`, `insert-entities-example.py`, `call-shutdown.py`, `toggle-lights.py`, `plot-log-files-4-wheels.py`.
 
 ---
 
@@ -215,7 +248,8 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 
 | Library | Role |
 |---|---|
-| **MRPT** (>= 3.0) | Math, poses, observations, GUI. 3D scene graph lives in `mrpt/viz` (`mrpt::viz::Scene`, `CSetOfObjects`, ...); `mrpt/opengl` is only used for offscreen FBO rendering (`CFBORender`) in sensors. |
+| **MRPT** (>= 3.0) | Math, poses, observations. 3D scene graph lives in `mrpt/viz` (`mrpt::viz::Scene`, `CSetOfObjects`, ...); `mrpt/opengl` is used for offscreen FBO rendering (`CFBORender`) in sensors. |
+| **mrpt_imgui / mrpt_imgui_vendor** | GUI: Dear ImGui (docking) + GLFW, linked privately to libmvsim. The world is drawn behind the dockspace with `mrpt::imgui::CImGuiSceneView::renderAsBackground()` (if `MRPT_IMGUI_HAS_BACKGROUND_SCENE_VIEW`; with older MRPT, as an FBO image with `render()`). Layout autosaved in `~/.config/mvsim/imgui.ini`. |
 | **Box2D** | 2D rigid-body physics engine |
 | **ZeroMQ** (optional) | Pub-sub communications |
 | **Protobuf** (optional) | Message serialization |
@@ -230,6 +264,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 ## Build system
 
 - CMake 3.9+, C++17.
+- No `file(GLOB)`: every source, header and `.proto` file is listed explicitly in its module `CMakeLists.txt`; add new files there.
 - Detects ROS 2 via `$ROS_VERSION` env var; builds the ROS node and uses `ament_cmake` when present.
 - Standalone build: `cmake .. && make`.
 - ROS 2 build: `colcon build`.
@@ -237,6 +272,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 - `cmake/mvsim_cmake_functions.cmake` contains helpers used across targets.
 - Optional features guarded by `MVSIM_HAS_ZMQ` and `MVSIM_HAS_PROTOBUF` compile-time defines.
 - Linux CI (`.github/workflows/build-linux.yml`, `.circleci/config.yml`) installs MRPT 3.x from `ppa:joseluisblancoc/mrpt3-stable` (releases) and `ppa:joseluisblancoc/mrpt3-develop` (nightlies). Both PPAs only cover Ubuntu 24.04 and 26.04. GitHub runs both PPAs; CircleCI runs stable only.
+- ROS 2 CI (`.github/workflows/ci-ros2.yml`): colcon build and tests in `ros:<distro>-ros-base` containers (humble, jazzy, lyrical), with dependencies from `package.xml` via rosdep and the `ros2-testing` apt repository (which carries MRPT 3).
 
 ---
 

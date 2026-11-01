@@ -101,17 +101,20 @@ std::string RemoteResourcesManager::handle_remote_uri(const std::string& uri)
 #endif
 		ASSERT_DIRECTORY_EXISTS_(localDir);
 	}
-	else
+	if (!cacheUsageLogged_)
 	{
-		// get usage stats:
-		if (0 == mrpt::system::executeCommand(
+		// Usage stats, only for this message: it runs a process, too slow for
+		// every resource.
+		cacheUsageLogged_ = true;
+		if (0 != mrpt::system::executeCommand(
 					 mrpt::format("du -sh0 \"%s\"", localDir.c_str()), &cacheUsageStats))
 		{
-			// usage stats are valid.
+			cacheUsageStats = "unknown";
 		}
+		MRPT_LOG_INFO(
+			"Using local storage directory: '"s + localDir + "' (Usage: "s + cacheUsageStats +
+			")"s);
 	}
-	MRPT_LOG_ONCE_INFO(
-		"Using local storage directory: '"s + localDir + "' (Usage: "s + cacheUsageStats + ")"s);
 
 	const auto splitResult = zip_uri_split(uri);
 	const bool isZipPkg = std::get<0>(splitResult);

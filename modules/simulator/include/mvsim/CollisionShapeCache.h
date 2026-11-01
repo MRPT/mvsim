@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
+#include <mrpt/math/TPoint3D.h>
 #include <mrpt/viz/CVisualObject.h>
 #include <mvsim/Shape2p5.h>
 
@@ -22,10 +23,12 @@ class CollisionShapeCache
    public:
 	static CollisionShapeCache& Instance();
 
-	/** Computes the convex hull of a given model, or gets it from the cache */
+	/** Computes the convex hull of a given model, or gets it from the cache.
+	 * The cache key is the model file plus all the other arguments, since the
+	 * same model may be used with different poses or (per-axis) scales. */
 	Shape2p5 get(
 		mrpt::viz::CVisualObject& obj, float zMin, float zMax,
-		const mrpt::poses::CPose3D& modelPose, const float modelScale,
+		const mrpt::poses::CPose3D& modelPose, const mrpt::math::TPoint3Df& modelScale,
 		const std::optional<std::string>& modelFile = std::nullopt);
 
 	void clear() { cache.clear(); }
@@ -46,15 +49,15 @@ class CollisionShapeCache
 	 */
 	std::optional<Shape2p5> processSimpleGeometries(
 		const mrpt::viz::CVisualObject& obj, float zMin, float zMax,
-		const mrpt::poses::CPose3D& modelPose, const float modelScale);
+		const mrpt::poses::CPose3D& modelPose, const mrpt::math::TPoint3Df& modelScale);
 
 	Shape2p5 processGenericGeometry(
 		mrpt::viz::CVisualObject& obj, float zMin, float zMax,
-		const mrpt::poses::CPose3D& modelPose, const float modelScale);
+		const mrpt::poses::CPose3D& modelPose, const mrpt::math::TPoint3Df& modelScale);
 
 	Shape2p5 processCylinderLike(
 		const size_t actualEdgeCount, double actualRadius, float zMin, float zMax,
-		const mrpt::poses::CPose3D& modelPose, const float modelScale);
+		const mrpt::poses::CPose3D& modelPose, const mrpt::math::TPoint3Df& modelScale);
 };
 
 }  // namespace mvsim

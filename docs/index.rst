@@ -19,10 +19,15 @@ MVSim: a lightweight MultiVehicle Simulator
    sensors
    demo_worlds
    teleoperation
+   ros2_control
+   dynamic_worlds
+   runtime_objects
+   video_recording
    mvsim-cli
    mvsim_node
    mvsim-pid-tuner
    mvsim-dataset-gen
+   mvsim-urdf2xml
    physics
    extending
    bibliography

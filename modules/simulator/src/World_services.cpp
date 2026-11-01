@@ -12,14 +12,34 @@
 
 #if MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 #include <mvsim/mvsim-msgs/GenericAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetAllPoses.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetAllPosesAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetLightState.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetLightStateAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvGetPoseAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetVideoRecordingStatus.pb.h>
+#include <mvsim/mvsim-msgs/SrvGetVideoRecordingStatusAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvInsertEntities.pb.h>
+#include <mvsim/mvsim-msgs/SrvInsertEntitiesAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveEntities.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveEntitiesAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveObjects.pb.h>
+#include <mvsim/mvsim-msgs/SrvRemoveObjectsAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetControllerTwist.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetControllerTwistAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetLightState.pb.h>
+#include <mvsim/mvsim-msgs/SrvSetLightStateAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPose.pb.h>
 #include <mvsim/mvsim-msgs/SrvSetPoseAnswer.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdown.pb.h>
 #include <mvsim/mvsim-msgs/SrvShutdownAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvSpawnObjects.pb.h>
+#include <mvsim/mvsim-msgs/SrvSpawnObjectsAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvStartVideoRecording.pb.h>
+#include <mvsim/mvsim-msgs/SrvStartVideoRecordingAnswer.pb.h>
+#include <mvsim/mvsim-msgs/SrvStopVideoRecording.pb.h>
+#include <mvsim/mvsim-msgs/SrvStopVideoRecordingAnswer.pb.h>
 #endif
 
 #include <map>
@@ -64,6 +84,18 @@ mvsim_msgs::SrvSetPoseAnswer World::srv_set_pose(const mvsim_msgs::SrvSetPose& r
 		ans.set_objectisincollision(itV->second->hadCollision());
 		itV->second->resetCollisionFlag();
 	}
+	else if (auto rp = runtimeObjects_.getPose(sId); rp.has_value())
+	{
+		// Runtime (visual-only) objects:
+		auto p = mrpt::math::TPose3D(
+			req.pose().x(), req.pose().y(), req.pose().z(), req.pose().yaw(), req.pose().pitch(),
+			req.pose().roll());
+		if (req.has_relativeincrement() && req.relativeincrement())
+		{
+			p = (mrpt::poses::CPose3D(*rp) + mrpt::poses::CPose3D(p)).asTPose();
+		}
+		ans.set_success(runtimeObjects_.setPose(sId, p));
+	}
 	else
 	{
 		ans.set_success(false);
@@ -103,6 +135,18 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(const mvsim_msgs::SrvGetPose& r
 
 		ans.set_objectisincollision(copy_of_objects_had_collision_.count(sId) != 0);
 	}
+	else if (auto rp = runtimeObjects_.getPose(sId); rp.has_value())
+	{
+		// Runtime (visual-only) objects:
+		ans.set_success(true);
+		auto* po = ans.mutable_pose();
+		po->set_x(rp->x);
+		po->set_y(rp->y);
+		po->set_z(rp->z);
+		po->set_yaw(rp->yaw);
+		po->set_pitch(rp->pitch);
+		po->set_roll(rp->roll);
+	}
 	else
 	{
 		ans.set_success(false);
@@ -120,7 +164,7 @@ mvsim_msgs::SrvGetPoseAnswer World::srv_get_pose(const mvsim_msgs::SrvGetPose& r
 mvsim_msgs::SrvSetControllerTwistAnswer World::srv_set_controller_twist(
 	const mvsim_msgs::SrvSetControllerTwist& req)
 {
-	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
+	std::lock_guard<std::recursive_mutex> lck(simulationStepRunningMtx_);
 
 	mvsim_msgs::SrvSetControllerTwistAnswer ans;
 	ans.set_success(false);
@@ -177,6 +221,392 @@ mvsim_msgs::SrvShutdownAnswer World::srv_shutdown(
 	return ans;
 }
 
+namespace
+{
+/** Finds the light group of an object, or returns an error message */
+std::string findLightGroup(
+	const World::SimulableList& objs, const std::string& objectId, const std::string& group,
+	CVisualObject*& obj)
+{
+	const auto it = objs.find(objectId);
+	obj = it == objs.end() ? nullptr : dynamic_cast<CVisualObject*>(it->second.get());
+	if (!obj)
+	{
+		return "objectId not found";
+	}
+	if (!obj->lightGroupState(group).has_value())
+	{
+		std::string available;
+		for (const auto& name : obj->lightGroupNames())
+		{
+			available += (available.empty() ? "" : ", ") + name;
+		}
+		return "light group not found. Available ones: [" + available + "]";
+	}
+	return {};
+}
+}  // namespace
+
+mvsim_msgs::SrvSetLightStateAnswer World::srv_set_light_state(
+	const mvsim_msgs::SrvSetLightState& req)
+{
+	mvsim_msgs::SrvSetLightStateAnswer ans;
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+
+	CVisualObject* obj = nullptr;
+	if (const auto err = findLightGroup(simulableObjects_, req.objectid(), req.lightgroup(), obj);
+		!err.empty())
+	{
+		ans.set_success(false);
+		ans.set_errormessage(err);
+		return ans;
+	}
+	ans.set_success(obj->setLightGroupState(req.lightgroup(), req.on()));
+	return ans;
+}
+
+mvsim_msgs::SrvGetLightStateAnswer World::srv_get_light_state(
+	const mvsim_msgs::SrvGetLightState& req)
+{
+	mvsim_msgs::SrvGetLightStateAnswer ans;
+
+	auto lckListObjs = mrpt::lockHelper(getListOfSimulableObjectsMtx());
+
+	CVisualObject* obj = nullptr;
+	if (const auto err = findLightGroup(simulableObjects_, req.objectid(), req.lightgroup(), obj);
+		!err.empty())
+	{
+		ans.set_success(false);
+		ans.set_errormessage(err);
+		return ans;
+	}
+	ans.set_success(true);
+	ans.set_on(obj->lightGroupState(req.lightgroup()).value_or(false));
+	return ans;
+}
+
+namespace
+{
+mrpt::img::TColor colorFromRGBA(uint32_t c)
+{
+	return mrpt::img::TColor(
+		static_cast<uint8_t>(c >> 24), static_cast<uint8_t>(c >> 16), static_cast<uint8_t>(c >> 8),
+		static_cast<uint8_t>(c));
+}
+
+RuntimeObjectDescription fromProto(const mvsim_msgs::RuntimeObject& o)
+{
+	RuntimeObjectDescription d;
+	d.name = o.name();
+	d.shape = static_cast<RuntimeObjectDescription::Shape>(o.shape());
+	if (o.has_pose())
+	{
+		const auto& p = o.pose();
+		d.pose = {p.x(), p.y(), p.z(), p.yaw(), p.pitch(), p.roll()};
+	}
+	d.size = {o.sizex(), o.sizey(), o.sizez()};
+	d.color = colorFromRGBA(o.color());
+	for (int i = 0; i + 1 < o.polygonxy_size(); i += 2)
+	{
+		d.polygon.emplace_back(o.polygonxy(i), o.polygonxy(i + 1));
+	}
+	for (int i = 0; i + 2 < o.pointsxyz_size(); i += 3)
+	{
+		d.points.emplace_back(o.pointsxyz(i), o.pointsxyz(i + 1), o.pointsxyz(i + 2));
+	}
+	for (const auto c : o.pointcolors())
+	{
+		d.point_colors.push_back(colorFromRGBA(c));
+	}
+	d.texture = o.texture();
+	d.visible_to_sensors = o.visibletosensors();
+	d.on_ground = o.onground();
+	return d;
+}
+}  // namespace
+
+mvsim_msgs::SrvSpawnObjectsAnswer World::srv_spawn_objects(const mvsim_msgs::SrvSpawnObjects& req)
+{
+	mvsim_msgs::SrvSpawnObjectsAnswer ans;
+	try
+	{
+		std::vector<RuntimeObjectDescription> objs;
+		objs.reserve(static_cast<size_t>(req.objects_size()));
+		for (const auto& o : req.objects())
+		{
+			objs.push_back(fromProto(o));
+		}
+		runtimeObjects_.spawn(objs);
+		ans.set_success(true);
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(e.what());
+	}
+	return ans;
+}
+
+mvsim_msgs::SrvRemoveObjectsAnswer World::srv_remove_objects(
+	const mvsim_msgs::SrvRemoveObjects& req)
+{
+	mvsim_msgs::SrvRemoveObjectsAnswer ans;
+	size_t n = runtimeObjects_.remove({req.names().begin(), req.names().end()});
+	if (req.has_prefix())
+	{
+		n += runtimeObjects_.removeByPrefix(req.prefix());
+	}
+	ans.set_success(true);
+	ans.set_numremoved(static_cast<uint32_t>(n));
+	return ans;
+}
+
+namespace
+{
+// Services run in the communications thread: entities are inserted or removed
+// in the simulation thread.
+constexpr auto kSimulationThreadTimeout = std::chrono::seconds(30);
+}  // namespace
+
+mvsim_msgs::SrvInsertEntitiesAnswer World::srv_insert_entities(
+	const mvsim_msgs::SrvInsertEntities& req)
+{
+	mvsim_msgs::SrvInsertEntitiesAnswer ans;
+	auto names = std::make_shared<std::vector<std::string>>();
+	const std::string xml = req.xml();
+	const std::string basePath = req.has_basepath() ? req.basepath() : std::string();
+	try
+	{
+		auto fut = runInSimulationThread([this, names, xml, basePath]()
+										 { *names = insertEntitiesFromXML(xml, basePath); });
+		if (fut.wait_for(kSimulationThreadTimeout) != std::future_status::ready)
+		{
+			THROW_EXCEPTION("Timeout waiting for the simulation thread");
+		}
+		fut.get();
+		ans.set_success(true);
+		for (const auto& n : *names)
+		{
+			ans.add_names(n);
+		}
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(e.what());
+	}
+	return ans;
+}
+
+mvsim_msgs::SrvRemoveEntitiesAnswer World::srv_remove_entities(
+	const mvsim_msgs::SrvRemoveEntities& req)
+{
+	mvsim_msgs::SrvRemoveEntitiesAnswer ans;
+	auto notFound = std::make_shared<std::vector<std::string>>();
+	const std::vector<std::string> names(req.names().begin(), req.names().end());
+	try
+	{
+		auto fut = runInSimulationThread(
+			[this, notFound, names]()
+			{
+				for (const auto& n : names)
+				{
+					if (!removeEntity(n))
+					{
+						notFound->push_back(n);
+					}
+				}
+			});
+		if (fut.wait_for(kSimulationThreadTimeout) != std::future_status::ready)
+		{
+			THROW_EXCEPTION("Timeout waiting for the simulation thread");
+		}
+		fut.get();
+		ans.set_numremoved(static_cast<uint32_t>(names.size() - notFound->size()));
+		ans.set_success(notFound->empty());
+		if (!notFound->empty())
+		{
+			std::string msg = "Not found:";
+			for (const auto& n : *notFound)
+			{
+				msg += " '" + n + "'";
+			}
+			ans.set_errormessage(msg);
+		}
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(e.what());
+	}
+	return ans;
+}
+
+mvsim_msgs::SrvGetAllPosesAnswer World::srv_get_all_poses(const mvsim_msgs::SrvGetAllPoses& req)
+{
+	mvsim_msgs::SrvGetAllPosesAnswer ans;
+	const auto snap = getGroundTruthSnapshot(req.prefix());
+	ans.set_success(true);
+	ans.set_simultime(snap.simul_time);
+	for (const auto& o : snap.objects)
+	{
+		auto* np = ans.add_objects();
+		np->set_name(o.name);
+		auto* po = np->mutable_pose();
+		po->set_x(o.pose.x);
+		po->set_y(o.pose.y);
+		po->set_z(o.pose.z);
+		po->set_yaw(o.pose.yaw);
+		po->set_pitch(o.pose.pitch);
+		po->set_roll(o.pose.roll);
+		auto* tw = np->mutable_twist();
+		tw->set_vx(o.twist.vx);
+		tw->set_vy(o.twist.vy);
+		tw->set_vz(0);
+		tw->set_wx(0);
+		tw->set_wy(0);
+		tw->set_wz(o.twist.omega);
+	}
+	return ans;
+}
+
+mvsim_msgs::SrvStartVideoRecordingAnswer World::srv_start_video_recording(
+	const mvsim_msgs::SrvStartVideoRecording& req)
+{
+	mvsim_msgs::SrvStartVideoRecordingAnswer ans;
+
+	// Defaults from the world file:
+	auto o = videoRecorder_.defaultOptions();
+	if (req.has_outputfile())
+	{
+		o.output_file = req.outputfile();
+	}
+	if (req.has_fps())
+	{
+		o.fps = req.fps();
+	}
+	if (req.has_width())
+	{
+		o.width = req.width();
+	}
+	if (req.has_height())
+	{
+		o.height = req.height();
+	}
+	if (req.has_duration())
+	{
+		o.duration = req.duration();
+	}
+	if (req.has_camera())
+	{
+		o.camera = req.camera();
+	}
+	if (req.has_followvehicle())
+	{
+		o.follow_vehicle = req.followvehicle();
+	}
+	if (req.has_followheading())
+	{
+		o.follow_heading = req.followheading();
+	}
+	if (req.has_camdistance())
+	{
+		o.cam_distance = req.camdistance();
+	}
+	if (req.has_camazimuthdeg())
+	{
+		o.cam_azimuth = req.camazimuthdeg();
+	}
+	if (req.has_camelevationdeg())
+	{
+		o.cam_elevation = req.camelevationdeg();
+	}
+	if (req.has_campointtox())
+	{
+		o.cam_point_to.x = req.campointtox();
+	}
+	if (req.has_campointtoy())
+	{
+		o.cam_point_to.y = req.campointtoy();
+	}
+	if (req.has_campointtoz())
+	{
+		o.cam_point_to.z = req.campointtoz();
+	}
+	if (req.has_fovdeg())
+	{
+		o.fov_deg = req.fovdeg();
+	}
+	if (req.has_ffmpegoptions())
+	{
+		o.ffmpeg_options = req.ffmpegoptions();
+	}
+	// Not when started from here:
+	o.start_time = 0;
+	o.close_simulator_when_done = false;
+
+	try
+	{
+		videoRecorder_.start(o);
+		ans.set_success(true);
+		if (const auto cur = videoRecorder_.currentOptions(); cur)
+		{
+			ans.set_outputfile(cur->output_file);
+			MRPT_LOG_INFO_STREAM("Recording video to: " << cur->output_file);
+		}
+	}
+	catch (const std::exception& e)
+	{
+		ans.set_success(false);
+		ans.set_errormessage(mrpt::exception_to_str(e));
+	}
+	return ans;
+}
+
+mvsim_msgs::SrvStopVideoRecordingAnswer World::srv_stop_video_recording(
+	[[maybe_unused]] const mvsim_msgs::SrvStopVideoRecording& req)
+{
+	mvsim_msgs::SrvStopVideoRecordingAnswer ans;
+
+	if (!videoRecorder_.isRecording())
+	{
+		ans.set_success(false);
+		ans.set_errormessage("Not recording");
+		return ans;
+	}
+	const auto st = videoRecorder_.stop();
+	ans.set_success(st.error.empty());
+	if (!st.error.empty())
+	{
+		ans.set_errormessage(st.error);
+	}
+	ans.set_outputfile(st.output_file);
+	ans.set_frames(st.frames);
+	ans.set_duration(st.duration);
+	MRPT_LOG_INFO_STREAM(
+		"Video saved: " << st.output_file << " (" << st.frames << " frames, " << st.duration
+						<< " s)");
+	return ans;
+}
+
+mvsim_msgs::SrvGetVideoRecordingStatusAnswer World::srv_get_video_recording_status(
+	[[maybe_unused]] const mvsim_msgs::SrvGetVideoRecordingStatus& req)
+{
+	mvsim_msgs::SrvGetVideoRecordingStatusAnswer ans;
+
+	const auto st = videoRecorder_.status();
+	ans.set_recording(st.recording);
+	ans.set_outputfile(st.output_file);
+	ans.set_frames(st.frames);
+	ans.set_duration(st.duration);
+	if (!st.error.empty())
+	{
+		ans.set_errormessage(st.error);
+	}
+	return ans;
+}
+
 #endif	// MVSIM_HAS_ZMQ && MVSIM_HAS_PROTOBUF
 
 void World::internal_advertiseServices()
@@ -195,6 +625,41 @@ void World::internal_advertiseServices()
 
 	client_.advertiseService<mvsim_msgs::SrvShutdown, mvsim_msgs::SrvShutdownAnswer>(
 		"shutdown", [this](const auto& req) { return srv_shutdown(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvSetLightState, mvsim_msgs::SrvSetLightStateAnswer>(
+		"set_light_state", [this](const auto& req) { return srv_set_light_state(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvGetLightState, mvsim_msgs::SrvGetLightStateAnswer>(
+		"get_light_state", [this](const auto& req) { return srv_get_light_state(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvSpawnObjects, mvsim_msgs::SrvSpawnObjectsAnswer>(
+		"spawn_objects", [this](const auto& req) { return srv_spawn_objects(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvRemoveObjects, mvsim_msgs::SrvRemoveObjectsAnswer>(
+		"remove_objects", [this](const auto& req) { return srv_remove_objects(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvInsertEntities, mvsim_msgs::SrvInsertEntitiesAnswer>(
+		"insert_entities", [this](const auto& req) { return srv_insert_entities(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvRemoveEntities, mvsim_msgs::SrvRemoveEntitiesAnswer>(
+		"remove_entities", [this](const auto& req) { return srv_remove_entities(req); });
+
+	client_.advertiseService<mvsim_msgs::SrvGetAllPoses, mvsim_msgs::SrvGetAllPosesAnswer>(
+		"get_all_poses", [this](const auto& req) { return srv_get_all_poses(req); });
+
+	client_.advertiseService<
+		mvsim_msgs::SrvStartVideoRecording, mvsim_msgs::SrvStartVideoRecordingAnswer>(
+		"start_video_recording",
+		[this](const auto& req) { return srv_start_video_recording(req); });
+
+	client_.advertiseService<
+		mvsim_msgs::SrvStopVideoRecording, mvsim_msgs::SrvStopVideoRecordingAnswer>(
+		"stop_video_recording", [this](const auto& req) { return srv_stop_video_recording(req); });
+
+	client_.advertiseService<
+		mvsim_msgs::SrvGetVideoRecordingStatus, mvsim_msgs::SrvGetVideoRecordingStatusAnswer>(
+		"get_video_recording_status",
+		[this](const auto& req) { return srv_get_video_recording_status(req); });
 
 #endif
 }

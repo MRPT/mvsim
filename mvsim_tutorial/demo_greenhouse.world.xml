@@ -36,13 +36,17 @@
 		<light_elevation_deg>40.0</light_elevation_deg>
 	</lights>
 
+	<!-- ensure reproducible randomized numbers from the same seed (e.g. plant poses
+	     match those of static maps generated with "mvsim slice") -->
+	<variable name="dummy" value="$f{randomize(1)}"></variable>
+
 	<variable name="NUM_TILTED_BEAMS_X" value="21"></variable>
 	<variable name="NUM_TILTED_BEAMS_Y" value="10"></variable>
 	
-	<variable name="NUM_CORRIDORS_X" value="5"></variable>
+	<variable name="NUM_CORRIDORS_X" value="10"></variable>
 	
-	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="5"></variable>
-	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="6"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="6"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="7"></variable>
 
 	<variable name="NUM_POLES_X" value="8"></variable>
 	<variable name="NUM_POLES_Y" value="8"></variable>
@@ -63,8 +67,8 @@
 		<x_min>0</x_min> <y_min>0</y_min>
 		<x_max>46</x_max> <y_max>28.6</y_max>
 		<z>0.0</z>
-		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt01_512_BaseColor.png</texture>
-		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/Dirt01_512_NormalGL.png</normal_map>
+		<texture>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WhiteGravel02_512_BaseColor.png</texture>
+		<normal_map>https://mrpt.github.io/mvsim-models/textures-cgbookcase/WhiteGravel02_512_NormalGL.png</normal_map>
 		<texture_size_x>1.5</texture_size_x>
 		<texture_size_y>1.5</texture_size_y>
 	</element>
@@ -127,7 +131,9 @@
 	<!-- =============================
 		   Vehicle classes definition
 	     ============================= -->
-	<include file="../definitions/agricobiot2.vehicle.xml" />
+	<include file="../definitions/agricobiot2.vehicle.xml"
+		headlights="false"
+	/>
 
 	<!-- ========================
 		   Vehicle(s) definition
@@ -172,6 +178,8 @@
 		  show_3d_pointcloud="false"
 		  publish_ros_depth_image="true"
 		  publish_ros_colored_pointcloud="true"
+		  distortion_model="$env{MVSIM_CAMERA_DISTORTION|none}" k1="-0.25" k2="0.07"
+		  image_noise_std="$env{MVSIM_CAMERA_NOISE_STD|0}"
 		/>
 
 		<include file="../definitions/gnss.sensor.xml"

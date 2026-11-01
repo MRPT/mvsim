@@ -26,8 +26,13 @@ Under the ``<visual> </visual>`` tag group:
 
 - **model_uri**: Path to 3D model file. Can be any file format supported by ASSIMP,
   like ``.dae``, ``.stl``, etc. If empty, the default visual aspect will be used.
-- **model_scale**: (Default=1.0) Scale to apply to the 3D model.
-- **visual_scale**: (Only for blocks) Per-instance override for the model scale. 
+- **model_scale**: (Default=1.0) Scale to apply to the 3D model: either one number
+  (same scale for all axes) or three, ``SX SY SZ``, to scale each axis independently
+  (e.g. ``<model_scale>0.3 0.3 0.7</model_scale>``). Axes are those of the model file,
+  before applying ``model_offset_*`` and the ``model_yaw|pitch|roll`` rotations.
+  The collision shape follows the scaled (and offset) model.
+- **visual_scale**: (Only for blocks) Per-instance override for the model scale, with
+  the same one or three values format as ``model_scale``.
   When specified in a ``<block>`` instance, this value overrides the ``model_scale`` 
   defined in the ``<visual>`` section of the block class. This allows creating size 
   variations of the same block class without defining new classes. If not specified 
@@ -36,7 +41,14 @@ Under the ``<visual> </visual>`` tag group:
 - **model_yaw**, **model_pitch**, **model_roll**: (Default=0) Optional model rotation [degrees].
 - **model_color**: (Default: white) For colorless files (e.g. ``*.stl``), the color to use (see :ref:`color formatting <world_value_parsing>`).
 - **model_cull_faces**: (Default=``NONE``) Can be one of ``NONE | BACK | FRONT``.
+- **model_emissive**: (Default: none, keep the model file emissive materials) Emissive (glow) color of the model,
+  visible regardless of the scene lights, e.g. for lamps (see :ref:`color formatting <world_value_parsing>`).
+  Parts with an emissive texture in the model file only glow where that texture is bright.
+- **cast_shadows**: (Default=``true``) Whether the model casts shadows. Set it to ``false`` for lamp models
+  whose point/spot light is inside them.
 - **show_bounding_box**: (Default=``false``) Initial visibility of the object bounding box.
+- ``<visual light_group="NAME">`` (attribute): The model glows (keeps its emissive materials)
+  only while that :ref:`light group <world_lighting>` of the object is on.
   
   .. note::
      The ``visual_scale`` parameter is only available for blocks, not vehicles. 

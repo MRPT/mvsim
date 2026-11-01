@@ -18,6 +18,8 @@
 #include <mrpt/version.h>
 #include <mvsim/World.h>
 
+#include <cmath>
+
 using namespace mvsim;
 using namespace std;
 
@@ -26,7 +28,11 @@ void World::run_simulation(double dt)
 {
 	ASSERT_(initialized_);
 
+	internalRunSimulationThreadTasks();
+
 	const double t0 = mrpt::Clock::nowDouble();
+	const auto prevRunStart = lastRunSimulWallclock_;
+	runSimulStartWallclock_ = t0;
 
 	// Define start of simulation time:
 	if (!simul_start_wallclock_time_.has_value())
@@ -85,6 +91,77 @@ void World::run_simulation(double dt)
 	const double t1 = mrpt::Clock::toDouble(mrpt::Clock::now());
 
 	timlogger_.registerUserMeasure("run_simulation.cpu_dt", t1 - t0);
+
+	// Fraction of wall time spent in here, since the former call started,
+	// smoothed with a time constant (calls may be short or very long):
+	runSimulStartWallclock_ = 0;
+	if (prevRunStart.has_value() && t1 > prevRunStart.value())
+	{
+		const double interval = t1 - prevRunStart.value();
+		const double busy = (t1 - t0) / interval;
+		const double alpha = 1.0 - std::exp(-interval / BUSY_FRACTION_TIME_CONSTANT);
+		simulBusyFraction_ = (1.0 - alpha) * simulBusyFraction_.load() + alpha * busy;
+	}
+
+	// Before the world is ready, the first (slow) frames are not
+	// representative:
+	if (worldReadyWallclock_ > 0)
+	{
+		updateCpuUsage(dt, t1 - t0);
+	}
+}
+
+double World::simulation_busy_fraction() const
+{
+	// A call in progress for long means busy, before it ends and updates the
+	// smoothed value:
+	const double tStart = runSimulStartWallclock_.load();
+	if (tStart > 0 && mrpt::Clock::nowDouble() - tStart > BUSY_FRACTION_TIME_CONSTANT)
+	{
+		return 1.0;
+	}
+	return simulBusyFraction_.load();
+}
+
+void World::updateCpuUsage(double simulTime, double cpuTime)
+{
+	// Exponentially-weighted sums, forgetting with this time constant:
+	constexpr double timeConstant = 1.0;  // [s]
+	const double decay = std::exp(-simulTime / timeConstant);
+
+	cpuUsageSumCpuTime_ = decay * cpuUsageSumCpuTime_ + cpuTime;
+	cpuUsageSumSimulTime_ = decay * cpuUsageSumSimulTime_ + simulTime;
+	cpuUsage_ = cpuUsageSumCpuTime_ / cpuUsageSumSimulTime_;
+
+	// After the first seconds, turn off the point and spot lights (the most
+	// expensive rendering) if the simulation cannot keep up with real time:
+	constexpr double checkAfterReady = 5.0;	 // [s]
+	if (highCpuUsageChecked_ || mrpt::Clock::nowDouble() - worldReadyWallclock_ < checkAfterReady)
+	{
+		return;
+	}
+	highCpuUsageChecked_ = true;
+
+	if (cpuUsage_ <= 1.0 || !lightOptions_.disable_lights_on_high_cpu_usage ||
+		lightOptions_.extra_lights.empty())
+	{
+		return;
+	}
+
+	MRPT_LOG_WARN_FMT(
+		"CPU usage is %.0f%%, so the simulation is slower than real time: turning off the point "
+		"and spot lights. They can be turned on again from the GUI \"Lighting\" panel, or this "
+		"check disabled with <disable_lights_on_high_cpu_usage>false</...> in <lights>.",
+		cpuUsage_ * 100.0);
+
+	if (headless())
+	{
+		setPointAndSpotLightsEnabled(false);
+	}
+	else
+	{
+		enqueue_task_to_run_in_gui_thread([this]() { setPointAndSpotLightsEnabled(false); });
+	}
 }
 
 /** Runs one individual time step */
@@ -94,9 +171,20 @@ void World::internal_one_timestep(double dt)
 	{
 		return;
 	}
-	std::lock_guard<std::mutex> lck(simulationStepRunningMtx_);
+	std::lock_guard<std::recursive_mutex> lck(simulationStepRunningMtx_);
+
+	// Start the first performance window right before its first step:
+	{
+		auto lckPerf = mrpt::lockHelper(perfStatsMtx_);
+		if (!perfWindowStartSim_)
+		{
+			perfWindowStartSim_ = get_simul_time();
+			perfWindowStartWall_ = mrpt::Clock::nowDouble();
+		}
+	}
 
 	timer_iteration_.Tic();
+	const double tStepStart = mrpt::Clock::nowDouble();
 
 	TSimulContext context;
 	context.world = this;
@@ -144,6 +232,12 @@ void World::internal_one_timestep(double dt)
 
 		const auto lckPhys = mrpt::lockHelper(physical_objects_mtx());
 		const auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
+		copy_of_objects_dynstate_time_ = simulTime_;
+
+		// Both maps are sorted by name like simulableObjects_, so the position of
+		// each object is the one right after the previous one (hinted inserts):
+		auto hintPose = copy_of_objects_dynstate_pose_.begin();
+		auto hintTwist = copy_of_objects_dynstate_twist_.begin();
 
 		for (auto& e : simulableObjects_)
 		{
@@ -155,14 +249,19 @@ void World::internal_one_timestep(double dt)
 			e.second->simul_post_timestep(context);
 
 			// save our own copy of the kinematic state:
-			copy_of_objects_dynstate_pose_[e.first] = e.second->getPose();
-			copy_of_objects_dynstate_twist_[e.first] = e.second->getRefVelocityLocal();
+			hintPose = std::next(copy_of_objects_dynstate_pose_.insert_or_assign(
+				hintPose, e.first, e.second->getPose()));
+			hintTwist = std::next(copy_of_objects_dynstate_twist_.insert_or_assign(
+				hintTwist, e.first, e.second->getRefVelocityLocal()));
 
 			if (e.second->hadCollision())
 			{
 				copy_of_objects_had_collision_.insert(e.first);
 			}
 		}
+
+		// Video frames, under the same lock as the sensors that need OpenGL:
+		internalPostSimulStepForVideo();
 	}
 	{
 		const auto lckCollis = mrpt::lockHelper(reset_collision_flags_mtx_);
@@ -178,6 +277,7 @@ void World::internal_one_timestep(double dt)
 	lckListObjs.unlock();  // for simulableObjects_
 
 	// 5) Wait for 3D sensors (OpenGL raytrace) to get executed on its thread:
+	const double tWaitStart = mrpt::Clock::nowDouble();
 	mrpt::system::CTimeLoggerEntry tle4(timlogger_, "timestep.5.wait_3D_sensors");
 	if (pending_running_sensors_on_3D_scene())
 	{
@@ -198,6 +298,7 @@ void World::internal_one_timestep(double dt)
 		}
 	}
 	tle4.stop();
+	const double tWaitEnd = mrpt::Clock::nowDouble();
 
 	// 6) If we have .rawlog generation enabled, process odometry, etc.
 	mrpt::system::CTimeLoggerEntry tle5(timlogger_, "timestep.6.post_rawlog");
@@ -206,6 +307,27 @@ void World::internal_one_timestep(double dt)
 	internalPostSimulStepForTrajectory();
 
 	tle5.stop();
+
+	const double tStepEnd = mrpt::Clock::nowDouble();
+	internalUpdatePerformanceStats(
+		(tWaitStart - tStepStart) + (tStepEnd - tWaitEnd), tWaitEnd - tWaitStart);
+
+	// 7) User hooks:
+	{
+		// Held while they run, so removePostStepCallback() returns only once
+		// a callback is not running. A copy, since they may add or remove
+		// callbacks:
+		auto lckCb = mrpt::lockHelper(postStepCallbacksMtx_);
+		const auto callbacks = postStepCallbacks_;
+		for (const auto& [id, cb] : callbacks)
+		{
+			if (postStepCallbacks_.count(id) == 0)
+			{
+				continue;  // removed by a former one
+			}
+			cb(get_simul_time());
+		}
+	}
 
 	const double ts = timer_iteration_.Tac();
 	timlogger_.registerUserMeasure("timestep", ts);
@@ -334,31 +456,31 @@ void World::internalPostSimulStepForTrajectory()
 	gt_last_time_ = now;
 
 	// Create one entry per robot.
-	// First, create the output files if this is the first time:
 	auto lck = mrpt::lockHelper(gt_io_mtx_);
-	if (gt_io_per_veh_.empty())
+
+	const double t = mrpt::Clock::toDouble(get_simul_timestamp());
+
+	for (const auto& [vehName, veh] : vehicles_)
 	{
-		for (const auto& [vehName, veh] : vehicles_)
+		// One file per vehicle, created the first time (vehicles may be inserted
+		// at runtime):
+		auto [itOut, isNew] = gt_io_per_veh_.try_emplace(vehName);
+		if (isNew)
 		{
 			const std::string fileName = mrpt::system::fileNameChangeExtension(
 				save_ground_truth_trajectory_, vehName + ".txt"s);
 
 			MRPT_LOG_INFO_STREAM("Creating ground truth file: " << fileName);
 
-			gt_io_per_veh_[vehName] = std::fstream(fileName, std::ios::out);
+			itOut->second = std::fstream(fileName, std::ios::out);
 		}
-	}
 
-	const double t = mrpt::Clock::toDouble(get_simul_timestamp());
-
-	for (const auto& [vehName, veh] : vehicles_)
-	{
 		const auto p = mrpt::poses::CPose3DQuat(veh->getCPose3D());
 
 		// each row contains these elements separated by spaces:
 		// timestamp x y z q_x q_y q_z q_w
 
-		gt_io_per_veh_.at(vehName) << mrpt::format(
+		itOut->second << mrpt::format(
 			"%f %f %f %f %f %f %f %f\n", t, p.x(), p.y(), p.z(), p.quat().x(), p.quat().y(),
 			p.quat().z(), p.quat().w());
 	}
@@ -755,5 +877,58 @@ void World::internal_update_lut_cache() const
 				lut2d_objects_[{cx, cy}].push_back(obj);
 			}
 		}
+	}
+}
+
+void World::internalUpdatePerformanceStats(double physicsTime, double sensorsWaitTime)
+{
+	// Length of each measuring window, in simulated time:
+	constexpr double windowLength = 2.0;  // [s]
+
+	const double tSim = get_simul_time();
+	const double tWall = mrpt::Clock::nowDouble();
+
+	auto lck = mrpt::lockHelper(perfStatsMtx_);
+	if (!perfWindowStartSim_)
+	{
+		return;	 // reset meanwhile
+	}
+	auto& cur = perfStatsCurrent_;
+	cur.steps++;
+	// Exclude the CPU-side sensors run within the step:
+	cur.physics_time += std::max(0.0, physicsTime - perfSensorTimeInStep_);
+	perfSensorTimeInStep_ = 0;
+	cur.sensors_wait_time += sensorsWaitTime;
+
+	if (tSim - *perfWindowStartSim_ < windowLength)
+	{
+		return;
+	}
+	cur.window_simul_time = tSim - *perfWindowStartSim_;
+	cur.window_wall_time = tWall - *perfWindowStartWall_;
+	cur.realtime_factor =
+		cur.window_wall_time > 0 ? cur.window_simul_time / cur.window_wall_time : .0;
+	cur.window_end_wall_time = tWall;
+
+	perfStatsLast_ = std::move(cur);
+	perfStatsCurrent_ = {};
+	perfWindowStartSim_ = tSim;
+	perfWindowStartWall_ = tWall;
+}
+
+World::PerformanceStats World::getPerformanceStats() const
+{
+	auto lck = mrpt::lockHelper(perfStatsMtx_);
+	return perfStatsLast_;
+}
+
+void World::internalAddSensorProcessingTime(
+	const std::string& key, double seconds, bool inSimulationThread)
+{
+	auto lck = mrpt::lockHelper(perfStatsMtx_);
+	perfStatsCurrent_.sensors[key].processing_time += seconds;
+	if (inSimulationThread)
+	{
+		perfSensorTimeInStep_ += seconds;
 	}
 }

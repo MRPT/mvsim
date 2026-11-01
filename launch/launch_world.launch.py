@@ -4,6 +4,7 @@
 from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 import os
@@ -19,7 +20,7 @@ def generate_launch_description():
         "headless", default_value='False')
 
     do_fake_localization_arg = DeclareLaunchArgument(
-        "do_fake_localization", default_value='True', description='publish fake identity tf "map" -> "odom"')
+        "do_fake_localization", default_value='True', description='Publish tf "map" -> "odom" from the ground truth (fake localization)')
 
     publish_tf_odom2baselink_arg = DeclareLaunchArgument(
         "publish_tf_odom2baselink", default_value='True', description='publish tf "odom" -> "base_link"')
@@ -38,6 +39,16 @@ def generate_launch_description():
         description='Do not use mvsim internal simulation clock: do not publish "/clock" and '
                     'stamp all messages with wall-clock time instead, as done before simulation '
                     'time support was added.')
+
+    realtime_factor_arg = DeclareLaunchArgument(
+        "realtime_factor", default_value='1.0',
+        description='Simulation speed: <1 slower, >1 faster than real time, '
+                    '0 as fast as possible.')
+
+    publish_sensor_tf_arg = DeclareLaunchArgument(
+        "publish_sensor_tf", default_value='True',
+        description='Publish the TF of each sensor wrt "base_link". Disable it if '
+                    'robot_state_publisher publishes them from the URDF.')
 
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz', default_value='True',
@@ -63,6 +74,9 @@ def generate_launch_description():
                 "force_publish_vehicle_namespace": LaunchConfiguration('force_publish_vehicle_namespace'),
                 "publish_log_topics": LaunchConfiguration('publish_log_topics'),
                 "disable_sim_time_clock": LaunchConfiguration('disable_sim_time_clock'),
+                "realtime_factor": ParameterValue(
+                    LaunchConfiguration('realtime_factor'), value_type=float),
+                "publish_sensor_tf": LaunchConfiguration('publish_sensor_tf'),
             }]
     )
 
@@ -83,6 +97,8 @@ def generate_launch_description():
         force_publish_vehicle_namespace_arg,
         publish_log_topics_arg,
         disable_sim_time_clock_arg,
+        realtime_factor_arg,
+        publish_sensor_tf_arg,
         use_rviz_arg,
         rviz_config_file_arg,
         mvsim_node,

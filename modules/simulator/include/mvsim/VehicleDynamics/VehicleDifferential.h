@@ -13,6 +13,7 @@
 #include <mvsim/PID_Controller.h>
 #include <mvsim/PoseTrajectoryFollower.h>
 #include <mvsim/VehicleBase.h>
+#include <mvsim/WheelJointsInterface.h>
 
 namespace mvsim
 {
@@ -83,6 +84,14 @@ class DynamicsDifferential : public VehicleBase
 
 		double wheel_torque_l = 0;
 		double wheel_torque_r = 0;
+
+		/// Optional closed-loop models of the L/R motors (forward positive)
+		MotorTorqueModel motor_l, motor_r;
+
+		/** If not empty, one torque per wheel, overriding the ones above */
+		std::vector<double> wheel_torques;
+		/** Optional motor models, one per wheel, for wheel_torques */
+		std::vector<MotorTorqueModel> wheel_motors;
 	};
 
 	/** Virtual base for controllers of vehicles of type DynamicsDifferential */
@@ -130,6 +139,12 @@ class DynamicsDifferential : public VehicleBase
 
 		/// Maximum abs. value torque (for clamp) [Nm]
 		double max_torque = 100;
+
+		/** Multiplier of the distance between wheels used to compute the wheel
+		 *  speed setpoints, as in ROS diff_drive_controller. Skid-steer robots
+		 *  turn slower than their wheel speeds imply (their wheels slip), and
+		 *  values >1 compensate it. */
+		double wheel_separation_multiplier = 1.0;
 
 		bool enable_antiwindup = false;
 
@@ -259,6 +274,26 @@ class DynamicsDifferential : public VehicleBase
 	   private:
 		PoseTrajectoryFollower follower_;
 		double vizHeight_ = 0.5;  //!< [m] height for the GUI trajectory line viz
+	};
+
+	/** Per-wheel joint commands from an external controller (e.g.
+	 * ros2_control), see WheelJointsInterface. */
+	class ControllerJointCommands : public ControllerBase
+	{
+	   public:
+		ControllerJointCommands(DynamicsDifferential& veh) : ControllerBase(veh) {}
+		static const char* class_name() { return "ros2_control"; }
+
+		void control_step(
+			const DynamicsDifferential::TControllerInput& ci,
+			DynamicsDifferential::TControllerOutput& co) override;
+		void on_post_step(const TSimulContext& context) override;
+		void load_config(const rapidxml::xml_node<char>& node) override;
+
+		WheelJointsInterface* wheelJointsInterface() override { return &joints_; }
+
+	   private:
+		WheelJointsInterface joints_;
 	};
 
 	const ControllerBase::Ptr& getController() const { return controller_; }

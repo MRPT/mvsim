@@ -12,6 +12,7 @@
 #include <mrpt/core/bits_math.h>
 #include <mvsim/World.h>
 
+#include <cmath>
 #include <iostream>
 #include <iterator>
 
@@ -47,6 +48,18 @@ const char* WORLD_XML = R"(
     <init_pose>0 -20 0</init_pose>
     <shape> <pt>-6 -1</pt> <pt>6 -1</pt> <pt>6 1</pt> <pt>-6 1</pt> </shape>
     <zmin>0</zmin> <zmax>0.3</zmax>
+  </block>
+  <block>
+    <static>true</static>
+    <intangible>true</intangible>
+    <init_pose>0 20 0</init_pose>
+    <geometry type="box" lx="1" ly="1" lz="0.5"/>
+  </block>
+  <block>
+    <static>true</static>
+    <init_pose>0 30 0</init_pose>
+    <shape_from_visual/>
+    <geometry type="box" lx="1" ly="1" lz="0.5"/>
   </block>
 </mvsim_world>
 )";
@@ -86,6 +99,27 @@ int main()
 	// The middle of a large block, far from its vertices:
 	EXPECT_NEAR(elev(world, 0, -20), 0.3, 1e-4);
 	EXPECT_NEAR(elev(world, 5.5, -20.5), 0.3, 1e-4);
+
+	// An intangible block is not terrain, and has a bounded shape even
+	// without explicit zmin/zmax:
+	EXPECT_NEAR(elev(world, 0.2, 20.2), 0.0, 1e-4);
+	for (const auto& [name, block] : world.getListOfBlocks())
+	{
+		if (!block->isIntangible())
+		{
+			continue;
+		}
+		const auto& cs = block->collisionShape();
+		EXPECT_TRUE(cs.has_value());
+		if (cs)
+		{
+			EXPECT_TRUE(std::isfinite(cs->zMax() - cs->zMin()));
+		}
+	}
+
+	// A block shaped from a geometry, without explicit zmin/zmax, as tall
+	// as the geometry:
+	EXPECT_NEAR(elev(world, 0.2, 30.2), 0.5, 1e-3);
 
 	// Moving a plane (the 2nd one, the platform) updates the queries:
 	const auto& elements = world.getListOfWorldElements();

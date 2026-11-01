@@ -16,9 +16,6 @@ using namespace mvsim;
 DynamicsDifferential::ControllerTrajectory::ControllerTrajectory(DynamicsDifferential& veh)
 	: ControllerBase(veh)
 {
-	// Signal that friction reaction forces must not be applied to the
-	// chassis body, the twist is imposed directly by this controller.
-	veh_.idealControllerActive_ = true;
 }
 
 void DynamicsDifferential::ControllerTrajectory::control_step(
@@ -27,6 +24,11 @@ void DynamicsDifferential::ControllerTrajectory::control_step(
 {
 	co.wheel_torque_l = 0;
 	co.wheel_torque_r = 0;
+
+	// Friction reaction forces must not be applied to the chassis body, the
+	// twist is imposed directly by this controller. Set on every step, since
+	// the vehicle resets it before invoking the controller.
+	veh_.idealControllerActive_ = true;
 }
 
 void DynamicsDifferential::ControllerTrajectory::on_post_step(const TSimulContext& context)

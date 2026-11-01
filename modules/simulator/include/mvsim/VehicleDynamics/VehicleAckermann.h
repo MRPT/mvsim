@@ -15,6 +15,8 @@
 #include <mvsim/PoseTrajectoryFollower.h>
 #include <mvsim/VehicleBase.h>
 
+#include <algorithm>
+
 namespace mvsim
 {
 /** Implementation of 4 wheels Ackermann-driven vehicles.
@@ -50,6 +52,8 @@ class DynamicsAckermann : public VehicleBase
 	{
 		double fl_torque, fr_torque, rl_torque, rr_torque;
 		double steer_ang;  //!< Equivalent Ackermann steering angle
+		/// Optional closed-loop models of the front motors (forward positive)
+		MotorTorqueModel fl_motor, fr_motor;
 		TControllerOutput() : fl_torque(0), fr_torque(0), rl_torque(0), rr_torque(0), steer_ang(0)
 		{
 		}
@@ -95,8 +99,6 @@ class DynamicsAckermann : public VehicleBase
 		double max_torque;	//!< Maximum abs. value torque (for clamp) [Nm]
 		/// setpoint magnitude below which it is treated as zero [m/s]
 		double zero_threshold = 0.001;
-		/// velocity magnitude below which vehicle is considered stopped [m/s]
-		double stop_threshold = 0.05;
 
 		bool enable_antiwindup = false;
 		bool enable_feedforward = false;
@@ -276,5 +278,25 @@ class DynamicsAckermann : public VehicleBase
 
 	/** The maximum steering angle (rad). Determines min turning radius */
 	double max_steer_ang_ = mrpt::DEG2RAD(30);
+
+	/** Maximum steering rate (rad/s) of the equivalent steering angle, 0 means
+	 *  instantaneous steering. XML: <max_steer_rate_deg> */
+	double max_steer_rate_ = 0;
+	double steer_ang_ = 0;	//!< Current equivalent steering angle (rad)
+
+	/** Limits the steering rate (see max_steer_rate_) towards the desired
+	 *  equivalent steering angle, and returns the resulting one. */
+	double rateLimitedSteering(double desired, double dt)
+	{
+		// The wheels cannot go beyond their limit, so neither does the state:
+		desired = std::clamp(desired, -max_steer_ang_, max_steer_ang_);
+		if (max_steer_rate_ > 0)
+		{
+			const double maxDelta = max_steer_rate_ * dt;
+			desired = steer_ang_ + std::clamp(desired - steer_ang_, -maxDelta, maxDelta);
+		}
+		steer_ang_ = desired;
+		return desired;
+	}
 };
 }  // namespace mvsim

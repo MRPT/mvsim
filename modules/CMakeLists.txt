@@ -146,7 +146,6 @@ function(mvsim_common_target_settings MODULENAME_)
   target_include_directories(${TARGETNAME_}
 	  PRIVATE
 		  ${CMAKE_CURRENT_SOURCE_DIR}/src
-		  ${ZeroMQ_INCLUDE_DIR}
   )
 
   if (MVSIM_WITH_PROTOBUF)
@@ -154,6 +153,7 @@ function(mvsim_common_target_settings MODULENAME_)
   endif()
 
   if (MVSIM_WITH_ZMQ)
+    target_include_directories(${TARGETNAME_} PRIVATE ${ZeroMQ_INCLUDE_DIR})
     target_compile_definitions(${TARGETNAME_} PUBLIC MVSIM_HAS_ZMQ)
   endif()
 
@@ -282,7 +282,7 @@ endif()
 
 # ========================== Show results ====================================
 message(STATUS "----- Configured libmvsim (version ${PROJECT_VERSION}) ------")
-message(STATUS "MRPT version   : ${mrpt-maps_VERSION}")
+message(STATUS "MRPT version   : ${mrpt_maps_VERSION}")
 message(STATUS "BUILD_FOR_ROS  : ${BUILD_FOR_ROS} (ROS_VERSION: " $ENV{ROS_VERSION} ")")
 if (DETECTED_ROS1)
 	message(STATUS "  - catkin [req]              : ${catkin_FOUND}")

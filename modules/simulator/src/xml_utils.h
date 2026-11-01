@@ -8,6 +8,7 @@
   +-------------------------------------------------------------------------+ */
 #pragma once
 
+#include <mrpt/viz/TLightParameters.h>
 #include <mvsim/PoseTrajectoryFollower.h>
 #include <mvsim/TParameterDefinitions.h>
 #include <mvsim/basic_types.h>
@@ -58,6 +59,13 @@ std::string parse_variables(
 	const std::string& in, const std::map<std::string, std::string>& variables,
 	const std::set<std::string>& varsRetain);
 
+/** Parses a `<point_light>` or `<spot_light>` XML node into a light, with
+ * `${VAR}` variables in its values replaced from \a variables.
+ * \exception std::exception On unknown node names or format errors.
+ */
+mrpt::viz::TLight parse_light_xml_node(
+	const rapidxml::xml_node<char>& node, const std::map<std::string, std::string>& variables = {});
+
 void parse_xmlnode_attribs(
 	const rapidxml::xml_node<char>& xml_node, const TParameterDefinitions& params,
 	const std::map<std::string, std::string>& variableNamesValues = {},
@@ -106,6 +114,15 @@ void parse_trajectory_controller_config(
 to the World object (to solve for variables, current local dir, etc.)
 */
 std::string xml_to_str_solving_includes(
+	const World& parent, const rapidxml::xml_node<char>* xml_node,
+	const std::set<std::string>& varsRetain = {});
+
+/** Same as xml_to_str_solving_includes(), but returns the result parsed again
+ * as an XML tree: `<include>` and `<if>` tags found at any depth below the
+ * given node are already resolved in it. The returned document owns the
+ * memory of the returned node, so it must be kept alive while the node is used.
+ */
+std::tuple<XML_Doc_Data::Ptr, rapidxml::xml_node<>*> xml_node_solving_includes(
 	const World& parent, const rapidxml::xml_node<char>* xml_node,
 	const std::set<std::string>& varsRetain = {});
 

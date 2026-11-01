@@ -17,6 +17,8 @@
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 
+#include <cmath>
+
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -80,6 +82,19 @@ void LaserScanner::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	scan_model_.stdError = rangeStdNoise_;
 
 	scan_model_.sensorLabel = name_;
+
+	// The 2D mode ray-traces in the horizontal plane only:
+	constexpr double maxTiltForPlanarScan = 1e-3;  // [rad]
+	if (!raytrace_3d_ && (std::abs(scan_model_.sensorPose.pitch()) > maxTiltForPlanarScan ||
+						  std::abs(scan_model_.sensorPose.roll()) > maxTiltForPlanarScan))
+	{
+		world_->logFmt(
+			mrpt::system::LVL_WARN,
+			"LaserScanner '%s' has a non-zero pitch or roll, which is ignored in 2D mode: set "
+			"<raytrace_3d>true</raytrace_3d> to simulate a tilted scan plane (e.g. to see the "
+			"ground).",
+			name_.c_str());
+	}
 }
 
 void LaserScanner::internalGuiUpdate(
@@ -116,7 +131,7 @@ void LaserScanner::internalGuiUpdate(
 		gl_scan_->setLocalRepresentativePoint({0, 0, 0.10f});
 		gl_scan_->setName("glScan veh:"s + vehicle_.getName() + " sensor:"s + this->name_);
 
-		glVizSensors->insert(gl_scan_);
+		insertIntoScene(glVizSensors, gl_scan_);
 	}
 	if (!gl_sensor_origin_ && viz)
 	{
@@ -127,8 +142,8 @@ void LaserScanner::internalGuiUpdate(
 		gl_sensor_origin_->insert(gl_sensor_origin_corner_);
 
 		gl_sensor_origin_->setVisibility(false);
-		viz->get().insert(gl_sensor_origin_);
-		SensorBase::RegisterSensorOriginViz(gl_sensor_origin_);
+		insertIntoScene(viz->get(), gl_sensor_origin_);
+		insertIntoScene(SensorBase::GetAllSensorsOriginViz(), gl_sensor_origin_);
 	}
 	if (!gl_sensor_fov_ && viz)
 	{
@@ -151,8 +166,8 @@ void LaserScanner::internalGuiUpdate(
 		gl_sensor_fov_->insert(fovScan);
 
 		gl_sensor_fov_->setVisibility(false);
-		viz->get().insert(gl_sensor_fov_);
-		SensorBase::RegisterSensorFOVViz(gl_sensor_fov_);
+		insertIntoScene(viz->get(), gl_sensor_fov_);
+		insertIntoScene(SensorBase::GetAllSensorsFOVViz(), gl_sensor_fov_);
 	}
 
 	if (!gui_uptodate_ && glVizSensors->isVisible())
@@ -170,7 +185,7 @@ void LaserScanner::internalGuiUpdate(
 		gui_uptodate_ = true;
 	}
 
-	const mrpt::poses::CPose3D p = vehicle_.getCPose3D();
+	const mrpt::poses::CPose3D p = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 	const auto pp = parent()->applyWorldRenderOffset(p);
 
 	const double z_incrs = 1e-3;  // for z_order_
@@ -231,7 +246,7 @@ void LaserScanner::simul_post_timestep(const TSimulContext& context)
 	}
 
 	// Keep sensor global pose up-to-date:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	const auto globalSensorPose = p + scan_model_.sensorPose.asTPose();
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
@@ -240,7 +255,7 @@ void LaserScanner::notifySimulableSetPose(const mrpt::math::TPose3D& newPose)
 {
 	// The editor has moved the sensor in global coordinates.
 	// Convert back to local:
-	const auto& p = vehicle_.getPose();
+	const auto& p = vehicle_.getChassisPose();
 	scan_model_.sensorPose = mrpt::poses::CPose3D(newPose - p);
 }
 
@@ -510,7 +525,7 @@ void LaserScanner::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	const auto fixedAxisConventionRot =
 		mrpt::poses::CPose3D(0, 0, 0, -90.0_deg, 0.0_deg, -90.0_deg);
 
-	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getPose());
+	const auto vehiclePose = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 
 	// ----------------------------------------------------------
 	// Decompose the 2D lidar FOV into "n" depth camera images,
@@ -518,14 +533,22 @@ void LaserScanner::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	// ----------------------------------------------------------
 	const auto firstAngle = curObs->getScanAngle(0);  // wrt sensorPose
 	const auto lastAngle = curObs->getScanAngle(curObs->getScanSize() - 1);
-	const bool scanIsCW = (lastAngle > firstAngle);
 	ASSERT_NEAR_(std::abs(lastAngle - firstAngle), curObs->aperture, 1e-3);
 
-	const unsigned int numRenders = std::ceil((curObs->aperture / camModel_FOV) - 1e-3);
-	const auto numRaysPerRender =
-		mrpt::round(nRays * std::min<double>(1.0, (camModel_FOV / curObs->aperture)));
-
+	// Signed angular step between rays, and as many rays per render as fit in
+	// the camera FOV:
+	const double rayStep = nRays > 1 ? (lastAngle - firstAngle) / (nRays - 1) : 0.0;
+	const int numRaysPerRender =
+		rayStep != 0
+			? std::min<int>(
+				  nRays, static_cast<int>(std::floor(camModel_FOV / std::abs(rayStep) + 1e-6)) + 1)
+			: 1;
 	ASSERT_(numRaysPerRender > 0);
+
+	const unsigned int numRenders = (nRays + numRaysPerRender - 1) / numRaysPerRender;
+
+	// Signed angle spanned by the rays of one render:
+	const double renderSpan = (numRaysPerRender - 1) * rayStep;
 
 	// Precomputed LUT of bearings to pixel coordinates:
 	//                    cx - u
@@ -539,8 +562,8 @@ void LaserScanner::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 
 		for (int i = 0; i < numRaysPerRender; i++)
 		{
-			const auto ang = (scanIsCW ? -1 : 1) *
-							 (camModel_FOV * 0.5 - i * camModel_FOV / (numRaysPerRender - 1));
+			// Ray bearing wrt the center of its render:
+			const auto ang = -0.5 * renderSpan + i * rayStep;
 
 			const auto pixelIdx = mrpt::saturate_val<int>(
 				mrpt::round(camModel.cx() - camModel.fx() * std::tan(ang)), 0, camModel.ncols - 1);
@@ -586,7 +609,7 @@ void LaserScanner::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	for (size_t renderIdx = 0; renderIdx < numRenders; renderIdx++)
 	{
 		const double thisRenderMidAngle =
-			firstAngle + (camModel_FOV / 2.0 + camModel_FOV * renderIdx) * (scanIsCW ? 1 : -1);
+			firstAngle + renderIdx * numRaysPerRender * rayStep + 0.5 * renderSpan;
 
 		const auto depthSensorPose =
 			vehiclePose + curObs->sensorPose +

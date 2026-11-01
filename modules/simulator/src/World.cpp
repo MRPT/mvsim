@@ -7,6 +7,7 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/imgui/CImGuiSceneView.h>
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/poses/CPose3DQuat.h>
@@ -68,6 +69,20 @@ void World::clear_all()
 	blocks_.clear();
 	joints_.clear();
 	actors_.clear();
+
+	{
+		auto lckPerf = mrpt::lockHelper(perfStatsMtx_);
+		perfStatsCurrent_ = {};
+		perfStatsLast_ = {};
+		perfWindowStartSim_.reset();
+		perfWindowStartWall_.reset();
+		perfSensorTimeInStep_ = 0;
+	}
+
+	obstacles_for_each_obj_.clear();  // their bodies belonged to the old b2World
+	nextVehicleIndex_ = 0;
+	nextBlockIndex_ = 0;
+	nextRuntimeElementId_ = 0;
 }
 
 void World::internal_initialize()
@@ -75,16 +90,9 @@ void World::internal_initialize()
 	ASSERT_(!initialized_);
 	ASSERT_(worldVisual_);
 
-	{
-		auto& vlp = worldVisual_->getViewport()->lightParameters();
-		vlp.ambient = lightOptions_.light_ambient;
-		vlp.ambientSkyColor = mrpt::img::TColorf(lightOptions_.ambient_sky_color);
-		vlp.ambientGroundColor = mrpt::img::TColorf(lightOptions_.ambient_ground_color);
-	}
-
-	// Physical world light = visual world lights:
-	worldPhysical_.getViewport()->lightParameters() =
-		worldVisual_->getViewport()->lightParameters();
+	// Lights of both the visual and the physical worlds (the latter is the one
+	// seen by sensors, with or without GUI):
+	applyLightOptions();
 
 	// Create group for sensor viz:
 	{
@@ -190,10 +198,13 @@ void World::connectToServer()
 
 void World::insertBlock(const Block::Ptr& block)
 {
-	// Assign each block an "index" number
-	block->setBlockIndex(blocks_.size());
+	ASSERTMSG_(
+		blocks_.count(block->getName()) == 0,
+		mrpt::format("Duplicated block name: '%s'", block->getName().c_str()));
 
-	// make sure the name is not duplicated:
+	// Assign each block an "index" number
+	block->setBlockIndex(nextBlockIndex_++);
+
 	blocks_.insert(BlockList::value_type(block->getName(), block));
 
 	auto lckListObjs = mrpt::lockHelper(simulableObjectsMtx_);
@@ -205,12 +216,37 @@ void World::insertBlock(const Block::Ptr& block)
 
 void World::free_opengl_resources()
 {
+	// The GUI thread renders these scenes: stop it first. It frees its own
+	// OpenGL resources before exiting.
+	if (gui_thread_.joinable() && gui_thread_.get_id() != std::this_thread::get_id())
+	{
+		simulator_must_close(true);
+		gui_thread_.join();
+	}
+
 	auto lck = mrpt::lockHelper(worldPhysicalMtx_);
 
 	worldPhysical_.clear();
 	worldVisual_->clear();
 
 	CVisualObject::FreeOpenGLResources();
+}
+
+std::optional<double> World::next_opengl_sensor_time() const
+{
+	std::optional<double> t = videoRecorder_.nextFrameTime();
+	for (const auto& v : vehicles_)
+	{
+		for (const auto& s : v.second->getSensors())
+		{
+			if (s && s->rendersWithOpenGL())
+			{
+				const double ts = s->next_sensor_time();
+				t = t.has_value() ? std::min(*t, ts) : ts;
+			}
+		}
+	}
+	return t;
 }
 
 bool World::sensor_has_to_create_egl_context()
@@ -221,10 +257,10 @@ bool World::sensor_has_to_create_egl_context()
 		return false;
 	}
 
-	// otherwise, just the first time:
-	static bool first = true;
-	bool ret = first;
-	first = false;
+	// otherwise, just the first time for this world (each world renders its
+	// sensors from its own thread):
+	const bool ret = !eglContextCreated_;
+	eglContextCreated_ = true;
 	return ret;
 }
 
@@ -261,11 +297,19 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 
 	const size_t JOY_AXIS_AZIMUTH = 3;
 
-	if (js.axes.size() > JOY_AXIS_AZIMUTH && gui_.gui_win)
+	if (js.axes.size() > JOY_AXIS_AZIMUTH && is_GUI_open())
 	{
-		auto lck = mrpt::lockHelper(gui_.gui_win->background_scene_mtx);
-		auto& cam = gui_.gui_win->camera();
-		cam.setAzimuthDegrees(cam.getAzimuthDegrees() - js.axes[JOY_AXIS_AZIMUTH]);
+		const float dAzimuth = js.axes[JOY_AXIS_AZIMUTH];
+		enqueue_task_to_run_in_gui_thread(
+			[this, dAzimuth]()
+			{
+				if (!gui_.sceneView)
+				{
+					return;
+				}
+				auto& cam = gui_.sceneView->cameraController;
+				cam.setAzimuthDegrees(cam.getAzimuthDegrees() - dAzimuth);
+			});
 	}
 
 	return js;
@@ -273,6 +317,12 @@ std::optional<mvsim::TJoyStickEvent> World::getJoystickState() const
 
 void World::dispatchOnObservation(const Simulable& veh, const mrpt::obs::CObservation::Ptr& obs)
 {
+	if (obs)
+	{
+		auto lck = mrpt::lockHelper(perfStatsMtx_);
+		perfStatsCurrent_.sensors[veh.getName() + "/" + obs->sensorLabel].observations++;
+	}
+
 	internalOnObservation(veh, obs);
 	for (const auto& cb : callbacksOnObservation_) cb(veh, obs);
 }
@@ -287,26 +337,26 @@ void World::internalOnObservation(const Simulable& veh, const mrpt::obs::CObserv
 		return;
 	}
 	auto lck = mrpt::lockHelper(rawlog_io_mtx_);
-	if (rawlog_io_per_veh_.empty())
-	{
-		for (const auto& v : vehicles_)
-		{
-			const std::string fileName =
-				mrpt::system::fileNameChangeExtension(save_to_rawlog_, v.first + ".rawlog"s);
 
-			MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
+	// One file per vehicle, created on its first observation (vehicles may be
+	// inserted at runtime):
+	auto& out = rawlog_io_per_veh_[veh.getName()];
+	if (!out)
+	{
+		const std::string fileName =
+			mrpt::system::fileNameChangeExtension(save_to_rawlog_, veh.getName() + ".rawlog"s);
+
+		MRPT_LOG_INFO_STREAM("Creating dataset file: " << fileName);
 
 #if MRPT_VERSION >= 0x020f07
-			rawlog_io_per_veh_[v.first] =
-				std::make_shared<mrpt::io::CCompressedOutputStream>(fileName);
+		out = std::make_shared<mrpt::io::CCompressedOutputStream>(fileName);
 #else
-			rawlog_io_per_veh_[v.first] = std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
+		out = std::make_shared<mrpt::io::CFileGZOutputStream>(fileName);
 #endif
-		}
 	}
 
 	// Store:
-	auto arch = mrpt::serialization::archiveFrom(*rawlog_io_per_veh_.at(veh.getName()));
+	auto arch = mrpt::serialization::archiveFrom(*out);
 	arch << *obs;
 }
 
@@ -445,4 +495,76 @@ float World::getHighestElevationUnder(const mrpt::math::TPoint3Df& pt) const
 			}
 		});
 	return highest.value_or(.0f);
+}
+
+namespace
+{
+CVisualObject* findVisualObject(const World::SimulableList& objs, const std::string& name)
+{
+	const auto it = objs.find(name);
+	if (it == objs.end())
+	{
+		return nullptr;
+	}
+	return dynamic_cast<CVisualObject*>(it->second.get());
+}
+}  // namespace
+
+bool World::setLightGroupState(const std::string& objectName, const std::string& groupName, bool on)
+{
+	auto lck = mrpt::lockHelper(simulableObjectsMtx_);
+	auto* obj = findVisualObject(simulableObjects_, objectName);
+	return obj && obj->setLightGroupState(groupName, on);
+}
+
+std::optional<bool> World::lightGroupState(
+	const std::string& objectName, const std::string& groupName) const
+{
+	auto lck = mrpt::lockHelper(simulableObjectsMtx_);
+	const auto* obj = findVisualObject(simulableObjects_, objectName);
+	if (!obj)
+	{
+		return {};
+	}
+	return obj->lightGroupState(groupName);
+}
+
+World::GroundTruthSnapshot World::getGroundTruthSnapshot(const std::string& prefix) const
+{
+	// Skip unnamed and internal ("__"-prefixed) objects:
+	const auto startsWithPrefix = [&prefix](const std::string& name)
+	{
+		return !name.empty() && name.compare(0, 2, "__") != 0 &&
+			   name.compare(0, prefix.size(), prefix) == 0;
+	};
+
+	GroundTruthSnapshot snap;
+	{
+		auto lckCopy = mrpt::lockHelper(copy_of_objects_dynstate_mtx_);
+		snap.simul_time = copy_of_objects_dynstate_time_;
+		for (const auto& [name, pose] : copy_of_objects_dynstate_pose_)
+		{
+			if (!startsWithPrefix(name))
+			{
+				continue;
+			}
+			ObjectGroundTruth o;
+			o.name = name;
+			o.pose = pose;
+			if (auto it = copy_of_objects_dynstate_twist_.find(name);
+				it != copy_of_objects_dynstate_twist_.end())
+			{
+				o.twist = it->second;
+			}
+			snap.objects.push_back(std::move(o));
+		}
+	}
+	for (const auto& [name, pose] : runtimeObjects_.poses())
+	{
+		if (startsWithPrefix(name))
+		{
+			snap.objects.push_back({name, pose, {}});
+		}
+	}
+	return snap;
 }

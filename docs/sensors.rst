@@ -203,10 +203,12 @@ Velodyne VLP-16
 
 ----
 
+.. _sensors-rgb-camera:
+
 RGB camera
 ------------------
 
-A regular RGB (color) pin-hole camera (without lens distortion at present).
+A regular RGB (color) pin-hole camera, with optional lens distortion and pixel noise.
 The user must provide the camera intrinsic and extrinsic parameters:
 
 .. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
@@ -223,6 +225,34 @@ The user must provide the camera intrinsic and extrinsic parameters:
 			clip_min="0.02" clip_max="300"
 			sensor_visual_scale="0.2"
 		/>
+
+Optional **lens distortion** (``distortion_model=plumb_bob`` with ``k1``, ``k2``, ``p1``, ``p2``,
+``k3``, as in OpenCV and ROS ``camera_info``) and Gaussian **pixel noise** (``image_noise_std``, in
+intensity levels), both applied on the GPU while rendering. The published ``camera_info`` includes
+the distortion model and coefficients, so standard rectification gives back the pinhole image.
+They require MRPT >= 3.6.0 (loading a world that uses them fails with older versions).
+
+Both are disabled by default. To quickly try them in all the tutorial worlds and vehicle
+definitions with an RGB or RGB-D camera, set the environment variables ``MVSIM_CAMERA_DISTORTION=plumb_bob`` (with
+``k1=-0.25``, ``k2=0.07``) and/or ``MVSIM_CAMERA_NOISE_STD=2.0`` (any noise std):
+
+.. code-block:: bash
+
+	MVSIM_CAMERA_DISTORTION=plumb_bob mvsim launch mvsim_tutorial/demo_camera.world.xml
+
+Example: a camera with barrel distortion and some pixel noise:
+
+.. code-block:: xml
+
+	<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/camera.sensor.xml"
+		sensor_x="0.1" sensor_y="0.0" sensor_z="0.8"
+		ncols="800"    nrows="600"
+		cx="$f{800/2}" cy="$f{600/2}"
+		fx="500" fy="500"
+		distortion_model="plumb_bob"
+		k1="-0.25" k2="0.07" p1="0" p2="0" k3="0"
+		image_noise_std="2.0"
+	/>
 
 .. dropdown:: All parameters available in camera.sensor.xml
 
@@ -358,6 +388,9 @@ Generic 2D LIDAR
    
    - ``raytrace_3d=false`` (**DEFAULT**),  Very fast simulation using approximate 2D shapes of world elements.
    - ``raytrace_3d=true``: It uses GPU-based raytracing for exact distance calculation to world elements of arbitrary 3D shapes.
+   - A **tilted** scan plane (``sensor_pitch``, ``sensor_roll``, e.g. a LiDAR looking down to see
+     ground-level structures) requires ``raytrace_3d=true``: the 2D mode ignores pitch and roll
+     (a warning is printed).
 
    .. code-block:: xml
 
@@ -369,6 +402,20 @@ Generic 2D LIDAR
 			fov_degrees="270"
 			sensor_name="scanner1"
 		>
+
+   Example of a scanner tilted 20 degrees downward (positive pitch points it down), so its
+   scan plane hits the ground about 1.4 m ahead:
+
+   .. code-block:: xml
+
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/lidar2d.sensor.xml"
+			sensor_x="0.2" sensor_y="0" sensor_z="0.50"
+			sensor_yaw="0" sensor_pitch="20" sensor_roll="0"
+			sensor_period_sec="0.10"
+			raytrace_3d="true"
+			fov_degrees="120"
+			sensor_name="ground_scanner"
+		/>
 
 .. dropdown:: All parameters available in lidar2d.sensor.xml
 
@@ -436,7 +483,7 @@ ROS the following topics:
      - XYZ pointcloud, or **XYZRGB** if ``publish_ros_colored_pointcloud=true``
    * - ``<label>_depth/image_raw``
      - ``sensor_msgs/Image``
-     - 16UC1 depth image (each pixel = depth in ``rangeUnits``, default 1 mm; 0 = invalid). Published when ``publish_ros_depth_image=true``
+     - Depth image, ``16UC1`` in millimeters (0 = invalid, as REP 118) or ``32FC1`` in meters (NaN = invalid), see ``ros_depth_image_encoding``. Its frame ``<label>_depth`` is a camera optical frame (+Z forward). Published when ``publish_ros_depth_image=true``
    * - ``<label>_depth/camera_info``
      - ``sensor_msgs/CameraInfo``
      - Depth camera intrinsics. Published when ``publish_ros_depth_image=true``
@@ -454,6 +501,12 @@ ROS the following topics:
 		  publish_ros_colored_pointcloud="false"
 		/>
 
+The RGB image supports the same optional lens distortion and pixel noise as the
+:ref:`RGB camera <sensors-rgb-camera>`, with the same include parameters (``distortion_model``,
+``k1``, ..., ``image_noise_std``, which set the ``rgb_*`` tags). The depth image is not distorted.
+The colors of the 3D point cloud are taken ignoring the distortion, so they are slightly
+misregistered near the image borders when it is enabled.
+
 .. dropdown:: All parameters available in rgbd_camera.sensor.xml
 
    File: `mvsim_tutorial/definitions/rgbd_camera.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/rgbd_camera.sensor.xml>`_
@@ -467,11 +520,31 @@ ROS publishing options
 
 ``publish_ros_depth_image`` (default: ``true``)
   When enabled, the sensor publishes the depth channel as a separate
-  ``sensor_msgs/Image`` message encoded as **16UC1** on the topic
+  ``sensor_msgs/Image`` message (see ``ros_depth_image_encoding``) on the topic
   ``<label>_depth/image_raw``, together with a matching
   ``sensor_msgs/CameraInfo`` on ``<label>_depth/camera_info``.
   This matches the topic layout of real RGBD cameras such as the
   ASUS Xtion / Astra (``/depth/image_raw``).
+
+``ros_depth_image_encoding`` (default: ``16UC1``)
+  ``16UC1``: depth in millimeters, 0 for invalid pixels. ``32FC1``: depth in meters, NaN for
+  invalid pixels. Valid depths are limited to ``[depth_clip_min, depth_clip_max]``.
+
+  Example: depth images in meters, as floats:
+
+  .. code-block:: xml
+
+     <include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/rgbd_camera.sensor.xml"
+       sensor_name="camera1"
+       publish_ros_depth_image="true"
+       ros_depth_image_encoding="32FC1"
+     />
+
+  .. code-block:: bash
+
+     # Check the encoding and the optical frame of the depth images:
+     ros2 topic echo --once /camera1_depth/image_raw --field encoding
+     ros2 topic echo --once /camera1_depth/image_raw --field header.frame_id
 
 ``publish_ros_colored_pointcloud`` (default: ``false``)
   When enabled **and** the sensor has ``sense_rgb=true``, the pointcloud
@@ -501,6 +574,25 @@ For it to work, the ``world`` XML needs to have a :ref:`georeference tag <world-
 		  sensor_horizontal_std_noise="1.5"
 		  sensor_vertical_std_noise="2.5"
 		  />
+
+The published ``sensor_msgs/NavSatFix`` has a ``position_covariance`` from the noise parameters,
+and a status from ``fix_type``. For robustness tests, quality changes, outages and position jumps
+can be scheduled in simulation time with ``<event>`` tags inside the ``<sensor>`` tag (all
+attributes but ``start``/``end`` are optional):
+
+.. code-block:: xml
+
+    <!-- Change fix type and noise: -->
+    <event start="10" end="20" fix_type="rtk_float" horizontal_std_noise="0.3" vertical_std_noise="0.5" />
+    <!-- No data at all: -->
+    <event start="30" end="35" outage="true" />
+    <!-- Data without a valid fix: -->
+    <event start="40" end="45" fix_type="no_fix" />
+    <!-- Position jump (East, North, Up offset, in meters): -->
+    <event start="50" end="60" offset="2.0 -1.0 0" />
+
+Outages can also be defined by world regions, with the ``gps_no_coverage`` property of
+property regions.
 
 .. dropdown:: All parameters available in gnss.sensor.xml
 

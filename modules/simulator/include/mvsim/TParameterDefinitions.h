@@ -31,6 +31,8 @@ namespace mvsim
  * pointer to mrpt::poses::CPose3D
  *  - "%point3d" => Expects "X Y [Z]". "Val" is a pointer to
  * mrpt::math::TPoint3D
+ *  - "%scale3d" => Expects "S" (same scale for all axes) or "SX SY SZ".
+ * "Val" is a pointer to mrpt::math::TPoint3D
  *  - "%bool" ==> bool*. Values: 'true'/'false' or '1'/'0'
  *
  *  \ingroup mvsim_simulator_module

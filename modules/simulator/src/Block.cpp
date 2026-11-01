@@ -61,15 +61,20 @@ void Block::register_block_class(const World& parent, const rapidxml::xml_node<c
 	block_classes_registry.add(xml_to_str_solving_includes(parent, xml_node));
 }
 
-Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
+Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* rootIn)
 {
 	using namespace std;
 	using namespace rapidxml;
 
-	if (!root) throw runtime_error("[Block::factory] XML node is nullptr");
-	if (0 != strcmp(root->name(), "block"))
+	if (!rootIn) throw runtime_error("[Block::factory] XML node is nullptr");
+	if (0 != strcmp(rootIn->name(), "block"))
 		throw runtime_error(mrpt::format(
-			"[Block::factory] XML root element is '%s' ('block' expected)", root->name()));
+			"[Block::factory] XML root element is '%s' ('block' expected)", rootIn->name()));
+
+	// Resolve <include> and <if> tags found at any depth inside the instance
+	// definition. The resolved document must exist during this whole function scope.
+	const auto [resolvedDoc, root] = xml_node_solving_includes(*parent, rootIn);
+	(void)resolvedDoc;
 
 	// "class": When there is a 'class="XXX"' attribute, look for each parameter
 	//  in the set of "root" + "class_root" XML nodes:
@@ -101,7 +106,9 @@ Block::Ptr Block::factory(World* parent, const rapidxml::xml_node<char>* root)
 		const xml_attribute<>* attrib_name = root->first_attribute("name");
 		if (attrib_name && attrib_name->value())
 		{
-			block->name_ = attrib_name->value();
+			// World variables, e.g. for names in <for> loops:
+			block->name_ =
+				mvsim::parse_variables(attrib_name->value(), parent->user_defined_variables(), {});
 		}
 		else
 		{
@@ -256,8 +263,8 @@ void Block::internalGuiUpdate(
 
 			gl_block_->insert(gl_poly);
 
-			viz->get().insert(gl_block_);
-			physical->get().insert(gl_block_);
+			insertIntoScene(viz->get(), gl_block_);
+			insertIntoScene(physical->get(), gl_block_);
 		}
 
 		// Update them:
@@ -281,7 +288,7 @@ void Block::internalGuiUpdate(
 
 		gl_forces_->setPose(parent()->applyWorldRenderOffset(mrpt::poses::CPose3D::Identity()));
 
-		viz->get().insert(gl_forces_);	// forces are in global coords
+		insertIntoScene(viz->get(), gl_forces_);  // forces are in global coords
 	}
 
 	// Other common stuff:
@@ -322,15 +329,16 @@ void Block::updateMaxRadiusFromPoly()
 /** Create bodies, fixtures, etc. for the dynamical simulation */
 void Block::create_multibody_system(b2World& world)
 {
-	if (intangible_)
-	{
-		return;
-	}
-	// Update collision shape from shape loaded from XML or set manually:
+	// Update collision shape from shape loaded from XML or set manually
+	// (also for intangible blocks, whose shape is still drawn):
 	{
 		Shape2p5 cs;
 		cs.setShapeManual(block_poly_, block_z_min_, block_z_max_);
 		setCollisionShape(cs);
+	}
+	if (intangible_)
+	{
+		return;
 	}
 
 	// Define the dynamic body. We set its position and call the body
@@ -619,6 +627,12 @@ bool Block::default_block_z_min_max() const
 
 std::optional<float> mvsim::Block::getElevationAt(const mrpt::math::TPoint2D& worldXY) const
 {
+	// Intangible blocks don't affect the dynamics, terrain included:
+	if (intangible_)
+	{
+		return {};
+	}
+
 	// Is the point within the block?
 	const auto& myPose = getCPose3D();
 

@@ -80,14 +80,10 @@ class Shape2p5
 	mrpt::math::TPolygon2D internalGridContour() const;
 	mrpt::math::TPolygon2D internalPrunePolygon(const mrpt::math::TPolygon2D& poly) const;
 
-	struct RemovalCandidate
-	{
-		double loss = 0;
-		mrpt::math::TPolygon2D next;
-	};
-
-	std::optional<RemovalCandidate> lossOfRemovingVertex(
-		size_t i, const mrpt::math::TPolygon2D& p, bool allowApproxEdges) const;
+	/** Increase of the polygon area if vertex i is removed, or nullopt if it
+	 * cannot be removed. `area` is the signed area of `p`. */
+	std::optional<double> lossOfRemovingVertex(
+		size_t i, const mrpt::math::TPolygon2D& p, double area, bool allowApproxEdges) const;
 
 	void debugSaveGridTo3DSceneFile(
 		const mrpt::math::TPolygon2D& rawGridContour, const std::string& debugStr = {}) const;

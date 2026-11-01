@@ -24,8 +24,22 @@
 #include <mvsim/Comms/Server.h>
 #endif
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
+#endif
+
 #include <atomic>
+#include <memory>
 #include <thread>
+
+#if defined(MVSIM_HAS_SIMULATION_INTERFACES)
+#include <simulation_interfaces/srv/delete_entity.hpp>
+#include <simulation_interfaces/srv/get_entities.hpp>
+#include <simulation_interfaces/srv/get_entity_state.hpp>
+#include <simulation_interfaces/srv/get_simulator_features.hpp>
+#include <simulation_interfaces/srv/set_entity_state.hpp>
+#include <simulation_interfaces/srv/spawn_entity.hpp>
+#endif
 
 #if PACKAGE_ROS_VERSION == 1
 #include <dynamic_reconfigure/server.h>
@@ -164,8 +178,14 @@ class MVSimNode
 	mrpt::WorkerThreadsPool ros_publisher_workers_{
 		4 /*threads*/, mrpt::WorkerThreadsPool::POLICY_FIFO};
 
-	/// (Defaul=1.0) >1: speed-up, <1: slow-down
+	/// Simulation speed wrt real time (default=1.0): >1: speed-up,
+	/// <1: slow-down, <=0: as fast as possible.
 	double realtime_factor_ = 1.0;
+
+	/// "As fast as possible" mode: physics steps per spin() call, and maximum
+	/// number of pending sensor publications before waiting for them.
+	unsigned int afapStepsPerSpin_ = 10;
+	size_t afapMaxPendingPublications_ = 8;
 
 	/// [s] Max wall-time worth of simulation integrated in a single spin()
 	/// catch-up. Bounds the fixed-timestep "spiral of death": if a spin blocks
@@ -236,8 +256,51 @@ class MVSimNode
 
 	WorldPubs worldPubs_;
 
+#if defined(MVSIM_HAS_DIAGNOSTIC_MSGS)
+	/// Rate (Hz) of performance diagnostics on /diagnostics (0=disabled)
+	double diagnostics_rate_ = 1.0;
+	mrpt::system::CTicTac tim_publish_diagnostics_;
+	rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr pub_diagnostics_;
+	void publishDiagnostics();
+#endif
+
+#if PACKAGE_ROS_VERSION == 2
+	/// Rate (Hz) of the "objects_ground_truth" topic (0=disabled)
+	double objects_ground_truth_rate_ = 0;
+	mrpt::system::CTicTac tim_publish_objects_gt_;
+
+	/// Frame of world coordinates, for ground truth and runtime objects
+	std::string world_frame_id_ = "map";
+
+	rclcpp::Publisher<Msg_TFMessage>::SharedPtr pub_objects_ground_truth_;
+	rclcpp::Subscription<Msg_MarkerArray>::SharedPtr sub_runtime_objects_;
+	rclcpp::Subscription<Msg_MarkerArray>::SharedPtr sub_runtime_overlays_;
+
+	void onRuntimeObjectMarkers(const Msg_MarkerArray& msg, bool visibleToSensors);
+	void publishObjectsGroundTruth();
+#endif
+
+#if defined(MVSIM_HAS_SIMULATION_INTERFACES)
+	/// Standard simulator services (simulation_interfaces package):
+	struct SimInterfacesServices
+	{
+		rclcpp::Service<simulation_interfaces::srv::SpawnEntity>::SharedPtr spawn;
+		rclcpp::Service<simulation_interfaces::srv::DeleteEntity>::SharedPtr del;
+		rclcpp::Service<simulation_interfaces::srv::GetEntities>::SharedPtr getEntities;
+		rclcpp::Service<simulation_interfaces::srv::GetEntityState>::SharedPtr getState;
+		rclcpp::Service<simulation_interfaces::srv::SetEntityState>::SharedPtr setState;
+		rclcpp::Service<simulation_interfaces::srv::GetSimulatorFeatures>::SharedPtr features;
+	};
+	SimInterfacesServices simInterfacesServices_;
+
+	void initSimulationInterfacesServices();
+#endif
+
 	struct TPubSubPerVehicle
 	{
+		/// Kept here, so it outlives pending publications if it is removed
+		std::shared_ptr<mvsim::VehicleBase> vehicle;
+
 #if PACKAGE_ROS_VERSION == 1
 		mvsim_node::shared_ptr<ros::Subscriber>
 			sub_cmd_vel;  //!< Subscribers vehicle's "cmd_vel" topic
@@ -296,12 +359,42 @@ class MVSimNode
 		std::map<size_t, std::map<std::string, rclcpp::Publisher<Msg_Float64>::SharedPtr>>
 			pub_log_topics;
 #endif
+
+		/// ros2_control manager of this vehicle, if it uses the ros2_control
+		/// controller (opaque here, see mvsim_ros2_control.h)
+		std::shared_ptr<void> ros2_control;
 	};
 
-	/// Pubs/Subs for each vehicle. Initialized by initPubSubs(), called
-	/// from notifyROSWorldIsUpdated()
-	std::vector<TPubSubPerVehicle> pubsub_vehicles_;
+	/// Pubs/Subs for each vehicle, by its vehicle index. Created by
+	/// addVehiclePubSubs(), when the world is loaded or a vehicle is inserted
+	/// at runtime. Only modified from the ROS spin thread, with
+	/// pubsub_vehicles_mtx_ locked.
+	std::map<size_t, std::shared_ptr<TPubSubPerVehicle>> pubsub_vehicles_;
 	std::mutex pubsub_vehicles_mtx_;
+
+	/// Returns nullptr if the vehicle has no pubs/subs (e.g. it was removed).
+	/// Lock pubsub_vehicles_mtx_ first.
+	std::shared_ptr<TPubSubPerVehicle> findPubSubs(const mvsim::VehicleBase& veh);
+
+	/// Vehicles inserted at runtime always use their name as topic namespace.
+	void addVehiclePubSubs(const std::shared_ptr<mvsim::VehicleBase>& veh, bool atRuntime);
+
+	/// Whether the topics of each vehicle (by index) are under its name,
+	/// decided once, when its pubs/subs are created (see vehVarName()).
+	std::map<size_t, bool> vehicleUsesNamespace_;
+	mutable std::mutex vehicleUsesNamespaceMtx_;
+	void removeVehiclePubSubs(const mvsim::VehicleBase& veh);
+
+	/// Vehicles driven by ros2_control: MVSim does not subscribe to their
+	/// cmd_vel nor publishes their odometry.
+	static bool isRos2Controlled(const mvsim::VehicleBase& veh);
+
+	/// Creates the ros2_control manager of a vehicle, if it uses it.
+	void initRos2Control(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase& veh);
+
+	/// Creates or removes ROS interfaces of entities inserted or removed at
+	/// runtime.
+	void onWorldEntityChange(const mvsim::World::EntityChange& c);
 
 	/** Initialize all pub/subs required for each vehicle, for the specific
 	 * vehicle \a veh */
@@ -309,7 +402,8 @@ class MVSimNode
 
 	/// When publish_log_topics_==true, registers a per-column Float64
 	/// publisher callback on each of the vehicle's CSV loggers.
-	void initLoggerTopicCallbacks(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh);
+	void initLoggerTopicCallbacks(
+		const std::shared_ptr<TPubSubPerVehicle>& pubsubs, mvsim::VehicleBase* veh);
 
 	// === End ROS Publishers ====
 
@@ -343,6 +437,10 @@ class MVSimNode
 	double period_ms_publish_tf_ = 20;
 
 	mrpt::system::CTicTac tim_publish_tf_;
+
+	/// Publish the TFs base_link -> sensor frames. Disable it if other node
+	/// (e.g. robot_state_publisher from a URDF) already publishes them.
+	bool publish_sensor_tf_ = true;
 
 	/// If true, vehicle namespaces will be used even if there is only one vehicle:
 	bool force_publish_vehicle_namespace_ = false;

@@ -2,6 +2,33 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.0 (2026-11-01)
+------------------
+* GUI: ported from nanogui to Dear ImGui, with dockable panels, custom application panels and a lights window
+* Vehicle dynamics overhaul: friction circle and Ellipse static grip, wheel loads from force and moment balance, vehicles stop on zero twist, stable wheel control
+* Ackermann: Torsen differentials, steering rate limit; differential: swiveling caster, wheel_separation_multiplier
+* Optional chassis suspension, with vehicle definitions, demo world and docs
+* Ideal and new trajectory controllers follow the commanded twist exactly (exactly reproducible trajectories)
+* ros2_control integration for differential vehicles (Humble and Jazzy)
+* Insert and remove entities at runtime from world XML (C++, ZMQ and ROS 2 simulation_interfaces services); runtime visual objects and ground decals
+* Video recording of the 3D view, in simulation time
+* As fast as possible simulation mode (realtime_factor <= 0); performance diagnostics (per-sensor time and rate, physics time, achieved RTF)
+* Camera: plumb_bob lens distortion and pixel noise, also for RGB-D cameras (MRPT >= 3.6.0)
+* RGB-D in ROS: depth image in the optical frame, millimeters, optional 32FC1; faster RGB-D and 3D LiDAR simulation
+* 2D LiDAR: fix 3D ray tracing for apertures under 150 deg, support tilted scans
+* GNSS fix type and degradation events; IMU covariances in ROS
+* Lights: switchable light groups, shadow-casting point/spot lights, per-light range, emissive models
+* Horizontal plane: north-up texture placed by geodetic corners
+* New tools: mvsim-urdf2xml (vehicle XML from a URDF, `#136 <https://github.com/MRPT/mvsim/issues/136>`_), mvsim-pid-tuner (closed-loop tuning), mvsim slice (2D occupied cells at a height)
+* mvsim_node: fake localization publishes map->odom from the ground truth
+* XML: <include> and <if> at any depth inside vehicles, blocks and actors; empty default values in ${var|}; per-axis model scale
+* Headless rendering with one EGL context per World; docs for EGL and Xvfb
+* Faster world loading and physics steps with many static blocks
+* Demos: warehouse, home and greenhouse improvements; pickup with separate wheel models; retuned vehicle definitions
+* Fix crashes and lost output when shutting down; fix builds without ZeroMQ or ros2_control
+* CI: ROS 2 builds and tests for humble, jazzy and lyrical; release workflow
+* Contributors: Jose Luis Blanco-Claraco
+
 1.6.0 (2026-10-04)
 ------------------
 * Demo worlds:

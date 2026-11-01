@@ -97,6 +97,9 @@ jobs:
         run: |
           # See bug/issue: https://github.com/orgs/community/discussions/47863
           sudo apt-mark hold grub-efi-amd64-signed
+          # The preinstalled firefox deb-to-snap transitional package fails to
+          # upgrade on runners, breaking "apt-get upgrade" randomly:
+          sudo apt-mark hold firefox || true
 
           sudo apt-get -y update
           sudo apt-get -y upgrade
@@ -111,7 +114,7 @@ jobs:
             libnanoflann-dev \
             libmrpt-opengl-dev libmrpt-obs-dev libmrpt-maps-dev \
             libmrpt-topography-dev \
-            libmrpt-gui-dev libmrpt-nanogui-dev libmrpt-tfest-dev \
+            libmrpt-imgui-dev libmrpt-imgui-vendor-dev libglfw3-dev libmrpt-tfest-dev \
             protobuf-compiler \
             libzmq3-dev \
             pybind11-dev \

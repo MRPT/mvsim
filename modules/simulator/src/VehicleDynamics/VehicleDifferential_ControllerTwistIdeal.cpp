@@ -22,10 +22,6 @@ DynamicsDifferential::ControllerTwistIdeal::ControllerTwistIdeal(DynamicsDiffere
 	// a rule in differential robots!!)
 	distWheels_ = veh_.wheels_info_[0].y - veh_.wheels_info_[1].y;
 	ASSERT_(distWheels_ > 0);
-
-	// Signal that friction reaction forces must not be applied to the
-	// chassis body , the twist is imposed directly by this controller.
-	veh_.idealControllerActive_ = true;
 }
 
 void DynamicsDifferential::ControllerTwistIdeal::control_step(
@@ -34,6 +30,11 @@ void DynamicsDifferential::ControllerTwistIdeal::control_step(
 {
 	co.wheel_torque_l = 0;
 	co.wheel_torque_r = 0;
+
+	// Friction reaction forces must not be applied to the chassis body, the
+	// twist is imposed directly by this controller. Set on every step, since
+	// the vehicle resets it before invoking the controller.
+	veh_.idealControllerActive_ = true;
 }
 
 void DynamicsDifferential::ControllerTwistIdeal::on_post_step(

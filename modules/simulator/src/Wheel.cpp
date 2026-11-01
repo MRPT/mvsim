@@ -16,6 +16,7 @@
 #include <mvsim/Wheel.h>
 #include <mvsim/World.h>
 
+#include <cmath>
 #include <rapidxml.hpp>
 
 #include "xml_utils.h"
@@ -115,6 +116,21 @@ void Wheel::recalcInertia()
 {
 	// Iyy = m*r^2 / 2
 	Iyy = mass * (0.25 * diameter * diameter) * 0.5;
+}
+
+void Wheel::integrateSpin(double dt)
+{
+	// Explicit Euler:
+	phi += w * dt;
+
+	// Wrap by whole turns so the stored value stays small (keeps 'double'
+	// accuracy), while getPhiContinuous() remains continuous:
+	if (std::abs(phi) > 1e4)
+	{
+		const double turns = std::trunc(phi / (2 * M_PI));
+		phi -= turns * 2 * M_PI;
+		phi_turns += static_cast<int64_t>(turns);
+	}
 }
 
 void Wheel::internalGuiUpdate(

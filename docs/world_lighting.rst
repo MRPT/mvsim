@@ -17,7 +17,8 @@ Directional light
 ===================
 
 The primary directional light (sun-like, infinitely far away, parallel rays) is always present.
-Its direction is controlled via azimuth and elevation angles, and it is the only light that casts shadows.
+Its direction is controlled via azimuth and elevation angles, and it always casts shadows
+(if ``enable_shadows`` is true).
 
 - ``<light_color>#ffffff</light_color>``: The light color (see formatting for :ref:`%color <world_value_parsing>`).
 
@@ -28,6 +29,10 @@ Its direction is controlled via azimuth and elevation angles, and it is the only
 - ``<light_azimuth_deg>45.0</light_azimuth_deg>`` and ``<light_elevation_deg>70.0</light_elevation_deg>``:
   The orbit-like azimuth and elevation angles (in **degrees**) of the directional light source.
   For example, an elevation of ``90`` means a pure vertical (downwards) light.
+
+The GUI "Lighting" panel has controls for shadows,
+the point and spot lights (on/off), the light azimuth and elevation, its intensity (a factor from 0 to 2 applied to
+``light_diffuse`` and ``light_specular``), and the ambient light intensity.
 
 .. raw:: html
 
@@ -57,8 +62,8 @@ Point lights
 =============
 
 Point lights emit in all directions from a position in world coordinates.
-They do **not** cast shadows. Multiple point lights can be defined by adding
-``<point_light>`` child elements inside ``<lights>``.
+By default they do **not** cast shadows (see ``cast_shadows`` below). Multiple point lights
+can be defined by adding ``<point_light>`` child elements inside ``<lights>``.
 
 Each ``<point_light>`` supports the following child tags (all optional, shown with defaults):
 
@@ -69,15 +74,30 @@ Each ``<point_light>`` supports the following child tags (all optional, shown wi
 - ``<attenuation_constant>1.0</attenuation_constant>``: Constant attenuation factor.
 - ``<attenuation_linear>0.09</attenuation_linear>``: Linear attenuation factor.
 - ``<attenuation_quadratic>0.032</attenuation_quadratic>``: Quadratic attenuation factor.
+- ``<range>0</range>``: Maximum reach of the light, in meters. The intensity fades smoothly to
+  exactly zero at this distance. ``0`` (default) means unlimited reach (ignored by older MRPT versions).
+- ``<cast_shadows>false</cast_shadows>``: Whether the light casts shadows (ignored by older MRPT versions).
+  Up to 7 point/spot lights can cast shadows (8 lights in total, including the
+  directional one). Each one renders the scene six more times
+  (a cube shadow map) whenever something within its reach moves, so enable it only for
+  the lights that matter, and give them a ``range``. Lamp models enclosing the light must
+  not cast shadows themselves: use ``<cast_shadows>false</cast_shadows>`` in their
+  :ref:`visual <world_visual_object>`.
 
-The light intensity at distance *d* is: ``1 / (constant + linear*d + quadratic*d²)``.
+The light intensity at distance *d* is: ``1 / (constant + linear*d + quadratic*d²)``,
+multiplied by ``(1 - (d/range)⁴)²`` if a ``range`` is given.
+
+Point and spot lights without shadows light through walls.
+Set ``range`` to about the size of the room a lamp is in, so it does not light
+neighboring rooms. To make the lamp model itself glow, use ``<model_emissive>`` in its
+:ref:`visual <world_visual_object>`.
 
 
 Spot lights
 ============
 
 Spot lights emit in a cone from a position along a direction.
-They do **not** cast shadows. Multiple spot lights can be defined by adding
+By default they do **not** cast shadows. Multiple spot lights can be defined by adding
 ``<spot_light>`` child elements inside ``<lights>``.
 
 Each ``<spot_light>`` supports the following child tags (all optional, shown with defaults):
@@ -92,11 +112,73 @@ Each ``<spot_light>`` supports the following child tags (all optional, shown wit
 - ``<attenuation_constant>1.0</attenuation_constant>``: Constant attenuation factor.
 - ``<attenuation_linear>0.09</attenuation_linear>``: Linear attenuation factor.
 - ``<attenuation_quadratic>0.032</attenuation_quadratic>``: Quadratic attenuation factor.
+- ``<range>0</range>``: Maximum reach in meters, as for point lights (``0``: unlimited).
+- ``<cast_shadows>false</cast_shadows>``: Whether the light casts shadows, as for point lights.
 
 .. note::
 
    Up to 8 simultaneous light sources are supported (including the primary directional light).
-   This limit is defined by the shader pipeline.
+   This limit is defined by the shader pipeline. With MRPT versions supporting lights in the
+   scene graph (``MRPT_VIZ_HAS_CLIGHT``), more lights can be defined: each rendered view
+   (the GUI or a camera sensor) uses the directional light and the point/spot lights closest
+   to its camera.
+
+Point and spot lights, mostly those casting shadows, are the most expensive part of rendering.
+If the simulation is slower than real time during its first seconds (the "CPU usage" in the GUI
+status bar is above 100%), MVSim turns them off, with a warning in the console.
+They can be turned on again with the "Point and spot lights" checkbox of the GUI "Lighting" panel.
+To disable this check, use:
+
+- ``<disable_lights_on_high_cpu_usage>false</disable_lights_on_high_cpu_usage>``
+  (default: ``true``), under ``<lights>``.
+
+
+Switchable lights (light groups)
+=================================
+
+Vehicles and blocks can carry their own point and spot lights, e.g. headlights, which move
+with the object and can be switched on and off while the simulation runs. Each
+``<light_group>`` tag, inside a vehicle or block (class or instance) definition, defines a
+group of lights switched together:
+
+.. code-block:: xml
+
+    <light_group name="headlights" initially_on="${headlights_on|true}">
+      <spot_light>
+        <position>0.26 0.11 0.17</position> <direction>1 0 -0.25</direction>
+        <range>12</range>
+      </spot_light>
+      <spot_light> ... </spot_light>
+    </light_group>
+
+    <!-- A lamp model that glows while the group is on: -->
+    <visual light_group="headlights">
+      <model_uri>headlight.obj</model_uri>
+    </visual>
+
+- The ``name`` attribute is required. ``initially_on`` (default: ``true``) sets the state
+  at load time, and accepts :ref:`variables <world_value_parsing>`.
+- ``<point_light>`` and ``<spot_light>`` take the same tags as above, with positions and
+  directions given in the **object frame**.
+- ``<visual>`` models with a ``light_group`` attribute keep their emissive materials
+  (from the model file, or ``model_emissive``) only while the group is on.
+
+Light groups can be switched:
+
+- From the GUI: the "Lighting" panel has a checkbox per light group, and the "Inspector"
+  panel those of the selected object.
+- Via ZMQ, with the services ``set_light_state`` (``SrvSetLightState``: ``objectId``,
+  ``lightGroup``, ``on``) and ``get_light_state`` (``SrvGetLightState``).
+  See ``examples_python/toggle-lights.py``.
+- From C++, with ``World::setLightGroupState()``.
+
+The lights are also seen by camera sensors. The Jackal vehicle definition has headlights,
+enabled with the include variable ``headlights="true"`` (see the warehouse demo world).
+
+.. note::
+
+   The lights of light groups need MRPT versions with ``MRPT_VIZ_HAS_CLIGHT``. With older
+   versions they are ignored with a warning, and only the emissive models are switched.
 
 
 Shadows control
@@ -190,6 +272,7 @@ Shadows control
         <diffuse>0.6</diffuse>
         <specular>0.3</specular>
         <attenuation_quadratic>0.05</attenuation_quadratic>
+        <range>6.0</range>
       </point_light>
 
       <!-- Spot light: ceiling spotlight -->

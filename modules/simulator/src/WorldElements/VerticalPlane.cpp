@@ -363,6 +363,8 @@ void VerticalPlane::createVisualRepresentation(
 
 	gl_plane_text_ = mrpt::viz::CSetOfTexturedTriangles::Create();
 	gl_plane_text_->setName("VerticalPlane_"s + getName());
+	// Smooth (not blocky) texture close to the camera:
+	gl_plane_text_->enableTextureLinearInterpolation(true);
 	gl_plane_text_->enableLight(enableShadows_);
 
 	// Render both front and back faces
@@ -395,8 +397,8 @@ void VerticalPlane::createVisualRepresentation(
 		mrpt::typemeta::TEnumType<mrpt::viz::TCullFace>::name2value(cull_faces_));
 
 	glGroup_->insert(gl_plane_text_);
-	viz->get().insert(glGroup_);
-	physical->get().insert(glGroup_);
+	insertIntoScene(viz->get(), glGroup_);
+	insertIntoScene(physical->get(), glGroup_);
 }
 
 void VerticalPlane::renderWallFace(

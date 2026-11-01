@@ -27,8 +27,9 @@
 	<!-- Light parameters -->
 	<lights>
 		<enable_shadows>true</enable_shadows>
-		<light_azimuth_deg>-75.0</light_azimuth_deg>
-		<light_elevation_deg>50.0</light_elevation_deg>
+		<light_azimuth_deg>-24.0</light_azimuth_deg>
+		<light_elevation_deg>33.0</light_elevation_deg>
+		<light_ambient>0.20</light_ambient>
 	</lights>
 
 	<!-- A SkyBox decoration -->

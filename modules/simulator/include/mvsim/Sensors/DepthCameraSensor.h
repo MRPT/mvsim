@@ -12,9 +12,11 @@
 #include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/opengl/CFBORender.h>
 #include <mrpt/viz/CPointCloudColoured.h>
+#include <mvsim/Sensors/CameraSensor.h>
 #include <mvsim/Sensors/SensorBase.h>
 
 #include <mutex>
+#include <vector>
 
 namespace mvsim
 {
@@ -48,6 +50,7 @@ class DepthCameraSensor : public SensorBase
 	void simulateOn3DScene(mrpt::viz::Scene& gl_scene) override;
 
 	void freeOpenGLResources() override;
+	bool rendersWithOpenGL() const override { return true; }
 
 	/** Whether to publish the depth image as a separate 16UC1 ROS topic.
 	 *  Parsed from the XML tag `<publish_ros_depth_image>`. Default: true.
@@ -58,6 +61,10 @@ class DepthCameraSensor : public SensorBase
 	 *  Parsed from the XML tag `<publish_ros_colored_pointcloud>`. Default: false.
 	 */
 	bool publishColoredPointcloud() const { return publish_colored_pointcloud_; }
+
+	/** ROS depth image encoding: "16UC1" (millimeters, default) or "32FC1"
+	 * (meters) */
+	const std::string& rosDepthImageEncoding() const { return ros_depth_image_encoding_; }
 
    protected:
 	virtual void internalGuiUpdate(
@@ -74,6 +81,9 @@ class DepthCameraSensor : public SensorBase
 	{
 		sensor_params_.setSensorPose(mrpt::poses::CPose3D(p));
 	}
+
+	/** Converts depthImage_ into the range image of `obs`, with noise */
+	void depthToRangeImage(mrpt::obs::CObservation3DRangeScan& obs);
 
 	// Store here all sensor intrinsic parameters. This obj will be copied as a
 	// "pattern" to fill it with actual scan data.
@@ -96,12 +106,18 @@ class DepthCameraSensor : public SensorBase
 	std::mutex has_to_render_mtx_;
 
 	float rgbClipMin_ = 1e-2, rgbClipMax_ = 1e+4;
+	CameraDistortionOptions rgbDistortion_;	 //!< Of the RGB image only
 	float depth_clip_min_ = 0.1, depth_clip_max_ = 15.0;
 	float depth_resolution_ = 1e-3;
 
 	bool sense_depth_ = true;  //!< Simulate the DEPTH sensor part
 	bool sense_rgb_ = true;	 //!< Simulate the RGB sensor part
 
+	/** Both images come from a single render, possible if both cameras see
+	 * the same view (see loadConfigFrom()) */
+	bool single_render_pass_ = false;
+
+	std::string ros_depth_image_encoding_ = "16UC1";
 	bool publish_depth_image_ = true;  //!< Publish depth as 16UC1 image + CameraInfo
 	bool publish_colored_pointcloud_ = false;  //!< Publish XYZRGB instead of XYZ pointcloud
 
@@ -112,5 +128,7 @@ class DepthCameraSensor : public SensorBase
 	mrpt::viz::CSetOfObjects::Ptr gl_sensor_fov_, gl_sensor_frustum_;
 
 	mrpt::math::CMatrixFloat depthImage_;  // to avoid memory allocs
+	std::vector<int16_t> depthNoiseSeq_;  //!< Precomputed noise [range units]
+	size_t depthNoiseIdx_ = 0;
 };
 }  // namespace mvsim

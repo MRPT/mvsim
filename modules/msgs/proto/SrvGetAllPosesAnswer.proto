@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package mvsim_msgs;
+
+import "Pose.proto";
+import "Twist.proto";
+
+message NamedPose {
+  required string name = 1;
+  required Pose pose = 2;
+  optional Twist twist = 3;
+}
+
+message SrvGetAllPosesAnswer {
+  /* Should be checked */
+  required bool success = 1;
+  optional string errorMessage = 2;
+
+  // Simulation time of the poses (seconds)
+  optional double simulTime = 3;
+
+  repeated NamedPose objects = 4;
+}
