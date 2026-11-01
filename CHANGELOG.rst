@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.0.0 (2026-11-01)
+------------------
 * GUI: ported from nanogui to Dear ImGui, with dockable panels, custom application panels and a lights window
 * Vehicle dynamics overhaul: friction circle and Ellipse static grip, wheel loads from force and moment balance, vehicles stop on zero twist, stable wheel control
 * Ackermann: Torsen differentials, steering rate limit; differential: swiveling caster, wheel_separation_multiplier
