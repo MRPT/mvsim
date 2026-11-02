@@ -22,13 +22,17 @@ namespace mvsim_dataset_gen
 {
 enum class ShutterMode
 {
-	Global,	 //!< One pose for the whole sweep; every point's `t` field is 0.
-	Rolling	 //!< Pose re-interpolated per column; `t` is the column's firing offset.
+	/** One pose for the whole sweep; every point's `t` field is 0. */
+	Global,
+	/** Realistic rotating LiDAR: each azimuth column fires at its own time,
+	 * from the vehicle pose interpolated at that instant; `t` is the
+	 * column's firing offset from the sweep start, in [0, sensor period). */
+	Rolling
 };
 
 struct LidarSimOptions
 {
-	ShutterMode shutter = ShutterMode::Global;
+	ShutterMode shutter = ShutterMode::Rolling;
 
 	/** Std. dev. of additive Gaussian noise on each range reading [m]. 0 =
 	 * noiseless (the ideal ground-truth dataset). */
@@ -44,9 +48,12 @@ struct LidarSimOptions
  * against `scene`, with the sensor rigidly mounted at `sensorPoseOnVehicle`
  * on a vehicle whose ground-truth pose follows `traj`.
  *
- * Points are expressed in the sensor frame *at the sweep-start pose*
- * (the usual convention for de-skewing consumers): `t` tells them how much
- * ego-motion to undo. In `ShutterMode::Global`, every point's `t` is 0.
+ * Each point is expressed in the sensor frame at the instant its column
+ * fired, as a real rotating LiDAR driver outputs it: in
+ * `ShutterMode::Rolling` the cloud is motion-skewed, and consumers can use
+ * the per-point `t` field (relative to the observation timestamp, i.e. the
+ * sweep start) to de-skew it. In `ShutterMode::Global`, every point's `t`
+ * is 0 and the whole sweep uses the sweep-start pose.
  *
  * Columns are ray-cast in parallel with TBB (`RayScene::castRay()` is
  * const/thread-safe), each with its own RNG stream seeded up front from

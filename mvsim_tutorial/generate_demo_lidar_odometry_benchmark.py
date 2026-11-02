@@ -16,7 +16,7 @@ Run this script, then:
 
     mvsim-dataset-gen mvsim_tutorial/demo_lidar_odometry_benchmark.world.xml \\
         --trajectory mvsim_tutorial/demo_lidar_odometry_benchmark.trajectory.txt \\
-        -o /tmp/lidar_odom_benchmark.rawlog --noiseless
+        -o /tmp/lidar_odom_benchmark.rawlog --noiseless --shutter rolling
 
 Re-run this generator (optionally with a different --seed) to regenerate
 the two checked-in files if this script itself changes.
@@ -226,7 +226,7 @@ WORLD_TEMPLATE = """<mvsim_world version="1.0">
 \t  Usage:
 \t    mvsim-dataset-gen mvsim_tutorial/demo_lidar_odometry_benchmark.world.xml \\
 \t        --trajectory mvsim_tutorial/demo_lidar_odometry_benchmark.trajectory.txt \\
-\t        -o /tmp/lidar_odom_benchmark.rawlog --noiseless
+\t        -o /tmp/lidar_odom_benchmark.rawlog --noiseless --shutter rolling
 \t-->
 
 \t<simul_timestep>0</simul_timestep>

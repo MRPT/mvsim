@@ -13,6 +13,7 @@
 
 #include <mrpt/io/CFileGZInputStream.h>
 #include <mrpt/maps/CGenericPointsMap.h>
+#include <mrpt/math/wrap2pi.h>
 #include <mrpt/obs/CObservationIMU.h>
 #include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/obs/CObservationPointCloud.h>
@@ -40,6 +41,8 @@ const std::string kTraj = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen.t
 const std::string kWorld2D = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen_2d.world.xml";
 const std::string kTraj2D = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen_2d.trajectory.txt";
 
+constexpr double kSweepPeriod = 0.1;  // VLP16 default (600 rpm)
+
 struct SweepStats
 {
 	int nObs = 0;
@@ -48,6 +51,9 @@ struct SweepStats
 	double maxRange = 0;
 	float tMin = std::numeric_limits<float>::max();
 	float tMax = -1;
+	/** Max over points of |azimuth - expected column azimuth from `t`| [rad],
+	 * assuming a full sweep spanning `kSweepPeriod`. */
+	double maxAzimuthVsTimeErr = 0;
 
 	int nImu = 0;
 	double maxAbsAngVel = 0;  //!< Max over samples of |w| [rad/s]
@@ -110,6 +116,11 @@ SweepStats loadAndInspect(const std::string& rawlogPath)
 				const float tv = pts->getPointField_float(i, "t");
 				st.tMin = std::min(st.tMin, tv);
 				st.tMax = std::max(st.tMax, tv);
+
+				// Each column starts at azimuth -pi and sweeps 2*pi in one period:
+				const double azExpected = -M_PI + 2 * M_PI * tv / kSweepPeriod;
+				const double azErr = std::abs(mrpt::math::wrapToPi(std::atan2(y, x) - azExpected));
+				st.maxAzimuthVsTimeErr = std::max(st.maxAzimuthVsTimeErr, azErr);
 			}
 		}
 		else if (auto obsImu = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(obj))
@@ -189,7 +200,7 @@ std::string gtPath(const std::string& rawlogPath, const std::string& newExt)
 void test_global_shutter_basic()
 {
 	const std::string out = tempPath("global.rawlog");
-	const int rc = runDatasetGen(out, "--duration 0.5 --seed 1 --noiseless");
+	const int rc = runDatasetGen(out, "--duration 0.5 --seed 1 --noiseless --shutter global");
 	EXPECT_TRUE(rc == 0);
 
 	const auto st = loadAndInspect(out);
@@ -228,7 +239,8 @@ void test_global_shutter_basic()
 void test_rolling_shutter_skew()
 {
 	const std::string out = tempPath("rolling.rawlog");
-	const int rc = runDatasetGen(out, "--duration 0.5 --seed 1 --noiseless --shutter rolling");
+	// Rolling shutter is the default mode:
+	const int rc = runDatasetGen(out, "--duration 0.5 --seed 1 --noiseless");
 	EXPECT_TRUE(rc == 0);
 
 	const auto st = loadAndInspect(out);
@@ -237,7 +249,11 @@ void test_rolling_shutter_skew()
 	// (VLP16 default: 0.1s), strictly increasing from 0.
 	EXPECT_NEAR(st.tMin, 0.0f, 1e-6);
 	EXPECT_GT(st.tMax, 0.09);
-	EXPECT_LT(st.tMax, 0.1);
+	EXPECT_LT(st.tMax, kSweepPeriod);
+	// Points are given in the sensor frame at their own column firing time
+	// (not de-skewed), so each point azimuth matches its `t` exactly, even
+	// while the vehicle moves.
+	EXPECT_LT(st.maxAzimuthVsTimeErr, 1e-4);
 
 	std::remove(out.c_str());
 	std::remove(gtPath(out, "gt.tum").c_str());
