@@ -87,17 +87,12 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 		std::mt19937 colRng(colSeeds[col]);
 		std::normal_distribution<double> noiseDist(0.0, std::max(0.0, opts.rangeStdNoise));
 
-		CPose3D sensorPoseThisColumn = sensorPoseAtStart;
-		if (opts.shutter == ShutterMode::Rolling)
-		{
-			const double tCol = sweepStartEpochSeconds + model.columnFireTime(col);
-			const CPose3D vehiclePoseAtCol = traj.poseAt(tCol);
-			sensorPoseThisColumn = vehiclePoseAtCol + sensorPoseOnVehicle;
-		}
-
-		const float tField = opts.shutter == ShutterMode::Rolling
-								 ? static_cast<float>(model.columnFireTime(col))
-								 : 0.0f;
+		const bool rolling = opts.shutter == ShutterMode::Rolling;
+		const double tColRel = rolling ? model.columnFireTime(col) : 0.0;
+		const CPose3D sensorPoseThisColumn =
+			rolling ? traj.poseAt(sweepStartEpochSeconds + tColRel) + sensorPoseOnVehicle
+					: sensorPoseAtStart;
+		const auto tField = static_cast<float>(tColRel);
 
 		std::vector<ColumnPoint>& out = perColumn[col];
 		for (int ring = 0; ring < nRings; ring++)
@@ -126,11 +121,9 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 				continue;
 			}
 
-			const TPoint3D worldPt = ray.at(range);
-			// Express the point in the sensor frame *at the sweep-start
-			// pose*, regardless of shutter mode (the de-skewing
-			// convention: `t` tells a consumer how much motion to undo).
-			const TPoint3D localPt = sensorPoseAtStart.inverseComposePoint(worldPt);
+			// Point in the sensor frame at this column's firing pose
+			// (not de-skewed, like real LiDAR drivers output it):
+			const TPoint3D localPt = localDir * range;
 
 			ColumnPoint cp;
 			cp.x = static_cast<float>(localPt.x);

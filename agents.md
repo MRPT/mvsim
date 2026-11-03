@@ -187,7 +187,7 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 
 ## Dataset generator (`mvsim-dataset-gen/`)
 
-`mvsim-dataset-gen` binary (CLI11): offline, ray-traced (no OpenGL) simulated dataset generator. Given a world XML restricted to analytic geometry and a prescribed ground-truth trajectory (`.tum` SE(3), or 2D `(t,x,y)` waypoints with terrain-following; no controller, no physics stepping — the trajectory *is* the pose), it writes an MRPT `.rawlog` with 3D LiDAR (global or rolling shutter), IMU, and wheel-odometry observations, plus companion `.gt.tum` ground-truth files. See `docs/mvsim-dataset-gen.rst` and `~/plans/mvsim-lidar-simulator.md` for the full design.
+`mvsim-dataset-gen` binary (CLI11): offline, ray-traced (no OpenGL) simulated dataset generator. Given a world XML restricted to analytic geometry and a prescribed ground-truth trajectory (`.tum` SE(3), or 2D `(t,x,y)` waypoints with terrain-following; no controller, no physics stepping — the trajectory *is* the pose), it writes an MRPT `.rawlog` with 3D LiDAR (rolling shutter by default: per-column firing time `t` and pose, points not de-skewed; or global), IMU, and wheel-odometry observations, plus companion `.gt.tum` ground-truth files. See `docs/mvsim-dataset-gen.rst` and `~/plans/mvsim-lidar-simulator.md` for the full design.
 
 - `SceneBuilder.h/.cpp` — converts a headless-loaded `World` into a `mvsim::rt::RayScene`.
 - `TrajectorySource.h/.cpp` — `.tum` and 2D-waypoints-with-terrain-following loading via `CPose3DInterpolator`.

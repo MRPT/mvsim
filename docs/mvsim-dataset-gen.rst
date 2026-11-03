@@ -70,17 +70,21 @@ Sensors
   explicit ``vertical_ray_angles``, azimuth resolution, sensor period,
   min/max range, noise, intensity). Two shutter modes:
 
-  - ``--shutter global`` (default): one pose for the whole sweep; every
-    point's ``t`` field is 0.
-  - ``--shutter rolling``: the vehicle pose is re-interpolated once per
-    azimuth column (the usual "each column fires at a time" model of real
-    rotating LiDARs), producing genuinely motion-skewed points; ``t`` is
-    the column's firing offset from the sweep start.
+  - ``--shutter rolling`` (default): a realistic rotating LiDAR. Each
+    azimuth column fires at its own time, ``col * period / horz_nrays``
+    after the sweep start, and is ray-cast from the vehicle pose
+    interpolated at exactly that instant. Each point's ``t`` field holds
+    that relative time, in ``[0, period)`` (e.g. ``[0, 0.1)`` for a 10 Hz
+    sensor), and the point is expressed in the sensor frame at that same
+    instant, just like a real LiDAR driver outputs it: the cloud is
+    motion-skewed, and consumers can de-skew it using ``t``.
+  - ``--shutter global``: one pose (the sweep-start one) for the whole
+    sweep; every point's ``t`` field is 0.
 
-  In both modes, points are emitted as a ``CObservationPointCloud`` /
-  ``CGenericPointsMap`` with ``t``/``ring``/(optional)``intensity`` fields,
-  expressed in the sensor frame *at the sweep-start pose* — the usual
-  convention for de-skewing consumers.
+  Points are emitted as a ``CObservationPointCloud`` /
+  ``CGenericPointsMap`` with ``t``/``ring``/(optional)``intensity`` fields.
+  The observation timestamp is the sweep start time, and ``t`` is relative
+  to it.
 
 - **IMU**: one sample per ``imu`` sensor, computed by differentiating the
   prescribed trajectory (an exact SO(3) log for angular velocity, a
@@ -125,6 +129,7 @@ Example
 
    $ mvsim-dataset-gen mvsim_tutorial/demo_dataset_gen.world.xml \
        --trajectory mvsim_tutorial/demo_dataset_gen.trajectory.tum \
+       --shutter rolling \
        -o /tmp/demo_dataset.rawlog
 
 See ``mvsim_tutorial/demo_dataset_gen.world.xml`` and the accompanying

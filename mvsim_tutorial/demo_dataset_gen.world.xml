@@ -7,7 +7,7 @@
 	  Usage:
 	    mvsim-dataset-gen mvsim_tutorial/demo_dataset_gen.world.xml \
 	        --trajectory mvsim_tutorial/demo_dataset_gen.trajectory.tum \
-	        -o /tmp/demo_dataset.rawlog
+	        --shutter rolling -o /tmp/demo_dataset.rawlog
 	-->
 
 	<simul_timestep>0</simul_timestep>

@@ -13,6 +13,7 @@
 
 #include <mrpt/io/CFileGZInputStream.h>
 #include <mrpt/maps/CGenericPointsMap.h>
+#include <mrpt/math/wrap2pi.h>
 #include <mrpt/obs/CObservationIMU.h>
 #include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/obs/CObservationPointCloud.h>
@@ -40,6 +41,16 @@ const std::string kTraj = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen.t
 const std::string kWorld2D = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen_2d.world.xml";
 const std::string kTraj2D = std::string(MVSIM_TUTORIAL_DIR) + "/demo_dataset_gen_2d.trajectory.txt";
 
+constexpr double kSweepPeriod = 0.1;  // VLP16 default (600 rpm)
+
+// Known demo world geometry and motion (demo_dataset_gen.{world.xml,trajectory.tum}):
+// the vehicle moves along +X at 1 m/s from x=0 at kTrajT0, with no rotation,
+// and the lidar is mounted at z=0.75 m. Pillars are vertical cylinders.
+constexpr double kTrajT0 = 1700000000.0;
+constexpr double kLidarZ = 0.75;
+constexpr double kPillarRadius = 0.4;
+const std::vector<std::pair<double, double>> kPillarCenters = {{5, -3}, {6, 1}, {5, 3}};
+
 struct SweepStats
 {
 	int nObs = 0;
@@ -48,6 +59,14 @@ struct SweepStats
 	double maxRange = 0;
 	float tMin = std::numeric_limits<float>::max();
 	float tMax = -1;
+	/** Max over points of |azimuth - expected column azimuth from `t`| [rad],
+	 * assuming a full sweep spanning `kSweepPeriod`. */
+	double maxAzimuthVsTimeErr = 0;
+	/** Points on pillars, moved to the world frame with the vehicle pose at
+	 * each point's own firing time (sweep start + t), and the max deviation
+	 * of their distance to the pillar axis from the pillar radius [m]. */
+	size_t nPillarPoints = 0;
+	double maxPillarRadiusErr = 0;
 
 	int nImu = 0;
 	double maxAbsAngVel = 0;  //!< Max over samples of |w| [rad/s]
@@ -110,6 +129,30 @@ SweepStats loadAndInspect(const std::string& rawlogPath)
 				const float tv = pts->getPointField_float(i, "t");
 				st.tMin = std::min(st.tMin, tv);
 				st.tMax = std::max(st.tMax, tv);
+
+				// Each column starts at azimuth -pi and sweeps 2*pi in one period:
+				const double azExpected = -M_PI + 2 * M_PI * tv / kSweepPeriod;
+				const double azErr = std::abs(mrpt::math::wrapToPi(std::atan2(y, x) - azExpected));
+				st.maxAzimuthVsTimeErr = std::max(st.maxAzimuthVsTimeErr, azErr);
+
+				const double vehX = (t + tv) - kTrajT0;
+				const double wx = x + vehX;
+				const double wy = y;
+				const double wz = z + kLidarZ;
+				if (wz < 0.05)
+				{
+					continue;  // ground
+				}
+				for (const auto& [cx, cy] : kPillarCenters)
+				{
+					const double d = std::hypot(wx - cx, wy - cy);
+					if (d < kPillarRadius + 0.2)
+					{
+						st.nPillarPoints++;
+						st.maxPillarRadiusErr =
+							std::max(st.maxPillarRadiusErr, std::abs(d - kPillarRadius));
+					}
+				}
 			}
 		}
 		else if (auto obsImu = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(obj))
@@ -189,7 +232,7 @@ std::string gtPath(const std::string& rawlogPath, const std::string& newExt)
 void test_global_shutter_basic()
 {
 	const std::string out = tempPath("global.rawlog");
-	const int rc = runDatasetGen(out, "--duration 0.5 --seed 1 --noiseless");
+	const int rc = runDatasetGen(out, "--duration 0.5 --seed 1 --noiseless --shutter global");
 	EXPECT_TRUE(rc == 0);
 
 	const auto st = loadAndInspect(out);
@@ -201,6 +244,9 @@ void test_global_shutter_basic()
 	// Sanity range bounds (VLP16 default min/max range: 0.01 / 80.0 m):
 	EXPECT_GT(st.minRange, 0.005);
 	EXPECT_LT(st.maxRange, 80.0);
+	// Pillar hits lie on their surfaces when using the sweep-start pose:
+	EXPECT_TRUE(st.nPillarPoints > 100);
+	EXPECT_LT(st.maxPillarRadiusErr, 1e-3);
 
 	// The demo world's straight, constant-velocity, level trajectory: the
 	// IMU must read ~zero angular velocity and ~gravity on Z (regression
@@ -228,7 +274,8 @@ void test_global_shutter_basic()
 void test_rolling_shutter_skew()
 {
 	const std::string out = tempPath("rolling.rawlog");
-	const int rc = runDatasetGen(out, "--duration 0.5 --seed 1 --noiseless --shutter rolling");
+	// Rolling shutter is the default mode:
+	const int rc = runDatasetGen(out, "--duration 0.5 --seed 1 --noiseless");
 	EXPECT_TRUE(rc == 0);
 
 	const auto st = loadAndInspect(out);
@@ -237,7 +284,16 @@ void test_rolling_shutter_skew()
 	// (VLP16 default: 0.1s), strictly increasing from 0.
 	EXPECT_NEAR(st.tMin, 0.0f, 1e-6);
 	EXPECT_GT(st.tMax, 0.09);
-	EXPECT_LT(st.tMax, 0.1);
+	EXPECT_LT(st.tMax, kSweepPeriod);
+	// Points are given in the sensor frame at their own column firing time
+	// (not de-skewed), so each point azimuth matches its `t` exactly, even
+	// while the vehicle moves.
+	EXPECT_LT(st.maxAzimuthVsTimeErr, 1e-4);
+	// Each column must be cast from the vehicle pose at its own firing time:
+	// moved to the world frame with that pose, pillar hits lie exactly on
+	// their surfaces (the sweep-start pose would be off by several cm).
+	EXPECT_TRUE(st.nPillarPoints > 100);
+	EXPECT_LT(st.maxPillarRadiusErr, 1e-3);
 
 	std::remove(out.c_str());
 	std::remove(gtPath(out, "gt.tum").c_str());
