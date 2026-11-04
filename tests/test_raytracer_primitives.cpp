@@ -11,6 +11,8 @@
 
 #include <cmath>
 #include <cstdio>
+#include <random>
+#include <vector>
 
 #include "test_utils.h"
 
@@ -353,6 +355,102 @@ void test_heightfield_row_is_x_col_is_y()
 }
 
 // ---------------------------------------------------------------
+void test_heightfield_matches_its_triangles()
+{
+	// A bumpy 21x21 grid; each cell is the triangle pair (p00,p10,p11) and
+	// (p00,p11,p01). Random rays must hit the heightfield exactly where a
+	// brute-force search over those triangles does, with and without the
+	// cached z bounds.
+	constexpr int kN = 21;
+	HeightField hf;
+	hf.z.setSize(kN, kN);
+	for (int r = 0; r < kN; r++)
+	{
+		for (int c = 0; c < kN; c++)
+		{
+			hf.z(r, c) = 0.5 * std::sin(0.7 * r) * std::cos(0.9 * c) + 0.1 * ((r * 7 + c * 3) % 5);
+		}
+	}
+	hf.minX = -5.0;
+	hf.maxX = 5.0;
+	hf.minY = -5.0;
+	hf.maxY = 5.0;
+
+	const double res = (hf.maxX - hf.minX) / (kN - 1);
+	// Filled in place (moving a Primitive triggers a spurious GCC warning):
+	std::vector<Primitive> tris(2 * (kN - 1) * (kN - 1));
+	size_t k = 0;
+	for (int r = 0; r + 1 < kN; r++)
+	{
+		for (int c = 0; c + 1 < kN; c++)
+		{
+			const auto pt = [&](int i, int j)
+			{ return TPoint3D(hf.minX + i * res, hf.minY + j * res, hf.z(i, j)); };
+			Triangle t1;
+			t1.v0 = pt(r, c);
+			t1.v1 = pt(r + 1, c);
+			t1.v2 = pt(r + 1, c + 1);
+			Triangle t2;
+			t2.v0 = pt(r, c);
+			t2.v1 = pt(r + 1, c + 1);
+			t2.v2 = pt(r, c + 1);
+			tris[k++].geometry = t1;
+			tris[k++].geometry = t2;
+		}
+	}
+
+	HeightField hfCached = hf;
+	hfCached.zMin = hf.z.minCoeff();
+	hfCached.zMax = hf.z.maxCoeff();
+	const Primitive primNaN{hf, "terrain"};
+	const Primitive primCached{hfCached, "terrain"};
+
+	std::mt19937 rng(1);
+	std::uniform_real_distribution<double> uXY(-6.0, 6.0);
+	std::uniform_real_distribution<double> uZ(-1.0, 3.0);
+	int nHits = 0;
+	int nMismatch = 0;
+	for (int i = 0; i < 2000; i++)
+	{
+		const TPoint3D org(uXY(rng), uXY(rng), uZ(rng));
+		const TPoint3D dst(uXY(rng), uXY(rng), uZ(rng) - 1.0);
+		if (mrpt::math::TVector3D(dst - org).norm() < 1e-3)
+		{
+			continue;
+		}
+		const Ray ray = makeRay(org, dst - org);
+
+		Hit best;
+		bool gotBest = false;
+		for (const auto& t : tris)
+		{
+			Hit h;
+			if (intersectPrimitive(t, ray, h) && (!gotBest || h.t < best.t))
+			{
+				best = h;
+				gotBest = true;
+			}
+		}
+
+		for (const Primitive* prim : {&primNaN, &primCached})
+		{
+			Hit h;
+			const bool got = intersectPrimitive(*prim, ray, h);
+			if (got != gotBest || (got && std::abs(h.t - best.t) > 1e-9))
+			{
+				nMismatch++;
+			}
+		}
+		if (gotBest)
+		{
+			nHits++;
+		}
+	}
+	EXPECT_TRUE(nHits > 500);
+	EXPECT_TRUE(nMismatch == 0);
+}
+
+// ---------------------------------------------------------------
 void test_aabb()
 {
 	Sphere sp;
@@ -380,6 +478,7 @@ int main()
 	test_heightfield_flat_matches_plane();
 	test_heightfield_slope();
 	test_heightfield_row_is_x_col_is_y();
+	test_heightfield_matches_its_triangles();
 	test_aabb();
 
 	if (g_failures == 0)
