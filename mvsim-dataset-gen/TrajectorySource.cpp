@@ -170,7 +170,7 @@ void TrajectorySource::loadTum(const std::string& path)
 		}
 		const mrpt::math::CQuaternionDouble q(qw, qx, qy, qz);
 		const mrpt::poses::CPose3D p(q, x, y, z);
-		path_.insert(timeFromSeconds(t), p.asTPose());
+		insertKnot(timeFromSeconds(t), p.asTPose());
 	}
 	if (path_.size() < 2)
 	{
@@ -246,7 +246,7 @@ void TrajectorySource::load2DWithTerrain(
 		const double roll = std::atan(slopeY);
 
 		const mrpt::math::TPose3D p6{wps[i].x, wps[i].y, zCenter, yaw, pitch, roll};
-		path_.insert(timeFromSeconds(wps[i].t), p6);
+		insertKnot(timeFromSeconds(wps[i].t), p6);
 	}
 
 	if (nProbeMisses > 0)
@@ -261,19 +261,41 @@ void TrajectorySource::setInterpolationMethod(mrpt::poses::TInterpolatorMethod m
 	path_.setInterpolationMethod(m);
 }
 
-double TrajectorySource::startTime() const { return mrpt::Clock::toDouble(path_.begin()->first); }
+void TrajectorySource::insertKnot(const mrpt::Clock::time_point& t, const mrpt::math::TPose3D& p)
+{
+	if (path_.empty())
+	{
+		t0_ = t;
+	}
+	path_.insert(mrpt::Clock::time_point(t - t0_), p);
+}
 
-double TrajectorySource::endTime() const { return mrpt::Clock::toDouble(path_.rbegin()->first); }
+double TrajectorySource::startTime() const
+{
+	return mrpt::Clock::toDouble(t0_ + path_.begin()->first.time_since_epoch());
+}
+
+double TrajectorySource::endTime() const
+{
+	return mrpt::Clock::toDouble(t0_ + path_.rbegin()->first.time_since_epoch());
+}
 
 mrpt::poses::CPose3D TrajectorySource::poseAt(double tEpochSeconds) const
 {
-	const double t = std::clamp(tEpochSeconds, startTime(), endTime());
+	return poseAt(timeFromSeconds(tEpochSeconds));
+}
+
+mrpt::poses::CPose3D TrajectorySource::poseAt(const mrpt::Clock::time_point& tQuery) const
+{
+	const mrpt::Clock::time_point tRel(tQuery - t0_);
+	const auto t = std::clamp(tRel, path_.begin()->first, path_.rbegin()->first);
 	mrpt::poses::CPose3D out;
 	bool valid = false;
-	path_.interpolate(timeFromSeconds(t), out, valid);
+	path_.interpolate(t, out, valid);
 	if (!valid)
 	{
-		THROW_EXCEPTION_FMT("TrajectorySource: could not interpolate at t=%.6f", tEpochSeconds);
+		THROW_EXCEPTION_FMT(
+			"TrajectorySource: could not interpolate at t=%.6f", mrpt::Clock::toDouble(tQuery));
 	}
 	return out;
 }

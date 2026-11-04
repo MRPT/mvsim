@@ -61,10 +61,22 @@ class TrajectorySource
 	 * nearest endpoint's pose rather than extrapolating). */
 	mrpt::poses::CPose3D poseAt(double tEpochSeconds) const;
 
+	/** Same, at an exact clock time. Use it for queries that must keep their
+	 * exact spacing (e.g. finite differences): epoch seconds in a double are
+	 * only accurate to a fraction of a microsecond. */
+	mrpt::poses::CPose3D poseAt(const mrpt::Clock::time_point& t) const;
+
 	void setInterpolationMethod(mrpt::poses::TInterpolatorMethod m);
 
    private:
+	/** Knots, with times relative to the first one (`t0_`).
+	 * CPose3DInterpolator works with times in double seconds since the clock
+	 * epoch, which for absolute times only resolve about 2 us: too coarse for
+	 * the IMU finite differences. */
 	mrpt::poses::CPose3DInterpolator path_;
+	mrpt::Clock::time_point t0_{};
+
+	void insertKnot(const mrpt::Clock::time_point& t, const mrpt::math::TPose3D& p);
 };
 
 }  // namespace mvsim_dataset_gen
