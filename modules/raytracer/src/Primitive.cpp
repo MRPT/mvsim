@@ -376,8 +376,8 @@ bool intersectHeightField(const HeightField& hf, const Ray& ray, Hit& out)
 	{
 		return false;
 	}
-	const double zMin = hf.z.minCoeff();
-	const double zMax = hf.z.maxCoeff();
+	const double zMin = std::isnan(hf.zMin) ? hf.z.minCoeff() : hf.zMin;
+	const double zMax = std::isnan(hf.zMax) ? hf.z.maxCoeff() : hf.zMax;
 
 	AABB box;
 	box.grow({hf.minX, hf.minY, zMin});
@@ -435,18 +435,32 @@ bool intersectHeightField(const HeightField& hf, const Ray& ray, Hit& out)
 		const TPoint3D p11{
 			hf.minX + (row + 1) * resX, hf.minY + (col + 1) * resY, hf.z(row + 1, col + 1)};
 
-		Hit h1, h2;
-		const bool got1 = intersectTriangleRaw(p00, p10, p11, ray, h1);
-		const bool got2 = intersectTriangleRaw(p00, p11, p01, ray, h2);
-		if (got1 && (!got2 || h1.t <= h2.t))
+		// Skip the triangle tests if the ray stays above (or below) all four
+		// corners of this cell while crossing it:
+		const double tExit = std::min({tMaxX, tMaxY, tFar});
+		const double zEnter = ray.org.z + t * ray.dir.z;
+		const double zExit = ray.org.z + tExit * ray.dir.z;
+		const double cellZMax = std::max({p00.z, p10.z, p01.z, p11.z});
+		const double cellZMin = std::min({p00.z, p10.z, p01.z, p11.z});
+		const bool cellMissed =
+			std::min(zEnter, zExit) > cellZMax + 1e-6 || std::max(zEnter, zExit) < cellZMin - 1e-6;
+
+		if (!cellMissed)
 		{
-			out = h1;
-			return true;
-		}
-		if (got2)
-		{
-			out = h2;
-			return true;
+			Hit h1;
+			Hit h2;
+			const bool got1 = intersectTriangleRaw(p00, p10, p11, ray, h1);
+			const bool got2 = intersectTriangleRaw(p00, p11, p01, ray, h2);
+			if (got1 && (!got2 || h1.t <= h2.t))
+			{
+				out = h1;
+				return true;
+			}
+			if (got2)
+			{
+				out = h2;
+				return true;
+			}
 		}
 
 		if (tMaxX < tMaxY)
@@ -515,8 +529,8 @@ AABB mvsim::rt::primitiveAABB(const Primitive& prim)
 			}
 			else if constexpr (std::is_same_v<T, HeightField>)
 			{
-				box.grow({g.minX, g.minY, g.z.minCoeff()});
-				box.grow({g.maxX, g.maxY, g.z.maxCoeff()});
+				box.grow({g.minX, g.minY, std::isnan(g.zMin) ? g.z.minCoeff() : g.zMin});
+				box.grow({g.maxX, g.maxY, std::isnan(g.zMax) ? g.z.maxCoeff() : g.zMax});
 			}
 			return box;
 		},

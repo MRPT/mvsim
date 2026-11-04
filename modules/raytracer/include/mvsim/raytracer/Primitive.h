@@ -16,6 +16,7 @@
 #include <mvsim/raytracer/Ray.h>
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <variant>
 
@@ -82,6 +83,10 @@ struct HeightField
 	double maxX = 0.0;
 	double minY = 0.0;
 	double maxY = 0.0;
+	/** Cached min/max of `z`, filled in by RayScene::build(). NaN means unset:
+	 * then they are recomputed on every ray, which is slow for large maps. */
+	double zMin = std::numeric_limits<double>::quiet_NaN();
+	double zMax = std::numeric_limits<double>::quiet_NaN();
 };
 
 using PrimitiveGeometry = std::variant<Plane, Prism, Cylinder, Sphere, Triangle, HeightField>;

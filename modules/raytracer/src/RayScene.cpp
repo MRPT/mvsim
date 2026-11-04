@@ -12,6 +12,15 @@ using namespace mvsim::rt;
 
 void RayScene::build()
 {
+	for (auto& p : primitives_)
+	{
+		if (auto* hf = std::get_if<HeightField>(&p.geometry); hf && hf->z.size() > 0)
+		{
+			hf->zMin = hf->z.minCoeff();
+			hf->zMax = hf->z.maxCoeff();
+		}
+	}
+
 	std::vector<AABB> boxes;
 	boxes.reserve(primitives_.size());
 	for (const auto& p : primitives_)
