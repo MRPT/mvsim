@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <limits>
 #include <sstream>
 #include <vector>
@@ -387,6 +388,74 @@ void test_2d_trajectory_terrain_following()
 	std::remove(gtPath(out, "lidar1.gt.tum").c_str());
 }
 
+// ---------------------------------------------------------------
+// The vehicle rolls in place about its X axis at a constant rate `w`. The
+// demo world's IMU is mounted `r` = 0.3 m above the vehicle origin, so it
+// moves on a circle and must read the centripetal acceleration w^2*r towards
+// the axis, on top of gravity: f_x = 0 and |(f_y, f_z + w^2*r)| = g.
+void test_imu_lever_arm()
+{
+	constexpr double kW = 1.0;	// rad/s
+	constexpr double kImuZ = 0.3;  // demo_dataset_gen.world.xml
+	constexpr double kG = 9.81;
+
+	const std::string traj = tempPath("roll.tum");
+	{
+		std::ofstream f(traj);
+		f << std::fixed << std::setprecision(9);
+		for (int i = 0; i <= 40; i++)
+		{
+			const double t = 0.05 * i;
+			const double phi = kW * t;
+			f << kTrajT0 + t << " 0 0 0 " << std::sin(0.5 * phi) << " 0 0 " << std::cos(0.5 * phi)
+			  << "\n";
+		}
+	}
+	const std::string out = tempPath("roll.rawlog");
+	const int rc =
+		runDatasetGen(kWorld, traj, out, "--duration 1.5 --seed 1 --noiseless --shutter global");
+	EXPECT_TRUE(rc == 0);
+
+	mrpt::io::CFileGZInputStream f(out);
+	auto arch = mrpt::serialization::archiveFrom(f);
+	int nImu = 0;
+	double maxErr = 0;
+	for (;;)
+	{
+		mrpt::serialization::CSerializable::Ptr obj;
+		try
+		{
+			arch >> obj;
+		}
+		catch (const std::exception&)
+		{
+			break;	// EOF
+		}
+		if (!obj)
+		{
+			break;
+		}
+		auto obsImu = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(obj);
+		if (!obsImu)
+		{
+			continue;
+		}
+		nImu++;
+		const double fx = obsImu->get(mrpt::obs::IMU_X_ACC);
+		const double fy = obsImu->get(mrpt::obs::IMU_Y_ACC);
+		const double fz = obsImu->get(mrpt::obs::IMU_Z_ACC) + kW * kW * kImuZ;
+		maxErr = std::max(maxErr, std::abs(fx));
+		maxErr = std::max(maxErr, std::abs(std::sqrt(fy * fy + fz * fz) - kG));
+	}
+	EXPECT_TRUE(nImu > 10);
+	EXPECT_LT(maxErr, 1e-3);
+
+	std::remove(out.c_str());
+	std::remove(traj.c_str());
+	std::remove(gtPath(out, "gt.tum").c_str());
+	std::remove(gtPath(out, "lidar1.gt.tum").c_str());
+}
+
 }  // namespace
 
 // ---------------------------------------------------------------
@@ -397,6 +466,7 @@ int main()
 	test_determinism_same_seed();
 	test_noiseless_differs_from_noisy();
 	test_2d_trajectory_terrain_following();
+	test_imu_lever_arm();
 
 	if (g_failures == 0)
 	{
