@@ -991,6 +991,18 @@ MVSim uses the REP-105 standard coordinate frames:
 * ``base_footprint`` - Projection of base_link onto the ground plane
 * ``<sensor_name>`` - Individual sensor frames (camera, lidar, etc.)
 
+The vehicle frame, on the ground, is named ``base_link``. Robots whose URDF has another
+frame on the ground (e.g. ``base_footprint``, with ``base_link`` above it) can use that
+name instead, set in the vehicle (or vehicle class) XML. Then, the static
+``base_link -> base_footprint`` TF is not published, since the URDF (e.g. with
+``robot_state_publisher``) defines the rest of the frames:
+
+.. code-block:: xml
+
+   <base_frame_id>base_footprint</base_frame_id>
+
+:ref:`mvsim-urdf2xml` sets it from the URDF.
+
 CSV Logger → ROS 2 publishing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

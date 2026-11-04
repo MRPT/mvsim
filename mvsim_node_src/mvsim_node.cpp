@@ -957,7 +957,7 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		chassis_shape_msg.action = Msg_Marker::MODIFY;
 		chassis_shape_msg.type = Msg_Marker::LINE_STRIP;
 
-		chassis_shape_msg.header.frame_id = "base_link";
+		chassis_shape_msg.header.frame_id = veh->getBaseFrameId();
 		chassis_shape_msg.ns = "mvsim.chassis_shape";
 		chassis_shape_msg.id = static_cast<int>(veh->getVehicleIndex());
 		chassis_shape_msg.scale.x = 0.05;
@@ -1070,15 +1070,20 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 	}
 
 	// TF STATIC(namespace <Ri>): /base_link -> /base_footprint
-	Msg_TransformStamped tx;
-	tx.header.frame_id = "base_link";
-	tx.child_frame_id = "base_footprint";
-	tx.header.stamp = myNow();
-	tx.transform = tf2::toMsg(tfIdentity_);
+	// Only for the default frame name: otherwise, the vehicle frame is that of
+	// a robot description, which defines its own frames.
+	if (veh->getBaseFrameId() == "base_link")
+	{
+		Msg_TransformStamped tx;
+		tx.header.frame_id = "base_link";
+		tx.child_frame_id = "base_footprint";
+		tx.header.stamp = myNow();
+		tx.transform = tf2::toMsg(tfIdentity_);
 
-	Msg_TFMessage tfMsg;
-	tfMsg.transforms.push_back(tx);
-	pubsubs.pub_tf_static->publish(tfMsg);
+		Msg_TFMessage tfMsg;
+		tfMsg.transforms.push_back(tx);
+		pubsubs.pub_tf_static->publish(tfMsg);
+	}
 }
 
 void MVSimNode::onROSMsgCmdVel(Msg_Twist_CSPtr cmd, mvsim::VehicleBase* veh)
@@ -1167,7 +1172,7 @@ void MVSimNode::spinNotifyROS()
 
 				gtOdoMsg.header.stamp = myNow();
 				gtOdoMsg.header.frame_id = "odom";
-				gtOdoMsg.child_frame_id = "base_link";
+				gtOdoMsg.child_frame_id = veh->getBaseFrameId();
 
 				pubs.pub_ground_truth->publish(gtOdoMsg);
 
@@ -1251,7 +1256,7 @@ void MVSimNode::spinNotifyROS()
 				{
 					Msg_TransformStamped tx;
 					tx.header.frame_id = "odom";
-					tx.child_frame_id = "base_link";
+					tx.child_frame_id = veh->getBaseFrameId();
 					tx.header.stamp = myNow();
 					tx.transform = tf2::toMsg(mrpt2ros::toROS_tfTransform(veh_odom_pose));
 
@@ -1276,7 +1281,7 @@ void MVSimNode::spinNotifyROS()
 					// first, we'll populate the header for the odometry msg
 					odoMsg.header.stamp = myNow();
 					odoMsg.header.frame_id = "odom";
-					odoMsg.child_frame_id = "base_link";
+					odoMsg.child_frame_id = veh->getBaseFrameId();
 
 					// publish:
 					pubs.pub_odom->publish(odoMsg);
@@ -1511,7 +1516,7 @@ void MVSimNode::internalOn(
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = "base_link";
+	tfStmp.header.frame_id = veh.getBaseFrameId();
 	tfStmp.child_frame_id = obs.sensorLabel;
 	tfStmp.header.stamp = obsStamp;
 
@@ -1570,7 +1575,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = "base_link";
+	tfStmp.header.frame_id = veh.getBaseFrameId();
 	tfStmp.child_frame_id = obs.sensorLabel;
 	tfStmp.header.stamp = obsStamp;
 
@@ -1661,7 +1666,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = "base_link";
+	tfStmp.header.frame_id = veh.getBaseFrameId();
 	tfStmp.child_frame_id = obs.sensorLabel;
 	tfStmp.header.stamp = obsStamp;
 
@@ -1828,7 +1833,7 @@ void MVSimNode::internalOn(const mvsim::VehicleBase& veh, const mrpt::obs::CObse
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = "base_link";
+	tfStmp.header.frame_id = veh.getBaseFrameId();
 	tfStmp.child_frame_id = obs.sensorLabel;
 	tfStmp.header.stamp = obsStamp;
 
@@ -1947,7 +1952,7 @@ void MVSimNode::internalOn(
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
-		tfStmp.header.frame_id = "base_link";
+		tfStmp.header.frame_id = veh.getBaseFrameId();
 		tfStmp.child_frame_id = lbImage;
 		tfStmp.header.stamp = obsStamp;
 
@@ -1991,7 +1996,7 @@ void MVSimNode::internalOn(
 
 			Msg_TransformStamped tfStmp;
 			tfStmp.transform = tf2::toMsg(transform);
-			tfStmp.header.frame_id = "base_link";
+			tfStmp.header.frame_id = veh.getBaseFrameId();
 			tfStmp.child_frame_id = obs.sensorLabel + "_depth";
 			tfStmp.header.stamp = obsStamp;
 
@@ -2085,7 +2090,7 @@ void MVSimNode::internalOn(
 
 		Msg_TransformStamped tfStmp;
 		tfStmp.transform = tf2::toMsg(transform);
-		tfStmp.header.frame_id = "base_link";
+		tfStmp.header.frame_id = veh.getBaseFrameId();
 		tfStmp.child_frame_id = lbPoints;
 		tfStmp.header.stamp = obsStamp;
 
@@ -2174,7 +2179,7 @@ void MVSimNode::internalOn(
 
 	Msg_TransformStamped tfStmp;
 	tfStmp.transform = tf2::toMsg(transform);
-	tfStmp.header.frame_id = "base_link";
+	tfStmp.header.frame_id = veh.getBaseFrameId();
 	tfStmp.child_frame_id = lbPoints;
 	tfStmp.header.stamp = obsStamp;
 

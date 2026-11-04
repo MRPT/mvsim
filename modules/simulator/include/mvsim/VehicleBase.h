@@ -116,6 +116,10 @@ class VehicleBase : public CVisualObject, public Simulable
 	 * (only used for collision detection) */
 	const mrpt::math::TPolygon2D& getChassisShape() const { return chassis_poly_; }
 
+	/** Name of the vehicle frame in ROS (TF and message frame_id): "base_link"
+	 * by default, or that of the optional XML tag <base_frame_id>. */
+	const std::string& getBaseFrameId() const { return base_frame_id_; }
+
 	/** Set the vehicle index in the World */
 	void setVehicleIndex(size_t idx) { vehicle_index_ = idx; }
 	/** Get the vehicle index in the World */
@@ -207,6 +211,7 @@ class VehicleBase : public CVisualObject, public Simulable
 	std::vector<CSVLogger::Ptr> loggers_;
 	std::string log_path_;
 	bool auto_start_recording_ = false;
+	std::string base_frame_id_ = "base_link";
 
 	virtual void initLoggers();
 	virtual void writeLogStrings();
