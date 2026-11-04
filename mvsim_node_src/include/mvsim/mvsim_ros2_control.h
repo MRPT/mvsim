@@ -33,20 +33,22 @@ class ResourceManager;
 
 namespace mvsim_node
 {
-/** Generates a minimal URDF for a vehicle: base_link, one continuous joint
- * per wheel, and a <ros2_control> block for those joints. */
+/** Generates a minimal URDF for a vehicle: its base frame, its joints (one
+ * continuous joint per wheel, a revolute one per steering joint, from which
+ * steered wheels hang), and a <ros2_control> block for all of them. */
 std::string generateVehicleUrdf(
-	const mvsim::VehicleBase& veh, mvsim::WheelJointsInterface::CommandMode mode);
+	const mvsim::VehicleBase& veh, const mvsim::WheelJointsInterface& joints);
 
 /** ros2_control integration for one vehicle: owns a controller manager whose
- * hardware is the vehicle wheels (via mvsim::WheelJointsInterface).
+ * hardware is the vehicle joints: wheels and steering (via
+ * mvsim::WheelJointsInterface).
  *
  * The robot description (URDF) is read from the `robot_description` topic in
  * the vehicle namespace. In "generated" mode (default), this class publishes
  * there a URDF generated from the vehicle; otherwise, e.g.
  * robot_state_publisher must publish the user URDF. The <ros2_control>
- * systems whose joints all match wheel joint names of the vehicle are bound to
- * the simulated wheels, whatever their hardware plugin is.
+ * systems whose joints all match joint names of the vehicle are bound to
+ * the simulated joints, whatever their hardware plugin is.
  *
  * The controller manager read/update/write cycle runs in the simulation
  * thread, at its `update_rate`, in simulation time.

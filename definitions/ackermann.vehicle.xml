@@ -24,13 +24,19 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="${controller|twist_front_steer_pid}">  <!-- e.g. "twist_front_steer_pid" or "twist_ideal" -->
+        <controller class="${controller|twist_front_steer_pid}">  <!-- e.g. "twist_front_steer_pid", "twist_ideal" or "ros2_control" -->
             <!-- Params -->
             <KP>2550</KP>
             <KI>51</KI>
             <KD>0.0000</KD>
             <max_torque>287</max_torque>
             <V>0.0</V><W>0</W>
+            <!-- Only for controller="ros2_control" (ROS 2 node). The PID above is
+                 that of each wheel velocity joint. -->
+            <command_interface>${command_interface|velocity}</command_interface>
+            <steering_joints>${steering_joints|per_wheel}</steering_joints>  <!-- "per_wheel" or "central" -->
+            <controllers_yaml>${controllers_yaml|}</controllers_yaml>
+            <robot_description>${robot_description|generated}</robot_description>
         </controller>
 
         <!-- Available types (only if dynamics class="ackermann_drivetrain") 

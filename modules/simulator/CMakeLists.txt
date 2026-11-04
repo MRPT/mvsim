@@ -98,12 +98,14 @@ add_library(${PROJECT_NAME}
 
 	# VehicleDynamics:
 	src/VehicleDynamics/VehicleAckermann_ControllerFrontSteerPID.cpp
+	src/VehicleDynamics/VehicleAckermann_ControllerJointCommands.cpp
 	src/VehicleDynamics/VehicleAckermann_ControllerRaw.cpp
 	src/VehicleDynamics/VehicleAckermann_ControllerTrajectory.cpp
 	src/VehicleDynamics/VehicleAckermann_ControllerTwistIdeal.cpp
 	src/VehicleDynamics/VehicleAckermann_ControllerTwistFrontSteerPID.cpp
 	src/VehicleDynamics/VehicleAckermann.cpp
 	src/VehicleDynamics/VehicleAckermann_Drivetrain_ControllerFrontSteerPID.cpp
+	src/VehicleDynamics/VehicleAckermann_Drivetrain_ControllerJointCommands.cpp
 	src/VehicleDynamics/VehicleAckermann_Drivetrain_ControllerRaw.cpp
 	src/VehicleDynamics/Vehicleackermann_Drivetrain_ControllerTwistFrontSteerPID.cpp
 	src/VehicleDynamics/VehicleAckermann_Drivetrain.cpp

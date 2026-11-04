@@ -451,6 +451,14 @@ toggled with the **"Trajectories"** item of the GUI "View" menu. Whether it star
    :doc:`demo_worlds` for a complete example (square loop, figure-eight, and
    point-to-point presets, selectable from a single ``TRAJECTORY`` variable).
 
+ros2_control
+~~~~~~~~~~~~
+
+**Class:** ``ros2_control`` (differential, Ackermann and Ackermann with drivetrain)
+
+Joint-level commands (wheel velocities or torques, and steering angles) from standard
+ros2_control controllers, through the ROS 2 node. See :ref:`ros2_control`.
+
 5. Friction Models
 -------------------
 
@@ -634,7 +642,7 @@ Generic car-like vehicle with Ackermann steering.
 * Front-wheel drive (its ``<drivetrain>`` block, Torsen 4WD, only applies if the dynamics
   class is changed to ``ackermann_drivetrain``)
 * Controller: ``twist_front_steer_pid`` by default; select another one (e.g.
-  ``twist_ideal``) with the ``controller`` include variable:
+  ``twist_ideal`` or ``ros2_control``) with the ``controller`` include variable:
   ``<include file="ackermann.vehicle.xml" controller="twist_ideal" />``
 
 Pickup Truck
@@ -668,6 +676,8 @@ Agricultural robot with custom 3D model and Ackermann drivetrain.
 * Wheelbase: 0.62 m
 * Max steering: ±35°, at up to 90°/s
 * Open rear-wheel drive
+* Controller: ``twist_front_steer_pid`` by default, or ``ros2_control`` with the
+  ``controller`` include variable
 
 7. Creating Custom Vehicles
 ----------------------------

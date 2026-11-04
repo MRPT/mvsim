@@ -1,0 +1,56 @@
+# ros2_control controllers for the "agricobiot2" robot (class
+# "ackermann_drivetrain": one motor, open rear differential), used with:
+# <controller class="ros2_control">, and
+# <steering_joints>central</steering_joints> (one steering joint).
+#
+# bicycle_steering_controller drives the drivetrain "traction_joint"
+# (velocity) and the equivalent steering angle "steer_joint" (position): the
+# two actuators of the robot. Its geometry must match the vehicle XML
+# (definitions/agricobiot2.vehicle.xml). The odometry of the steering controllers
+# is that of the rear axle center, so the vehicle origin (base_link) must be
+# there: rear wheels at x=0.
+#
+# Controller manager: "/controller_manager" for one vehicle, or
+# "/<VEHICLE>/controller_manager" with several ones. The "/**/" prefix makes
+# these parameters apply in any namespace.
+/**/controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz. The simulation rate should be a multiple of this.
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    bicycle_steering_controller:
+      type: bicycle_steering_controller/BicycleSteeringController
+
+/**/joint_state_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+
+/**/bicycle_steering_controller:
+  ros__parameters:
+    use_sim_time: true
+
+    # Joint names: <traction_joint_name> and <steer_joint_name> in the vehicle
+    # <controller> (default: "traction_joint", "steer_joint").
+    traction_joints_names: [traction_joint]
+    steering_joints_names: [steer_joint]
+
+    wheelbase: 0.62  # f_wheels_x - rear wheels x
+    traction_wheel_radius: 0.203  # driven (rear) wheels diameter / 2
+
+    # The same parameters for ROS 2 Humble (deprecated in Jazzy, which warns
+    # about them, and ignored by newer versions):
+    rear_wheels_names: [traction_joint]
+    front_wheels_names: [steer_joint]
+    rear_wheel_radius: 0.203
+    front_wheel_radius: 0.203  # unused, but required by Humble
+    use_stamped_vel: true  # Humble: TwistStamped on ~/reference, as in newer versions
+
+    position_feedback: false  # odometry from the traction joint velocity
+    open_loop: false
+    reference_timeout: 0.5  # s
+
+    odom_frame_id: odom
+    base_frame_id: base_link
+    enable_odom_tf: true

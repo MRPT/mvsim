@@ -1,0 +1,57 @@
+<mvsim_world version="1.0">
+	<!--
+	  A car-like robot with a drivetrain (class "ackermann_drivetrain": one
+	  motor, open rear differential and a steering rack) driven by the
+	  ros2_control bicycle_steering_controller: one traction joint (the
+	  drivetrain, velocity) and one central steering joint (position), instead
+	  of MVSim built-in controllers. Launch with:
+	    ros2 launch mvsim demo_ros2_control.launch.py vehicle:=agricobiot2
+	-->
+	<simul_timestep>0.005</simul_timestep>
+
+	<gui>
+		<ortho>false</ortho>
+		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
+		<cam_distance>8</cam_distance>
+		<fov_deg>60</fov_deg>
+		<follow_vehicle>r1</follow_vehicle>
+	</gui>
+
+	<element class="horizontal_plane">
+		<x_min>-15</x_min> <y_min>-15</y_min> <x_max>15</x_max> <y_max>15</y_max> <z>0.0</z>
+		<color>#909090</color>
+	</element>
+	<element class="ground_grid">
+		<floating>true</floating>
+	</element>
+
+	<!-- Some obstacles around, for the LiDAR -->
+	<block:class name="box">
+		<mass>100</mass>
+		<color>#0080ff</color>
+		<zmax>1.0</zmax>
+		<ground_friction>1.0</ground_friction>
+		<shape> <pt>-0.4 -0.4</pt> <pt>-0.4 0.4</pt> <pt>0.4 0.4</pt> <pt>0.4 -0.4</pt> </shape>
+	</block:class>
+	<for var="i" from="0" to="7">
+		<block class="box">
+			<init_pose>$f{8*cos(i*pi/4)} $f{8*sin(i*pi/4)} $f{i*45}</init_pose>
+		</block>
+	</for>
+
+	<include file="../definitions/agricobiot2.vehicle.xml"
+		headlights="false"
+		controller="ros2_control"
+		steering_joints="central"
+		controllers_yaml="ros2_control/agricobiot2_controllers.yaml"
+		robot_description="$env{MVSIM_ROBOT_DESCRIPTION|generated}"
+	/>
+
+	<vehicle name="r1" class="agricobiot2">
+		<init_pose>0 0 0</init_pose>
+		<include file="../definitions/lidar2d.sensor.xml"
+		  sensor_x="0.8" sensor_z="0.4" sensor_yaw="0" sensor_name="laser1"
+		  fov_degrees="270" sensor_nrays="271" sensor_custom_visual="false"
+		/>
+	</vehicle>
+</mvsim_world>
