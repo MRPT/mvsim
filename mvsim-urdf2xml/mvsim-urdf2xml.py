@@ -277,14 +277,16 @@ class Model:
 
         # Steering limits from the URDF joint <limit>: either one central
         # steering joint (equivalent angle) or the two front wheel steering
-        # joints (the larger of their bounds is that of the inner wheel).
+        # joints (the inner wheel limits: the left one when turning left, the
+        # right one when turning right).
         joints = self.map.get('steering_joints') or []
         if isinstance(joints, str):
             joints = [joints]
-        if len(joints) not in (0, 1, 2):
+        if not isinstance(joints, list) or len(joints) not in (0, 1, 2):
             raise ValueError('"steering_joints" must list one central joint or the two '
                              'front wheel steering joints')
-        angles = []
+        max_left = []  # max angle turning left (positive), for each joint
+        max_right = []
         rates = []
         for name in joints:
             if name not in self.urdf.joints:
@@ -292,13 +294,23 @@ class Model:
             lim = self.urdf.joints[name].find('limit')
             if lim is None or 'upper' not in lim.attrib:
                 raise ValueError(f'Steering joint "{name}" has no <limit upper="...">')
-            bounds = [abs(float(lim.attrib.get(b, lim.attrib['upper'])))
-                      for b in ('lower', 'upper')]
-            angles.append(max(bounds) if len(joints) == 2 else min(bounds))
+            upper = float(lim.attrib['upper'])
+            lower = float(lim.attrib.get('lower', -upper))
+            if len(joints) == 2:
+                m, _ = self.urdf.link_pose(self.urdf.joint_child(name), self.base)
+                is_left = m[1][3] > 0
+                (max_left if is_left else max_right).append(upper if is_left else -lower)
+            else:
+                max_left.append(upper)
+                max_right.append(-lower)
             if float(lim.attrib.get('velocity', 0)) > 0:
                 rates.append(float(lim.attrib['velocity']))
-        if angles:
-            ang = min(angles)
+        if joints:
+            if not max_left or not max_right:
+                raise ValueError('The two front wheel steering joints must be on opposite sides')
+            ang = min(max_left + max_right)
+            if ang <= 0:
+                raise ValueError('The steering joint limits must allow turning both ways')
             if len(joints) == 2:
                 # Inner wheel angle -> equivalent (bicycle) angle:
                 # cot(delta) = cot(delta_inner) + 0.5 * track / wheelbase

@@ -51,8 +51,9 @@ Example (``mvsim_tutorial/urdf2xml/jackal_mapping.yaml``):
 - Ackermann classes: the front axle position and track (``f_wheels_x``, ``f_wheels_d``)
   come from the front wheels. Optionally, ``steering_joints`` lists the URDF steering joints,
   either one central joint or the two front wheel ones, whose ``<limit>`` gives
-  ``max_steer_ang_deg`` (for front wheel joints, the larger bound is that of the inner
-  wheel) and ``max_steer_rate_deg`` (from ``velocity``).
+  ``max_steer_ang_deg`` (for front wheel joints, from the inner wheel limits: the ``upper``
+  one of the left wheel and the ``lower`` one of the right wheel) and ``max_steer_rate_deg``
+  (from ``velocity``).
 - ``chassis``: optional ``link`` whose ``box`` geometry gives the chassis footprint and height,
   and optional overrides ``mass``, ``zmin``, ``zmax``. By default, the mass is the sum of the
   masses of the other links.

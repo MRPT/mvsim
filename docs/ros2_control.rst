@@ -93,7 +93,9 @@ Vehicle XML
     or a real hardware driver), so the same URDF serves real hardware, Gazebo and MVSim.
     Other ``<ros2_control>`` blocks are ignored with a warning. The command interfaces
     in the URDF must match ``<command_interface>`` (and ``position`` for steering
-    joints); joints may also be listed with state interfaces only.
+    joints); joints may also be listed with state interfaces only. If the URDF defines
+    the sensor frames, set the ``mvsim_node`` parameter ``publish_sensor_tf:=false`` (as
+    the demo launch file does), so they are not published twice.
 
 The URDF is only used for control and frames: MVSim physics always come from its own
 vehicle XML (wheel positions, diameters, masses, friction), which must be kept consistent
@@ -107,7 +109,9 @@ Examples
 ----------
 
 ``mvsim_tutorial/demo_ros2_control.launch.py`` runs one of these vehicles, each with its
-controller and ``joint_state_broadcaster``:
+controller and ``joint_state_broadcaster``. The steering controllers are not dependencies
+of MVSim: install them to run the Ackermann demos, e.g.
+``sudo apt install ros-$ROS_DISTRO-ackermann-steering-controller ros-$ROS_DISTRO-bicycle-steering-controller``.
 
 .. list-table::
    :header-rows: 1

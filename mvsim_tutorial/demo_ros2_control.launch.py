@@ -19,7 +19,7 @@
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction, SetEnvironmentVariable
-from launch.conditions import IfCondition, LaunchConfigurationEquals
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python import get_package_share_directory
@@ -56,6 +56,11 @@ VEHICLES = {
 def launch_setup(context):
     tutorial_dir = os.path.join(get_package_share_directory('mvsim'), 'mvsim_tutorial')
     veh = VEHICLES[LaunchConfiguration('vehicle').perform(context)]
+    use_urdf = LaunchConfiguration('robot_description').perform(context) == 'urdf'
+
+    # The world files read this to choose where the robot description comes from:
+    set_env = SetEnvironmentVariable(
+        'MVSIM_ROBOT_DESCRIPTION', 'topic' if use_urdf else 'generated')
 
     # Note: no 'name' (the default one is 'mvsim'), since in ROS 2 Humble it
     # would also rename the controller nodes, which then miss their parameters.
@@ -66,16 +71,18 @@ def launch_setup(context):
         parameters=[{
             'world_file': os.path.join(tutorial_dir, veh['world']),
             'headless': LaunchConfiguration('headless'),
+            # With a URDF, robot_state_publisher publishes the sensor frames:
+            'publish_sensor_tf': not use_urdf,
         }])
 
-    with open(os.path.join(tutorial_dir, 'ros2_control', veh['urdf']), 'r') as f:
-        urdf = f.read()
-
-    robot_state_publisher = Node(
-        condition=LaunchConfigurationEquals('robot_description', 'urdf'),
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        parameters=[{'robot_description': urdf, 'use_sim_time': True}])
+    actions = [set_env, mvsim_node]
+    if use_urdf:
+        with open(os.path.join(tutorial_dir, 'ros2_control', veh['urdf']), 'r') as f:
+            urdf = f.read()
+        actions.append(Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            parameters=[{'robot_description': urdf, 'use_sim_time': True}]))
 
     spawner = Node(
         package='controller_manager',
@@ -93,7 +100,7 @@ def launch_setup(context):
     info = LogInfo(msg='Drive it with geometry_msgs/msg/TwistStamped messages on ' +
                    veh['cmd_topic'])
 
-    return [mvsim_node, robot_state_publisher, spawner, rviz2_node, info]
+    return actions + [spawner, rviz2_node, info]
 
 
 def generate_launch_description():
@@ -109,16 +116,10 @@ def generate_launch_description():
     headless_arg = DeclareLaunchArgument('headless', default_value='False')
     use_rviz_arg = DeclareLaunchArgument('use_rviz', default_value='True')
 
-    # The world files read this to choose where the robot description comes from:
-    set_env = SetEnvironmentVariable(
-        'MVSIM_ROBOT_DESCRIPTION', 'topic',
-        condition=LaunchConfigurationEquals('robot_description', 'urdf'))
-
     return LaunchDescription([
         vehicle_arg,
         robot_description_arg,
         headless_arg,
         use_rviz_arg,
-        set_env,
         OpaqueFunction(function=launch_setup),
     ])

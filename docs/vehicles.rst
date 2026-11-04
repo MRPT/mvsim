@@ -945,7 +945,8 @@ Always published for each vehicle:
 * ``<VEH>/chassis_markers`` (visualization_msgs/MarkerArray) - RViz markers for chassis and wheel visualization
 * ``<VEH>/chassis_polygon`` (geometry_msgs/Polygon) - 2D footprint polygon of the vehicle
 * ``<VEH>/tf`` (tf2_msgs/TFMessage) - Dynamic transforms (odom→base_link, sensor frames)
-* ``<VEH>/tf_static`` (tf2_msgs/TFMessage) - Static transforms (base_link→base_footprint)
+* ``<VEH>/tf_static`` (tf2_msgs/TFMessage) - Static transforms (base_link→base_footprint, only
+  for the default vehicle frame name, see `Coordinate Frames`_)
 
 Fake Localization Topics
 ~~~~~~~~~~~~~~~~~~~~~~~~~

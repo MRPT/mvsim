@@ -127,6 +127,22 @@ class TestUrdf2Xml(unittest.TestCase):
         self.assertEqual(u2x.check_xml(model, xml), [])
         bad = xml.replace('<f_wheels_d>2</f_wheels_d>', '<f_wheels_d>2.2</f_wheels_d>')
         self.assertEqual(len(u2x.check_xml(model, bad)), 1)
+        # The inner wheel limits are on the side of each wheel (here, swapped):
+        swapped = open(CAR_URDF).read().replace(
+            'lower="-0.3804" upper="0.8044"', 'lower="-0.6" upper="0.2"').replace(
+            'lower="-0.8044" upper="0.3804"', 'lower="-0.2" upper="0.6"')
+        st = u2x.Model(u2x.Urdf(swapped), mapping).steering
+        self.assertAlmostEqual(
+            st['max_steer_ang_deg'],
+            math.degrees(math.atan(1 / (1 / math.tan(0.2) + 0.5 * 2.0 / 1.3))))
+        # Invalid steering joints or limits:
+        for joints in (7, True, ['fl_steer_joint', 'fl_steer_joint']):
+            with self.assertRaises(ValueError):
+                u2x.Model(urdf, dict(mapping, steering_joints=joints))
+        zero = open(CAR_URDF).read().replace('lower="-0.3804" upper="0.8044"',
+                                             'lower="0" upper="0"')
+        with self.assertRaises(ValueError):
+            u2x.Model(u2x.Urdf(zero), mapping)
         # A central steering joint limit is the equivalent angle itself:
         mapping['steering_joints'] = 'fl_steer_joint'
         model = u2x.Model(urdf, mapping)

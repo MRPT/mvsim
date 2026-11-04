@@ -401,10 +401,10 @@ std::string jointLinkName(const std::string& jointName)
 
 /** A URDF joint and its child link */
 void writeUrdfJoint(
-	std::stringstream& ss, const std::string& name, const std::string& parent,
-	const mrpt::math::TPoint3D& xyz, double yaw, const WheelJointsInterface::Joint* steering)
+	std::stringstream& ss, const std::string& name, const std::string& link,
+	const std::string& parent, const mrpt::math::TPoint3D& xyz, double yaw,
+	const WheelJointsInterface::Joint* steering)
 {
-	const auto link = jointLinkName(name);
 	ss << "  <link name=\"" << link << "\"/>\n";
 	ss << "  <joint name=\"" << name << "\" type=\"" << (steering ? "revolute" : "continuous")
 	   << "\">\n";
@@ -438,12 +438,26 @@ std::string mvsim_node::generateVehicleUrdf(
 
 	const std::string& base = veh.getBaseFrameId();
 
+	// The child link of each joint, with unique names:
+	std::set<std::string> usedLinks = {base};
+	std::vector<std::string> links;
+	for (const auto& j : js)
+	{
+		std::string link = jointLinkName(j.name);
+		while (!usedLinks.insert(link).second)
+		{
+			link += "_link";
+		}
+		links.push_back(link);
+	}
+
 	std::stringstream ss;
 	ss << "<?xml version=\"1.0\"?>\n";
 	ss << "<robot name=\"" << veh.getName() << "\">\n";
 	ss << "  <link name=\"" << base << "\"/>\n";
-	for (const auto& j : js)
+	for (size_t i = 0; i < js.size(); i++)
 	{
+		const auto& j = js[i];
 		switch (j.kind)
 		{
 			case JointKind::WheelSpin:
@@ -452,19 +466,18 @@ std::string mvsim_node::generateVehicleUrdf(
 				const auto steer = joints.findJoint(JointKind::WheelSteering, j.wheel);
 				if (steer)
 				{
-					writeUrdfJoint(
-						ss, j.name, jointLinkName(js[*steer].name), {0, 0, 0}, 0, nullptr);
+					writeUrdfJoint(ss, j.name, links[i], links[*steer], {0, 0, 0}, 0, nullptr);
 				}
 				else
 				{
 					writeUrdfJoint(
-						ss, j.name, base, wheelPos(j.wheel), veh.getWheelInfo(j.wheel).yaw,
-						nullptr);
+						ss, j.name, links[i], base, wheelPos(j.wheel),
+						veh.getWheelInfo(j.wheel).yaw, nullptr);
 				}
 			}
 			break;
 			case JointKind::WheelSteering:
-				writeUrdfJoint(ss, j.name, base, wheelPos(j.wheel), 0, &j);
+				writeUrdfJoint(ss, j.name, links[i], base, wheelPos(j.wheel), 0, &j);
 				break;
 			case JointKind::CentralSteering:
 			case JointKind::CentralTraction:
@@ -476,7 +489,7 @@ std::string mvsim_node::generateVehicleUrdf(
 				const bool front = j.kind == JointKind::CentralSteering;
 				const size_t i0 = front ? n - 2 : 0;
 				const auto pos = (wheelPos(i0) + wheelPos(i0 + 1)) * 0.5;
-				writeUrdfJoint(ss, j.name, base, pos, 0, front ? &j : nullptr);
+				writeUrdfJoint(ss, j.name, links[i], base, pos, 0, front ? &j : nullptr);
 			}
 			break;
 		};
