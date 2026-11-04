@@ -51,27 +51,34 @@ mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 	const CPose3D pose0 = traj.poseAt(tcTicks);
 	const CPose3D poseP = traj.poseAt(tcTicks + hTicks);
 
+	// Kinematics of the IMU frame itself (not of the vehicle frame): its
+	// angular velocity in its own axes, and the acceleration of its own
+	// origin, which includes the lever-arm terms of an offset mounting.
+	const CPose3D sensorM = poseM + sensorPoseOnVehicle;
+	const CPose3D sensor0 = pose0 + sensorPoseOnVehicle;
+	const CPose3D sensorP = poseP + sensorPoseOnVehicle;
+
 	// --- Angular velocity: exact SO(3) log of the relative rotation,
 	// central difference (2nd order accurate, well-defined for any
 	// rotation magnitude, unlike an Euler-angle finite difference).
-	// `poseP - poseM` = poseM^-1 (+) poseP, i.e. exactly R_M^T * R_P. ---
-	const CPose3D relPose = poseP - poseM;
+	// `sensorP - sensorM` = sensorM^-1 (+) sensorP, i.e. exactly R_M^T * R_P. ---
+	const CPose3D relPose = sensorP - sensorM;
 	const auto logRrel = mrpt::poses::Lie::SO<3>::log(relPose.getRotationMatrix());
 	const TVector3D trueW(logRrel[0] / (2 * h), logRrel[1] / (2 * h), logRrel[2] / (2 * h));
 
 	// --- Proper (specific) acceleration, body frame at t: finite-difference
 	// second derivative of position, minus gravity, rotated into the body
 	// frame. A stationary sensor reads +9.81 on local Z, as expected. ---
-	const TPoint3D pM = poseM.translation();
-	const TPoint3D p0 = pose0.translation();
-	const TPoint3D pP = poseP.translation();
+	const TPoint3D pM = sensorM.translation();
+	const TPoint3D p0 = sensor0.translation();
+	const TPoint3D pP = sensorP.translation();
 	const TVector3D coordAccGlobal(
 		(pP.x - 2 * p0.x + pM.x) / (h * h), (pP.y - 2 * p0.y + pM.y) / (h * h),
 		(pP.z - 2 * p0.z + pM.z) / (h * h));
 	const TVector3D g(0.0, 0.0, -world.get_gravity());
 	const TVector3D globalAcc = coordAccGlobal - g;
 
-	const auto R0 = pose0.getRotationMatrix();
+	const auto R0 = sensor0.getRotationMatrix();
 	const TVector3D trueAccLocal(
 		R0(0, 0) * globalAcc.x + R0(1, 0) * globalAcc.y + R0(2, 0) * globalAcc.z,
 		R0(0, 1) * globalAcc.x + R0(1, 1) * globalAcc.y + R0(2, 1) * globalAcc.z,
@@ -110,7 +117,7 @@ mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 		const auto oriNoiseRot = mrpt::poses::Lie::SO<3>::exp(oriNoiseVec);
 
 		const CPose3D sensorPoseEnu =
-			CPose3D::FromYawPitchRoll(w2enu, 0.0, 0.0) + (pose0 + sensorPoseOnVehicle) +
+			CPose3D::FromYawPitchRoll(w2enu, 0.0, 0.0) + sensor0 +
 			CPose3D::FromRotationAndTranslation(oriNoiseRot, TVector3D(0, 0, 0));
 
 		mrpt::math::CQuaternionDouble q;
