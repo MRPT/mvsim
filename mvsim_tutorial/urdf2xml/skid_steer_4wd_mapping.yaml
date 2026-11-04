@@ -1,0 +1,43 @@
+# Mapping file for mvsim-urdf2xml: generates "skid_steer_4wd.vehicle.xml"
+# from ../ros2_control/skid_steer_4wd.urdf. Regenerate it with:
+#   mvsim-urdf2xml ../ros2_control/skid_steer_4wd.urdf skid_steer_4wd_mapping.yaml -o skid_steer_4wd.vehicle.xml
+
+vehicle_class: skid_steer_4wd
+
+# The URDF frame on the ground: it becomes the MVSim vehicle frame, with the
+# same name in ROS (here, the URDF base_link is above the ground, at the
+# wheel axles).
+base_link: base_footprint
+
+dynamics: differential_4_wheels
+
+# MVSim wheel tag -> URDF wheel joint
+wheels:
+  lf_wheel: front_left_wheel_joint
+  rf_wheel: front_right_wheel_joint
+  lr_wheel: rear_left_wheel_joint
+  rr_wheel: rear_right_wheel_joint
+
+chassis:
+  link: base_link  # chassis footprint and height from its box geometry
+
+# Copied verbatim. By default, "twist_pid" (cmd_vel). Set the variable
+# controller="ros2_control" where it is included for ros2_control, with
+# the PID of each wheel velocity joint.
+controller: |
+  <controller class="${controller|twist_pid}">
+    <KP>40</KP> <KI>400</KI> <KD>0</KD> <max_torque>60</max_torque>
+    <controllers_yaml>${controllers_yaml|}</controllers_yaml>
+    <robot_description>${robot_description|generated}</robot_description>
+  </controller>
+friction: |
+  <friction class="default">
+    <mu>0.8</mu>
+    <C_damping>0.05</C_damping>
+  </friction>
+
+sensors:
+  - link: laser
+    include: ${MVSIM_CURRENT_FILE_DIRECTORY}/../../definitions/lidar2d.sensor.xml
+    args:
+      sensor_period_sec: 0.05

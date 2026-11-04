@@ -97,7 +97,9 @@ Vehicle XML
 
 The URDF is only used for control and frames: MVSim physics always come from its own
 vehicle XML (wheel positions, diameters, masses, friction), which must be kept consistent
-with the URDF.
+with the URDF: generate it from the URDF with :ref:`mvsim-urdf2xml`, which also sets the
+vehicle frame name (``<base_frame_id>``) to that of the URDF frame on the ground, e.g.
+``base_footprint`` if ``base_link`` is above it.
 
 |
 
@@ -126,6 +128,11 @@ controller and ``joint_state_broadcaster``:
      - ``ackermann_drivetrain`` (open rear differential, central steering joint)
      - ``bicycle_steering_controller``
      - ``/bicycle_steering_controller/reference``
+   * - ``skid_steer_4wd``
+     - ``differential_4_wheels``, generated from its URDF (``base_footprint`` on the
+       ground, ``base_link`` above it) with :ref:`mvsim-urdf2xml`
+     - ``diff_drive_controller``
+     - ``/diff_drive_controller/cmd_vel``
 
 .. code-block:: bash
 
@@ -145,6 +152,11 @@ Odometry is published by the controller (e.g. ``/diff_drive_controller/odom`` or
 ground truth in ``/base_pose_ground_truth``. The world files are
 ``mvsim_tutorial/demo_ros2_control*.world.xml``, and the controller parameters and URDF
 files are in ``mvsim_tutorial/ros2_control/``.
+
+Skid-steer wheels slip sideways when turning, so the yaw rate from the wheel speeds is
+larger than the actual one, as in real robots: calibrate it with the
+``wheel_separation_multiplier`` of ``diff_drive_controller`` (as in
+``skid_steer_4wd_controllers.yaml``), or the odometry drifts in turns.
 
 |
 

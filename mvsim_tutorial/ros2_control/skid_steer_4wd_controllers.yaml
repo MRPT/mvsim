@@ -1,0 +1,39 @@
+# ros2_control controllers for the "skid_steer_4wd" vehicle (4 wheels, skid
+# steer, generated from its URDF), used with: <controller class="ros2_control">
+# See jackal_controllers.yaml for the "/**/" prefix.
+/**/controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz. The simulation rate should be a multiple of this.
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+/**/joint_state_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+
+/**/diff_drive_controller:
+  ros__parameters:
+    use_sim_time: true
+
+    # The URDF joint names (also the wheel "joint_name" in the vehicle XML)
+    left_wheel_names: ["front_left_wheel_joint", "rear_left_wheel_joint"]
+    right_wheel_names: ["front_right_wheel_joint", "rear_right_wheel_joint"]
+
+    wheel_separation: 0.6
+    wheel_radius: 0.15
+    # Skid-steer wheels slip sideways when turning, so the actual yaw rate is
+    # lower than that of the wheel speeds: this multiplier calibrates it, for
+    # both the commands and the odometry. Its best value depends on the turning
+    # radius, as in real robots: this one fits radii up to ~2 m.
+    wheel_separation_multiplier: 1.7
+
+    # The vehicle frame, on the ground (the URDF base_link is above it):
+    odom_frame_id: odom
+    base_frame_id: base_footprint
+    enable_odom_tf: true
+    publish_rate: 50.0
+    cmd_vel_timeout: 0.5

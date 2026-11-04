@@ -6,6 +6,8 @@
 #    with ackermann_steering_controller.
 #  - vehicle:=agricobiot2: car-like robot with a drivetrain
 #    (ackermann_drivetrain), with bicycle_steering_controller.
+#  - vehicle:=skid_steer_4wd: skid-steer robot whose vehicle definition is
+#    generated from its URDF (mvsim-urdf2xml), with diff_drive_controller.
 # All of them, with joint_state_broadcaster.
 #
 # Usage:
@@ -41,6 +43,12 @@ VEHICLES = {
         'urdf': 'agricobiot2.urdf',
         'controller': 'bicycle_steering_controller',
         'cmd_topic': '/bicycle_steering_controller/reference',
+    },
+    'skid_steer_4wd': {
+        'world': 'demo_ros2_control_skid_steer.world.xml',
+        'urdf': 'skid_steer_4wd.urdf',
+        'controller': 'diff_drive_controller',
+        'cmd_topic': '/diff_drive_controller/cmd_vel',
     },
 }
 
