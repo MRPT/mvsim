@@ -147,7 +147,7 @@ Key headers in `modules/comms/include/mvsim/Comms/`:
 
 Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt-poses`), used by `mvsim-dataset-gen/`:
 
-- `Primitive.h` — 6 primitives as a `std::variant`: `Plane` (finite rectangle), `Prism` (2D polygon extruded along world Z, possibly non-convex), `Cylinder` (exact quadric), `Sphere`, `Triangle`, `HeightField` (regular grid; `z(row,col)` with row along X, col along Y, mirroring `ElevationMap::meshCacheZ_`'s own indexing).
+- `Primitive.h` — 6 primitives as a `std::variant`: `Plane` (finite rectangle), `Prism` (2D polygon extruded along world Z, possibly non-convex), `Cylinder` (exact quadric), `Sphere`, `Triangle`, `HeightField` (regular grid; `z(row,col)` with row along X, col along Y, mirroring `ElevationMap::meshCacheZ_`'s own indexing; its z bounds are cached by `RayScene::build()`, and cells the ray passes above or below are skipped).
 - `BVH.h` / `RayScene.h` — median-split BVH over primitive AABBs; `RayScene::castRay()` is the single entry point.
 - `Lidar3DModel.h` — ring/column ray-generation math for a rotating 3D LiDAR, mirroring `Lidar3D`'s own conventions (ascending ring order, `vertical_ray_angles` re-sorted the same way) so the same sensor XML describes both the interactive simulator and this ray tracer.
 
