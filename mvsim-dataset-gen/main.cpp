@@ -37,6 +37,7 @@
 #include "LidarSimulator.h"
 #include "OdometrySimulator.h"
 #include "SceneBuilder.h"
+#include "TimeUtils.h"
 #include "TrajectorySource.h"
 
 using namespace mvsim_dataset_gen;
@@ -260,9 +261,9 @@ int main(int argc, char** argv)
 					 auto obs = simulateLidarSweep(
 						 scene, *model, traj, sensorPoseOnVeh, t, label, *opts, rng);
 					 nSweeps++;
-					 gtVehicle.insert(mrpt::Clock::fromDouble(t), traj.poseAt(t).asTPose());
+					 gtVehicle.insert(timeFromSeconds(t), traj.poseAt(t).asTPose());
 					 gtSensors[label].insert(
-						 mrpt::Clock::fromDouble(t), (traj.poseAt(t) + sensorPoseOnVeh).asTPose());
+						 timeFromSeconds(t), (traj.poseAt(t) + sensorPoseOnVeh).asTPose());
 					 return obs;
 				 }});
 		}

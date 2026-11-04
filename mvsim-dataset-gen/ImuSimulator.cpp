@@ -14,6 +14,8 @@
 
 #include <algorithm>
 
+#include "TimeUtils.h"
+
 using namespace mvsim_dataset_gen;
 using mrpt::math::TPoint3D;
 using mrpt::math::TVector3D;
@@ -25,7 +27,10 @@ mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 	bool measureOrientation, double orientationStdNoise, mvsim::ImuNoiseModel& noiseModel,
 	std::mt19937& rng)
 {
-	const double h = diffStep;
+	// The stencil is evaluated at exact clock ticks, so that its three
+	// points are exactly equally spaced even with epoch timestamps.
+	const auto hTicks = mrpt::Clock::duration(std::max<int64_t>(1, std::llround(diffStep * 1e7)));
+	const double h = 1e-7 * static_cast<double>(hTicks.count());
 
 	// The stencil below needs [tc-h, tc+h] inside the trajectory's own time
 	// span: TrajectorySource::poseAt() clamps queries outside it, and
@@ -41,9 +46,10 @@ mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 		tc = std::clamp(tEpochSeconds, loEdge, hiEdge);
 	}
 
-	const CPose3D poseM = traj.poseAt(tc - h);
-	const CPose3D pose0 = traj.poseAt(tc);
-	const CPose3D poseP = traj.poseAt(tc + h);
+	const auto tcTicks = timeFromSeconds(tc);
+	const CPose3D poseM = traj.poseAt(tcTicks - hTicks);
+	const CPose3D pose0 = traj.poseAt(tcTicks);
+	const CPose3D poseP = traj.poseAt(tcTicks + hTicks);
 
 	// --- Angular velocity: exact SO(3) log of the relative rotation,
 	// central difference (2nd order accurate, well-defined for any
@@ -75,7 +81,7 @@ mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 	const TVector3D linAccLocal = noiseModel.applyAccelerometer(trueAccLocal, sampleDt);
 
 	auto obs = mrpt::obs::CObservationIMU::Create();
-	obs->timestamp = mrpt::Clock::fromDouble(tEpochSeconds);
+	obs->timestamp = timeFromSeconds(tEpochSeconds);
 	obs->sensorLabel = sensorLabel;
 
 	obs->set(mrpt::obs::IMU_WX, w.x);

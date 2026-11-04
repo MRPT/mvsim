@@ -70,6 +70,8 @@ struct SweepStats
 
 	int nImu = 0;
 	double maxAbsAngVel = 0;  //!< Max over samples of |w| [rad/s]
+	/** Max over IMU samples of |acc - (0,0,g)| [m/s^2]. */
+	double maxAccErrVsStatic = 0;
 	double lastAccZ = 0;  //!< Z-accel of the last IMU sample seen
 
 	int nOdom = 0;
@@ -171,6 +173,11 @@ SweepStats loadAndInspect(const std::string& rawlogPath)
 			const double wNorm = std::sqrt(wx * wx + wy * wy + wz * wz);
 			st.maxAbsAngVel = std::max(st.maxAbsAngVel, wNorm);
 			st.lastAccZ = obsImu->get(mrpt::obs::IMU_Z_ACC);
+			const double ax = obsImu->get(mrpt::obs::IMU_X_ACC);
+			const double ay = obsImu->get(mrpt::obs::IMU_Y_ACC);
+			const double az = obsImu->get(mrpt::obs::IMU_Z_ACC) - 9.81;
+			st.maxAccErrVsStatic =
+				std::max(st.maxAccErrVsStatic, std::sqrt(ax * ax + ay * ay + az * az));
 		}
 		else if (auto obsOdom = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(obj))
 		{
@@ -256,6 +263,9 @@ void test_global_shutter_basic()
 	EXPECT_TRUE(st.nImu > 0);
 	EXPECT_LT(st.maxAbsAngVel, 1e-6);
 	EXPECT_NEAR(st.lastAccZ, 9.81, 0.05);
+	// Every sample, not only the last one: the stencil times must be exact
+	// even with epoch timestamps, or the jitter reads as acceleration.
+	EXPECT_LT(st.maxAccErrVsStatic, 1e-3);
 
 	// Odometry: noiseless dead reckoning must match the ground truth
 	// x-displacement (straight line along +X) closely.

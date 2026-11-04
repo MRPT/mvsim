@@ -10,6 +10,8 @@
 
 #include <cmath>
 
+#include "TimeUtils.h"
+
 using namespace mvsim_dataset_gen;
 
 mrpt::obs::CObservationOdometry::Ptr mvsim_dataset_gen::simulateOdometryStep(
@@ -42,7 +44,7 @@ mrpt::obs::CObservationOdometry::Ptr mvsim_dataset_gen::simulateOdometryStep(
 	runningOdom = runningOdom + mrpt::poses::CPose2D(dx, dy, dphi);
 
 	auto obs = mrpt::obs::CObservationOdometry::Create();
-	obs->timestamp = mrpt::Clock::fromDouble(tEpochSecondsB);
+	obs->timestamp = timeFromSeconds(tEpochSecondsB);
 	obs->sensorLabel = "odom";
 	obs->odometry = runningOdom;
 	return obs;

@@ -9,6 +9,7 @@
 #include "TrajectorySource.h"
 
 #include <mrpt/core/exceptions.h>
+#include <mrpt/math/CQuaternion.h>
 #include <mvsim/World.h>
 
 #include <algorithm>
@@ -18,6 +19,8 @@
 #include <optional>
 #include <regex>
 #include <sstream>
+
+#include "TimeUtils.h"
 
 using namespace mvsim_dataset_gen;
 
@@ -132,9 +135,42 @@ void TrajectorySource::loadTum(const std::string& path)
 {
 	path_.clear();
 	path_.setInterpolationMethod(mrpt::poses::imLinearSlerp);
-	if (!path_.loadFromTextFile_TUM(path))
+	// Parsed here rather than with CPose3DInterpolator::loadFromTextFile_TUM()
+	// so that timestamps are rounded to the nearest clock tick (see
+	// timeFromSeconds()): dense trajectories need exactly regular knots.
+	std::ifstream f(path);
+	if (!f)
 	{
 		THROW_EXCEPTION("Failed to load TUM trajectory file: " + path);
+	}
+	std::string line;
+	size_t lineNo = 0;
+	while (std::getline(f, line))
+	{
+		lineNo++;
+		const size_t h = line.find('#');
+		const std::string dataPart = h != std::string::npos ? line.substr(0, h) : line;
+		if (dataPart.find_first_not_of(" \t\r\n") == std::string::npos)
+		{
+			continue;  // Blank or comment-only line.
+		}
+		std::istringstream ls(dataPart);
+		double t = 0;
+		double x = 0;
+		double y = 0;
+		double z = 0;
+		double qx = 0;
+		double qy = 0;
+		double qz = 0;
+		double qw = 0;
+		if (!(ls >> t >> x >> y >> z >> qx >> qy >> qz >> qw))
+		{
+			THROW_EXCEPTION_FMT(
+				"Malformed TUM line at %s:%zu: '%s'", path.c_str(), lineNo, line.c_str());
+		}
+		const mrpt::math::CQuaternionDouble q(qw, qx, qy, qz);
+		const mrpt::poses::CPose3D p(q, x, y, z);
+		insertKnot(timeFromSeconds(t), p.asTPose());
 	}
 	if (path_.size() < 2)
 	{
@@ -210,7 +246,7 @@ void TrajectorySource::load2DWithTerrain(
 		const double roll = std::atan(slopeY);
 
 		const mrpt::math::TPose3D p6{wps[i].x, wps[i].y, zCenter, yaw, pitch, roll};
-		path_.insert(mrpt::Clock::fromDouble(wps[i].t), p6);
+		insertKnot(timeFromSeconds(wps[i].t), p6);
 	}
 
 	if (nProbeMisses > 0)
@@ -225,19 +261,41 @@ void TrajectorySource::setInterpolationMethod(mrpt::poses::TInterpolatorMethod m
 	path_.setInterpolationMethod(m);
 }
 
-double TrajectorySource::startTime() const { return mrpt::Clock::toDouble(path_.begin()->first); }
+void TrajectorySource::insertKnot(const mrpt::Clock::time_point& t, const mrpt::math::TPose3D& p)
+{
+	if (path_.empty())
+	{
+		t0_ = t;
+	}
+	path_.insert(mrpt::Clock::time_point(t - t0_), p);
+}
 
-double TrajectorySource::endTime() const { return mrpt::Clock::toDouble(path_.rbegin()->first); }
+double TrajectorySource::startTime() const
+{
+	return mrpt::Clock::toDouble(t0_ + path_.begin()->first.time_since_epoch());
+}
+
+double TrajectorySource::endTime() const
+{
+	return mrpt::Clock::toDouble(t0_ + path_.rbegin()->first.time_since_epoch());
+}
 
 mrpt::poses::CPose3D TrajectorySource::poseAt(double tEpochSeconds) const
 {
-	const double t = std::clamp(tEpochSeconds, startTime(), endTime());
+	return poseAt(timeFromSeconds(tEpochSeconds));
+}
+
+mrpt::poses::CPose3D TrajectorySource::poseAt(const mrpt::Clock::time_point& tQuery) const
+{
+	const mrpt::Clock::time_point tRel(tQuery - t0_);
+	const auto t = std::clamp(tRel, path_.begin()->first, path_.rbegin()->first);
 	mrpt::poses::CPose3D out;
 	bool valid = false;
-	path_.interpolate(mrpt::Clock::fromDouble(t), out, valid);
+	path_.interpolate(t, out, valid);
 	if (!valid)
 	{
-		THROW_EXCEPTION_FMT("TrajectorySource: could not interpolate at t=%.6f", tEpochSeconds);
+		THROW_EXCEPTION_FMT(
+			"TrajectorySource: could not interpolate at t=%.6f", mrpt::Clock::toDouble(tQuery));
 	}
 	return out;
 }
