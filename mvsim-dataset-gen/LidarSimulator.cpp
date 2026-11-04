@@ -9,6 +9,8 @@
 #include "LidarSimulator.h"
 
 #include <mrpt/maps/CGenericPointsMap.h>
+
+#include "TimeUtils.h"
 #ifdef MVSIM_HAS_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -176,6 +178,6 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	obs->sensorLabel = sensorLabel;
 	// "sensorPose" field means the base_link => lidar transformation:
 	obs->sensorPose = sensorPoseOnVehicle;
-	obs->timestamp = mrpt::Clock::fromDouble(sweepStartEpochSeconds);
+	obs->timestamp = timeFromSeconds(sweepStartEpochSeconds);
 	return obs;
 }

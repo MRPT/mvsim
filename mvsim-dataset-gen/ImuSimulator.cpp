@@ -14,6 +14,8 @@
 
 #include <algorithm>
 
+#include "TimeUtils.h"
+
 using namespace mvsim_dataset_gen;
 using mrpt::math::TPoint3D;
 using mrpt::math::TVector3D;
@@ -75,7 +77,7 @@ mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 	const TVector3D linAccLocal = noiseModel.applyAccelerometer(trueAccLocal, sampleDt);
 
 	auto obs = mrpt::obs::CObservationIMU::Create();
-	obs->timestamp = mrpt::Clock::fromDouble(tEpochSeconds);
+	obs->timestamp = timeFromSeconds(tEpochSeconds);
 	obs->sensorLabel = sensorLabel;
 
 	obs->set(mrpt::obs::IMU_WX, w.x);
