@@ -84,7 +84,9 @@ struct HeightField
 	double minY = 0.0;
 	double maxY = 0.0;
 	/** Cached min/max of `z`, filled in by RayScene::build(). NaN means unset:
-	 * then they are recomputed on every ray, which is slow for large maps. */
+	 * then they are recomputed on every ray, which is slow for large maps.
+	 * If `z` is modified after they are set, reset both to NaN (or to the new
+	 * bounds), and rebuild the RayScene, whose BVH also uses them. */
 	double zMin = std::numeric_limits<double>::quiet_NaN();
 	double zMax = std::numeric_limits<double>::quiet_NaN();
 };
