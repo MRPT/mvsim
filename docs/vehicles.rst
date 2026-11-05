@@ -451,6 +451,14 @@ toggled with the **"Trajectories"** item of the GUI "View" menu. Whether it star
    :doc:`demo_worlds` for a complete example (square loop, figure-eight, and
    point-to-point presets, selectable from a single ``TRAJECTORY`` variable).
 
+ros2_control
+~~~~~~~~~~~~
+
+**Class:** ``ros2_control`` (differential, Ackermann and Ackermann with drivetrain)
+
+Joint-level commands (wheel velocities or torques, and steering angles) from standard
+ros2_control controllers, through the ROS 2 node. See :ref:`ros2_control`.
+
 5. Friction Models
 -------------------
 
@@ -634,7 +642,7 @@ Generic car-like vehicle with Ackermann steering.
 * Front-wheel drive (its ``<drivetrain>`` block, Torsen 4WD, only applies if the dynamics
   class is changed to ``ackermann_drivetrain``)
 * Controller: ``twist_front_steer_pid`` by default; select another one (e.g.
-  ``twist_ideal``) with the ``controller`` include variable:
+  ``twist_ideal`` or ``ros2_control``) with the ``controller`` include variable:
   ``<include file="ackermann.vehicle.xml" controller="twist_ideal" />``
 
 Pickup Truck
@@ -668,6 +676,8 @@ Agricultural robot with custom 3D model and Ackermann drivetrain.
 * Wheelbase: 0.62 m
 * Max steering: ±35°, at up to 90°/s
 * Open rear-wheel drive
+* Controller: ``twist_front_steer_pid`` by default, or ``ros2_control`` with the
+  ``controller`` include variable
 
 7. Creating Custom Vehicles
 ----------------------------
@@ -935,7 +945,8 @@ Always published for each vehicle:
 * ``<VEH>/chassis_markers`` (visualization_msgs/MarkerArray) - RViz markers for chassis and wheel visualization
 * ``<VEH>/chassis_polygon`` (geometry_msgs/Polygon) - 2D footprint polygon of the vehicle
 * ``<VEH>/tf`` (tf2_msgs/TFMessage) - Dynamic transforms (odom→base_link, sensor frames)
-* ``<VEH>/tf_static`` (tf2_msgs/TFMessage) - Static transforms (base_link→base_footprint)
+* ``<VEH>/tf_static`` (tf2_msgs/TFMessage) - Static transforms (base_link→base_footprint, only
+  for the default vehicle frame name, see `Coordinate Frames`_)
 
 Fake Localization Topics
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -990,6 +1001,18 @@ MVSim uses the REP-105 standard coordinate frames:
 * ``base_link`` - Robot body frame at the center of rotation
 * ``base_footprint`` - Projection of base_link onto the ground plane
 * ``<sensor_name>`` - Individual sensor frames (camera, lidar, etc.)
+
+The vehicle frame, on the ground, is named ``base_link``. Robots whose URDF has another
+frame on the ground (e.g. ``base_footprint``, with ``base_link`` above it) can use that
+name instead, set in the vehicle (or vehicle class) XML. Then, the static
+``base_link -> base_footprint`` TF is not published, since the URDF (e.g. with
+``robot_state_publisher``) defines the rest of the frames:
+
+.. code-block:: xml
+
+   <base_frame_id>base_footprint</base_frame_id>
+
+:ref:`mvsim-urdf2xml` sets it from the URDF.
 
 CSV Logger → ROS 2 publishing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -39,11 +39,17 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="twist_front_steer_pid">
+        <controller class="${controller|twist_front_steer_pid}">  <!-- "twist_front_steer_pid" or "ros2_control" -->
             <!-- Params -->
             <KP>1360</KP>  <KI>272</KI> <KD>0</KD>
             <V>0.0</V><W>0</W>
             <max_torque>100</max_torque>  <!-- Below the rear wheels traction limit -->
+            <!-- Only for controller="ros2_control" (ROS 2 node). The PID above is
+                 that of the drivetrain "traction_joint" velocity. -->
+            <command_interface>${command_interface|velocity}</command_interface>
+            <steering_joints>${steering_joints|central}</steering_joints>  <!-- "central" or "per_wheel" -->
+            <controllers_yaml>${controllers_yaml|}</controllers_yaml>
+            <robot_description>${robot_description|generated}</robot_description>
         </controller>
 
         <!-- Available types: 

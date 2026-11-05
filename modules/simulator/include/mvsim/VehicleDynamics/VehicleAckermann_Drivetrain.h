@@ -12,9 +12,12 @@
 #include <mrpt/img/TColor.h>
 #include <mvsim/PID_Controller.h>
 #include <mvsim/VehicleBase.h>
+#include <mvsim/WheelJointsInterface.h>
 
 #include <algorithm>
 #include <array>
+#include <optional>
+#include <utility>
 
 namespace mvsim
 {
@@ -59,6 +62,20 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	/** The maximum steering angle (rad). Determines min turning radius */
 	double getMaxSteeringAngle() const { return max_steer_ang_; }
 	void setMaxSteeringAngle(double val) { max_steer_ang_ = val; }
+	/** Range [min,max] of the steering angle of a front wheel (WHEEL_FL or
+	 * WHEEL_FR) [rad]: at the maximum (equivalent) steering angle, a wheel
+	 * reaches the inner angle when turning toward its side, and the outer one
+	 * when turning away from it. */
+	std::pair<double, double> wheelSteeringRange(size_t wheel) const
+	{
+		// Turning left: the left wheel is the inner one
+		double inner = 0;
+		double outer = 0;
+		computeFrontWheelAngles(max_steer_ang_, inner, outer);
+		return wheel == WHEEL_FL ? std::pair{-outer, inner} : std::pair{-inner, outer};
+	}
+	/** Maximum steering rate (rad/s), 0 means instantaneous steering */
+	double getMaxSteeringRate() const { return max_steer_rate_; }
 	/** @name Controllers
 		@{ */
 
@@ -70,6 +87,9 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	{
 		double drive_torque;
 		double steer_ang;  //!< Equivalent Ackermann steering angle
+		/// If set, the steering angles of the front wheels [FL, FR] (rad),
+		/// used instead of `steer_ang` (e.g. from ros2_control joints)
+		std::optional<std::array<double, 2>> front_wheels_steer_ang;
 		/// Optional closed-loop model of the drive motor (forward positive),
 		/// with its damping per unit of driveshaftSpeed() [N.m.s/m]
 		MotorTorqueModel drive_motor;
@@ -162,6 +182,28 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 		double r2f_L_;
 	};
 
+	/** Joint commands from an external controller (e.g. ros2_control): the
+	 * traction joint of the drivetrain (its speed is driveshaftSpeed() /
+	 * driveshaftRadius()), and steering joints, see
+	 * WheelJointsInterface::loadConfigAckermann() */
+	class ControllerJointCommands : public ControllerBase
+	{
+	   public:
+		ControllerJointCommands(DynamicsAckermannDrivetrain& veh) : ControllerBase(veh) {}
+		static const char* class_name() { return "ros2_control"; }
+
+		void control_step(
+			const DynamicsAckermannDrivetrain::TControllerInput& ci,
+			DynamicsAckermannDrivetrain::TControllerOutput& co) override;
+		void on_post_step(const TSimulContext& context) override;
+		void load_config(const rapidxml::xml_node<char>& node) override;
+
+		WheelJointsInterface* wheelJointsInterface() override { return &joints_; }
+
+	   private:
+		WheelJointsInterface joints_;
+	};
+
 	const ControllerBase::Ptr& getController() const { return controller_; }
 	ControllerBase::Ptr& getController() { return controller_; }
 	virtual ControllerBaseInterface* getControllerInterface() override { return controller_.get(); }
@@ -174,6 +216,10 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	 *  spin (as an encoder in the driveshaft would measure it). Optionally
 	 *  returns its derivative with respect to each wheel spin speed. */
 	double driveshaftSpeed(std::array<double, 4>* dSpeed_dw = nullptr) const;
+
+	/** Mean radius of the driven wheels [m]: driveshaftSpeed() divided by it
+	 *  is the spin speed of the equivalent traction wheel. */
+	double driveshaftRadius() const;
 
 	/** Computes the exact angles of the front wheels required to have an
 	 * equivalent central steering angle.
@@ -197,9 +243,13 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 	virtual void dynamics_load_params_from_xml(const rapidxml::xml_node<char>* xml_node) override;
 	// See base class doc
 	virtual std::vector<double> invoke_motor_controllers(const TSimulContext& context) override;
+	virtual void invoke_motor_controllers_post_step(const TSimulContext& context) override;
 
    private:
 	ControllerBase::Ptr controller_;  //!< The installed controller
+
+	/** Weights of the front and rear axles in driveshaftSpeed() */
+	void driveshaftAxleWeights(double& wFront, double& wRear) const;
 
 	double max_steer_ang_;	//!< The maximum steering angle (rad). Determines
 							//! min turning radius
@@ -221,6 +271,20 @@ class DynamicsAckermannDrivetrain : public VehicleBase
 			desired = steer_ang_ + std::clamp(desired - steer_ang_, -maxDelta, maxDelta);
 		}
 		steer_ang_ = desired;
+		return desired;
+	}
+
+	/** Like rateLimitedSteering(), for the angle of one front wheel, within
+	 *  its wheelSteeringRange(). */
+	double rateLimitedWheelSteering(size_t wheel, double desired, double current, double dt) const
+	{
+		const auto [minAng, maxAng] = wheelSteeringRange(wheel);
+		desired = std::clamp(desired, minAng, maxAng);
+		if (max_steer_rate_ > 0)
+		{
+			const double maxDelta = max_steer_rate_ * dt;
+			desired = current + std::clamp(desired - current, -maxDelta, maxDelta);
+		}
 		return desired;
 	}
 

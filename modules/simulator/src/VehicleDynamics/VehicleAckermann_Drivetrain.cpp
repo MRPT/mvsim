@@ -120,6 +120,10 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 				mrpt::system::LVL_WARN, "No XML entry '%s' found: using defaults for wheel #%u",
 				w_names[i], static_cast<unsigned int>(i));
 		}
+		if (wheels_info_[i].joint_name.empty())
+		{
+			wheels_info_[i].joint_name = std::string(w_names[i]) + "_joint";
+		}
 	}
 
 	//<f_wheels_x>1.3</f_wheels_x>
@@ -210,6 +214,10 @@ void DynamicsAckermannDrivetrain::dynamics_load_params_from_xml(
 			else if (sCtrlClass == ControllerFrontSteerPID::class_name())
 			{
 				controller_ = std::make_shared<ControllerFrontSteerPID>(*this);
+			}
+			else if (sCtrlClass == ControllerJointCommands::class_name())
+			{
+				controller_ = std::make_shared<ControllerJointCommands>(*this);
 			}
 			else
 			{
@@ -340,13 +348,35 @@ std::vector<double> DynamicsAckermannDrivetrain::invoke_motor_controllers(
 		}
 
 		// Kinematically-driven steering wheels:
-		// Ackermann formulas for inner&outer weels turning angles wrt the
-		// equivalent (central) one:
-		computeFrontWheelAngles(
-			rateLimitedSteering(co.steer_ang, context.dt), wheels_info_[WHEEL_FL].yaw,
-			wheels_info_[WHEEL_FR].yaw);
+		if (co.front_wheels_steer_ang)
+		{
+			// Each wheel angle given by the controller:
+			for (int k = 0; k < 2; k++)
+			{
+				const size_t wheel = k == 0 ? WHEEL_FL : WHEEL_FR;
+				auto& yaw = wheels_info_[wheel].yaw;
+				yaw = rateLimitedWheelSteering(
+					wheel, (*co.front_wheels_steer_ang)[k], yaw, context.dt);
+			}
+		}
+		else
+		{
+			// Ackermann formulas for inner&outer weels turning angles wrt the
+			// equivalent (central) one:
+			computeFrontWheelAngles(
+				rateLimitedSteering(co.steer_ang, context.dt), wheels_info_[WHEEL_FL].yaw,
+				wheels_info_[WHEEL_FR].yaw);
+		}
 	}
 	return out_torque_per_wheel;
+}
+
+void DynamicsAckermannDrivetrain::invoke_motor_controllers_post_step(const TSimulContext& context)
+{
+	if (controller_)
+	{
+		controller_->on_post_step(context);
+	}
 }
 
 void DynamicsAckermannDrivetrain::computeFrontWheelAngles(
@@ -417,10 +447,10 @@ mrpt::math::TTwist2D DynamicsAckermannDrivetrain::getVelocityLocalOdoEstimate() 
 	return odo_vel;
 }
 
-double DynamicsAckermannDrivetrain::driveshaftSpeed(std::array<double, 4>* dSpeed_dw) const
+void DynamicsAckermannDrivetrain::driveshaftAxleWeights(double& wFront, double& wRear) const
 {
-	double wFront = 0;
-	double wRear = 0;
+	wFront = 0;
+	wRear = 0;
 	switch (diff_type_)
 	{
 		case DIFF_OPEN_FRONT:
@@ -436,6 +466,28 @@ double DynamicsAckermannDrivetrain::driveshaftSpeed(std::array<double, 4>* dSpee
 			wRear = 0.5;
 			break;
 	};
+}
+
+double DynamicsAckermannDrivetrain::driveshaftRadius() const
+{
+	double wFront = 0;
+	double wRear = 0;
+	driveshaftAxleWeights(wFront, wRear);
+
+	double radius = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		const double axleWeight = (i == WHEEL_FL || i == WHEEL_FR) ? wFront : wRear;
+		radius += axleWeight * 0.5 * 0.5 * wheels_info_[i].diameter;
+	}
+	return radius;
+}
+
+double DynamicsAckermannDrivetrain::driveshaftSpeed(std::array<double, 4>* dSpeed_dw) const
+{
+	double wFront = 0;
+	double wRear = 0;
+	driveshaftAxleWeights(wFront, wRear);
 
 	double speed = 0;
 	for (int i = 0; i < 4; i++)

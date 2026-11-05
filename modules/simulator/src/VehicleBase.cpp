@@ -14,6 +14,7 @@
 #include <mrpt/poses/CPose2D.h>
 #include <mrpt/random.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/system/string_utils.h>
 #include <mrpt/viz/CPolyhedron.h>
 #include <mvsim/FrictionModels/DefaultFriction.h>  // For use as default model
 #include <mvsim/FrictionModels/FrictionBase.h>
@@ -372,6 +373,15 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	}
 
 	veh->initLoggers();
+
+	// <Optional> Name of the vehicle frame (for ROS)
+	if (const xml_node<>* bf_node = nodes.first_node("base_frame_id"); bf_node)
+	{
+		if (const auto frame = mrpt::system::trim(bf_node->value()); !frame.empty())
+		{
+			veh->base_frame_id_ = frame;
+		}
+	}
 
 	// <Optional> auto_start_recording
 	if (const xml_node<>* asr_node = nodes.first_node("auto_start_recording"); asr_node)

@@ -16,10 +16,9 @@ void DynamicsDifferential::ControllerJointCommands::control_step(
 	co.wheel_torques = joints_.computeWheelTorques(veh_, ci.context.dt, co.wheel_motors);
 }
 
-void DynamicsDifferential::ControllerJointCommands::on_post_step(
-	[[maybe_unused]] const TSimulContext& context)
+void DynamicsDifferential::ControllerJointCommands::on_post_step(const TSimulContext& context)
 {
-	joints_.updateStates(veh_);
+	joints_.updateStates(veh_, context.dt, {});
 }
 
 void DynamicsDifferential::ControllerJointCommands::load_config(

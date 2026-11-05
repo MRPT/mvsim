@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<!--
+  Example URDF of the "car_ackermann" MVSim vehicle (class "ackermann"), as it
+  could be used for Gazebo or real hardware: its <ros2_control> block names
+  another hardware plugin, but MVSim binds its joints to the simulated ones by
+  name. base_link is at the rear axle center, as the odometry of the steering
+  controllers expects. Each front wheel hangs from its steering joint.
+  Used by demo_ros2_control.launch.py with vehicle:=car_ackermann robot_description:=urdf
+-->
+<robot name="car_ackermann">
+  <link name="base_link"/>
+  <link name="chassis_link">
+    <visual><origin xyz="0.5 0 0"/><geometry><box size="2.6 2.0 0.85"/></geometry></visual>
+  </link>
+  <joint name="chassis_joint" type="fixed">
+    <parent link="base_link"/><child link="chassis_link"/>
+    <origin xyz="0 0 0.575" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Rear wheels -->
+  <link name="rl_wheel">
+    <visual><origin rpy="1.5708 0 0"/><geometry><cylinder radius="0.31" length="0.3"/></geometry></visual>
+  </link>
+  <joint name="rl_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="rl_wheel"/>
+    <origin xyz="0 1.0 0.31" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <link name="rr_wheel">
+    <visual><origin rpy="1.5708 0 0"/><geometry><cylinder radius="0.31" length="0.3"/></geometry></visual>
+  </link>
+  <joint name="rr_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="rr_wheel"/>
+    <origin xyz="0 -1.0 0.31" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- Front wheels: steering joint, then spin. Angle limits: the inner wheel angle
+       when turning toward the side of the wheel, the outer one otherwise -->
+  <link name="fl_steer"/>
+  <joint name="fl_steer_joint" type="revolute">
+    <parent link="base_link"/><child link="fl_steer"/>
+    <origin xyz="1.3 1.0 0.31" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.3804" upper="0.8044" effort="1000" velocity="1.0472"/>
+  </joint>
+  <link name="fl_wheel">
+    <visual><origin rpy="1.5708 0 0"/><geometry><cylinder radius="0.31" length="0.3"/></geometry></visual>
+  </link>
+  <joint name="fl_wheel_joint" type="continuous">
+    <parent link="fl_steer"/><child link="fl_wheel"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <link name="fr_steer"/>
+  <joint name="fr_steer_joint" type="revolute">
+    <parent link="base_link"/><child link="fr_steer"/>
+    <origin xyz="1.3 -1.0 0.31" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8044" upper="0.3804" effort="1000" velocity="1.0472"/>
+  </joint>
+  <link name="fr_wheel">
+    <visual><origin rpy="1.5708 0 0"/><geometry><cylinder radius="0.31" length="0.3"/></geometry></visual>
+  </link>
+  <joint name="fr_wheel_joint" type="continuous">
+    <parent link="fr_steer"/><child link="fr_wheel"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="laser1"/>
+  <joint name="laser1_joint" type="fixed">
+    <parent link="base_link"/><child link="laser1"/>
+    <origin xyz="1.8 0 1.1" rpy="0 0 0"/>
+  </joint>
+
+  <ros2_control name="GazeboSimSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <!-- Traction: rear wheels -->
+    <joint name="rl_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rr_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <!-- Steering -->
+    <joint name="fl_steer_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+    </joint>
+    <joint name="fr_steer_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+    </joint>
+    <!-- Free (not driven) front wheels: state only, for joint_state_broadcaster -->
+    <joint name="fl_wheel_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="fr_wheel_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+</robot>

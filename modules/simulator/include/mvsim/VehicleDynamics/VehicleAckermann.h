@@ -14,8 +14,12 @@
 #include <mvsim/PID_Controller.h>
 #include <mvsim/PoseTrajectoryFollower.h>
 #include <mvsim/VehicleBase.h>
+#include <mvsim/WheelJointsInterface.h>
 
 #include <algorithm>
+#include <array>
+#include <optional>
+#include <utility>
 
 namespace mvsim
 {
@@ -41,6 +45,20 @@ class DynamicsAckermann : public VehicleBase
 	/** The maximum steering angle (rad). Determines min turning radius */
 	double getMaxSteeringAngle() const { return max_steer_ang_; }
 	void setMaxSteeringAngle(double val) { max_steer_ang_ = val; }
+	/** Range [min,max] of the steering angle of a front wheel (WHEEL_FL or
+	 * WHEEL_FR) [rad]: at the maximum (equivalent) steering angle, a wheel
+	 * reaches the inner angle when turning toward its side, and the outer one
+	 * when turning away from it. */
+	std::pair<double, double> wheelSteeringRange(size_t wheel) const
+	{
+		// Turning left: the left wheel is the inner one
+		double inner = 0;
+		double outer = 0;
+		computeFrontWheelAngles(max_steer_ang_, inner, outer);
+		return wheel == WHEEL_FL ? std::pair{-outer, inner} : std::pair{-inner, outer};
+	}
+	/** Maximum steering rate (rad/s), 0 means instantaneous steering */
+	double getMaxSteeringRate() const { return max_steer_rate_; }
 	/** @name Controllers
 		@{ */
 
@@ -52,8 +70,14 @@ class DynamicsAckermann : public VehicleBase
 	{
 		double fl_torque, fr_torque, rl_torque, rr_torque;
 		double steer_ang;  //!< Equivalent Ackermann steering angle
-		/// Optional closed-loop models of the front motors (forward positive)
-		MotorTorqueModel fl_motor, fr_motor;
+		/// If set, the steering angles of the front wheels [FL, FR] (rad),
+		/// used instead of `steer_ang` (e.g. from ros2_control joints)
+		std::optional<std::array<double, 2>> front_wheels_steer_ang;
+		/// Optional closed-loop models of the motors (forward positive)
+		MotorTorqueModel fl_motor;
+		MotorTorqueModel fr_motor;
+		MotorTorqueModel rl_motor;
+		MotorTorqueModel rr_motor;
 		TControllerOutput() : fl_torque(0), fr_torque(0), rl_torque(0), rr_torque(0), steer_ang(0)
 		{
 		}
@@ -250,6 +274,27 @@ class DynamicsAckermann : public VehicleBase
 		double vizHeight_ = 0.5;  //!< [m] height for the GUI trajectory line viz
 	};
 
+	/** Joint commands from an external controller (e.g. ros2_control): one
+	 * traction joint per wheel, and steering joints, see
+	 * WheelJointsInterface::loadConfigAckermann() */
+	class ControllerJointCommands : public ControllerBase
+	{
+	   public:
+		ControllerJointCommands(DynamicsAckermann& veh) : ControllerBase(veh) {}
+		static const char* class_name() { return "ros2_control"; }
+
+		void control_step(
+			const DynamicsAckermann::TControllerInput& ci,
+			DynamicsAckermann::TControllerOutput& co) override;
+		void on_post_step(const TSimulContext& context) override;
+		void load_config(const rapidxml::xml_node<char>& node) override;
+
+		WheelJointsInterface* wheelJointsInterface() override { return &joints_; }
+
+	   private:
+		WheelJointsInterface joints_;
+	};
+
 	const ControllerBase::Ptr& getController() const { return controller_; }
 	ControllerBase::Ptr& getController() { return controller_; }
 	virtual ControllerBaseInterface* getControllerInterface() override { return controller_.get(); }
@@ -296,6 +341,20 @@ class DynamicsAckermann : public VehicleBase
 			desired = steer_ang_ + std::clamp(desired - steer_ang_, -maxDelta, maxDelta);
 		}
 		steer_ang_ = desired;
+		return desired;
+	}
+
+	/** Like rateLimitedSteering(), for the angle of one front wheel, within
+	 *  its wheelSteeringRange(). */
+	double rateLimitedWheelSteering(size_t wheel, double desired, double current, double dt) const
+	{
+		const auto [minAng, maxAng] = wheelSteeringRange(wheel);
+		desired = std::clamp(desired, minAng, maxAng);
+		if (max_steer_rate_ > 0)
+		{
+			const double maxDelta = max_steer_rate_ * dt;
+			desired = current + std::clamp(desired - current, -maxDelta, maxDelta);
+		}
 		return desired;
 	}
 };

@@ -21,6 +21,8 @@
 #include <sstream>
 
 #if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+#include <rcl/remap.h>
+
 #include <array>
 #include <hardware_interface/types/lifecycle_state_names.hpp>
 #include <lifecycle_msgs/msg/state.hpp>
@@ -32,19 +34,32 @@ namespace
 {
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 using mvsim::WheelJointsInterface;
+using JointCommand = WheelJointsInterface::JointCommand;
+using JointKind = WheelJointsInterface::JointKind;
 
-const char* commandInterfaceName(WheelJointsInterface::CommandMode mode)
+/** Command interface name of a joint ("" if state only) */
+std::string commandInterfaceName(JointCommand c)
 {
-	return mode == WheelJointsInterface::CommandMode::Velocity ? hardware_interface::HW_IF_VELOCITY
-															   : hardware_interface::HW_IF_EFFORT;
+	switch (c)
+	{
+		case JointCommand::Velocity:
+			return hardware_interface::HW_IF_VELOCITY;
+		case JointCommand::Effort:
+			return hardware_interface::HW_IF_EFFORT;
+		case JointCommand::Position:
+			return hardware_interface::HW_IF_POSITION;
+		default:
+			return {};
+	}
 }
 
-/** The hardware component: the wheels of a simulated vehicle */
+/** The hardware component: some joints (wheels, steering) of a simulated
+ * vehicle */
 class MvsimSystem : public hardware_interface::SystemInterface
 {
    public:
-	MvsimSystem(WheelJointsInterface& joints, std::vector<size_t> wheelIndices)
-		: joints_(joints), wheelIndices_(std::move(wheelIndices))
+	MvsimSystem(WheelJointsInterface& joints, std::vector<size_t> jointIndices)
+		: joints_(joints), jointIndices_(std::move(jointIndices))
 	{
 	}
 
@@ -105,12 +120,12 @@ class MvsimSystem : public hardware_interface::SystemInterface
 		const auto states = joints_.getStates();
 		for (size_t k = 0; k < info_.joints.size(); k++)
 		{
-			const size_t wi = wheelIndices_[k];
-			if (wi >= states.size())
+			const size_t ji = jointIndices_[k];
+			if (ji >= states.size())
 			{
 				continue;  // no simulation step yet
 			}
-			const auto& st = states[wi];
+			const auto& st = states[ji];
 			setState(k, hardware_interface::HW_IF_POSITION, st.position);
 			setState(k, hardware_interface::HW_IF_VELOCITY, st.velocity);
 			setState(k, hardware_interface::HW_IF_EFFORT, st.effort);
@@ -122,34 +137,44 @@ class MvsimSystem : public hardware_interface::SystemInterface
 		[[maybe_unused]] const rclcpp::Time& time,
 		[[maybe_unused]] const rclcpp::Duration& period) override
 	{
-		// Only the wheels of this system, since others may belong to other
+		// Only the joints of this system, since others may belong to other
 		// systems:
 		for (size_t k = 0; k < info_.joints.size(); k++)
 		{
-			// NaN (e.g. not claimed by any controller) leaves the wheel free:
-			joints_.setCommand(wheelIndices_[k], getCommand(k));
+			// NaN (e.g. not claimed by any controller, or no command
+			// interface) leaves a wheel free, or the steering as is:
+			joints_.setCommand(jointIndices_[k], getCommand(k));
 		}
 		return hardware_interface::return_type::OK;
 	}
 
    private:
 	WheelJointsInterface& joints_;
-	const std::vector<size_t> wheelIndices_;  //!< joint index -> wheel index
+	/// System joint index -> vehicle joint index (WheelJointsInterface::joints())
+	const std::vector<size_t> jointIndices_;
+
+	const WheelJointsInterface::Joint& vehicleJoint(size_t joint) const
+	{
+		return joints_.joints().at(jointIndices_.at(joint));
+	}
 
 	CallbackReturn checkInterfaces()
 	{
-		const std::string cmdIf = commandInterfaceName(joints_.commandMode());
-		for (const auto& j : info_.joints)
+		for (size_t k = 0; k < info_.joints.size(); k++)
 		{
+			const auto& j = info_.joints[k];
+			const std::string cmdIf = commandInterfaceName(vehicleJoint(k).command);
 			for (const auto& ci : j.command_interfaces)
 			{
 				if (ci.name != cmdIf)
 				{
 					RCLCPP_ERROR(
 						logger(),
-						"Joint '%s': command interface '%s' does not match the MVSim vehicle "
-						"<command_interface> ('%s')",
-						j.name.c_str(), ci.name.c_str(), cmdIf.c_str());
+						"Joint '%s': command interface '%s' not supported by MVSim (expected: "
+						"'%s'; see <command_interface> and <steering_joints> in the vehicle "
+						"<controller>)",
+						j.name.c_str(), ci.name.c_str(),
+						cmdIf.empty() ? "none, state only" : cmdIf.c_str());
 					return CallbackReturn::ERROR;
 				}
 			}
@@ -206,25 +231,50 @@ class MvsimSystem : public hardware_interface::SystemInterface
 	double getCommand(size_t joint) const
 	{
 		const auto ifName =
-			info_.joints[joint].name + "/" + commandInterfaceName(joints_.commandMode());
-		return has_command(ifName) ? get_command<double>(ifName) : 0.0;
+			info_.joints[joint].name + "/" + commandInterfaceName(vehicleJoint(joint).command);
+		return has_command(ifName) ? get_command<double>(ifName)
+								   : std::numeric_limits<double>::quiet_NaN();
 	}
 #endif
 };
 
-/** A <ros2_control> system of the robot description, and the vehicle wheel of
- * each of its joints */
+#if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+/** Whether the process has a global node name remap (e.g. "name" in a launch
+ * file). In this ros2_control version, it also renames the controller nodes,
+ * which then do not get their parameters. */
+bool hasGlobalNodeNameRemap()
+{
+	auto ctx = rclcpp::contexts::get_global_default_context()->get_rcl_context();
+	const auto alloc = rcl_get_default_allocator();
+	char* newName = nullptr;
+	if (rcl_remap_node_name(nullptr, &ctx->global_arguments, "controller", alloc, &newName) !=
+		RCL_RET_OK)
+	{
+		return false;
+	}
+	const bool remapped = newName != nullptr;
+	if (newName)
+	{
+		alloc.deallocate(newName, alloc.state);
+	}
+	return remapped;
+}
+#endif
+
+/** A <ros2_control> system of the robot description, and the vehicle joint
+ * of each of its joints */
 struct BoundSystem
 {
 	hardware_interface::HardwareInfo info;
-	std::vector<size_t> wheelIndices;
+	std::vector<size_t> jointIndices;
 };
 
-std::optional<size_t> findWheel(const mvsim::VehicleBase& veh, const std::string& jointName)
+std::optional<size_t> findJoint(const WheelJointsInterface& joints, const std::string& jointName)
 {
-	for (size_t i = 0; i < veh.getNumWheels(); i++)
+	const auto& js = joints.joints();
+	for (size_t i = 0; i < js.size(); i++)
 	{
-		if (veh.getWheelInfo(i).joint_name == jointName)
+		if (js[i].name == jointName)
 		{
 			return i;
 		}
@@ -232,11 +282,11 @@ std::optional<size_t> findWheel(const mvsim::VehicleBase& veh, const std::string
 	return std::nullopt;
 }
 
-/** The <ros2_control> systems whose joints are all wheels of the vehicle,
- * each wheel in one system only. The rest are ignored, with a warning. */
-std::vector<BoundSystem> bindSystemsToWheels(
+/** The <ros2_control> systems whose joints are all joints of the vehicle,
+ * each joint in one system only. The rest are ignored, with a warning. */
+std::vector<BoundSystem> bindSystemsToJoints(
 	const std::string& robotDescription, const mvsim::VehicleBase& veh,
-	const rclcpp::Logger& logger)
+	const WheelJointsInterface& joints, const rclcpp::Logger& logger)
 {
 	std::vector<hardware_interface::HardwareInfo> infos;
 	try
@@ -250,40 +300,40 @@ std::vector<BoundSystem> bindSystemsToWheels(
 	}
 
 	std::vector<BoundSystem> bound;
-	std::set<size_t> boundWheels;  // each wheel can be in one system only
+	std::set<size_t> boundJoints;  // each joint can be in one system only
 	for (const auto& info : infos)
 	{
-		std::vector<size_t> wheelIndices;
+		std::vector<size_t> jointIndices;
 		std::string missing;
 		std::string repeated;
 		for (const auto& j : info.joints)
 		{
-			const auto idx = findWheel(veh, j.name);
+			const auto idx = findJoint(joints, j.name);
 			if (!idx)
 			{
 				missing += (missing.empty() ? "" : ", ") + j.name;
 				continue;
 			}
-			if (boundWheels.count(*idx) ||
-				std::find(wheelIndices.begin(), wheelIndices.end(), *idx) != wheelIndices.end())
+			if (boundJoints.count(*idx) ||
+				std::find(jointIndices.begin(), jointIndices.end(), *idx) != jointIndices.end())
 			{
 				repeated += (repeated.empty() ? "" : ", ") + j.name;
 			}
-			wheelIndices.push_back(*idx);
+			jointIndices.push_back(*idx);
 		}
 		if (info.type != "system" || info.joints.empty() || !missing.empty() || !repeated.empty())
 		{
 			RCLCPP_WARN(
 				logger,
 				"Ignoring <ros2_control> '%s' (type '%s'): only systems whose joints are "
-				"all wheels of vehicle '%s', each in one system only, are supported. Unknown "
+				"all joints of vehicle '%s', each in one system only, are supported. Unknown "
 				"joints: [%s]. Repeated joints: [%s]",
 				info.name.c_str(), info.type.c_str(), veh.getName().c_str(), missing.c_str(),
 				repeated.c_str());
 			continue;
 		}
-		boundWheels.insert(wheelIndices.begin(), wheelIndices.end());
-		bound.push_back({info, wheelIndices});
+		boundJoints.insert(jointIndices.begin(), jointIndices.end());
+		bound.push_back({info, jointIndices});
 
 		RCLCPP_INFO(
 			logger, "Bound <ros2_control> '%s' (%zu joints) to MVSim vehicle '%s'",
@@ -301,7 +351,7 @@ std::vector<BoundSystem> bindSystemsToWheels(
 #if !defined(MVSIM_ROS2_CONTROL_LEGACY_API)
 
 /** A resource manager that binds <ros2_control> systems to the vehicle
- * wheels (by joint name), whatever hardware plugin they specify. */
+ * joints (by name), whatever hardware plugin they specify. */
 class MvsimResourceManager : public hardware_interface::ResourceManager
 {
    public:
@@ -315,7 +365,8 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 	bool load_and_initialize_components(
 		const hardware_interface::ResourceManagerParams& params) override
 	{
-		const auto bound = bindSystemsToWheels(params.robot_description, veh_, get_logger());
+		const auto bound =
+			bindSystemsToJoints(params.robot_description, veh_, joints_, get_logger());
 		for (const auto& b : bound)
 		{
 			hardware_interface::HardwareComponentParams hp;
@@ -323,7 +374,7 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 			hp.clock = get_clock();
 			hp.logger = get_logger();
 			hp.executor = executor_;
-			import_component(std::make_unique<MvsimSystem>(joints_, b.wheelIndices), hp);
+			import_component(std::make_unique<MvsimSystem>(joints_, b.jointIndices), hp);
 		}
 		components_are_loaded_and_initialized_ = !bound.empty();
 		return components_are_loaded_and_initialized_;
@@ -336,8 +387,8 @@ class MvsimResourceManager : public hardware_interface::ResourceManager
 };
 #endif
 
-/** Link name for a wheel joint: "<name>_joint" -> "<name>", else "<name>_link" */
-std::string wheelLinkName(const std::string& jointName)
+/** Link name for a joint: "<name>_joint" -> "<name>", else "<name>_link" */
+std::string jointLinkName(const std::string& jointName)
 {
 	const std::string suffix = "_joint";
 	if (jointName.size() > suffix.size() &&
@@ -348,37 +399,116 @@ std::string wheelLinkName(const std::string& jointName)
 	return jointName + "_link";
 }
 
+/** A URDF joint and its child link */
+void writeUrdfJoint(
+	std::stringstream& ss, const std::string& name, const std::string& link,
+	const std::string& parent, const mrpt::math::TPoint3D& xyz, double yaw,
+	const WheelJointsInterface::Joint* steering)
+{
+	ss << "  <link name=\"" << link << "\"/>\n";
+	ss << "  <joint name=\"" << name << "\" type=\"" << (steering ? "revolute" : "continuous")
+	   << "\">\n";
+	ss << "    <parent link=\"" << parent << "\"/>\n";
+	ss << "    <child link=\"" << link << "\"/>\n";
+	ss << mrpt::format("    <origin xyz=\"%f %f %f\" rpy=\"0 0 %f\"/>\n", xyz.x, xyz.y, xyz.z, yaw);
+	ss << "    <axis xyz=\"" << (steering ? "0 0 1" : "0 1 0") << "\"/>\n";
+	if (steering)
+	{
+		// The steering rate limit (none: a high one, as the URDF needs one).
+		// The effort limit is not used by position commands.
+		const double maxRate = steering->velocityLimit > 0 ? steering->velocityLimit : 100.0;
+		ss << mrpt::format(
+			"    <limit lower=\"%f\" upper=\"%f\" effort=\"1000\" velocity=\"%f\"/>\n",
+			steering->positionMin, steering->positionMax, maxRate);
+	}
+	ss << "  </joint>\n";
+}
+
 }  // namespace
 
 std::string mvsim_node::generateVehicleUrdf(
-	const mvsim::VehicleBase& veh, mvsim::WheelJointsInterface::CommandMode mode)
+	const mvsim::VehicleBase& veh, const mvsim::WheelJointsInterface& joints)
 {
+	const auto& js = joints.joints();
+	const auto wheelPos = [&veh](size_t i)
+	{
+		const auto& w = veh.getWheelInfo(i);
+		return mrpt::math::TPoint3D(w.x, w.y, 0.5 * w.diameter);
+	};
+
+	const std::string& base = veh.getBaseFrameId();
+
+	// The child link of each joint, with unique names:
+	std::set<std::string> usedLinks = {base};
+	std::vector<std::string> links;
+	for (const auto& j : js)
+	{
+		std::string link = jointLinkName(j.name);
+		while (!usedLinks.insert(link).second)
+		{
+			link += "_link";
+		}
+		links.push_back(link);
+	}
+
 	std::stringstream ss;
 	ss << "<?xml version=\"1.0\"?>\n";
 	ss << "<robot name=\"" << veh.getName() << "\">\n";
-	ss << "  <link name=\"base_link\"/>\n";
-	for (size_t i = 0; i < veh.getNumWheels(); i++)
+	ss << "  <link name=\"" << base << "\"/>\n";
+	for (size_t i = 0; i < js.size(); i++)
 	{
-		const auto& w = veh.getWheelInfo(i);
-		const auto link = wheelLinkName(w.joint_name);
-		ss << "  <link name=\"" << link << "\"/>\n";
-		ss << "  <joint name=\"" << w.joint_name << "\" type=\"continuous\">\n";
-		ss << "    <parent link=\"base_link\"/>\n";
-		ss << "    <child link=\"" << link << "\"/>\n";
-		ss << mrpt::format(
-			"    <origin xyz=\"%f %f %f\" rpy=\"0 0 %f\"/>\n", w.x, w.y, 0.5 * w.diameter, w.yaw);
-		ss << "    <axis xyz=\"0 1 0\"/>\n";
-		ss << "  </joint>\n";
+		const auto& j = js[i];
+		switch (j.kind)
+		{
+			case JointKind::WheelSpin:
+			{
+				// Steered wheels hang from their steering joint link:
+				const auto steer = joints.findJoint(JointKind::WheelSteering, j.wheel);
+				if (steer)
+				{
+					writeUrdfJoint(ss, j.name, links[i], links[*steer], {0, 0, 0}, 0, nullptr);
+				}
+				else
+				{
+					writeUrdfJoint(
+						ss, j.name, links[i], base, wheelPos(j.wheel),
+						veh.getWheelInfo(j.wheel).yaw, nullptr);
+				}
+			}
+			break;
+			case JointKind::WheelSteering:
+				writeUrdfJoint(ss, j.name, links[i], base, wheelPos(j.wheel), 0, &j);
+				break;
+			case JointKind::CentralSteering:
+			case JointKind::CentralTraction:
+			{
+				// Virtual joints of the bicycle model, at the center of the
+				// front (steering) or rear (traction) axle. Ackermann vehicles
+				// have the front wheels last:
+				const size_t n = veh.getNumWheels();
+				const bool front = j.kind == JointKind::CentralSteering;
+				const size_t i0 = front ? n - 2 : 0;
+				const auto pos = (wheelPos(i0) + wheelPos(i0 + 1)) * 0.5;
+				writeUrdfJoint(ss, j.name, links[i], base, pos, 0, front ? &j : nullptr);
+			}
+			break;
+		};
 	}
 	ss << "  <ros2_control name=\"mvsim_" << veh.getName() << "\" type=\"system\">\n";
 	ss << "    <hardware><plugin>mvsim/MvsimSystem</plugin></hardware>\n";
-	for (size_t i = 0; i < veh.getNumWheels(); i++)
+	for (const auto& j : js)
 	{
-		ss << "    <joint name=\"" << veh.getWheelInfo(i).joint_name << "\">\n";
-		ss << "      <command_interface name=\"" << commandInterfaceName(mode) << "\"/>\n";
+		ss << "    <joint name=\"" << j.name << "\">\n";
+		if (j.command != JointCommand::None)
+		{
+			ss << "      <command_interface name=\"" << commandInterfaceName(j.command) << "\"/>\n";
+		}
 		ss << "      <state_interface name=\"position\"/>\n";
 		ss << "      <state_interface name=\"velocity\"/>\n";
-		ss << "      <state_interface name=\"effort\"/>\n";
+		if (j.hasEffortState())
+		{
+			ss << "      <state_interface name=\"effort\"/>\n";
+		}
 		ss << "    </joint>\n";
 	}
 	ss << "  </ros2_control>\n";
@@ -398,6 +528,16 @@ Ros2ControlVehicle::Ros2ControlVehicle(
 	const auto qosDescription = rclcpp::QoS(1).transient_local().reliable();
 
 #if defined(MVSIM_ROS2_CONTROL_LEGACY_API)
+	if (hasGlobalNodeNameRemap())
+	{
+		RCLCPP_ERROR(
+			descriptionNode_->get_logger(),
+			"The node name of mvsim_node is set by a global remap (e.g. 'name' in its launch "
+			"file Node action). In this ROS 2 version, it renames the ros2_control controller "
+			"nodes too, so they will not get their parameters: remove it (the default node "
+			"name is 'mvsim').");
+	}
+
 	// This resource manager version cannot bind the systems by itself: do it
 	// here when the robot description arrives, then create the controller
 	// manager with it.
@@ -418,7 +558,7 @@ Ros2ControlVehicle::Ros2ControlVehicle(
 		pubDescription_ = descriptionNode_->create_publisher<std_msgs::msg::String>(
 			"robot_description", qosDescription);
 		std_msgs::msg::String msg;
-		msg.data = generateVehicleUrdf(veh_, joints_.commandMode());
+		msg.data = generateVehicleUrdf(veh_, joints_);
 		pubDescription_->publish(msg);
 	}
 	executor_->add_node(descriptionNode_);
@@ -540,7 +680,7 @@ void Ros2ControlVehicle::onRobotDescription(const std::string& robotDescription)
 		}
 	}
 
-	const auto bound = bindSystemsToWheels(robotDescription, veh_, logger);
+	const auto bound = bindSystemsToJoints(robotDescription, veh_, joints_, logger);
 	if (bound.empty())
 	{
 		return;
@@ -552,7 +692,7 @@ void Ros2ControlVehicle::onRobotDescription(const std::string& robotDescription)
 		auto rm = std::make_unique<hardware_interface::ResourceManager>();
 		for (const auto& b : bound)
 		{
-			rm->import_component(std::make_unique<MvsimSystem>(joints_, b.wheelIndices), b.info);
+			rm->import_component(std::make_unique<MvsimSystem>(joints_, b.jointIndices), b.info);
 		}
 		// Only marks the description as loaded (its systems were imported above):
 		rm->load_urdf(robotDescription, false /*validate*/, false /*load components*/);

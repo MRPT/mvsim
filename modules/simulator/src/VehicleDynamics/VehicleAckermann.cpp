@@ -86,6 +86,10 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 				mrpt::system::LVL_WARN, "No XML entry '%s' found: using defaults for wheel #%u",
 				w_names[i], static_cast<unsigned int>(i));
 		}
+		if (wheels_info_[i].joint_name.empty())
+		{
+			wheels_info_[i].joint_name = std::string(w_names[i]) + "_joint";
+		}
 	}
 
 	//<f_wheels_x>1.3</f_wheels_x>
@@ -147,6 +151,10 @@ void DynamicsAckermann::dynamics_load_params_from_xml(const rapidxml::xml_node<c
 			{
 				controller_ = std::make_shared<ControllerTrajectory>(*this);
 			}
+			else if (sCtrlClass == ControllerJointCommands::class_name())
+			{
+				controller_ = std::make_shared<ControllerJointCommands>(*this);
+			}
 			else
 			{
 				THROW_EXCEPTION_FMT(
@@ -189,15 +197,31 @@ std::vector<double> DynamicsAckermann::invoke_motor_controllers(const TSimulCont
 		out_torque_per_wheel[WHEEL_FR] = co.fr_torque;
 
 		wheelMotors_.assign(4, MotorTorqueModel());
+		wheelMotors_[WHEEL_RL] = co.rl_motor;
+		wheelMotors_[WHEEL_RR] = co.rr_motor;
 		wheelMotors_[WHEEL_FL] = co.fl_motor;
 		wheelMotors_[WHEEL_FR] = co.fr_motor;
 
 		// Kinematically-driven steering wheels:
-		// Ackermann formulas for inner&outer weels turning angles wrt the
-		// equivalent (central) one:
-		computeFrontWheelAngles(
-			rateLimitedSteering(co.steer_ang, context.dt), wheels_info_[WHEEL_FL].yaw,
-			wheels_info_[WHEEL_FR].yaw);
+		if (co.front_wheels_steer_ang)
+		{
+			// Each wheel angle given by the controller:
+			for (int k = 0; k < 2; k++)
+			{
+				const size_t wheel = k == 0 ? WHEEL_FL : WHEEL_FR;
+				auto& yaw = wheels_info_[wheel].yaw;
+				yaw = rateLimitedWheelSteering(
+					wheel, (*co.front_wheels_steer_ang)[k], yaw, context.dt);
+			}
+		}
+		else
+		{
+			// Ackermann formulas for inner&outer weels turning angles wrt the
+			// equivalent (central) one:
+			computeFrontWheelAngles(
+				rateLimitedSteering(co.steer_ang, context.dt), wheels_info_[WHEEL_FL].yaw,
+				wheels_info_[WHEEL_FR].yaw);
+		}
 	}
 	return out_torque_per_wheel;
 }
