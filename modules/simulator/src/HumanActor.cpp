@@ -242,8 +242,7 @@ void HumanActor::parsePath(const rapidxml::xml_node<char>* pathNode)
 		pathStartPose_ = getPose();
 		pathTargetPose_ = path_[0].pose;
 
-		const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
-		pathSegmentLength_ = delta.norm();
+		pathSegmentLength_ = currentSegmentLength();
 		pathSegmentProgress_ = 0.0;
 	}
 }
@@ -263,6 +262,13 @@ void HumanActor::setPath(const std::vector<Waypoint>& waypoints, bool loop)
 	initializePathFromCurrentPose();
 }
 
+double HumanActor::currentSegmentLength() const
+{
+	const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
+	// With terrain following, z comes from the ground, not the waypoints:
+	return followTerrain_ ? std::hypot(delta.x, delta.y) : delta.norm();
+}
+
 void HumanActor::initializePathFromCurrentPose()
 {
 	if (path_.empty())
@@ -272,8 +278,7 @@ void HumanActor::initializePathFromCurrentPose()
 	pathStartPose_ = getPose();
 	pathTargetPose_ = path_[0].pose;
 
-	const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
-	pathSegmentLength_ = delta.norm();
+	pathSegmentLength_ = currentSegmentLength();
 	pathSegmentProgress_ = 0.0;
 }
 
@@ -309,6 +314,12 @@ void HumanActor::simul_pre_timestep(const TSimulContext& context)
 	if (!path_.empty())
 	{
 		updatePathFollowing(context);
+	}
+
+	// Ground height, with or without a path:
+	if (followTerrain_)
+	{
+		updateTerrainHeight();
 	}
 
 	// Animation state machine.
@@ -388,6 +399,24 @@ void HumanActor::updatePathFollowing(const TSimulContext& context)
 	setPose(newPose);
 }
 
+void HumanActor::updateTerrainHeight()
+{
+	// Like a wheel: ground no higher than one step above the last one.
+	// The first time, take the topmost ground under the actor.
+	constexpr double maxStepHeight = 0.5;
+	constexpr double firstQueryHeight = 1e4;
+
+	auto pose = getPose();
+	const double queryZ = terrainZ_ ? *terrainZ_ + maxStepHeight : firstQueryHeight;
+	terrainZ_ = world_->getHighestElevationUnder(mrpt::math::TPoint3Df(
+		static_cast<float>(pose.x), static_cast<float>(pose.y), static_cast<float>(queryZ)));
+	if (pose.z != *terrainZ_)
+	{
+		pose.z = *terrainZ_;
+		setPose(pose);
+	}
+}
+
 void HumanActor::advanceToNextWaypoint()
 {
 	if (path_.empty())
@@ -417,8 +446,7 @@ void HumanActor::advanceToNextWaypoint()
 	pathStartPose_ = getPose();
 	pathTargetPose_ = path_[currentWaypointIdx_].pose;
 
-	const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
-	pathSegmentLength_ = delta.norm();
+	pathSegmentLength_ = currentSegmentLength();
 	pathSegmentProgress_ = 0.0;
 }
 

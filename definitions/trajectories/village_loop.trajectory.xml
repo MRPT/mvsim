@@ -1,0 +1,31 @@
+<!--
+  Exactly-reproducible-trajectory snippet for mvsim_tutorial/demo_ouster_rev8.world.xml
+  (opt-in, see MVSIM_DEMO_TRAJECTORY there): a closed loop at 1 m/s along the
+  right lane of the village main street and the southern half of the ring
+  road. Intended to be <include>d inside a <controller class="trajectory">
+  node, with loop="true" (the default).
+-->
+<waypoint t="0.0" x="-30.00" y="-1.75" />
+<waypoint t="73.2" x="43.25" y="-1.75" />
+<waypoint t="91.5" x="43.25" y="-20.00" />
+<waypoint t="93.8" x="43.05" y="-22.30" />
+<waypoint t="96.1" x="42.45" y="-24.53" />
+<waypoint t="98.4" x="41.47" y="-26.62" />
+<waypoint t="100.7" x="40.15" y="-28.52" />
+<waypoint t="103.0" x="38.52" y="-30.15" />
+<waypoint t="105.4" x="36.62" y="-31.47" />
+<waypoint t="107.7" x="34.53" y="-32.45" />
+<waypoint t="110.0" x="32.30" y="-33.05" />
+<waypoint t="112.3" x="30.00" y="-33.25" />
+<waypoint t="172.3" x="-30.00" y="-33.25" />
+<waypoint t="174.6" x="-32.30" y="-33.05" />
+<waypoint t="176.9" x="-34.53" y="-32.45" />
+<waypoint t="179.2" x="-36.62" y="-31.47" />
+<waypoint t="181.5" x="-38.52" y="-30.15" />
+<waypoint t="183.8" x="-40.15" y="-28.52" />
+<waypoint t="186.1" x="-41.47" y="-26.62" />
+<waypoint t="188.5" x="-42.45" y="-24.53" />
+<waypoint t="190.8" x="-43.05" y="-22.30" />
+<waypoint t="193.1" x="-43.25" y="-20.00" />
+<waypoint t="211.3" x="-43.25" y="-1.75" />
+<waypoint t="224.6" x="-30.00" y="-1.75" />

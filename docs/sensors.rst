@@ -175,6 +175,51 @@ OUSTER OS1
 |
 
 
+OUSTER Rev8 (RGB)
+##########################
+
+Ouster Rev8 3D LiDAR with per-point RGB color, as the "native color" models of
+that sensor family. Default: OS1 (45 deg vertical FOV), 128 channels, 1024 columns
+at 10 Hz. Other models and modes are set with the include variables (e.g.
+``vert_fov_degrees="90"`` for an OS0, ``vert_nrays="256" sensor_horz_nrays="4096"
+sensor_period_sec="0.2"`` for the 4096x256 at 5 Hz mode).
+
+Each point has the fields ``x y z intensity t ring color_r color_g color_b``,
+with the color (uint8) of the rendered scene where the ray hits, from the same
+render used for the ranges. The ROS 2 node publishes them as a ``PointCloud2``
+with a packed ``rgb`` float32 field (as PCL and ``ouster-ros`` with
+``point_type: xyzrgb`` do), so RViz shows it with the ``RGB8`` color transformer.
+See the :ref:`demo_ouster_rev8 <demo-ouster-rev8>` demo world.
+
+.. dropdown:: To use in your robot, copy and paste this inside a ``<vehicle>`` or ``<vehicle:class>`` tag.
+   :open:
+
+   .. code-block:: xml
+
+		<include file="$(ros2 pkg prefix mvsim)/share/mvsim/definitions/ouster-rev8.sensor.xml"
+		  sensor_x="0.0" sensor_z="0.55"
+		  sensor_name="lidar1"
+		/>
+
+.. dropdown:: All parameters available in ouster-rev8.sensor.xml
+
+   File: `mvsim_tutorial/definitions/ouster-rev8.sensor.xml <https://github.com/MRPT/mvsim/blob/develop/definitions/ouster-rev8.sensor.xml>`_
+
+   .. literalinclude:: ../definitions/ouster-rev8.sensor.xml
+      :language: xml
+
+|
+
+**Per-point RGB in any 3D LiDAR:** add ``<generate_rgb>true</generate_rgb>`` to any
+``lidar3d`` sensor. It requires reading back the rendered color image, so it is
+slower than a depth-only lidar (as ``<generate_intensity>``, which takes the
+intensity from the grayscale of the same image). Lidars without these options
+render depth only. The color is taken without shadows. The offline ray tracer
+``mvsim-dataset-gen`` has no colors and ignores ``generate_rgb``.
+
+|
+
+
 Velodyne VLP-16
 ##########################
 

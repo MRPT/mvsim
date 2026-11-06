@@ -42,6 +42,12 @@
           <command_interface>${command_interface|velocity}</command_interface>
           <controllers_yaml>${controllers_yaml|}</controllers_yaml>
           <robot_description>${robot_description|generated}</robot_description>
+          <!-- Only for controller="trajectory": set use_trajectory_file="true" and
+               trajectory_file to a waypoints file, relative to this directory
+               (e.g. "trajectories/square_loop.trajectory.xml") or absolute -->
+          <if condition="${use_trajectory_file|false}">
+            <include file="${trajectory_file|}" />
+          </if>
         </controller>
     </dynamics>
 
