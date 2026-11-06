@@ -311,6 +311,12 @@ void HumanActor::simul_pre_timestep(const TSimulContext& context)
 		updatePathFollowing(context);
 	}
 
+	// Ground height, with or without a path:
+	if (followTerrain_)
+	{
+		updateTerrainHeight();
+	}
+
 	// Animation state machine.
 	updateAnimationState(context.dt);
 
@@ -384,22 +390,26 @@ void HumanActor::updatePathFollowing(const TSimulContext& context)
 	}
 
 	// Interpolate pose along segment.
-	auto newPose = interpolatePathPose(pathSegmentProgress_);
-
-	if (followTerrain_)
-	{
-		// Like a wheel: ground no higher than one step above the last one.
-		// The first time, take the topmost ground under the actor.
-		constexpr double maxStepHeight = 0.5;
-		constexpr double firstQueryHeight = 1e4;
-		const double queryZ = terrainZ_ ? *terrainZ_ + maxStepHeight : firstQueryHeight;
-		terrainZ_ = world_->getHighestElevationUnder(mrpt::math::TPoint3Df(
-			static_cast<float>(newPose.x), static_cast<float>(newPose.y),
-			static_cast<float>(queryZ)));
-		newPose.z = *terrainZ_;
-	}
-
+	const auto newPose = interpolatePathPose(pathSegmentProgress_);
 	setPose(newPose);
+}
+
+void HumanActor::updateTerrainHeight()
+{
+	// Like a wheel: ground no higher than one step above the last one.
+	// The first time, take the topmost ground under the actor.
+	constexpr double maxStepHeight = 0.5;
+	constexpr double firstQueryHeight = 1e4;
+
+	auto pose = getPose();
+	const double queryZ = terrainZ_ ? *terrainZ_ + maxStepHeight : firstQueryHeight;
+	terrainZ_ = world_->getHighestElevationUnder(mrpt::math::TPoint3Df(
+		static_cast<float>(pose.x), static_cast<float>(pose.y), static_cast<float>(queryZ)));
+	if (pose.z != *terrainZ_)
+	{
+		pose.z = *terrainZ_;
+		setPose(pose);
+	}
 }
 
 void HumanActor::advanceToNextWaypoint()

@@ -6,8 +6,8 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-// HumanActor with follow_terrain: its height follows an elevation map ramp,
-// while actors without it keep the waypoints height.
+// HumanActor with follow_terrain: its height follows an elevation map ramp
+// (with or without a path), while actors without it keep the waypoints height.
 
 #include <mvsim/HumanActor.h>
 #include <mvsim/World.h>
@@ -41,6 +41,10 @@ const char* WORLD_XML = R"(
       <waypoint>-5 0 0</waypoint>
       <waypoint>5 0 0</waypoint>
     </path>
+  </actor>
+  <actor name="stander">
+    <follow_terrain>true</follow_terrain>
+    <init_pose>5 -3 0</init_pose>
   </actor>
   <actor name="floater">
     <walking_speed>1.0</walking_speed>
@@ -81,6 +85,8 @@ int main()
 			EXPECT_NEAR(floater->getPose().z, 0.0, 0.05);
 		}
 		EXPECT_GT(walker->getPose().x, 0.0);
+		// Without a path, too:
+		EXPECT_NEAR(actor(world, "stander")->getPose().z, 1.5, 0.05);
 	}
 	catch (const std::exception& e)
 	{

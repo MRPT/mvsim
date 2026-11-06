@@ -250,6 +250,9 @@ class HumanActor : public CVisualObject, public Simulable
 	/** Update path following logic each timestep. */
 	void updatePathFollowing(const TSimulContext& context);
 
+	/** Sets z to the ground height under the actor (follow_terrain). */
+	void updateTerrainHeight();
+
 	/** Update animation state machine. */
 	void updateAnimationState(double dt);
 

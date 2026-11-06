@@ -687,7 +687,8 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 				noiseSeq.reserve(noiseLen);
 				for (size_t i = 0; i < noiseLen; i++)
 				{
-					noiseSeq.push_back(static_cast<float>(rng.drawGaussian1D(0.0, rangeStdNoise_)));
+					// Unit noise, scaled by each sensor's own std. deviation:
+					noiseSeq.push_back(static_cast<float>(rng.drawGaussian1D(0.0, 1.0)));
 				}
 			}
 		}
@@ -729,7 +730,8 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 					// Add noise (d==0: invalid range):
 					if (d != 0 && rangeStdNoise_ > 0)
 					{
-						const float dNoisy = d + noiseSeq[noiseIdx++];
+						const float dNoisy =
+							d + static_cast<float>(rangeStdNoise_) * noiseSeq[noiseIdx++];
 						if (noiseIdx >= noiseLen)
 						{
 							noiseIdx = 0;
