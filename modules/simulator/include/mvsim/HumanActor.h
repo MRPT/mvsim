@@ -214,6 +214,9 @@ class HumanActor : public CVisualObject, public Simulable
 
 	void initializePathFromCurrentPose();
 
+	/** Length of the current path segment (in XY only with follow_terrain). */
+	double currentSegmentLength() const;
+
 	// ==================== Animation ====================
 
 	AnimationState animState_ = AnimationState::Idle;

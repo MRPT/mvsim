@@ -57,6 +57,30 @@ const char* WORLD_XML = R"(
 </mvsim_world>
 )";
 
+// Steep ramp (z = 10 + x): the walking speed must not depend on the height
+// difference between the ground and the waypoints.
+const char* STEEP_WORLD_XML = R"(
+<mvsim_world version="1.0">
+  <simul_timestep>0.01</simul_timestep>
+  <element class="elevation_map">
+    <resolution>10.0</resolution>
+    <elevation_data_matrix>[0 0 0; 10 10 10; 20 20 20]</elevation_data_matrix>
+    <corner_min_x>-10</corner_min_x>
+    <corner_min_y>-10</corner_min_y>
+  </element>
+  <actor name="climber">
+    <follow_terrain>true</follow_terrain>
+    <walking_speed>1.0</walking_speed>
+    <init_pose>-5 0 0</init_pose>
+    <path loop="false">
+      <waypoint>-5 0 0</waypoint>
+      <waypoint>5 0 0</waypoint>
+      <waypoint>-5 0 180</waypoint>
+    </path>
+  </actor>
+</mvsim_world>
+)";
+
 mvsim::HumanActor::Ptr actor(mvsim::World& world, const std::string& name)
 {
 	const auto it = world.getListOfActors().find(name);
@@ -87,6 +111,25 @@ int main()
 		EXPECT_GT(walker->getPose().x, 0.0);
 		// Without a path, too:
 		EXPECT_NEAR(actor(world, "stander")->getPose().z, 1.5, 0.05);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Exception: " << e.what() << "\n";
+		return 1;
+	}
+
+	try
+	{
+		mvsim::World world;
+		world.headless(true);
+		world.load_from_XML(STEEP_WORLD_XML, ".");
+		const auto climber = actor(world, "climber");
+
+		// 10 m up the ramp, then 5 m back down (planar distance), at 1 m/s:
+		world.run_simulation(15.0);
+		const auto p = climber->getPose();
+		EXPECT_NEAR(p.x, 0.0, 0.5);
+		EXPECT_NEAR(p.z, 10.0 + p.x, 0.1);
 	}
 	catch (const std::exception& e)
 	{

@@ -242,8 +242,7 @@ void HumanActor::parsePath(const rapidxml::xml_node<char>* pathNode)
 		pathStartPose_ = getPose();
 		pathTargetPose_ = path_[0].pose;
 
-		const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
-		pathSegmentLength_ = delta.norm();
+		pathSegmentLength_ = currentSegmentLength();
 		pathSegmentProgress_ = 0.0;
 	}
 }
@@ -263,6 +262,13 @@ void HumanActor::setPath(const std::vector<Waypoint>& waypoints, bool loop)
 	initializePathFromCurrentPose();
 }
 
+double HumanActor::currentSegmentLength() const
+{
+	const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
+	// With terrain following, z comes from the ground, not the waypoints:
+	return followTerrain_ ? std::hypot(delta.x, delta.y) : delta.norm();
+}
+
 void HumanActor::initializePathFromCurrentPose()
 {
 	if (path_.empty())
@@ -272,8 +278,7 @@ void HumanActor::initializePathFromCurrentPose()
 	pathStartPose_ = getPose();
 	pathTargetPose_ = path_[0].pose;
 
-	const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
-	pathSegmentLength_ = delta.norm();
+	pathSegmentLength_ = currentSegmentLength();
 	pathSegmentProgress_ = 0.0;
 }
 
@@ -441,8 +446,7 @@ void HumanActor::advanceToNextWaypoint()
 	pathStartPose_ = getPose();
 	pathTargetPose_ = path_[currentWaypointIdx_].pose;
 
-	const auto delta = pathTargetPose_.translation() - pathStartPose_.translation();
-	pathSegmentLength_ = delta.norm();
+	pathSegmentLength_ = currentSegmentLength();
 	pathSegmentProgress_ = 0.0;
 }
 
