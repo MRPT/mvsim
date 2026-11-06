@@ -1,0 +1,54 @@
+<sensor class="lidar3d" name="${sensor_name|lidar1}">
+    <!--
+      Ouster Rev8 3D LiDAR with per-point RGB color ("native color" models).
+      Default: OS1, 128 channels, 1024 columns at 10 Hz.
+
+      Each point has the fields: x y z intensity t ring color_r color_g color_b
+      (the ROS node publishes the color as a packed "rgb" float32 field, as
+      ouster-ros "xyzrgb" and PCL do).
+    -->
+    <pose_3d> ${sensor_x|0.0}  ${sensor_y|0.0}  ${sensor_z|0.5}  ${sensor_yaw|0.0} ${sensor_pitch|0.0} ${sensor_roll|0.0}</pose_3d>
+
+    <!-- Channels: 32, 64, 128 or 256 (OS-1-MAX) -->
+    <vert_nrays>${vert_nrays|128}</vert_nrays>
+
+    <!-- Vertical FOV:
+         - OS0: 90deg
+         - OS1: 45deg
+         - OS2: 22.5deg
+    -->
+    <vert_fov_degrees>${vert_fov_degrees|45.0}</vert_fov_degrees>
+
+    <!-- Horizontal resolution x frame rate (lidar modes):
+        - 1024 x 10 Hz (default)
+        - 2048 x 10 Hz
+        - 4096 x 5 Hz  (sensor_period_sec=0.2)
+    -->
+    <sensor_period>${sensor_period_sec|0.10}</sensor_period>
+    <horz_nrays>${sensor_horz_nrays|1024}</horz_nrays>
+
+    <!-- 1.0=minimum (faster), larger values=potentially finer details captured -->
+    <horz_resolution_factor>${horz_resolution_factor|1.0}</horz_resolution_factor>
+    <vert_resolution_factor>${vert_resolution_factor|1.0}</vert_resolution_factor>
+
+    <!-- Depth ratio (0 to 1) between adjacent depth image to allow linear interpolation of ranges -->
+    <max_vert_relative_depth_to_interpolate>${max_vert_relative_depth_to_interpolate|0.3}</max_vert_relative_depth_to_interpolate>
+    <max_horz_relative_depth_to_interpolate>${max_horz_relative_depth_to_interpolate|0.1}</max_horz_relative_depth_to_interpolate>
+
+    <range_std_noise>${sensor_std_noise|0.01}</range_std_noise>
+    <min_range>${min_range|0.5}</min_range>
+    <max_range>${max_range|120.0}</max_range>
+
+    <ignore_parent_body>${ignore_parent_body|true}</ignore_parent_body>
+
+    <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/velodyne-vlp16.dae</model_uri> <model_roll>90</model_roll> </visual>
+
+    <!-- Intensity from the grayscale of the scene, and per-point RGB color -->
+    <generate_intensity>${generate_intensity|true}</generate_intensity>
+    <generate_rgb>${generate_rgb|true}</generate_rgb>
+
+    <!-- Publish sensor on MVSIM ZMQ topic? (Note, this is **not** related to ROS at all) -->
+    <publish enabled="${sensor_publish|false}">
+        <publish_topic>/${PARENT_NAME}/${NAME}</publish_topic>
+    </publish>
+</sensor>

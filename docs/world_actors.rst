@@ -112,6 +112,9 @@ speed, and animation mapping. Multiple ``<actor>`` instances can share one class
 * **<height>** - Character height in meters (default: 1.75). Used for the placeholder visual
 * **<collision_radius>** - Radius for collision shape in meters (default: 0.3)
 * **<collision_height>** - Height for collision shape in meters (default: 1.7)
+* **<follow_terrain>** - If ``true``, the actor height follows the ground under it
+  (elevation maps, etc.) instead of the height of the waypoints, e.g. to walk on hills
+  (default: false)
 * **<animation_idle>** - Name of the idle animation clip in the 3D model
 * **<animation_walk>** - Name of the walking animation clip
 * **<animation_run>** - Name of the running animation clip
