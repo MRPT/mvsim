@@ -25,6 +25,10 @@ namespace mvsim
  * The number of rays in the vertical FOV and the number of samples in each
  * horizontal row are configurable.
  *
+ * Optionally, each point carries the color of the scene where the ray hits
+ * (`generate_rgb`), as in RGB LiDARs (e.g. Ouster Rev8), in the uint8 point
+ * fields `color_r`, `color_g`, `color_b`.
+ *
  * \ingroup sensors_module
  */
 class Lidar3D : public SensorBase
@@ -56,6 +60,7 @@ class Lidar3D : public SensorBase
 	float maxRange() const { return maxRange_; }
 	double rangeStdNoise() const { return rangeStdNoise_; }
 	bool generateIntensityFromRGB() const { return generateIntensityFromRGB_; }
+	bool generateRGB() const { return generateRGB_; }
 
 	/** The sensor's pose on the vehicle. Equivalent to getRelativePose(),
 	 * exposed under a public, non-overridden name: Lidar3D re-declares
@@ -122,6 +127,10 @@ class Lidar3D : public SensorBase
 	/** If true, intensity values will be generated from the grayscale of
 	 *  the rendered RGB image for each lidar return. */
 	bool generateIntensityFromRGB_ = true;
+
+	/** If true, each point gets the color (`color_{r,g,b}` uint8 fields)
+	 *  of the rendered RGB image pixel of its lidar return. */
+	bool generateRGB_ = false;
 
 	struct PerRayLUT
 	{

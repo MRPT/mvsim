@@ -384,7 +384,21 @@ void HumanActor::updatePathFollowing(const TSimulContext& context)
 	}
 
 	// Interpolate pose along segment.
-	const auto newPose = interpolatePathPose(pathSegmentProgress_);
+	auto newPose = interpolatePathPose(pathSegmentProgress_);
+
+	if (followTerrain_)
+	{
+		// Like a wheel: ground no higher than one step above the last one.
+		// The first time, take the topmost ground under the actor.
+		constexpr double maxStepHeight = 0.5;
+		constexpr double firstQueryHeight = 1e4;
+		const double queryZ = terrainZ_ ? *terrainZ_ + maxStepHeight : firstQueryHeight;
+		terrainZ_ = world_->getHighestElevationUnder(mrpt::math::TPoint3Df(
+			static_cast<float>(newPose.x), static_cast<float>(newPose.y),
+			static_cast<float>(queryZ)));
+		newPose.z = *terrainZ_;
+	}
+
 	setPose(newPose);
 }
 

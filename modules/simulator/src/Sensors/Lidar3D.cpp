@@ -18,12 +18,52 @@
 #include <mvsim/World.h>
 #include <mvsim/WorldElements/OccupancyGridMap.h>
 
+#include <array>
+#include <cmath>
+#include <type_traits>
+
 #include "xml_utils.h"
 
 using namespace mvsim;
 using namespace rapidxml;
 
 // TODO(jlbc): Also store obs as CObservationRotatingScan??
+
+namespace
+{
+// Point colors are sRGB (as in camera images), but the renderer takes vertex
+// colors as linear and encodes them to sRGB (gamma correction): convert them
+// back for display, so they look like the scene.
+void linearizePointColors(const mrpt::maps::CPointsMap& pts, mrpt::viz::CPointCloudColoured& gl)
+{
+	using mrpt::maps::CPointsMap;
+	const auto* R = pts.getPointsBufferRef_uint8_field(CPointsMap::POINT_FIELD_COLOR_Ru8);
+	const auto* G = pts.getPointsBufferRef_uint8_field(CPointsMap::POINT_FIELD_COLOR_Gu8);
+	const auto* B = pts.getPointsBufferRef_uint8_field(CPointsMap::POINT_FIELD_COLOR_Bu8);
+	if (!R || !G || !B || R->size() != gl.size())
+	{
+		return;
+	}
+
+	static const std::array<uint8_t, 256> lut = []()
+	{
+		std::array<uint8_t, 256> t{};
+		for (size_t i = 0; i < t.size(); i++)
+		{
+			const double c = static_cast<double>(i) / 255.0;
+			const double lin = c <= 0.04045 ? c / 12.92 : std::pow((c + 0.055) / 1.055, 2.4);
+			t[i] = static_cast<uint8_t>(std::lround(255.0 * lin));
+		}
+		return t;
+	}();
+
+	for (size_t i = 0; i < R->size(); i++)
+	{
+		gl.setPointColor_u8_fast(i, lut[(*R)[i]], lut[(*G)[i]], lut[(*B)[i]]);
+	}
+	gl.markAllPointsAsNew();
+}
+}  // namespace
 
 Lidar3D::Lidar3D(Simulable& parent, const rapidxml::xml_node<char>* root) : SensorBase(parent)
 {
@@ -60,6 +100,7 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["max_horz_relative_depth_to_interpolate"] =
 		TParamEntry("%f", &maxDepthInterpolationStepHorz_);
 	params["generate_intensity"] = TParamEntry("%bool", &generateIntensityFromRGB_);
+	params["generate_rgb"] = TParamEntry("%bool", &generateRGB_);
 
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
@@ -153,6 +194,11 @@ void Lidar3D::internalGuiUpdate(
 			if (last_scan2gui_ && last_scan2gui_->pointcloud)
 			{
 				glPoints_->loadFromPointsMap(last_scan2gui_->pointcloud.get());
+				if (generateRGB_ && viz &&
+					viz->get().getViewport()->lightParameters().gamma_correction)
+				{
+					linearizePointColors(*last_scan2gui_->pointcloud, *glPoints_);
+				}
 				last_scan2gui_.reset();
 			}
 		}
@@ -356,6 +402,22 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 	ASSERT_(curPts_Is);
 	ASSERT_(curPts_Ts);
 	ASSERT_(curPts_Rs);
+
+	if (generateRGB_)
+	{
+		curPts.registerField_uint8(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Ru8);
+		curPts.registerField_uint8(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Gu8);
+		curPts.registerField_uint8(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Bu8);
+	}
+	// nullptr if not registered:
+	auto* curPts_R =
+		curPts.getPointsBufferRef_uint8_field(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Ru8);
+	auto* curPts_G =
+		curPts.getPointsBufferRef_uint8_field(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Gu8);
+	auto* curPts_B =
+		curPts.getPointsBufferRef_uint8_field(mrpt::maps::CPointsMap::POINT_FIELD_COLOR_Bu8);
+	ASSERT_(!generateRGB_ || (curPts_R && curPts_G && curPts_B));
+	const bool needsRgbRender = generateIntensityFromRGB_ || generateRGB_;
 
 	// Create FBO on first use, now that we are here at the GUI / OpenGL thread.
 	constexpr double camModel_hFOV = 120.01_deg;
@@ -600,9 +662,10 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		auto tleRender =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.renderSubScan");
 
-		if (generateIntensityFromRGB_)
+		if (needsRgbRender)
 		{
 			fbo_renderer_depth_->render_RGBD(world3DScene, convergenceRgbImage, depthImage);
+			ASSERT_EQUAL_(convergenceRgbImage.channels(), 3);
 		}
 		else
 		{
@@ -632,104 +695,141 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		auto tleStore =
 			mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.3Dlidar.storeObs");
 
-		// Convert depth into range and store into polar range images:
-		for (int i = 0; i < numHorzRaysPerRender; i++)
+		// Convert depth into range and store into polar range images.
+		// The loop is instantiated for each combination of optional channels,
+		// so depth-only lidars do no per-point work for them.
+		const auto storeRays = [&](auto withIntensity, auto withRGB)
 		{
-			const int iAbs = i + numHorzRaysPerRender * renderIdx;
-			if (iAbs >= rangeImage.cols())
+			constexpr bool kIntensity = decltype(withIntensity)::value;
+			constexpr bool kRGB = decltype(withRGB)::value;
+
+			for (int i = 0; i < numHorzRaysPerRender; i++)
 			{
-				continue;  // we don't need this image part
-			}
-
-			for (unsigned int j = 0; j < nRows; j++)
-			{
-				// LUT entry:
-				const auto& e = lut_.at(i).column.at(j);
-				const auto u = e.u;
-				const auto v = e.v;
-
-				ASSERTDEB_LT_(u, depthImage.cols());
-				ASSERTDEB_LT_(v, depthImage.rows());
-
-				// Depth:
-				float d = safeInterpolateRangeImage(
-					depthImage, maxDepthInterpolationStepVert_, maxDepthInterpolationStepHorz_,
-					FBO_NCOLS, FBO_NROWS, v, u, depth_log2lin_lut);
-
-				// Add noise:
-				if (d != 0)	 // invalid range
+				const int iAbs = i + numHorzRaysPerRender * renderIdx;
+				if (iAbs >= rangeImage.cols())
 				{
-					const float dNoisy = d + noiseSeq[noiseIdx++];
-					if (noiseIdx >= noiseLen)
-					{
-						noiseIdx = 0;
-					}
-
-					if (dNoisy < 0 || dNoisy > maxRange_)
-					{
-						continue;
-					}
-
-					d = dNoisy;
+					continue;  // we don't need this image part
 				}
 
-				// un-project: depth -> range:
-				const float range = d * e.depth2range;
-
-				if (range <= minRange_ || range >= maxRange_)
+				for (unsigned int j = 0; j < nRows; j++)
 				{
-					continue;  // invalid or out of sensor range
-				}
+					// LUT entry:
+					const auto& e = lut_.at(i).column.at(j);
+					const auto u = e.u;
+					const auto v = e.v;
 
-				ASSERTDEB_LT_(j, rangeImage.rows());
-				ASSERTDEB_LT_(iAbs, rangeImage.cols());
+					ASSERTDEB_LT_(u, depthImage.cols());
+					ASSERTDEB_LT_(v, depthImage.rows());
 
-				rangeImage(j, iAbs) = range;
+					// Depth:
+					float d = safeInterpolateRangeImage(
+						depthImage, maxDepthInterpolationStepVert_, maxDepthInterpolationStepHorz_,
+						FBO_NCOLS, FBO_NROWS, v, u, depth_log2lin_lut);
 
-				// add points:
-				const mrpt::math::TPoint3D pt_wrt_cam = {
-					d * (u - camModel.cx()) / camModel.fx(),
-					d * (v - camModel.cy()) / camModel.fy(), d};
-				const auto pt = thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam);
-				curPts.insertPointFast(
-					static_cast<float>(pt.x), static_cast<float>(pt.y), static_cast<float>(pt.z));
-
-				// Extract intensity from rendered RGB grayscale:
-				float intensity = 1.0f;
-				if (generateIntensityFromRGB_ && convergenceRgbImage.getWidth() > 0)
-				{
-					const int pu = std::clamp(
-						static_cast<int>(std::round(u)), 0,
-						static_cast<int>(convergenceRgbImage.getWidth()) - 1);
-					const int pv = std::clamp(
-						static_cast<int>(std::round(v)), 0,
-						static_cast<int>(convergenceRgbImage.getHeight()) - 1);
-
-					if (convergenceRgbImage.isColor())
+					// Add noise (d==0: invalid range):
+					if (d != 0 && rangeStdNoise_ > 0)
 					{
+						const float dNoisy = d + noiseSeq[noiseIdx++];
+						if (noiseIdx >= noiseLen)
+						{
+							noiseIdx = 0;
+						}
+
+						if (dNoisy < 0 || dNoisy > maxRange_)
+						{
+							continue;
+						}
+
+						d = dNoisy;
+					}
+
+					// un-project: depth -> range:
+					const float range = d * e.depth2range;
+
+					if (range <= minRange_ || range >= maxRange_)
+					{
+						continue;  // invalid or out of sensor range
+					}
+
+					ASSERTDEB_LT_(j, rangeImage.rows());
+					ASSERTDEB_LT_(iAbs, rangeImage.cols());
+
+					rangeImage(j, iAbs) = range;
+
+					// add points:
+					const mrpt::math::TPoint3D pt_wrt_cam = {
+						d * (u - camModel.cx()) / camModel.fx(),
+						d * (v - camModel.cy()) / camModel.fy(), d};
+					const auto pt = thisDepthSensorPoseWrtSensor.composePoint(pt_wrt_cam);
+					curPts.insertPointFast(
+						static_cast<float>(pt.x), static_cast<float>(pt.y),
+						static_cast<float>(pt.z));
+
+					// Add "ring" field:
+					curPts_Rs->push_back(static_cast<uint16_t>(j));
+
+					// Add "timestamp" field: all to zero since we are simulating an ideal
+					// "flash" lidar:
+					curPts_Ts->push_back(0.0f);
+
+					if constexpr (kIntensity || kRGB)
+					{
+						// Nearest pixel of the rendered RGB image (no blending across
+						// depth edges):
+						const int pu = std::clamp(
+							static_cast<int>(std::round(u)), 0,
+							static_cast<int>(convergenceRgbImage.getWidth()) - 1);
+						const int pv = std::clamp(
+							static_cast<int>(std::round(v)), 0,
+							static_cast<int>(convergenceRgbImage.getHeight()) - 1);
 						const auto* px = convergenceRgbImage.ptr<uint8_t>(pu, pv, 0);
-						// ITU-R BT.601 luminance (BGR channel order):
-						intensity = (0.114f * static_cast<float>(px[0]) +
-									 0.587f * static_cast<float>(px[1]) +
-									 0.299f * static_cast<float>(px[2])) /
-									255.0f;
+
+						if constexpr (kIntensity)
+						{
+							// ITU-R BT.601 luminance (RGB channel order):
+							curPts_Is->push_back(
+								(0.299f * static_cast<float>(px[0]) +
+								 0.587f * static_cast<float>(px[1]) +
+								 0.114f * static_cast<float>(px[2])) /
+								255.0f);
+						}
+						else
+						{
+							curPts_Is->push_back(1.0f);
+						}
+						if constexpr (kRGB)
+						{
+							curPts_R->push_back(px[0]);
+							curPts_G->push_back(px[1]);
+							curPts_B->push_back(px[2]);
+						}
 					}
 					else
 					{
-						intensity =
-							static_cast<float>(*convergenceRgbImage.ptr<uint8_t>(pu, pv)) / 255.0f;
+						curPts_Is->push_back(1.0f);
 					}
 				}
-
-				// Add "ring" field:
-				curPts_Rs->push_back(static_cast<uint16_t>(j));
-
-				// Add "timestamp" field: all to zero since we are simulating an ideal "flash"
-				// lidar:
-				curPts_Ts->push_back(0.0f);
-				// intensity from rendered scene grayscale:
-				curPts_Is->push_back(intensity);
 			}
+		};
+
+		if (generateRGB_)
+		{
+			if (generateIntensityFromRGB_)
+			{
+				storeRays(std::true_type(), std::true_type());
+			}
+			else
+			{
+				storeRays(std::false_type(), std::true_type());
+			}
+		}
+		else if (generateIntensityFromRGB_)
+		{
+			storeRays(std::true_type(), std::false_type());
+		}
+		else
+		{
+			storeRays(std::false_type(), std::false_type());
 		}
 		tleStore.stop();
 	}

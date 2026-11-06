@@ -95,6 +95,18 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_lidar3d_rgb
+	SOURCES test_lidar3d_rgb.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
+	TARGET test_actor_follow_terrain
+	SOURCES test_actor_follow_terrain.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_wheel_joints
 	SOURCES test_wheel_joints.cpp
 	LINK_LIBRARIES mvsim::simulator

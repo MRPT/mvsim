@@ -250,6 +250,12 @@ int main(int argc, char** argv)
 			auto opts = std::make_shared<LidarSimOptions>(simOpts);
 			opts->rangeStdNoise = noiseless ? 0.0 : lidar->rangeStdNoise() * noiseScale;
 			opts->generateIntensity = lidar->generateIntensityFromRGB();
+			if (lidar->generateRGB())
+			{
+				std::cerr << "[mvsim-dataset-gen] Warning: lidar '" << lidar->getName()
+						  << "' has generate_rgb=true, but the ray tracer has no colors: "
+							 "points will have no RGB fields.\n";
+			}
 
 			const mrpt::poses::CPose3D sensorPoseOnVeh = lidar->sensorPoseOnVehicle();
 			const std::string label = lidar->getName();

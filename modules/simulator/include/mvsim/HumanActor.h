@@ -29,6 +29,7 @@
 #endif
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -41,6 +42,8 @@ class World;
  * Actors follow predefined paths (waypoints) and play appropriate
  * animations (idle, walk, run) based on movement speed.
  * They are purely kinematic: they do not respond to external forces.
+ * With `<follow_terrain>true</follow_terrain>`, their height follows the
+ * ground under them (elevation maps, etc.) instead of the waypoints z.
  *
  * XML usage example:
  * \code{.xml}
@@ -168,6 +171,10 @@ class HumanActor : public CVisualObject, public Simulable
 	double collisionRadius_ = 0.3;
 	double collisionHeight_ = 1.7;
 
+	/** If true, z follows the ground (World::getHighestElevationUnder())
+	 *  instead of being interpolated from the waypoints. */
+	bool followTerrain_ = false;
+
 	// Animation names (mapped to animations in the 3D model)
 	std::string animNameIdle_ = "idle";
 	std::string animNameWalk_ = "walk";
@@ -181,6 +188,7 @@ class HumanActor : public CVisualObject, public Simulable
 		{"height", {"%lf", &height_}},
 		{"collision_radius", {"%lf", &collisionRadius_}},
 		{"collision_height", {"%lf", &collisionHeight_}},
+		{"follow_terrain", {"%bool", &followTerrain_}},
 		{"animation_idle", {"%s", &animNameIdle_}},
 		{"animation_walk", {"%s", &animNameWalk_}},
 		{"animation_run", {"%s", &animNameRun_}},
@@ -200,6 +208,9 @@ class HumanActor : public CVisualObject, public Simulable
 	mrpt::math::TPose3D pathTargetPose_;
 	double pathSegmentProgress_ = 0.0;	//!< [0, 1]
 	double pathSegmentLength_ = 0.0;
+
+	/** Last ground height under the actor, if follow_terrain is enabled. */
+	std::optional<double> terrainZ_;
 
 	void initializePathFromCurrentPose();
 
