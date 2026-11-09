@@ -8,6 +8,7 @@
 
 #include "LidarSimulator.h"
 
+#include <mrpt/core/bits_math.h>
 #include <mrpt/maps/CGenericPointsMap.h>
 
 #include "TimeUtils.h"
@@ -35,6 +36,17 @@ TPoint3D rotateOnly(const CPose3D& pose, const TPoint3D& localDir)
 	return withOrigin - origin;
 }
 
+/** Direction with its elevation and azimuth shifted by the given angles
+ * [rad]. */
+TPoint3D perturbDirection(const TPoint3D& dir, double dElevation, double dAzimuth)
+{
+	const double horz = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+	const double el = std::atan2(dir.z, horz) + dElevation;
+	const double az = std::atan2(dir.y, dir.x) + dAzimuth;
+	const double n = dir.norm();
+	return {n * std::cos(el) * std::cos(az), n * std::cos(el) * std::sin(az), n * std::sin(el)};
+}
+
 /** One ray hit, buffered per-column so columns can be ray-cast in parallel
  * while still being merged into the output point cloud in a fixed,
  * seed-reproducible column order. */
@@ -46,7 +58,93 @@ struct ColumnPoint
 	float t = 0;
 	uint16_t ring = 0;
 	float intensity = 0;
+	// Kept for the mixed-return pass: range, nominal unit direction (sensor
+	// frame), and the surface hit point and normal (world frame).
+	float range = 0;
+	TPoint3D dir;
+	TPoint3D hitWorld;
+	TPoint3D normalWorld;
 };
+
+/** Mixed returns: where neighbor rays hit different surfaces (one lies off
+ * the other's tangent plane), the beam footprint straddles the edge and,
+ * with the given probability, the return is a range between both. */
+void addMixedReturns(
+	std::vector<std::vector<ColumnPoint>>& perColumn, int nRings, double probability,
+	float minRange, float maxRange, std::mt19937& rng)
+{
+	const int nCols = static_cast<int>(perColumn.size());
+	// (column, ring) => index in perColumn[column], or -1 if no return:
+	std::vector<int> idx(static_cast<size_t>(nCols) * nRings, -1);
+	for (int c = 0; c < nCols; c++)
+	{
+		for (size_t k = 0; k < perColumn[c].size(); k++)
+		{
+			idx[static_cast<size_t>(c) * nRings + perColumn[c][k].ring] = static_cast<int>(k);
+		}
+	}
+	const auto at = [&](int c, int r) -> const ColumnPoint*
+	{
+		if (r < 0 || r >= nRings)
+		{
+			return nullptr;
+		}
+		c = (c + nCols) % nCols;
+		const int k = idx[static_cast<size_t>(c) * nRings + r];
+		return k < 0 ? nullptr : &perColumn[c][k];
+	};
+
+	std::uniform_real_distribution<double> uni(0.0, 1.0);
+	std::vector<std::vector<float>> newRange(nCols);
+	for (int c = 0; c < nCols; c++)
+	{
+		newRange[c].resize(perColumn[c].size());
+		for (size_t k = 0; k < perColumn[c].size(); k++)
+		{
+			const ColumnPoint& p = perColumn[c][k];
+			newRange[c][k] = p.range;
+
+			// The neighbor farthest off this point's tangent plane:
+			const ColumnPoint* other = nullptr;
+			double worst = std::max(0.05, 0.02 * p.range);
+			for (const auto* q :
+				 {at(c - 1, p.ring), at(c + 1, p.ring), at(c, p.ring - 1), at(c, p.ring + 1)})
+			{
+				if (!q)
+				{
+					continue;
+				}
+				const TPoint3D d = q->hitWorld - p.hitWorld;
+				const double off =
+					std::abs(d.x * p.normalWorld.x + d.y * p.normalWorld.y + d.z * p.normalWorld.z);
+				if (off > worst)
+				{
+					worst = off;
+					other = q;
+				}
+			}
+			if (other && uni(rng) < probability)
+			{
+				const float r = p.range + static_cast<float>(uni(rng)) * (other->range - p.range);
+				if (r > minRange && r < maxRange)
+				{
+					newRange[c][k] = r;
+				}
+			}
+		}
+	}
+	for (int c = 0; c < nCols; c++)
+	{
+		for (size_t k = 0; k < perColumn[c].size(); k++)
+		{
+			ColumnPoint& p = perColumn[c][k];
+			p.range = newRange[c][k];
+			p.x = static_cast<float>(p.dir.x * p.range);
+			p.y = static_cast<float>(p.dir.y * p.range);
+			p.z = static_cast<float>(p.dir.z * p.range);
+		}
+	}
+}
 
 }  // namespace
 
@@ -84,10 +182,24 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	// scheduling either.
 	std::vector<std::vector<ColumnPoint>> perColumn(nCols);
 
+	// Drawn only with the error model enabled, so that the default noise
+	// stream is unchanged:
+	const bool realistic = opts.hasRealisticErrors();
+	const bool calibrated = !opts.beamRangeBias.empty();
+	std::uint32_t mixedSeed = 0;
+	if (opts.mixedPixelProbability > 0)
+	{
+		mixedSeed = static_cast<std::uint32_t>(rng());
+	}
+	const double cosMaxIncidence =
+		opts.maxIncidenceDeg > 0 ? std::cos(mrpt::DEG2RAD(opts.maxIncidenceDeg)) : -1.0;
+	const double beamDivergence = mrpt::DEG2RAD(opts.beamDivergenceDeg);
+
 	auto processColumn = [&](int col)
 	{
 		std::mt19937 colRng(colSeeds[col]);
 		std::normal_distribution<double> noiseDist(0.0, std::max(0.0, opts.rangeStdNoise));
+		std::normal_distribution<double> unitNoise(0.0, 1.0);
 
 		const bool rolling = opts.shutter == ShutterMode::Rolling;
 		const double tColRel = rolling ? model.columnFireTime(col) : 0.0;
@@ -103,7 +215,14 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 
 			mvsim::rt::Ray ray;
 			ray.org = sensorPoseThisColumn.composePoint(TPoint3D(0, 0, 0));
-			ray.dir = rotateOnly(sensorPoseThisColumn, localDir);
+			// With calibration errors, the ray samples the scene along a
+			// perturbed direction, but the point is reported along the
+			// nominal one:
+			const TPoint3D sampleDir = calibrated ? perturbDirection(
+														localDir, opts.beamElevOffset.at(ring),
+														opts.beamAzimOffset.at(ring))
+												  : localDir;
+			ray.dir = rotateOnly(sensorPoseThisColumn, sampleDir);
 			ray.tMin = std::max(1e-6, static_cast<double>(model.params().minRange));
 			ray.tMax = model.params().maxRange;
 
@@ -114,7 +233,36 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			}
 
 			double range = hit->t;
-			if (opts.rangeStdNoise > 0)
+			if (realistic)
+			{
+				const double dirNorm = ray.dir.norm();
+				const double cosIncidence =
+					dirNorm > 0 ? std::abs(
+									  ray.dir.x * hit->normal.x + ray.dir.y * hit->normal.y +
+									  ray.dir.z * hit->normal.z) /
+									  dirNorm
+								: 1.0;
+				if (cosIncidence < cosMaxIncidence)
+				{
+					continue;  // too oblique: no return
+				}
+				// Noise: constant, proportional to range, and the spread of
+				// the beam footprint over an oblique surface (uniform over
+				// its range interval):
+				const double c = std::max(cosIncidence, 0.1);
+				const double tanIncidence = std::sqrt(1.0 - c * c) / c;
+				const double footprint = range * beamDivergence;
+				const double sigma = std::sqrt(
+					mrpt::square(opts.rangeStdNoise) +
+					mrpt::square(opts.rangeStdNoisePerMeter * range) +
+					mrpt::square(footprint * tanIncidence) / 12.0);
+				range += sigma * unitNoise(colRng);
+				if (calibrated)
+				{
+					range += opts.beamRangeBias.at(ring);
+				}
+			}
+			else if (opts.rangeStdNoise > 0)
 			{
 				range += noiseDist(colRng);
 			}
@@ -133,6 +281,14 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			cp.z = static_cast<float>(localPt.z);
 			cp.t = tField;
 			cp.ring = static_cast<uint16_t>(ring);
+			if (opts.mixedPixelProbability > 0)
+			{
+				const double n = localDir.norm();
+				cp.range = static_cast<float>(range);
+				cp.dir = n > 0 ? localDir * (1.0 / n) : localDir;
+				cp.hitWorld = ray.at(hit->t);
+				cp.normalWorld = hit->normal;
+			}
 
 			if (opts.generateIntensity)
 			{
@@ -159,6 +315,14 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	}
 #endif
 
+	if (opts.mixedPixelProbability > 0)
+	{
+		std::mt19937 mixedRng(mixedSeed);
+		addMixedReturns(
+			perColumn, nRings, opts.mixedPixelProbability, model.params().minRange,
+			model.params().maxRange, mixedRng);
+	}
+
 	for (const auto& colPts : perColumn)
 	{
 		for (const auto& cp : colPts)
@@ -180,4 +344,25 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	obs->sensorPose = sensorPoseOnVehicle;
 	obs->timestamp = timeFromSeconds(sweepStartEpochSeconds);
 	return obs;
+}
+
+void mvsim_dataset_gen::drawCalibrationErrors(
+	LidarSimOptions& opts, int nRings, double elevationStdDeg, double azimuthStdDeg,
+	double rangeBiasStd, int seed)
+{
+	opts.beamElevOffset.clear();
+	opts.beamAzimOffset.clear();
+	opts.beamRangeBias.clear();
+	if (elevationStdDeg <= 0 && azimuthStdDeg <= 0 && rangeBiasStd <= 0)
+	{
+		return;
+	}
+	std::mt19937 rng(static_cast<std::uint32_t>(seed));
+	std::normal_distribution<double> unit(0.0, 1.0);
+	for (int r = 0; r < nRings; r++)
+	{
+		opts.beamElevOffset.push_back(mrpt::DEG2RAD(elevationStdDeg) * unit(rng));
+		opts.beamAzimOffset.push_back(mrpt::DEG2RAD(azimuthStdDeg) * unit(rng));
+		opts.beamRangeBias.push_back(rangeBiasStd * unit(rng));
+	}
 }

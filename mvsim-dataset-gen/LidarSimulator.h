@@ -15,6 +15,7 @@
 
 #include <random>
 #include <string>
+#include <vector>
 
 #include "TrajectorySource.h"
 
@@ -42,7 +43,33 @@ struct LidarSimOptions
 	 * geometric Lambertian cos(incidence)/r^2 stand-in: the world XML
 	 * carries no material model). */
 	bool generateIntensity = false;
+
+	/** \name Realistic error model (see mvsim::Lidar3D::ErrorModel); all
+	 * zero or empty: disabled.
+	 * @{ */
+	double rangeStdNoisePerMeter = 0.0;
+	double beamDivergenceDeg = 0.0;
+	double maxIncidenceDeg = 0.0;
+	double mixedPixelProbability = 0.0;
+	/** Per-ring calibration errors: elevation and azimuth offsets [rad] and
+	 * range bias [m], filled by drawCalibrationErrors(). */
+	std::vector<double> beamElevOffset;
+	std::vector<double> beamAzimOffset;
+	std::vector<double> beamRangeBias;
+	/** @} */
+
+	bool hasRealisticErrors() const
+	{
+		return rangeStdNoisePerMeter > 0 || beamDivergenceDeg > 0 || maxIncidenceDeg > 0 ||
+			   mixedPixelProbability > 0 || !beamRangeBias.empty();
+	}
 };
+
+/** Draws the per-ring calibration errors of `opts` (left empty if every std
+ * is zero), reproducibly from `seed`. */
+void drawCalibrationErrors(
+	LidarSimOptions& opts, int nRings, double elevationStdDeg, double azimuthStdDeg,
+	double rangeBiasStd, int seed);
 
 /** Simulates one full 360-degree sweep of a 3D LiDAR via exact ray casting
  * against `scene`, with the sensor rigidly mounted at `sensorPoseOnVehicle`

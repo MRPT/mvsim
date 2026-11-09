@@ -102,6 +102,15 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["generate_intensity"] = TParamEntry("%bool", &generateIntensityFromRGB_);
 	params["generate_rgb"] = TParamEntry("%bool", &generateRGB_);
 
+	params["range_std_noise_per_meter"] = TParamEntry("%lf", &errorModel_.rangeStdNoisePerMeter);
+	params["beam_divergence_deg"] = TParamEntry("%lf", &errorModel_.beamDivergenceDeg);
+	params["max_incidence_deg"] = TParamEntry("%lf", &errorModel_.maxIncidenceDeg);
+	params["mixed_pixel_probability"] = TParamEntry("%lf", &errorModel_.mixedPixelProbability);
+	params["beam_elevation_std_deg"] = TParamEntry("%lf", &errorModel_.beamElevationStdDeg);
+	params["beam_azimuth_std_deg"] = TParamEntry("%lf", &errorModel_.beamAzimuthStdDeg);
+	params["beam_range_bias_std"] = TParamEntry("%lf", &errorModel_.beamRangeBiasStd);
+	params["calibration_seed"] = TParamEntry("%i", &errorModel_.calibrationSeed);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
 }
