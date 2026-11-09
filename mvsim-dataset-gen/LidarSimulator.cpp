@@ -58,20 +58,35 @@ struct ColumnPoint
 	float t = 0;
 	uint16_t ring = 0;
 	float intensity = 0;
-	// Kept for the mixed-return pass: range, nominal unit direction (sensor
-	// frame), and the surface hit point and normal (world frame).
+};
+
+/** What the mixed-return pass needs of each hit (kept only if enabled):
+ * range, nominal unit direction (sensor frame), the surface hit point and
+ * normal (world frame), and the Lambertian cosine of the intensity model. */
+struct MixedReturnInfo
+{
 	float range = 0;
 	TPoint3D dir;
 	TPoint3D hitWorld;
 	TPoint3D normalWorld;
+	float lambertCos = 0;
 };
+
+/** The geometric intensity stand-in: Lambertian cos(incidence)/r^2 (the
+ * world XML carries no material model). */
+float geometricIntensity(double lambertCos, double range)
+{
+	const double falloff = 1.0 / std::max(1.0, range * range);
+	return static_cast<float>(std::clamp(lambertCos * falloff * 4.0, 0.0, 1.0));
+}
 
 /** Mixed returns: where neighbor rays hit different surfaces (one lies off
  * the other's tangent plane), the beam footprint straddles the edge and,
  * with the given probability, the return is a range between both. */
 void addMixedReturns(
-	std::vector<std::vector<ColumnPoint>>& perColumn, int nRings, double probability,
-	float minRange, float maxRange, std::mt19937& rng)
+	std::vector<std::vector<ColumnPoint>>& perColumn,
+	const std::vector<std::vector<MixedReturnInfo>>& info, int nRings, double probability,
+	float minRange, float maxRange, bool withIntensity, std::mt19937& rng)
 {
 	const int nCols = static_cast<int>(perColumn.size());
 	// (column, ring) => index in perColumn[column], or -1 if no return:
@@ -83,7 +98,7 @@ void addMixedReturns(
 			idx[static_cast<size_t>(c) * nRings + perColumn[c][k].ring] = static_cast<int>(k);
 		}
 	}
-	const auto at = [&](int c, int r) -> const ColumnPoint*
+	const auto at = [&](int c, int r) -> const MixedReturnInfo*
 	{
 		if (r < 0 || r >= nRings)
 		{
@@ -91,7 +106,7 @@ void addMixedReturns(
 		}
 		c = (c + nCols) % nCols;
 		const int k = idx[static_cast<size_t>(c) * nRings + r];
-		return k < 0 ? nullptr : &perColumn[c][k];
+		return k < 0 ? nullptr : &info[c][k];
 	};
 
 	std::uniform_real_distribution<double> uni(0.0, 1.0);
@@ -101,14 +116,15 @@ void addMixedReturns(
 		newRange[c].resize(perColumn[c].size());
 		for (size_t k = 0; k < perColumn[c].size(); k++)
 		{
-			const ColumnPoint& p = perColumn[c][k];
+			const MixedReturnInfo& p = info[c][k];
+			const int ring = perColumn[c][k].ring;
 			newRange[c][k] = p.range;
 
 			// The neighbor farthest off this point's tangent plane:
-			const ColumnPoint* other = nullptr;
+			const MixedReturnInfo* other = nullptr;
 			double worst = std::max(0.05, 0.02 * p.range);
 			for (const auto* q :
-				 {at(c - 1, p.ring), at(c + 1, p.ring), at(c, p.ring - 1), at(c, p.ring + 1)})
+				 {at(c - 1, ring), at(c + 1, ring), at(c, ring - 1), at(c, ring + 1)})
 			{
 				if (!q)
 				{
@@ -137,11 +153,20 @@ void addMixedReturns(
 	{
 		for (size_t k = 0; k < perColumn[c].size(); k++)
 		{
+			const float r = newRange[c][k];
+			if (r == info[c][k].range)
+			{
+				continue;
+			}
 			ColumnPoint& p = perColumn[c][k];
-			p.range = newRange[c][k];
-			p.x = static_cast<float>(p.dir.x * p.range);
-			p.y = static_cast<float>(p.dir.y * p.range);
-			p.z = static_cast<float>(p.dir.z * p.range);
+			const TPoint3D& dir = info[c][k].dir;
+			p.x = static_cast<float>(dir.x * r);
+			p.y = static_cast<float>(dir.y * r);
+			p.z = static_cast<float>(dir.z * r);
+			if (withIntensity)
+			{
+				p.intensity = geometricIntensity(info[c][k].lambertCos, r);
+			}
 		}
 	}
 }
@@ -181,13 +206,15 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	// order so the resulting point cloud does not depend on thread
 	// scheduling either.
 	std::vector<std::vector<ColumnPoint>> perColumn(nCols);
+	const bool mixedReturns = opts.mixedPixelProbability > 0;
+	std::vector<std::vector<MixedReturnInfo>> mixedInfo(mixedReturns ? nCols : 0);
 
 	// Drawn only with the error model enabled, so that the default noise
 	// stream is unchanged:
 	const bool realistic = opts.hasRealisticErrors();
 	const bool calibrated = !opts.beamRangeBias.empty();
 	std::uint32_t mixedSeed = 0;
-	if (opts.mixedPixelProbability > 0)
+	if (mixedReturns)
 	{
 		mixedSeed = static_cast<std::uint32_t>(rng());
 	}
@@ -200,6 +227,7 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 		std::mt19937 colRng(colSeeds[col]);
 		std::normal_distribution<double> noiseDist(0.0, std::max(0.0, opts.rangeStdNoise));
 		std::normal_distribution<double> unitNoise(0.0, 1.0);
+		std::uniform_real_distribution<double> unitUniform(-0.5, 0.5);
 
 		const bool rolling = opts.shutter == ShutterMode::Rolling;
 		const double tColRel = rolling ? model.columnFireTime(col) : 0.0;
@@ -246,17 +274,20 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 				{
 					continue;  // too oblique: no return
 				}
-				// Noise: constant, proportional to range, and the spread of
-				// the beam footprint over an oblique surface (uniform over
-				// its range interval):
-				const double c = std::max(cosIncidence, 0.1);
-				const double tanIncidence = std::sqrt(1.0 - c * c) / c;
-				const double footprint = range * beamDivergence;
+				// Gaussian noise, constant plus proportional to range:
 				const double sigma = std::sqrt(
 					mrpt::square(opts.rangeStdNoise) +
-					mrpt::square(opts.rangeStdNoisePerMeter * range) +
-					mrpt::square(footprint * tanIncidence) / 12.0);
+					mrpt::square(opts.rangeStdNoisePerMeter * range));
+				const double footprint = range * beamDivergence;
 				range += sigma * unitNoise(colRng);
+				// The beam footprint on an oblique surface spreads the return
+				// uniformly over a range interval:
+				if (footprint > 0)
+				{
+					const double c = std::clamp(cosIncidence, 0.1, 1.0);
+					const double tanIncidence = std::sqrt(1.0 - c * c) / c;
+					range += footprint * tanIncidence * unitUniform(colRng);
+				}
 				if (calibrated)
 				{
 					range += opts.beamRangeBias.at(ring);
@@ -281,25 +312,24 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			cp.z = static_cast<float>(localPt.z);
 			cp.t = tField;
 			cp.ring = static_cast<uint16_t>(ring);
-			if (opts.mixedPixelProbability > 0)
-			{
-				const double n = localDir.norm();
-				cp.range = static_cast<float>(range);
-				cp.dir = n > 0 ? localDir * (1.0 / n) : localDir;
-				cp.hitWorld = ray.at(hit->t);
-				cp.normalWorld = hit->normal;
-			}
-
+			// Lambertian cosine for the geometric intensity stand-in:
+			const double lambertCos = std::max(
+				0.0, -(ray.dir.x * hit->normal.x + ray.dir.y * hit->normal.y +
+					   ray.dir.z * hit->normal.z));
 			if (opts.generateIntensity)
 			{
-				// Purely geometric Lambertian cos(incidence)/r^2
-				// stand-in; mvsim's world XML carries no material model.
-				const double cosIncidence = std::max(
-					0.0, -(ray.dir.x * hit->normal.x + ray.dir.y * hit->normal.y +
-						   ray.dir.z * hit->normal.z));
-				const double falloff = 1.0 / std::max(1.0, range * range);
-				cp.intensity =
-					static_cast<float>(std::clamp(cosIncidence * falloff * 4.0, 0.0, 1.0));
+				cp.intensity = geometricIntensity(lambertCos, range);
+			}
+			if (mixedReturns)
+			{
+				const double n = localDir.norm();
+				MixedReturnInfo mi;
+				mi.range = static_cast<float>(range);
+				mi.dir = n > 0 ? localDir * (1.0 / n) : localDir;
+				mi.hitWorld = ray.at(hit->t);
+				mi.normalWorld = hit->normal;
+				mi.lambertCos = static_cast<float>(lambertCos);
+				mixedInfo[col].push_back(mi);
 			}
 
 			out.push_back(cp);
@@ -315,12 +345,12 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	}
 #endif
 
-	if (opts.mixedPixelProbability > 0)
+	if (mixedReturns)
 	{
 		std::mt19937 mixedRng(mixedSeed);
 		addMixedReturns(
-			perColumn, nRings, opts.mixedPixelProbability, model.params().minRange,
-			model.params().maxRange, mixedRng);
+			perColumn, mixedInfo, nRings, opts.mixedPixelProbability, model.params().minRange,
+			model.params().maxRange, opts.generateIntensity, mixedRng);
 	}
 
 	for (const auto& colPts : perColumn)

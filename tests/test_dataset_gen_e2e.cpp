@@ -378,6 +378,11 @@ void test_realistic_error_model()
 	const std::string outIdeal = tempPath("errideal.rawlog");
 	const std::string outIdealErr = tempPath("erridealerr.rawlog");
 
+	// The baseline runs with the model disabled, whatever the environment:
+	for (const char* v : vars)
+	{
+		setEnv(v, "0");
+	}
 	EXPECT_TRUE(runDatasetGen(outBase, "--duration 0.5 --seed 5") == 0);
 	EXPECT_TRUE(runDatasetGen(outIdeal, "--duration 0.5 --seed 5 --noiseless") == 0);
 
