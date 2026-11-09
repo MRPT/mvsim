@@ -283,6 +283,17 @@ class World : public mrpt::system::COutputLogger
 	/// friction, etc.
 	void set_gravity(double accel) { gravity_ = accel; }
 
+	/** Seed set with `<random_seed>` in the world XML file, or std::nullopt if
+	 * none was given (non-deterministic random numbers).
+	 * \sa noiseSeedFor() */
+	std::optional<uint32_t> random_seed() const { return randomSeed_; }
+
+	/** Returns a seed for the random noise generator of the object with the
+	 * given name (e.g. a sensor), derived from `<random_seed>`, so that each
+	 * object has its own reproducible random sequence. Returns std::nullopt if
+	 * no `<random_seed>` was set in the world file. */
+	std::optional<uint32_t> noiseSeedFor(const std::string& objectName) const;
+
 	/** Runs the simulation for a given time interval (in seconds)
 	 * \note The minimum simulation time is the timestep set (e.g. via
 	 * set_simul_timestep()), even if time advanced further than the provided
@@ -843,6 +854,9 @@ class World : public mrpt::system::COutputLogger
 	mrpt::viz::CCamera internalVideoCamera(const VideoRecorder::Options& opts) const;
 
 	double ground_truth_rate_ = 50.0;  //!< In Hz.
+
+	/// Set with `<random_seed>` (empty: non-deterministic random numbers)
+	std::optional<uint32_t> randomSeed_;
 
 	double max_slope_to_collide_ = 0.30;
 	double min_slope_to_collide_ = -0.50;
@@ -1510,6 +1524,7 @@ class World : public mrpt::system::COutputLogger
 	void parse_tag_actor(const XmlParserContext& ctx);
 	void parse_tag_actor_class(const XmlParserContext& ctx);
 	void parse_tag_remote_resources(const XmlParserContext& ctx);  //!< `<remote_resources>`
+	void parse_tag_random_seed(const XmlParserContext& ctx);  //!< `<random_seed>`
 
 	// ======== end of XML parser tags ========
 

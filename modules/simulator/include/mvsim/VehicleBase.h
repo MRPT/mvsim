@@ -211,6 +211,10 @@ class VehicleBase : public CVisualObject, public Simulable
 	std::vector<CSVLogger::Ptr> loggers_;
 	std::string log_path_;
 	bool auto_start_recording_ = false;
+	/// Period [s] (simulated time) between rows of the loggers (CSV files and
+	/// log topics), set with <log_period>. 0: one row per simulation step.
+	double log_period_ = 0;
+	double last_log_time_ = -1;
 	std::string base_frame_id_ = "base_link";
 
 	virtual void initLoggers();

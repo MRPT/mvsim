@@ -367,8 +367,9 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		const xml_node<>* log_path_node = nodes.first_node("log_path");
 		if (log_path_node)
 		{
-			// Parse:
-			veh->log_path_ = log_path_node->value();
+			// Parse (expanding variables, e.g. $env{...}):
+			veh->log_path_ =
+				mvsim::trim(mvsim::parse(log_path_node->value(), parent->user_defined_variables()));
 		}
 	}
 
@@ -386,8 +387,20 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	// <Optional> auto_start_recording
 	if (const xml_node<>* asr_node = nodes.first_node("auto_start_recording"); asr_node)
 	{
-		const std::string val = asr_node->value();
+		const std::string val =
+			mvsim::trim(mvsim::parse(asr_node->value(), parent->user_defined_variables()));
 		veh->auto_start_recording_ = (val == "true" || val == "1");
+	}
+
+	// <Optional> log_period: decimation of the logger rows
+	if (const xml_node<>* lp_node = nodes.first_node("log_period"); lp_node)
+	{
+		const std::string val =
+			mvsim::trim(mvsim::parse(lp_node->value(), parent->user_defined_variables()));
+		if (!val.empty())
+		{
+			veh->log_period_ = std::stod(val);
+		}
 	}
 	if (veh->auto_start_recording_)
 	{
@@ -1098,7 +1111,13 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		}
 	}
 
-	writeLogStrings();
+	// One row every <log_period> seconds of simulated time (or every step):
+	if (log_period_ <= 0 || last_log_time_ < 0 ||
+		context.simul_time - last_log_time_ >= log_period_ - 1e-9)
+	{
+		last_log_time_ = context.simul_time;
+		writeLogStrings();
+	}
 }
 
 /** Last time-step velocity of each wheel's center point (in local coords) */

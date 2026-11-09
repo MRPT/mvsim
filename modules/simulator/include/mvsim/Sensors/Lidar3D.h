@@ -111,6 +111,10 @@ class Lidar3D : public SensorBase
 
 	double rangeStdNoise_ = 0.01;
 	ErrorModel errorModel_;
+
+	/// Precomputed unit-variance noise of this sensor (reproducible with <random_seed>)
+	std::vector<float> noiseSeq_;
+	size_t noiseIdx_ = 0;
 	bool ignore_parent_body_ = false;
 
 	float viz_pointSize_ = 3.0f;

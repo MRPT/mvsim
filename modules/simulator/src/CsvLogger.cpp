@@ -9,6 +9,8 @@
 
 #include "mvsim/CsvLogger.h"
 
+#include <filesystem>
+
 CSVLogger::CSVLogger() { file_ = std::make_shared<std::ofstream>(); }
 
 CSVLogger::~CSVLogger() { close(); }
@@ -76,7 +78,18 @@ bool CSVLogger::open()
 
 	if (file_)
 	{
-		file_->open("session_"s + std::to_string(::time(nullptr)) + "-"s + filepath_);
+		// The session prefix goes in front of the file name, not of its
+		// directory, which is created if needed:
+		const std::filesystem::path path(filepath_);
+		const std::filesystem::path dir = path.parent_path();
+		if (!dir.empty())
+		{
+			std::error_code ec;
+			std::filesystem::create_directories(dir, ec);
+		}
+		const std::string fileName =
+			"session_"s + std::to_string(::time(nullptr)) + "-"s + path.filename().string();
+		file_->open((dir / fileName).string());
 		return isOpen();
 	}
 	return false;

@@ -230,6 +230,12 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 
 	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.GNSS");
 
+	if (!noiseSeeded_)
+	{
+		noiseSeeded_ = true;
+		seedNoiseGenerator(rng_);
+	}
+
 	// Where the GPS sensor is in the world frame:
 	mrpt::poses::CPose3D vehPoseInWorld = mrpt::poses::CPose3D(vehicle().getChassisPose());
 	const auto& georef = world()->georeferenceOptions();

@@ -179,6 +179,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_random_seed
+	SOURCES test_random_seed.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_static_blocks
 	SOURCES test_static_blocks.cpp
 	LINK_LIBRARIES mvsim::simulator

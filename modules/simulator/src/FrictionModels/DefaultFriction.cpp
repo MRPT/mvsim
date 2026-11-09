@@ -107,6 +107,8 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
 		logger->updateColumn("motor_torque", input.motorTorque);
 		logger->updateColumn("wheel_long_friction", wheel_long_friction);
+		logger->updateColumn("friction_mu", mu);
+		logger->updateColumn("friction_C_rr", input.C_rr_override.value_or(C_rr_));
 	}
 
 	return res;

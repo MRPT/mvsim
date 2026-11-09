@@ -124,6 +124,15 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 
 	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.IMU");
 
+	if (!noiseSeeded_)
+	{
+		noiseSeeded_ = true;
+		if (seedNoiseGenerator(rng_))
+		{
+			noiseModel_.seed(rng_.drawUniform32bit());
+		}
+	}
+
 	auto outObs = CObservationIMU::Create(obs_model_);
 
 	outObs->timestamp = world_->get_simul_timestamp();
@@ -194,9 +203,8 @@ void IMU::internal_simulate_imu(const TSimulContext& context)
 		const auto& p = mrpt::poses::CPose3D(vehicle_.getChassisPose());
 
 		// compose with sensor pose + orientation noise:
-		auto& rng = mrpt::random::getRandomGenerator();
 		mrpt::math::CVectorFixed<double, 3> oriNoiseVec;
-		rng.drawGaussian1DVector(oriNoiseVec, 0.0, orientationStdNoise_);
+		rng_.drawGaussian1DVector(oriNoiseVec, 0.0, orientationStdNoise_);
 
 		const auto oriNoiseRot = mrpt::poses::Lie::SO<3>::exp(oriNoiseVec);
 

@@ -477,6 +477,7 @@ void DepthCameraSensor::depthToRangeImage(mrpt::obs::CObservation3DRangeScan& ob
 	if (depthNoiseSeq_.empty())
 	{
 		mrpt::random::CRandomGenerator rng;
+		seedNoiseGenerator(rng);
 		depthNoiseSeq_.resize(noiseLen, 0);
 		if (depth_noise_sigma_ > 0)
 		{

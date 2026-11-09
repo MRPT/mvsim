@@ -705,15 +705,15 @@ void Lidar3D::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		tleRender.stop();
 
 		// Add random noise:
-		// Each thread must create its own rng:
-		thread_local mrpt::random::CRandomGenerator rng;
-		thread_local std::vector<float> noiseSeq;
-		thread_local size_t noiseIdx = 0;
+		auto& noiseSeq = noiseSeq_;
+		auto& noiseIdx = noiseIdx_;
 		constexpr size_t noiseLen = 7823;  // prime
 		if (rangeStdNoise_ > 0)
 		{
 			if (noiseSeq.empty())
 			{
+				mrpt::random::CRandomGenerator rng;
+				seedNoiseGenerator(rng);
 				noiseSeq.reserve(noiseLen);
 				for (size_t i = 0; i < noiseLen; i++)
 				{

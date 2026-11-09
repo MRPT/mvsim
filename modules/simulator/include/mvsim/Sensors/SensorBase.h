@@ -11,6 +11,7 @@
 
 #include <mrpt/obs/obs_frwds.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/random/RandomGenerators.h>
 #include <mrpt/viz/viz_frwds.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
@@ -93,6 +94,12 @@ class SensorBase : public CVisualObject, public Simulable
 	 *         false otherwise.
 	 */
 	bool should_simulate_sensor(const TSimulContext& context);
+
+	/** Seeds \a rng with a seed specific to this sensor (from its vehicle and
+	 * sensor names), derived from the world `<random_seed>`, so its noise is
+	 * reproducible. Returns false, leaving \a rng untouched, if the world file
+	 * does not set `<random_seed>`. */
+	bool seedNoiseGenerator(mrpt::random::CRandomGenerator& rng) const;
 
 	Simulable& vehicle_;  //!< The vehicle this sensor is attached to
 

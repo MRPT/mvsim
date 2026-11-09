@@ -70,6 +70,11 @@ class LaserScanner : public SensorBase
 
 	double rangeStdNoise_ = 0.01;
 	double angleStdNoise_ = mrpt::DEG2RAD(0.01);
+
+	/// Range noise generator of this sensor (reproducible with <random_seed>)
+	mrpt::random::CRandomGenerator noiseRng_;
+	bool noiseRngSeeded_ = false;
+	mrpt::random::CRandomGenerator& noiseRng();
 	/** Whether all box2d "fixtures" are visible (solid) or not (Default=true)
 	 */
 	bool see_fixtures_ = true;

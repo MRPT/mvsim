@@ -268,6 +268,22 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 	name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
 }
 
+bool SensorBase::seedNoiseGenerator(mrpt::random::CRandomGenerator& rng) const
+{
+	const World* w = world();
+	if (!w)
+	{
+		return false;
+	}
+	const auto seed = w->noiseSeedFor(vehicle().getName() + "/" + getName());
+	if (!seed)
+	{
+		return false;
+	}
+	rng.randomize(*seed);
+	return true;
+}
+
 bool SensorBase::should_simulate_sensor(const TSimulContext& context)
 {
 	// to fix edge cases with sensor period a multiple of simulation timestep:
