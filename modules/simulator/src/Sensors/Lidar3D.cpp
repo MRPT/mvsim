@@ -20,7 +20,9 @@
 
 #include <array>
 #include <cmath>
+#include <initializer_list>
 #include <type_traits>
+#include <utility>
 
 #include "xml_utils.h"
 
@@ -102,8 +104,36 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["generate_intensity"] = TParamEntry("%bool", &generateIntensityFromRGB_);
 	params["generate_rgb"] = TParamEntry("%bool", &generateRGB_);
 
+	params["range_std_noise_per_meter"] = TParamEntry("%lf", &errorModel_.rangeStdNoisePerMeter);
+	params["beam_divergence_deg"] = TParamEntry("%lf", &errorModel_.beamDivergenceDeg);
+	params["max_incidence_deg"] = TParamEntry("%lf", &errorModel_.maxIncidenceDeg);
+	params["mixed_pixel_probability"] = TParamEntry("%lf", &errorModel_.mixedPixelProbability);
+	params["beam_elevation_std_deg"] = TParamEntry("%lf", &errorModel_.beamElevationStdDeg);
+	params["beam_azimuth_std_deg"] = TParamEntry("%lf", &errorModel_.beamAzimuthStdDeg);
+	params["beam_range_bias_std"] = TParamEntry("%lf", &errorModel_.beamRangeBiasStd);
+	params["calibration_seed"] = TParamEntry("%i", &errorModel_.calibrationSeed);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
+
+	// The error model must be finite and non-negative:
+	const auto& em = errorModel_;
+	for (const auto& [name, v] : std::initializer_list<std::pair<const char*, double>>{
+			 {"range_std_noise_per_meter", em.rangeStdNoisePerMeter},
+			 {"beam_divergence_deg", em.beamDivergenceDeg},
+			 {"max_incidence_deg", em.maxIncidenceDeg},
+			 {"mixed_pixel_probability", em.mixedPixelProbability},
+			 {"beam_elevation_std_deg", em.beamElevationStdDeg},
+			 {"beam_azimuth_std_deg", em.beamAzimuthStdDeg},
+			 {"beam_range_bias_std", em.beamRangeBiasStd}})
+	{
+		if (!std::isfinite(v) || v < 0)
+		{
+			THROW_EXCEPTION_FMT("Lidar3D '%s': invalid %s=%f", name_.c_str(), name, v);
+		}
+	}
+	ASSERTMSG_(em.mixedPixelProbability <= 1.0, "mixed_pixel_probability must be <= 1");
+	ASSERTMSG_(em.maxIncidenceDeg < 90.0, "max_incidence_deg must be < 90");
 }
 
 void Lidar3D::internalGuiUpdate(

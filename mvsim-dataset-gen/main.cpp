@@ -249,6 +249,18 @@ int main(int argc, char** argv)
 
 			auto opts = std::make_shared<LidarSimOptions>(simOpts);
 			opts->rangeStdNoise = noiseless ? 0.0 : lidar->rangeStdNoise() * noiseScale;
+			if (!noiseless)
+			{
+				const auto& em = lidar->errorModel();
+				opts->rangeStdNoisePerMeter = em.rangeStdNoisePerMeter * noiseScale;
+				opts->beamDivergenceDeg = em.beamDivergenceDeg;
+				opts->maxIncidenceDeg = em.maxIncidenceDeg;
+				opts->mixedPixelProbability = em.mixedPixelProbability;
+				drawCalibrationErrors(
+					*opts, model->vertRays(), em.beamElevationStdDeg * noiseScale,
+					em.beamAzimuthStdDeg * noiseScale, em.beamRangeBiasStd * noiseScale,
+					em.calibrationSeed);
+			}
 			opts->generateIntensity = lidar->generateIntensityFromRGB();
 			if (lidar->generateRGB())
 			{

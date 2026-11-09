@@ -62,6 +62,31 @@ class Lidar3D : public SensorBase
 	bool generateIntensityFromRGB() const { return generateIntensityFromRGB_; }
 	bool generateRGB() const { return generateRGB_; }
 
+	/** Realistic sensor error model. Applied by the offline ray tracer
+	 * (mvsim-dataset-gen) only; all zero: disabled (the default). */
+	struct ErrorModel
+	{
+		/** Range noise std growing linearly with range [m per m]. */
+		double rangeStdNoisePerMeter = 0;
+		/** Full beam divergence [deg]: the footprint on an oblique surface
+		 * spreads the return over a range interval. */
+		double beamDivergenceDeg = 0;
+		/** No return beyond this incidence angle [deg] (0: disabled). */
+		double maxIncidenceDeg = 0;
+		/** Probability of a mixed return (a range between both surfaces)
+		 * at a depth edge between neighbor rays. */
+		double mixedPixelProbability = 0;
+		/** Per-beam calibration errors (std of the elevation and azimuth
+		 * offsets [deg], and of the range bias [m]), drawn once per run from
+		 * calibrationSeed. Rays sample the scene along the perturbed
+		 * direction, but points are reported along the nominal one. */
+		double beamElevationStdDeg = 0;
+		double beamAzimuthStdDeg = 0;
+		double beamRangeBiasStd = 0;
+		int calibrationSeed = 0;
+	};
+	const ErrorModel& errorModel() const { return errorModel_; }
+
 	/** The sensor's pose on the vehicle. Equivalent to getRelativePose(),
 	 * exposed under a public, non-overridden name: Lidar3D re-declares
 	 * getRelativePose() as protected (overriding Simulable's public one),
@@ -85,6 +110,7 @@ class Lidar3D : public SensorBase
 	mrpt::poses::CPose3D sensorPoseOnVeh_;
 
 	double rangeStdNoise_ = 0.01;
+	ErrorModel errorModel_;
 	bool ignore_parent_body_ = false;
 
 	float viz_pointSize_ = 3.0f;

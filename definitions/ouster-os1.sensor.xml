@@ -29,6 +29,15 @@
     <max_horz_relative_depth_to_interpolate>${max_horz_relative_depth_to_interpolate|0.1}</max_horz_relative_depth_to_interpolate>
 
     <range_std_noise>${sensor_std_noise|0.005}</range_std_noise>
+    <!-- Realistic error model, used by mvsim-dataset-gen only (all 0: disabled) -->
+    <range_std_noise_per_meter>${sensor_range_std_noise_per_meter|0}</range_std_noise_per_meter>
+    <beam_divergence_deg>${sensor_beam_divergence_deg|0}</beam_divergence_deg>
+    <max_incidence_deg>${sensor_max_incidence_deg|0}</max_incidence_deg>
+    <mixed_pixel_probability>${sensor_mixed_pixel_probability|0}</mixed_pixel_probability>
+    <beam_elevation_std_deg>${sensor_beam_elevation_std_deg|0}</beam_elevation_std_deg>
+    <beam_azimuth_std_deg>${sensor_beam_azimuth_std_deg|0}</beam_azimuth_std_deg>
+    <beam_range_bias_std>${sensor_beam_range_bias_std|0}</beam_range_bias_std>
+    <calibration_seed>${sensor_calibration_seed|0}</calibration_seed>
     <min_range>${min_range|0.5}</min_range>
     <max_range>${max_range|90.0}</max_range>
     
