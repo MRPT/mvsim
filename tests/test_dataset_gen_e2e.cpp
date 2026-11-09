@@ -348,6 +348,75 @@ void test_noiseless_differs_from_noisy()
 }
 
 // ---------------------------------------------------------------
+// The sensor definition reads the error model from XML variables, which
+// fall back to environment variables (inherited by the generator process).
+void setEnv(const char* name, const char* value)
+{
+#ifdef _WIN32
+	_putenv_s(name, value);
+#else
+	setenv(name, value, 1);
+#endif
+}
+
+void removeOutputs(const std::string& rawlog)
+{
+	std::remove(rawlog.c_str());
+	std::remove(gtPath(rawlog, "gt.tum").c_str());
+	std::remove(gtPath(rawlog, "lidar1.gt.tum").c_str());
+}
+
+void test_realistic_error_model()
+{
+	const char* vars[] = {"sensor_range_std_noise_per_meter", "sensor_beam_divergence_deg",
+						  "sensor_mixed_pixel_probability",	  "sensor_beam_elevation_std_deg",
+						  "sensor_beam_azimuth_std_deg",	  "sensor_beam_range_bias_std",
+						  "sensor_max_incidence_deg",		  "sensor_calibration_seed"};
+	const std::string outBase = tempPath("errbase.rawlog");
+	const std::string outErr1 = tempPath("err1.rawlog");
+	const std::string outErr2 = tempPath("err2.rawlog");
+	const std::string outIdeal = tempPath("errideal.rawlog");
+	const std::string outIdealErr = tempPath("erridealerr.rawlog");
+
+	EXPECT_TRUE(runDatasetGen(outBase, "--duration 0.5 --seed 5") == 0);
+	EXPECT_TRUE(runDatasetGen(outIdeal, "--duration 0.5 --seed 5 --noiseless") == 0);
+
+	setEnv("sensor_range_std_noise_per_meter", "0.0005");
+	setEnv("sensor_beam_divergence_deg", "0.2");
+	setEnv("sensor_mixed_pixel_probability", "0.5");
+	setEnv("sensor_beam_elevation_std_deg", "0.05");
+	setEnv("sensor_beam_azimuth_std_deg", "0.05");
+	setEnv("sensor_beam_range_bias_std", "0.01");
+	setEnv("sensor_max_incidence_deg", "60");
+	setEnv("sensor_calibration_seed", "7");
+
+	EXPECT_TRUE(runDatasetGen(outErr1, "--duration 0.5 --seed 5") == 0);
+	EXPECT_TRUE(runDatasetGen(outErr2, "--duration 0.5 --seed 5") == 0);
+	EXPECT_TRUE(runDatasetGen(outIdealErr, "--duration 0.5 --seed 5 --noiseless") == 0);
+
+	for (const char* v : vars)
+	{
+		setEnv(v, "0");
+	}
+
+	// Enabled: different output, still reproducible from the seeds:
+	EXPECT_FALSE(filesEqual(outBase, outErr1));
+	EXPECT_TRUE(filesEqual(outErr1, outErr2));
+	// --noiseless disables the error model too:
+	EXPECT_TRUE(filesEqual(outIdeal, outIdealErr));
+	// No returns beyond the maximum incidence angle:
+	const SweepStats base = loadAndInspect(outBase);
+	const SweepStats err = loadAndInspect(outErr1);
+	EXPECT_TRUE(base.nObs == err.nObs);
+	EXPECT_LT(err.totalPoints, base.totalPoints);
+
+	for (const auto& f : {outBase, outErr1, outErr2, outIdeal, outIdealErr})
+	{
+		removeOutputs(f);
+	}
+}
+
+// ---------------------------------------------------------------
 // demo_dataset_gen_2d.world.xml is a linear ramp, z = 0.1*x exactly;
 // demo_dataset_gen_2d.trajectory.txt drives straight along +X, so the
 // terrain-following ground truth is trivial to check by hand.
@@ -465,6 +534,7 @@ int main()
 	test_rolling_shutter_skew();
 	test_determinism_same_seed();
 	test_noiseless_differs_from_noisy();
+	test_realistic_error_model();
 	test_2d_trajectory_terrain_following();
 	test_imu_lever_arm();
 

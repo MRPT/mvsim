@@ -111,6 +111,36 @@ sigma to zero, for generating an ideal ground-truth dataset;
 ``--noise-scale k`` scales every sigma instead. ``--seed`` fixes the RNG
 seed; the same seed always produces a byte-identical ``.rawlog``.
 
+Realistic LiDAR errors
+----------------------
+
+On top of the Gaussian ``range_std_noise``, a ``lidar3d`` sensor can enable a
+realistic error model, applied by this tool only (the interactive simulator
+ignores it). All parameters default to 0 (disabled), which leaves the output
+unchanged; ``--noiseless`` disables them too, and ``--noise-scale`` scales the
+noise and calibration sigmas:
+
+- ``range_std_noise_per_meter``: range noise std growing linearly with range.
+- ``beam_divergence_deg``: full beam divergence. On a surface hit at
+  incidence angle :math:`\theta`, the footprint spreads the return over a
+  range interval of width :math:`r \, \delta \tan\theta`, adding its uniform
+  spread to the noise.
+- ``max_incidence_deg``: no return beyond this incidence angle.
+- ``mixed_pixel_probability``: where neighbor rays hit different surfaces
+  (one lies off the other's tangent plane), the return is, with this
+  probability, a range between both, as in real sensors at depth edges.
+- ``beam_elevation_std_deg``, ``beam_azimuth_std_deg``,
+  ``beam_range_bias_std``: per-beam calibration errors, drawn once per run
+  from ``calibration_seed``. Rays sample the scene along the perturbed
+  direction, while points are reported along the nominal one.
+
+The stock 3D LiDAR definitions expose them as the XML variables
+``sensor_range_std_noise_per_meter``, ``sensor_beam_divergence_deg``,
+``sensor_max_incidence_deg``, ``sensor_mixed_pixel_probability``,
+``sensor_beam_elevation_std_deg``, ``sensor_beam_azimuth_std_deg``,
+``sensor_beam_range_bias_std`` and ``sensor_calibration_seed`` (as
+``<include>`` attributes or environment variables).
+
 Output
 ------
 
