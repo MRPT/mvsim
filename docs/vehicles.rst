@@ -925,6 +925,7 @@ variables (e.g. ``$env{LOG_DIR}/``); its directory is created if it does not exi
 of the logs (both the CSV files and the ROS 2 log topics below). By default (``0``),
 one row is written at every simulation step, which may be too much for small time steps
 (e.g. 1000 rows/s with ``<simul_timestep>0.001</simul_timestep>``).
+A recording always starts with a row written at once.
 
 10. ROS 2 Topics
 -----------------

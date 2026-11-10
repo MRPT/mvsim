@@ -263,7 +263,16 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 		return;
 	}
 	size_t nextIdx = 0;
-	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v) nextIdx = v->getSensors().size() + 1;
+	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v)
+	{
+		nextIdx = v->getSensors().size() + 1;
+	}
+	else if (auto b = dynamic_cast<DummyInvisibleBlock*>(&vehicle_); b)
+	{
+		// Standalone sensors share one host: number them too, so their names
+		// (and noise seeds) are distinct.
+		nextIdx = b->getSensors().size() + 1;
+	}
 
 	name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
 }

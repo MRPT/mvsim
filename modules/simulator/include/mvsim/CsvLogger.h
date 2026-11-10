@@ -47,7 +47,7 @@ class CSVLogger
 	bool close();
 	bool clear();
 
-	void setRecording(bool recording) { isRecording_ = recording; }
+	void setRecording(bool recording);
 	[[nodiscard]] bool isRecording() const { return isRecording_; }
 
 	/// When disabled, writeRow() still fires callbacks but skips all file

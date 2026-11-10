@@ -132,6 +132,16 @@ bool CSVLogger::clear()
 	return false;
 }
 
+void CSVLogger::setRecording(bool recording)
+{
+	// A new recording may retry an open that failed before:
+	if (recording && !isRecording_)
+	{
+		openFailed_ = false;
+	}
+	isRecording_ = recording;
+}
+
 void CSVLogger::newSession()
 {
 	close();
