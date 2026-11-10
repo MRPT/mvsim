@@ -262,10 +262,74 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 	{
 		return;
 	}
+	// Sensors on a vehicle are numbered from 1; standalone ones (sharing one
+	// host) from 0, so a single unnamed standalone sensor keeps its usual name.
+	const TListSensors* siblings = nullptr;
 	size_t nextIdx = 0;
-	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v) nextIdx = v->getSensors().size() + 1;
+	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v)
+	{
+		siblings = &v->getSensors();
+		nextIdx = siblings->size() + 1;
+	}
+	else if (auto b = dynamic_cast<DummyInvisibleBlock*>(&vehicle_); b)
+	{
+		siblings = &b->getSensors();
+		nextIdx = siblings->size();
+	}
 
-	name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
+	// Skip names already taken, so names (and noise seeds) are distinct:
+	const auto isTaken = [siblings](const std::string& name)
+	{
+		if (!siblings)
+		{
+			return false;
+		}
+		for (const auto& s : *siblings)
+		{
+			if (s && s->getName() == name)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	do
+	{
+		name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx++));
+	} while (isTaken(name_));
+}
+
+void SensorBase::assertNameIsUnique(const std::vector<Ptr>& siblings) const
+{
+	for (const auto& s : siblings)
+	{
+		ASSERTMSG_(
+			!s || s.get() == this || s->getName() != getName(),
+			mrpt::format(
+				"Duplicated sensor name '%s' in '%s': sensor names must be unique.",
+				getName().c_str(), vehicle().getName().c_str()));
+	}
+}
+
+uint32_t SensorBase::noiseSeed() const
+{
+	const World* w = world();
+	if (!w)
+	{
+		return 0;
+	}
+	return w->noiseSeedFor(vehicle().getName() + "/" + getName()).value_or(0);
+}
+
+bool SensorBase::seedNoiseGenerator(mrpt::random::CRandomGenerator& rng) const
+{
+	const World* w = world();
+	if (!w || !w->random_seed())
+	{
+		return false;
+	}
+	rng.randomize(noiseSeed());
+	return true;
 }
 
 bool SensorBase::should_simulate_sensor(const TSimulContext& context)

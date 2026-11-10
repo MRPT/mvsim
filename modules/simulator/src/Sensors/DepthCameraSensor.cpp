@@ -317,7 +317,8 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		fbo_renderer_rgb_ = std::make_shared<mrpt::opengl::CFBORender>(p);
-		rgbDistortion_.applyTo(*fbo_renderer_rgb_, sensor_params_.cameraParamsIntensity);
+		rgbDistortion_.applyTo(
+			*fbo_renderer_rgb_, sensor_params_.cameraParamsIntensity, noiseSeed());
 	}
 
 	if (!fbo_renderer_depth_ && sense_depth_ && !single_render_pass_)
@@ -477,6 +478,7 @@ void DepthCameraSensor::depthToRangeImage(mrpt::obs::CObservation3DRangeScan& ob
 	if (depthNoiseSeq_.empty())
 	{
 		mrpt::random::CRandomGenerator rng;
+		seedNoiseGenerator(rng);
 		depthNoiseSeq_.resize(noiseLen, 0);
 		if (depth_noise_sigma_ > 0)
 		{

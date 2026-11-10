@@ -195,7 +195,7 @@ void CameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		p.create_EGL_context = world()->sensor_has_to_create_egl_context();
 
 		fbo_renderer_rgb_ = std::make_shared<mrpt::opengl::CFBORender>(p);
-		distortion_.applyTo(*fbo_renderer_rgb_, sensor_params_.cameraParams);
+		distortion_.applyTo(*fbo_renderer_rgb_, sensor_params_.cameraParams, noiseSeed());
 	}
 
 	auto viewport = world3DScene.getViewport();
@@ -334,11 +334,11 @@ void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
 
 void CameraDistortionOptions::applyTo(
 	[[maybe_unused]] mrpt::opengl::CFBORender& renderer,
-	[[maybe_unused]] const mrpt::img::TCamera& cam) const
+	[[maybe_unused]] const mrpt::img::TCamera& cam, [[maybe_unused]] uint32_t noiseSeed) const
 {
 #if MRPT_VERSION >= MIN_MRPT_VERSION_CAMERA_DISTORTION
 	// Both are applied on the GPU:
 	renderer.setLensDistortion(cam);
-	renderer.setRGBNoise(static_cast<float>(imageNoiseStd));
+	renderer.setRGBNoise(static_cast<float>(imageNoiseStd), noiseSeed);
 #endif
 }

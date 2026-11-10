@@ -367,8 +367,15 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		const xml_node<>* log_path_node = nodes.first_node("log_path");
 		if (log_path_node)
 		{
-			// Parse:
-			veh->log_path_ = log_path_node->value();
+			// Parse (expanding variables, e.g. $env{...}):
+			veh->log_path_ =
+				mvsim::trim(mvsim::parse(log_path_node->value(), parent->user_defined_variables()));
+			// It is a directory (the file names are appended to it):
+			if (!veh->log_path_.empty() && veh->log_path_.back() != '/' &&
+				veh->log_path_.back() != '\\')
+			{
+				veh->log_path_ += '/';
+			}
 		}
 	}
 
@@ -386,8 +393,32 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	// <Optional> auto_start_recording
 	if (const xml_node<>* asr_node = nodes.first_node("auto_start_recording"); asr_node)
 	{
-		const std::string val = asr_node->value();
+		const std::string val =
+			mvsim::trim(mvsim::parse(asr_node->value(), parent->user_defined_variables()));
 		veh->auto_start_recording_ = (val == "true" || val == "1");
+	}
+
+	// <Optional> log_period: decimation of the logger rows
+	if (const xml_node<>* lp_node = nodes.first_node("log_period"); lp_node)
+	{
+		const std::string val =
+			mvsim::trim(mvsim::parse(lp_node->value(), parent->user_defined_variables()));
+		if (!val.empty())
+		{
+			size_t parsedChars = 0;
+			double period = -1;
+			try
+			{
+				period = std::stod(val, &parsedChars);
+			}
+			catch (const std::exception&)
+			{
+			}
+			ASSERTMSG_(
+				parsedChars == val.size() && std::isfinite(period) && period >= 0,
+				"<log_period> must be a finite, non-negative number of seconds");
+			veh->log_period_ = period;
+		}
 	}
 	if (veh->auto_start_recording_)
 	{
@@ -447,7 +478,8 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		if (!strcmp(xmlNode->name(), "sensor"))
 		{
 			SensorBase::Ptr se = SensorBase::factory(*veh, xmlNode);
-			veh->sensors_.push_back(SensorBase::Ptr(se));
+			se->assertNameIsUnique(veh->sensors_);
+			veh->sensors_.push_back(se);
 		}
 	}
 
@@ -1098,7 +1130,43 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		}
 	}
 
-	writeLogStrings();
+	// One row every <log_period> seconds of simulated time (or every step),
+	// counted from the moment a logger becomes active:
+	bool anyLoggerActive = false;
+	bool recordingStarted = false;	// by any logger, since the last step
+	was_recording_.resize(loggers_.size(), false);
+	for (size_t i = 0; i < loggers_.size(); i++)
+	{
+		const auto& l = loggers_[i];
+		const bool recording = l && l->isRecording();
+		if (l && l->isActive())
+		{
+			anyLoggerActive = true;
+		}
+		if (recording && !was_recording_[i])
+		{
+			recordingStarted = true;
+		}
+		was_recording_[i] = recording;
+	}
+	// A recording that has just started writes its first row now:
+	if (!anyLoggerActive || recordingStarted)
+	{
+		last_log_time_ = -1;
+	}
+	if (!anyLoggerActive)
+	{
+		return;
+	}
+	const double t = context.simul_time;
+	const bool timeJumped =
+		last_log_time_ < 0 || t < last_log_time_ || t - last_log_time_ >= 2 * log_period_ - 1e-9;
+	if (log_period_ <= 0 || timeJumped || t - last_log_time_ >= log_period_ - 1e-9)
+	{
+		// Keep an exact period, unless the simulated time jumped:
+		last_log_time_ = (log_period_ <= 0 || timeJumped) ? t : last_log_time_ + log_period_;
+		writeLogStrings();
+	}
 }
 
 /** Last time-step velocity of each wheel's center point (in local coords) */

@@ -150,4 +150,5 @@ a static obstacle map for path planning. For example, as an ``mp2p_icp`` metric 
 
 Random expressions in the world file (e.g. ``$f{rand()}``) give the same values as in a
 simulation only if the world fixes the random seed first, e.g. with
+``<random_seed>1</random_seed>`` or
 ``<variable name="dummy" value="$f{randomize(1)}"></variable>``.

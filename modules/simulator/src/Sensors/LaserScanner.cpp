@@ -381,8 +381,7 @@ void LaserScanner::internal_simulate_lidar_2d_mode(const TSimulContext& context)
 		double A = sensorPose.phi() + (scan.rightToLeft ? -0.5 : +0.5) * scan.aperture;
 		const double AA = (scan.rightToLeft ? 1.0 : -1.0) * (scan.aperture / (nRays - 1));
 
-		// Each thread must create its own rng:
-		thread_local mrpt::random::CRandomGenerator rnd;
+		auto& rnd = noiseRng();
 
 		for (size_t i = 0; i < nRays; i++, A += AA)
 		{
@@ -634,8 +633,7 @@ void LaserScanner::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 			auto tleStore =
 				mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.2Dlidar.noise");
 
-			// Each thread must create its own rng:
-			thread_local mrpt::random::CRandomGenerator rng;
+			auto& rng = noiseRng();
 
 			float* d = depthImage.data();
 			const size_t N = depthImage.size();
@@ -740,4 +738,14 @@ void LaserScanner::registerOnServer(mvsim::Client& c)
 	if (!publishTopic_.empty())
 		c.advertiseTopic<mvsim_msgs::ObservationLidar2D>(publishTopic_ + "_scan"s);
 #endif
+}
+
+mrpt::random::CRandomGenerator& LaserScanner::noiseRng()
+{
+	if (!noiseRngSeeded_)
+	{
+		seedNoiseGenerator(noiseRng_);
+		noiseRngSeeded_ = true;
+	}
+	return noiseRng_;
 }

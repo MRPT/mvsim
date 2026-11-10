@@ -334,6 +334,7 @@ class DummyInvisibleBlock : public CVisualObject, public Simulable
 	virtual double getMass() const { return 0; }
 
 	void add_sensor(const SensorBase::Ptr& sensor) { sensors_.push_back(sensor); }
+	const TListSensors& getSensors() const { return sensors_; }
 
    protected:
 	void internalGuiUpdate(

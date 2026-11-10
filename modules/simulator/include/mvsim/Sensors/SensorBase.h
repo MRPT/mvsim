@@ -11,6 +11,7 @@
 
 #include <mrpt/obs/obs_frwds.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/random/RandomGenerators.h>
 #include <mrpt/viz/viz_frwds.h>
 #include <mvsim/ClassFactory.h>
 #include <mvsim/Simulable.h>
@@ -19,6 +20,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace mvsim
 {
@@ -83,6 +85,10 @@ class SensorBase : public CVisualObject, public Simulable
 	Simulable& vehicle() { return vehicle_; }
 	const Simulable& vehicle() const { return vehicle_; }
 
+	/** Throws if another sensor of the same host already has this name, since
+	 * names identify the observations (and seed the sensor noise). */
+	void assertNameIsUnique(const std::vector<Ptr>& siblings) const;
+
    protected:
 	/** Should be called within each derived class simul_post_timestep() method
 	 *  to update sensor_last_timestamp_ and check if the sensor should be
@@ -93,6 +99,16 @@ class SensorBase : public CVisualObject, public Simulable
 	 *         false otherwise.
 	 */
 	bool should_simulate_sensor(const TSimulContext& context);
+
+	/** Seeds \a rng with a seed specific to this sensor (from its vehicle and
+	 * sensor names), derived from the world `<random_seed>`, so its noise is
+	 * reproducible. Returns false, leaving \a rng untouched, if the world file
+	 * does not set `<random_seed>`. */
+	bool seedNoiseGenerator(mrpt::random::CRandomGenerator& rng) const;
+
+	/** The seed of this sensor (see seedNoiseGenerator()), or 0 if the world
+	 * file does not set `<random_seed>`. */
+	uint32_t noiseSeed() const;
 
 	Simulable& vehicle_;  //!< The vehicle this sensor is attached to
 

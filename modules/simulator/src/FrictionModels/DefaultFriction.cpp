@@ -58,7 +58,9 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 	const double w = input.wheel.getW();
 
 	// Wheel spin acceleration for rolling without slipping within the step:
-	const double desired_wheel_alpha = (vel_w.x / R - w) / dt;
+	const bool contactHolds = contactHoldsWheel(input, vel_w.x, R);
+	const double desired_wheel_alpha =
+		desiredWheelAlpha(input, vel_w.x, gravSlope_w.x, R, contactHolds);
 
 	// Lateral force to cancel the lateral velocity + counteract gravity slope:
 	const double latForceToStick =
@@ -81,11 +83,12 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 		{vel_w.x - w * R, vel_w.y}, max_friction, wheel_long_friction, wheel_lateral_friction,
 		actual_wheel_alpha);
 
-	// Add slope gravity force to the contact-patch friction (acts on chassis,
-	// not on wheel spin). Clamped by remaining friction capacity.
+	// A wheel held by the contact patch (at rest) also absorbs the gravity
+	// along the slope there, clamped by the remaining friction capacity.
 	const double remaining_lon =
 		remainingLongitudinalForce(max_friction, wheel_long_friction, wheel_lateral_friction);
-	wheel_long_friction -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
+	wheel_long_friction -=
+		std::clamp(contactHolds ? gravSlope_w.x : 0.0, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(w + actual_wheel_alpha * dt);
@@ -107,6 +110,8 @@ mrpt::math::TVector2D DefaultFriction::evaluate_friction(
 		logger->updateColumn("actual_wheel_alpha", actual_wheel_alpha);
 		logger->updateColumn("motor_torque", input.motorTorque);
 		logger->updateColumn("wheel_long_friction", wheel_long_friction);
+		logger->updateColumn("friction_mu", mu);
+		logger->updateColumn("friction_C_rr", input.C_rr_override.value_or(C_rr_));
 	}
 
 	return res;

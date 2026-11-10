@@ -102,5 +102,6 @@ class GNSS : public SensorBase
 	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;
 
 	mrpt::random::CRandomGenerator rng_;
+	bool noiseSeeded_ = false;
 };
 }  // namespace mvsim

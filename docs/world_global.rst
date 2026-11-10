@@ -44,6 +44,18 @@ Available parameters (all are optional):
 - ``<ground_truth_rate>50.0</ground_truth_rate>``: If ``save_ground_truth_trajectory`` is enabled,
   this parameter defines the rate (in Hz) to generate entries in the trajectory file (Default is 50 Hz).
 
+- ``<random_seed>42</random_seed>``: Makes the simulation reproducible. The noise of every
+  sensor (2D and 3D LiDARs, IMU, GNSS, depth cameras) is drawn from its own generator,
+  seeded from this value and the vehicle and sensor names, so it does not depend on the
+  number of threads or on the other sensors. The generator used by random expressions in
+  the world file (``$f{rand()}``, ``$f{randn()}``, ``$f{unifrnd(a,b)}``) is also seeded
+  when this tag is parsed, so it must appear *before* the elements that use them.
+  It accepts variables, e.g. ``<random_seed>$env{SEED}</random_seed>``; a negative
+  value (or no tag) keeps non-deterministic random numbers. Put it once, at the top level
+  and at the beginning of the file: the vehicle odometry noise is also drawn from that
+  generator when the vehicles are created. RGB camera pixel noise is seeded per sensor too
+  (without ``<random_seed>``, it uses a fixed seed, as before, so it is the same in every run).
+
 .. code-block:: xml
    :caption: Top-level and global settings example
 

@@ -70,6 +70,14 @@ class LaserScanner : public SensorBase
 
 	double rangeStdNoise_ = 0.01;
 	double angleStdNoise_ = mrpt::DEG2RAD(0.01);
+
+	/// Range noise generator of this sensor (reproducible with <random_seed>).
+	/// Only one thread uses it: the simulation thread (2D mode) or the render
+	/// thread (<raytrace_3d>), which is fixed when the sensor is loaded.
+	mrpt::random::CRandomGenerator noiseRng_;
+	bool noiseRngSeeded_ = false;
+	mrpt::random::CRandomGenerator& noiseRng();
+
 	/** Whether all box2d "fixtures" are visible (solid) or not (Default=true)
 	 */
 	bool see_fixtures_ = true;

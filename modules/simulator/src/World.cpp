@@ -11,6 +11,7 @@
 #include <mrpt/math/TTwist2D.h>
 #include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/poses/CPose3DQuat.h>
+#include <mrpt/random/RandomGenerators.h>
 #include <mrpt/serialization/CArchive.h>
 #include <mrpt/system/filesystem.h>	 // filePathSeparatorsToNative()
 #include <mrpt/version.h>
@@ -53,6 +54,12 @@ void World::clear_all()
 
 	// Reset params:
 	force_set_simul_time(.0);
+	if (randomSeed_)
+	{
+		// Do not let a previous seed make the next world deterministic:
+		mrpt::random::getRandomGenerator().randomize();
+		randomSeed_.reset();
+	}
 
 	// (B2D) World contents:
 	// ---------------------------------------------

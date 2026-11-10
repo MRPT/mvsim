@@ -44,7 +44,9 @@ struct CameraDistortionOptions
 	void applyTo(mrpt::img::TCamera& cam) const;
 
 	/** Enables distortion and noise in a renderer of `cam` images */
-	void applyTo(mrpt::opengl::CFBORender& renderer, const mrpt::img::TCamera& cam) const;
+	void applyTo(
+		mrpt::opengl::CFBORender& renderer, const mrpt::img::TCamera& cam,
+		uint32_t noiseSeed = 0) const;
 };
 
 /** An "RGB" camera sensor on board a vehicle.

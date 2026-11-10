@@ -649,11 +649,18 @@ The friction model incorporates these forces in both lateral and longitudinal di
 
 * **Lateral:** The gravity slope force is added to the impulse that cancels lateral
   velocity, preventing the vehicle from sliding sideways on slopes.
-* **Longitudinal:** The gravity slope force is added to the contact-patch friction
-  (clamped by remaining friction capacity), counteracting the tendency to roll downhill.
+* **Longitudinal, rolling wheel:** The gravity slope force accelerates the chassis, and it
+  is included in the velocity of the wheel center that the wheel must follow to roll without
+  slipping within the step. Hence, the ground friction that balances it goes through the
+  wheel spin dynamics, and the motors must provide the torque to hold or climb the slope:
+  the motor torques (and the wheel speed tracking of their controllers) depend on the slope.
+* **Longitudinal, wheel at rest:** When both the wheel spin and the velocity of its center
+  are below 1 cm/s, the contact patch holds the wheel, as a non-backdrivable drivetrain or a
+  brake would: the gravity slope force is added to the contact-patch friction (clamped by the
+  remaining friction capacity), so a vehicle stopped on a slope does not creep.
 
-This ensures vehicles remain stationary on slopes when no motor torque is applied,
-and behave realistically when driving on uneven terrain with elevation maps.
+The same applies to vehicles with ideal controllers (``twist_ideal``, ``trajectory``),
+whose chassis velocity is imposed: the contact patch always absorbs the gravity component.
 
 Per-Region Friction Overrides
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

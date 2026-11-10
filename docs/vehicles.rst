@@ -906,12 +906,26 @@ Enable vehicle logging for debugging:
 .. code-block:: xml
 
    <log_path>/path/to/logs/</log_path>
+   <auto_start_recording>true</auto_start_recording>
+   <log_period>0.01</log_period>
 
 This creates CSV files:
 
 * ``mvsim_<name>_pose.csv`` - Vehicle pose and velocity over time (and the chassis
   suspension displacement ``susp_z``, ``susp_roll``, ``susp_pitch``, if enabled)
-* ``mvsim_<name>_wheel_<N>.csv`` - Per-wheel forces, torques, and velocities
+* ``mvsim_<name>_wheel_<N>.csv`` - Per-wheel forces, torques, and velocities, and the
+  friction parameters in effect at the wheel (``friction_mu``, ``friction_C_rr``),
+  which reflect the per-region overrides (see :ref:`physics`)
+
+Each file name is prefixed with ``session_<UNIX time>-``. ``<log_path>`` may contain
+variables (e.g. ``$env{LOG_DIR}/``); its directory is created if it does not exist.
+``<auto_start_recording>`` starts recording as soon as the simulation starts.
+
+``<log_period>`` sets the period, in seconds of simulated time, between consecutive rows
+of the logs (both the CSV files and the ROS 2 log topics below). By default (``0``),
+one row is written at every simulation step, which may be too much for small time steps
+(e.g. 1000 rows/s with ``<simul_timestep>0.001</simul_timestep>``).
+A recording always starts with a row written at once.
 
 10. ROS 2 Topics
 -----------------
@@ -1026,7 +1040,8 @@ If publishing log topics is enabled via ``publish_log_topics:=True``:
       world_file:=my.world.xml \
       publish_log_topics:=True
 
-these topics will be created (per vehicle, lazily on first data):
+these topics will be created (per vehicle, lazily on first data), one message per log
+row (see ``<log_period>`` above to limit their rate):
 
 
 * ``<VEH>/log/pose/Timestamp``          (Float64)

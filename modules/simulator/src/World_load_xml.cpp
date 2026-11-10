@@ -12,10 +12,12 @@
 #include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
 #include <mrpt/maps/CSimplePointsMap.h>
+#include <mrpt/random/RandomGenerators.h>
 #include <mrpt/system/filesystem.h>	 // extractFileDirectory()
 #include <mrpt/topography/conversions.h>
 #include <mvsim/World.h>
 
+#include <limits>
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
@@ -141,6 +143,7 @@ void World::register_standard_xml_tag_parsers()
 	register_tag_parser("actor:class", &World::parse_tag_actor_class);
 
 	register_tag_parser("remote_resources", &World::parse_tag_remote_resources);
+	register_tag_parser("random_seed", &World::parse_tag_random_seed);
 }
 
 void World::internal_recursive_parse_XML(const XmlParserContext& ctx)
@@ -239,6 +242,7 @@ void World::parse_tag_sensor(const XmlParserContext& ctx)
 	ASSERT_(standaloneSensorHost);
 
 	SensorBase::Ptr sensor = SensorBase::factory(*standaloneSensorHost, ctx.node);
+	sensor->assertNameIsUnique(standaloneSensorHost->getSensors());
 	standaloneSensorHost->add_sensor(sensor);
 }
 
@@ -279,6 +283,63 @@ void World::parse_tag_lights(const XmlParserContext& ctx)
 void World::parse_tag_remote_resources(const XmlParserContext& ctx)
 {
 	remoteResources_.parse_from(*ctx.node);
+}
+
+void World::parse_tag_random_seed(const XmlParserContext& ctx)
+{
+	const std::string sVal = mvsim::trim(parse(ctx.node->value(), userDefinedVariables_));
+	if (sVal.empty())
+	{
+		return;
+	}
+	long long seed = 0;
+	try
+	{
+		size_t idx = 0;
+		seed = std::stoll(sVal, &idx);
+		if (idx != sVal.size())
+		{
+			throw std::invalid_argument(sVal);
+		}
+	}
+	catch (const std::exception&)
+	{
+		THROW_EXCEPTION_FMT("Invalid value in <random_seed>: '%s'", sVal.c_str());
+	}
+	ASSERTMSG_(
+		seed <= static_cast<long long>(std::numeric_limits<uint32_t>::max()),
+		"<random_seed> must be a 32-bit unsigned integer (or negative)");
+	if (seed < 0)
+	{
+		// A negative value means: keep non-deterministic random numbers.
+		if (randomSeed_)
+		{
+			mrpt::random::getRandomGenerator().randomize();
+			randomSeed_.reset();
+		}
+		return;
+	}
+	randomSeed_ = static_cast<uint32_t>(seed);
+
+	// Seed now the generator used by `$f{rand()}` and similar expressions, so
+	// that the elements defined after this tag are reproducible:
+	mrpt::random::getRandomGenerator().randomize(*randomSeed_);
+}
+
+std::optional<uint32_t> World::noiseSeedFor(const std::string& objectName) const
+{
+	if (!randomSeed_)
+	{
+		return std::nullopt;
+	}
+	// FNV-1a hash of the name, so the seed does not depend on the platform:
+	uint32_t h = 2166136261u;
+	for (const char c : objectName)
+	{
+		h ^= static_cast<uint8_t>(c);
+		h *= 16777619u;
+	}
+	return *randomSeed_ ^ h;
 }
 
 void World::parse_tag_georeference(const XmlParserContext& ctx)

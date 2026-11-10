@@ -119,6 +119,25 @@ class FrictionBase
 	World* world_;
 	VehicleBase& myVehicle_;
 
+	/** Gravity on slopes: the component of gravity along the ground acts on the
+	 * chassis, and the ground friction that balances it goes through the wheel
+	 * spin dynamics, so the motors must provide the torque to hold or climb a
+	 * slope. The exception is a wheel at rest (both its spin and the velocity
+	 * of its center below a small threshold): then the contact patch holds it,
+	 * as a non-backdrivable drivetrain or a brake would, so a vehicle stopped
+	 * on a slope does not creep. Also when the chassis does not react to
+	 * forces (ideal controllers), since gravity is not applied to it then.
+	 * \return true if the contact patch absorbs the gravity component. */
+	static bool contactHoldsWheel(const TFrictionInput& input, double vel_x, double R);
+
+	/** Desired wheel spin acceleration for rolling without slipping within the
+	 * step, from the longitudinal velocity of the wheel center (vel_x) and,
+	 * unless the contact holds the wheel, the change of that velocity within
+	 * the step due to this wheel share of gravity along the slope (gravSlope_x).
+	 * \sa contactHoldsWheel() */
+	static double desiredWheelAlpha(
+		const TFrictionInput& input, double vel_x, double gravSlope_x, double R, bool contactHolds);
+
 	/** Solves the wheel spin dynamics in one time step:
 	 *  `Iyy * alpha = motor_torque + otherTorque - R * F`, where the motor
 	 *  torque comes from input.motor (implicit) or input.motorTorque, and F is

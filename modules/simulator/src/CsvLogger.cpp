@@ -9,6 +9,9 @@
 
 #include "mvsim/CsvLogger.h"
 
+#include <filesystem>
+#include <iostream>
+
 CSVLogger::CSVLogger() { file_ = std::make_shared<std::ofstream>(); }
 
 CSVLogger::~CSVLogger() { close(); }
@@ -52,6 +55,10 @@ bool CSVLogger::writeRow()
 
 	if (!isOpen())
 	{
+		if (openFailed_)
+		{
+			return false;
+		}
 		clear();
 	}
 
@@ -76,7 +83,24 @@ bool CSVLogger::open()
 
 	if (file_)
 	{
-		file_->open("session_"s + std::to_string(::time(nullptr)) + "-"s + filepath_);
+		// The session prefix goes in front of the file name, not of its
+		// directory, which is created if needed:
+		const std::filesystem::path path(filepath_);
+		const std::filesystem::path dir = path.parent_path();
+		if (!dir.empty())
+		{
+			std::error_code ec;
+			std::filesystem::create_directories(dir, ec);
+		}
+		const std::string fileName =
+			"session_"s + std::to_string(::time(nullptr)) + "-"s + path.filename().string();
+		file_->open((dir / fileName).string());
+		if (!isOpen() && !openFailed_)
+		{
+			std::cerr << "[CSVLogger] Cannot write the log file: " << (dir / fileName).string()
+					  << "\n";
+		}
+		openFailed_ = !isOpen();
 		return isOpen();
 	}
 	return false;
@@ -108,4 +132,19 @@ bool CSVLogger::clear()
 	return false;
 }
 
-void CSVLogger::newSession() { close(); }
+void CSVLogger::setRecording(bool recording)
+{
+	// A new recording may retry an open that failed before:
+	if (recording && !isRecording_)
+	{
+		openFailed_ = false;
+	}
+	isRecording_ = recording;
+}
+
+void CSVLogger::newSession()
+{
+	close();
+	// A new session may succeed where a previous one failed to open its file:
+	openFailed_ = false;
+}
