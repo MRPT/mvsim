@@ -478,7 +478,8 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		if (!strcmp(xmlNode->name(), "sensor"))
 		{
 			SensorBase::Ptr se = SensorBase::factory(*veh, xmlNode);
-			veh->sensors_.push_back(SensorBase::Ptr(se));
+			se->assertNameIsUnique(veh->sensors_);
+			veh->sensors_.push_back(se);
 		}
 	}
 

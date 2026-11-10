@@ -242,6 +242,7 @@ void World::parse_tag_sensor(const XmlParserContext& ctx)
 	ASSERT_(standaloneSensorHost);
 
 	SensorBase::Ptr sensor = SensorBase::factory(*standaloneSensorHost, ctx.node);
+	sensor->assertNameIsUnique(standaloneSensorHost->getSensors());
 	standaloneSensorHost->add_sensor(sensor);
 }
 

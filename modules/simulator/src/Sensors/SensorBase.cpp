@@ -299,6 +299,18 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 	} while (isTaken(name_));
 }
 
+void SensorBase::assertNameIsUnique(const std::vector<Ptr>& siblings) const
+{
+	for (const auto& s : siblings)
+	{
+		ASSERTMSG_(
+			!s || s.get() == this || s->getName() != getName(),
+			mrpt::format(
+				"Duplicated sensor name '%s' in '%s': sensor names must be unique.",
+				getName().c_str(), vehicle().getName().c_str()));
+	}
+}
+
 uint32_t SensorBase::noiseSeed() const
 {
 	const World* w = world();

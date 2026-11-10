@@ -20,6 +20,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace mvsim
 {
@@ -83,6 +84,10 @@ class SensorBase : public CVisualObject, public Simulable
 	/** The vehicle this sensor is attached to */
 	Simulable& vehicle() { return vehicle_; }
 	const Simulable& vehicle() const { return vehicle_; }
+
+	/** Throws if another sensor of the same host already has this name, since
+	 * names identify the observations (and seed the sensor noise). */
+	void assertNameIsUnique(const std::vector<Ptr>& siblings) const;
 
    protected:
 	/** Should be called within each derived class simul_post_timestep() method
