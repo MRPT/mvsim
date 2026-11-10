@@ -51,7 +51,9 @@ Available parameters (all are optional):
   the world file (``$f{rand()}``, ``$f{randn()}``, ``$f{unifrnd(a,b)}``) is also seeded
   when this tag is parsed, so it must appear *before* the elements that use them.
   It accepts variables, e.g. ``<random_seed>$env{SEED}</random_seed>``; a negative
-  value (or no tag) keeps non-deterministic random numbers.
+  value (or no tag) keeps non-deterministic random numbers. Put it once, at the top level
+  and at the beginning of the file: the vehicle odometry noise is also drawn from that
+  generator when the vehicles are created. RGB camera pixel noise is seeded per sensor too.
 
 .. code-block:: xml
    :caption: Top-level and global settings example

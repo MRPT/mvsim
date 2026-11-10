@@ -268,19 +268,24 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 	name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
 }
 
-bool SensorBase::seedNoiseGenerator(mrpt::random::CRandomGenerator& rng) const
+uint32_t SensorBase::noiseSeed() const
 {
 	const World* w = world();
 	if (!w)
 	{
-		return false;
+		return 0;
 	}
-	const auto seed = w->noiseSeedFor(vehicle().getName() + "/" + getName());
-	if (!seed)
+	return w->noiseSeedFor(vehicle().getName() + "/" + getName()).value_or(0);
+}
+
+bool SensorBase::seedNoiseGenerator(mrpt::random::CRandomGenerator& rng) const
+{
+	const World* w = world();
+	if (!w || !w->random_seed())
 	{
 		return false;
 	}
-	rng.randomize(*seed);
+	rng.randomize(noiseSeed());
 	return true;
 }
 

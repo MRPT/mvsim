@@ -147,9 +147,9 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 	// direction: +x local wrt the wheel
 	// -------------------------------------------------
 
-	const double lon_constraint_desired_wheel_w = vel_w.x / R;
-	const double desired_wheel_w_impulse = (lon_constraint_desired_wheel_w - input.wheel.getW());
-	const double desired_wheel_alpha = desired_wheel_w_impulse / input.context.dt;
+	const bool contactHolds = contactHoldsWheel(input, vel_w.x, R);
+	const double desired_wheel_alpha =
+		desiredWheelAlpha(input, vel_w.x, gravSlope_w.x, R, contactHolds);
 
 	// Bearing damping and rolling resistance (both integrated implicitly):
 	double T_rolling_resistance = 0;
@@ -165,10 +165,11 @@ mrpt::math::TVector2D EllipseCurveMethod::evaluate_friction(
 		input, otherTorque, C_damping_ + dTrr_dw, desired_wheel_alpha, R,
 		max_friction_longitudinal_Fx, wheel_long_friction, actual_wheel_alpha);
 
-	// Add slope gravity force to the contact-patch friction (acts on chassis,
-	// not on wheel spin). Clamped by remaining friction capacity.
+	// A wheel held by the contact patch (at rest) also absorbs the gravity
+	// along the slope there, clamped by the remaining friction capacity.
 	const double remaining_lon = max_friction_longitudinal_Fx - std::abs(wheel_long_friction);
-	wheel_long_friction -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
+	wheel_long_friction -=
+		std::clamp(contactHolds ? gravSlope_w.x : 0.0, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(input.wheel.getW() + actual_wheel_alpha * input.context.dt);

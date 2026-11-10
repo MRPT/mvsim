@@ -75,6 +75,7 @@ class CSVLogger
 	std::string filepath_;
 	bool isRecording_ = false;
 	bool fileWritingEnabled_ = true;
+	bool openFailed_ = false;  //!< Do not retry (and report) a failed open()
 
 	std::vector<on_row_callback_t> onRowCallbacks_;
 };

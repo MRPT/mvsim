@@ -53,6 +53,7 @@ void World::clear_all()
 
 	// Reset params:
 	force_set_simul_time(.0);
+	randomSeed_.reset();
 
 	// (B2D) World contents:
 	// ---------------------------------------------

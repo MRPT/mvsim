@@ -370,6 +370,12 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 			// Parse (expanding variables, e.g. $env{...}):
 			veh->log_path_ =
 				mvsim::trim(mvsim::parse(log_path_node->value(), parent->user_defined_variables()));
+			// It is a directory (the file names are appended to it):
+			if (!veh->log_path_.empty() && veh->log_path_.back() != '/' &&
+				veh->log_path_.back() != '\\')
+			{
+				veh->log_path_ += '/';
+			}
 		}
 	}
 
@@ -399,7 +405,11 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 			mvsim::trim(mvsim::parse(lp_node->value(), parent->user_defined_variables()));
 		if (!val.empty())
 		{
-			veh->log_period_ = std::stod(val);
+			const double period = std::stod(val);
+			ASSERTMSG_(
+				std::isfinite(period) && period >= 0,
+				"<log_period> must be a finite, non-negative number of seconds");
+			veh->log_period_ = period;
 		}
 	}
 	if (veh->auto_start_recording_)
@@ -1111,11 +1121,29 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 		}
 	}
 
-	// One row every <log_period> seconds of simulated time (or every step):
-	if (log_period_ <= 0 || last_log_time_ < 0 ||
-		context.simul_time - last_log_time_ >= log_period_ - 1e-9)
+	// One row every <log_period> seconds of simulated time (or every step),
+	// counted from the moment a logger becomes active:
+	bool anyLoggerActive = false;
+	for (const auto& l : loggers_)
 	{
-		last_log_time_ = context.simul_time;
+		if (l && l->isActive())
+		{
+			anyLoggerActive = true;
+			break;
+		}
+	}
+	if (!anyLoggerActive)
+	{
+		last_log_time_ = -1;
+		return;
+	}
+	const double t = context.simul_time;
+	const bool timeJumped =
+		last_log_time_ < 0 || t < last_log_time_ || t - last_log_time_ >= 2 * log_period_ - 1e-9;
+	if (log_period_ <= 0 || timeJumped || t - last_log_time_ >= log_period_ - 1e-9)
+	{
+		// Keep an exact period, unless the simulated time jumped:
+		last_log_time_ = (log_period_ <= 0 || timeJumped) ? t : last_log_time_ + log_period_;
 		writeLogStrings();
 	}
 }

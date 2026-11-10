@@ -42,7 +42,6 @@ WardIagnemmaFriction::WardIagnemmaFriction(
 		params["A_roll"] = TParamEntry("%lf", &A_roll_);
 		params["R1"] = TParamEntry("%lf", &R1_);
 		params["R2"] = TParamEntry("%lf", &R2_);
-		params["slope_reaction_on_wheels"] = TParamEntry("%bool", &slopeReactionOnWheels_);
 		// Parse XML params:
 		parse_xmlnode_children_as_param(
 			*node, params, world_->user_defined_variables(), "WardIagnemmaFriction",
@@ -76,8 +75,9 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	const double w = input.wheel.getW();
 
 	// Wheel spin acceleration for rolling without slipping within the step:
+	const bool contactHolds = contactHoldsWheel(input, vel_w.x, R);
 	const double desired_wheel_alpha =
-		desiredWheelAlpha(input, vel_w.x, gravSlope_w.x, partial_mass, R);
+		desiredWheelAlpha(input, vel_w.x, gravSlope_w.x, R, contactHolds);
 
 	// Lateral force to cancel the lateral velocity + counteract gravity slope:
 	const double latForceToStick =
@@ -120,12 +120,12 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 		{vel_w.x - w * R, vel_w.y}, max_friction, wheel_long_friction, wheel_lateral_friction,
 		actual_wheel_alpha);
 
-	// Add slope gravity force to the contact-patch friction (acts on chassis,
-	// not on wheel spin). Clamped by remaining friction capacity.
+	// A wheel held by the contact patch (at rest) also absorbs the gravity
+	// along the slope there, clamped by the remaining friction capacity.
 	const double remaining_lon =
 		remainingLongitudinalForce(max_friction, wheel_long_friction, wheel_lateral_friction);
 	wheel_long_friction -=
-		std::clamp(gravityAbsorbedByContact(gravSlope_w.x), -remaining_lon, remaining_lon);
+		std::clamp(contactHolds ? gravSlope_w.x : 0.0, -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(w + actual_wheel_alpha * dt);

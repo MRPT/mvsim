@@ -38,9 +38,6 @@ class DefaultFriction : public FrictionBase
 
    public:
 	const TParameterDefinitions params_ = {
-		{"mu", {"%lf", &mu_}},
-		{"C_damping", {"%lf", &C_damping_}},
-		{"C_rr", {"%lf", &C_rr_}},
-		{"slope_reaction_on_wheels", {"%bool", &slopeReactionOnWheels_}}};
+		{"mu", {"%lf", &mu_}}, {"C_damping", {"%lf", &C_damping_}}, {"C_rr", {"%lf", &C_rr_}}};
 };
 }  // namespace mvsim

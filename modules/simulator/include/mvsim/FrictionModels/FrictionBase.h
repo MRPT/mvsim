@@ -119,28 +119,24 @@ class FrictionBase
 	World* world_;
 	VehicleBase& myVehicle_;
 
-	/** If true (XML parameter <slope_reaction_on_wheels>), the component of
-	 * gravity along the ground acts on the chassis and the ground friction that
-	 * balances it goes through the wheel spin dynamics, so the wheels (and their
-	 * motors) must provide the torque to hold or climb a slope. If false
-	 * (default), the contact patch absorbs it directly, so a vehicle stays still
-	 * on a slope without any motor torque. */
-	bool slopeReactionOnWheels_ = false;
+	/** Gravity on slopes: the component of gravity along the ground acts on the
+	 * chassis, and the ground friction that balances it goes through the wheel
+	 * spin dynamics, so the motors must provide the torque to hold or climb a
+	 * slope. The exception is a wheel at rest (both its spin and the velocity
+	 * of its center below a small threshold): then the contact patch holds it,
+	 * as a non-backdrivable drivetrain or a brake would, so a vehicle stopped
+	 * on a slope does not creep. Also when the chassis does not react to
+	 * forces (ideal controllers), since gravity is not applied to it then.
+	 * \return true if the contact patch absorbs the gravity component. */
+	static bool contactHoldsWheel(const TFrictionInput& input, double vel_x, double R);
 
 	/** Desired wheel spin acceleration for rolling without slipping within the
-	 * step, from the longitudinal velocity of the wheel center (vel_x) and, if
-	 * slopeReactionOnWheels_, the gravity force along the slope on this wheel
-	 * share (gravSlope_x), which changes that velocity within the step. */
-	double desiredWheelAlpha(
-		const TFrictionInput& input, double vel_x, double gravSlope_x, double partialMass,
-		double R) const;
-
-	/** Gravity force along the slope, in the wheel x direction, to be absorbed by
-	 * the contact patch (0 if slopeReactionOnWheels_). */
-	double gravityAbsorbedByContact(double gravSlope_x) const
-	{
-		return slopeReactionOnWheels_ ? 0.0 : gravSlope_x;
-	}
+	 * step, from the longitudinal velocity of the wheel center (vel_x) and,
+	 * unless the contact holds the wheel, the change of that velocity within
+	 * the step due to this wheel share of gravity along the slope (gravSlope_x).
+	 * \sa contactHoldsWheel() */
+	static double desiredWheelAlpha(
+		const TFrictionInput& input, double vel_x, double gravSlope_x, double R, bool contactHolds);
 
 	/** Solves the wheel spin dynamics in one time step:
 	 *  `Iyy * alpha = motor_torque + otherTorque - R * F`, where the motor

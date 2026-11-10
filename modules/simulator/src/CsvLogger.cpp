@@ -10,6 +10,7 @@
 #include "mvsim/CsvLogger.h"
 
 #include <filesystem>
+#include <iostream>
 
 CSVLogger::CSVLogger() { file_ = std::make_shared<std::ofstream>(); }
 
@@ -54,6 +55,10 @@ bool CSVLogger::writeRow()
 
 	if (!isOpen())
 	{
+		if (openFailed_)
+		{
+			return false;
+		}
 		clear();
 	}
 
@@ -90,6 +95,12 @@ bool CSVLogger::open()
 		const std::string fileName =
 			"session_"s + std::to_string(::time(nullptr)) + "-"s + path.filename().string();
 		file_->open((dir / fileName).string());
+		if (!isOpen() && !openFailed_)
+		{
+			std::cerr << "[CSVLogger] Cannot write the log file: " << (dir / fileName).string()
+					  << "\n";
+		}
+		openFailed_ = !isOpen();
 		return isOpen();
 	}
 	return false;

@@ -72,18 +72,28 @@ FrictionBase::Ptr FrictionBase::factory(
 
 void FrictionBase::setLogger(const std::weak_ptr<CSVLogger>& logger) { logger_ = logger; }
 
+bool FrictionBase::contactHoldsWheel(const TFrictionInput& input, double vel_x, double R)
+{
+	// Speed below which a wheel is considered to be at rest [m/s]:
+	constexpr double restSpeed = 0.01;
+
+	if (input.longitudinalMass <= 0)
+	{
+		return true;
+	}
+	return std::abs(vel_x) < restSpeed && std::abs(input.wheel.getW() * R) < restSpeed;
+}
+
 double FrictionBase::desiredWheelAlpha(
-	const TFrictionInput& input, double vel_x, double gravSlope_x, double partialMass,
-	double R) const
+	const TFrictionInput& input, double vel_x, double gravSlope_x, double R, bool contactHolds)
 {
 	const double dt = input.context.dt;
 	double groundSpeed = vel_x;
-	if (slopeReactionOnWheels_)
+	if (!contactHolds)
 	{
 		// The wheel center is accelerated along the slope by its share of the
 		// vehicle weight within this step:
-		const double m = input.longitudinalMass > 0 ? input.longitudinalMass : partialMass;
-		groundSpeed += gravSlope_x * dt / m;
+		groundSpeed += gravSlope_x * dt / input.longitudinalMass;
 	}
 	return (groundSpeed / R - input.wheel.getW()) / dt;
 }

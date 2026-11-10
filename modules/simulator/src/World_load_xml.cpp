@@ -17,6 +17,7 @@
 #include <mrpt/topography/conversions.h>
 #include <mvsim/World.h>
 
+#include <limits>
 #include <map>
 #include <rapidxml.hpp>
 #include <rapidxml_print.hpp>
@@ -290,7 +291,23 @@ void World::parse_tag_random_seed(const XmlParserContext& ctx)
 	{
 		return;
 	}
-	const long long seed = std::stoll(sVal);
+	long long seed = 0;
+	try
+	{
+		size_t idx = 0;
+		seed = std::stoll(sVal, &idx);
+		if (idx != sVal.size())
+		{
+			throw std::invalid_argument(sVal);
+		}
+	}
+	catch (const std::exception&)
+	{
+		THROW_EXCEPTION_FMT("Invalid value in <random_seed>: '%s'", sVal.c_str());
+	}
+	ASSERTMSG_(
+		seed <= static_cast<long long>(std::numeric_limits<uint32_t>::max()),
+		"<random_seed> must be a 32-bit unsigned integer (or negative)");
 	if (seed < 0)
 	{
 		// A negative value means: keep non-deterministic random numbers.

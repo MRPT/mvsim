@@ -101,6 +101,10 @@ class SensorBase : public CVisualObject, public Simulable
 	 * does not set `<random_seed>`. */
 	bool seedNoiseGenerator(mrpt::random::CRandomGenerator& rng) const;
 
+	/** The seed of this sensor (see seedNoiseGenerator()), or 0 if the world
+	 * file does not set `<random_seed>`. */
+	uint32_t noiseSeed() const;
+
 	Simulable& vehicle_;  //!< The vehicle this sensor is attached to
 
 	World* world() { return vehicle_.getSimulableWorldObject(); }

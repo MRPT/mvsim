@@ -9,11 +9,13 @@
 // Tests of <random_seed> (reproducible random expressions and per-object
 // noise seeds) and of the decimation of the vehicle logs with <log_period>.
 
+#include <mrpt/obs/CObservation2DRangeScan.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "test_utils.h"
 
@@ -41,11 +43,44 @@ std::string worldXml(const std::string& seed)
     </dynamics>
     <log_period>0.01</log_period>
   </vehicle:class>
+  <block name="wall">
+    <static>true</static>
+    <init_pose>3 0 0</init_pose>
+    <geometry type="box" lx="0.2" ly="20" lz="1"/>
+  </block>
   <vehicle name="veh" class="small_robot">
     <init_pose>0 0 0</init_pose>
+    <sensor class="laser" name="laser1">
+      <pose_3d>0 0 0.5 0 0 0</pose_3d>
+      <fov_degrees>90</fov_degrees>
+      <nrays>91</nrays>
+      <sensor_period>0.05</sensor_period>
+      <range_std_noise>0.05</range_std_noise>
+      <max_range>20</max_range>
+    </sensor>
   </vehicle>
 </mvsim_world>
 )";
+}
+
+// Ranges of the first 2D LiDAR scan of a world, after loading it.
+std::vector<float> firstScan(mvsim::World& w)
+{
+	std::vector<float> ranges;
+	w.registerCallbackOnObservation(
+		[&ranges](const mvsim::Simulable&, const mrpt::obs::CObservation::Ptr& o)
+		{
+			auto s = std::dynamic_pointer_cast<mrpt::obs::CObservation2DRangeScan>(o);
+			if (s && ranges.empty())
+			{
+				for (size_t i = 0; i < s->getScanSize(); i++)
+				{
+					ranges.push_back(s->getScanRange(i));
+				}
+			}
+		});
+	w.run_simulation(0.2);
+	return ranges;
 }
 
 std::string var(const mvsim::World& w, const std::string& name)
@@ -87,6 +122,19 @@ int main()
 	w4.load_from_XML(worldXml("-1"));
 	EXPECT_FALSE(w4.random_seed().has_value());
 	EXPECT_FALSE(w4.noiseSeedFor("veh/lidar").has_value());
+
+	// Seeded sensor noise: the same scans with the same seed, others with another.
+	{
+		const auto s1 = firstScan(w2);
+		const auto s3 = firstScan(w3);
+		mvsim::World w5;
+		w5.headless(true);
+		w5.load_from_XML(worldXml("5"));
+		const auto s5 = firstScan(w5);
+		EXPECT_FALSE(s1.empty());
+		EXPECT_TRUE(s1 == s5);
+		EXPECT_TRUE(s1 != s3);
+	}
 
 	// <log_period>: one log row every 10 ms of simulated time.
 	{
