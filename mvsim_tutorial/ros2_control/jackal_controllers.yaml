@@ -30,6 +30,11 @@
 
     wheel_separation: 0.32
     wheel_radius: 0.10
+    # Skid-steer wheels slip sideways when turning, so the actual yaw rate is
+    # lower than that of the wheel speeds: this multiplier calibrates it, for
+    # both the commands and the odometry. Its best value depends on the turning
+    # radius, as in real robots: this one fits radii up to ~2 m.
+    wheel_separation_multiplier: 1.66
 
     odom_frame_id: odom
     base_frame_id: base_link

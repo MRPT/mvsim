@@ -160,7 +160,8 @@ files are in ``mvsim_tutorial/ros2_control/``.
 Skid-steer wheels slip sideways when turning, so the yaw rate from the wheel speeds is
 larger than the actual one, as in real robots: calibrate it with the
 ``wheel_separation_multiplier`` of ``diff_drive_controller`` (as in
-``skid_steer_4wd_controllers.yaml``), or the odometry drifts in turns.
+``jackal_controllers.yaml`` and ``skid_steer_4wd_controllers.yaml``), or the odometry
+drifts in turns.
 
 |
 
