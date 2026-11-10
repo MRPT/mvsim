@@ -73,8 +73,10 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	double ff = 0;
 	if (enable_feedforward)
 	{
-		// nDrivenWheels=2 for differential drive
-		ff = feedforward_gain * veh_.estimateSlopeTorquePerWheel(2);
+		// Each side torque drives all the wheels on that side (a caster is not
+		// driven), so the slope load is shared among them:
+		const size_t nDrivenWheels = veh_.getNumWheels() == 4 ? 4 : 2;
+		ff = feedforward_gain * veh_.estimateSlopeTorquePerWheel(nDrivenWheels);
 	}
 
 	// "-" because \tau<0 makes robot moves forwards.
