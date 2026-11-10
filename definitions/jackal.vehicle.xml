@@ -30,8 +30,8 @@
         <!--   Motor controller -->
         <controller class="${controller|twist_ideal}">  <!-- "twist_ideal", "twist_pid", or "ros2_control" -->
           <!-- Optimal parameters from the mvsim-pid-tuner tool -->
-          <KP>79</KP>
-          <KI>40</KI>
+          <KP>79.2</KP>
+          <KI>112</KI>
           <KD>0.0000</KD>
           <max_torque>8.2</max_torque>
           <!-- Joystick teleop maximum speeds (overridable via include variables) -->

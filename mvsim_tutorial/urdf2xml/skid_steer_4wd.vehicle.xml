@@ -15,7 +15,7 @@
       </shape>
     </chassis>
     <controller class="${controller|twist_pid}">
-      <KP>40</KP> <KI>400</KI> <KD>0</KD> <max_torque>60</max_torque>
+      <KP>441.2</KP> <KI>3900</KI> <KD>0</KD> <max_torque>60</max_torque>
       <controllers_yaml>${controllers_yaml|}</controllers_yaml>
       <robot_description>${robot_description|generated}</robot_description>
     </controller>
