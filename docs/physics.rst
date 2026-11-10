@@ -655,6 +655,14 @@ The friction model incorporates these forces in both lateral and longitudinal di
 This ensures vehicles remain stationary on slopes when no motor torque is applied,
 and behave realistically when driving on uneven terrain with elevation maps.
 
+By default, the longitudinal component is absorbed by the contact patch, so it does not
+load the wheel spin nor the motors. To simulate slopes as a load for the motors (e.g. to
+evaluate wheel speed controllers), set ``<slope_reaction_on_wheels>true</slope_reaction_on_wheels>``
+in the ``<friction>`` block (``default`` and ``wardiagnemma`` models): then the gravity
+component accelerates the chassis, and the friction that balances it goes through the wheel
+spin dynamics, so the motors must provide the torque to hold or climb the slope. A vehicle
+without motor torque then rolls down the slope.
+
 Per-Region Friction Overrides
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
