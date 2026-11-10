@@ -1132,21 +1132,23 @@ void VehicleBase::simul_post_timestep(const TSimulContext& context)
 	// One row every <log_period> seconds of simulated time (or every step),
 	// counted from the moment a logger becomes active:
 	bool anyLoggerActive = false;
-	bool anyRecording = false;
-	for (const auto& l : loggers_)
+	bool recordingStarted = false;	// by any logger, since the last step
+	was_recording_.resize(loggers_.size(), false);
+	for (size_t i = 0; i < loggers_.size(); i++)
 	{
+		const auto& l = loggers_[i];
+		const bool recording = l && l->isRecording();
 		if (l && l->isActive())
 		{
 			anyLoggerActive = true;
 		}
-		if (l && l->isRecording())
+		if (recording && !was_recording_[i])
 		{
-			anyRecording = true;
+			recordingStarted = true;
 		}
+		was_recording_[i] = recording;
 	}
 	// A recording that has just started writes its first row now:
-	const bool recordingStarted = anyRecording && !was_recording_;
-	was_recording_ = anyRecording;
 	if (!anyLoggerActive || recordingStarted)
 	{
 		last_log_time_ = -1;

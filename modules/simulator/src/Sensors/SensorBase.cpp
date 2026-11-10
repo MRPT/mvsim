@@ -262,19 +262,41 @@ void SensorBase::make_sure_we_have_a_name(const std::string& prefix)
 	{
 		return;
 	}
+	// Sensors on a vehicle are numbered from 1; standalone ones (sharing one
+	// host) from 0, so a single unnamed standalone sensor keeps its usual name.
+	const TListSensors* siblings = nullptr;
 	size_t nextIdx = 0;
 	if (auto v = dynamic_cast<VehicleBase*>(&vehicle_); v)
 	{
-		nextIdx = v->getSensors().size() + 1;
+		siblings = &v->getSensors();
+		nextIdx = siblings->size() + 1;
 	}
 	else if (auto b = dynamic_cast<DummyInvisibleBlock*>(&vehicle_); b)
 	{
-		// Standalone sensors share one host: number them too, so their names
-		// (and noise seeds) are distinct.
-		nextIdx = b->getSensors().size() + 1;
+		siblings = &b->getSensors();
+		nextIdx = siblings->size();
 	}
 
-	name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx));
+	// Skip names already taken, so names (and noise seeds) are distinct:
+	const auto isTaken = [siblings](const std::string& name)
+	{
+		if (!siblings)
+		{
+			return false;
+		}
+		for (const auto& s : *siblings)
+		{
+			if (s && s->getName() == name)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	do
+	{
+		name_ = mrpt::format("%s%u", prefix.c_str(), static_cast<unsigned int>(nextIdx++));
+	} while (isTaken(name_));
 }
 
 uint32_t SensorBase::noiseSeed() const

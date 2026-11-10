@@ -215,7 +215,7 @@ class VehicleBase : public CVisualObject, public Simulable
 	/// log topics), set with <log_period>. 0: one row per simulation step.
 	double log_period_ = 0;
 	double last_log_time_ = -1;
-	bool was_recording_ = false;
+	std::vector<bool> was_recording_;  //!< Per logger, at the last step
 	std::string base_frame_id_ = "base_link";
 
 	virtual void initLoggers();
