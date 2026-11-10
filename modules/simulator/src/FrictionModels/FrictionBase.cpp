@@ -72,6 +72,22 @@ FrictionBase::Ptr FrictionBase::factory(
 
 void FrictionBase::setLogger(const std::weak_ptr<CSVLogger>& logger) { logger_ = logger; }
 
+double FrictionBase::desiredWheelAlpha(
+	const TFrictionInput& input, double vel_x, double gravSlope_x, double partialMass,
+	double R) const
+{
+	const double dt = input.context.dt;
+	double groundSpeed = vel_x;
+	if (slopeReactionOnWheels_)
+	{
+		// The wheel center is accelerated along the slope by its share of the
+		// vehicle weight within this step:
+		const double m = input.longitudinalMass > 0 ? input.longitudinalMass : partialMass;
+		groundSpeed += gravSlope_x * dt / m;
+	}
+	return (groundSpeed / R - input.wheel.getW()) / dt;
+}
+
 void FrictionBase::solveWheelSpin(
 	const TFrictionInput& input, double otherTorque, double spinDamping, double desiredAlpha,
 	double R, double maxF, double& F, double& alpha)

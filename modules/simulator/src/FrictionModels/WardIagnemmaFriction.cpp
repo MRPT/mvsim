@@ -42,6 +42,7 @@ WardIagnemmaFriction::WardIagnemmaFriction(
 		params["A_roll"] = TParamEntry("%lf", &A_roll_);
 		params["R1"] = TParamEntry("%lf", &R1_);
 		params["R2"] = TParamEntry("%lf", &R2_);
+		params["slope_reaction_on_wheels"] = TParamEntry("%bool", &slopeReactionOnWheels_);
 		// Parse XML params:
 		parse_xmlnode_children_as_param(
 			*node, params, world_->user_defined_variables(), "WardIagnemmaFriction",
@@ -75,7 +76,8 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	const double w = input.wheel.getW();
 
 	// Wheel spin acceleration for rolling without slipping within the step:
-	const double desired_wheel_alpha = (vel_w.x / R - w) / dt;
+	const double desired_wheel_alpha =
+		desiredWheelAlpha(input, vel_w.x, gravSlope_w.x, partial_mass, R);
 
 	// Lateral force to cancel the lateral velocity + counteract gravity slope:
 	const double latForceToStick =
@@ -122,7 +124,8 @@ mrpt::math::TVector2D WardIagnemmaFriction::evaluate_friction(
 	// not on wheel spin). Clamped by remaining friction capacity.
 	const double remaining_lon =
 		remainingLongitudinalForce(max_friction, wheel_long_friction, wheel_lateral_friction);
-	wheel_long_friction -= std::clamp(gravSlope_w.x, -remaining_lon, remaining_lon);
+	wheel_long_friction -=
+		std::clamp(gravityAbsorbedByContact(gravSlope_w.x), -remaining_lon, remaining_lon);
 
 	// Apply impulse to wheel's spinning:
 	input.wheel.setW(w + actual_wheel_alpha * dt);
