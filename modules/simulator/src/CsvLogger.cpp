@@ -132,4 +132,9 @@ bool CSVLogger::clear()
 	return false;
 }
 
-void CSVLogger::newSession() { close(); }
+void CSVLogger::newSession()
+{
+	close();
+	// A new session may succeed where a previous one failed to open its file:
+	openFailed_ = false;
+}

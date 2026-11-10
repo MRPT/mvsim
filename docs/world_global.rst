@@ -53,7 +53,8 @@ Available parameters (all are optional):
   It accepts variables, e.g. ``<random_seed>$env{SEED}</random_seed>``; a negative
   value (or no tag) keeps non-deterministic random numbers. Put it once, at the top level
   and at the beginning of the file: the vehicle odometry noise is also drawn from that
-  generator when the vehicles are created. RGB camera pixel noise is seeded per sensor too.
+  generator when the vehicles are created. RGB camera pixel noise is seeded per sensor too
+  (without ``<random_seed>``, it uses a fixed seed, as before, so it is the same in every run).
 
 .. code-block:: xml
    :caption: Top-level and global settings example

@@ -311,7 +311,11 @@ void World::parse_tag_random_seed(const XmlParserContext& ctx)
 	if (seed < 0)
 	{
 		// A negative value means: keep non-deterministic random numbers.
-		randomSeed_.reset();
+		if (randomSeed_)
+		{
+			mrpt::random::getRandomGenerator().randomize();
+			randomSeed_.reset();
+		}
 		return;
 	}
 	randomSeed_ = static_cast<uint32_t>(seed);

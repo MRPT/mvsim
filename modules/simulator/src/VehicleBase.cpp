@@ -405,9 +405,17 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 			mvsim::trim(mvsim::parse(lp_node->value(), parent->user_defined_variables()));
 		if (!val.empty())
 		{
-			const double period = std::stod(val);
+			size_t parsedChars = 0;
+			double period = -1;
+			try
+			{
+				period = std::stod(val, &parsedChars);
+			}
+			catch (const std::exception&)
+			{
+			}
 			ASSERTMSG_(
-				std::isfinite(period) && period >= 0,
+				parsedChars == val.size() && std::isfinite(period) && period >= 0,
 				"<log_period> must be a finite, non-negative number of seconds");
 			veh->log_period_ = period;
 		}
