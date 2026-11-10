@@ -43,9 +43,9 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	const bool commandIsZero =
 		std::abs(sp.vx) < zero_threshold && std::abs(0.5 * sp.omega * spTrack) < zero_threshold;
 
-	// Compute each wheel actual velocity (from an "odometry" estimation of
-	// velocity, not ground-truth!):
-	const mrpt::math::TTwist2D vehVelOdo = veh_.getVelocityLocalOdoEstimate();
+	// Compute each wheel actual velocity (from the wheel speeds, not
+	// ground-truth!):
+	const mrpt::math::TTwist2D vehVelOdo = veh_.getVelocityLocalFromWheels();
 
 	// Turn slip compensation: the wheels must turn faster by the ratio between
 	// the yaw rate implied by their speeds (in setpoint units, i.e. before the

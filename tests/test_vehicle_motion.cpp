@@ -250,8 +250,11 @@ void test_skid_steer_slip_compensation()
 		"</controller>",
 		friction("default", "0.8"), 5e-3);
 	s.run(4.0, {0, 0, 1.0});
-	std::cout << "  w=" << s.veh->getRefVelocityLocal().omega << "\n";
+	std::cout << "  w=" << s.veh->getRefVelocityLocal().omega
+			  << " odometry w=" << s.veh->getVelocityLocalOdoEstimate().omega << "\n";
 	EXPECT_NEAR(s.veh->getRefVelocityLocal().omega, 1.0, 0.02);
+	// The odometry accounts for the compensated slip:
+	EXPECT_NEAR(s.veh->getVelocityLocalOdoEstimate().omega, 1.0, 0.02);
 }
 
 // A caster wheel swivels, so it must not resist turning: same turn rate as

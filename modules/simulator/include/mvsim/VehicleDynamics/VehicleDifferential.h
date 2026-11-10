@@ -131,6 +131,9 @@ class DynamicsDifferential : public VehicleBase
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
+		/** Estimated turn slip ratio (1 if not compensated) */
+		double turnSlipRatio() const { return slip_compensation_tau > 0 ? turnSlipRatio_ : 1.0; }
+
 		/// PID controller parameters
 		double KP = 10, KI = 0, KD = 0;
 
@@ -316,7 +319,13 @@ class DynamicsDifferential : public VehicleBase
 
 	/** @} */  // end controllers
 
+	/** Odometry velocity, from the wheel speeds. With the twist_pid
+	 *  controller, its turn rate is divided by the wheel separation multiplier
+	 *  and by the estimated turn slip ratio. */
 	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const override;
+
+	/** Velocity from the wheel speeds alone, assuming no slip. */
+	mrpt::math::TTwist2D getVelocityLocalFromWheels() const;
 
    protected:
 	// See base class docs
