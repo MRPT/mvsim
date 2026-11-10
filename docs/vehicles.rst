@@ -333,9 +333,15 @@ or rebounding.
 
 **Skid-steer robots** (``differential_4_wheels``) turn slower than their wheel speeds imply,
 since their wheels must slide sideways to turn (e.g. ~60% of the commanded rate for the
-Jackal, spinning in place). As in ROS ``diff_drive_controller``, the optional
-``<wheel_separation_multiplier>`` (default 1) multiplies the wheel separation used to
-compute the wheel speed setpoints to compensate it.
+Jackal, spinning in place). The controller compensates it: while the vehicle turns steadily,
+it estimates the turn slip ratio (the yaw rate implied by the wheel speeds over the actual
+yaw rate of the vehicle, as measured by an ideal gyroscope), low-pass filtered with
+``<slip_compensation_tau>`` (default 0.2 s; 0 disables it), and multiplies the turn rate used
+for the wheel speed setpoints by it, up to ``<slip_compensation_max>`` (default 5). The ratio
+is 1 for vehicles whose wheels do not slip, so it has no effect on them. As in ROS
+``diff_drive_controller``, ``<wheel_separation_multiplier>`` (default 1) also multiplies the
+wheel separation used to compute the wheel speed setpoints, but it is not needed with the
+compensation.
 
 **Tuning:** keep ``max_torque`` below the traction limit of the driven wheels
 (:math:`\mu \, N \, R`, with :math:`N` the wheel load), except for skid-steer vehicles,

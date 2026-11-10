@@ -34,7 +34,6 @@
           <KI>40</KI>
           <KD>0.0000</KD>
           <max_torque>8.2</max_torque>
-          <wheel_separation_multiplier>1.8</wheel_separation_multiplier>  <!-- skid-steer: see docs -->
           <!-- Joystick teleop maximum speeds (overridable via include variables) -->
           <joyMaxLinSpeed>${joyMaxLinSpeed|1.0}</joyMaxLinSpeed>
           <joyMaxAngSpeed>${joyMaxAngSpeed|0.5}</joyMaxAngSpeed>

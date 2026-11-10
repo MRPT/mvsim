@@ -219,6 +219,19 @@ void DynamicsDifferential::invoke_motor_controllers_post_step(const TSimulContex
 // See docs in base class:
 mrpt::math::TTwist2D DynamicsDifferential::getVelocityLocalOdoEstimate() const
 {
+	auto odo_vel = getVelocityLocalFromWheels();
+	// As for the wheel speed setpoints (and as in ROS diff_drive_controller),
+	// the odometry accounts for the wheel separation multiplier and the turn
+	// slip compensated by the controller:
+	if (const auto* c = dynamic_cast<const ControllerTwistPID*>(controller_.get()))
+	{
+		odo_vel.omega /= c->wheel_separation_multiplier * c->turnSlipRatio();
+	}
+	return odo_vel;
+}
+
+mrpt::math::TTwist2D DynamicsDifferential::getVelocityLocalFromWheels() const
+{
 	mrpt::math::TTwist2D odo_vel;
 	// Equations:
 

@@ -231,12 +231,30 @@ void test_skid_steer_spin_rate()
 	Sim s(
 		kSkidSteer,
 		"<controller class=\"twist_pid\"><KP>18</KP><KI>470</KI><max_torque>100</max_torque>"
-		"</controller>",
+		"<slip_compensation_tau>0</slip_compensation_tau></controller>",
 		friction("default", "0.8"), 5e-3);
 	s.run(4.0, {0, 0, 1.0});
 	const double expected = 0.16 * 0.16 / (0.13 * 0.13 + 0.16 * 0.16);
 	std::cout << "  w=" << s.veh->getRefVelocityLocal().omega << " expected=" << expected << "\n";
 	EXPECT_NEAR(s.veh->getRefVelocityLocal().omega, expected, 0.02);
+}
+
+// The turn slip compensation of twist_pid makes the same robot spin at the
+// commanded rate.
+void test_skid_steer_slip_compensation()
+{
+	std::cout << "[TEST] skid-steer spin rate with turn slip compensation\n";
+	Sim s(
+		kSkidSteer,
+		"<controller class=\"twist_pid\"><KP>18</KP><KI>470</KI><max_torque>100</max_torque>"
+		"</controller>",
+		friction("default", "0.8"), 5e-3);
+	s.run(4.0, {0, 0, 1.0});
+	std::cout << "  w=" << s.veh->getRefVelocityLocal().omega
+			  << " odometry w=" << s.veh->getVelocityLocalOdoEstimate().omega << "\n";
+	EXPECT_NEAR(s.veh->getRefVelocityLocal().omega, 1.0, 0.02);
+	// The odometry accounts for the compensated slip:
+	EXPECT_NEAR(s.veh->getVelocityLocalOdoEstimate().omega, 1.0, 0.02);
 }
 
 // A caster wheel swivels, so it must not resist turning: same turn rate as
@@ -453,6 +471,7 @@ int main()
 		test_ellipse_pid();
 		test_stiff_pid_low_friction();
 		test_skid_steer_spin_rate();
+		test_skid_steer_slip_compensation();
 		test_caster();
 		test_torsen();
 		test_steering_rate();

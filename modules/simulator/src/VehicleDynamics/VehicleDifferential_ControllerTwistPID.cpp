@@ -39,12 +39,44 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	// 1) Compute desired velocity set-point (in m/s)
 	// 2) Run the PI/PID for that wheel independently (in newtons)
 	const double spTrack = distWheels_ * wheel_separation_multiplier;
-	double spVelL = sp.vx - 0.5 * sp.omega * spTrack;
-	double spVelR = sp.vx + 0.5 * sp.omega * spTrack;
+	const double zero_threshold = 0.001;  // m/s
+	const bool commandIsZero =
+		std::abs(sp.vx) < zero_threshold && std::abs(0.5 * sp.omega * spTrack) < zero_threshold;
 
-	// Compute each wheel actual velocity (from an "odometry" estimation of
-	// velocity, not ground-truth!):
-	const mrpt::math::TTwist2D vehVelOdo = veh_.getVelocityLocalOdoEstimate();
+	// Compute each wheel actual velocity (from the wheel speeds, not
+	// ground-truth!):
+	const mrpt::math::TTwist2D vehVelOdo = veh_.getVelocityLocalFromWheels();
+
+	// Turn slip compensation: the wheels must turn faster by the ratio between
+	// the yaw rate implied by their speeds (in setpoint units, i.e. before the
+	// separation multiplier) and the actual one. The ratio is only measured
+	// while turning steadily (the chassis lags behind the wheels while its yaw
+	// rate changes), and kept otherwise:
+	double spOmega = sp.omega;
+	const double yawRate = veh_.getRefVelocityLocal().omega;
+	if (slip_compensation_tau > 0)
+	{
+		const double dt = ci.context.dt;
+		const double minYawRate = 0.005;  // [rad/s]
+		const double maxRelativeYawAccel = 2.0;	 // [1/s]
+		const double minYawAccelLimit = 0.1;  // [rad/s^2]
+		const double wheelsYawRate = vehVelOdo.omega / wheel_separation_multiplier;
+		const double yawAccel = dt > 0 ? (yawRate - lastYawRate_) / dt : 0;
+		if (!commandIsZero && std::abs(yawRate) > minYawRate &&
+			std::abs(wheelsYawRate) > minYawRate && wheelsYawRate * yawRate > 0 &&
+			std::abs(yawAccel) < maxRelativeYawAccel * std::abs(yawRate) + minYawAccelLimit)
+		{
+			const double ratio = std::clamp(
+				wheelsYawRate / yawRate, 1.0 / slip_compensation_max, slip_compensation_max);
+			turnSlipRatio_ += (ratio - turnSlipRatio_) * dt / (slip_compensation_tau + dt);
+		}
+		spOmega *= turnSlipRatio_;
+	}
+	lastYawRate_ = yawRate;
+
+	double spVelL = sp.vx - 0.5 * spOmega * spTrack;
+	double spVelR = sp.vx + 0.5 * spOmega * spTrack;
+
 	const double actVelL = vehVelOdo.vx - 0.5 * vehVelOdo.omega * distWheels_;
 	const double actVelR = vehVelOdo.vx + 0.5 * vehVelOdo.omega * distWheels_;
 
@@ -82,8 +114,6 @@ void DynamicsDifferential::ControllerTwistPID::control_step(
 	// "-" because \tau<0 makes robot moves forwards.
 	const double followErrorL = spVelL - actVelL;
 	const double followErrorR = spVelR - actVelR;
-
-	const double zero_threshold = 0.001;  // m/s
 
 	const bool setpointIsZero =
 		std::abs(spVelL) < zero_threshold && std::abs(spVelR) < zero_threshold;
@@ -158,6 +188,8 @@ void DynamicsDifferential::ControllerTwistPID::load_config(const rapidxml::xml_n
 	params["N"] = TParamEntry("%lf", &N);
 	params["max_torque"] = TParamEntry("%lf", &max_torque);
 	params["wheel_separation_multiplier"] = TParamEntry("%lf", &wheel_separation_multiplier);
+	params["slip_compensation_tau"] = TParamEntry("%lf", &slip_compensation_tau);
+	params["slip_compensation_max"] = TParamEntry("%lf", &slip_compensation_max);
 	params["enable_antiwindup"] = TParamEntry("%bool", &enable_antiwindup);
 	params["enable_feedforward"] = TParamEntry("%bool", &enable_feedforward);
 	params["feedforward_gain"] = TParamEntry("%lf", &feedforward_gain);

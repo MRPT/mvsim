@@ -35,8 +35,7 @@ the linear velocity overshoots more than 5%, if the vehicle does not come to a f
 candidates that become unstable are discarded.
 
 The search starts with a coarse grid: ``KP`` values in powers of 2 around an estimate from
-the vehicle mass and wheel radius, times several ``KI/KP`` ratios (and several
-``wheel_separation_multiplier`` values for skid-steer robots). It is then refined around the
+the vehicle mass and wheel radius, times several ``KI/KP`` ratios. It is then refined around the
 best candidate. Among the candidates within 2% of the best cost, the one with the smallest
 ``KP`` is selected: tracking is often limited by ``max_torque``, so larger gains would only
 make the controller stiffer.
@@ -133,8 +132,8 @@ Supported Vehicle Types
 -----------------------
 
 * **Differential drive** (``differential``, ``differential_3_wheels``, ``differential_4_wheels``)
-  -- tunes the ``twist_pid`` controller. For skid-steer robots (4 wheels), it also tunes
-  ``wheel_separation_multiplier``.
+  -- tunes the ``twist_pid`` controller (skid-steer robots need no
+  ``wheel_separation_multiplier``, thanks to its turn slip compensation).
 * **Ackermann steering** (``ackermann``) -- tunes the ``twist_front_steer_pid`` controller.
 * **Ackermann with drivetrain** (``ackermann_drivetrain``) -- tunes its
   ``twist_front_steer_pid`` controller.

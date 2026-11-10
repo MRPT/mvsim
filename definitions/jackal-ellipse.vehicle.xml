@@ -34,7 +34,6 @@
           <KI>56</KI>
           <KD>0.0000</KD>
           <max_torque>8.7</max_torque>
-          <wheel_separation_multiplier>1.26</wheel_separation_multiplier>  <!-- skid-steer: see docs -->
         </controller>
 
     </dynamics>

@@ -131,6 +131,9 @@ class DynamicsDifferential : public VehicleBase
 		virtual void load_config(const rapidxml::xml_node<char>& node) override;
 		virtual void teleop_interface(const TeleopInput& in, TeleopOutput& out) override;
 
+		/** Estimated turn slip ratio (1 if not compensated) */
+		double turnSlipRatio() const { return slip_compensation_tau > 0 ? turnSlipRatio_ : 1.0; }
+
 		/// PID controller parameters
 		double KP = 10, KI = 0, KD = 0;
 
@@ -145,6 +148,18 @@ class DynamicsDifferential : public VehicleBase
 		 *  turn slower than their wheel speeds imply (their wheels slip), and
 		 *  values >1 compensate it. */
 		double wheel_separation_multiplier = 1.0;
+
+		/** Turn slip compensation time constant [s] (0 disables it): the turn
+		 *  rate used for the wheel speed setpoints is multiplied by the
+		 *  estimated turn slip ratio (the yaw rate implied by the wheel speeds
+		 *  over the actual vehicle yaw rate, as measured by a gyroscope),
+		 *  low-pass filtered with this time constant, so skid-steer robots turn
+		 *  at the commanded rate. Vehicles whose wheels do not slip have a
+		 *  ratio of 1, so it has no effect on them. */
+		double slip_compensation_tau = 0.2;
+
+		/** Maximum turn slip ratio to compensate */
+		double slip_compensation_max = 5.0;
 
 		bool enable_antiwindup = false;
 
@@ -184,6 +199,8 @@ class DynamicsDifferential : public VehicleBase
 	   private:
 		double distWheels_ = 0;
 		std::array<PID_Controller, 2> PIDs_;
+		double turnSlipRatio_ = 1.0;  //!< Estimated turn slip ratio
+		double lastYawRate_ = 0;  //!< Vehicle yaw rate in the last step [rad/s]
 		mrpt::math::TTwist2D setpoint_{0, 0, 0};  //!< "vx" and "omega" only
 		mutable std::mutex setpointMtx_;
 
@@ -302,7 +319,13 @@ class DynamicsDifferential : public VehicleBase
 
 	/** @} */  // end controllers
 
+	/** Odometry velocity, from the wheel speeds. With the twist_pid
+	 *  controller, its turn rate is divided by the wheel separation multiplier
+	 *  and by the estimated turn slip ratio. */
 	virtual mrpt::math::TTwist2D getVelocityLocalOdoEstimate() const override;
+
+	/** Velocity from the wheel speeds alone, assuming no slip. */
+	mrpt::math::TTwist2D getVelocityLocalFromWheels() const;
 
    protected:
 	// See base class docs

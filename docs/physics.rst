@@ -414,7 +414,8 @@ interaction suitable for indoor robots and general applications.
    slide sideways to turn) turns slower than its wheel speeds imply: e.g. for wheels at
    :math:`(\pm a, \pm b)` and equal loads, spinning in place at
    :math:`\omega = \omega_{cmd} \, b^2 / (a^2 + b^2)`. This is a well-known behavior of
-   real skid-steer robots, see ``wheel_separation_multiplier`` in :doc:`vehicles`.
+   real skid-steer robots, compensated by the ``twist_pid`` controller (see
+   :doc:`vehicles`).
 
 7. Update wheel angular velocity:
 
@@ -990,8 +991,9 @@ Given desired :math:`v_{desired}, \omega_{desired}`, compute wheel velocities:
    v_r = v + \frac{\omega \cdot w}{2}
 
 where :math:`w = |y_r - y_l|` is the wheel track width, times the optional
-``wheel_separation_multiplier`` of the ``twist_pid`` controller (default 1), which
-compensates the slower turning of skid-steer robots (see the friction models).
+``wheel_separation_multiplier`` of the ``twist_pid`` controller (default 1), and with
+:math:`\omega` multiplied by the estimated turn slip ratio of the vehicle, which compensates
+the slower turning of skid-steer robots (see the friction models and :doc:`vehicles`).
 
 Ackermann Steering Dynamics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
