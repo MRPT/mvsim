@@ -163,7 +163,7 @@ Exact analytic ray casting, no Box2D/GUI/ZMQ dependency (only `mrpt-math`, `mrpt
 
 **Vehicle frame:** `VehicleBase::getBaseFrameId()` (XML `<base_frame_id>`, default `base_link`) names it in all TFs and message `frame_id`s; the static `base_link`->`base_footprint` TF is only published for the default name.
 
-**Fake localization** (`do_fake_localization`): `<VEH>/amcl_pose`, `<VEH>/particlecloud` and a `map`->`odom` TF making `map`->`base_link` the ground truth pose (odometry starts at the origin, with noise).
+**Fake localization** (`do_fake_localization`): `<VEH>/amcl_pose`, `<VEH>/particlecloud` and a `map`->`odom` TF making `map`->`base_link` the ground truth pose (odometry starts at the origin, with noise). On ROS 2 it also subscribes to `<VEH>/tf` (ignoring its own messages) and warns if another node (SLAM, AMCL) publishes `map`->`odom` too.
 
 **Performance diagnostics:** `World::getPerformanceStats()` (2 s windows of sim time: achieved RTF, physics time, OpenGL sensors wait, per-sensor `<veh>/<sensor>` processing time and observation rate), shown in the GUI status bar tooltip and published by the node (ROS 2) on `/diagnostics` at `diagnostics_rate` Hz.
 

@@ -337,6 +337,9 @@ class MVSimNode
 		/// "fake_localization" pubs:
 		rclcpp::Publisher<Msg_PoseWithCovarianceStamped>::SharedPtr pub_amcl_pose;
 		rclcpp::Publisher<Msg_PoseArray>::SharedPtr pub_particlecloud;
+		/// Watches "<VEH>/tf" for "map" -> "odom" published by other nodes
+		/// (e.g. SLAM), which would conflict with the fake localization one.
+		rclcpp::Subscription<Msg_TFMessage>::SharedPtr sub_foreign_tf;
 
 		/// Map <sensor_label> => publisher
 		std::map<std::string, mvsim_node::shared_ptr<PublisherWrapperBase>> pub_sensors;

@@ -56,7 +56,8 @@ All these parameters apply to both, ROS 1 and ROS 2 launch files above:
          (default: 'False')
 
       'do_fake_localization':
-         Publish tf "map" -> "odom" from the ground truth (fake localization)
+         Publish tf "map" -> "odom" from the ground truth (fake localization).
+         Set to False when running SLAM or a localization node (e.g. AMCL).
          (default: 'True')
 
       'publish_tf_odom2baselink':
@@ -90,6 +91,29 @@ All these parameters apply to both, ROS 1 and ROS 2 launch files above:
       'rviz_config_file':
          If use_rviz:="True", the configuration file for rviz
          (default: '')
+
+|
+
+Running SLAM or localization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+By default (``do_fake_localization:=True``), ``mvsim_node`` publishes the TF ``map`` → ``odom``
+from the ground truth. SLAM and localization nodes (e.g. ``slam_toolbox``, AMCL) publish that
+same TF, and two publishers make the robot jump between both estimates (more and more, as
+odometry drifts). Disable fake localization in that case, e.g.:
+
+.. code-block:: bash
+
+   ros2 launch mvsim demo_warehouse.launch.py do_fake_localization:=False
+   ros2 launch slam_toolbox online_async_launch.py use_sim_time:=True \
+     slam_params_file:=my_mapper_params.yaml  # with "scan_topic" set to the 2D lidar topic
+
+``mvsim_node`` (ROS 2) warns if it detects another node publishing ``map`` → ``odom`` while
+fake localization is enabled.
+
+.. note::
+   As with real robots, 2D lidar SLAM works best on flat ground: on slopes, a planar scanner
+   sees the terrain or misses the walls, which degrades scan matching. For worlds with hills
+   (e.g. the outdoor part of ``demo_indoor_outdoor``), use a 3D lidar SLAM instead.
 
 |
 

@@ -46,7 +46,8 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'do_fake_localization',
             default_value='True',
-            description='Publish tf "map" -> "odom" from the ground truth (fake localization)'
+            description='Publish tf "map" -> "odom" from the ground truth (fake localization). '
+                        'Set to False when running SLAM or a localization node (e.g. AMCL).'
         )
     )
     ld.add_action(

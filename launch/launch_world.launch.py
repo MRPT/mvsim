@@ -20,7 +20,9 @@ def generate_launch_description():
         "headless", default_value='False')
 
     do_fake_localization_arg = DeclareLaunchArgument(
-        "do_fake_localization", default_value='True', description='Publish tf "map" -> "odom" from the ground truth (fake localization)')
+        "do_fake_localization", default_value='True',
+        description='Publish tf "map" -> "odom" from the ground truth (fake localization). '
+                    'Set to False when running SLAM or a localization node (e.g. AMCL).')
 
     publish_tf_odom2baselink_arg = DeclareLaunchArgument(
         "publish_tf_odom2baselink", default_value='True', description='publish tf "odom" -> "base_link"')

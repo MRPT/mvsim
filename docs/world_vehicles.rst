@@ -230,7 +230,7 @@ Key parameters when launching the mvsim_node:
   frames are skipped), and downstream nodes must use ``use_sim_time:=true``.
 * ``headless`` — Run without GUI (default: false)  
 * ``period_ms_publish_tf`` — Transform publication rate in milliseconds (default: 20)
-* ``do_fake_localization`` — Enable fake AMCL output (default: false)
+* ``do_fake_localization`` — Publish the ground truth as fake AMCL output and TF ``map`` → ``odom`` (default: true). Disable it when running SLAM or a localization node, which publish that TF themselves.
 * ``publish_tf_odom2baselink`` — Publish odom→base_link transform (default: true)
 * ``publisher_history_len`` — Queue size for publishers (default: 10)
 
