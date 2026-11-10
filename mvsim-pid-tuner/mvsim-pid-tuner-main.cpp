@@ -18,6 +18,7 @@
 
 #include <mrpt/core/exceptions.h>
 #include <mrpt/math/TTwist2D.h>
+#include <mrpt/system/filesystem.h>
 #include <mvsim/FrictionModels/FrictionBase.h>
 #include <mvsim/VehicleBase.h>
 #include <mvsim/VehicleDynamics/VehicleAckermann.h>
@@ -473,6 +474,9 @@ int main(int argc, char** argv)
 		app.add_option("-j,--threads", numThreads, "Number of parallel threads");
 
 		CLI11_PARSE(app, argc, argv);
+		// (The world includes it from a string, so relative paths would be
+		// resolved with respect to the file itself)
+		xmlFile = mrpt::system::toAbsolutePath(xmlFile);
 
 		const std::vector<double> simSteps = parseList(dts);
 		ASSERT_(!simSteps.empty());

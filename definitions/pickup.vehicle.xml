@@ -35,7 +35,7 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="twist_front_steer_pid">
+        <controller class="${controller|twist_front_steer_pid}">  <!-- "twist_front_steer_pid" or "twist_ideal" -->
             <!-- Params -->
             <KP>16200</KP>  <KI>324</KI> <KD>0</KD>
             <V>0.0</V><W>0</W>

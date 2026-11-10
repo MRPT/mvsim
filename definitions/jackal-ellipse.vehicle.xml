@@ -28,10 +28,10 @@
         </chassis>
 
         <!--   Motor controller -->
-        <controller class="twist_ideal">  <!-- "twist_ideal" or "twist_pid" -->
+        <controller class="${controller|twist_ideal}">  <!-- "twist_ideal" or "twist_pid" -->
           <!-- Params (for twist_pid) -->
           <KP>112</KP>
-          <KI>56</KI>
+          <KI>79.2</KI>
           <KD>0.0000</KD>
           <max_torque>8.7</max_torque>
         </controller>

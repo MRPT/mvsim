@@ -149,6 +149,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_shipped_vehicles
+	SOURCES test_shipped_vehicles.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_suspension
 	SOURCES test_suspension.cpp
 	LINK_LIBRARIES mvsim::simulator
