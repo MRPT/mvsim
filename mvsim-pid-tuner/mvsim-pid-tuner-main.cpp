@@ -515,18 +515,15 @@ int main(int argc, char** argv)
 		}
 
 		// Coarse grid:
+		// (Skid-steer robots need no wheel separation multiplier: the turn slip
+		// compensation of twist_pid makes them turn at the commanded rate.)
 		std::vector<Gains> candidates;
-		const std::vector<double> sepMults =
-			skidSteer ? std::vector<double>{1.0, 1.4, 1.8, 2.2} : std::vector<double>{1.0};
 		for (int i = -2; i <= 5; i++)
 		{
 			const double kp = info.kpEstimate * std::pow(2.0, i);
 			for (const double kiRatio : {0.0, 0.02, 0.1, 0.5, 2.5, 12.5, 62.5})
 			{
-				for (const double sm : sepMults)
-				{
-					candidates.push_back({kp, kp * kiRatio, maxTorque, sm});
-				}
+				candidates.push_back({kp, kp * kiRatio, maxTorque, 1.0});
 			}
 		}
 		std::printf("\nCoarse search (%zu candidates):\n", candidates.size());
@@ -543,20 +540,13 @@ int main(int argc, char** argv)
 		const Gains best0 = results.front().gains;
 		candidates.clear();
 		const double f = std::sqrt(2.0);
-		const std::vector<double> sepFactors =
-			skidSteer ? std::vector<double>{0.9, 1.0, 1.1} : std::vector<double>{1.0};
 		const std::vector<double> kiFactors =
 			best0.KI > 0 ? std::vector<double>{0.5, 1 / f, 1.0, f, 2.0} : std::vector<double>{1.0};
 		for (const double kpf : {1 / f, 1.0, f})
 		{
 			for (const double kif : kiFactors)
 			{
-				for (const double smf : sepFactors)
-				{
-					candidates.push_back(
-						{best0.KP * kpf, best0.KI * kif, maxTorque,
-						 best0.separation_multiplier * smf});
-				}
+				candidates.push_back({best0.KP * kpf, best0.KI * kif, maxTorque, 1.0});
 			}
 		}
 		std::printf("Refinement (%zu candidates):\n", candidates.size());
@@ -600,12 +590,6 @@ int main(int argc, char** argv)
 		std::printf(
 			"  <KP>%.4g</KP>\n  <KI>%.4g</KI>\n  <KD>0</KD>\n  <max_torque>%.4g</max_torque>\n",
 			best.KP, best.KI, best.max_torque);
-		if (skidSteer)
-		{
-			std::printf(
-				"  <wheel_separation_multiplier>%.3g</wheel_separation_multiplier>\n",
-				best.separation_multiplier);
-		}
 		return 0;
 	}
 	catch (const std::exception& e)

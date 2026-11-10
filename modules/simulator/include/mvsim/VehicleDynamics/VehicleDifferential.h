@@ -146,6 +146,18 @@ class DynamicsDifferential : public VehicleBase
 		 *  values >1 compensate it. */
 		double wheel_separation_multiplier = 1.0;
 
+		/** Turn slip compensation time constant [s] (0 disables it): the turn
+		 *  rate used for the wheel speed setpoints is multiplied by the
+		 *  estimated turn slip ratio (the yaw rate implied by the wheel speeds
+		 *  over the actual vehicle yaw rate, as measured by a gyroscope),
+		 *  low-pass filtered with this time constant, so skid-steer robots turn
+		 *  at the commanded rate. Vehicles whose wheels do not slip have a
+		 *  ratio of 1, so it has no effect on them. */
+		double slip_compensation_tau = 0.2;
+
+		/** Maximum turn slip ratio to compensate */
+		double slip_compensation_max = 5.0;
+
 		bool enable_antiwindup = false;
 
 		/** Enable slope feedforward compensation */
@@ -184,6 +196,8 @@ class DynamicsDifferential : public VehicleBase
 	   private:
 		double distWheels_ = 0;
 		std::array<PID_Controller, 2> PIDs_;
+		double turnSlipRatio_ = 1.0;  //!< Estimated turn slip ratio
+		double lastYawRate_ = 0;  //!< Vehicle yaw rate in the last step [rad/s]
 		mrpt::math::TTwist2D setpoint_{0, 0, 0};  //!< "vx" and "omega" only
 		mutable std::mutex setpointMtx_;
 
