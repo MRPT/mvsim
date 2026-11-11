@@ -1066,6 +1066,44 @@ void MVSimNode::initPubSubs(TPubSubPerVehicle& pubsubs, mvsim::VehicleBase* veh)
 		// pub: <VEH>/particlecloud
 		pubsubs.pub_particlecloud =
 			n_->create_publisher<Msg_PoseArray>(vehVarName("particlecloud", *veh), 1);
+
+		// sub: <VEH>/tf, to warn if another node also publishes "map" -> "odom",
+		// since both would fight and the robot would jump between them.
+		// (ros2_control vehicles do not get the fake localization TF)
+		if (!isRos2Controlled(*veh))
+		{
+			rclcpp::SubscriptionOptions subOpts;
+			subOpts.ignore_local_publications = true;
+			// Not all RMW implementations honor the option above, so also
+			// discard our own messages by their publisher GID:
+			const auto ownTfPub = pubsubs.pub_tf;
+			pubsubs.sub_foreign_tf = n_->create_subscription<Msg_TFMessage>(
+				vehVarName("tf", *veh), tf2_ros::DynamicListenerQoS(),
+				[this, ownTfPub](
+					const Msg_TFMessage::ConstSharedPtr& msg, const rclcpp::MessageInfo& info)
+				{
+					if (*ownTfPub == info.get_rmw_message_info().publisher_gid)
+					{
+						return;
+					}
+					for (const auto& t : msg->transforms)
+					{
+						if (t.child_frame_id == "odom" && t.header.frame_id == "map")
+						{
+							ROS12_WARN_THROTTLE(
+								5000,
+								"Another node is also publishing the TF 'map'->'odom' on '%s', "
+								"conflicting with MVSim fake localization: the robot will jump "
+								"between both. If you run SLAM or a localization node (e.g. "
+								"slam_toolbox, AMCL), launch MVSim with "
+								"'do_fake_localization:=False'.",
+								ownTfPub->get_topic_name());
+							return;
+						}
+					}
+				},
+				subOpts);
+		}
 #endif
 	}
 
