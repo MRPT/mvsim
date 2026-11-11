@@ -2,6 +2,24 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* ros2_control for Ackermann vehicles: per-wheel spin joints and per-wheel or central steering joints (ackermann), or a traction joint (ackermann_drivetrain), with demos for the steering controllers (`#169 <https://github.com/MRPT/mvsim/issues/169>`_)
+* Vehicles: optional <base_frame_id> to use the URDF frame on the ground (e.g. base_footprint) in all TFs and frame_ids
+* twist_pid compensates the turn slip of skid-steer robots, also in the odometry twist; tests for the controllers of all shipped vehicles, and four of them retuned (`#176 <https://github.com/MRPT/mvsim/issues/176>`_, `#177 <https://github.com/MRPT/mvsim/issues/177>`_, `#178 <https://github.com/MRPT/mvsim/issues/178>`_)
+* Slopes load the motors of rolling wheels, while vehicles stopped on a slope do not creep (`#175 <https://github.com/MRPT/mvsim/issues/175>`_)
+* Reproducible simulations: new world <random_seed> for XML random functions and all sensor noise; vehicle <log_period>; wheel logs with the friction parameters in effect (`#175 <https://github.com/MRPT/mvsim/issues/175>`_)
+* 3D LiDAR: optional per-point RGB (<generate_rgb>, packed "rgb" field in ROS), new Ouster Rev8 definition and an outdoor village demo world (`#172 <https://github.com/MRPT/mvsim/issues/172>`_)
+* HumanActor: <follow_terrain> so actors walk on hills
+* mvsim-dataset-gen: realistic per-column rotating LiDAR by default, optional realistic LiDAR error model (also in the stock 3D LiDAR definitions), and correct IMU kinematics and timestamps at the IMU mounting pose (`#166 <https://github.com/MRPT/mvsim/issues/166>`_, `#170 <https://github.com/MRPT/mvsim/issues/170>`_, `#171 <https://github.com/MRPT/mvsim/issues/171>`_, `#174 <https://github.com/MRPT/mvsim/issues/174>`_)
+* raytracer: much faster ray casting on large heightfields (`#168 <https://github.com/MRPT/mvsim/issues/168>`_)
+* mvsim-urdf2xml: Ackermann vehicles, base_frame_id, optional sensors and sensor link masses, and a skid-steer example (`#169 <https://github.com/MRPT/mvsim/issues/169>`_, `#180 <https://github.com/MRPT/mvsim/issues/180>`_)
+* World files can include complete world files; collision shapes for flat and long, thin visual models (`#180 <https://github.com/MRPT/mvsim/issues/180>`_)
+* mvsim_node warns if another node publishes map->odom while fake localization is enabled (`#173 <https://github.com/MRPT/mvsim/issues/173>`_, `#179 <https://github.com/MRPT/mvsim/issues/179>`_)
+* Duplicated sensor names are rejected
+* mvsim_version.h is generated in the build tree, so package.xml is the only place holding the version (`#181 <https://github.com/MRPT/mvsim/issues/181>`_)
+* Contributors: Jose Luis Blanco-Claraco
+
 2.0.0 (2026-11-01)
 ------------------
 * GUI: ported from nanogui to Dear ImGui, with dockable panels, custom application panels and a lights window
