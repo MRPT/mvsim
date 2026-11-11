@@ -34,6 +34,8 @@ project(mvsim)
 # Extract version from package.xml
 # Example line:" <version>0.3.2</version>"
 file(READ package.xml contentPackageXML)
+# Re-run CMake (and regenerate the version header) when package.xml changes:
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS package.xml)
 string(REGEX MATCH "<version>([0-9\.]*)</version>" _ ${contentPackageXML})
 set(MVSIM_VERSION ${CMAKE_MATCH_1})
 message(STATUS "MVSIM version: ${MVSIM_VERSION} (detected in package.xml)")
@@ -41,10 +43,11 @@ string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${MVSIM_VERSION})
 set(MVSIM_MAJOR_VERSION ${CMAKE_MATCH_1})
 set(MVSIM_MINOR_VERSION ${CMAKE_MATCH_2})
 set(MVSIM_PATCH_VERSION ${CMAKE_MATCH_3})
-#TODO: Avoid overwriting source dir.
+# Generated into the build tree, so version bumps never modify the sources:
+set(MVSIM_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated/include)
 configure_file(
   cmake/mvsim_version.h.in
-  ${CMAKE_CURRENT_SOURCE_DIR}/modules/simulator/include/mvsim/mvsim_version.h
+  ${MVSIM_GENERATED_INCLUDE_DIR}/mvsim/mvsim_version.h
   @ONLY
 )
 #----

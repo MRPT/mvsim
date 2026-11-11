@@ -6,7 +6,7 @@
 
 ## Project overview
 
-**MultiVehicle Simulator (MVSim)** is a lightweight, realistic 2.5D dynamics simulator for mobile robots and multi-agent research. It runs standalone, as a ROS 2 node, or embedded in C++/Python applications. Worlds are fully configured via XML files. Current version: 1.6.0.
+**MultiVehicle Simulator (MVSim)** is a lightweight, realistic 2.5D dynamics simulator for mobile robots and multi-agent research. It runs standalone, as a ROS 2 node, or embedded in C++/Python applications. Worlds are fully configured via XML files.
 
 - License: BSD 3-Clause
 - Language: C++17 (minimum CMake 3.9)
@@ -271,7 +271,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 - Detects ROS 2 via `$ROS_VERSION` env var; builds the ROS node and uses `ament_cmake` when present.
 - Standalone build: `cmake .. && make`.
 - ROS 2 build: `colcon build`.
-- Version is read from `package.xml` and injected into `modules/simulator/include/mvsim/mvsim_version.h` at configure time.
+- Version is read from `package.xml` (its only source) into `mvsim/mvsim_version.h`, generated in the build tree (`<build>/generated/include`) at configure time and installed with the headers.
 - `cmake/mvsim_cmake_functions.cmake` contains helpers used across targets.
 - Optional features guarded by `MVSIM_HAS_ZMQ` and `MVSIM_HAS_PROTOBUF` compile-time defines.
 - Linux CI (`.github/workflows/build-linux.yml`, `.circleci/config.yml`) installs MRPT 3.x from `ppa:joseluisblancoc/mrpt3-stable` (releases) and `ppa:joseluisblancoc/mrpt3-develop` (nightlies). Both PPAs only cover Ubuntu 24.04 and 26.04. GitHub runs both PPAs; CircleCI runs stable only.

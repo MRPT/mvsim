@@ -82,6 +82,6 @@ then use these keys:
 All the details on **keyboard and joystick-based control** are listed `here <teleoperation.html>`_.
 
 Next, you can jump straight into the many other demo worlds and launch files
-available under `mvsim_tutorial <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_,
+available under `mvsim_tutorial <https://github.com/MRPT/mvsim/tree/develop/mvsim_tutorial>`_,
 or continue reading these docs to better understand them.
 

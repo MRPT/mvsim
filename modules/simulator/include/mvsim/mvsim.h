@@ -10,7 +10,7 @@
 #pragma once
 
 // Version of the library
-#include "mvsim_version.h"
+#include <mvsim/mvsim_version.h>
 
 // Generic classes ------------------
 #include "World.h"
