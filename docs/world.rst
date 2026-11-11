@@ -16,7 +16,7 @@ By means of :ref:`includes <world-includes>`, robots, sensors, or environment ob
 can be defined in their own files for the sake of reusability.
 
 .. note:: 
-   Many examples can be found in the `mvsim_tutorial directory <https://github.com/MRPT/mvsim/tree/master/mvsim_tutorial>`_.
+   Many examples can be found in the `mvsim_tutorial directory <https://github.com/MRPT/mvsim/tree/develop/mvsim_tutorial>`_.
    Look for the ``*.world.xml`` files.
 
 
