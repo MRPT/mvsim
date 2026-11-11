@@ -403,6 +403,18 @@ void World::parse_tag_include(const XmlParserContext& ctx)
 		{
 			continue;
 		}
+		// A complete world file: include its contents.
+		if (strcmp(n->name(), "mvsim_world") == 0)
+		{
+			for (auto* c = n->first_node(); c; c = c->next_sibling())
+			{
+				if (c->type() == rapidxml::node_element)
+				{
+					internal_recursive_parse_XML({c, newBasePath});
+				}
+			}
+			continue;
+		}
 		internal_recursive_parse_XML({n, newBasePath});
 	}
 }

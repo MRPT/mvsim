@@ -59,7 +59,10 @@ Example (``mvsim_tutorial/urdf2xml/jackal_mapping.yaml``):
   masses of the other links.
 - ``controller`` and ``friction``: XML copied verbatim.
 - ``sensors``: for each one, the URDF ``link`` (it becomes the sensor name, hence its TF
-  ``frame_id``), the MVSim sensor definition file to ``include``, and optional extra ``args``.
+  ``frame_id``), the MVSim sensor definition file to ``include``, optional extra ``args``
+  (values may use variables of the including file, e.g. ``${rate|10}``), and an optional
+  ``if`` condition (e.g. ``${use_camera|false}``) that wraps the sensor in an ``<if>`` tag,
+  so the world file that includes the vehicle can enable it.
   The sensor pose is computed through the chain of joints from ``base_link``. For pinhole
   cameras (``+Z`` forward), map the URDF optical frame link.
 - ``visual`` (default ``true``): emit the mesh visuals of non-wheel links, resolving

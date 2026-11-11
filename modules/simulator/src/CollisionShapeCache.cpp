@@ -12,6 +12,7 @@
 #include <mrpt/core/format.h>
 #include <mrpt/core/get_env.h>
 #include <mrpt/core/lock_helper.h>
+#include <mrpt/math/geometry.h>
 #include <mrpt/version.h>
 #include <mrpt/viz/CAssimpModel.h>
 #include <mrpt/viz/CBox.h>
@@ -32,6 +33,26 @@ mrpt::math::TPoint3Df scaled(const mrpt::math::TPoint3Df& p, const mrpt::math::T
 mrpt::math::TPoint3D scaled(const mrpt::math::TPoint3D& p, const mrpt::math::TPoint3Df& s)
 {
 	return {p.x * s.x, p.y * s.y, p.z * s.z};
+}
+
+// Footprint of the bounding box of a model, with its pose and scale.
+mrpt::math::TPolygon2D boundingBoxFootprint(
+	const mrpt::viz::CVisualObject& obj, const mrpt::poses::CPose3D& modelPose,
+	const mrpt::math::TPoint3Df& modelScale)
+{
+	auto bb = obj.getBoundingBox();
+	const auto a = scaled(bb.min, modelScale);
+	const auto b = scaled(bb.max, modelScale);
+	bb.min = {std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z)};
+	bb.max = {std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z)};
+	bb = bb.compose(modelPose);
+
+	mrpt::math::TPolygon2D poly;
+	poly.emplace_back(bb.min.x, bb.min.y);
+	poly.emplace_back(bb.max.x, bb.min.y);
+	poly.emplace_back(bb.max.x, bb.max.y);
+	poly.emplace_back(bb.min.x, bb.max.y);
+	return poly;
 }
 }  // namespace
 
@@ -94,13 +115,25 @@ Shape2p5 CollisionShapeCache::get(
 				  << ret.getContour().asYAML() << "\n\n";
 	}
 
+	// Flat models (e.g. ground textures) get a minimal height, and degenerate
+	// contours (e.g. of long, thin models) their bounding box footprint:
 	if (vol < 1e-8)
+	{
+		constexpr float minHeight = 1e-3f;
+		auto contour = ret.getContour();
+		if (std::abs(mrpt::math::signedArea(contour)) < 1e-6)
+		{
+			contour = boundingBoxFootprint(obj, modelPose, modelScale);
+		}
+		ret.setShapeManual(contour, ret.zMin(), std::max(ret.zMax(), ret.zMin() + minHeight));
+	}
+	if (ret.volume() < 1e-8)
 	{
 		THROW_EXCEPTION_FMT(
 			"Error: Collision volume for visual model ('%s') has almost null "
 			"volume (=%g m³). A possible cause, if this is a <block>, is not "
 			"enough vertices within the given range [zmin,zmax]",
-			modelFile.has_value() ? modelFile->c_str() : "none", vol);
+			modelFile.has_value() ? modelFile->c_str() : "none", ret.volume());
 	}
 
 	return ret;

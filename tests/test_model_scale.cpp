@@ -89,6 +89,56 @@ void testSparseModelFootprint()
 	EXPECT_NEAR(bb.maxX, 1.1, 0.05);
 }
 
+// A flat model (e.g. a ground texture) keeps its footprint, with a minimal height.
+void testFlatModel()
+{
+	auto glTris = mrpt::viz::CSetOfTriangles::Create();
+	glTris->insertTriangle(mrpt::viz::TTriangle(
+		mrpt::math::TPoint3Df(0, 0, 0.01f), mrpt::math::TPoint3Df(2, 0, 0.01f),
+		mrpt::math::TPoint3Df(2, 1, 0.01f)));
+	glTris->insertTriangle(mrpt::viz::TTriangle(
+		mrpt::math::TPoint3Df(0, 0, 0.01f), mrpt::math::TPoint3Df(2, 1, 0.01f),
+		mrpt::math::TPoint3Df(0, 1, 0.01f)));
+	const auto shape =
+		mvsim::CollisionShapeCache::Instance().get(*glTris, -1.0f, 1.0f, {}, {1.0f, 1.0f, 1.0f});
+	EXPECT_TRUE(shape.volume() > 0);
+	EXPECT_NEAR(shape.zMin(), 0.01, 1e-3);
+	BBox2D bb;
+	for (const auto& pt : shape.getContour())
+	{
+		bb.minX = std::min(bb.minX, pt.x);
+		bb.maxX = std::max(bb.maxX, pt.x);
+	}
+	EXPECT_NEAR(bb.width(), 2.0, 0.1);
+}
+
+// A long, thin model (like a crop row) gets a valid footprint along all its length.
+void testThinModel()
+{
+	auto glTris = mrpt::viz::CSetOfTriangles::Create();
+	for (int i = 0; i < 100; i++)
+	{
+		const float x0 = 0.3f * static_cast<float>(i);
+		glTris->insertTriangle(mrpt::viz::TTriangle(
+			mrpt::math::TPoint3Df(x0, -0.14f, 0.01f),
+			mrpt::math::TPoint3Df(x0 + 0.2f, -0.14f, 0.01f),
+			mrpt::math::TPoint3Df(x0 + 0.1f, -0.1f, 0.12f)));
+		glTris->insertTriangle(mrpt::viz::TTriangle(
+			mrpt::math::TPoint3Df(x0, 0.14f, 0.01f), mrpt::math::TPoint3Df(x0 + 0.2f, 0.14f, 0.01f),
+			mrpt::math::TPoint3Df(x0 + 0.1f, 0.1f, 0.12f)));
+	}
+	const auto shape =
+		mvsim::CollisionShapeCache::Instance().get(*glTris, -1.0f, 1.0f, {}, {1.0f, 1.0f, 1.0f});
+	EXPECT_TRUE(shape.volume() > 0);
+	BBox2D bb;
+	for (const auto& pt : shape.getContour())
+	{
+		bb.minX = std::min(bb.minX, pt.x);
+		bb.maxX = std::max(bb.maxX, pt.x);
+	}
+	EXPECT_NEAR(bb.width(), 29.9, 0.5);
+}
+
 std::string worldXml()
 {
 	const std::string model =
@@ -129,6 +179,8 @@ std::string worldXml()
 int main()
 {
 	testSparseModelFootprint();
+	testFlatModel();
+	testThinModel();
 
 	mvsim::World world;
 	world.headless(true);
