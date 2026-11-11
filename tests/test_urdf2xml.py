@@ -68,6 +68,11 @@ class TestUrdf2Xml(unittest.TestCase):
     def test_chassis(self):
         ch = load_model().chassis
         self.assertAlmostEqual(ch['mass'], 20.0)  # wheels excluded
+        # A sensor on the chassis link does not remove its mass:
+        mapping = u2x.load_mapping(MAPPING)
+        mapping['sensors'].append({'link': 'base_link', 'include': 'gnss.sensor.xml'})
+        model = u2x.Model(u2x.Urdf(open(URDF).read()), mapping)
+        self.assertAlmostEqual(model.chassis['mass'], 20.0)
         self.assertAlmostEqual(ch['zmin'], 0.15)
         self.assertAlmostEqual(ch['zmax'], 0.35)
         xs = [p[0] for p in ch['shape']]
@@ -101,6 +106,19 @@ class TestUrdf2Xml(unittest.TestCase):
         self.assertEqual(root.attrib['name'], 'a&b')
         inc = [e for e in root.iter('include') if e.attrib.get('sensor_name') == 'lidar'][0]
         self.assertEqual(inc.attrib['topic'], 'x"y<z>&w')
+        self.assertEqual(u2x.check_xml(model, xml), [])
+
+    def test_optional_sensor(self):
+        mapping = u2x.load_mapping(MAPPING)
+        mapping['sensors'][0]['if'] = '${use_lidar|false}'
+        mapping['sensors'][0]['args'] = {'raytrace_3d': True}
+        model = u2x.Model(u2x.Urdf(open(URDF).read()), mapping)
+        xml = u2x.generate_xml(model)
+        root = u2x.ET.fromstring(xml.replace('vehicle:class', 'vehicle_class'))
+        cond = root.find('if')
+        self.assertEqual(cond.attrib['condition'], '${use_lidar|false}')
+        self.assertEqual(cond.find('include').attrib['sensor_name'], 'lidar')
+        self.assertEqual(cond.find('include').attrib['raytrace_3d'], 'true')
         self.assertEqual(u2x.check_xml(model, xml), [])
 
     def test_cli(self):

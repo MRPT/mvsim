@@ -335,19 +335,18 @@ class Model:
                           f'{movable}: using their zero position')
             (x, y, z), (yaw, pitch, roll) = mat_to_xyz_ypr(m)
             sensors.append({'link': link, 'include': s['include'], 'args': s.get('args', {}),
-                            'x': x, 'y': y, 'z': z, 'yaw': yaw, 'pitch': pitch,
-                            'roll': roll})
+                            'if': s.get('if'), 'x': x, 'y': y, 'z': z, 'yaw': yaw,
+                            'pitch': pitch, 'roll': roll})
         return sensors
 
     def _chassis(self):
         cfg = self.map.get('chassis', {}) or {}
         wheel_links = {self.urdf.joint_child(w['joint']) for w in self.wheels}
-        sensor_links = {s['link'] for s in self.sensors}
 
         mass = cfg.get('mass')
         if mass is None:
-            mass = sum(self.urdf.mass(l) for l in self.urdf.links
-                       if l not in wheel_links and l not in sensor_links)
+            # Wheels have their own mass in MVSim; sensors do not:
+            mass = sum(self.urdf.mass(l) for l in self.urdf.links if l not in wheel_links)
             if mass <= 0:
                 mass = 10.0
                 self.warn('No inertial masses in the URDF: using a chassis mass of 10 kg')
@@ -461,9 +460,15 @@ def generate_xml(model, out_dir='.'):
                  'sensor_pitch': fmt(math.degrees(s['pitch'])),
                  'sensor_roll': fmt(math.degrees(s['roll']))}
         for k, v in s['args'].items():
-            attrs[k] = str(v)
-        lines.append('  <include ' + ' '.join(f'{k}={quoteattr(v)}' for k, v in attrs.items()) +
-                     ' />')
+            attrs[k] = str(v).lower() if isinstance(v, bool) else str(v)
+        include = '<include ' + ' '.join(f'{k}={quoteattr(v)}' for k, v in attrs.items()) + ' />'
+        if s['if']:
+            # Optional sensor, enabled by the condition (e.g. "${my_var|false}"):
+            lines.append(f'  <if condition={quoteattr(str(s["if"]))}>')
+            lines.append('    ' + include)
+            lines.append('  </if>')
+        else:
+            lines.append('  ' + include)
     lines.append('</vehicle:class>')
     return '\n'.join(lines) + '\n'
 
