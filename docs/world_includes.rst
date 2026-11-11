@@ -3,12 +3,23 @@
 Including other XML files
 --------------------------------------------
 
-Write me!
+The ``<include file="..."/>`` tag inserts the contents of another XML file, with the
+remaining attributes of the tag defined as variables for that file (e.g. ``${my_var|default}``).
+Relative paths inside the included file are relative to its own directory.
 
+A complete world file (with its ``<mvsim_world>`` root tag) can be included too: its
+contents are added to the including world. This allows, for example, adding robots to a scene
+world that can also be loaded by itself:
 
+.. code-block:: xml
 
-
-
+    <mvsim_world version="1.0">
+      <include file="scenes/my_field.world.xml"/>
+      <include file="robots/my_robot.vehicle.xml" use_camera="true"/>
+      <vehicle name="robot1" class="my_robot">
+        <init_pose>5 2 90</init_pose>
+      </vehicle>
+    </mvsim_world>
 
 
 Limitations
