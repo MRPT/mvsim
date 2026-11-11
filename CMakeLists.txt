@@ -34,6 +34,8 @@ project(mvsim)
 # Extract version from package.xml
 # Example line:" <version>0.3.2</version>"
 file(READ package.xml contentPackageXML)
+# Re-run CMake (and regenerate the version header) when package.xml changes:
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS package.xml)
 string(REGEX MATCH "<version>([0-9\.]*)</version>" _ ${contentPackageXML})
 set(MVSIM_VERSION ${CMAKE_MATCH_1})
 message(STATUS "MVSIM version: ${MVSIM_VERSION} (detected in package.xml)")
