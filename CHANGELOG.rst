@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.1.0 (2026-11-11)
+------------------
 * ros2_control for Ackermann vehicles: per-wheel spin joints and per-wheel or central steering joints (ackermann), or a traction joint (ackermann_drivetrain), with demos for the steering controllers (`#169 <https://github.com/MRPT/mvsim/issues/169>`_)
 * Vehicles: optional <base_frame_id> to use the URDF frame on the ground (e.g. base_footprint) in all TFs and frame_ids
 * twist_pid compensates the turn slip of skid-steer robots, also in the odometry twist; tests for the controllers of all shipped vehicles, and four of them retuned (`#176 <https://github.com/MRPT/mvsim/issues/176>`_, `#177 <https://github.com/MRPT/mvsim/issues/177>`_, `#178 <https://github.com/MRPT/mvsim/issues/178>`_)
