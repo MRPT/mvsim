@@ -90,6 +90,7 @@ mrpt::obs::CObservationIMU::Ptr mvsim_dataset_gen::simulateImuSample(
 	auto obs = mrpt::obs::CObservationIMU::Create();
 	obs->timestamp = timeFromSeconds(tEpochSeconds);
 	obs->sensorLabel = sensorLabel;
+	obs->sensorPose = sensorPoseOnVehicle;
 
 	obs->set(mrpt::obs::IMU_WX, w.x);
 	obs->set(mrpt::obs::IMU_WY, w.y);
