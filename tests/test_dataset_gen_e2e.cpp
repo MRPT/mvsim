@@ -458,7 +458,8 @@ std::vector<Sweep> loadSweeps(const std::string& rawlogPath)
 	return out;
 }
 
-/** Whether both rawlogs have the same sweeps, point by point (positions only). */
+/** Whether both rawlogs have the same sweeps, point by point (sweep times,
+ * positions, and the `t` and `ring` fields). */
 bool samePoints(const std::string& a, const std::string& b)
 {
 	const auto sa = loadSweeps(a);
@@ -471,7 +472,7 @@ bool samePoints(const std::string& a, const std::string& b)
 	{
 		const auto& pa = sa[k].pts;
 		const auto& pb = sb[k].pts;
-		if (!pa || !pb || pa->size() != pb->size())
+		if (sa[k].t != sb[k].t || !pa || !pb || pa->size() != pb->size())
 		{
 			return false;
 		}
@@ -480,7 +481,9 @@ bool samePoints(const std::string& a, const std::string& b)
 			float xa, ya, za, xb, yb, zb;
 			pa->getPoint(i, xa, ya, za);
 			pb->getPoint(i, xb, yb, zb);
-			if (xa != xb || ya != yb || za != zb)
+			if (xa != xb || ya != yb || za != zb ||
+				pa->getPointField_float(i, "t") != pb->getPointField_float(i, "t") ||
+				pa->getPointField_uint16(i, "ring") != pb->getPointField_uint16(i, "ring"))
 			{
 				return false;
 			}
