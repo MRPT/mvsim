@@ -515,6 +515,8 @@ void test_imu_lever_arm()
 			continue;
 		}
 		nImu++;
+		// The observation carries the mounting pose on the vehicle:
+		EXPECT_LT(std::abs(obsImu->sensorPose.z() - kImuZ), 1e-9);
 		const double fx = obsImu->get(mrpt::obs::IMU_X_ACC);
 		const double fy = obsImu->get(mrpt::obs::IMU_Y_ACC);
 		const double fz = obsImu->get(mrpt::obs::IMU_Z_ACC) + kW * kW * kImuZ;
