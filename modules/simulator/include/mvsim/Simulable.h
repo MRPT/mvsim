@@ -17,6 +17,7 @@
 #include <mrpt/poses/CPose3DInterpolator.h>
 #include <mvsim/basic_types.h>
 
+#include <cstdint>
 #include <optional>
 #include <shared_mutex>
 
@@ -144,6 +145,15 @@ class Simulable
 	/** Changes object name (e.g. "r1", "veh1") */
 	void setName(const std::string& s) { name_ = s; }
 
+	/** Semantic class of this object, from its optional XML tag
+	 * `<semantic_class>`, for sensors that output labeled data (0: unlabeled).
+	 * The meaning of each value is up to the world author. */
+	uint16_t semanticClass() const { return semanticClass_; }
+
+	/** Instance id of this object, from its optional XML tag `<instance_id>`
+	 * (0: none). Several objects may share one, e.g. the parts of a tree. */
+	uint16_t instanceId() const { return instanceId_; }
+
 	/** Whether is is in collision right now. \sa  */
 	bool isInCollision() const;
 
@@ -195,6 +205,10 @@ class Simulable
 
 	bool parseSimulable(const JointXMLnode<>& node, const ParseSimulableParams& p = {});
 
+	/** Parses the optional `<semantic_class>` and `<instance_id>` tags. Called
+	 * by parseSimulable(), and by objects that do not use it. */
+	void parseSemanticLabels(const JointXMLnode<>& node);
+
 	void internalHandlePublish(const TSimulContext& context);
 
 	/** Will be called after the global pose of the object has changed due to a
@@ -232,6 +246,9 @@ class Simulable
 	std::optional<mrpt::poses::CPose3DInterpolator> anim_keyframes_path_;
 
 	// ============ END OF ANIMATION VARIABLES ============
+
+	uint16_t semanticClass_ = 0;
+	uint16_t instanceId_ = 0;
 
 	/** Whether is is in collision right now */
 	bool isInCollision_ = false;

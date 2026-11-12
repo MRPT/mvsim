@@ -19,6 +19,7 @@
 #include <rapidxml.hpp>
 
 #include "../parse_utils.h"
+#include "JointXMLnode.h"
 #include "xml_utils.h"
 
 using namespace rapidxml;
@@ -122,6 +123,12 @@ ElevationMap::ElevationMap(World* parent, const rapidxml::xml_node<char>* root)
 ElevationMap::~ElevationMap() {}
 void ElevationMap::loadConfigFrom(const rapidxml::xml_node<char>* root)
 {
+	{
+		JointXMLnode<> jnode;
+		jnode.add(root);
+		parseSemanticLabels(jnode);
+	}
+
 	// Other general params:
 	TParameterDefinitions params;
 

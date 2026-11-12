@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 using namespace mvsim_dataset_gen;
@@ -58,6 +59,8 @@ struct ColumnPoint
 	float t = 0;
 	uint16_t ring = 0;
 	float intensity = 0;
+	uint16_t label = 0;
+	uint16_t instance = 0;
 };
 
 /** What the mixed-return pass needs of each hit (kept only if enabled):
@@ -86,7 +89,8 @@ float geometricIntensity(double lambertCos, double range)
 void addMixedReturns(
 	std::vector<std::vector<ColumnPoint>>& perColumn,
 	const std::vector<std::vector<MixedReturnInfo>>& info, int nRings, double probability,
-	float minRange, float maxRange, bool withIntensity, std::mt19937& rng)
+	float minRange, float maxRange, bool withIntensity, const std::optional<uint16_t>& mixedLabel,
+	std::mt19937& rng)
 {
 	const int nCols = static_cast<int>(perColumn.size());
 	// (column, ring) => index in perColumn[column], or -1 if no return:
@@ -167,6 +171,11 @@ void addMixedReturns(
 			{
 				p.intensity = geometricIntensity(info[c][k].lambertCos, r);
 			}
+			if (mixedLabel)
+			{
+				p.label = *mixedLabel;
+				p.instance = 0;
+			}
 		}
 	}
 }
@@ -184,6 +193,11 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	if (opts.generateIntensity)
 	{
 		pts->registerField_float("intensity");
+	}
+	if (opts.generateLabels)
+	{
+		pts->registerField_uint16("label");
+		pts->registerField_uint16("instance");
 	}
 
 	const CPose3D vehiclePoseAtStart = traj.poseAt(sweepStartEpochSeconds);
@@ -320,6 +334,12 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			{
 				cp.intensity = geometricIntensity(lambertCos, range);
 			}
+			if (opts.generateLabels)
+			{
+				const auto& prim = scene.primitive(hit->primIndex);
+				cp.label = prim.semanticClass;
+				cp.instance = prim.instanceId;
+			}
 			if (mixedReturns)
 			{
 				const double n = localDir.norm();
@@ -350,7 +370,7 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 		std::mt19937 mixedRng(mixedSeed);
 		addMixedReturns(
 			perColumn, mixedInfo, nRings, opts.mixedPixelProbability, model.params().minRange,
-			model.params().maxRange, opts.generateIntensity, mixedRng);
+			model.params().maxRange, opts.generateIntensity, opts.mixedReturnLabel, mixedRng);
 	}
 
 	for (const auto& colPts : perColumn)
@@ -363,6 +383,11 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			if (opts.generateIntensity)
 			{
 				pts->insertPointField_float("intensity", cp.intensity);
+			}
+			if (opts.generateLabels)
+			{
+				pts->insertPointField_uint16("label", cp.label);
+				pts->insertPointField_uint16("instance", cp.instance);
 			}
 		}
 	}

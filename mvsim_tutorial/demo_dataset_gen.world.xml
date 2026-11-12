@@ -12,8 +12,14 @@
 
 	<simul_timestep>0</simul_timestep>
 
+	<!-- Optional semantic labels, output with `mvsim-dataset-gen --labels` as
+	     the per-point "label" (<semantic_class>) and "instance"
+	     (<instance_id>) fields. Here: 1=ground, 2=pillar, 3=crate. Tags in a
+	     block class apply to all its blocks, which may override them. -->
+
 	<!-- Ground plane -->
 	<element class="horizontal_plane">
+		<semantic_class>1</semantic_class>
 		<x_min>-15</x_min>
 		<y_min>-15</y_min>
 		<x_max> 15</x_max>
@@ -24,18 +30,20 @@
 	<!-- A row of cylindrical pillars -->
 	<block:class name="pillar">
 		<geometry type="cylinder" radius="0.4" length="3.0" vertex_count="16" />
+		<semantic_class>2</semantic_class>
 	</block:class>
 
-	<block name="pillar1" class="pillar"> <init_pose>5 -3 0</init_pose> </block>
-	<block name="pillar2" class="pillar"> <init_pose>6  1 0</init_pose> </block>
-	<block name="pillar3" class="pillar"> <init_pose>5  3 0</init_pose> </block>
+	<block name="pillar1" class="pillar"> <init_pose>5 -3 0</init_pose> <instance_id>1</instance_id> </block>
+	<block name="pillar2" class="pillar"> <init_pose>6  1 0</init_pose> <instance_id>2</instance_id> </block>
+	<block name="pillar3" class="pillar"> <init_pose>5  3 0</init_pose> <instance_id>3</instance_id> </block>
 
 	<!-- A couple of box obstacles -->
 	<block:class name="crate">
 		<geometry type="box" lx="1.5" ly="1.0" lz="1.2" />
+		<semantic_class>3</semantic_class>
 	</block:class>
 
-	<block name="crate1" class="crate"> <init_pose>2 2 30</init_pose> </block>
+	<block name="crate1" class="crate"> <init_pose>2 2 30</init_pose> <instance_id>4</instance_id> </block>
 	<block name="crate2" class="crate"> <init_pose>-3 -2 -15</init_pose> </block>
 
 	<!-- ============================= Vehicle ============================= -->

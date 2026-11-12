@@ -21,6 +21,8 @@
 #endif
 
 #include <cmath>  // fmod()
+#include <limits>
+#include <string>
 
 #include "JointXMLnode.h"
 #include "parse_utils.h"
@@ -329,6 +331,8 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 		initial_q_ = *initPose;	 // save it for later usage in some animations, etc.
 	}
 
+	parseSemanticLabels(rootNode);
+
 	// -------------------------------------
 	// (Optional) initial vel:
 	// -------------------------------------
@@ -457,6 +461,39 @@ bool Simulable::parseSimulable(const JointXMLnode<>& rootNode, const ParseSimula
 
 	return true;
 	MRPT_END
+}
+
+void Simulable::parseSemanticLabels(const JointXMLnode<>& node)
+{
+	const auto parseId = [&](const char* tag, uint16_t& out)
+	{
+		const rapidxml::xml_node<>* n = node.first_node(tag);
+		if (!n)
+		{
+			return;
+		}
+		const std::string s = mrpt::system::trim(
+			mvsim::parse(n->value(), getSimulableWorldObject()->user_defined_variables()));
+		size_t used = 0;
+		long v = -1;
+		try
+		{
+			v = std::stol(s, &used);
+		}
+		catch (const std::exception&)
+		{
+			used = 0;
+		}
+		if (used != s.size() || v < 0 || v > std::numeric_limits<uint16_t>::max())
+		{
+			THROW_EXCEPTION_FMT(
+				"Object '%s': <%s> must be an integer in [0, 65535], got '%s'", name_.c_str(), tag,
+				s.c_str());
+		}
+		out = static_cast<uint16_t>(v);
+	};
+	parseId("semantic_class", semanticClass_);
+	parseId("instance_id", instanceId_);
 }
 
 void Simulable::internalHandlePublish(const TSimulContext& context)

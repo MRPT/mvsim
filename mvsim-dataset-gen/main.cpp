@@ -86,6 +86,8 @@ int main(int argc, char** argv)
 	std::string trajectoryFormat = "auto";	// auto | tum | waypoints2d
 	double footprintLx = 0.6;
 	double footprintLy = 0.4;
+	bool labels = false;
+	int mixedReturnLabel = -1;
 
 	cli.add_option("world_xml", worldXmlPath, "World XML file (analytic geometry only)")
 		->required()
@@ -124,6 +126,16 @@ int main(int argc, char** argv)
 	cli.add_flag(
 		"--allow-unsupported", allowUnsupported,
 		"Skip unsupported world geometry with a warning instead of aborting");
+	auto* labelsFlag = cli.add_flag(
+		"--labels", labels,
+		"Store per-point uint16 'label' and 'instance' LiDAR fields: the <semantic_class> and "
+		"<instance_id> of the world entity each ray hit (0 if not given)");
+	cli.add_option(
+		   "--mixed-return-label", mixedReturnLabel,
+		   "With --labels: semantic class of mixed returns (ranges between two surfaces), with "
+		   "instance 0 (default: the labels of the surface their ray hit)")
+		->check(CLI::Range(0, 65535))
+		->needs(labelsFlag);
 	cli.add_option("--odom-rate", odomRateHz, "Wheel-odometry sample rate [Hz] (default: 10)")
 		->check(CLI::PositiveNumber);
 	cli.add_option(
@@ -175,6 +187,16 @@ int main(int argc, char** argv)
 		const auto scene = SceneBuilder::build(world, vehicleName, sbOpts);
 		std::cout << "[mvsim-dataset-gen] Scene built: " << scene.primitiveCount()
 				  << " ray-traceable primitives.\n";
+		if (labels)
+		{
+			size_t nLabeled = 0;
+			for (size_t i = 0; i < scene.primitiveCount(); i++)
+			{
+				nLabeled += scene.primitive(i).semanticClass != 0 ? 1 : 0;
+			}
+			std::cout << "[mvsim-dataset-gen] Semantic labels: " << nLabeled << " of "
+					  << scene.primitiveCount() << " primitives have a semantic class.\n";
+		}
 
 		// Collect the LiDAR and IMU sensors aboard the ego vehicle:
 		std::vector<std::shared_ptr<mvsim::Lidar3D>> lidars;
@@ -262,6 +284,11 @@ int main(int argc, char** argv)
 					em.calibrationSeed);
 			}
 			opts->generateIntensity = lidar->generateIntensityFromRGB();
+			opts->generateLabels = labels;
+			if (mixedReturnLabel >= 0)
+			{
+				opts->mixedReturnLabel = static_cast<uint16_t>(mixedReturnLabel);
+			}
 			if (lidar->generateRGB())
 			{
 				std::cerr << "[mvsim-dataset-gen] Warning: lidar '" << lidar->getName()
