@@ -421,6 +421,183 @@ void test_realistic_error_model()
 	}
 }
 
+struct Sweep
+{
+	double t = 0;  //!< Sweep start time [s]
+	mrpt::maps::CGenericPointsMap::Ptr pts;
+};
+
+/** Every LiDAR sweep of a rawlog, in file order. */
+std::vector<Sweep> loadSweeps(const std::string& rawlogPath)
+{
+	std::vector<Sweep> out;
+	mrpt::io::CFileGZInputStream f(rawlogPath);
+	auto arch = mrpt::serialization::archiveFrom(f);
+	for (;;)
+	{
+		mrpt::serialization::CSerializable::Ptr obj;
+		try
+		{
+			arch >> obj;
+		}
+		catch (const std::exception&)
+		{
+			break;	// EOF
+		}
+		if (!obj)
+		{
+			break;
+		}
+		if (auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(obj); obs)
+		{
+			out.push_back(
+				{mrpt::Clock::toDouble(obs->timestamp),
+				 std::dynamic_pointer_cast<mrpt::maps::CGenericPointsMap>(obs->pointcloud)});
+		}
+	}
+	return out;
+}
+
+/** Whether both rawlogs have the same sweeps, point by point (positions only). */
+bool samePoints(const std::string& a, const std::string& b)
+{
+	const auto sa = loadSweeps(a);
+	const auto sb = loadSweeps(b);
+	if (sa.empty() || sa.size() != sb.size())
+	{
+		return false;
+	}
+	for (size_t k = 0; k < sa.size(); k++)
+	{
+		const auto& pa = sa[k].pts;
+		const auto& pb = sb[k].pts;
+		if (!pa || !pb || pa->size() != pb->size())
+		{
+			return false;
+		}
+		for (size_t i = 0; i < pa->size(); i++)
+		{
+			float xa, ya, za, xb, yb, zb;
+			pa->getPoint(i, xa, ya, za);
+			pb->getPoint(i, xb, yb, zb);
+			if (xa != xb || ya != yb || za != zb)
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+// The demo world labels the ground 1, the pillars 2 (instances 1-3) and the
+// crates 3 (instance 4 for crate1, none for crate2).
+void test_semantic_labels()
+{
+	const std::string outPlain = tempPath("plain.rawlog");
+	const std::string outLabels = tempPath("labels.rawlog");
+	EXPECT_TRUE(runDatasetGen(outPlain, "--duration 0.5 --seed 9 --noiseless") == 0);
+	EXPECT_TRUE(runDatasetGen(outLabels, "--duration 0.5 --seed 9 --noiseless --labels") == 0);
+
+	// Labels do not change the samples:
+	EXPECT_TRUE(samePoints(outPlain, outLabels));
+	const auto plain = loadSweeps(outPlain);
+	EXPECT_TRUE(!plain.empty() && plain.front().pts && !plain.front().pts->hasPointField("label"));
+
+	size_t nPoints = 0;
+	size_t nWrong = 0;
+	size_t nPillar = 0;
+	size_t nCrate = 0;
+	for (const auto& sweep : loadSweeps(outLabels))
+	{
+		const auto& pts = sweep.pts;
+		EXPECT_TRUE(pts && pts->hasPointField("label") && pts->hasPointField("instance"));
+		if (!pts || !pts->hasPointField("label"))
+		{
+			continue;
+		}
+		for (size_t i = 0; i < pts->size(); i++)
+		{
+			float x, y, z;
+			pts->getPoint(i, x, y, z);
+			// Each point at the vehicle pose of its own firing time (1 m/s along +X):
+			const double vehX = (sweep.t + pts->getPointField_float(i, "t")) - kTrajT0;
+			const double wx = x + vehX;
+			const double wz = z + kLidarZ;
+			const uint16_t label = pts->getPointField_uint16(i, "label");
+			const uint16_t instance = pts->getPointField_uint16(i, "instance");
+			nPoints++;
+
+			// The object the point lies on: a pillar (by distance to its axis),
+			// else the ground (z=0) or a crate. Within 1 mm of the ground, the
+			// base of a pillar or crate is accepted too.
+			const bool nearGround = wz < 1e-3;
+			const uint16_t crateInstance = std::hypot(wx - 2.0, y - 2.0) < 2.5 ? 4 : 0;
+			bool ok = nearGround ? (label == 1 && instance == 0)
+								 : (label == 3 && instance == crateInstance);
+			if (nearGround)
+			{
+				ok = ok || (label == 3 && instance == crateInstance);
+			}
+			else
+			{
+				nCrate++;
+			}
+			for (size_t p = 0; p < kPillarCenters.size(); p++)
+			{
+				const auto& [cx, cy] = kPillarCenters[p];
+				if (std::hypot(wx - cx, y - cy) < kPillarRadius + 1e-3)
+				{
+					const bool onPillar = label == 2 && instance == p + 1;
+					ok = nearGround ? (ok || onPillar) : onPillar;
+					if (!nearGround)
+					{
+						nPillar++;
+						nCrate--;
+					}
+				}
+			}
+			nWrong += ok ? 0 : 1;
+		}
+	}
+	EXPECT_GT(nPoints, 1000U);
+	EXPECT_GT(nPillar, 100U);
+	EXPECT_GT(nCrate, 100U);
+	EXPECT_TRUE(nWrong == 0);
+
+	// Mixed returns get their own class if asked for, and the samples are
+	// still the same as without labels:
+	const std::string outMixed = tempPath("mixed.rawlog");
+	const std::string outMixedPlain = tempPath("mixedplain.rawlog");
+	setEnv("sensor_mixed_pixel_probability", "1.0");
+	EXPECT_TRUE(runDatasetGen(outMixedPlain, "--duration 0.5 --seed 9") == 0);
+	EXPECT_TRUE(
+		runDatasetGen(outMixed, "--duration 0.5 --seed 9 --labels --mixed-return-label 99") == 0);
+	setEnv("sensor_mixed_pixel_probability", "0");
+	EXPECT_TRUE(samePoints(outMixedPlain, outMixed));
+	size_t nMixed = 0;
+	for (const auto& sweep : loadSweeps(outMixed))
+	{
+		const auto& pts = sweep.pts;
+		for (size_t i = 0; pts && i < pts->size(); i++)
+		{
+			if (pts->getPointField_uint16(i, "label") == 99)
+			{
+				nMixed++;
+				EXPECT_TRUE(pts->getPointField_uint16(i, "instance") == 0);
+			}
+		}
+	}
+	EXPECT_GT(nMixed, 0U);
+
+	// --mixed-return-label requires --labels:
+	EXPECT_TRUE(runDatasetGen(outMixed, "--duration 0.5 --mixed-return-label 99") != 0);
+
+	for (const auto& f : {outPlain, outLabels, outMixed, outMixedPlain})
+	{
+		removeOutputs(f);
+	}
+}
+
 // ---------------------------------------------------------------
 // demo_dataset_gen_2d.world.xml is a linear ramp, z = 0.1*x exactly;
 // demo_dataset_gen_2d.trajectory.txt drives straight along +X, so the
@@ -540,6 +717,7 @@ int main()
 	test_determinism_same_seed();
 	test_noiseless_differs_from_noisy();
 	test_realistic_error_model();
+	test_semantic_labels();
 	test_2d_trajectory_terrain_following();
 	test_imu_lever_arm();
 

@@ -13,6 +13,8 @@
 #include <mvsim/raytracer/Lidar3DModel.h>
 #include <mvsim/raytracer/RayScene.h>
 
+#include <cstdint>
+#include <optional>
 #include <random>
 #include <string>
 #include <vector>
@@ -43,6 +45,16 @@ struct LidarSimOptions
 	 * geometric Lambertian cos(incidence)/r^2 stand-in: the world XML
 	 * carries no material model). */
 	bool generateIntensity = false;
+
+	/** Whether to store the uint16 "label" and "instance" fields: the
+	 * semantic class and instance id of the world entity each ray hit
+	 * (`<semantic_class>`, `<instance_id>`; 0 if not given). */
+	bool generateLabels = false;
+
+	/** If set, mixed returns (ranges between two surfaces, see
+	 * mixedPixelProbability) get this semantic class and instance 0, instead
+	 * of the labels of the surface their own ray hit. */
+	std::optional<uint16_t> mixedReturnLabel;
 
 	/** \name Realistic error model (see mvsim::Lidar3D::ErrorModel); all
 	 * zero or empty: disabled.

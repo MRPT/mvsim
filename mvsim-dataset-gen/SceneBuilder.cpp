@@ -23,6 +23,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <utility>
 
 using namespace mvsim_dataset_gen;
 using mrpt::math::TPoint2D;
@@ -36,6 +37,18 @@ TPoint2D toWorldXY(const mrpt::poses::CPose3D& pose, double lx, double ly)
 {
 	const TPoint3D p = pose.composePoint(TPoint3D(lx, ly, 0));
 	return {p.x, p.y};
+}
+
+/** A primitive of the given geometry, traced back to the world entity `src`
+ * (its name and semantic labels). */
+mvsim::rt::Primitive primitiveOf(mvsim::rt::PrimitiveGeometry geometry, const mvsim::Simulable& src)
+{
+	mvsim::rt::Primitive p;
+	p.geometry = std::move(geometry);
+	p.objectName = src.getName();
+	p.semanticClass = src.semanticClass();
+	p.instanceId = src.instanceId();
+	return p;
 }
 
 void warnOrThrow(const SceneBuilder::Options& opts, const std::string& msg)
@@ -52,7 +65,6 @@ void addBlock(mvsim::rt::RayScene& scene, const mvsim::Block& block, const Scene
 {
 	using mvsim::GeometryType;
 	const auto pose = block.getCPose3D();
-	const std::string name = block.getName();
 
 	switch (block.geometryType())
 	{
@@ -64,7 +76,7 @@ void addBlock(mvsim::rt::RayScene& scene, const mvsim::Block& block, const Scene
 			cyl.length = block.geometryLength();
 			cyl.cappedBottom = true;
 			cyl.cappedTop = true;
-			scene.addPrimitive(mvsim::rt::Primitive{cyl, name});
+			scene.addPrimitive(primitiveOf(cyl, block));
 			return;
 		}
 		case GeometryType::Sphere:
@@ -72,7 +84,7 @@ void addBlock(mvsim::rt::RayScene& scene, const mvsim::Block& block, const Scene
 			mvsim::rt::Sphere sp;
 			sp.center = {pose.x(), pose.y(), pose.z()};
 			sp.radius = block.geometryRadius();
-			scene.addPrimitive(mvsim::rt::Primitive{sp, name});
+			scene.addPrimitive(primitiveOf(sp, block));
 			return;
 		}
 		case GeometryType::Box:
@@ -84,7 +96,7 @@ void addBlock(mvsim::rt::RayScene& scene, const mvsim::Block& block, const Scene
 				 toWorldXY(pose, 0, ly)});
 			prism.zMin = pose.z();
 			prism.zMax = pose.z() + lz;
-			scene.addPrimitive(mvsim::rt::Primitive{prism, name});
+			scene.addPrimitive(primitiveOf(prism, block));
 			return;
 		}
 		case GeometryType::Ramp:
@@ -105,8 +117,7 @@ void addBlock(mvsim::rt::RayScene& scene, const mvsim::Block& block, const Scene
 				  std::array<TPoint3D, 3>{p0, p4, p1}, std::array<TPoint3D, 3>{p5, p3, p2},
 				  std::array<TPoint3D, 3>{p4, p5, p1}, std::array<TPoint3D, 3>{p3, p1, p5}})
 			{
-				scene.addPrimitive(
-					mvsim::rt::Primitive{mvsim::rt::Triangle{tri[0], tri[1], tri[2]}, name});
+				scene.addPrimitive(primitiveOf(mvsim::rt::Triangle{tri[0], tri[1], tri[2]}, block));
 			}
 			return;
 		}
@@ -137,8 +148,8 @@ void addBlock(mvsim::rt::RayScene& scene, const mvsim::Block& block, const Scene
 				const TPoint3D a1 = pose.composePoint(TPoint3D(0, y1, z1));
 				const TPoint3D b0 = pose.composePoint(TPoint3D(lx, y0, z0));
 				const TPoint3D b1 = pose.composePoint(TPoint3D(lx, y1, z1));
-				scene.addPrimitive(mvsim::rt::Primitive{mvsim::rt::Triangle{a0, b0, b1}, name});
-				scene.addPrimitive(mvsim::rt::Primitive{mvsim::rt::Triangle{a0, b1, a1}, name});
+				scene.addPrimitive(primitiveOf(mvsim::rt::Triangle{a0, b0, b1}, block));
+				scene.addPrimitive(primitiveOf(mvsim::rt::Triangle{a0, b1, a1}, block));
 			}
 			return;
 		}
@@ -168,7 +179,7 @@ void addBlock(mvsim::rt::RayScene& scene, const mvsim::Block& block, const Scene
 	prism.contour = mrpt::math::TPolygon2D(worldPoly);
 	prism.zMin = pose.z() + block.block_z_min();
 	prism.zMax = pose.z() + block.block_z_max();
-	scene.addPrimitive(mvsim::rt::Primitive{prism, name});
+	scene.addPrimitive(primitiveOf(prism, block));
 }
 
 void addHorizontalPlane(mvsim::rt::RayScene& scene, const mvsim::HorizontalPlane& hp)
@@ -180,7 +191,7 @@ void addHorizontalPlane(mvsim::rt::RayScene& scene, const mvsim::HorizontalPlane
 	pl.vAxis = {0, 1, 0};
 	pl.halfU = (hp.xMax() - hp.xMin()) * 0.5;
 	pl.halfV = (hp.yMax() - hp.yMin()) * 0.5;
-	scene.addPrimitive(mvsim::rt::Primitive{pl, hp.getName()});
+	scene.addPrimitive(primitiveOf(pl, hp));
 }
 
 void addVerticalPlane(mvsim::rt::RayScene& scene, const mvsim::VerticalPlane& vp)
@@ -243,7 +254,7 @@ void addVerticalPlane(mvsim::rt::RayScene& scene, const mvsim::VerticalPlane& vp
 		{
 			prism.zMin = vp.z();
 			prism.zMax = vp.z() + vp.height();
-			scene.addPrimitive(mvsim::rt::Primitive{prism, vp.getName()});
+			scene.addPrimitive(primitiveOf(prism, vp));
 			continue;
 		}
 		// Both doors and windows are modeled as full through-gaps (mvsim
@@ -254,14 +265,14 @@ void addVerticalPlane(mvsim::rt::RayScene& scene, const mvsim::VerticalPlane& vp
 			mvsim::rt::Prism below = prism;
 			below.zMin = vp.z();
 			below.zMax = vp.z() + active->z_min;
-			scene.addPrimitive(mvsim::rt::Primitive{below, vp.getName()});
+			scene.addPrimitive(primitiveOf(below, vp));
 		}
 		if (active->z_max < vp.height() - 1e-4)
 		{
 			mvsim::rt::Prism above = prism;
 			above.zMin = vp.z() + active->z_max;
 			above.zMax = vp.z() + vp.height();
-			scene.addPrimitive(mvsim::rt::Primitive{above, vp.getName()});
+			scene.addPrimitive(primitiveOf(above, vp));
 		}
 	}
 }
@@ -274,7 +285,7 @@ void addElevationMap(mvsim::rt::RayScene& scene, const mvsim::ElevationMap& em)
 	hf.maxX = em.meshMaxX();
 	hf.minY = em.meshMinY();
 	hf.maxY = em.meshMaxY();
-	scene.addPrimitive(mvsim::rt::Primitive{hf, em.getName()});
+	scene.addPrimitive(primitiveOf(hf, em));
 }
 
 }  // namespace

@@ -102,6 +102,11 @@ struct Primitive
 	/** Name of the source world entity (block, world element, ...), for
 	 * diagnostics and `--dump-scene`. */
 	std::string objectName;
+
+	/** Semantic class and instance id of the source world entity (0:
+	 * unlabeled / none), for labeled sensor data. */
+	uint16_t semanticClass = 0;
+	uint16_t instanceId = 0;
 };
 
 /** Axis-aligned bounding box enclosing `prim`. Infinite/unbounded planes are
