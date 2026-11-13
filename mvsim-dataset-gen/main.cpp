@@ -112,6 +112,13 @@ std::vector<MovingObject> loadMovingBlocks(
 			const auto range = world.getListOfBlocks().equal_range(name);
 			for (auto it = range.first; it != range.second; ++it)
 			{
+				// Same rule as for the static scene:
+				if (it->second->isIntangible())
+				{
+					THROW_EXCEPTION(
+						"--moving-block: block '" + name +
+						"' is intangible, and intangible blocks are not ray-traced");
+				}
 				auto blockScene = SceneBuilder::buildBlock(*it->second);
 				if (blockScene.primitiveCount() == 0)
 				{

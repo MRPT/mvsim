@@ -70,8 +70,9 @@ block at the block's pose at that column's firing time; with
 models and the semantic labels apply to moving blocks like to the static
 scene. IMU and odometry do not depend on them.
 
-An unknown block name, a block given twice, or an unreadable or empty
-trajectory file abort the run with an error.
+An unknown block name, a block given twice, an ``<intangible>`` block (those
+are not ray-traced), or a trajectory file that cannot be read or has fewer
+than two poses abort the run with an error.
 
 .. code-block:: console
 
