@@ -12,6 +12,7 @@
 // ideal (or optionally noisy) simulated 3D LiDAR, IMU and wheel-odometry
 // data. See ~/plans/mvsim-lidar-simulator.md for the full design.
 
+#include <mrpt/core/exceptions.h>
 #include <mrpt/io/CFileGZOutputStream.h>
 #include <mrpt/poses/CPose3DInterpolator.h>
 #include <mrpt/serialization/CArchive.h>
@@ -30,8 +31,14 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <memory>
 #include <queue>
 #include <random>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "ImuSimulator.h"
 #include "LidarSimulator.h"
@@ -64,6 +71,59 @@ mvsim::rt::Lidar3DModel::Params paramsFromSensor(const mvsim::Lidar3D& lidar)
 	p.maxRange = lidar.maxRange();
 	return p;
 }
+
+/** Parses the `--moving-block <block name>=<trajectory.tum>` arguments into
+ * one moving object per block, and adds the block names to `movingNames`.
+ * Blocks sharing a trajectory file share one trajectory, and are stored
+ * together. Throws on any invalid argument. */
+std::vector<MovingObject> loadMovingBlocks(
+	const mvsim::World& world, const std::vector<std::string>& args,
+	std::set<std::string>& movingNames)
+{
+	// Trajectory file => names of the blocks following it:
+	std::map<std::string, std::vector<std::string>> blocksByFile;
+	for (const auto& arg : args)
+	{
+		const size_t eq = arg.find('=');
+		if (eq == std::string::npos || eq == 0 || eq + 1 == arg.size())
+		{
+			THROW_EXCEPTION(
+				"Malformed --moving-block '" + arg + "': expected <block name>=<trajectory.tum>");
+		}
+		const std::string name = arg.substr(0, eq);
+		if (world.getListOfBlocks().count(name) == 0)
+		{
+			THROW_EXCEPTION("--moving-block: the world has no block named '" + name + "'");
+		}
+		if (!movingNames.insert(name).second)
+		{
+			THROW_EXCEPTION("--moving-block: block '" + name + "' given more than once");
+		}
+		blocksByFile[arg.substr(eq + 1)].push_back(name);
+	}
+
+	std::vector<MovingObject> objects;
+	for (const auto& [file, names] : blocksByFile)
+	{
+		auto traj = std::make_shared<TrajectorySource>();
+		traj->loadTum(file);
+		for (const auto& name : names)
+		{
+			const auto range = world.getListOfBlocks().equal_range(name);
+			for (auto it = range.first; it != range.second; ++it)
+			{
+				auto blockScene = SceneBuilder::buildBlock(*it->second);
+				if (blockScene.primitiveCount() == 0)
+				{
+					THROW_EXCEPTION(
+						"--moving-block: block '" + name + "' has no ray-traceable geometry");
+				}
+				objects.emplace_back(std::move(blockScene), traj);
+			}
+		}
+	}
+	return objects;
+}
 }  // namespace
 
 int main(int argc, char** argv)
@@ -88,6 +148,7 @@ int main(int argc, char** argv)
 	double footprintLy = 0.4;
 	bool labels = false;
 	int mixedReturnLabel = -1;
+	std::vector<std::string> movingBlockArgs;
 
 	cli.add_option("world_xml", worldXmlPath, "World XML file (analytic geometry only)")
 		->required()
@@ -126,6 +187,13 @@ int main(int argc, char** argv)
 	cli.add_flag(
 		"--allow-unsupported", allowUnsupported,
 		"Skip unsupported world geometry with a warning instead of aborting");
+	cli.add_option(
+		   "--moving-block", movingBlockArgs,
+		   "A block that moves during the run, as <block name>=<trajectory.tum>: the block is "
+		   "left out of the static scene, and its frame follows the given TUM trajectory (same "
+		   "clock as --trajectory) instead of staying at its <init_pose>. Repeat the option for "
+		   "more blocks; several blocks may share one trajectory file")
+		->allow_extra_args(false);
 	auto* labelsFlag = cli.add_flag(
 		"--labels", labels,
 		"Store per-point uint16 'label' and 'instance' LiDAR fields: the <semantic_class> and "
@@ -181,21 +249,38 @@ int main(int argc, char** argv)
 		}
 		vehicleName = egoVehicle->getName();
 
-		// Build the ray-traceable scene (everything except the ego vehicle):
+		// Build the ray-traceable scene (everything except the ego vehicle
+		// and the moving blocks):
 		SceneBuilder::Options sbOpts;
 		sbOpts.allowUnsupported = allowUnsupported;
+		const std::vector<MovingObject> movingObjects =
+			loadMovingBlocks(world, movingBlockArgs, sbOpts.excludedBlocks);
 		const auto scene = SceneBuilder::build(world, vehicleName, sbOpts);
 		std::cout << "[mvsim-dataset-gen] Scene built: " << scene.primitiveCount()
 				  << " ray-traceable primitives.\n";
+		if (!movingObjects.empty())
+		{
+			std::cout << "[mvsim-dataset-gen] Moving blocks: " << movingObjects.size() << ".\n";
+		}
 		if (labels)
 		{
 			size_t nLabeled = 0;
-			for (size_t i = 0; i < scene.primitiveCount(); i++)
+			size_t nPrimitives = 0;
+			const auto countLabeled = [&](const mvsim::rt::RayScene& s)
 			{
-				nLabeled += scene.primitive(i).semanticClass != 0 ? 1 : 0;
+				nPrimitives += s.primitiveCount();
+				for (size_t i = 0; i < s.primitiveCount(); i++)
+				{
+					nLabeled += s.primitive(i).semanticClass != 0 ? 1 : 0;
+				}
+			};
+			countLabeled(scene);
+			for (const auto& obj : movingObjects)
+			{
+				countLabeled(obj.scene);
 			}
 			std::cout << "[mvsim-dataset-gen] Semantic labels: " << nLabeled << " of "
-					  << scene.primitiveCount() << " primitives have a semantic class.\n";
+					  << nPrimitives << " primitives have a semantic class.\n";
 		}
 
 		// Collect the LiDAR and IMU sensors aboard the ego vehicle:
@@ -304,7 +389,7 @@ int main(int argc, char** argv)
 				 [&, model, opts, sensorPoseOnVeh, label](double t)
 				 {
 					 auto obs = simulateLidarSweep(
-						 scene, *model, traj, sensorPoseOnVeh, t, label, *opts, rng);
+						 scene, movingObjects, *model, traj, sensorPoseOnVeh, t, label, *opts, rng);
 					 nSweeps++;
 					 gtVehicle.insert(timeFromSeconds(t), traj.poseAt(t).asTPose());
 					 gtSensors[label].insert(

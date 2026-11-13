@@ -42,6 +42,43 @@ the one carrying the sensors) aborts the run with a clear error, unless
 ``--allow-unsupported`` is given, in which case it is skipped with a
 warning instead.
 
+Moving blocks
+-------------
+
+The scene is static by default. To have objects that move during the run
+(for example, traffic around the sensor vehicle), give each of them its own
+trajectory with the repeatable option:
+
+.. code-block:: console
+
+   --moving-block <block name>=<trajectory.tum>
+
+- ``<block name>`` is the ``name`` of a ``<block>`` of the world XML, with
+  any of the block geometries above. It is left out of the static scene.
+- The trajectory is a TUM file (``timestamp tx ty tz qx qy qz qw``, in the
+  same epoch-seconds clock as ``--trajectory``) with the pose of the block's
+  own frame in the world along time, full SE(3). It replaces the block's
+  ``<init_pose>``. Before its first pose and after its last one, the block
+  stays at that pose.
+- Several blocks may share one trajectory file, e.g. a vehicle made of two
+  boxes.
+
+Each LiDAR ray returns its nearest hit over the static scene and all moving
+blocks. With ``--shutter rolling``, each azimuth column sees every moving
+block at the block's pose at that column's firing time; with
+``--shutter global``, at the sweep start time. The LiDAR noise and error
+models and the semantic labels apply to moving blocks like to the static
+scene. IMU and odometry do not depend on them.
+
+An unknown block name, a block given twice, or an unreadable or empty
+trajectory file abort the run with an error.
+
+.. code-block:: console
+
+   $ mvsim-dataset-gen world.xml --trajectory ego.tum -o out.rawlog \
+       --moving-block car1_body=car1.tum --moving-block car1_cabin=car1.tum \
+       --moving-block car2=car2.tum
+
 Trajectory input
 -----------------
 
