@@ -2,8 +2,8 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.2.0 (2026-11-14)
+------------------
 * mvsim-dataset-gen: per-point semantic and instance labels in LiDAR observations.
 * mvsim-dataset-gen: blocks that move along their own trajectory (--moving-block).
 * mvsim-dataset-gen: IMU observations carry their sensor pose.
