@@ -14,6 +14,7 @@
 #include <mvsim/raytracer/RayScene.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <random>
 #include <string>
@@ -77,6 +78,20 @@ struct LidarSimOptions
 	}
 };
 
+/** A rigid object that moves during the run: its geometry in its own frame,
+ * and the pose of that frame in the world along time. */
+struct MovingObject
+{
+	MovingObject(mvsim::rt::RayScene localScene, std::shared_ptr<const TrajectorySource> traj);
+
+	mvsim::rt::RayScene scene;	//!< In the object frame
+	std::shared_ptr<const TrajectorySource> trajectory;	 //!< May be shared among objects
+
+	/** Sphere enclosing `scene` (object frame), for a quick rejection test. */
+	mrpt::math::TPoint3D boundCenter{0, 0, 0};
+	double boundRadius = 0;
+};
+
 /** Draws the per-ring calibration errors of `opts` (left empty if every std
  * is zero), reproducibly from `seed`. */
 void drawCalibrationErrors(
@@ -84,8 +99,11 @@ void drawCalibrationErrors(
 	double rangeBiasStd, int seed);
 
 /** Simulates one full 360-degree sweep of a 3D LiDAR via exact ray casting
- * against `scene`, with the sensor rigidly mounted at `sensorPoseOnVehicle`
- * on a vehicle whose ground-truth pose follows `traj`.
+ * against the static `scene` and the `movingObjects`, with the sensor rigidly
+ * mounted at `sensorPoseOnVehicle` on a vehicle whose ground-truth pose
+ * follows `traj`. Each ray returns its nearest hit over all of them, with
+ * every moving object at its pose at the firing time of the ray (the column
+ * time in `ShutterMode::Rolling`, the sweep start in `ShutterMode::Global`).
  *
  * Each point is expressed in the sensor frame at the instant its column
  * fired, as a real rotating LiDAR driver outputs it: in
@@ -100,9 +118,9 @@ void drawCalibrationErrors(
  * result depends only on `rng`'s state on entry, never on thread scheduling.
  */
 mrpt::obs::CObservationPointCloud::Ptr simulateLidarSweep(
-	const mvsim::rt::RayScene& scene, const mvsim::rt::Lidar3DModel& model,
-	const TrajectorySource& traj, const mrpt::poses::CPose3D& sensorPoseOnVehicle,
-	double sweepStartEpochSeconds, const std::string& sensorLabel, const LidarSimOptions& opts,
-	std::mt19937& rng);
+	const mvsim::rt::RayScene& scene, const std::vector<MovingObject>& movingObjects,
+	const mvsim::rt::Lidar3DModel& model, const TrajectorySource& traj,
+	const mrpt::poses::CPose3D& sensorPoseOnVehicle, double sweepStartEpochSeconds,
+	const std::string& sensorLabel, const LidarSimOptions& opts, std::mt19937& rng);
 
 }  // namespace mvsim_dataset_gen

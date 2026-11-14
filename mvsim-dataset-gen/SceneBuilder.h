@@ -11,6 +11,9 @@
 #include <mvsim/World.h>
 #include <mvsim/raytracer/RayScene.h>
 
+#include <set>
+#include <string>
+
 namespace mvsim_dataset_gen
 {
 /** Converts a loaded, headless `mvsim::World` into a ray-traceable
@@ -33,6 +36,10 @@ class SceneBuilder
 		/** If true, unsupported entities are skipped with a warning on
 		 * stderr instead of throwing. */
 		bool allowUnsupported = false;
+
+		/** Names of the blocks to leave out of the scene (e.g. those that
+		 * move during the run, see buildBlock()). */
+		std::set<std::string> excludedBlocks;
 	};
 
 	/** Builds a scene from every block and world element in `world`,
@@ -41,6 +48,11 @@ class SceneBuilder
 	 * Throws on unsupported geometry unless `opts.allowUnsupported`. */
 	static mvsim::rt::RayScene build(
 		const mvsim::World& world, const std::string& egoVehicleName, const Options& opts);
+
+	/** Builds a scene with one block only, in the block's own frame (that
+	 * is, as if its pose were the identity), whatever its `<init_pose>`:
+	 * for blocks that move during the run. */
+	static mvsim::rt::RayScene buildBlock(const mvsim::Block& block);
 };
 
 }  // namespace mvsim_dataset_gen

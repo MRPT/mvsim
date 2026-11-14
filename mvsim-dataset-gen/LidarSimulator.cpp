@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cstdint>
 #include <optional>
+#include <utility>
 #include <vector>
 
 using namespace mvsim_dataset_gen;
@@ -74,6 +75,80 @@ struct MixedReturnInfo
 	TPoint3D normalWorld;
 	float lambertCos = 0;
 };
+
+/** A moving object as all the rays of one column see it: they share one
+ * firing time and one origin. */
+struct PosedObject
+{
+	const MovingObject* object = nullptr;
+	CPose3D pose;  //!< Of the object frame in the world, at the firing time
+	TPoint3D rayOrgLocal;  //!< Ray origin, in the object frame
+	TPoint3D toBoundCenter;	 //!< From the ray origin to the bounding sphere center (world frame)
+	double distSqrToBoundCenter = 0;
+};
+
+/** The moving objects at the given time, for rays from `rayOrg` (world). */
+std::vector<PosedObject> poseObjects(
+	const std::vector<MovingObject>& objects, double tEpochSeconds, const TPoint3D& rayOrg)
+{
+	std::vector<PosedObject> out;
+	out.reserve(objects.size());
+	for (const auto& obj : objects)
+	{
+		PosedObject po;
+		po.object = &obj;
+		// Objects sharing one trajectory are stored together:
+		if (!out.empty() && out.back().object->trajectory == obj.trajectory)
+		{
+			po.pose = out.back().pose;
+		}
+		else
+		{
+			po.pose = obj.trajectory->poseAt(tEpochSeconds);
+		}
+		po.rayOrgLocal = po.pose.inverseComposePoint(rayOrg);
+		po.toBoundCenter = po.pose.composePoint(obj.boundCenter) - rayOrg;
+		po.distSqrToBoundCenter = po.toBoundCenter.sqrNorm();
+		out.push_back(po);
+	}
+	return out;
+}
+
+/** Keeps in `hit` (world frame) the nearest of itself and the hits of `ray`
+ * on the moving objects, and in `hitScene` the scene of its primitive. */
+void castRayOnObjects(
+	const std::vector<PosedObject>& objects, const mvsim::rt::Ray& ray,
+	std::optional<mvsim::rt::Hit>& hit, const mvsim::rt::RayScene*& hitScene)
+{
+	for (const auto& po : objects)
+	{
+		// Quick rejection (`ray.dir` is a unit vector): the ray line misses
+		// the bounding sphere, or the sphere is out of the range interval
+		// still of interest.
+		const double tMax = hit ? hit->t : ray.tMax;
+		const double radius = po.object->boundRadius;
+		const TPoint3D& m = po.toBoundCenter;
+		const double along = m.x * ray.dir.x + m.y * ray.dir.y + m.z * ray.dir.z;
+		if (po.distSqrToBoundCenter - along * along > radius * radius ||
+			along + radius < ray.tMin || along - radius > tMax)
+		{
+			continue;
+		}
+		mvsim::rt::Ray localRay;
+		localRay.org = po.rayOrgLocal;
+		localRay.dir = po.pose.inverseRotateVector(ray.dir);
+		localRay.tMin = ray.tMin;
+		localRay.tMax = tMax;
+		auto localHit = po.object->scene.castRay(localRay);
+		if (!localHit)
+		{
+			continue;
+		}
+		localHit->normal = po.pose.rotateVector(localHit->normal);
+		hit = localHit;
+		hitScene = &po.object->scene;
+	}
+}
 
 /** The geometric intensity stand-in: Lambertian cos(incidence)/r^2 (the
  * world XML carries no material model). */
@@ -183,8 +258,9 @@ void addMixedReturns(
 }  // namespace
 
 mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
-	const mvsim::rt::RayScene& scene, const mvsim::rt::Lidar3DModel& model,
-	const TrajectorySource& traj, const CPose3D& sensorPoseOnVehicle, double sweepStartEpochSeconds,
+	const mvsim::rt::RayScene& scene, const std::vector<MovingObject>& movingObjects,
+	const mvsim::rt::Lidar3DModel& model, const TrajectorySource& traj,
+	const CPose3D& sensorPoseOnVehicle, double sweepStartEpochSeconds,
 	const std::string& sensorLabel, const LidarSimOptions& opts, std::mt19937& rng)
 {
 	auto pts = mrpt::maps::CGenericPointsMap::Create();
@@ -249,6 +325,10 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			rolling ? traj.poseAt(sweepStartEpochSeconds + tColRel) + sensorPoseOnVehicle
 					: sensorPoseAtStart;
 		const auto tField = static_cast<float>(tColRel);
+		const TPoint3D rayOrg = sensorPoseThisColumn.composePoint(TPoint3D(0, 0, 0));
+		// The moving objects, at this column's firing time:
+		const std::vector<PosedObject> posedObjects =
+			poseObjects(movingObjects, sweepStartEpochSeconds + tColRel, rayOrg);
 
 		std::vector<ColumnPoint>& out = perColumn[col];
 		for (int ring = 0; ring < nRings; ring++)
@@ -256,7 +336,7 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			const TPoint3D localDir = model.rayDirection(ring, col);
 
 			mvsim::rt::Ray ray;
-			ray.org = sensorPoseThisColumn.composePoint(TPoint3D(0, 0, 0));
+			ray.org = rayOrg;
 			// With calibration errors, the ray samples the scene along a
 			// perturbed direction, but the point is reported along the
 			// nominal one:
@@ -268,7 +348,9 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			ray.tMin = std::max(1e-6, static_cast<double>(model.params().minRange));
 			ray.tMax = model.params().maxRange;
 
-			const auto hit = scene.castRay(ray);
+			auto hit = scene.castRay(ray);
+			const mvsim::rt::RayScene* hitScene = &scene;
+			castRayOnObjects(posedObjects, ray, hit, hitScene);
 			if (!hit)
 			{
 				continue;
@@ -336,7 +418,7 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			}
 			if (opts.generateLabels)
 			{
-				const auto& prim = scene.primitive(hit->primIndex);
+				const auto& prim = hitScene->primitive(hit->primIndex);
 				cp.label = prim.semanticClass;
 				cp.instance = prim.instanceId;
 			}
@@ -399,6 +481,23 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	obs->sensorPose = sensorPoseOnVehicle;
 	obs->timestamp = timeFromSeconds(sweepStartEpochSeconds);
 	return obs;
+}
+
+MovingObject::MovingObject(
+	mvsim::rt::RayScene localScene, std::shared_ptr<const TrajectorySource> traj)
+	: scene(std::move(localScene)), trajectory(std::move(traj))
+{
+	mvsim::rt::AABB box;
+	for (size_t i = 0; i < scene.primitiveCount(); i++)
+	{
+		box.grow(mvsim::rt::primitiveAABB(scene.primitive(i)));
+	}
+	if (box.isValid())
+	{
+		boundCenter = box.centroid();
+		// Slightly enlarged, so that rounding never rejects a grazing hit:
+		boundRadius = 0.5 * (box.max - box.min).norm() * (1.0 + 1e-9) + 1e-9;
+	}
 }
 
 void mvsim_dataset_gen::drawCalibrationErrors(

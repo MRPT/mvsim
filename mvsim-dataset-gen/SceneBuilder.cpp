@@ -61,10 +61,11 @@ void warnOrThrow(const SceneBuilder::Options& opts, const std::string& msg)
 	THROW_EXCEPTION(msg + " (pass --allow-unsupported to skip it instead)");
 }
 
-void addBlock(mvsim::rt::RayScene& scene, const mvsim::Block& block, const SceneBuilder::Options&)
+/** Adds the geometry of `block`, with its own frame at `pose`. */
+void addBlock(
+	mvsim::rt::RayScene& scene, const mvsim::Block& block, const mrpt::poses::CPose3D& pose)
 {
 	using mvsim::GeometryType;
-	const auto pose = block.getCPose3D();
 
 	switch (block.geometryType())
 	{
@@ -297,11 +298,11 @@ mvsim::rt::RayScene SceneBuilder::build(
 
 	for (const auto& [name, block] : world.getListOfBlocks())
 	{
-		if (!block || block->isIntangible())
+		if (!block || block->isIntangible() || opts.excludedBlocks.count(name) != 0)
 		{
 			continue;
 		}
-		addBlock(scene, *block, opts);
+		addBlock(scene, *block, block->getCPose3D());
 	}
 
 	for (const auto& elem : world.getListOfWorldElements())
@@ -360,6 +361,14 @@ mvsim::rt::RayScene SceneBuilder::build(
 					  "extra vehicles are not ray-traced as obstacles");
 	}
 
+	scene.build();
+	return scene;
+}
+
+mvsim::rt::RayScene SceneBuilder::buildBlock(const mvsim::Block& block)
+{
+	mvsim::rt::RayScene scene;
+	addBlock(scene, block, mrpt::poses::CPose3D::Identity());
 	scene.build();
 	return scene;
 }
