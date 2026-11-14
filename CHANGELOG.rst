@@ -2,6 +2,13 @@
 Changelog for package mvsim
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* mvsim-dataset-gen: per-point semantic and instance labels in LiDAR observations.
+* mvsim-dataset-gen: blocks that move along their own trajectory (--moving-block).
+* mvsim-dataset-gen: IMU observations carry their sensor pose.
+* Contributors: Jose Luis Blanco-Claraco
+
 2.1.0 (2026-11-11)
 ------------------
 * ros2_control for Ackermann vehicles: per-wheel spin joints and per-wheel or central steering joints (ackermann), or a traction joint (ackermann_drivetrain), with demos for the steering controllers (`#169 <https://github.com/MRPT/mvsim/issues/169>`_)
