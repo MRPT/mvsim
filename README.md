@@ -10,7 +10,7 @@
 
 [**Documentation**](https://mvsimulator.readthedocs.io) · [**Installation**](https://mvsimulator.readthedocs.io/en/latest/install.html) · [**Demo worlds**](https://mvsimulator.readthedocs.io/en/latest/demo_worlds.html) · [**Cite**](#citation)
 
-<a href="https://mrpt.github.io/videos/mvsim-montage_v3.mp4"><img src="https://mrpt.github.io/videos/mvsim-montage_v3.webp" alt="MVSim overview: GUI, demo worlds, vehicles and sensors" width="100%"/></a>
+<a href="https://mrpt.github.io/videos/mvsim-montage_v3.mp4"><img src="https://mrpt.github.io/videos/mvsim-montage_v3_preview.webp" alt="MVSim overview: GUI, demo worlds, vehicles and sensors" width="100%"/></a>
 
 <sub>Click to watch the full video (1 min).</sub>
 
