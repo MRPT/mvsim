@@ -40,6 +40,25 @@ Lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots.
 It is tailored to analysis of vehicle dynamics, wheel-ground contact forces, and
 accurate simulation of typical robot sensors.
 
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted playsinline style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim-montage_v3.mp4" type="video/mp4">
+     </video>
+   </div>
+
+|
+
+- **Vehicles**: differential drive and skid steer robots, Ackermann cars with
+  mechanical differentials, trucks and tractors with trailers, optional chassis suspension.
+- **Sensors**: 2D and 3D LiDARs (including RGB-colored Ouster Rev8), RGB and depth cameras,
+  IMU, and GNSS.
+- **Worlds**: warehouses, homes, greenhouses, cities and off-road terrain, with elevation maps,
+  animated human actors, lights and shadows, all defined in XML files.
+- **Interfaces**: interactive GUI or headless mode, ROS 2 (including ``ros2_control``),
+  C++ and Python APIs, and ZMQ.
+
 This project includes C++ and Python libraries, the standalone CLI application ``mvsim``,
 and ROS 1 and ROS 2 nodes, and it is licensed under the permissive 3-clause BSD License.
 
@@ -81,15 +100,6 @@ If you use MVSim in your work, feel free of citing
     :link-type: ref
 
     All the details about how to design simulated worlds and robots
-
-
-.. raw:: html
-
-   <div style="width: 100%; overflow: hidden;">
-     <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim-montage_v2.mp4" type="video/mp4">
-     </video>
-   </div>
 
 
 Documentation credits:

@@ -10,6 +10,10 @@
 
 [**Documentation**](https://mvsimulator.readthedocs.io) · [**Installation**](https://mvsimulator.readthedocs.io/en/latest/install.html) · [**Demo worlds**](https://mvsimulator.readthedocs.io/en/latest/demo_worlds.html) · [**Cite**](#citation)
 
+<a href="https://mrpt.github.io/videos/mvsim-montage_v3.mp4"><img src="https://mrpt.github.io/videos/mvsim-montage_v3.webp" alt="MVSim overview: GUI, demo worlds, vehicles and sensors" width="100%"/></a>
+
+<sub>Click to watch the full video (1 min).</sub>
+
 </div>
 
 ---
@@ -19,16 +23,11 @@
 MVSim simulates wheeled robots and vehicles with realistic physics, sensors, and multi-agent support. It is designed to be **fast enough for large-scale experiments** while remaining **accurate enough for dynamics and sensor research**.
 
 Key properties:
-- Fully configured via **XML world files** — no code changes needed for most experiments.
+- Fully configured via **XML world files**: no code changes needed for most experiments.
 - Works **standalone**, as a **ROS 2 node**, or embedded in a **C++ / Python** application.
-- **Headless mode** for CI pipelines and Docker containers.
-- Multi-vehicle worlds with mutual sensing (robots see each other in LiDAR).
-
-https://github.com/user-attachments/assets/766db164-2d16-44f4-acbf-2f15b73c1ab3
-
-![mvsim demo worlds](docs/imgs/mvsim-demo.webp)
-
-https://github.com/user-attachments/assets/93c95aeb-71e9-4c35-b1dc-ba895c79daf7
+- Interactive **GUI** (world tree, object inspector, lighting controls, live camera previews), or **headless** for CI pipelines and Docker containers.
+- Multi-vehicle worlds with mutual sensing (robots see each other in LiDAR scans and camera images).
+- From small indoor robots to cars, trucks and tractors with trailers, in warehouses, homes, greenhouses, cities or off-road terrain.
 
 ---
 
@@ -37,21 +36,22 @@ https://github.com/user-attachments/assets/93c95aeb-71e9-4c35-b1dc-ba895c79daf7
 ### Vehicle dynamics
 | Model | Description |
 |---|---|
-| `differential` | 2-wheel or 4-wheel differential drive (e.g. TurtleBot, Jackal) |
-| `ackermann` | Car-like Ackermann steering with kinematic or dynamic control |
-| `ackermann_drivetrain` | Ackermann + realistic mechanical differentials (open / Torsen, 2WD / 4WD) |
-| Articulated | Trailer-style articulated vehicles |
+| `differential` | 2, 3 or 4-wheel differential drive and skid steer (e.g. TurtleBot, Jackal) |
+| `ackermann` | Car-like Ackermann steering |
+| `ackermann_drivetrain` | Ackermann + mechanical differentials (open / Torsen, 2WD / 4WD) |
+| Articulated | Tractor-trailer and truck-trailer combinations, linked by joints |
 
-Controllers available: **raw torque**, **twist PID**, **ideal twist**.
-
-Friction models: **default Coulomb**, **Ward-Iagnemma** (off-road), **ellipse** (slip angle + slip ratio).
+- Controllers: **raw torque**, **twist PID**, **ideal twist**, and **trajectory following** (exactly reproducible paths).
+- Friction models: **default Coulomb**, **Ward-Iagnemma** (off-road), **ellipse** (slip angle + slip ratio).
+- Optional **chassis suspension** (heave, roll and pitch on per-wheel springs and dampers).
+- **ros2_control** hardware interface, to use the same controllers as on the real robot.
 
 ### Sensors
 | Sensor | Notes |
 |---|---|
-| **3D LiDARs** | Velodyne VLP-16, Ouster OS1, Hesai Helios-32 (26°/31°/70° FOV) |
+| **3D LiDARs** | Velodyne VLP-16, Ouster OS1, Ouster Rev8 with per-point RGB color, Hesai Helios-32 (26°/31°/70° FOV) |
 | **2D LiDAR** | Generic + RPLidar A2; optional GPU-based 3D ray-tracing |
-| **RGB camera** | Pinhole model, configurable intrinsics |
+| **RGB camera** | Pinhole model, optional lens distortion and pixel noise |
 | **RGBD camera** | Depth + color (RealSense / Xtion-style), publishes pointcloud, depth image |
 | **IMU** | White noise + bias random-walk (Forster 2016 model) |
 | **GNSS / GPS** | Requires georeferenced world; configurable noise |
@@ -59,17 +59,21 @@ Friction models: **default Coulomb**, **Ward-Iagnemma** (off-road), **ellipse** 
 ### World elements
 - Occupancy grid maps (image or MRPT binary)
 - Elevation meshes (terrain with height)
-- Textured 3D blocks and custom meshes (`.dae`, `.obj`)
+- Textured 3D blocks and custom meshes (`.dae`, `.obj`, ...)
+- Animated human actors walking along waypoints
 - Friction zones (spatially-varying `mu`, rolling resistance)
-- Multi-storey environments
-- Lighting configuration
+- Multi-storey environments and moving platforms
+- Lighting: sun with shadows, point and spot lights, vehicle headlights
+- Objects spawned, moved or removed at run time
 - Remote resource caching
 
-### Interfaces
-- **ROS 2** — full topic / TF / parameter interface (see [mvsim_node docs](https://mvsimulator.readthedocs.io/en/latest/mvsim_node.html))
-- **ZMQ / Protobuf** — language-agnostic pub/sub for custom clients
-- **Python** — direct API access
-- **C++ library** — embed the simulator in your application
+### Interfaces and tools
+- **ROS 2**: full topic / TF / parameter interface (see [mvsim_node docs](https://mvsimulator.readthedocs.io/en/latest/mvsim_node.html))
+- **ZMQ / Protobuf**: language-agnostic pub/sub for custom clients
+- **Python**: direct API access
+- **C++ library**: embed the simulator in your application
+- **Video recording** of the 3D view, in simulation time, from the GUI, the world file or scripts
+- `mvsim-dataset-gen` (offline LiDAR/IMU datasets from a prescribed trajectory), `mvsim-pid-tuner`, and `mvsim-urdf2xml` (URDF import)
 
 ---
 
@@ -137,7 +141,6 @@ See [all demo worlds](https://mvsimulator.readthedocs.io/en/latest/demo_worlds.h
 | ROS 2 Foxy (u20.04) | [![Version](https://img.shields.io/ros/v/foxy/mvsim)](https://index.ros.org/?search_packages=true&pkgs=mvsim) |
 | ROS 2 Iron (u22.04) | [![Version](https://img.shields.io/ros/v/iron/mvsim)](https://index.ros.org/?search_packages=true&pkgs=mvsim) |
 
-</details>
 
 ---
 

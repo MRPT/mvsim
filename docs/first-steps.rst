@@ -50,7 +50,7 @@ published sensor topics.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim-warehouse-teleop-demo.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim-warehouse-teleop-demo_v3.mp4" type="video/mp4">
      </video>
    </div>
 

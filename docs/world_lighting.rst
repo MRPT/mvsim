@@ -36,7 +36,7 @@ the point and spot lights (on/off), the light azimuth and elevation, its intensi
 
 .. raw:: html
 
-   <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-light-direction.mp4" type="video/mp4"> </video>
+   <video controls autoplay loop muted> <source src="https://mrpt.github.io/videos/mvsim-docs-light-direction.mp4" type="video/mp4"> </video>
 
 
 Ambient lighting
@@ -190,7 +190,7 @@ Shadows control
 
 .. raw:: html
 
-   <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-shadows-on-off.mp4" type="video/mp4"> </video>
+   <video controls autoplay loop muted> <source src="https://mrpt.github.io/videos/mvsim-docs-shadows-on-off.mp4" type="video/mp4"> </video>
 
 |
 

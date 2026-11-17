@@ -46,7 +46,7 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
 
 .. raw:: html
 
-   <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-gui-view-pointclouds.mp4" type="video/mp4"> </video>
+   <video controls autoplay loop muted> <source src="https://mrpt.github.io/videos/mvsim-docs-gui-view-pointclouds.mp4" type="video/mp4"> </video>
 
 - ``<show_sensor_previews>true</show_sensor_previews>``. If enabled (default),
   camera images (RGB and depth) are shown in preview windows within the GUI.
@@ -93,7 +93,7 @@ Available parameters under the global ``<gui> ... </gui>`` tag (all are optional
 
 .. raw:: html
 
-   <video controls autoplay loop muted> <source src="https://mrpt.github.io/mvsim-models/anims/mvsim-docs-gui-view-forces.mp4" type="video/mp4"> </video>
+   <video controls autoplay loop muted> <source src="https://mrpt.github.io/videos/mvsim-docs-gui-view-forces.mp4" type="video/mp4"> </video>
 
 
 - ``<ortho>false</ortho>``. If set to ``true``, the GUI will show an orthographic view 

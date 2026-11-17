@@ -24,7 +24,7 @@ can be defined in their own files for the sake of reusability.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_warehouse_overview_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_warehouse_overview_v3.mp4" type="video/mp4">
      </video>
    </div>
 

@@ -36,6 +36,15 @@ the patches to observe the effects.
             mvsim launch mvsim_tutorial/demo_friction_zones.world.xml
 
 
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_friction_zones.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
 .. dropdown:: World XML code
 
    File: `mvsim_tutorial/demo_friction_zones.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_friction_zones.world.xml>`_
@@ -63,7 +72,7 @@ chassis pitch when accelerating and braking, roll in turns, and bounce over the 
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_suspension.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_suspension_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -114,7 +123,7 @@ follow a given trajectory in a loop, and a walking person.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_warehouse_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_warehouse_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -156,7 +165,7 @@ needed for RViz to show the sensors and send ``/cmd_vel`` commands.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim-demo-road-circuit1_world_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim-demo-road-circuit1_world_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -197,7 +206,7 @@ Example of a 3D Lidar Jackal robot in a world mixing indoor and outdoor scenario
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_indoor_outdoor_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_indoor_outdoor_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -244,7 +253,7 @@ Jackal with a 3D lidar, an RGB-D camera and an IMU.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_home_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_home_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -274,7 +283,7 @@ Example of how to define textured walls, with doors and windows.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_walls_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_walls_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -320,7 +329,7 @@ A simple 2D world defined via an occupancy grid map and a robot equipped with 2D
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_1robot_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_1robot_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -367,7 +376,7 @@ A world with 2 simple robots and a couple of custom "blocks" (furniture).
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_2robots_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_2robots_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -415,7 +424,7 @@ Example of a robot with a camera sensor (RGB).
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_camera_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_camera_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -463,7 +472,7 @@ Example of a robot with a depth camera sensor (RGB+D).
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_depth_camera_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_depth_camera_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -510,7 +519,7 @@ Example of a 3D Lidar robot in a "2.5D" world defined by an elevation map.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_elevation_map_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_elevation_map_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -559,7 +568,7 @@ slightly randomized-perturbations in plant poses, etc.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_greenhouse_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_greenhouse_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -608,7 +617,7 @@ external ``.dae`` or ``.stl`` files.
 
    <div style="width: 100%; overflow: hidden;">
      <video controls autoplay loop muted style="width: 100%;">
-       <source src="https://mrpt.github.io/videos/mvsim_demo_turtlebot_world_v2.mp4" type="video/mp4">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_turtlebot_world_v3.mp4" type="video/mp4">
      </video>
    </div>
 
@@ -655,6 +664,15 @@ generated by ``mvsim_tutorial/generate_demo_ouster_rev8_terrain.py``.
             MVSIM_DEMO_TRAJECTORY=1 mvsim launch mvsim_tutorial/demo_ouster_rev8.world.xml
 
 
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_ouster_rev8.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
 .. dropdown:: World XML code
 
    File: `mvsim_tutorial/demo_ouster_rev8.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_ouster_rev8.world.xml>`_
@@ -691,6 +709,15 @@ The vehicle carries a 3D LiDAR (Velodyne VLP-16) and a GNSS/GPS sensor.
             mvsim launch mvsim_tutorial/demo_trajectory.world.xml
 
 
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_trajectory.mp4" type="video/mp4">
+     </video>
+   </div>
+
+
 .. dropdown:: World XML code
 
    File: `mvsim_tutorial/demo_trajectory.world.xml <https://github.com/MRPT/mvsim/blob/develop/mvsim_tutorial/demo_trajectory.world.xml>`_
@@ -713,6 +740,15 @@ non-holonomic vehicle type in MVSim.
         .. code-block:: bash
 
             mvsim launch mvsim_tutorial/demo_trajectory_ackermann.world.xml
+
+
+.. raw:: html
+
+   <div style="width: 100%; overflow: hidden;">
+     <video controls autoplay loop muted style="width: 100%;">
+       <source src="https://mrpt.github.io/videos/mvsim_demo_trajectory_ackermann.mp4" type="video/mp4">
+     </video>
+   </div>
 
 
 .. dropdown:: World XML code
