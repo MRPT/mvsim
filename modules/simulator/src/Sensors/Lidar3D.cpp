@@ -108,6 +108,8 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["beam_divergence_deg"] = TParamEntry("%lf", &errorModel_.beamDivergenceDeg);
 	params["max_incidence_deg"] = TParamEntry("%lf", &errorModel_.maxIncidenceDeg);
 	params["mixed_pixel_probability"] = TParamEntry("%lf", &errorModel_.mixedPixelProbability);
+	params["echo_separation"] = TParamEntry("%lf", &errorModel_.echoSeparation);
+	params["detection_range"] = TParamEntry("%lf", &errorModel_.detectionRange);
 	params["beam_elevation_std_deg"] = TParamEntry("%lf", &errorModel_.beamElevationStdDeg);
 	params["beam_azimuth_std_deg"] = TParamEntry("%lf", &errorModel_.beamAzimuthStdDeg);
 	params["beam_range_bias_std"] = TParamEntry("%lf", &errorModel_.beamRangeBiasStd);
@@ -123,6 +125,8 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 			 {"beam_divergence_deg", em.beamDivergenceDeg},
 			 {"max_incidence_deg", em.maxIncidenceDeg},
 			 {"mixed_pixel_probability", em.mixedPixelProbability},
+			 {"echo_separation", em.echoSeparation},
+			 {"detection_range", em.detectionRange},
 			 {"beam_elevation_std_deg", em.beamElevationStdDeg},
 			 {"beam_azimuth_std_deg", em.beamAzimuthStdDeg},
 			 {"beam_range_bias_std", em.beamRangeBiasStd}})
@@ -134,6 +138,13 @@ void Lidar3D::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	}
 	ASSERTMSG_(em.mixedPixelProbability <= 1.0, "mixed_pixel_probability must be <= 1");
 	ASSERTMSG_(em.maxIncidenceDeg < 90.0, "max_incidence_deg must be < 90");
+	if (em.echoSeparation > 0)
+	{
+		ASSERTMSG_(em.beamDivergenceDeg > 0, "echo_separation needs beam_divergence_deg > 0");
+		ASSERTMSG_(
+			em.mixedPixelProbability == 0,
+			"echo_separation replaces mixed_pixel_probability: set it to 0");
+	}
 }
 
 void Lidar3D::internalGuiUpdate(

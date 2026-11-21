@@ -64,6 +64,11 @@ struct LidarSimOptions
 	double beamDivergenceDeg = 0.0;
 	double maxIncidenceDeg = 0.0;
 	double mixedPixelProbability = 0.0;
+	/** Beam model: sub-ray hits closer than this along the beam [m] merge
+	 * into one echo (0: disabled; needs beamDivergenceDeg > 0). */
+	double echoSeparation = 0.0;
+	/** Detection range at normal incidence [m] (0: disabled). */
+	double detectionRange = 0.0;
 	/** Per-ring calibration errors: elevation and azimuth offsets [rad] and
 	 * range bias [m], filled by drawCalibrationErrors(). */
 	std::vector<double> beamElevOffset;
@@ -74,7 +79,8 @@ struct LidarSimOptions
 	bool hasRealisticErrors() const
 	{
 		return rangeStdNoisePerMeter > 0 || beamDivergenceDeg > 0 || maxIncidenceDeg > 0 ||
-			   mixedPixelProbability > 0 || !beamRangeBias.empty();
+			   mixedPixelProbability > 0 || echoSeparation > 0 || detectionRange > 0 ||
+			   !beamRangeBias.empty();
 	}
 };
 

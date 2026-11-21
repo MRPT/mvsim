@@ -33,6 +33,8 @@
     <beam_divergence_deg>${sensor_beam_divergence_deg|0}</beam_divergence_deg>
     <max_incidence_deg>${sensor_max_incidence_deg|0}</max_incidence_deg>
     <mixed_pixel_probability>${sensor_mixed_pixel_probability|0}</mixed_pixel_probability>
+    <echo_separation>${sensor_echo_separation|0}</echo_separation>
+    <detection_range>${sensor_detection_range|0}</detection_range>
     <beam_elevation_std_deg>${sensor_beam_elevation_std_deg|0}</beam_elevation_std_deg>
     <beam_azimuth_std_deg>${sensor_beam_azimuth_std_deg|0}</beam_azimuth_std_deg>
     <beam_range_bias_std>${sensor_beam_range_bias_std|0}</beam_range_bias_std>

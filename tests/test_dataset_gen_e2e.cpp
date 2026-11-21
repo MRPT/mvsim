@@ -497,6 +497,82 @@ bool samePoints(const std::string& a, const std::string& b)
 
 // The demo world labels the ground 1, the pillars 2 (instances 1-3) and the
 // crates 3 (instance 4 for crate1, none for crate2).
+void test_beam_model()
+{
+	const char* vars[] = {
+		"sensor_beam_divergence_deg", "sensor_echo_separation", "sensor_detection_range",
+		"sensor_mixed_pixel_probability"};
+	for (const char* v : vars)
+	{
+		setEnv(v, "0");
+	}
+	const std::string outBase = tempPath("beambase.rawlog");
+	const std::string outBeam1 = tempPath("beam1.rawlog");
+	const std::string outBeam2 = tempPath("beam2.rawlog");
+	const std::string outNear = tempPath("beamnear.rawlog");
+	const std::string outBad = tempPath("beambad.rawlog");
+	EXPECT_TRUE(runDatasetGen(outBase, "--duration 0.5 --seed 5") == 0);
+
+	setEnv("sensor_beam_divergence_deg", "0.3");
+	setEnv("sensor_echo_separation", "0.5");
+	EXPECT_TRUE(runDatasetGen(outBeam1, "--duration 0.5 --seed 5") == 0);
+	EXPECT_TRUE(runDatasetGen(outBeam2, "--duration 0.5 --seed 5") == 0);
+	// A short detection range drops the far returns:
+	setEnv("sensor_detection_range", "4.0");
+	EXPECT_TRUE(runDatasetGen(outNear, "--duration 0.5 --seed 5") == 0);
+	setEnv("sensor_detection_range", "0");
+	// The beam model replaces the mixed returns between neighbor rays:
+	setEnv("sensor_mixed_pixel_probability", "0.5");
+	EXPECT_TRUE(runDatasetGen(outBad, "--duration 0.5 --seed 5") != 0);
+	setEnv("sensor_mixed_pixel_probability", "0");
+
+	EXPECT_FALSE(filesEqual(outBase, outBeam1));
+	EXPECT_TRUE(filesEqual(outBeam1, outBeam2));
+	// Every ray whose axis hits returns, as without the model (up to the
+	// returns that the range noise moves out of the valid interval):
+	const SweepStats base = loadAndInspect(outBase);
+	const SweepStats beam = loadAndInspect(outBeam1);
+	const SweepStats nearOnly = loadAndInspect(outNear);
+	EXPECT_TRUE(base.nObs == beam.nObs);
+	EXPECT_LT(
+		std::abs(static_cast<double>(beam.totalPoints) - static_cast<double>(base.totalPoints)),
+		0.01 * static_cast<double>(base.totalPoints));
+	EXPECT_LT(nearOnly.totalPoints, beam.totalPoints);
+	EXPECT_LT(nearOnly.maxRange, 4.5);
+
+	// Echoes that span two surfaces are mixed returns, labeled as such if
+	// asked for, and labels do not change the samples:
+	const std::string outMixed = tempPath("beammixed.rawlog");
+	const std::string outMixedPlain = tempPath("beammixedplain.rawlog");
+	setEnv("sensor_echo_separation", "5.0");
+	EXPECT_TRUE(runDatasetGen(outMixedPlain, "--duration 0.5 --seed 9") == 0);
+	EXPECT_TRUE(
+		runDatasetGen(outMixed, "--duration 0.5 --seed 9 --labels --mixed-return-label 99") == 0);
+	for (const char* v : vars)
+	{
+		setEnv(v, "0");
+	}
+	EXPECT_TRUE(samePoints(outMixedPlain, outMixed));
+	size_t nMixed = 0;
+	for (const auto& sweep : loadSweeps(outMixed))
+	{
+		const auto& pts = sweep.pts;
+		for (size_t i = 0; pts && i < pts->size(); i++)
+		{
+			if (pts->getPointField_uint16(i, "label") == 99)
+			{
+				nMixed++;
+			}
+		}
+	}
+	EXPECT_GT(nMixed, 0U);
+
+	for (const auto& f : {outBase, outBeam1, outBeam2, outNear, outBad, outMixed, outMixedPlain})
+	{
+		removeOutputs(f);
+	}
+}
+
 void test_semantic_labels()
 {
 	const std::string outPlain = tempPath("plain.rawlog");
@@ -1004,6 +1080,7 @@ int main()
 	test_determinism_same_seed();
 	test_noiseless_differs_from_noisy();
 	test_realistic_error_model();
+	test_beam_model();
 	test_semantic_labels();
 	test_moving_block_rigid_with_vehicle();
 	test_moving_block_shutter_timing();

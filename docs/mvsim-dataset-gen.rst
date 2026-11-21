@@ -168,6 +168,24 @@ noise and calibration sigmas:
 - ``mixed_pixel_probability``: where neighbor rays hit different surfaces
   (one lies off the other's tangent plane), the return is, with this
   probability, a range between both, as in real sensors at depth edges.
+- ``echo_separation``: enables a beam model instead (it needs
+  ``beam_divergence_deg`` > 0, and ``mixed_pixel_probability`` must be 0).
+  Each ray samples its footprint with seven sub-rays: its axis and six rays
+  on the cone of half the divergence. Their hits closer than this distance
+  [m] along the beam merge into one echo, at their mean range weighted by the
+  received power :math:`\cos\theta / r^2`, and the strongest echo is the
+  return. The range spread of that echo replaces the
+  :math:`r \, \delta \tan\theta` term (up to its value at 80 deg of
+  incidence, beyond which real sensors are not noisier), so that an object
+  narrower than the footprint spreads its returns only over its own depth. At a depth edge,
+  two surfaces within the separation give a return between both, the same
+  in every sweep for a still sensor; farther apart, the return comes from the
+  stronger one. The point is still reported along the ray's axis, and the
+  ray's axis must hit something for a return.
+- ``detection_range``: the range [m] at which a surface seen at normal
+  incidence is still detected: a return needs
+  :math:`\cos\theta / r^2 \geq 1 / R^2` (with the beam model, the echo's
+  power over its seven sub-rays). 0 disables it.
 - ``beam_elevation_std_deg``, ``beam_azimuth_std_deg``,
   ``beam_range_bias_std``: per-beam calibration errors, drawn once per run
   from ``calibration_seed``. Rays sample the scene along the perturbed
@@ -176,6 +194,7 @@ noise and calibration sigmas:
 The stock 3D LiDAR definitions expose them as the XML variables
 ``sensor_range_std_noise_per_meter``, ``sensor_beam_divergence_deg``,
 ``sensor_max_incidence_deg``, ``sensor_mixed_pixel_probability``,
+``sensor_echo_separation``, ``sensor_detection_range``,
 ``sensor_beam_elevation_std_deg``, ``sensor_beam_azimuth_std_deg``,
 ``sensor_beam_range_bias_std`` and ``sensor_calibration_seed`` (as
 ``<include>`` attributes or environment variables).
@@ -207,7 +226,9 @@ and ``instance``: the tags of the object its ray hit. Labels never change
 the samples: the points are the same as without ``--labels``, for the same
 seed. A mixed return (see ``mixed_pixel_probability``) keeps the labels of
 the surface its own ray hit, unless ``--mixed-return-label N`` gives all of
-them class ``N`` and instance 0 instead.
+them class ``N`` and instance 0 instead. With the beam model, a return has
+the labels of the strongest hit of its echo, and an echo whose hits lie on
+more than one surface is a mixed return.
 
 Output
 ------
