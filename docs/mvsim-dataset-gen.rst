@@ -176,8 +176,9 @@ noise and calibration sigmas:
   received power :math:`\cos\theta / r^2`, and the strongest echo is the
   return. The range spread of that echo replaces the
   :math:`r \, \delta \tan\theta` term (up to its value at 80 deg of
-  incidence, beyond which real sensors are not noisier), so that an object
-  narrower than the footprint spreads its returns only over its own depth. At a depth edge,
+  incidence, and at most 0.15 m: real sensors measured at any incidence are
+  not noisier), so that an object narrower than the footprint spreads its
+  returns only over its own depth. At a depth edge,
   two surfaces within the separation give a return between both, the same
   in every sweep for a still sensor; farther apart, the return comes from the
   stronger one. The point is still reported along the ray's axis, and the

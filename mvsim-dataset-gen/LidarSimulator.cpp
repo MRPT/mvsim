@@ -163,6 +163,12 @@ constexpr double kMinFootprintCos = 0.1;
  * the range noise; real sensors measured beyond it are not noisier. */
 constexpr double kBeamMaxSpreadIncidenceDeg = 80.0;
 
+/** Beam model: largest footprint spread [m] that adds to the range noise. A
+ * longer echo shifts the detected range rather than spreading it further:
+ * real sensors measured at any incidence are not noisier than this spread
+ * gives (about 4 cm). */
+constexpr double kBeamMaxSpread = 0.15;
+
 /** Sub-ray directions of a beam of full divergence `divergence` [rad] about
  * the unit vector `dir`: the axis first, then six rays on the cone of half
  * that angle, two of them in the vertical plane of the axis. */
@@ -543,13 +549,13 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 				}
 				// Gaussian noise, constant plus proportional to range, and the
 				// spread of the echo, at most that of a plane seen at
-				// kBeamMaxSpreadIncidenceDeg:
+				// kBeamMaxSpreadIncidenceDeg and kBeamMaxSpread:
 				const double sigma = std::sqrt(
 					mrpt::square(opts.rangeStdNoise) +
 					mrpt::square(opts.rangeStdNoisePerMeter * range));
 				const double maxSpread =
 					range * beamDivergence * std::tan(mrpt::DEG2RAD(kBeamMaxSpreadIncidenceDeg));
-				const double spread = std::min(echo.spread, maxSpread);
+				const double spread = std::min({echo.spread, maxSpread, kBeamMaxSpread});
 				range += sigma * unitNoise(colRng);
 				range += spread * unitUniform(colRng);
 				if (calibrated)
