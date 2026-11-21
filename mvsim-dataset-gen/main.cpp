@@ -370,6 +370,8 @@ int main(int argc, char** argv)
 				opts->beamDivergenceDeg = em.beamDivergenceDeg;
 				opts->maxIncidenceDeg = em.maxIncidenceDeg;
 				opts->mixedPixelProbability = em.mixedPixelProbability;
+				opts->echoSeparation = em.echoSeparation;
+				opts->detectionRange = em.detectionRange;
 				drawCalibrationErrors(
 					*opts, model->vertRays(), em.beamElevationStdDeg * noiseScale,
 					em.beamAzimuthStdDeg * noiseScale, em.beamRangeBiasStd * noiseScale,

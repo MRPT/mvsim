@@ -17,6 +17,7 @@
 #endif
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <optional>
@@ -148,6 +149,188 @@ void castRayOnObjects(
 		hit = localHit;
 		hitScene = &po.object->scene;
 	}
+}
+
+/** Number of sub-rays of the beam model: the beam axis and six rays around
+ * it. */
+constexpr int kBeamRays = 7;
+
+/** Share of the beam energy of the axis sub-ray and of each of the six
+ * others. A Gaussian beam whose full width at half maximum is the
+ * divergence has half the axis intensity on the cone of the six. */
+constexpr double kAxisWeight = 0.25;
+constexpr double kRingWeight = 0.125;
+
+/** Smallest incidence cosine used for the footprint spread: beyond about 84
+ * deg, the spread stays that of 84 deg. */
+constexpr double kMinFootprintCos = 0.1;
+
+/** Beam model: largest incidence angle [deg] whose footprint spread grows
+ * the range noise; real sensors measured beyond it are not noisier. */
+constexpr double kBeamMaxSpreadIncidenceDeg = 80.0;
+
+/** Beam model: largest footprint spread [m] that adds to the range noise. A
+ * longer echo shifts the detected range rather than spreading it further:
+ * real sensors measured at any incidence are not noisier than this spread
+ * gives (about 4 cm). */
+constexpr double kBeamMaxSpread = 0.15;
+
+/** Beam model: two sub-ray hits lie on the same surface if each is within
+ * this distance [m] of the other's tangent plane. */
+constexpr double kSameSurfaceTolerance = 0.05;
+
+/** Geometry of the beam model's sub-rays, the same for every ray of a sweep:
+ * the cosine and sine of half the divergence, and the direction of each of
+ * the six outer sub-rays around the axis. */
+struct BeamPattern
+{
+	double cosHalf = 1;
+	double sinHalf = 0;
+	std::array<double, kBeamRays - 1> cosPhi{};
+	std::array<double, kBeamRays - 1> sinPhi{};
+};
+
+BeamPattern beamPattern(double divergence)
+{
+	BeamPattern bp;
+	bp.cosHalf = std::cos(0.5 * divergence);
+	bp.sinHalf = std::sin(0.5 * divergence);
+	for (int k = 0; k < kBeamRays - 1; k++)
+	{
+		// Two of them in the vertical plane of the axis:
+		const double phi = mrpt::DEG2RAD(90.0 + 60.0 * k);
+		bp.cosPhi[k] = std::cos(phi);
+		bp.sinPhi[k] = std::sin(phi);
+	}
+	return bp;
+}
+
+/** Sub-ray directions about the unit vector `dir`: the axis first, then six
+ * rays on the cone of half the divergence. */
+std::array<TPoint3D, kBeamRays> beamDirections(const TPoint3D& dir, const BeamPattern& bp)
+{
+	// A horizontal unit vector normal to the axis, and the one normal to both:
+	TPoint3D h(-dir.y, dir.x, 0);
+	const double hn = h.norm();
+	h = hn > 1e-9 ? h * (1.0 / hn) : TPoint3D(0, 1, 0);
+	const TPoint3D v(
+		dir.y * h.z - dir.z * h.y, dir.z * h.x - dir.x * h.z, dir.x * h.y - dir.y * h.x);
+	std::array<TPoint3D, kBeamRays> out;
+	out[0] = dir;
+	for (int k = 1; k < kBeamRays; k++)
+	{
+		out[k] = dir * bp.cosHalf + (h * bp.cosPhi[k - 1] + v * bp.sinPhi[k - 1]) * bp.sinHalf;
+	}
+	return out;
+}
+
+/** One sub-ray hit of the beam model. */
+struct BeamSample
+{
+	double range = 0;
+	double cosIncidence = 0;
+	/** Received power: the sub-ray's share of the beam, times
+	 * cos(incidence) / r^2. */
+	double power = 0;
+	double lambertCos = 0;
+	TPoint3D hitWorld;
+	TPoint3D normalWorld;
+	uint16_t label = 0;
+	uint16_t instance = 0;
+};
+
+BeamSample beamSample(
+	const mvsim::rt::Ray& ray, const mvsim::rt::Hit& hit, const mvsim::rt::RayScene& hitScene,
+	double weight)
+{
+	const double dn =
+		ray.dir.x * hit.normal.x + ray.dir.y * hit.normal.y + ray.dir.z * hit.normal.z;
+	BeamSample s;
+	s.range = hit.t;
+	s.cosIncidence = std::abs(dn);
+	s.power = weight * std::max(s.cosIncidence, 1e-9) / std::max(hit.t * hit.t, 1e-12);
+	s.lambertCos = std::max(0.0, -dn);
+	s.hitWorld = ray.at(hit.t);
+	s.normalWorld = hit.normal;
+	const auto& prim = hitScene.primitive(hit.primIndex);
+	s.label = prim.semanticClass;
+	s.instance = prim.instanceId;
+	return s;
+}
+
+/** Whether two sub-ray hits lie on the same surface: each within
+ * kSameSurfaceTolerance of the other's tangent plane. */
+bool sameSurface(const BeamSample& a, const BeamSample& b)
+{
+	const TPoint3D d = b.hitWorld - a.hitWorld;
+	const double offA =
+		std::abs(d.x * a.normalWorld.x + d.y * a.normalWorld.y + d.z * a.normalWorld.z);
+	const double offB =
+		std::abs(d.x * b.normalWorld.x + d.y * b.normalWorld.y + d.z * b.normalWorld.z);
+	return offA <= kSameSurfaceTolerance && offB <= kSameSurfaceTolerance;
+}
+
+/** An echo of the beam model: a run of sub-ray hits, in range order, each
+ * on the surface of the previous one or closer to it than the echo
+ * separation. */
+struct Echo
+{
+	double range = 0;  //!< Power-weighted mean range
+	double minRange = 0;
+	double maxRange = 0;
+	double power = 0;  //!< Sum of the power of its hits
+	size_t strongest = 0;  //!< Index of its hit of largest power
+	bool mixed = false;	 //!< It joins hits on different surfaces
+};
+
+/** The echo of largest power among the hits in `samples` (sorted by range
+ * on return, which must not be empty). Hits on one surface form one echo,
+ * however long; hits on different surfaces closer than `separation` along
+ * the beam merge into one too, as the pulses they return overlap. */
+Echo strongestEcho(std::vector<BeamSample>& samples, double separation)
+{
+	std::stable_sort(
+		samples.begin(), samples.end(),
+		[](const BeamSample& a, const BeamSample& b) { return a.range < b.range; });
+	Echo best;
+	size_t first = 0;
+	bool mixed = false;
+	for (size_t i = 1; i <= samples.size(); i++)
+	{
+		if (i < samples.size())
+		{
+			const bool same = sameSurface(samples[i - 1], samples[i]);
+			if (same || samples[i].range - samples[i - 1].range < separation)
+			{
+				mixed = mixed || !same;
+				continue;
+			}
+		}
+		// Hits [first, i) form one echo:
+		Echo e;
+		e.strongest = first;
+		e.mixed = mixed;
+		e.minRange = samples[first].range;
+		e.maxRange = samples[i - 1].range;
+		double weightedRange = 0;
+		for (size_t j = first; j < i; j++)
+		{
+			e.power += samples[j].power;
+			weightedRange += samples[j].power * samples[j].range;
+			if (samples[j].power > samples[e.strongest].power)
+			{
+				e.strongest = j;
+			}
+		}
+		e.range = weightedRange / e.power;
+		if (e.power > best.power)
+		{
+			best = e;
+		}
+		first = i;
+		mixed = false;
+	}
+	return best;
 }
 
 /** The geometric intensity stand-in: Lambertian cos(incidence)/r^2 (the
@@ -296,7 +479,10 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	// order so the resulting point cloud does not depend on thread
 	// scheduling either.
 	std::vector<std::vector<ColumnPoint>> perColumn(nCols);
-	const bool mixedReturns = opts.mixedPixelProbability > 0;
+	const double beamDivergence = mrpt::DEG2RAD(opts.beamDivergenceDeg);
+	// The beam model replaces the mixed returns between neighbor rays:
+	const bool beamModel = opts.echoSeparation > 0 && beamDivergence > 0;
+	const bool mixedReturns = opts.mixedPixelProbability > 0 && !beamModel;
 	std::vector<std::vector<MixedReturnInfo>> mixedInfo(mixedReturns ? nCols : 0);
 
 	// Drawn only with the error model enabled, so that the default noise
@@ -310,7 +496,12 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 	}
 	const double cosMaxIncidence =
 		opts.maxIncidenceDeg > 0 ? std::cos(mrpt::DEG2RAD(opts.maxIncidenceDeg)) : -1.0;
-	const double beamDivergence = mrpt::DEG2RAD(opts.beamDivergenceDeg);
+	// Received power of a Lambertian surface at normal incidence and the
+	// detection range:
+	const double minPower = opts.detectionRange > 0 ? 1.0 / mrpt::square(opts.detectionRange) : 0.0;
+	const BeamPattern beam = beamPattern(beamDivergence);
+	const double maxSpreadPerMeter =
+		beamDivergence * std::tan(mrpt::DEG2RAD(kBeamMaxSpreadIncidenceDeg));
 
 	auto processColumn = [&](int col)
 	{
@@ -331,6 +522,8 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			poseObjects(movingObjects, sweepStartEpochSeconds + tColRel, rayOrg);
 
 		std::vector<ColumnPoint>& out = perColumn[col];
+		std::vector<BeamSample> samples;
+		samples.reserve(kBeamRays);
 		for (int ring = 0; ring < nRings; ring++)
 		{
 			const TPoint3D localDir = model.rayDirection(ring, col);
@@ -357,7 +550,82 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			}
 
 			double range = hit->t;
-			if (realistic)
+			// Lambertian cosine for the geometric intensity stand-in, and the
+			// surface the return comes from:
+			double lambertCos = std::max(
+				0.0, -(ray.dir.x * hit->normal.x + ray.dir.y * hit->normal.y +
+					   ray.dir.z * hit->normal.z));
+			const auto& hitPrim = hitScene->primitive(hit->primIndex);
+			uint16_t label = hitPrim.semanticClass;
+			uint16_t instance = hitPrim.instanceId;
+			if (realistic && beamModel)
+			{
+				// The beam samples its footprint with several sub-rays; the
+				// strongest echo among their hits is the return. Hits beyond the
+				// incidence cutoff return nothing:
+				samples.clear();
+				const auto keep = [&](const BeamSample& bs)
+				{
+					if (bs.cosIncidence >= cosMaxIncidence)
+					{
+						samples.push_back(bs);
+					}
+				};
+				keep(beamSample(ray, *hit, *hitScene, kAxisWeight));
+				const TPoint3D axis = sampleDir * (1.0 / sampleDir.norm());
+				const auto dirs = beamDirections(axis, beam);
+				for (int k = 1; k < kBeamRays; k++)
+				{
+					mvsim::rt::Ray sub = ray;
+					sub.dir = rotateOnly(sensorPoseThisColumn, dirs[k]);
+					auto subHit = scene.castRay(sub);
+					const mvsim::rt::RayScene* subScene = &scene;
+					castRayOnObjects(posedObjects, sub, subHit, subScene);
+					if (subHit)
+					{
+						keep(beamSample(sub, *subHit, *subScene, kRingWeight));
+					}
+				}
+				if (samples.empty())
+				{
+					continue;  // too oblique: no return
+				}
+				const Echo echo = strongestEcho(samples, opts.echoSeparation);
+				if (echo.power < minPower)
+				{
+					continue;  // too weak to be detected
+				}
+				const BeamSample& s = samples[echo.strongest];
+				lambertCos = s.lambertCos;
+				label = s.label;
+				instance = s.instance;
+				if (echo.mixed && opts.mixedReturnLabel)
+				{
+					label = *opts.mixedReturnLabel;
+					instance = 0;
+				}
+				// The echo's spread, up to that of a plane seen at
+				// kBeamMaxSpreadIncidenceDeg and kBeamMaxSpread, around its mean
+				// range but within its range interval; then Gaussian noise,
+				// constant plus proportional to range:
+				const double spread = std::min(
+					{echo.maxRange - echo.minRange, maxSpreadPerMeter * echo.range,
+					 kBeamMaxSpread});
+				const double lowest = echo.minRange + 0.5 * spread;
+				const double highest = std::max(lowest, echo.maxRange - 0.5 * spread);
+				const double center = std::clamp(echo.range, lowest, highest);
+				const double sigma = std::sqrt(
+					mrpt::square(opts.rangeStdNoise) +
+					mrpt::square(opts.rangeStdNoisePerMeter * echo.range));
+				range = center;
+				range += sigma * unitNoise(colRng);
+				range += spread * unitUniform(colRng);
+				if (calibrated)
+				{
+					range += opts.beamRangeBias.at(ring);
+				}
+			}
+			else if (realistic)
 			{
 				const double dirNorm = ray.dir.norm();
 				const double cosIncidence =
@@ -370,6 +638,10 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 				{
 					continue;  // too oblique: no return
 				}
+				if (cosIncidence / std::max(range * range, 1e-12) < minPower)
+				{
+					continue;  // too weak to be detected
+				}
 				// Gaussian noise, constant plus proportional to range:
 				const double sigma = std::sqrt(
 					mrpt::square(opts.rangeStdNoise) +
@@ -380,7 +652,7 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 				// uniformly over a range interval:
 				if (footprint > 0)
 				{
-					const double c = std::clamp(cosIncidence, 0.1, 1.0);
+					const double c = std::clamp(cosIncidence, kMinFootprintCos, 1.0);
 					const double tanIncidence = std::sqrt(1.0 - c * c) / c;
 					range += footprint * tanIncidence * unitUniform(colRng);
 				}
@@ -408,19 +680,14 @@ mrpt::obs::CObservationPointCloud::Ptr mvsim_dataset_gen::simulateLidarSweep(
 			cp.z = static_cast<float>(localPt.z);
 			cp.t = tField;
 			cp.ring = static_cast<uint16_t>(ring);
-			// Lambertian cosine for the geometric intensity stand-in:
-			const double lambertCos = std::max(
-				0.0, -(ray.dir.x * hit->normal.x + ray.dir.y * hit->normal.y +
-					   ray.dir.z * hit->normal.z));
 			if (opts.generateIntensity)
 			{
 				cp.intensity = geometricIntensity(lambertCos, range);
 			}
 			if (opts.generateLabels)
 			{
-				const auto& prim = hitScene->primitive(hit->primIndex);
-				cp.label = prim.semanticClass;
-				cp.instance = prim.instanceId;
+				cp.label = label;
+				cp.instance = instance;
 			}
 			if (mixedReturns)
 			{

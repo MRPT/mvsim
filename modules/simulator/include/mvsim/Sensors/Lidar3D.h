@@ -76,6 +76,16 @@ class Lidar3D : public SensorBase
 		/** Probability of a mixed return (a range between both surfaces)
 		 * at a depth edge between neighbor rays. */
 		double mixedPixelProbability = 0;
+		/** Beam model (0: disabled; needs beamDivergenceDeg > 0, and replaces
+		 * mixedPixelProbability): each ray samples its footprint with
+		 * several sub-rays; hits on one surface, or on different surfaces
+		 * closer than this distance along the beam [m], form one echo, and
+		 * the strongest echo is returned. */
+		double echoSeparation = 0;
+		/** Detection range at normal incidence [m] (0: disabled): a return
+		 * needs cos(incidence) / r^2 >= 1 / detectionRange^2, the received
+		 * power of a Lambertian surface. */
+		double detectionRange = 0;
 		/** Per-beam calibration errors (std of the elevation and azimuth
 		 * offsets [deg], and of the range bias [m]), drawn once per run from
 		 * calibrationSeed. Rays sample the scene along the perturbed
