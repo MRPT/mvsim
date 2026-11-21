@@ -31,6 +31,7 @@
 #include <functional>
 #include <iomanip>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <vector>
 
@@ -495,21 +496,28 @@ bool samePoints(const std::string& a, const std::string& b)
 	return true;
 }
 
-// The demo world labels the ground 1, the pillars 2 (instances 1-3) and the
-// crates 3 (instance 4 for crate1, none for crate2).
-void test_beam_model()
+/** Sets every error-model variable of the stock sensor definitions to 0. */
+void resetErrorModelEnv()
 {
-	const char* vars[] = {
-		"sensor_beam_divergence_deg", "sensor_echo_separation", "sensor_detection_range",
-		"sensor_mixed_pixel_probability"};
-	for (const char* v : vars)
+	for (const char* v :
+		 {"sensor_range_std_noise_per_meter", "sensor_beam_divergence_deg",
+		  "sensor_max_incidence_deg", "sensor_mixed_pixel_probability", "sensor_echo_separation",
+		  "sensor_detection_range", "sensor_beam_elevation_std_deg", "sensor_beam_azimuth_std_deg",
+		  "sensor_beam_range_bias_std", "sensor_calibration_seed"})
 	{
 		setEnv(v, "0");
 	}
+}
+
+void test_beam_model()
+{
+	resetErrorModelEnv();
 	const std::string outBase = tempPath("beambase.rawlog");
 	const std::string outBeam1 = tempPath("beam1.rawlog");
 	const std::string outBeam2 = tempPath("beam2.rawlog");
 	const std::string outNear = tempPath("beamnear.rawlog");
+	const std::string outNearLegacy = tempPath("beamnearlegacy.rawlog");
+	const std::string outCutoff = tempPath("beamcutoff.rawlog");
 	const std::string outBad = tempPath("beambad.rawlog");
 	EXPECT_TRUE(runDatasetGen(outBase, "--duration 0.5 --seed 5") == 0);
 
@@ -517,14 +525,26 @@ void test_beam_model()
 	setEnv("sensor_echo_separation", "0.5");
 	EXPECT_TRUE(runDatasetGen(outBeam1, "--duration 0.5 --seed 5") == 0);
 	EXPECT_TRUE(runDatasetGen(outBeam2, "--duration 0.5 --seed 5") == 0);
-	// A short detection range drops the far returns:
+	// A short detection range drops the far returns, with or without the beam
+	// model:
 	setEnv("sensor_detection_range", "4.0");
 	EXPECT_TRUE(runDatasetGen(outNear, "--duration 0.5 --seed 5") == 0);
+	setEnv("sensor_echo_separation", "0");
+	EXPECT_TRUE(runDatasetGen(outNearLegacy, "--duration 0.5 --seed 5") == 0);
 	setEnv("sensor_detection_range", "0");
-	// The beam model replaces the mixed returns between neighbor rays:
+	// The incidence cutoff applies to every sub-ray hit:
+	setEnv("sensor_echo_separation", "0.5");
+	setEnv("sensor_max_incidence_deg", "60");
+	EXPECT_TRUE(runDatasetGen(outCutoff, "--duration 0.5 --seed 5") == 0);
+	setEnv("sensor_max_incidence_deg", "0");
+	// The beam model replaces the mixed returns between neighbor rays, and it
+	// needs a beam divergence:
 	setEnv("sensor_mixed_pixel_probability", "0.5");
 	EXPECT_TRUE(runDatasetGen(outBad, "--duration 0.5 --seed 5") != 0);
 	setEnv("sensor_mixed_pixel_probability", "0");
+	setEnv("sensor_beam_divergence_deg", "0");
+	EXPECT_TRUE(runDatasetGen(outBad, "--duration 0.5 --seed 5") != 0);
+	resetErrorModelEnv();
 
 	EXPECT_FALSE(filesEqual(outBase, outBeam1));
 	EXPECT_TRUE(filesEqual(outBeam1, outBeam2));
@@ -533,46 +553,164 @@ void test_beam_model()
 	const SweepStats base = loadAndInspect(outBase);
 	const SweepStats beam = loadAndInspect(outBeam1);
 	const SweepStats nearOnly = loadAndInspect(outNear);
+	const SweepStats nearLegacy = loadAndInspect(outNearLegacy);
+	const SweepStats cutoff = loadAndInspect(outCutoff);
 	EXPECT_TRUE(base.nObs == beam.nObs);
 	EXPECT_LT(
 		std::abs(static_cast<double>(beam.totalPoints) - static_cast<double>(base.totalPoints)),
 		0.01 * static_cast<double>(base.totalPoints));
 	EXPECT_LT(nearOnly.totalPoints, beam.totalPoints);
 	EXPECT_LT(nearOnly.maxRange, 4.5);
+	EXPECT_LT(nearLegacy.totalPoints, base.totalPoints);
+	EXPECT_LT(nearLegacy.maxRange, 4.5);
+	EXPECT_LT(cutoff.totalPoints, beam.totalPoints);
 
-	// Echoes that span two surfaces are mixed returns, labeled as such if
-	// asked for, and labels do not change the samples:
-	const std::string outMixed = tempPath("beammixed.rawlog");
-	const std::string outMixedPlain = tempPath("beammixedplain.rawlog");
-	setEnv("sensor_echo_separation", "5.0");
-	EXPECT_TRUE(runDatasetGen(outMixedPlain, "--duration 0.5 --seed 9") == 0);
-	EXPECT_TRUE(
-		runDatasetGen(outMixed, "--duration 0.5 --seed 9 --labels --mixed-return-label 99") == 0);
-	for (const char* v : vars)
-	{
-		setEnv(v, "0");
-	}
-	EXPECT_TRUE(samePoints(outMixedPlain, outMixed));
-	size_t nMixed = 0;
-	for (const auto& sweep : loadSweeps(outMixed))
-	{
-		const auto& pts = sweep.pts;
-		for (size_t i = 0; pts && i < pts->size(); i++)
-		{
-			if (pts->getPointField_uint16(i, "label") == 99)
-			{
-				nMixed++;
-			}
-		}
-	}
-	EXPECT_GT(nMixed, 0U);
-
-	for (const auto& f : {outBase, outBeam1, outBeam2, outNear, outBad, outMixed, outMixedPlain})
+	for (const auto& f : {outBase, outBeam1, outBeam2, outNear, outNearLegacy, outCutoff, outBad})
 	{
 		removeOutputs(f);
 	}
 }
 
+/** Ground points of a beam-model render against the exact ranges: one plane
+ * stays one echo however oblique, so its returns keep their footprint spread
+ * and their mean range. The demo world labels the ground 1. */
+void test_beam_model_oblique_ground()
+{
+	resetErrorModelEnv();
+	setEnv("sensor_std_noise", "0");
+	const std::string outExact = tempPath("beamexact.rawlog");
+	const std::string outBeam = tempPath("beamground.rawlog");
+	EXPECT_TRUE(runDatasetGen(outExact, "--duration 0.5 --seed 3 --labels") == 0);
+	// A separation far below the range spread of the footprint on the ground:
+	setEnv("sensor_beam_divergence_deg", "0.3");
+	setEnv("sensor_echo_separation", "0.05");
+	EXPECT_TRUE(runDatasetGen(outBeam, "--duration 0.5 --seed 3 --labels") == 0);
+	resetErrorModelEnv();
+	setEnv("sensor_std_noise", "0.005");
+
+	const auto exact = loadSweeps(outExact);
+	const auto beam = loadSweeps(outBeam);
+	EXPECT_TRUE(exact.size() == beam.size() && !exact.empty());
+	// Per ring: count, sum and sum of squares of the range error, and the
+	// relative errors, over the ground beyond 8 m. Errors over 1 m are returns
+	// from another object at the edge of the footprint, counted apart.
+	struct RingStats
+	{
+		size_t n = 0;
+		double sum = 0;
+		double sumSq = 0;
+		double sumRel = 0;
+	};
+	std::map<int, RingStats> rings;
+	size_t nOther = 0;
+	size_t nGround = 0;
+	for (size_t s = 0; s < std::min(exact.size(), beam.size()); s++)
+	{
+		const auto& a = exact[s].pts;
+		const auto& b = beam[s].pts;
+		// The same rays return, in the same order:
+		EXPECT_TRUE(a && b && a->size() == b->size());
+		if (!a || !b || a->size() != b->size())
+		{
+			continue;
+		}
+		for (size_t i = 0; i < a->size(); i++)
+		{
+			if (a->getPointField_uint16(i, "label") != 1)
+			{
+				continue;
+			}
+			float ax = 0;
+			float ay = 0;
+			float az = 0;
+			float bx = 0;
+			float by = 0;
+			float bz = 0;
+			a->getPoint(i, ax, ay, az);
+			b->getPoint(i, bx, by, bz);
+			const double ra = std::sqrt(ax * ax + ay * ay + az * az);
+			if (ra < 8.0)
+			{
+				continue;
+			}
+			nGround++;
+			const double d = std::sqrt(bx * bx + by * by + bz * bz) - ra;
+			if (std::abs(d) > 1.0)
+			{
+				nOther++;
+				continue;
+			}
+			RingStats& rs = rings[a->getPointField_uint16(i, "ring")];
+			rs.n++;
+			rs.sum += d;
+			rs.sumSq += d * d;
+			rs.sumRel += d / ra;
+		}
+	}
+	EXPECT_GT(nGround, 100U);
+	EXPECT_LT(nOther, nGround / 50);
+	size_t nRings = 0;
+	for (const auto& [ring, rs] : rings)
+	{
+		if (rs.n < 50)
+		{
+			continue;
+		}
+		nRings++;
+		const double mean = rs.sum / static_cast<double>(rs.n);
+		const double stdDev = std::sqrt(std::max(0.0, rs.sumSq / rs.n - mean * mean));
+		std::printf(
+			"Beam model, ground ring %d: %zu points, range error mean %.3f m, std %.3f m\n", ring,
+			rs.n, mean, stdDev);
+		// The footprint spread (capped at 0.15 m: std 0.043 m) is still there:
+		EXPECT_GT(stdDev, 0.03);
+		EXPECT_LT(stdDev, 0.1);
+		// No range jump to a part of the footprint, beyond the power weighting:
+		EXPECT_LT(std::abs(rs.sumRel / static_cast<double>(rs.n)), 0.03);
+	}
+	EXPECT_GT(nRings, 1U);
+
+	removeOutputs(outExact);
+	removeOutputs(outBeam);
+}
+
+/** Mixed echoes at depth edges: labeled as such if asked for, a small share
+ * of the points, and labels do not change the samples. */
+void test_beam_model_mixed_labels()
+{
+	resetErrorModelEnv();
+	const std::string outMixed = tempPath("beammixed.rawlog");
+	const std::string outMixedPlain = tempPath("beammixedplain.rawlog");
+	setEnv("sensor_beam_divergence_deg", "0.3");
+	setEnv("sensor_echo_separation", "1.0");
+	EXPECT_TRUE(runDatasetGen(outMixedPlain, "--duration 0.5 --seed 9") == 0);
+	EXPECT_TRUE(
+		runDatasetGen(outMixed, "--duration 0.5 --seed 9 --labels --mixed-return-label 99") == 0);
+	resetErrorModelEnv();
+	EXPECT_TRUE(samePoints(outMixedPlain, outMixed));
+	size_t nMixed = 0;
+	size_t nPoints = 0;
+	for (const auto& sweep : loadSweeps(outMixed))
+	{
+		const auto& pts = sweep.pts;
+		for (size_t i = 0; pts && i < pts->size(); i++)
+		{
+			nPoints++;
+			if (pts->getPointField_uint16(i, "label") == 99)
+			{
+				nMixed++;
+				EXPECT_TRUE(pts->getPointField_uint16(i, "instance") == 0);
+			}
+		}
+	}
+	EXPECT_GT(nMixed, 0U);
+	EXPECT_LT(nMixed, nPoints / 20);
+	removeOutputs(outMixed);
+	removeOutputs(outMixedPlain);
+}
+
+// The demo world labels the ground 1, the pillars 2 (instances 1-3) and the
+// crates 3 (instance 4 for crate1, none for crate2).
 void test_semantic_labels()
 {
 	const std::string outPlain = tempPath("plain.rawlog");
@@ -1081,6 +1219,8 @@ int main()
 	test_noiseless_differs_from_noisy();
 	test_realistic_error_model();
 	test_beam_model();
+	test_beam_model_oblique_ground();
+	test_beam_model_mixed_labels();
 	test_semantic_labels();
 	test_moving_block_rigid_with_vehicle();
 	test_moving_block_shutter_timing();

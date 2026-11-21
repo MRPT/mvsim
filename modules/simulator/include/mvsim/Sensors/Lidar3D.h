@@ -78,8 +78,9 @@ class Lidar3D : public SensorBase
 		double mixedPixelProbability = 0;
 		/** Beam model (0: disabled; needs beamDivergenceDeg > 0, and replaces
 		 * mixedPixelProbability): each ray samples its footprint with
-		 * several sub-rays, whose hits closer than this distance along the
-		 * beam [m] merge into one echo; the strongest echo is returned. */
+		 * several sub-rays; hits on one surface, or on different surfaces
+		 * closer than this distance along the beam [m], form one echo, and
+		 * the strongest echo is returned. */
 		double echoSeparation = 0;
 		/** Detection range at normal incidence [m] (0: disabled): a return
 		 * needs cos(incidence) / r^2 >= 1 / detectionRange^2, the received

@@ -53,8 +53,8 @@ struct LidarSimOptions
 	bool generateLabels = false;
 
 	/** If set, mixed returns (ranges between two surfaces, see
-	 * mixedPixelProbability) get this semantic class and instance 0, instead
-	 * of the labels of the surface their own ray hit. */
+	 * mixedPixelProbability and echoSeparation) get this semantic class and
+	 * instance 0, instead of the labels of the surface their own ray hit. */
 	std::optional<uint16_t> mixedReturnLabel;
 
 	/** \name Realistic error model (see mvsim::Lidar3D::ErrorModel); all
@@ -64,8 +64,9 @@ struct LidarSimOptions
 	double beamDivergenceDeg = 0.0;
 	double maxIncidenceDeg = 0.0;
 	double mixedPixelProbability = 0.0;
-	/** Beam model: sub-ray hits closer than this along the beam [m] merge
-	 * into one echo (0: disabled; needs beamDivergenceDeg > 0). */
+	/** Beam model: sub-ray hits on different surfaces closer than this along
+	 * the beam [m] merge into one echo (0: disabled; needs
+	 * beamDivergenceDeg > 0). */
 	double echoSeparation = 0.0;
 	/** Detection range at normal incidence [m] (0: disabled). */
 	double detectionRange = 0.0;
