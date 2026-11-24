@@ -406,7 +406,7 @@ void Client::doAdvertiseTopic(
 
 	MRPT_LOG_DEBUG_FMT(
 		"Advertising topic `%s` [%s] on endpoint `%s`", topicName.c_str(),
-		descriptor->full_name().c_str(), ipat.endpoint.c_str());
+		std::string(descriptor->full_name()).c_str(), ipat.endpoint.c_str());
 
 	// MRPT_LOG_INFO_STREAM("Type: " << descriptor->DebugString());
 
@@ -468,7 +468,8 @@ void Client::doAdvertiseService(
 
 	MRPT_LOG_DEBUG_FMT(
 		"Advertising service `%s` [%s->%s] on endpoint `%s`", serviceName.c_str(),
-		descIn->full_name().c_str(), descOut->full_name().c_str(), assignedPort.c_str());
+		std::string(descIn->full_name()).c_str(), std::string(descOut->full_name()).c_str(),
+		assignedPort.c_str());
 
 	mvsim_msgs::AdvertiseServiceRequest req;
 	req.set_servicename(ips.serviceName);
@@ -525,8 +526,8 @@ void Client::publishTopic(const std::string& topicName, const google::protobuf::
 		mrpt::format(
 			"Topic `%s` has type `%s`, but expected `%s` from former call to "
 			"advertiseTopic()?",
-			topicName.c_str(), msg.GetDescriptor()->name().c_str(),
-			ipat.descriptor->name().c_str()));
+			topicName.c_str(), std::string(msg.GetDescriptor()->name()).c_str(),
+			std::string(ipat.descriptor->name()).c_str()));
 
 #if CPPZMQ_VERSION >= ZMQ_MAKE_VERSION(4, 7, 1)
 	ASSERT_(ipat.pubSocket);

@@ -64,7 +64,7 @@ variant_t recursiveParse(const std::string& typeName, const std::string& seriali
 	{
 		using this_t = std::variant_alternative_t<IDX, variant_t>;
 		this_t v;
-		const std::string expectedName = v.GetTypeName();
+		const std::string expectedName{v.GetTypeName()};
 		if (expectedName == typeName)
 		{
 			bool ok = v.ParseFromString(serializedData);

@@ -22,7 +22,7 @@ void mvsim::sendMessage(const google::protobuf::MessageLite& m, zmq::socket_t& s
 	mrpt::io::CMemoryStream buf;
 	auto arch = mrpt::serialization::archiveFrom(buf);
 
-	arch << m.GetTypeName();
+	arch << std::string(m.GetTypeName());
 	arch << m.SerializeAsString();
 
 	zmq::message_t msg(buf.getRawBufferData(), buf.getTotalBytesCount());
@@ -49,7 +49,7 @@ void mvsim::parseMessage(const zmq::message_t& msg, google::protobuf::MessageLit
 {
 	const auto [typeName, serializedData] = internal::parseMessageToParts(msg);
 
-	ASSERT_EQUAL_(typeName, out.GetTypeName());
+	ASSERT_EQUAL_(typeName, std::string(out.GetTypeName()));
 
 	bool ok = out.ParseFromString(serializedData);
 	if (!ok)
