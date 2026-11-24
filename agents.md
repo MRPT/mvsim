@@ -276,7 +276,7 @@ Uses ZMQ/Protobuf `Client`. Examples: `subscriber-example.py`, `mvsim-teleop.py`
 - Optional features guarded by `MVSIM_HAS_ZMQ` and `MVSIM_HAS_PROTOBUF` compile-time defines.
 - Protobuf: found through its own CMake config first (protobuf >= 22 needs it to link Abseil), else FindProtobuf (distro 3.x packages), also in the exported `cmake/mvsim-config.cmake.in`; link `protobuf::libprotobuf`. Newer protobuf returns `absl::string_view` from `GetTypeName()`/`name()`/`full_name()`: wrap them in `std::string(...)` where a `std::string` or `char*` is needed.
 - Linux CI (`.github/workflows/build-linux.yml`, `.circleci/config.yml`) installs MRPT 3.x from `ppa:joseluisblancoc/mrpt3-stable` (releases) and `ppa:joseluisblancoc/mrpt3-develop` (nightlies). Both PPAs only cover Ubuntu 24.04 and 26.04. GitHub runs both PPAs; CircleCI runs stable only.
-- ROS 2 CI (`.github/workflows/ci-ros2.yml`): colcon build and tests in `ros:<distro>-ros-base` containers (humble, jazzy, kilted, lyrical), with dependencies from `package.xml` via rosdep and the `ros2-testing` apt repository (which carries MRPT 3).
+- ROS 2 CI (`.github/workflows/ci-ros2.yml`): colcon build and tests in `ros:<distro>-ros-base` containers (humble, jazzy, lyrical), with dependencies from `package.xml` via rosdep and the `ros2-testing` apt repository (which carries MRPT 3).
 
 ---
 
