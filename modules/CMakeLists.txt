@@ -7,10 +7,15 @@ include(CMakePackageConfigHelpers)
 option(MVSIM_WITH_PROTOBUF "Use protobuf for communications" ON)
 
 if (MVSIM_WITH_PROTOBUF)
-	find_package(Protobuf)
-	if (Protobuf_FOUND)
-		#
-	else()
+	# protobuf >= 22 needs Abseil, which only the protobuf::libprotobuf target of its own
+	# CMake config links in (module-compatible mode also defines protobuf_generate_cpp()).
+	# Distro packages of protobuf 3.x ship no config: FindProtobuf defines the same target.
+	set(protobuf_MODULE_COMPATIBLE ON CACHE BOOL "Define FindProtobuf variables and functions")
+	find_package(Protobuf CONFIG QUIET)
+	if (NOT Protobuf_FOUND)
+		find_package(Protobuf)
+	endif()
+	if (NOT Protobuf_FOUND)
 		set(MVSIM_WITH_PROTOBUF OFF CACHE BOOL "Use protobuf for communications" FORCE)
 	endif()
 endif()

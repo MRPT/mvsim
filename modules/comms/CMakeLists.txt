@@ -26,6 +26,7 @@ set(PACKAGE_DEPENDENCIES
   mrpt_io
   mrpt_serialization
   mvsim-msgs
+  Protobuf
   )
 mvsim_common_target_settings(${MODULE_NAME})
 
@@ -34,7 +35,7 @@ target_link_libraries(${PROJECT_NAME}
 	${CMAKE_THREAD_LIBS_INIT}
 	${ZeroMQ_LIBRARY}
  PUBLIC
-	${Protobuf_LIBRARIES}
+	protobuf::libprotobuf
 	mrpt::mrpt_system
 	mrpt::mrpt_io
 	mrpt::mrpt_serialization
