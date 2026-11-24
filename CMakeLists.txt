@@ -8,7 +8,7 @@
 # |   See COPYING                                                           |
 # +-------------------------------------------------------------------------+
 
-cmake_minimum_required(VERSION 3.9) # for CMAKE_MATCH_1
+cmake_minimum_required(VERSION 3.9...3.31) # 3.9: for CMAKE_MATCH_1
 
 if("$ENV{ROS_VERSION}" STREQUAL "2")
   set(DETECTED_ROS2 TRUE)
