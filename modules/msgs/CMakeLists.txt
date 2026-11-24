@@ -81,8 +81,10 @@ source_group(ProtobufMessages FILES
   ${PROTO_PY_FILES}
   ${PROTOBUF_DEFINITION_FILES}
 )
-set(PACKAGE_DEPENDENCIES "")
+set(PACKAGE_DEPENDENCIES Protobuf)
 mvsim_common_target_settings(${MODULE_NAME})
+
+target_link_libraries(${PROJECT_NAME} PUBLIC protobuf::libprotobuf)
 
 if (MVSIM_WITH_PROTOBUF)
 

@@ -3,7 +3,15 @@
 include(CMakeFindDependencyMacro)
 
 foreach(dep @PACKAGE_DEPENDENCIES@)
-  find_dependency(${dep})
+  if (dep STREQUAL "Protobuf")
+    # Same lookup as mvsim itself: protobuf >= 22 needs its own config to link Abseil.
+    find_package(Protobuf CONFIG QUIET)
+    if (NOT Protobuf_FOUND)
+      find_dependency(Protobuf)
+    endif()
+  else()
+    find_dependency(${dep})
+  endif()
 endforeach()
 
 include(${CMAKE_CURRENT_LIST_DIR}/@TARGETNAME_@-targets.cmake)
