@@ -13,6 +13,7 @@ from mvsim_msgs import ObservationLidar2D_pb2
 from mvsim_msgs import SrvShutdown_pb2
 from mvsim_msgs import SrvGetPose_pb2
 
+import socket
 import subprocess
 import time
 import os
@@ -48,30 +49,48 @@ def call_mvsim_shutdown(client):
     client.callService('shutdown', req.SerializeToString())
 
 
+def free_tcp_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
+
 if __name__ == "__main__":
+
+    # A port of our own for the server and the client (both read it from the
+    # environment), so this test never talks to another MVSim instance
+    # running at the same time (e.g. other packages' tests):
+    os.environ['MVSIM_SERVER_PORT'] = str(free_tcp_port())
 
     # Important: Run with simulated slow-down time (--realtime-factor),
     # to prevent timeout in real-time check asserts within mvsim
     # when run inside cloud docker containers:
     #
-    subprocess.Popen([MVSIM_CLI_EXE_PATH, "launch",
-                     TESTS_DIR + "/test-still-lidar2d.world.xml",
-                     "--headless", "-v", "DEBUG", "--realtime-factor", "0.1"])
+    server = subprocess.Popen([MVSIM_CLI_EXE_PATH, "launch",
+                               TESTS_DIR + "/test-still-lidar2d.world.xml",
+                               "--headless", "-v", "DEBUG", "--realtime-factor", "0.1"])
+    try:
+        client = pymvsim_comms.mvsim.Client()
+        print("Connecting to server...", flush=True)
+        client.connect()
+        print("Connected successfully.", flush=True)
 
-    client = pymvsim_comms.mvsim.Client()
-    print("Connecting to server...", flush=True)
-    client.connect()
-    print("Connected successfully.", flush=True)
+        # Subscribe to "/r1/laser1_scan"
+        client.subscribeTopic("/r1/laser1_scan", onMessage)
 
-    # Subscribe to "/r1/laser1_scan"
-    client.subscribeTopic("/r1/laser1_scan", onMessage)
+        for i in range(300):
+            if TEST_PASSED:
+                break
+            print("Running and waiting...", flush=True)
+            time.sleep(0.25)
 
-    for i in range(300):
-        if TEST_PASSED:
-            break
-        print("Running and waiting...", flush=True)
-        time.sleep(0.25)
-
-    call_mvsim_shutdown(client)
+        call_mvsim_shutdown(client)
+    finally:
+        # Never leave the simulator running (the test would hang until timeout):
+        try:
+            server.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            server.kill()
+            server.wait()
 
     assert(TEST_PASSED)
