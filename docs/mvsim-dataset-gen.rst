@@ -342,8 +342,11 @@ format, ``mvsim/dataset_gt/1``:
   outside the episodes: ``no_fix``, ``single``, ``dgps``, ``rtk_float``,
   ``rtk_fixed``), ``horizontal_std``, ``vertical_std``, ``noise_scale``, and
   ``episodes``: ``{t_start, t_end, quality, horizontal_std, vertical_std,
-  injected_error_m}``, with absolute times, ``quality: outage`` for
-  outages, and the ENU position error added during the episode.
+  injected_error_m}``, the intervals ``[t_start, t_end)`` (absolute times)
+  where any of them differs from the nominal values: the values in effect,
+  from all the ``<event>`` tags covering the interval (overlapping events
+  give one episode per combination), ``quality: outage`` for outages, and
+  the ENU position error added to the readings.
 - ``odometry`` (the wheel odometry stream, ``odom``, at the vehicle frame):
   ``trans_noise_rel``, ``rot_noise_rel``.
 

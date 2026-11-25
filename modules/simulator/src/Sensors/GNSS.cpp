@@ -270,6 +270,31 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 	SensorBase::reportNewObservation(last_obs_, context);
 }
 
+GNSS::Quality GNSS::qualityAt(double t) const
+{
+	Quality q;
+	q.fix_type = fix_type_;
+	q.horizontal_std_noise = horizontal_std_noise_;
+	q.vertical_std_noise = vertical_std_noise_;
+	for (const auto& ev : events_)
+	{
+		if (t < ev.start || t >= ev.end)
+		{
+			continue;
+		}
+		if (ev.outage)
+		{
+			q.outage = true;
+			return q;
+		}
+		q.fix_type = ev.fix_type.value_or(q.fix_type);
+		q.horizontal_std_noise = ev.horizontal_std_noise.value_or(q.horizontal_std_noise);
+		q.vertical_std_noise = ev.vertical_std_noise.value_or(q.vertical_std_noise);
+		q.offset = q.offset + ev.offset;
+	}
+	return q;
+}
+
 mrpt::obs::CObservationGPS::Ptr GNSS::simulateReading(
 	const mrpt::poses::CPose3D& vehiclePose, double t, const mrpt::Clock::time_point& stamp,
 	mrpt::random::CRandomGenerator& rng, double noiseScale) const
@@ -312,25 +337,15 @@ mrpt::obs::CObservationGPS::Ptr GNSS::simulateReading(
 	}
 
 	// Quality and degradation events:
-	auto fixType = fix_type_;
-	double hStd = horizontal_std_noise_;
-	double vStd = vertical_std_noise_;
-	mrpt::math::TPoint3D offset = {0, 0, 0};
-	for (const auto& ev : events_)
+	const Quality q = qualityAt(t);
+	if (q.outage)
 	{
-		if (t < ev.start || t >= ev.end)
-		{
-			continue;
-		}
-		if (ev.outage)
-		{
-			return {};	// no data at all
-		}
-		fixType = ev.fix_type.value_or(fixType);
-		hStd = ev.horizontal_std_noise.value_or(hStd);
-		vStd = ev.vertical_std_noise.value_or(vStd);
-		offset = offset + ev.offset;
+		return {};	// no data at all
 	}
+	const auto fixType = q.fix_type;
+	const double hStd = q.horizontal_std_noise;
+	const double vStd = q.vertical_std_noise;
+	const mrpt::math::TPoint3D offset = q.offset;
 
 	auto outObs = CObservationGPS::Create(obs_model_);
 
@@ -354,7 +369,7 @@ mrpt::obs::CObservationGPS::Ptr GNSS::simulateReading(
 	const mrpt::topography::TGeodeticCoords& georefCoord = georef.georefCoord;
 
 	// Warn the user if settings not set:
-	if (georefCoord.lat.decimal_value == 0 && georefCoord.lon.decimal_value == 0)
+	if (!georef.is_set)
 	{
 		thread_local bool once = false;
 		if (!once)

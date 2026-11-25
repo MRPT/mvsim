@@ -13,12 +13,16 @@
 #include <mrpt/math/CQuaternion.h>
 #include <mvsim/Sensors/GNSS.h>
 
+#include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <initializer_list>
+#include <limits>
 #include <sstream>
+#include <vector>
 
 using namespace mvsim_dataset_gen;
 
@@ -66,6 +70,70 @@ std::string num(double v)
 	return s;
 }
 
+/** Whether YAML readers would take this plain scalar for a number, a
+ * boolean or null. */
+bool readsAsNonString(const std::string& v)
+{
+	char* end = nullptr;
+	std::strtod(v.c_str(), &end);
+	if (end != v.c_str() && *end == '\0')
+	{
+		return true;
+	}
+	std::string low;
+	for (const char c : v)
+	{
+		low += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	}
+	for (const char* w : {"true", "false", "yes", "no", "on", "off", "y", "n", "null"})
+	{
+		if (low == w)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/** A string as a YAML scalar: plain if it only has safe characters, else
+ * double-quoted and escaped. */
+std::string str(const std::string& v)
+{
+	const bool plain = !v.empty() && !readsAsNonString(v) &&
+					   std::all_of(
+						   v.begin(), v.end(),
+						   [](char c)
+						   {
+							   return std::isalnum(static_cast<unsigned char>(c)) || c == '_' ||
+									  c == '-' || c == '.' || c == '/';
+						   }) &&
+					   v.front() != '-' && v.front() != '.';
+	if (plain)
+	{
+		return v;
+	}
+	std::string s = "\"";
+	for (const char c : v)
+	{
+		if (c == '"' || c == '\\')
+		{
+			s += '\\';
+			s += c;
+		}
+		else if (static_cast<unsigned char>(c) < 0x20)
+		{
+			char buf[8];
+			std::snprintf(buf, sizeof(buf), "\\x%02x", static_cast<unsigned char>(c));
+			s += buf;
+		}
+		else
+		{
+			s += c;
+		}
+	}
+	return s + "\"";
+}
+
 std::string vec(std::initializer_list<double> values)
 {
 	std::string s = "[";
@@ -90,9 +158,9 @@ void writeSensorHeader(
 {
 	mrpt::math::CQuaternionDouble q;
 	p.getAsQuaternion(q);
-	o << "  " << label << ":\n";
+	o << "  " << str(label) << ":\n";
 	o << "    type: " << type << "\n";
-	o << "    frame_id: " << label << "\n";
+	o << "    frame_id: " << str(label) << "\n";
 	o << "    pose_in_vehicle:\n";
 	o << "      xyz: " << vec({p.x(), p.y(), p.z()}) << "\n";
 	o << "      quat_xyzw: " << vec({q.x(), q.y(), q.z(), q.r()}) << "\n";
@@ -176,7 +244,7 @@ void writeImu(std::ostream& o, const ImuGroundTruth& imu)
 	writeImuChannel(o, "accelerometer", imu.accelerometer);
 	if (!imu.biasFile.empty())
 	{
-		o << "      bias_file: " << imu.biasFile << "\n";
+		o << "      bias_file: " << str(imu.biasFile) << "\n";
 	}
 }
 
@@ -190,19 +258,52 @@ void writeGnss(std::ostream& o, const GnssGroundTruth& g, double tStart)
 	o << "      horizontal_std: " << num(s.horizontalStdNoise()) << "\n";
 	o << "      vertical_std: " << num(s.verticalStdNoise()) << "\n";
 	o << "      noise_scale: " << num(g.noiseScale) << "\n";
-	o << "      # Episodes [t_start, t_end) with another quality, reported sigmas, or an\n"
-		 "      # injected ENU error [m] (which with rtk_fixed is a false fix).\n"
-		 "      # Overlapping episodes add their errors; the last one sets the rest.\n";
-	o << "      episodes:" << (s.events().empty() ? " []" : "") << "\n";
+	o << "      # Intervals [t_start, t_end) whose quality, reported sigmas or injected\n"
+		 "      # ENU error [m] (with rtk_fixed, a false fix) differ from the above: the\n"
+		 "      # values in effect, from all the <event> tags covering them.\n";
+
+	// The quality is constant between consecutive event boundaries:
+	std::vector<double> cuts;
 	for (const auto& ev : s.events())
 	{
-		const std::string quality =
-			ev.outage ? "outage" : mvsim::GNSS::fixTypeName(ev.fix_type.value_or(s.fixType()));
-		o << "        - {t_start: " << num(tStart + ev.start) << ", t_end: " << num(tStart + ev.end)
-		  << ", quality: " << quality
-		  << ", horizontal_std: " << num(ev.horizontal_std_noise.value_or(s.horizontalStdNoise()))
-		  << ", vertical_std: " << num(ev.vertical_std_noise.value_or(s.verticalStdNoise()))
-		  << ", injected_error_m: " << vec3(ev.offset * g.noiseScale) << "}\n";
+		cuts.push_back(ev.start);
+		cuts.push_back(ev.end);
+	}
+	std::sort(cuts.begin(), cuts.end());
+	cuts.erase(std::unique(cuts.begin(), cuts.end()), cuts.end());
+	const mvsim::GNSS::Quality nominal = s.qualityAt(-std::numeric_limits<double>::infinity());
+	struct Episode
+	{
+		double start;
+		double end;
+		mvsim::GNSS::Quality q;
+	};
+	std::vector<Episode> episodes;
+	for (size_t i = 0; i + 1 < cuts.size(); i++)
+	{
+		const auto q = s.qualityAt(cuts[i]);
+		if (q == nominal)
+		{
+			continue;
+		}
+		if (!episodes.empty() && episodes.back().end == cuts[i] && episodes.back().q == q)
+		{
+			episodes.back().end = cuts[i + 1];
+		}
+		else
+		{
+			episodes.push_back({cuts[i], cuts[i + 1], q});
+		}
+	}
+	o << "      episodes:" << (episodes.empty() ? " []" : "") << "\n";
+	for (const auto& e : episodes)
+	{
+		o << "        - {t_start: " << num(tStart + e.start) << ", t_end: " << num(tStart + e.end)
+		  << ", quality: "
+		  << (e.q.outage ? std::string("outage") : mvsim::GNSS::fixTypeName(e.q.fix_type))
+		  << ", horizontal_std: " << num(e.q.horizontal_std_noise)
+		  << ", vertical_std: " << num(e.q.vertical_std_noise)
+		  << ", injected_error_m: " << vec3(e.q.offset * g.noiseScale) << "}\n";
 	}
 }
 
@@ -222,11 +323,11 @@ void mvsim_dataset_gen::writeGroundTruthYaml(const std::string& path, const Data
 		 "# Times: seconds, in the clock of the trajectory. Each observation is\n"
 		 "# stamped at its true sampling time plus clock_offset_s.\n";
 	o << "format: mvsim/dataset_gt/1\n";
-	o << "world: " << gt.worldFile << "\n";
-	o << "vehicle: " << gt.vehicle << "\n";
-	o << "base_frame: " << gt.baseFrame << "\n";
-	o << "rawlog: " << gt.rawlogFile << "\n";
-	o << "vehicle_ground_truth: " << gt.vehicleGtFile << "\n";
+	o << "world: " << str(gt.worldFile) << "\n";
+	o << "vehicle: " << str(gt.vehicle) << "\n";
+	o << "base_frame: " << str(gt.baseFrame) << "\n";
+	o << "rawlog: " << str(gt.rawlogFile) << "\n";
+	o << "vehicle_ground_truth: " << str(gt.vehicleGtFile) << "\n";
 	o << "time: {start: " << num(gt.tStart) << ", end: " << num(gt.tEnd) << "}\n";
 	o << "lidar_shutter: " << gt.shutter << "\n";
 	o << "seed: " << gt.seed << "\n";

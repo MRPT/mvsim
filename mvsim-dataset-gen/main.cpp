@@ -43,6 +43,7 @@
 #include <random>
 #include <set>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -367,8 +368,7 @@ int main(int argc, char** argv)
 			return 1;
 		}
 		const auto& georef = world.georeferenceOptions();
-		const bool hasGeoref =
-			georef.georefCoord.lat.decimal_value != 0 || georef.georefCoord.lon.decimal_value != 0;
+		const bool hasGeoref = georef.is_set;
 		if (!gnssSensors.empty() && !hasGeoref)
 		{
 			std::cerr << "Error: vehicle '" << vehicleName
@@ -654,21 +654,29 @@ int main(int argc, char** argv)
 		}
 
 		// Merge all sensor streams into the rawlog in strict global stamp
-		// order (min-heap over each generator's next stamp):
-		using Entry = std::pair<double, size_t>;
+		// order (min-heap over each generator's next stamp, in exact clock
+		// ticks, then its sampling time and index):
+		using Entry = std::tuple<int64_t, double, size_t>;
+		const auto offsetTicks = [](const SensorGen& g)
+		{ return mrpt::Clock::duration(std::llround(g.clockOffset * 1e7)); };
+		const auto entryOf = [&](size_t i) -> Entry
+		{
+			const auto stamp = timeFromSeconds(gens[i].nextTime) + offsetTicks(gens[i]);
+			return {stamp.time_since_epoch().count(), gens[i].nextTime, i};
+		};
 		std::priority_queue<Entry, std::vector<Entry>, std::greater<>> pq;
 		for (size_t i = 0; i < gens.size(); i++)
 		{
 			if (gens[i].nextTime <= t1 + 1e-9)
 			{
-				pq.push({gens[i].nextTime + gens[i].clockOffset, i});
+				pq.push(entryOf(i));
 			}
 		}
 		mrpt::system::CTicTac progressTimer;
 		double lastProgressPrintTime = 0.0;
 		while (!pq.empty())
 		{
-			const size_t idx = pq.top().second;
+			const size_t idx = std::get<2>(pq.top());
 			pq.pop();
 			auto& g = gens[idx];
 			const double t = g.nextTime;  // sampling time
@@ -678,14 +686,14 @@ int main(int argc, char** argv)
 				if (g.clockOffset != 0)
 				{
 					// In exact clock ticks: epoch seconds in a double are coarser.
-					obs->timestamp += mrpt::Clock::duration(std::llround(g.clockOffset * 1e7));
+					obs->timestamp += offsetTicks(g);
 				}
 				arch << *obs;
 			}
 			g.nextTime += g.period;
 			if (g.nextTime <= t1 + 1e-9)
 			{
-				pq.push({g.nextTime + g.clockOffset, idx});
+				pq.push(entryOf(idx));
 			}
 
 			const double elapsed = progressTimer.Tac();

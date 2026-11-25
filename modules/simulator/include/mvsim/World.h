@@ -1056,6 +1056,9 @@ class World : public mrpt::system::COutputLogger
 
 		void parse_from(const rapidxml::xml_node<char>& node, COutputLogger& logger);
 
+		/// Whether the world has a <georeference> tag (any origin, even 0, 0).
+		bool is_set = false;
+
 		/// Latitude/longitude/height of the world (0,0,0) frame.
 		mrpt::topography::TGeodeticCoords georefCoord;
 

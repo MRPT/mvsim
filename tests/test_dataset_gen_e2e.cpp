@@ -1468,9 +1468,9 @@ void test_clock_offsets()
 
 void test_gnss_generator()
 {
-	// Exact readings (zero noise), an RTK float episode, a false fix and an
-	// outage. Event times are relative to the trajectory start, and away from
-	// the 0.1 s sample times.
+	// Exact readings (zero noise), an RTK float episode (with a position jump
+	// inside), a false fix and an outage. Event times are relative to the
+	// trajectory start, and away from the 0.1 s sample times.
 	const std::string world = tempPath("gnss.world.xml");
 	{
 		std::ofstream f(world);
@@ -1497,6 +1497,7 @@ void test_gnss_generator()
       <horizontal_std_noise>0</horizontal_std_noise> <vertical_std_noise>0</vertical_std_noise>
       <fix_type>rtk_fixed</fix_type>
       <event start="0.25" end="0.55" fix_type="rtk_float" horizontal_std_noise="0.3" vertical_std_noise="0.5" />
+      <event start="0.35" end="0.45" offset="0 0 1.0" />
       <event start="0.55" end="0.75" offset="2.0 -1.0 0.5" />
       <event start="0.75" end="0.95" outage="true" />
     </sensor>
@@ -1566,13 +1567,22 @@ void test_gnss_generator()
 	EXPECT_TRUE(gnss["type"].as<std::string>() == "gnss");
 	EXPECT_NEAR(gnss["pose_in_vehicle"]["xyz"](0).as<double>(), 0.2, 1e-12);
 	EXPECT_NEAR(gnss["rate_hz"].as<double>(), 10.0, 1e-9);
+	// The values in effect over each interval, overlaps included:
 	const auto& episodes = gnss["intrinsics"]["episodes"];
-	EXPECT_TRUE(episodes.size() == 3);
-	EXPECT_TRUE(episodes(0)["quality"].as<std::string>() == "rtk_float");
-	EXPECT_TRUE(episodes(1)["quality"].as<std::string>() == "rtk_fixed");
-	EXPECT_TRUE(episodes(2)["quality"].as<std::string>() == "outage");
-	EXPECT_NEAR(episodes(1)["t_start"].as<double>(), kTrajT0 + 0.55, 1e-6);
-	EXPECT_NEAR(episodes(1)["injected_error_m"](0).as<double>(), 2.0, 1e-12);
+	EXPECT_TRUE(episodes.size() == 5);
+	const std::vector<std::string> qualities = {
+		"rtk_float", "rtk_float", "rtk_float", "rtk_fixed", "outage"};
+	for (size_t i = 0; i < std::min<size_t>(episodes.size(), qualities.size()); i++)
+	{
+		EXPECT_TRUE(episodes(i)["quality"].as<std::string>() == qualities[i]);
+	}
+	EXPECT_NEAR(episodes(1)["t_start"].as<double>(), kTrajT0 + 0.35, 1e-6);
+	EXPECT_NEAR(episodes(1)["horizontal_std"].as<double>(), 0.3, 1e-12);
+	EXPECT_NEAR(episodes(1)["injected_error_m"](2).as<double>(), 1.0, 1e-12);
+	EXPECT_NEAR(episodes(2)["injected_error_m"](2).as<double>(), 0.0, 1e-12);
+	EXPECT_NEAR(episodes(3)["t_start"].as<double>(), kTrajT0 + 0.55, 1e-6);
+	EXPECT_NEAR(episodes(3)["horizontal_std"].as<double>(), 0.0, 1e-12);
+	EXPECT_NEAR(episodes(3)["injected_error_m"](0).as<double>(), 2.0, 1e-12);
 
 	for (const auto& f : {out, outIdeal})
 	{
