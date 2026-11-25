@@ -251,13 +251,26 @@ void ImageWriter::worker()
 			queue_.pop_front();
 			busy_++;
 		}
-		const bool ok = job.first.saveToFile(job.second);
+		// Exceptions must not leave the thread (that would terminate the
+		// program): they are reported by write() and finish().
+		std::string error;
+		try
+		{
+			if (!job.first.saveToFile(job.second))
+			{
+				error = "Cannot write image '" + job.second + "'";
+			}
+		}
+		catch (const std::exception& e)
+		{
+			error = "Cannot write image '" + job.second + "': " + e.what();
+		}
 		{
 			std::lock_guard<std::mutex> lck(mtx_);
 			busy_--;
-			if (!ok && error_.empty())
+			if (!error.empty() && error_.empty())
 			{
-				error_ = "Cannot write image '" + job.second + "'";
+				error_ = error;
 			}
 		}
 		cv_.notify_all();
@@ -328,6 +341,11 @@ DepthCameraSim::DepthCameraSim(
 	{
 		depth_.errors = sensor.depthErrors();
 	}
+	// Range images are 16-bit: every depth in range must fit.
+	ASSERTMSG_(
+		!sensor.senseDepth() || depth_.clipMax / depth_.unit <= 65535.0,
+		"'" + sensor.getName() +
+			"': depth_clip_max / depth_resolution must be at most 65535 (16-bit depth images)");
 
 	// One render gives both images if both cameras see the same view, as in
 	// the interactive simulator:
@@ -440,8 +458,9 @@ mrpt::obs::CObservation3DRangeScan::Ptr DepthCameraSim::simulate(
 	}
 	if (obs->hasRangeImage)
 	{
-		// MRPT's external range image format (it adds the .bin extension):
-		obs->rangeImage_convertToExternalStorage(files_.name("_depth"), files_.imagesDir);
+		// MRPT's external range image format. With an explicit extension: MRPT
+		// replaces any extension with .bin, and a label may contain dots.
+		obs->rangeImage_convertToExternalStorage(files_.name("_depth.bin"), files_.imagesDir);
 	}
 	timing_.write += tic.Tac();
 	timing_.frames++;
