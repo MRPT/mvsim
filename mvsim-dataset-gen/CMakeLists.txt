@@ -14,6 +14,8 @@ add_executable(${PROJECT_NAME}
 	ImuSimulator.cpp
 	OdometrySimulator.h
 	OdometrySimulator.cpp
+	GroundTruthYaml.h
+	GroundTruthYaml.cpp
 )
 target_link_libraries(
 	${PROJECT_NAME}
