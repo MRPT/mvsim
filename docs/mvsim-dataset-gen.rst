@@ -2,7 +2,9 @@ mvsim-dataset-gen
 ===================
 
 ``mvsim-dataset-gen`` is an offline CLI tool that generates simulated sensor
-datasets (MRPT ``.rawlog`` files) from a world XML and a **prescribed**
+datasets (MRPT ``.rawlog`` files: 3D LiDAR, IMU, GNSS and wheel odometry,
+with the exact ground truth of the trajectory and of every sensor) from a
+world XML and a **prescribed**
 ground-truth trajectory, with no interactive GUI and no OpenGL rendering
 anywhere in the pipeline. Its 3D LiDAR is simulated by exact mathematical
 ray casting, not by rasterizing depth images (unlike the interactive
@@ -128,8 +130,22 @@ Sensors
 - **IMU**: one sample per ``imu`` sensor, computed by differentiating the
   prescribed trajectory (an exact SO(3) log for angular velocity, a
   finite-difference second derivative of position for proper
-  acceleration), reusing the same noise model (white noise + bias random
-  walk) as the interactive simulator.
+  acceleration), reusing the same error model as the interactive simulator:
+  white noise, bias random walk, and the deterministic errors (constant
+  bias, scale factors and axis misalignment, see the IMU section of
+  :doc:`sensors`). Each IMU has its own noise stream. With a bias random
+  walk, the bias of every sample is written to
+  ``<output>.<sensor_label>.bias.txt``.
+
+- **GNSS**: one reading per ``gnss`` sensor and period, at the antenna
+  (the sensor pose on the vehicle), with the sensor's fix type, the
+  reported ENU covariance from its noise parameters, and its ``<event>``
+  episodes (quality changes, outages, position jumps; see the GNSS section
+  of :doc:`sensors`), whose ``start``/``end`` times count from the first
+  pose of the trajectory. A jump with the ``rtk_fixed`` fix type is a false
+  fix. Readings are ``CObservationGPS`` with an NMEA GGA message (its
+  ``fix_quality`` is 4 for RTK fixed, 5 for RTK float) and ``fix_type``.
+  The world needs a ``<georeference>``.
 
 - **Wheel odometry**: dead-reckoned from the trajectory's planar
   projection, with noise proportional to the motion magnitude
@@ -138,17 +154,37 @@ Sensors
   interactive simulator derives it from the stepped Box2D wheel state
   instead), so this tool synthesizes it directly from the trajectory.
 
-All 3 sensor streams are merged into the ``.rawlog`` in strict global
-chronological order.
+All sensor streams are merged into the ``.rawlog`` in strict global order
+of their timestamps.
+
+Clock offsets
+-------------
+
+Real sensors stamp their data with some delay or advance. To simulate it,
+``--clock-offset <sensor label>=<seconds>`` (repeatable) shifts the
+timestamps of one stream: each observation is sampled at its true time
+``t`` and stamped ``t + offset`` (positive: stamped late). The data itself
+does not change, and the LiDAR per-point ``t`` field stays relative to the
+observation timestamp. The label of the wheel odometry stream is ``odom``.
+Ground-truth files keep the true times.
+
+.. code-block:: console
+
+   $ mvsim-dataset-gen world.xml --trajectory ego.tum -o out.rawlog \
+       --clock-offset imu1=0.004 --clock-offset gnss1=0.1
 
 Noise and reproducibility
 --------------------------
 
 Per-sensor noise sigmas come from the world XML by default (the same
 values the interactive simulator would use). ``--noiseless`` forces every
-sigma to zero, for generating an ideal ground-truth dataset;
-``--noise-scale k`` scales every sigma instead. ``--seed`` fixes the RNG
-seed; the same seed always produces a byte-identical ``.rawlog``.
+sigma to zero, for generating an ideal ground-truth dataset: it also removes
+the LiDAR per-beam errors, the IMU constant bias, scale factors and
+misalignment, and the GNSS event offsets (GNSS fix types, reported
+covariances and outages stay). ``--noise-scale k`` scales every sigma
+instead, and the GNSS event offsets, but not the IMU deterministic errors.
+``--seed`` fixes the RNG seed; the same seed always produces a
+byte-identical ``.rawlog``.
 
 Realistic LiDAR errors
 ----------------------
@@ -247,6 +283,79 @@ Output
   sensor (vehicle pose composed with the sensor's mount offset) — this is
   what trajectory-error tooling (e.g. ``evo``) actually wants to compare
   against.
+- ``<output>.gt.yaml``: ground truth of every sensor (see below).
+- ``<output>.<sensor_label>.bias.txt``: for an IMU with a bias random walk,
+  the bias of each sample: ``t`` and the gyroscope and accelerometer biases
+  (x, y, z).
+
+Sensor ground truth
+-------------------
+
+``<output>.gt.yaml`` records, for every generated stream, the exact values
+in effect: the sensor pose on the vehicle, the clock offset, the rate, and
+the sensor intrinsics and errors, including those drawn at random (LiDAR
+per-beam errors). Times are seconds in the clock of the trajectory. The
+format, ``mvsim/dataset_gt/1``:
+
+.. code-block:: yaml
+
+   format: mvsim/dataset_gt/1
+   world: world.xml            # as given on the command line
+   vehicle: r1
+   base_frame: base_link       # the vehicle frame
+   rawlog: out.rawlog
+   vehicle_ground_truth: out.gt.tum
+   time: {start: 100, end: 280}
+   lidar_shutter: rolling
+   seed: 0
+   noiseless: false
+   noise_scale: 1
+   georeference: {...}         # if the world has one
+   sensors:
+     <sensor label>:
+       type: lidar3d           # lidar3d | imu | gnss | odometry
+       frame_id: <sensor label>
+       pose_in_vehicle:        # T_vehicle_sensor
+         xyz: [x, y, z]
+         quat_xyzw: [qx, qy, qz, qw]
+         ypr_deg: [yaw, pitch, roll]
+       clock_offset_s: 0       # stamp minus true sampling time
+       rate_hz: 10
+       intrinsics: {...}       # one block per type, below
+
+``intrinsics`` of each sensor type:
+
+- ``lidar3d``: ``rings``, ``horz_nrays``, ``min_range``, ``max_range``,
+  ``elevations_deg`` (nominal, ring 0 first, ascending), ``noise`` (the
+  error model parameters in effect), ``calibration_seed``,
+  ``beam_error_std`` and ``beam_errors``, one row per ring:
+  ``{ring, d_elevation_deg, d_azimuth_deg, d_range_m}``. The angles are the
+  perturbed (sampled) ray minus the nominal one, along which points are
+  reported; ``d_range_m`` is the reported range minus the true one. Without
+  per-beam errors, they are all zero.
+- ``imu``: ``gyroscope`` and ``accelerometer``, each with ``bias`` (the
+  constant bias), ``scale`` (diagonal), ``misalignment`` (the full 3x3
+  matrix M, zero diagonal), ``sensitivity_matrix`` (diag(scale) (I + M),
+  which multiplies the true value) and ``noise``
+  (``white_noise_std``, ``random_walk_std``); and ``bias_file`` if written.
+- ``gnss``: the antenna is ``pose_in_vehicle.xyz``. ``quality`` (fix type
+  outside the episodes: ``no_fix``, ``single``, ``dgps``, ``rtk_float``,
+  ``rtk_fixed``), ``horizontal_std``, ``vertical_std``, ``noise_scale``, and
+  ``episodes``: ``{t_start, t_end, quality, horizontal_std, vertical_std,
+  injected_error_m}``, with absolute times, ``quality: outage`` for
+  outages, and the ENU position error added during the episode.
+- ``odometry`` (the wheel odometry stream, ``odom``, at the vehicle frame):
+  ``trans_noise_rel``, ``rot_noise_rel``.
+
+Reserved for camera streams (not generated yet), with the same common keys:
+
+- ``camera``: ``{width, height, fx, fy, cx, cy, distortion: {model:
+  none|plumb_bob|equidistant, coeffs: [...]}, rolling_shutter_line_time_s}``.
+- ``depth_camera``: as ``camera``, plus the depth errors ``{scale,
+  offset_m, radial: [...]}`` (a radial "bowl" term).
+- ``rgbd_camera``: ``rgb`` and ``depth`` sub-blocks, each with its own
+  ``pose_in_vehicle`` and the intrinsics of ``camera`` and
+  ``depth_camera``.
 
 Example
 -------

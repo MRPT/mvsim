@@ -9,8 +9,9 @@
 // mvsim-dataset-gen: offline, ray-traced (no OpenGL) simulated dataset
 // generator. Given a world XML (restricted to analytic geometry) and a
 // prescribed ground-truth trajectory, it writes an MRPT .rawlog with
-// ideal (or optionally noisy) simulated 3D LiDAR, IMU and wheel-odometry
-// data. See ~/plans/mvsim-lidar-simulator.md for the full design.
+// ideal (or optionally noisy) simulated 3D LiDAR, IMU, GNSS and
+// wheel-odometry data, plus the ground truth of the trajectory and of every
+// sensor. See docs/mvsim-dataset-gen.rst.
 
 #include <mrpt/core/exceptions.h>
 #include <mrpt/io/CFileGZOutputStream.h>
@@ -21,6 +22,7 @@
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/progress.h>
 #include <mrpt/system/string_utils.h>
+#include <mvsim/Sensors/GNSS.h>
 #include <mvsim/Sensors/IMU.h>
 #include <mvsim/Sensors/Lidar3D.h>
 #include <mvsim/VehicleBase.h>
@@ -29,7 +31,11 @@
 
 #include <CLI/CLI.hpp>
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -40,6 +46,7 @@
 #include <utility>
 #include <vector>
 
+#include "GroundTruthYaml.h"
 #include "ImuSimulator.h"
 #include "LidarSimulator.h"
 #include "OdometrySimulator.h"
@@ -131,11 +138,49 @@ std::vector<MovingObject> loadMovingBlocks(
 	}
 	return objects;
 }
+
+/** Parses the `--clock-offset <sensor label>=<seconds>` arguments. Throws on
+ * any invalid argument. */
+std::map<std::string, double> parseClockOffsets(const std::vector<std::string>& args)
+{
+	std::map<std::string, double> out;
+	for (const auto& arg : args)
+	{
+		const size_t eq = arg.find('=');
+		bool ok = eq != std::string::npos && eq != 0 && eq + 1 < arg.size();
+		double value = 0;
+		if (ok)
+		{
+			const std::string v = arg.substr(eq + 1);
+			char* end = nullptr;
+			value = std::strtod(v.c_str(), &end);
+			ok = end != v.c_str() && *end == '\0' && std::isfinite(value);
+		}
+		if (!ok)
+		{
+			THROW_EXCEPTION(
+				"Malformed --clock-offset '" + arg + "': expected <sensor label>=<seconds>");
+		}
+		if (!out.emplace(arg.substr(0, eq), value).second)
+		{
+			THROW_EXCEPTION(
+				"--clock-offset: sensor '" + arg.substr(0, eq) + "' given more than once");
+		}
+	}
+	return out;
+}
+
+/** File name of a path, without its directory. */
+std::string fileNameOf(const std::string& path)
+{
+	const size_t slash = path.find_last_of("/\\");
+	return slash == std::string::npos ? path : path.substr(slash + 1);
+}
 }  // namespace
 
 int main(int argc, char** argv)
 {
-	CLI::App cli{"mvsim-dataset-gen: ray-traced offline LiDAR/IMU dataset generator"};
+	CLI::App cli{"mvsim-dataset-gen: ray-traced offline LiDAR/IMU/GNSS dataset generator"};
 
 	std::string worldXmlPath;
 	std::string trajectoryPath;
@@ -156,6 +201,7 @@ int main(int argc, char** argv)
 	bool labels = false;
 	int mixedReturnLabel = -1;
 	std::vector<std::string> movingBlockArgs;
+	std::vector<std::string> clockOffsetArgs;
 
 	cli.add_option("world_xml", worldXmlPath, "World XML file (analytic geometry only)")
 		->required()
@@ -211,6 +257,12 @@ int main(int argc, char** argv)
 		   "instance 0 (default: the labels of the surface their ray hit)")
 		->check(CLI::Range(0, 65535))
 		->needs(labelsFlag);
+	cli.add_option(
+		   "--clock-offset", clockOffsetArgs,
+		   "Clock offset of a sensor stream, as <sensor label>=<seconds>: its observations are "
+		   "stamped at their sampling time plus this offset (the wheel odometry label is "
+		   "'odom'). Repeat the option for more sensors")
+		->allow_extra_args(false);
 	cli.add_option("--odom-rate", odomRateHz, "Wheel-odometry sample rate [Hz] (default: 10)")
 		->check(CLI::PositiveNumber);
 	cli.add_option(
@@ -290,9 +342,10 @@ int main(int argc, char** argv)
 					  << nPrimitives << " primitives have a semantic class.\n";
 		}
 
-		// Collect the LiDAR and IMU sensors aboard the ego vehicle:
+		// Collect the LiDAR, IMU and GNSS sensors aboard the ego vehicle:
 		std::vector<std::shared_ptr<mvsim::Lidar3D>> lidars;
 		std::vector<std::shared_ptr<mvsim::IMU>> imus;
+		std::vector<std::shared_ptr<mvsim::GNSS>> gnssSensors;
 		for (const auto& s : egoVehicle->getSensors())
 		{
 			if (auto l = std::dynamic_pointer_cast<mvsim::Lidar3D>(s); l)
@@ -303,12 +356,31 @@ int main(int argc, char** argv)
 			{
 				imus.push_back(i);
 			}
+			else if (auto g = std::dynamic_pointer_cast<mvsim::GNSS>(s); g)
+			{
+				gnssSensors.push_back(g);
+			}
 		}
 		if (lidars.empty())
 		{
 			std::cerr << "Error: vehicle '" << vehicleName << "' has no lidar3d sensor.\n";
 			return 1;
 		}
+		const auto& georef = world.georeferenceOptions();
+		const bool hasGeoref =
+			georef.georefCoord.lat.decimal_value != 0 || georef.georefCoord.lon.decimal_value != 0;
+		if (!gnssSensors.empty() && !hasGeoref)
+		{
+			std::cerr << "Error: vehicle '" << vehicleName
+					  << "' has a gnss sensor, but the world has no <georeference>.\n";
+			return 1;
+		}
+		const std::map<std::string, double> clockOffsets = parseClockOffsets(clockOffsetArgs);
+		const auto clockOffsetOf = [&](const std::string& label)
+		{
+			const auto it = clockOffsets.find(label);
+			return it == clockOffsets.end() ? 0.0 : it->second;
+		};
 
 		// Load the prescribed ground-truth trajectory:
 		TrajectorySource traj;
@@ -342,17 +414,23 @@ int main(int argc, char** argv)
 		mrpt::poses::CPose3DInterpolator gtVehicle;
 		std::map<std::string, mrpt::poses::CPose3DInterpolator> gtSensors;
 
-		// A per-sensor generator: produces one observation at `nextTime`,
-		// then advances by `period`. Sensors run at different rates, so all
-		// of them are merged into the rawlog in strict global time order via
-		// a min-heap below, rather than being written one sensor at a time.
+		// A per-sensor generator: produces one observation sampled at
+		// `nextTime` (or none, e.g. during a GNSS outage), then advances by
+		// `period`. Sensors run at different rates, so all of them are merged
+		// into the rawlog in strict global order of their stamps (sampling
+		// time plus `clockOffset`) via a min-heap below, rather than being
+		// written one sensor at a time.
 		struct SensorGen
 		{
+			std::string label;
 			double nextTime;
 			double period;
-			std::function<mrpt::serialization::CSerializable::Ptr(double t)> generate;
+			std::function<mrpt::obs::CObservation::Ptr(double t)> generate;
+			double clockOffset = 0;
 		};
 		std::vector<SensorGen> gens;
+
+		DatasetGroundTruth groundTruth;
 
 		size_t nSweeps = 0;
 		for (const auto& lidar : lidars)
@@ -363,6 +441,7 @@ int main(int argc, char** argv)
 
 			auto opts = std::make_shared<LidarSimOptions>(simOpts);
 			opts->rangeStdNoise = noiseless ? 0.0 : lidar->rangeStdNoise() * noiseScale;
+			LidarGroundTruth lidarGt;
 			if (!noiseless)
 			{
 				const auto& em = lidar->errorModel();
@@ -376,6 +455,10 @@ int main(int argc, char** argv)
 					*opts, model->vertRays(), em.beamElevationStdDeg * noiseScale,
 					em.beamAzimuthStdDeg * noiseScale, em.beamRangeBiasStd * noiseScale,
 					em.calibrationSeed);
+				lidarGt.beamElevationStdDeg = em.beamElevationStdDeg * noiseScale;
+				lidarGt.beamAzimuthStdDeg = em.beamAzimuthStdDeg * noiseScale;
+				lidarGt.beamRangeBiasStd = em.beamRangeBiasStd * noiseScale;
+				lidarGt.calibrationSeed = em.calibrationSeed;
 			}
 			opts->generateIntensity = lidar->generateIntensityFromRGB();
 			opts->generateLabels = labels;
@@ -393,8 +476,15 @@ int main(int argc, char** argv)
 			const mrpt::poses::CPose3D sensorPoseOnVeh = lidar->sensorPoseOnVehicle();
 			const std::string label = lidar->getName();
 
+			lidarGt.label = label;
+			lidarGt.pose = sensorPoseOnVeh;
+			lidarGt.clockOffset = clockOffsetOf(label);
+			lidarGt.model = model;
+			lidarGt.opts = opts;
+			groundTruth.lidars.push_back(lidarGt);
+
 			gens.push_back(
-				{t0, params->sensorPeriod,
+				{label, t0, params->sensorPeriod,
 				 [&, model, opts, sensorPoseOnVeh, label](double t)
 				 {
 					 auto obs = simulateLidarSweep(
@@ -404,12 +494,14 @@ int main(int argc, char** argv)
 					 gtSensors[label].insert(
 						 timeFromSeconds(t), (traj.poseAt(t) + sensorPoseOnVeh).asTPose());
 					 return obs;
-				 }});
+				 },
+				 lidarGt.clockOffset});
 		}
 
 		size_t nImuSamples = 0;
-		for (const auto& imu : imus)
+		for (size_t imuIdx = 0; imuIdx < imus.size(); imuIdx++)
 		{
+			const auto& imu = imus[imuIdx];
 			auto noiseModel = std::make_shared<mvsim::ImuNoiseModel>(imu->noiseModel());
 			if (noiseless)
 			{
@@ -423,7 +515,10 @@ int main(int argc, char** argv)
 				noiseModel->accelerometer.white_noise_std *= noiseScale;
 				noiseModel->accelerometer.random_walk_std *= noiseScale;
 			}
-			noiseModel->seed(seed);
+			noiseModel->reset();
+			// Each IMU has its own noise stream; the first one is seeded as in
+			// older versions, so their datasets reproduce:
+			noiseModel->seed(seed + 0x9E3779B9u * static_cast<unsigned>(imuIdx));
 
 			const double period = imu->sensor_period();
 			const double diffStep = period / 10.0;
@@ -434,18 +529,85 @@ int main(int argc, char** argv)
 			const bool measureOri = imu->measureOrientation();
 			auto prevT = std::make_shared<double>(t0);
 
+			ImuGroundTruth imuGt;
+			imuGt.label = label;
+			imuGt.pose = sensorPoseOnVeh;
+			imuGt.clockOffset = clockOffsetOf(label);
+			imuGt.period = period;
+			imuGt.gyroscope = noiseModel->gyroscope;
+			imuGt.accelerometer = noiseModel->accelerometer;
+			// The bias time series, if it varies:
+			std::shared_ptr<std::ofstream> biasOut;
+			if (noiseModel->gyroscope.random_walk_std > 0 ||
+				noiseModel->accelerometer.random_walk_std > 0)
+			{
+				const std::string biasPath =
+					mrpt::system::fileNameChangeExtension(outputPath, label + ".bias.txt");
+				biasOut = std::make_shared<std::ofstream>(biasPath);
+				if (!biasOut->is_open())
+				{
+					THROW_EXCEPTION("Cannot write '" + biasPath + "'");
+				}
+				*biasOut << "# t gyro_bias_x gyro_bias_y gyro_bias_z accel_bias_x accel_bias_y "
+							"accel_bias_z\n"
+							"# Bias of each sample [s, rad/s, m/s^2], at its sampling time\n"
+						 << std::setprecision(10);
+				imuGt.biasFile = fileNameOf(biasPath);
+			}
+			groundTruth.imus.push_back(imuGt);
+
 			gens.push_back(
-				{t0, period,
+				{label, t0, period,
 				 [&, noiseModel, diffStep, sensorPoseOnVeh, label, measureOri, orientationNoise,
-				  prevT](double t)
+				  prevT, biasOut](double t)
 				 {
 					 auto obs = simulateImuSample(
 						 world, traj, sensorPoseOnVeh, t, diffStep, t - *prevT, label, measureOri,
 						 orientationNoise, *noiseModel, rng);
 					 nImuSamples++;
 					 *prevT = t;
+					 if (biasOut)
+					 {
+						 const auto& bg = noiseModel->gyroBias();
+						 const auto& ba = noiseModel->accelBias();
+						 *biasOut << std::fixed << std::setprecision(7) << t << std::defaultfloat
+								  << std::setprecision(10) << " " << bg.x << " " << bg.y << " "
+								  << bg.z << " " << ba.x << " " << ba.y << " " << ba.z << "\n";
+					 }
 					 return obs;
-				 }});
+				 },
+				 imuGt.clockOffset});
+		}
+
+		size_t nGnss = 0;
+		for (size_t gnssIdx = 0; gnssIdx < gnssSensors.size(); gnssIdx++)
+		{
+			const auto& gnss = gnssSensors[gnssIdx];
+			auto gnssRng = std::make_shared<mrpt::random::CRandomGenerator>();
+			gnssRng->randomize(seed ^ (0x85EBCA6Bu * static_cast<unsigned>(gnssIdx + 1)));
+			const double gnssNoiseScale = noiseless ? 0.0 : noiseScale;
+
+			GnssGroundTruth gnssGt;
+			gnssGt.label = gnss->getName();
+			gnssGt.sensor = gnss.get();
+			gnssGt.clockOffset = clockOffsetOf(gnssGt.label);
+			gnssGt.noiseScale = gnssNoiseScale;
+			groundTruth.gnss.push_back(gnssGt);
+
+			gens.push_back(
+				{gnssGt.label, t0, gnss->sensor_period(),
+				 [&, gnss, gnssRng, gnssNoiseScale](double t) -> mrpt::obs::CObservation::Ptr
+				 {
+					 // The degradation events are timed from the trajectory start:
+					 auto obs = gnss->simulateReading(
+						 traj.poseAt(t), t - t0, timeFromSeconds(t), *gnssRng, gnssNoiseScale);
+					 if (obs)
+					 {
+						 nGnss++;
+					 }
+					 return obs;
+				 },
+				 gnssGt.clockOffset});
 		}
 
 		size_t nOdom = 0;
@@ -457,8 +619,16 @@ int main(int argc, char** argv)
 			const double transNoise = noiseless ? 0.0 : odomTransNoiseRel;
 			const double rotNoise = noiseless ? 0.0 : odomRotNoiseRel;
 
+			OdometryGroundTruth odomGt;
+			odomGt.label = "odom";	// see OdometrySimulator
+			odomGt.clockOffset = clockOffsetOf(odomGt.label);
+			odomGt.period = odomPeriod;
+			odomGt.transNoiseRel = transNoise;
+			odomGt.rotNoiseRel = rotNoise;
+			groundTruth.odometry.push_back(odomGt);
+
 			gens.push_back(
-				{t0 + odomPeriod, odomPeriod,
+				{odomGt.label, t0 + odomPeriod, odomPeriod,
 				 [&, runningOdom, prevPose, transNoise, rotNoise](double t)
 				 {
 					 const auto p3 = traj.poseAt(t);
@@ -468,32 +638,54 @@ int main(int argc, char** argv)
 					 *prevPose = curPose;
 					 nOdom++;
 					 return obs;
-				 }});
+				 },
+				 odomGt.clockOffset});
 		}
 
-		// Merge all sensor streams into the rawlog in strict global time
-		// order (min-heap over each generator's next firing time):
+		// Every --clock-offset must name a stream:
+		for (const auto& [label, offset] : clockOffsets)
+		{
+			const bool found = std::any_of(
+				gens.begin(), gens.end(), [&](const SensorGen& g) { return g.label == label; });
+			if (!found)
+			{
+				THROW_EXCEPTION("--clock-offset: no sensor stream named '" + label + "'");
+			}
+		}
+
+		// Merge all sensor streams into the rawlog in strict global stamp
+		// order (min-heap over each generator's next stamp):
 		using Entry = std::pair<double, size_t>;
 		std::priority_queue<Entry, std::vector<Entry>, std::greater<>> pq;
 		for (size_t i = 0; i < gens.size(); i++)
 		{
 			if (gens[i].nextTime <= t1 + 1e-9)
 			{
-				pq.push({gens[i].nextTime, i});
+				pq.push({gens[i].nextTime + gens[i].clockOffset, i});
 			}
 		}
 		mrpt::system::CTicTac progressTimer;
 		double lastProgressPrintTime = 0.0;
 		while (!pq.empty())
 		{
-			const auto [t, idx] = pq.top();
+			const size_t idx = pq.top().second;
 			pq.pop();
 			auto& g = gens[idx];
-			arch << *g.generate(t);
+			const double t = g.nextTime;  // sampling time
+			auto obs = g.generate(t);
+			if (obs)
+			{
+				if (g.clockOffset != 0)
+				{
+					// In exact clock ticks: epoch seconds in a double are coarser.
+					obs->timestamp += mrpt::Clock::duration(std::llround(g.clockOffset * 1e7));
+				}
+				arch << *obs;
+			}
 			g.nextTime += g.period;
 			if (g.nextTime <= t1 + 1e-9)
 			{
-				pq.push({g.nextTime, idx});
+				pq.push({g.nextTime + g.clockOffset, idx});
 			}
 
 			const double elapsed = progressTimer.Tac();
@@ -513,7 +705,8 @@ int main(int argc, char** argv)
 
 		std::cout << "[mvsim-dataset-gen] Wrote " << nSweeps << " lidar sweep(s) from "
 				  << lidars.size() << " sensor(s), " << nImuSamples << " IMU sample(s) from "
-				  << imus.size() << " sensor(s), and " << nOdom << " odometry sample(s) to '"
+				  << imus.size() << " sensor(s), " << nGnss << " GNSS reading(s) from "
+				  << gnssSensors.size() << " sensor(s), and " << nOdom << " odometry sample(s) to '"
 				  << outputPath << "'.\n";
 
 		const std::string gtBase = mrpt::system::fileNameChangeExtension(outputPath, "gt.tum");
@@ -527,6 +720,22 @@ int main(int argc, char** argv)
 			std::cout << "[mvsim-dataset-gen] Wrote sensor '" << label << "' ground truth to '" << p
 					  << "'.\n";
 		}
+
+		groundTruth.worldFile = worldXmlPath;
+		groundTruth.rawlogFile = fileNameOf(outputPath);
+		groundTruth.vehicleGtFile = fileNameOf(gtBase);
+		groundTruth.vehicle = vehicleName;
+		groundTruth.baseFrame = egoVehicle->getBaseFrameId();
+		groundTruth.shutter = shutterStr;
+		groundTruth.tStart = t0;
+		groundTruth.tEnd = t1;
+		groundTruth.seed = seed;
+		groundTruth.noiseless = noiseless;
+		groundTruth.noiseScale = noiseScale;
+		groundTruth.georef = hasGeoref ? &georef : nullptr;
+		const std::string gtYaml = mrpt::system::fileNameChangeExtension(outputPath, "gt.yaml");
+		writeGroundTruthYaml(gtYaml, groundTruth);
+		std::cout << "[mvsim-dataset-gen] Wrote sensor ground truth to '" << gtYaml << "'.\n";
 	}
 	catch (const std::exception& e)
 	{
