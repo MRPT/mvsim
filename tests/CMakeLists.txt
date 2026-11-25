@@ -197,6 +197,12 @@ mvsim_add_test(
 	)
 
 mvsim_add_test(
+	TARGET test_xml_param_types
+	SOURCES test_xml_param_types.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+
+mvsim_add_test(
 	TARGET test_slope_load
 	SOURCES test_slope_load.cpp
 	LINK_LIBRARIES mvsim::simulator

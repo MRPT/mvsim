@@ -88,8 +88,10 @@ Common Vehicle Parameters
        yaw_multiplier="1.03"
    />
 
-Adds realistic noise to odometry by multiplying actual pose increments. Values are typically
-drawn from ``$f{1.0 + 0.02*randn()}`` to simulate sensor imperfections.
+Adds systematic odometry errors by multiplying the actual pose increments (1.0 means perfect
+odometry). Without this tag, each factor is drawn at random from a normal distribution with
+mean 1.0 and standard deviation 0.02. Expressions like ``$f{1.0 + 0.02*randn()}`` are also
+accepted.
 
 **Visual Models:**
 
