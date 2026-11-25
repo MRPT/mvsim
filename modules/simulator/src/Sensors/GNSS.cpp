@@ -301,24 +301,6 @@ mrpt::obs::CObservationGPS::Ptr GNSS::simulateReading(
 {
 	using mrpt::obs::CObservationGPS;
 
-	// Where the GPS sensor is in the world frame:
-	mrpt::poses::CPose3D vehPoseInWorld = vehiclePose;
-	const auto& georef = world()->georeferenceOptions();
-	if (georef.world_is_utm)
-	{
-		auto posLocal = vehPoseInWorld.translation() - georef.utmRef;
-
-		vehPoseInWorld.x(posLocal.x);
-		vehPoseInWorld.y(posLocal.y);
-		vehPoseInWorld.z(posLocal.z);
-	}
-
-	const auto worldRotation =
-		mrpt::poses::CPose3D::FromYawPitchRoll(georef.world_to_enu_rotation, .0, .0);
-
-	const mrpt::math::TPoint3D sensorPtNoNoise =
-		(worldRotation + (vehPoseInWorld + obs_model_.sensorPose)).translation();
-
 	// Are we into a no-coverage area? (regions are in world coordinates)
 	const auto noCoverageProp = world()->getPropertyAt(
 		"gps_no_coverage", (vehiclePose + obs_model_.sensorPose).translation());
@@ -336,6 +318,26 @@ mrpt::obs::CObservationGPS::Ptr GNSS::simulateReading(
 			return {};
 		}
 	}
+
+	// The vehicle pose relative to the georeference origin (in UTM worlds,
+	// world coordinates are UTM coordinates):
+	mrpt::poses::CPose3D vehPoseLocal = vehiclePose;
+	const auto& georef = world()->georeferenceOptions();
+	if (georef.world_is_utm)
+	{
+		auto posLocal = vehPoseLocal.translation() - georef.utmRef;
+
+		vehPoseLocal.x(posLocal.x);
+		vehPoseLocal.y(posLocal.y);
+		vehPoseLocal.z(posLocal.z);
+	}
+
+	const auto worldRotation =
+		mrpt::poses::CPose3D::FromYawPitchRoll(georef.world_to_enu_rotation, .0, .0);
+
+	// The sensor position in ENU, without noise:
+	const mrpt::math::TPoint3D sensorPtNoNoise =
+		(worldRotation + (vehPoseLocal + obs_model_.sensorPose)).translation();
 
 	// Quality and degradation events:
 	const Quality q = qualityAt(t);
