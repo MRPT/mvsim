@@ -6,11 +6,14 @@
   |   See COPYING                                                           |
   +-------------------------------------------------------------------------+ */
 
-// GNSS sensor: fix type and degradation events (outages, quality changes,
-// position jumps).
+// GNSS sensor: fix type, degradation events (outages, quality changes,
+// position jumps) and no-coverage regions.
 
+#include <mrpt/core/format.h>
 #include <mrpt/obs/CObservationGPS.h>
 #include <mrpt/topography/conversions.h>
+#include <mvsim/Sensors/GNSS.h>
+#include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
 #include <iostream>
@@ -153,6 +156,95 @@ int main()
 		EXPECT_GT(countPerSecond[1], 8);
 		EXPECT_GT(countPerSecond[3], 8);
 		std::cout << "GNSS samples: " << samples.size() << "\n";
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Exception: " << e.what() << std::endl;
+		return 1;
+	}
+
+	// No-coverage regions are in world coordinates, also when the world is
+	// rotated wrt ENU: with a rotation of 90 deg and a region around (10,0), a
+	// robot inside it gets no readings, while robots at (0,-10) and (0,10),
+	// where the region would be if it were taken in ENU coordinates with either
+	// rotation sign, do.
+	const auto region = [](double xMin, double xMax, double yMin, double yMax)
+	{
+		return mrpt::format(
+			"<element class=\"property_region\"><property_name>gps_no_coverage</property_name>"
+			"<value_bool>true</value_bool><x_min>%f</x_min><x_max>%f</x_max><y_min>%f</y_min>"
+			"<y_max>%f</y_max></element>",
+			xMin, xMax, yMin, yMax);
+	};
+	const std::string geo = "<height>100.0</height>";
+	try
+	{
+		const std::vector<std::pair<std::string, bool>> cases = {
+			{"10 0 0", false}, {"0 -10 0", true}, {"0 10 0", true}};
+		for (const auto& [pose, expectReadings] : cases)
+		{
+			std::string xml = kWorldXml;
+			xml.replace(
+				xml.find(geo), geo.size(),
+				geo + "<world_to_enu_rotation_deg>90</world_to_enu_rotation_deg>");
+			xml.replace(xml.find("<vehicle"), 0, region(9.0, 11.0, -1.0, 1.0));
+			const std::string init = "<init_pose>0 0 0</init_pose>";
+			xml.replace(xml.find(init), init.size(), "<init_pose>" + pose + "</init_pose>");
+
+			mvsim::World world;
+			world.headless(true);
+			world.load_from_XML(xml, ".");
+			int n = 0;
+			world.registerCallbackOnObservation(
+				[&](const mvsim::Simulable&, const mrpt::obs::CObservation::Ptr& o)
+				{ n += std::dynamic_pointer_cast<mrpt::obs::CObservationGPS>(o) ? 1 : 0; });
+			for (int i = 0; i < 100; i++)
+			{
+				world.run_simulation(0.01);
+			}
+			if (expectReadings)
+			{
+				EXPECT_GT(n, 5);
+			}
+			else
+			{
+				EXPECT_TRUE(n == 0);
+			}
+		}
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Exception: " << e.what() << std::endl;
+		return 1;
+	}
+
+	// The same in a UTM world, where world coordinates are UTM coordinates:
+	try
+	{
+		double utmX = 0;
+		double utmY = 0;
+		int zone = 0;
+		char band = 0;
+		mrpt::topography::GeodeticToUTM(36.0, -2.0, utmX, utmY, zone, band);
+
+		std::string xml = kWorldXml;
+		xml.replace(xml.find(geo), geo.size(), geo + "<world_is_utm>true</world_is_utm>");
+		xml.replace(xml.find("<vehicle"), 0, region(utmX + 9, utmX + 11, utmY - 1, utmY + 1));
+
+		mvsim::World world;
+		world.headless(true);
+		world.load_from_XML(xml, ".");
+		const auto gnss = std::dynamic_pointer_cast<mvsim::GNSS>(
+			world.getListOfVehicles().begin()->second->getSensors().at(0));
+		ASSERT_(gnss);
+		mrpt::random::CRandomGenerator rng;
+		const auto readingAt = [&](double x)
+		{
+			return gnss->simulateReading(
+				mrpt::poses::CPose3D(x, utmY, 100.0, 0, 0, 0), 0.5, mrpt::Clock::now(), rng);
+		};
+		EXPECT_TRUE(readingAt(utmX + 10) == nullptr);
+		EXPECT_TRUE(readingAt(utmX) != nullptr);
 	}
 	catch (const std::exception& e)
 	{
