@@ -224,10 +224,26 @@ void GNSS::simul_post_timestep(const TSimulContext& context)
 	Simulable::setPose(globalSensorPose, false /*do not notify*/);
 }
 
+std::string GNSS::fixTypeName(mrpt::obs::GnssFixType t)
+{
+	using mrpt::obs::GnssFixType;
+	switch (t)
+	{
+		case GnssFixType::NO_FIX:
+			return "no_fix";
+		case GnssFixType::AUTONOMOUS:
+			return "single";
+		case GnssFixType::RTK_FLOAT:
+			return "rtk_float";
+		case GnssFixType::RTK_FIXED:
+			return "rtk_fixed";
+		default:
+			return "dgps";
+	}
+}
+
 void GNSS::internal_simulate_gnss(const TSimulContext& context)
 {
-	using mrpt::obs::CObservationGPS;
-
 	auto tle = mrpt::system::CTimeLoggerEntry(world_->getTimeLogger(), "sensor.GNSS");
 
 	if (!noiseSeeded_)
@@ -236,8 +252,32 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 		seedNoiseGenerator(rng_);
 	}
 
+	auto outObs = simulateReading(
+		mrpt::poses::CPose3D(vehicle().getChassisPose()), world_->get_simul_time(),
+		world_->get_simul_timestamp(), rng_);
+	if (!outObs)
+	{
+		return;
+	}
+
+	// Save:
+	{
+		std::lock_guard<std::mutex> csl(last_obs_cs_);
+		last_obs_ = std::move(outObs);
+	}
+
+	// publish as generic Protobuf (mrpt serialized) object:
+	SensorBase::reportNewObservation(last_obs_, context);
+}
+
+mrpt::obs::CObservationGPS::Ptr GNSS::simulateReading(
+	const mrpt::poses::CPose3D& vehiclePose, double t, const mrpt::Clock::time_point& stamp,
+	mrpt::random::CRandomGenerator& rng, double noiseScale) const
+{
+	using mrpt::obs::CObservationGPS;
+
 	// Where the GPS sensor is in the world frame:
-	mrpt::poses::CPose3D vehPoseInWorld = mrpt::poses::CPose3D(vehicle().getChassisPose());
+	mrpt::poses::CPose3D vehPoseInWorld = vehiclePose;
 	const auto& georef = world()->georeferenceOptions();
 	if (georef.world_is_utm)
 	{
@@ -255,7 +295,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 		(worldRotation + (vehPoseInWorld + obs_model_.sensorPose)).translation();
 
 	// Are we into a no-coverage area?
-	const auto noCoverageProp = world_->getPropertyAt("gps_no_coverage", sensorPtNoNoise);
+	const auto noCoverageProp = world()->getPropertyAt("gps_no_coverage", sensorPtNoNoise);
 	if (noCoverageProp.has_value())
 	{
 		const std::any& anyVal = *noCoverageProp;
@@ -267,7 +307,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 		if (*noCoverage == true)
 		{
 			// We don't have GPS coverage here. Skip.
-			return;
+			return {};
 		}
 	}
 
@@ -276,7 +316,6 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 	double hStd = horizontal_std_noise_;
 	double vStd = vertical_std_noise_;
 	mrpt::math::TPoint3D offset = {0, 0, 0};
-	const double t = world_->get_simul_time();	// the observation timestamp
 	for (const auto& ev : events_)
 	{
 		if (t < ev.start || t >= ev.end)
@@ -285,7 +324,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 		}
 		if (ev.outage)
 		{
-			return;	 // no data at all
+			return {};	// no data at all
 		}
 		fixType = ev.fix_type.value_or(fixType);
 		hStd = ev.horizontal_std_noise.value_or(hStd);
@@ -295,7 +334,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 
 	auto outObs = CObservationGPS::Create(obs_model_);
 
-	outObs->timestamp = world_->get_simul_timestamp();
+	outObs->timestamp = stamp;
 	outObs->sensorLabel = name_;
 	outObs->fix_type = fixType;
 	outObs->covariance_enu.emplace();
@@ -304,10 +343,10 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 
 	// noise:
 	const mrpt::math::TPoint3D noise = {
-		rng_.drawGaussian1D(0.0, hStd), rng_.drawGaussian1D(0.0, hStd),
-		rng_.drawGaussian1D(0.0, vStd)};
+		rng.drawGaussian1D(0.0, hStd * noiseScale), rng.drawGaussian1D(0.0, hStd * noiseScale),
+		rng.drawGaussian1D(0.0, vStd * noiseScale)};
 
-	const mrpt::math::TPoint3D sensorPt = sensorPtNoNoise + noise + offset;
+	const mrpt::math::TPoint3D sensorPt = sensorPtNoNoise + noise + offset * noiseScale;
 
 	// convert from ENU (world coordinates) to geodetic:
 	const thread_local auto WGS84 = mrpt::topography::TEllipsoid::Ellipsoid_WGS84();
@@ -326,7 +365,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 				"World <georeference> parameters are not set, and they are required for "
 				"properly define GNSS sensor simulation");
 		}
-		return;
+		return {};
 	}
 
 	mrpt::topography::TGeocentricCoords gcPt;
@@ -358,14 +397,7 @@ void GNSS::internal_simulate_gnss(const TSimulContext& context)
 
 	outObs->setMsg(msgGGA);
 
-	// Save:
-	{
-		std::lock_guard<std::mutex> csl(last_obs_cs_);
-		last_obs_ = std::move(outObs);
-	}
-
-	// publish as generic Protobuf (mrpt serialized) object:
-	SensorBase::reportNewObservation(last_obs_, context);
+	return outObs;
 }
 
 void GNSS::notifySimulableSetPose(const mrpt::math::TPose3D&)

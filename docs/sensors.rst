@@ -667,6 +667,9 @@ attributes but ``start``/``end`` are optional):
     <!-- Position jump (East, North, Up offset, in meters): -->
     <event start="50" end="60" offset="2.0 -1.0 0" />
 
+An event with only an ``offset`` keeps the fix type and the reported covariance: with
+``rtk_fixed``, it is a "false fix", reported as fixed but meters off.
+
 Outages can also be defined by world regions, with the ``gps_no_coverage`` property of
 property regions.
 
