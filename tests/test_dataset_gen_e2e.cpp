@@ -1400,6 +1400,33 @@ void test_ground_truth_imu_errors()
 	}
 }
 
+/** A copy of the demo world (in a temporary file) whose IMU is named
+ * `name`. */
+std::string demoWorldWithImuNamed(const std::string& name)
+{
+	std::ifstream in(kWorld);
+	std::stringstream ss;
+	ss << in.rdbuf();
+	std::string xml = ss.str();
+	const std::string rel = "../definitions/";
+	const std::string defs = std::string(MVSIM_TUTORIAL_DIR) + "/" + rel;
+	for (size_t pos = xml.find(rel); pos != std::string::npos;
+		 pos = xml.find(rel, pos + defs.size()))
+	{
+		xml.replace(pos, rel.size(), defs);
+	}
+	const std::string imu = "sensor_name=\"imu1\"";
+	const size_t pos = xml.find(imu);
+	EXPECT_TRUE(pos != std::string::npos);
+	if (pos != std::string::npos)
+	{
+		xml.replace(pos, imu.size(), "sensor_name=\"" + name + "\"");
+	}
+	const std::string path = tempPath(name + ".world.xml");
+	std::ofstream(path) << xml;
+	return path;
+}
+
 void test_clock_offsets()
 {
 	const std::string outA = tempPath("clockA.rawlog");
@@ -1495,30 +1522,32 @@ void test_clock_offsets()
 	const std::string outC = tempPath("clockC.rawlog");
 	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset nope=0.1") == 0);
 	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset imu1=abc") == 0);
-	// A sensor named as the odometry stream:
-	const std::string worldOdom = tempPath("odomlabel.world.xml");
+	// A sensor named as the odometry stream is rejected, before any output
+	// is written:
+	EXPECT_TRUE(runDatasetGen(kWorld, kTraj, outC, "--duration 0.2") == 0);
+	const std::string outCopy = tempPath("clockCcopy.rawlog");
 	{
-		std::ifstream in(kWorld);
+		std::ifstream in(outC, std::ios::binary);
+		std::ofstream(outCopy, std::ios::binary) << in.rdbuf();
+	}
+	const std::string worldOdom = demoWorldWithImuNamed("odom");
+	EXPECT_FALSE(runDatasetGen(worldOdom, kTraj, outC, "--duration 0.2") == 0);
+	EXPECT_TRUE(filesEqual(outC, outCopy));
+	std::remove(worldOdom.c_str());
+	std::remove(outCopy.c_str());
+
+	// Labels that YAML would read as numbers stay strings:
+	const std::string worldNum = demoWorldWithImuNamed("1_000");
+	EXPECT_TRUE(runDatasetGen(worldNum, kTraj, outC, "--duration 0.2") == 0);
+	{
+		std::ifstream in(gtPath(outC, "gt.yaml"));
 		std::stringstream ss;
 		ss << in.rdbuf();
-		std::string xml = ss.str();
-		const std::string defs = std::string(MVSIM_TUTORIAL_DIR) + "/../definitions/";
-		for (size_t pos = xml.find("../definitions/"); pos != std::string::npos;
-			 pos = xml.find("../definitions/", pos + defs.size()))
-		{
-			xml.replace(pos, std::string("../definitions/").size(), defs);
-		}
-		const size_t imu = xml.find("sensor_name=\"imu1\"");
-		EXPECT_TRUE(imu != std::string::npos);
-		if (imu != std::string::npos)
-		{
-			xml.replace(imu, std::string("sensor_name=\"imu1\"").size(), "sensor_name=\"odom\"");
-		}
-		std::ofstream(worldOdom) << xml;
+		EXPECT_TRUE(ss.str().find("\n  \"1_000\":\n") != std::string::npos);
+		const auto gt = loadGroundTruth(outC);
+		EXPECT_TRUE(gt["sensors"]["1_000"]["frame_id"].as<std::string>() == "1_000");
 	}
-	EXPECT_TRUE(runDatasetGen(kWorld, kTraj, outC, "--duration 0.2") == 0);
-	EXPECT_FALSE(runDatasetGen(worldOdom, kTraj, outC, "--duration 0.2") == 0);
-	std::remove(worldOdom.c_str());
+	std::remove(worldNum.c_str());
 
 	for (const auto& f : {outA, outB, outC})
 	{

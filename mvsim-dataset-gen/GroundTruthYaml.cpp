@@ -70,44 +70,30 @@ std::string num(double v)
 	return s;
 }
 
-/** Whether YAML readers would take this plain scalar for a number, a
- * boolean or null. */
-bool readsAsNonString(const std::string& v)
-{
-	char* end = nullptr;
-	std::strtod(v.c_str(), &end);
-	if (end != v.c_str() && *end == '\0')
-	{
-		return true;
-	}
-	std::string low;
-	for (const char c : v)
-	{
-		low += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-	}
-	for (const char* w : {"true", "false", "yes", "no", "on", "off", "y", "n", "null"})
-	{
-		if (low == w)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-/** A string as a YAML scalar: plain if it only has safe characters, else
- * double-quoted and escaped. */
+/** A string as a YAML scalar: plain if it starts with a letter, '_' or '/',
+ * has only letters, digits and "_-./", and is not a word that YAML 1.1
+ * readers take for a boolean or null; else double-quoted and escaped. */
 std::string str(const std::string& v)
 {
-	const bool plain = !v.empty() && !readsAsNonString(v) &&
-					   std::all_of(
-						   v.begin(), v.end(),
-						   [](char c)
-						   {
-							   return std::isalnum(static_cast<unsigned char>(c)) || c == '_' ||
-									  c == '-' || c == '.' || c == '/';
-						   }) &&
-					   v.front() != '-' && v.front() != '.';
+	const auto isAlpha = [](char c) { return std::isalpha(static_cast<unsigned char>(c)) != 0; };
+	bool plain = !v.empty() && (isAlpha(v.front()) || v.front() == '_' || v.front() == '/');
+	for (const char c : v)
+	{
+		plain = plain && (std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-' ||
+						  c == '.' || c == '/');
+	}
+	if (plain)
+	{
+		std::string low;
+		for (const char c : v)
+		{
+			low += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+		}
+		for (const char* w : {"true", "false", "yes", "no", "on", "off", "y", "n", "null"})
+		{
+			plain = plain && low != w;
+		}
+	}
 	if (plain)
 	{
 		return v;

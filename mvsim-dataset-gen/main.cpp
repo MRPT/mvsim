@@ -383,6 +383,43 @@ int main(int argc, char** argv)
 			return it == clockOffsets.end() ? 0.0 : it->second;
 		};
 
+		// Validate the stream labels before any output is written. Each one
+		// identifies one stream (sensors are already unique, but one may be
+		// named as the wheel odometry stream, "odom"):
+		{
+			std::set<std::string> streamLabels = {"odom"};
+			std::vector<std::string> sensorLabels;
+			for (const auto& l : lidars)
+			{
+				sensorLabels.push_back(l->getName());
+			}
+			for (const auto& i : imus)
+			{
+				sensorLabels.push_back(i->getName());
+			}
+			for (const auto& g : gnssSensors)
+			{
+				sensorLabels.push_back(g->getName());
+			}
+			for (const auto& label : sensorLabels)
+			{
+				if (!streamLabels.insert(label).second)
+				{
+					THROW_EXCEPTION(
+						"Two sensor streams are labeled '" + label +
+						"' (the wheel odometry stream is 'odom'): rename the sensor");
+				}
+			}
+			// Every --clock-offset must name a stream:
+			for (const auto& [label, offset] : clockOffsets)
+			{
+				if (streamLabels.count(label) == 0)
+				{
+					THROW_EXCEPTION("--clock-offset: no sensor stream named '" + label + "'");
+				}
+			}
+		}
+
 		// Load the prescribed ground-truth trajectory:
 		TrajectorySource traj;
 		std::string fmt = trajectoryFormat;
@@ -641,31 +678,6 @@ int main(int argc, char** argv)
 					 return obs;
 				 },
 				 odomGt.clockOffset});
-		}
-
-		// Each stream label identifies one stream (sensors are already unique,
-		// but one may be named as the odometry stream):
-		for (size_t i = 0; i < gens.size(); i++)
-		{
-			for (size_t j = i + 1; j < gens.size(); j++)
-			{
-				if (gens[i].label == gens[j].label)
-				{
-					THROW_EXCEPTION(
-						"Two sensor streams are labeled '" + gens[i].label +
-						"' (the wheel odometry stream is 'odom'): rename the sensor");
-				}
-			}
-		}
-		// Every --clock-offset must name a stream:
-		for (const auto& [label, offset] : clockOffsets)
-		{
-			const bool found = std::any_of(
-				gens.begin(), gens.end(), [&](const SensorGen& g) { return g.label == label; });
-			if (!found)
-			{
-				THROW_EXCEPTION("--clock-offset: no sensor stream named '" + label + "'");
-			}
 		}
 
 		// Observations are generated in sampling time order (min-heap over
