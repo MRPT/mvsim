@@ -197,6 +197,53 @@ void test_combined_noise()
 	// The combined model should have larger mean-square error
 	EXPECT_GT(var_wr, var_w);
 }
+
+// ---------------------------------------------------------------
+// Test 6: Constant bias, scale factors and misalignment (no noise):
+//          m = diag(s) * (I + M) * true + bias, and reset() restores
+//          the constant bias
+// ---------------------------------------------------------------
+void test_scale_misalignment_bias()
+{
+	mvsim::ImuNoiseModel model;
+	model.gyroscope.scale = {0.9, 1.0, 1.1};
+	model.gyroscope.misalignment = {0.01, -0.02, 0.03, 0.0, -0.01, 0.02};
+	model.gyroscope.initial_bias = {0.001, -0.002, 0.003};
+	model.accelerometer.scale = {1.02, 1.02, 1.02};
+	model.accelerometer.initial_bias = {0.1, 0.0, -0.1};
+	model.reset();
+
+	EXPECT_TRUE(!model.gyroscope.hasIdealSensitivity());
+	EXPECT_TRUE(mvsim::ImuNoiseModel::ChannelParams().hasIdealSensitivity());
+
+	const mrpt::math::TVector3D w{0.5, -1.0, 2.0};
+	const auto g = model.applyGyroscope(w, 0.01);
+	EXPECT_NEAR(g.x, 0.9 * (0.5 + 0.01 * -1.0 - 0.02 * 2.0) + 0.001, 1e-12);
+	EXPECT_NEAR(g.y, 1.0 * (0.03 * 0.5 - 1.0 + 0.0 * 2.0) - 0.002, 1e-12);
+	EXPECT_NEAR(g.z, 1.1 * (-0.01 * 0.5 + 0.02 * -1.0 + 2.0) + 0.003, 1e-12);
+
+	const mrpt::math::TVector3D f{0.0, 0.0, 9.81};
+	const auto a = model.applyAccelerometer(f, 0.01);
+	EXPECT_NEAR(a.x, 0.1, 1e-12);
+	EXPECT_NEAR(a.y, 0.0, 1e-12);
+	EXPECT_NEAR(a.z, 1.02 * 9.81 - 0.1, 1e-12);
+
+	// The sensitivity matrix is the one applied above:
+	const auto T = model.gyroscope.sensitivityMatrix();
+	EXPECT_NEAR(T(0, 1), 0.9 * 0.01, 1e-15);
+	EXPECT_NEAR(T(2, 0), 1.1 * -0.01, 1e-15);
+	EXPECT_NEAR(T(1, 1), 1.0, 1e-15);
+
+	model.gyroscope.random_walk_std = 0.1;
+	for (int i = 0; i < 100; ++i)
+	{
+		model.applyGyroscope(w, 0.01);
+	}
+	model.reset();
+	EXPECT_NEAR(model.gyroBias().x, 0.001, 1e-15);
+	EXPECT_NEAR(model.gyroBias().z, 0.003, 1e-15);
+	EXPECT_NEAR(model.accelBias().x, 0.1, 1e-15);
+}
 }  // namespace
 
 // ---------------------------------------------------------------
@@ -207,6 +254,7 @@ int main()
 	test_random_walk_drift();
 	test_reset();
 	test_combined_noise();
+	test_scale_misalignment_bias();
 
 	if (g_failures == 0)
 	{

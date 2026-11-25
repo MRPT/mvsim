@@ -15,6 +15,8 @@
 #include <mvsim/VehicleBase.h>
 #include <mvsim/World.h>
 
+#include <sstream>
+
 #include "xml_utils.h"
 
 #if defined(MVSIM_HAS_ZMQ) && defined(MVSIM_HAS_PROTOBUF)
@@ -23,6 +25,26 @@
 
 using namespace mvsim;
 using namespace rapidxml;
+
+namespace
+{
+/** Parses the six off-diagonal misalignment terms "xy xz yx yz zx zy". */
+std::array<double, 6> parseMisalignment(const std::string& s, const char* tagName)
+{
+	std::array<double, 6> m{};
+	std::stringstream ss(s);
+	for (auto& v : m)
+	{
+		ss >> v;
+	}
+	std::string rest;
+	ASSERTMSG_(
+		!ss.fail() && !(ss >> rest),
+		mrpt::format(
+			"IMU <%s>: expected six numbers 'xy xz yx yz zx zy', got '%s'", tagName, s.c_str()));
+	return m;
+}
+}  // namespace
 
 IMU::IMU(Simulable& parent, const rapidxml::xml_node<char>* root) : SensorBase(parent)
 {
@@ -61,8 +83,32 @@ void IMU::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	params["linear_acceleration_random_walk_std_noise"] =
 		TParamEntry("%lf", &noiseModel_.accelerometer.random_walk_std);
 
+	// Deterministic errors: constant bias, scale factors and misalignment:
+	params["angular_velocity_bias"] = TParamEntry("%point3d", &noiseModel_.gyroscope.initial_bias);
+	params["linear_acceleration_bias"] =
+		TParamEntry("%point3d", &noiseModel_.accelerometer.initial_bias);
+	params["angular_velocity_scale"] = TParamEntry("%scale3d", &noiseModel_.gyroscope.scale);
+	params["linear_acceleration_scale"] = TParamEntry("%scale3d", &noiseModel_.accelerometer.scale);
+	std::string gyroMisalignment;
+	std::string accMisalignment;
+	params["angular_velocity_misalignment"] = TParamEntry("%s", &gyroMisalignment);
+	params["linear_acceleration_misalignment"] = TParamEntry("%s", &accMisalignment);
+
 	// Parse XML params:
 	parse_xmlnode_children_as_param(*root, params, varValues_);
+
+	if (!gyroMisalignment.empty())
+	{
+		noiseModel_.gyroscope.misalignment =
+			parseMisalignment(gyroMisalignment, "angular_velocity_misalignment");
+	}
+	if (!accMisalignment.empty())
+	{
+		noiseModel_.accelerometer.misalignment =
+			parseMisalignment(accMisalignment, "linear_acceleration_misalignment");
+	}
+	// The bias random walk starts at the constant bias:
+	noiseModel_.reset();
 
 	// Pass params to the template obj:
 	obs_model_.sensorLabel = name_;

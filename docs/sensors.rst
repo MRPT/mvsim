@@ -394,6 +394,37 @@ The four XML parameters are:
    ``linear_acceleration_std_noise`` are still accepted and map to the
    corresponding ``*_white_noise_std_noise`` parameters.
 
+**Deterministic errors** (all off by default): a constant (turn-on) bias,
+which is the initial value of :math:`\mathbf{b}`, and per-axis scale factors
+and axis misalignment, which multiply the true value:
+
+.. math::
+
+   \tilde{\mathbf{m}}_{k} = \mathrm{diag}(\mathbf{s})\,(\mathbf{I} + \mathbf{M})\,\mathbf{m}_{k}
+       + \mathbf{b}_{k}
+       + \mathcal{N}\!\bigl(\mathbf{0},\;\sigma_{w}^{2}\;\mathbf{I}\bigr)
+
+where :math:`\mathbf{M}` has a zero diagonal and six off-diagonal terms (small
+angles, rad), given in row-major order ``xy xz yx yz zx zy``; ``xy`` is the
+sensitivity of the x axis to the true value along y.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 55 15 30
+
+   * - Parameter
+     - Default
+     - Description
+   * - ``angular_velocity_bias``, ``linear_acceleration_bias``
+     - ``0 0 0``
+     - Constant bias (rad/s, m/s²)
+   * - ``angular_velocity_scale``, ``linear_acceleration_scale``
+     - ``1 1 1``
+     - Scale factors: one value for all axes, or three
+   * - ``angular_velocity_misalignment``, ``linear_acceleration_misalignment``
+     - ``0 0 0 0 0 0``
+     - Off-diagonal terms of :math:`\mathbf{M}` (rad)
+
 **Example** — a noisy tactical-grade IMU with bias drift:
 
 .. code-block:: xml

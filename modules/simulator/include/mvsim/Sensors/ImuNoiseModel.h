@@ -8,8 +8,11 @@
 
 #pragma once
 
+#include <mrpt/math/CMatrixFixed.h>
 #include <mrpt/math/TPoint3D.h>
 #include <mrpt/random.h>
+
+#include <array>
 
 namespace mvsim
 {
@@ -41,6 +44,13 @@ namespace mvsim
  * where \f$\sigma_{w}\f$ is the white-noise standard deviation and
  * \f$\sigma_{rw}\f$ is the random-walk standard deviation.
  *
+ * Optionally, each channel also has deterministic errors: a constant
+ * (turn-on) bias, the initial value of \f$\mathbf{b}\f$, and per-axis scale
+ * factors and axis misalignment, which replace \f$\mathbf{m}_{k}\f$ above
+ * by \f$\mathbf{T}\,\mathbf{m}_{k}\f$, with
+ * \f$\mathbf{T} = \mathrm{diag}(\mathbf{s})\,(\mathbf{I} + \mathbf{M})\f$
+ * (see ChannelParams::sensitivityMatrix()).
+ *
  * \par Reference
  * C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza,
  * "On-Manifold Preintegration for Real-Time Visual-Inertial Odometry",
@@ -60,6 +70,26 @@ class ImuNoiseModel
 		/** Bias random-walk standard deviation
 		 *  (units / sqrt(s) in continuous time). */
 		double random_walk_std = 0.0;
+
+		/** Constant (turn-on) bias, the initial value of the bias random
+		 * walk (same units as the channel). */
+		mrpt::math::TVector3D initial_bias{0.0, 0.0, 0.0};
+
+		/** Per-axis scale factors (1: ideal). */
+		mrpt::math::TVector3D scale{1.0, 1.0, 1.0};
+
+		/** Axis misalignment: the off-diagonal elements of the matrix M,
+		 * in row-major order (xy, xz, yx, yz, zx, zy), small angles [rad].
+		 * Element `ij` is the sensitivity of axis `i` to the true value
+		 * along axis `j`. All zero: ideal. */
+		std::array<double, 6> misalignment{};
+
+		/** The matrix T = diag(scale) * (I + M) that multiplies the true
+		 * value. */
+		mrpt::math::CMatrixDouble33 sensitivityMatrix() const;
+
+		/** Whether T is the identity (no scale or misalignment errors). */
+		bool hasIdealSensitivity() const;
 	};
 
 	/** Gyroscope noise parameters [rad/s]. */
@@ -68,7 +98,8 @@ class ImuNoiseModel
 	/** Accelerometer noise parameters [m/s²]. */
 	ChannelParams accelerometer;
 
-	/** \brief Reset the internal bias states to zero. */
+	/** \brief Reset the internal bias states to their initial values
+	 * (ChannelParams::initial_bias). */
 	void reset();
 
 	/** \brief Seed the internal RNG for reproducible noise sequences.

@@ -16,6 +16,18 @@
     <angular_velocity_random_walk_std_noise>${sensor_angular_velocity_random_walk_std_noise|0}</angular_velocity_random_walk_std_noise>
     <linear_acceleration_random_walk_std_noise>${sensor_linear_acceleration_random_walk_std_noise|0}</linear_acceleration_random_walk_std_noise>
 
+    <!-- Deterministic errors (defaults: none). Readings are
+         diag(scale) * (I + M) * true + bias + noise, where the bias starts at
+         the constant bias below and then follows the random walk, and M has
+         the six off-diagonal misalignment terms "xy xz yx yz zx zy" [rad]
+         (xy: sensitivity of the x axis to the true value along y). -->
+    <angular_velocity_bias>${sensor_angular_velocity_bias|0 0 0}</angular_velocity_bias>
+    <linear_acceleration_bias>${sensor_linear_acceleration_bias|0 0 0}</linear_acceleration_bias>
+    <angular_velocity_scale>${sensor_angular_velocity_scale|1 1 1}</angular_velocity_scale>
+    <linear_acceleration_scale>${sensor_linear_acceleration_scale|1 1 1}</linear_acceleration_scale>
+    <angular_velocity_misalignment>${sensor_angular_velocity_misalignment|0 0 0 0 0 0}</angular_velocity_misalignment>
+    <linear_acceleration_misalignment>${sensor_linear_acceleration_misalignment|0 0 0 0 0 0}</linear_acceleration_misalignment>
+
     <measure_orientation>${sensor_measure_orientation|false}</measure_orientation>
 
     <visual enabled="${sensor_custom_visual|true}">
