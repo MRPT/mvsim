@@ -319,8 +319,9 @@ mrpt::obs::CObservationGPS::Ptr GNSS::simulateReading(
 	const mrpt::math::TPoint3D sensorPtNoNoise =
 		(worldRotation + (vehPoseInWorld + obs_model_.sensorPose)).translation();
 
-	// Are we into a no-coverage area?
-	const auto noCoverageProp = world()->getPropertyAt("gps_no_coverage", sensorPtNoNoise);
+	// Are we into a no-coverage area? (regions are in world coordinates)
+	const auto noCoverageProp = world()->getPropertyAt(
+		"gps_no_coverage", (vehiclePose + obs_model_.sensorPose).translation());
 	if (noCoverageProp.has_value())
 	{
 		const std::any& anyVal = *noCoverageProp;

@@ -159,6 +159,54 @@ int main()
 		std::cerr << "Exception: " << e.what() << std::endl;
 		return 1;
 	}
+
+	// No-coverage regions are in world coordinates, also when the world is
+	// rotated wrt ENU: a robot at (10,0) inside one gets no readings, and one
+	// at (0,10) (its ENU coordinates) does.
+	try
+	{
+		for (const char* pose : {"10 0 0", "0 10 0"})
+		{
+			std::string xml = kWorldXml;
+			const std::string geo = "<height>100.0</height>";
+			xml.replace(
+				xml.find(geo), geo.size(),
+				geo + "<world_to_enu_rotation_deg>90</world_to_enu_rotation_deg>");
+			const std::string region =
+				"<element class=\"property_region\"><property_name>gps_no_coverage</property_name>"
+				"<value_bool>true</value_bool><x_min>9</x_min><x_max>11</x_max><y_min>-1</y_min>"
+				"<y_max>1</y_max><z_min>-1</z_min><z_max>3</z_max></element>";
+			xml.replace(xml.find("<vehicle"), 0, region);
+			const std::string init = "<init_pose>0 0 0</init_pose>";
+			xml.replace(
+				xml.find(init), init.size(), std::string("<init_pose>") + pose + "</init_pose>");
+
+			mvsim::World world;
+			world.headless(true);
+			world.load_from_XML(xml, ".");
+			int n = 0;
+			world.registerCallbackOnObservation(
+				[&](const mvsim::Simulable&, const mrpt::obs::CObservation::Ptr& o)
+				{ n += std::dynamic_pointer_cast<mrpt::obs::CObservationGPS>(o) ? 1 : 0; });
+			for (int i = 0; i < 100; i++)
+			{
+				world.run_simulation(0.01);
+			}
+			if (std::string(pose) == "10 0 0")
+			{
+				EXPECT_TRUE(n == 0);
+			}
+			else
+			{
+				EXPECT_GT(n, 5);
+			}
+		}
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Exception: " << e.what() << std::endl;
+		return 1;
+	}
 	if (g_failures)
 	{
 		std::cerr << g_failures << " failure(s)\n";
