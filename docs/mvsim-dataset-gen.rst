@@ -2,14 +2,15 @@ mvsim-dataset-gen
 ===================
 
 ``mvsim-dataset-gen`` is an offline CLI tool that generates simulated sensor
-datasets (MRPT ``.rawlog`` files: 3D LiDAR, IMU, GNSS and wheel odometry,
-with the exact ground truth of the trajectory and of every sensor) from a
-world XML and a **prescribed**
-ground-truth trajectory, with no interactive GUI and no OpenGL rendering
-anywhere in the pipeline. Its 3D LiDAR is simulated by exact mathematical
-ray casting, not by rasterizing depth images (unlike the interactive
-``lidar3d`` sensor used by ``mvsim launch``), so it has no depth-buffer
-quantization and no GPU/EGL dependency.
+datasets (MRPT ``.rawlog`` files: 3D LiDAR, IMU, GNSS, wheel odometry and
+cameras, with the exact ground truth of the trajectory and of every sensor)
+from a world XML and a **prescribed**
+ground-truth trajectory, with no interactive GUI. Its 3D LiDAR is simulated
+by exact mathematical ray casting, not by rasterizing depth images (unlike
+the interactive ``lidar3d`` sensor used by ``mvsim launch``), so it has no
+depth-buffer quantization and no GPU/EGL dependency. Cameras, if the
+vehicle has any, are rendered with OpenGL off-screen (EGL: a GPU, or Mesa's
+software renderer without one).
 
 .. note::
    The vehicle's pose is **prescribed**, not simulated: it is read directly
@@ -154,8 +155,48 @@ Sensors
   interactive simulator derives it from the stepped Box2D wheel state
   instead), so this tool synthesizes it directly from the trajectory.
 
+- **Cameras** (``camera`` and ``rgbd_camera`` sensors): see below.
+
 All sensor streams are merged into the ``.rawlog`` in strict global order
 of their timestamps.
+
+Cameras
+-------
+
+``camera`` (RGB) and ``rgbd_camera`` (RGB and/or depth) sensors are
+rendered off-screen with OpenGL through EGL, at the exact times of the
+trajectory, from a scene of the world elements and blocks (never the
+vehicle carrying the sensors; moving blocks at their poses), lit by the
+world ``<lights>``. ``--no-cameras`` skips them. Images use the sensor
+options of the interactive simulator: intrinsics, clip distances, the
+``plumb_bob`` lens distortion and Gaussian pixel noise (both need MRPT >=
+3.6.0), and for depth images the resolution, the noise
+(``depth_noise_sigma``) and the systematic depth errors (``depth_error_*``,
+see :doc:`sensors`). Noise uses a stream of its own per camera, so cameras
+never change the other sensors' data, and ``--noiseless`` removes the noise
+and the depth errors.
+
+- The intrinsics follow the OpenCV / ROS ``camera_info`` convention: the
+  center of pixel (u, v) is at image coordinates (u, v).
+- Depths are along the optical axis, computed in double precision from the
+  depth buffer.
+- **Rolling shutter** (optional, RGB): ``rolling_shutter_line_time`` is the
+  time between the exposures of consecutive rows [s] (``rgb_`` prefix in
+  ``rgbd_camera``). Row ``i`` of a frame stamped ``t`` is exposed at
+  ``t + i * line_time``. The image is rendered as
+  ``rolling_shutter_bands`` (default 8) bands of rows, each from the pose at
+  the time of its middle row: an approximation whose error is half a band's
+  readout time.
+
+Images are written next to the rawlog, in ``<output name>_Images/`` (the
+images directory MRPT looks for), and referenced from the observations by
+file name: RGB images as PNG (``<label>_<index>.png``), depth images in
+MRPT's external range image format (``<label>_<index>_depth.bin``: a
+zstd-compressed matrix of ``uint16`` depths in units of
+``depth_resolution``, 0 for no return; ``CObservation3DRangeScan::load()``
+reads it). RGB cameras give ``CObservationImage``, depth cameras
+``CObservation3DRangeScan``. PNG files are encoded by ``--image-threads``
+worker threads.
 
 Clock offsets
 -------------
@@ -286,6 +327,7 @@ Output
   what trajectory-error tooling (e.g. ``evo``) actually wants to compare
   against.
 - ``<output>.gt.yaml``: ground truth of every sensor (see below).
+- ``<output name>_Images/``: camera images (see Cameras).
 - ``<output>.<sensor_label>.bias.txt``: for an IMU with a bias random walk,
   the bias of each sample: ``t`` and the gyroscope and accelerometer biases
   (x, y, z).
@@ -315,7 +357,8 @@ format, ``mvsim/dataset_gt/1``:
    georeference: {...}         # if the world has one
    sensors:
      <sensor label>:
-       type: lidar3d           # lidar3d | imu | gnss | odometry
+       type: lidar3d           # lidar3d | imu | gnss | odometry | camera
+                               # | depth_camera | rgbd_camera
        frame_id: <sensor label>
        pose_in_vehicle:        # T_vehicle_sensor
          xyz: [x, y, z]
@@ -351,16 +394,20 @@ format, ``mvsim/dataset_gt/1``:
   the ENU position error added to the readings.
 - ``odometry`` (the wheel odometry stream, ``odom``, at the vehicle frame):
   ``trans_noise_rel``, ``rot_noise_rel``.
-
-Reserved for camera streams (not generated yet), with the same common keys:
-
-- ``camera``: ``{width, height, fx, fy, cx, cy, distortion: {model:
-  none|plumb_bob|equidistant, coeffs: [...]}, rolling_shutter_line_time_s}``.
-- ``depth_camera``: as ``camera``, plus the depth errors ``{scale,
-  offset_m, radial: [...]}`` (a radial "bowl" term).
+- ``camera`` (also an ``rgbd_camera`` without depth): the pose is that of
+  the optical frame (+Z forward, +X right, +Y down). ``width``, ``height``,
+  ``fx``, ``fy``, ``cx``, ``cy`` (OpenCV convention), ``distortion:
+  {model: none|plumb_bob, coeffs: [k1, k2, p1, p2, k3]}``, ``clip_m``,
+  ``rolling_shutter_line_time_s`` (0: global shutter; with
+  ``rolling_shutter_bands`` otherwise), ``image_noise_std`` and ``files``
+  (the path pattern of the images, relative to the dataset).
+- ``depth_camera`` (an ``rgbd_camera`` without RGB): the same keys, but
+  ``depth_unit_m``, ``depth_noise_std_m`` and ``depth_errors: {scale,
+  offset_m, radial: [k1, k2]}`` instead of the rolling shutter and pixel
+  noise.
 - ``rgbd_camera``: ``rgb`` and ``depth`` sub-blocks, each with its own
-  ``pose_in_vehicle`` and the intrinsics of ``camera`` and
-  ``depth_camera``.
+  ``pose_in_vehicle`` (optical frames) and the keys above; the sensor
+  ``pose_in_vehicle`` is that of the depth optical frame.
 
 Example
 -------

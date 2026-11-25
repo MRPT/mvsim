@@ -8,12 +8,15 @@
 
 #pragma once
 
+#include <mrpt/img/TCamera.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/Sensors/ImuNoiseModel.h>
 #include <mvsim/World.h>
 #include <mvsim/raytracer/Lidar3DModel.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -70,6 +73,31 @@ struct OdometryGroundTruth
 	double rotNoiseRel = 0;
 };
 
+/** One image stream of a camera (RGB or depth). */
+struct CameraImageGroundTruth
+{
+	mrpt::img::TCamera camera;	//!< Intrinsics and lens distortion
+	mrpt::poses::CPose3D pose;	//!< Of the optical frame on the vehicle
+	double clipMin = 0;
+	double clipMax = 0;
+	double noiseStd = 0;  //!< RGB: [intensity levels]; depth: [m]
+	double rollingShutterLineTime = 0;	//!< [s], RGB only
+	int rollingShutterBands = 0;
+	std::string files;	//!< Path pattern, relative to the dataset directory
+	bool isDepth = false;
+	double depthUnit = 0;  //!< [m]
+	mvsim::DepthErrorModel depthErrors;
+};
+
+struct CameraGroundTruth
+{
+	std::string label;
+	double clockOffset = 0;	 //!< [s]
+	double period = 0;	//!< [s]
+	std::optional<CameraImageGroundTruth> rgb;
+	std::optional<CameraImageGroundTruth> depth;
+};
+
 /** Everything the ground-truth YAML file of a dataset records. */
 struct DatasetGroundTruth
 {
@@ -89,6 +117,7 @@ struct DatasetGroundTruth
 	std::vector<ImuGroundTruth> imus;
 	std::vector<GnssGroundTruth> gnss;
 	std::vector<OdometryGroundTruth> odometry;
+	std::vector<CameraGroundTruth> cameras;
 };
 
 /** Writes `gt` as YAML to `path` (see docs/mvsim-dataset-gen.rst for the

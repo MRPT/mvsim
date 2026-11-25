@@ -24,7 +24,9 @@ namespace mvsim
 {
 /** Lens distortion and pixel noise options of an RGB camera image, read from
  * the XML tags `distortion_model`, `k1`, `k2`, `p1`, `p2`, `k3` and
- * `image_noise_std`, optionally with a prefix (e.g. `rgb_k1`).
+ * `image_noise_std`, optionally with a prefix (e.g. `rgb_k1`). Also the
+ * rolling shutter (`rolling_shutter_line_time`, `rolling_shutter_bands`),
+ * only simulated by mvsim-dataset-gen.
  * \ingroup sensors_module
  */
 struct CameraDistortionOptions
@@ -36,6 +38,13 @@ struct CameraDistortionOptions
 	double p2 = 0;
 	double k3 = 0;
 	double imageNoiseStd = 0;  //!< Gaussian pixel noise [intensity levels, 0-255]
+
+	/** Rolling shutter: time between the exposures of consecutive image rows
+	 * [s] (0: global shutter). Used by mvsim-dataset-gen only. */
+	double rollingShutterLineTime = 0;
+	/** Rolling shutter: number of image bands rendered, each from the camera
+	 * pose at its middle row's time. */
+	int rollingShutterBands = 8;
 
 	/** Adds the XML parameters, with tag names starting with `prefix` */
 	void declareParams(TParameterDefinitions& params, const std::string& prefix = "");
@@ -70,6 +79,17 @@ class CameraSensor : public SensorBase
 
 	void freeOpenGLResources() override;
 	bool rendersWithOpenGL() const override { return true; }
+
+	/** \name Read-only access to the XML-configured parameters, for exact
+	 * (non-simulation) consumers such as the offline dataset generator.
+	 * @{ */
+	/** Camera intrinsics (`cameraParams`, with the lens distortion) and pose
+	 * on the vehicle (`cameraPose`, of the optical frame: +Z forward). */
+	const mrpt::obs::CObservationImage& sensorParams() const { return sensor_params_; }
+	float clipMin() const { return rgbClipMin_; }
+	float clipMax() const { return rgbClipMax_; }
+	const CameraDistortionOptions& imageOptions() const { return distortion_; }
+	/** @} */
 
    protected:
 	virtual void internalGuiUpdate(

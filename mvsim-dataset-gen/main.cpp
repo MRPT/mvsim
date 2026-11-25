@@ -22,6 +22,8 @@
 #include <mrpt/system/filesystem.h>
 #include <mrpt/system/progress.h>
 #include <mrpt/system/string_utils.h>
+#include <mvsim/Sensors/CameraSensor.h>
+#include <mvsim/Sensors/DepthCameraSensor.h>
 #include <mvsim/Sensors/GNSS.h>
 #include <mvsim/Sensors/IMU.h>
 #include <mvsim/Sensors/Lidar3D.h>
@@ -44,10 +46,12 @@
 #include <random>
 #include <set>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "CameraSimulator.h"
 #include "GroundTruthYaml.h"
 #include "ImuSimulator.h"
 #include "LidarSimulator.h"
@@ -82,12 +86,13 @@ mvsim::rt::Lidar3DModel::Params paramsFromSensor(const mvsim::Lidar3D& lidar)
 }
 
 /** Parses the `--moving-block <block name>=<trajectory.tum>` arguments into
- * one moving object per block, and adds the block names to `movingNames`.
+ * one moving object per block, and adds the block names to `movingNames`
+ * and the blocks with their trajectories to `movingBlocks` (for cameras).
  * Blocks sharing a trajectory file share one trajectory, and are stored
  * together. Throws on any invalid argument. */
 std::vector<MovingObject> loadMovingBlocks(
 	const mvsim::World& world, const std::vector<std::string>& args,
-	std::set<std::string>& movingNames)
+	std::set<std::string>& movingNames, std::vector<CameraScene::MovingBlock>& movingBlocks)
 {
 	// Trajectory file => names of the blocks following it:
 	std::map<std::string, std::vector<std::string>> blocksByFile;
@@ -135,6 +140,7 @@ std::vector<MovingObject> loadMovingBlocks(
 						"--moving-block: block '" + name + "' has no ray-traceable geometry");
 				}
 				objects.emplace_back(std::move(blockScene), traj);
+				movingBlocks.emplace_back(it->second, traj);
 			}
 		}
 	}
@@ -174,6 +180,31 @@ std::map<std::string, double> parseClockOffsets(const std::vector<std::string>& 
 	return out;
 }
 
+/** A seed of its own for the noise of each camera, from the run seed and
+ * the camera name (FNV-1a, the same on every platform). */
+uint32_t cameraNoiseSeed(unsigned seed, const std::string& label)
+{
+	uint32_t h = 2166136261u;
+	for (const char c : label)
+	{
+		h = (h ^ static_cast<uint8_t>(c)) * 16777619u;
+	}
+	return h ^ (seed * 0x9E3779B9u);
+}
+
+/** Calls a function when it goes out of scope, also during stack unwinding. */
+class AtScopeExit
+{
+   public:
+	explicit AtScopeExit(std::function<void()> f) : f_(std::move(f)) {}
+	~AtScopeExit() { f_(); }
+	AtScopeExit(const AtScopeExit&) = delete;
+	AtScopeExit& operator=(const AtScopeExit&) = delete;
+
+   private:
+	std::function<void()> f_;
+};
+
 /** File name of a path, without its directory. */
 std::string fileNameOf(const std::string& path)
 {
@@ -206,6 +237,8 @@ int main(int argc, char** argv)
 	int mixedReturnLabel = -1;
 	std::vector<std::string> movingBlockArgs;
 	std::vector<std::string> clockOffsetArgs;
+	bool noCameras = false;
+	unsigned imageThreads = std::max(1u, std::min(8u, std::thread::hardware_concurrency()));
 
 	cli.add_option("world_xml", worldXmlPath, "World XML file (analytic geometry only)")
 		->required()
@@ -239,6 +272,13 @@ int main(int argc, char** argv)
 		   "pose, per-point 't' in [0, sensor period)) | global (one pose per sweep, t=0)")
 		->check(CLI::IsMember({"global", "rolling"}));
 	cli.add_flag("--noiseless", noiseless, "Force every sensor noise sigma to zero");
+	cli.add_flag(
+		"--no-cameras", noCameras,
+		"Do not render the camera and depth camera sensors (rendering needs OpenGL, through EGL)");
+	cli.add_option(
+		   "--image-threads", imageThreads,
+		   "Threads that encode and write camera image files (default: up to 8)")
+		->check(CLI::PositiveNumber);
 	cli.add_option("--noise-scale", noiseScale, "Scale every XML-configured noise sigma");
 	cli.add_option("--seed", seed, "RNG seed (default: 0, fully reproducible)");
 	cli.add_flag(
@@ -316,8 +356,9 @@ int main(int argc, char** argv)
 		// and the moving blocks):
 		SceneBuilder::Options sbOpts;
 		sbOpts.allowUnsupported = allowUnsupported;
+		std::vector<CameraScene::MovingBlock> movingBlocksForCameras;
 		const std::vector<MovingObject> movingObjects =
-			loadMovingBlocks(world, movingBlockArgs, sbOpts.excludedBlocks);
+			loadMovingBlocks(world, movingBlockArgs, sbOpts.excludedBlocks, movingBlocksForCameras);
 		const auto scene = SceneBuilder::build(world, vehicleName, sbOpts);
 		std::cout << "[mvsim-dataset-gen] Scene built: " << scene.primitiveCount()
 				  << " ray-traceable primitives.\n";
@@ -350,6 +391,8 @@ int main(int argc, char** argv)
 		std::vector<std::shared_ptr<mvsim::Lidar3D>> lidars;
 		std::vector<std::shared_ptr<mvsim::IMU>> imus;
 		std::vector<std::shared_ptr<mvsim::GNSS>> gnssSensors;
+		std::vector<std::shared_ptr<mvsim::CameraSensor>> cameras;
+		std::vector<std::shared_ptr<mvsim::DepthCameraSensor>> depthCameras;
 		for (const auto& s : egoVehicle->getSensors())
 		{
 			if (auto l = std::dynamic_pointer_cast<mvsim::Lidar3D>(s); l)
@@ -363,6 +406,23 @@ int main(int argc, char** argv)
 			else if (auto g = std::dynamic_pointer_cast<mvsim::GNSS>(s); g)
 			{
 				gnssSensors.push_back(g);
+			}
+			else if (auto c = std::dynamic_pointer_cast<mvsim::CameraSensor>(s); c && !noCameras)
+			{
+				cameras.push_back(c);
+			}
+			else if (auto d = std::dynamic_pointer_cast<mvsim::DepthCameraSensor>(s);
+					 d && !noCameras)
+			{
+				if (d->senseRgb() || d->senseDepth())
+				{
+					depthCameras.push_back(d);
+				}
+				else
+				{
+					std::cerr << "[mvsim-dataset-gen] Warning: '" << d->getName()
+							  << "' senses neither RGB nor depth: skipped.\n";
+				}
 			}
 		}
 		if (lidars.empty())
@@ -402,6 +462,14 @@ int main(int argc, char** argv)
 			for (const auto& g : gnssSensors)
 			{
 				sensorLabels.push_back(g->getName());
+			}
+			for (const auto& c : cameras)
+			{
+				sensorLabels.push_back(c->getName());
+			}
+			for (const auto& d : depthCameras)
+			{
+				sensorLabels.push_back(d->getName());
 			}
 			for (const auto& label : sensorLabels)
 			{
@@ -697,6 +765,144 @@ int main(int argc, char** argv)
 				 odomGt.clockOffset});
 		}
 
+		// Cameras: rendered with OpenGL (EGL) from a scene of the world,
+		// images in files in <output name>_Images/. The first renderer owns the
+		// OpenGL context, so renderers are released in reverse order, on every
+		// exit path (the generators hold them too):
+		size_t nImages = 0;
+		std::unique_ptr<CameraScene> cameraScene;
+		std::vector<std::shared_ptr<RgbCameraSim>> rgbSims;
+		std::vector<std::shared_ptr<DepthCameraSim>> depthSims;
+		std::shared_ptr<ImageWriter> imageWriter;
+		const AtScopeExit releaseRenderers(
+			[&]()
+			{
+				gens.clear();
+				while (!depthSims.empty())
+				{
+					depthSims.pop_back();
+				}
+				while (!rgbSims.empty())
+				{
+					rgbSims.pop_back();
+				}
+				cameraScene.reset();
+			});
+		const std::string imagesDirName =
+			mrpt::system::extractFileName(outputPath) + std::string("_Images");
+		const std::string imagesDir =
+			mrpt::system::pathJoin({mrpt::system::extractFileDirectory(outputPath), imagesDirName});
+		if (!cameras.empty() || !depthCameras.empty())
+		{
+			if (!mrpt::system::directoryExists(imagesDir) &&
+				!mrpt::system::createDirectory(imagesDir))
+			{
+				THROW_EXCEPTION("Cannot create the images directory '" + imagesDir + "'");
+			}
+			cameraScene = std::make_unique<CameraScene>(world, movingBlocksForCameras);
+			imageWriter = std::make_shared<ImageWriter>(imageThreads);
+			const double camNoiseScale = noiseless ? 0.0 : noiseScale;
+			bool firstRenderer = true;
+			for (const auto& cam : cameras)
+			{
+				const std::string label = cam->getName();
+				CameraImageModel m;
+				m.camera = cam->sensorParams().cameraParams;
+				m.poseOnVehicle = cam->sensorParams().cameraPose;
+				m.clipMin = cam->clipMin();
+				m.clipMax = cam->clipMax();
+				m.noiseStd = cam->imageOptions().imageNoiseStd * camNoiseScale;
+				m.rollingShutterLineTime = cam->imageOptions().rollingShutterLineTime;
+				m.rollingShutterBands = cam->imageOptions().rollingShutterBands;
+				auto sim = std::make_shared<RgbCameraSim>(
+					m, label, imagesDir, imageWriter, cameraNoiseSeed(seed, label), firstRenderer);
+				firstRenderer = false;
+				rgbSims.push_back(sim);
+
+				// The model as rendered (e.g. the band count it uses):
+				const auto& sm = sim->model();
+				CameraGroundTruth camGt;
+				camGt.label = label;
+				camGt.clockOffset = clockOffsetOf(label);
+				camGt.period = cam->sensor_period();
+				CameraImageGroundTruth im;
+				im.camera = sm.camera;
+				im.pose = sm.poseOnVehicle;
+				im.clipMin = sm.clipMin;
+				im.clipMax = sm.clipMax;
+				im.noiseStd = sm.noiseStd;
+				im.rollingShutterLineTime = sm.rollingShutterLineTime;
+				im.rollingShutterBands = sm.rollingShutterBands;
+				im.files = imagesDirName + "/" + label + "_%06d.png";
+				camGt.rgb = im;
+				groundTruth.cameras.push_back(camGt);
+
+				gens.push_back(
+					{label, t0, cam->sensor_period(),
+					 [&, sim](double t) -> mrpt::obs::CObservation::Ptr
+					 {
+						 nImages++;
+						 return sim->simulate(*cameraScene, traj, t);
+					 },
+					 camGt.clockOffset});
+			}
+			for (const auto& cam : depthCameras)
+			{
+				const std::string label = cam->getName();
+				auto sim = std::make_shared<DepthCameraSim>(
+					*cam, imagesDir, imageWriter, cameraNoiseSeed(seed, label), camNoiseScale,
+					firstRenderer);
+				firstRenderer = false;
+				depthSims.push_back(sim);
+
+				CameraGroundTruth camGt;
+				camGt.label = label;
+				camGt.clockOffset = clockOffsetOf(label);
+				camGt.period = cam->sensor_period();
+				if (sim->hasRgb())
+				{
+					const auto& m = sim->rgbModel();
+					CameraImageGroundTruth im;
+					im.camera = m.camera;
+					im.pose = m.poseOnVehicle;
+					im.clipMin = m.clipMin;
+					im.clipMax = m.clipMax;
+					im.noiseStd = m.noiseStd;
+					im.rollingShutterLineTime = m.rollingShutterLineTime;
+					im.rollingShutterBands = m.rollingShutterBands;
+					im.files = imagesDirName + "/" + label + "_%06d.png";
+					camGt.rgb = im;
+				}
+				if (sim->hasDepth())
+				{
+					const auto& m = sim->depthModel();
+					CameraImageGroundTruth im;
+					im.camera = m.camera;
+					im.pose = m.poseOnVehicle;
+					im.clipMin = m.clipMin;
+					im.clipMax = m.clipMax;
+					im.noiseStd = m.noiseStd;
+					im.isDepth = true;
+					im.depthUnit = m.unit;
+					im.depthErrors = m.errors;
+					im.files = imagesDirName + "/" + label + "_%06d_depth.bin";
+					camGt.depth = im;
+				}
+				groundTruth.cameras.push_back(camGt);
+
+				gens.push_back(
+					{label, t0, cam->sensor_period(),
+					 [&, sim](double t) -> mrpt::obs::CObservation::Ptr
+					 {
+						 nImages++;
+						 return sim->simulate(*cameraScene, traj, t);
+					 },
+					 camGt.clockOffset});
+			}
+			std::cout << "[mvsim-dataset-gen] Cameras: " << rgbSims.size() + depthSims.size()
+					  << ", images in '" << imagesDir << "'.\n";
+		}
+
 		// Observations are generated in sampling time order (min-heap over
 		// each generator's next sampling time), so that clock offsets never
 		// change the order in which the streams draw from the shared RNG, and
@@ -774,12 +980,17 @@ int main(int argc, char** argv)
 			}
 		}
 		std::cout << "\n";
+		if (imageWriter)
+		{
+			imageWriter->finish();
+		}
 
 		std::cout << "[mvsim-dataset-gen] Wrote " << nSweeps << " lidar sweep(s) from "
 				  << lidars.size() << " sensor(s), " << nImuSamples << " IMU sample(s) from "
 				  << imus.size() << " sensor(s), " << nGnss << " GNSS reading(s) from "
-				  << gnssSensors.size() << " sensor(s), and " << nOdom << " odometry sample(s) to '"
-				  << outputPath << "'.\n";
+				  << gnssSensors.size() << " sensor(s), " << nImages << " camera frame(s) from "
+				  << rgbSims.size() + depthSims.size() << " sensor(s), and " << nOdom
+				  << " odometry sample(s) to '" << outputPath << "'.\n";
 
 		const std::string gtBase = mrpt::system::fileNameChangeExtension(outputPath, "gt.tum");
 		gtVehicle.saveToTextFile_TUM(gtBase);
@@ -808,6 +1019,27 @@ int main(int argc, char** argv)
 		const std::string gtYaml = mrpt::system::fileNameChangeExtension(outputPath, "gt.yaml");
 		writeGroundTruthYaml(gtYaml, groundTruth);
 		std::cout << "[mvsim-dataset-gen] Wrote sensor ground truth to '" << gtYaml << "'.\n";
+
+		const auto printTiming = [](const std::string& label, const CameraTiming& tm)
+		{
+			if (tm.frames == 0)
+			{
+				return;
+			}
+			const double n = static_cast<double>(tm.frames);
+			std::cout << mrpt::format(
+				"[mvsim-dataset-gen] Camera '%s': %zu frames, %.1f ms rendering and %.1f ms "
+				"writing per frame.\n",
+				label.c_str(), tm.frames, 1e3 * tm.render / n, 1e3 * tm.write / n);
+		};
+		for (size_t i = 0; i < rgbSims.size(); i++)
+		{
+			printTiming(cameras.at(i)->getName(), rgbSims[i]->timing());
+		}
+		for (size_t i = 0; i < depthSims.size(); i++)
+		{
+			printTiming(depthCameras.at(i)->getName(), depthSims[i]->timing());
+		}
 	}
 	catch (const std::exception& e)
 	{
