@@ -16,6 +16,8 @@ add_executable(${PROJECT_NAME}
 	OdometrySimulator.cpp
 	GroundTruthYaml.h
 	GroundTruthYaml.cpp
+	CameraSimulator.h
+	CameraSimulator.cpp
 )
 target_link_libraries(
 	${PROJECT_NAME}

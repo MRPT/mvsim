@@ -293,6 +293,80 @@ void writeGnss(std::ostream& o, const GnssGroundTruth& g, double tStart)
 	}
 }
 
+/** The intrinsics of an image stream, at `indent`, optionally with its
+ * pose (for the sub-blocks of RGB-D cameras). */
+void writeCameraImage(
+	std::ostream& o, const std::string& indent, const CameraImageGroundTruth& im, bool withPose)
+{
+	const auto& c = im.camera;
+	if (withPose)
+	{
+		mrpt::math::CQuaternionDouble q;
+		im.pose.getAsQuaternion(q);
+		o << indent << "pose_in_vehicle:\n";
+		o << indent << "  xyz: " << vec({im.pose.x(), im.pose.y(), im.pose.z()}) << "\n";
+		o << indent << "  quat_xyzw: " << vec({q.x(), q.y(), q.z(), q.r()}) << "\n";
+		o << indent << "  ypr_deg: "
+		  << vec(
+				 {mrpt::RAD2DEG(im.pose.yaw()), mrpt::RAD2DEG(im.pose.pitch()),
+				  mrpt::RAD2DEG(im.pose.roll())})
+		  << "\n";
+	}
+	o << indent << "width: " << c.ncols << "\n";
+	o << indent << "height: " << c.nrows << "\n";
+	o << indent << "fx: " << num(c.fx()) << "\n";
+	o << indent << "fy: " << num(c.fy()) << "\n";
+	o << indent << "cx: " << num(c.cx()) << "\n";
+	o << indent << "cy: " << num(c.cy()) << "\n";
+	if (c.distortion == mrpt::img::DistortionModel::plumb_bob)
+	{
+		o << indent << "distortion: {model: plumb_bob, coeffs: "
+		  << vec({c.k1(), c.k2(), c.p1(), c.p2(), c.k3()}) << "}  # k1 k2 p1 p2 k3\n";
+	}
+	else
+	{
+		o << indent << "distortion: {model: none, coeffs: []}\n";
+	}
+	o << indent << "clip_m: " << vec({im.clipMin, im.clipMax}) << "\n";
+	if (im.isDepth)
+	{
+		o << indent << "depth_unit_m: " << num(im.depthUnit) << "\n";
+		o << indent << "depth_noise_std_m: " << num(im.noiseStd) << "\n";
+		const auto& e = im.depthErrors;
+		o << indent << "depth_errors: {scale: " << num(e.scale) << ", offset_m: " << num(e.offset)
+		  << ", radial: " << vec({e.radialK1, e.radialK2}) << "}\n";
+	}
+	else
+	{
+		o << indent << "rolling_shutter_line_time_s: " << num(im.rollingShutterLineTime) << "\n";
+		if (im.rollingShutterLineTime > 0)
+		{
+			o << indent << "rolling_shutter_bands: " << im.rollingShutterBands << "\n";
+		}
+		o << indent << "image_noise_std: " << num(im.noiseStd) << "\n";
+	}
+	o << indent << "files: " << str(im.files) << "\n";
+}
+
+void writeCamera(std::ostream& o, const CameraGroundTruth& cam)
+{
+	const auto& main = cam.depth ? *cam.depth : *cam.rgb;
+	const char* type =
+		cam.rgb && cam.depth ? "rgbd_camera" : (cam.depth ? "depth_camera" : "camera");
+	writeSensorHeader(o, cam.label, type, main.pose, cam.clockOffset, cam.period);
+	if (cam.rgb && cam.depth)
+	{
+		o << "      rgb:\n";
+		writeCameraImage(o, "        ", *cam.rgb, true);
+		o << "      depth:\n";
+		writeCameraImage(o, "        ", *cam.depth, true);
+	}
+	else
+	{
+		writeCameraImage(o, "      ", main, false);
+	}
+}
+
 void writeOdometry(std::ostream& o, const OdometryGroundTruth& od)
 {
 	writeSensorHeader(o, od.label, "odometry", {}, od.clockOffset, od.period);
@@ -345,6 +419,10 @@ void mvsim_dataset_gen::writeGroundTruthYaml(const std::string& path, const Data
 	for (const auto& od : gt.odometry)
 	{
 		writeOdometry(o, od);
+	}
+	for (const auto& cam : gt.cameras)
+	{
+		writeCamera(o, cam);
 	}
 
 	std::ofstream f(path);

@@ -250,6 +250,16 @@ target_compile_definitions(test_dataset_gen_e2e PRIVATE
 add_dependencies(test_dataset_gen_e2e mvsim-dataset-gen)
 
 mvsim_add_test(
+	TARGET test_dataset_gen_cameras
+	SOURCES test_dataset_gen_cameras.cpp
+	LINK_LIBRARIES mvsim::simulator
+	)
+target_compile_definitions(test_dataset_gen_cameras PRIVATE
+	MVSIM_DATASET_GEN_EXE_PATH="$<TARGET_FILE:mvsim-dataset-gen>"
+	)
+add_dependencies(test_dataset_gen_cameras mvsim-dataset-gen)
+
+mvsim_add_test(
 	TARGET test_xml_if_in_instances
 	SOURCES test_xml_if_in_instances.cpp
 	LINK_LIBRARIES mvsim::simulator
