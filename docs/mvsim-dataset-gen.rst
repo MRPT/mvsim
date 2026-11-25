@@ -394,13 +394,13 @@ format, ``mvsim/dataset_gt/1``:
   the ENU position error added to the readings.
 - ``odometry`` (the wheel odometry stream, ``odom``, at the vehicle frame):
   ``trans_noise_rel``, ``rot_noise_rel``.
-
-- ``camera``: the pose is that of the optical frame (+Z forward, +X right,
-  +Y down). ``width``, ``height``, ``fx``, ``fy``, ``cx``, ``cy`` (OpenCV
-  convention), ``distortion: {model: none|plumb_bob, coeffs: [k1, k2, p1,
-  p2, k3]}``, ``clip_m``, ``rolling_shutter_line_time_s`` (0: global
-  shutter; with ``rolling_shutter_bands`` otherwise), ``image_noise_std``
-  and ``files`` (the path pattern of the images, relative to the dataset).
+- ``camera`` (also an ``rgbd_camera`` without depth): the pose is that of
+  the optical frame (+Z forward, +X right, +Y down). ``width``, ``height``,
+  ``fx``, ``fy``, ``cx``, ``cy`` (OpenCV convention), ``distortion:
+  {model: none|plumb_bob, coeffs: [k1, k2, p1, p2, k3]}``, ``clip_m``,
+  ``rolling_shutter_line_time_s`` (0: global shutter; with
+  ``rolling_shutter_bands`` otherwise), ``image_noise_std`` and ``files``
+  (the path pattern of the images, relative to the dataset).
 - ``depth_camera`` (an ``rgbd_camera`` without RGB): the same keys, but
   ``depth_unit_m``, ``depth_noise_std_m`` and ``depth_errors: {scale,
   offset_m, radial: [k1, k2]}`` instead of the rolling shutter and pixel

@@ -25,6 +25,7 @@
 #include <mrpt/serialization/CArchive.h>
 #include <mrpt/system/filesystem.h>
 #include <mrpt/version.h>
+#include <mvsim/Sensors/DepthCameraSensor.h>
 
 #include <algorithm>
 #include <cmath>
@@ -58,8 +59,9 @@ std::string tempPath(const std::string& suffix)
 
 /** A flat world with a wall facing the cameras and a thin red disk (the landmark,
  * 20 cm wide, centered at kLandmark, facing the cameras and uniformly lit),
- * with an RGB camera (20 Hz) and an RGB-D camera (10 Hz). */
-std::string writeWorld(const std::string& cameraTags, const std::string& rgbdTags)
+ * with an RGB camera (20 Hz, at height camZ) and an RGB-D camera (10 Hz). */
+std::string writeWorld(
+	const std::string& cameraTags, const std::string& rgbdTags, double camZ = kLandmark.z)
 {
 	const std::string path = tempPath("cameras.world.xml");
 	std::ofstream f(path);
@@ -81,7 +83,8 @@ std::string writeWorld(const std::string& cameraTags, const std::string& rgbdTag
       <vert_fov_degrees>30</vert_fov_degrees><horz_nrays>360</horz_nrays><sensor_period>0.1</sensor_period>
       <range_std_noise>0.01</range_std_noise></sensor>
     <sensor class="camera" name="cam1">
-      <pose_3d>0.2 0 1.2 -90 0 -90</pose_3d>
+      <pose_3d>0.2 0 )"
+	  << camZ << R"( -90 0 -90</pose_3d>
       <sensor_period>0.05</sensor_period>
       <ncols>640</ncols><nrows>480</nrows><cx>320</cx><cy>240</cy><fx>500</fx><fy>500</fy>
       <clip_min>0.05</clip_min><clip_max>200</clip_max>
@@ -239,7 +242,8 @@ mrpt::math::TPoint2D project(
  * and its projection at the row time (`lineTime` per row; 0: the frame
  * stamp), and the number of frames. */
 std::pair<double, int> landmarkError(
-	const std::vector<mrpt::obs::CObservation::Ptr>& obs, double clockOffset, double lineTime)
+	const std::vector<mrpt::obs::CObservation::Ptr>& obs, double clockOffset, double lineTime,
+	double camZ = kLandmark.z)
 {
 	double maxErr = 0;
 	int n = 0;
@@ -258,8 +262,8 @@ std::pair<double, int> landmarkError(
 		}
 		const double t = mrpt::Clock::toDouble(im->timestamp) - clockOffset;
 		// The row of the landmark tells its exposure time:
-		const auto p0 = project(t, 1.2, 500, 320, 240);
-		const auto p = project(t + p0.y * lineTime, 1.2, 500, 320, 240);
+		const auto p0 = project(t, camZ, 500, 320, 240);
+		const auto p = project(t + p0.y * lineTime, camZ, 500, 320, 240);
 		maxErr = std::max(maxErr, std::hypot(blob->x - p.x, blob->y - p.y));
 		n++;
 	}
@@ -393,20 +397,22 @@ void test_frame_times_and_depth()
 
 void test_rolling_shutter()
 {
-	// 0.1 ms per row: the middle row is exposed 24 ms after the first one,
-	// when the landmark has moved 2.5 px.
+	// 0.1 ms per row. The camera is 1 m above the landmark, which it sees at
+	// row 344: exposed 34 ms after the first row (3.6 px of motion), and 21 ms
+	// later than if the rows were read bottom-up.
+	constexpr double camZ = 2.2;
 	const std::string world = writeWorld(
 		"<rolling_shutter_line_time>1e-4</rolling_shutter_line_time>"
 		"<rolling_shutter_bands>48</rolling_shutter_bands>",
-		"");
+		"", camZ);
 	const std::string traj = writeTrajectory();
 	const std::string out = tempPath("rs.rawlog");
 	EXPECT_TRUE(runDatasetGen(world, traj, out, "--duration 1.0 --seed 3") == 0);
 
 	mrpt::img::CImage::setImagesPathBase(imagesDirOf(out));
 	const auto obs = loadObservations(out);
-	const auto [errRs, n] = landmarkError(obs, 0, 1e-4);
-	const auto [errGlobal, n2] = landmarkError(obs, 0, 0);
+	const auto [errRs, n] = landmarkError(obs, 0, 1e-4, camZ);
+	const auto [errGlobal, n2] = landmarkError(obs, 0, 0, camZ);
 	EXPECT_TRUE(n == 21 && n2 == 21);
 	EXPECT_LT(errRs, 0.3);
 	EXPECT_GT(errGlobal, 1.5);
@@ -539,11 +545,39 @@ void test_determinism()
 	std::remove(traj.c_str());
 }
 
+void test_depth_error_model()
+{
+	// Depths beyond the range stay out of it, those that become non-positive
+	// are no return, and r is measured from the pixel centers (u, v):
+	mvsim::DepthErrorModel e;
+	e.scale = 0.8;
+	e.offset = -0.5;
+	e.radialK1 = 0.1;
+	mrpt::img::TCamera cam;
+	cam.ncols = 4;
+	cam.nrows = 1;
+	cam.fx(2.0);
+	cam.fy(2.0);
+	cam.cx(1.0);
+	cam.cy(0.0);
+	mrpt::math::CMatrixFloat d(1, 4);
+	d(0, 0) = 0.5f;	 // 0.5 (0.8 + 0.1 * 0.25) - 0.5 < 0
+	d(0, 1) = 4.0f;	 // At the principal point
+	d(0, 2) = 6.0f;	 // Beyond 5 m, although it would become 4.45 m
+	d(0, 3) = 3.0f;	 // r = 1
+	e.apply(d, cam, 5.0);
+	EXPECT_NEAR(d(0, 0), 0.0, 1e-9);
+	EXPECT_NEAR(d(0, 1), 4.0 * 0.8 - 0.5, 1e-6);
+	EXPECT_NEAR(d(0, 2), 0.0, 1e-9);
+	EXPECT_NEAR(d(0, 3), 3.0 * 0.9 - 0.5, 1e-6);
+}
+
 void test_depth_errors()
 {
-	// d -> d (1.02 + 0.01 r^2) + 0.05:
+	// A depth-only camera (rendered on its own), d -> d (1.02 + 0.01 r^2) + 0.05:
 	const std::string world = writeWorld(
 		"",
+		"<sense_rgb>false</sense_rgb>"
 		"<depth_error_scale>1.02</depth_error_scale><depth_error_offset>0.05</depth_error_offset>"
 		"<depth_error_radial_k1>0.01</depth_error_radial_k1>");
 	const std::string traj = writeTrajectory();
@@ -551,7 +585,8 @@ void test_depth_errors()
 	EXPECT_TRUE(runDatasetGen(world, traj, out, "--duration 0.5 --seed 3") == 0);
 
 	mrpt::img::CImage::setImagesPathBase(imagesDirOf(out));
-	double maxErr = 0;
+	double maxWallErr = 0;
+	double maxFloorErr = 0;
 	int n = 0;
 	for (const auto& o : loadObservations(out))
 	{
@@ -561,25 +596,40 @@ void test_depth_errors()
 			continue;
 		}
 		d->load();
+		EXPECT_TRUE(d->hasRangeImage && !d->hasIntensityImage);
 		n++;
-		for (int r = 30; r < 60; r++)
+		// The wall (rows 30-60), and the floor (rows 160-240, the camera is
+		// 1 m above it): the depth of the floor changes 2 to 6 cm per row, so
+		// it also checks the pixel centers of the depth image.
+		for (int r = 30; r < 240; r++)
 		{
+			if (r >= 60 && r < 160)
+			{
+				continue;
+			}
+			const double y = (r - 120.0) / 250.0;
+			const double z = r < 60 ? kWallX - kCamX : 1.0 / y;
+			double& maxErr = r < 60 ? maxWallErr : maxFloorErr;
 			for (int c = 0; c < 320; c += 7)
 			{
 				const double x = (c - 160.0) / 250.0;
-				const double y = (r - 120.0) / 250.0;
-				const double expected = (kWallX - kCamX) * (1.02 + 0.01 * (x * x + y * y)) + 0.05;
+				const double expected = z * (1.02 + 0.01 * (x * x + y * y)) + 0.05;
 				maxErr = std::max(maxErr, std::abs(d->rangeImage(r, c) * d->rangeUnits - expected));
 			}
 		}
 	}
 	EXPECT_TRUE(n == 6);
-	EXPECT_LT(maxErr, 0.0006);
-	std::cout << "Depth error model max deviation: " << maxErr * 1e3 << " mm\n";
+	// Rounding to 1 mm units, and the depth buffer resolution on the floor:
+	EXPECT_LT(maxWallErr, 0.0006);
+	EXPECT_LT(maxFloorErr, 0.001);
+	std::cout << "Depth error model max deviation: " << maxWallErr * 1e3 << " mm (wall), "
+			  << maxFloorErr * 1e3 << " mm (floor)\n";
 
 	const auto gt =
 		mrpt::containers::yaml::FromFile(mrpt::system::fileNameChangeExtension(out, "gt.yaml"));
-	const auto& e = gt["sensors"]["rgbd1"]["intrinsics"]["depth"]["depth_errors"];
+	const auto& cam = gt["sensors"]["rgbd1"];
+	EXPECT_TRUE(cam["type"].as<std::string>() == "depth_camera");
+	const auto& e = cam["intrinsics"]["depth_errors"];
 	EXPECT_NEAR(e["scale"].as<double>(), 1.02, 1e-12);
 	EXPECT_NEAR(e["offset_m"].as<double>(), 0.05, 1e-12);
 	EXPECT_NEAR(e["radial"](0).as<double>(), 0.01, 1e-12);
@@ -594,7 +644,9 @@ int main()
 {
 	try
 	{
-		// Skip only if off-screen rendering is not available at all:
+		test_depth_error_model();
+
+		// Skip the rest only if off-screen rendering is not available at all:
 		try
 		{
 			mrpt::opengl::CFBORender probe(16, 16);
@@ -602,7 +654,7 @@ int main()
 		catch (const std::exception& e)
 		{
 			std::cout << "[SKIPPED] No OpenGL rendering available: " << e.what() << "\n";
-			return 0;
+			return g_failures == 0 ? 0 : 1;
 		}
 
 		test_frame_times_and_depth();
