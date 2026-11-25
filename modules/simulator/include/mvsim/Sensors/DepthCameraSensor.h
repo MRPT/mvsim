@@ -20,6 +20,32 @@
 
 namespace mvsim
 {
+/** Systematic errors of the depth images of a depth camera: a depth `d`
+ * (along the optical axis) is measured as
+ * `d * (scale + radial_k1 * r^2 + radial_k2 * r^4) + offset`, where `r` is
+ * the distance of the pixel to the principal point in normalized image
+ * coordinates (a "bowl" growing towards the image borders). Depths that
+ * become non-positive are invalid (0). From the XML tags `depth_error_scale`,
+ * `depth_error_offset` [m], `depth_error_radial_k1` and
+ * `depth_error_radial_k2`.
+ * \ingroup sensors_module
+ */
+struct DepthErrorModel
+{
+	double scale = 1.0;
+	double offset = 0;	//!< [m]
+	double radialK1 = 0;
+	double radialK2 = 0;
+
+	bool enabled() const { return scale != 1.0 || offset != 0 || radialK1 != 0 || radialK2 != 0; }
+
+	/** Adds the XML parameters */
+	void declareParams(TParameterDefinitions& params);
+
+	/** Applies the errors to a depth image [m] (0: no return) of `cam` */
+	void apply(mrpt::math::CMatrixFloat& depth, const mrpt::img::TCamera& cam) const;
+};
+
 /** "RGB+D" or just "D" (depth without RGB) camera sensor on board a vehicle.
  *
  *  Use the XML parameters:
@@ -65,6 +91,25 @@ class DepthCameraSensor : public SensorBase
 	/** ROS depth image encoding: "16UC1" (millimeters, default) or "32FC1"
 	 * (meters) */
 	const std::string& rosDepthImageEncoding() const { return ros_depth_image_encoding_; }
+
+	/** \name Read-only access to the XML-configured parameters, for exact
+	 * (non-simulation) consumers such as the offline dataset generator.
+	 * @{ */
+	/** Depth (`cameraParams`) and RGB (`cameraParamsIntensity`) intrinsics,
+	 * sensor pose on the vehicle (`sensorPose`, +X forward), RGB camera pose
+	 * wrt it (`relativePoseIntensityWRTDepth`, +Z forward), `rangeUnits` and
+	 * `maxRange`. */
+	const mrpt::obs::CObservation3DRangeScan& sensorParams() const { return sensor_params_; }
+	bool senseDepth() const { return sense_depth_; }
+	bool senseRgb() const { return sense_rgb_; }
+	float rgbClipMin() const { return rgbClipMin_; }
+	float rgbClipMax() const { return rgbClipMax_; }
+	float depthClipMin() const { return depth_clip_min_; }
+	float depthClipMax() const { return depth_clip_max_; }
+	float depthNoiseSigma() const { return depth_noise_sigma_; }
+	const CameraDistortionOptions& rgbImageOptions() const { return rgbDistortion_; }
+	const DepthErrorModel& depthErrors() const { return depthErrors_; }
+	/** @} */
 
    protected:
 	virtual void internalGuiUpdate(
@@ -122,6 +167,7 @@ class DepthCameraSensor : public SensorBase
 	bool publish_colored_pointcloud_ = false;  //!< Publish XYZRGB instead of XYZ pointcloud
 
 	float depth_noise_sigma_ = 1e-3;
+	DepthErrorModel depthErrors_;
 	bool show_3d_pointcloud_ = false;
 
 	mrpt::viz::CSetOfObjects::Ptr gl_sensor_origin_, gl_sensor_origin_corner_;

@@ -627,6 +627,27 @@ ROS publishing options
   published on ``<label>_points`` will include per-point RGB color
   (``XYZRGB`` fields) instead of plain ``XYZ``.
 
+Depth errors
+##########################
+
+Besides the Gaussian ``depth_noise_sigma``, depth images can have systematic
+errors (all off by default): a depth ``d`` along the optical axis is
+measured as ``d * (scale + radial_k1 * r^2 + radial_k2 * r^4) + offset``,
+where ``r`` is the distance of the pixel to the principal point in
+normalized image coordinates (a "bowl" that grows towards the image
+borders), with the tags ``depth_error_scale`` (default 1),
+``depth_error_offset`` [m], ``depth_error_radial_k1`` and
+``depth_error_radial_k2``. Depths that become non-positive are invalid.
+
+Rolling shutter (offline datasets)
+##################################
+
+``rolling_shutter_line_time`` (``camera``) or
+``rgb_rolling_shutter_line_time`` (``rgbd_camera``): the time between the
+exposures of consecutive image rows [s], 0 (default) for a global shutter,
+with ``rolling_shutter_bands`` render bands. Only simulated by
+:doc:`mvsim-dataset-gen`.
+
 
 ----
 

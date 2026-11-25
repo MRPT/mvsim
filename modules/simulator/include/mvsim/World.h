@@ -736,6 +736,12 @@ class World : public mrpt::system::COutputLogger
 	/** Number of shadow map cascades used while rendering camera sensors. */
 	int sensor_shadow_cascades() const { return lightOptions_.sensor_shadow_cascades; }
 
+	/** Sets the lights of the world XML <lights> options (direction, colors,
+	 * shadows and the point and spot lights) in a viewport, as in the scene
+	 * camera sensors see. For renderers of their own scene (e.g. offline
+	 * dataset generation). */
+	void applyLightOptionsTo(mrpt::viz::Viewport& v) const;
+
 	const std::map<std::string, std::string>& user_defined_variables() const
 	{
 		return userDefinedVariables_;

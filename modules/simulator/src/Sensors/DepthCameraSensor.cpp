@@ -127,6 +127,9 @@ void DepthCameraSensor::loadConfigFrom(const rapidxml::xml_node<char>* root)
 	// Lens distortion and noise of the RGB image:
 	rgbDistortion_ = CameraDistortionOptions();
 	rgbDistortion_.declareParams(params, "rgb_");
+
+	depthErrors_ = DepthErrorModel();
+	depthErrors_.declareParams(params);
 	params["rgb_clip_max"] = TParamEntry("%f", &rgbClipMax_);
 	params["depth_clip_min"] = TParamEntry("%f", &depth_clip_min_);
 	params["depth_clip_max"] = TParamEntry("%f", &depth_clip_max_);
@@ -435,6 +438,10 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 
 		curObs.hasRangeImage = true;
 		curObs.range_is_depth = true;
+		if (depthErrors_.enabled())
+		{
+			depthErrors_.apply(depthImage_, curObs.cameraParams);
+		}
 		depthToRangeImage(curObs);
 	}
 	else
@@ -555,6 +562,38 @@ void DepthCameraSensor::notifySimulableSetPose(const mrpt::math::TPose3D& newPos
 	// Convert back to local:
 	const auto& p = vehicle_.getChassisPose();
 	sensor_params_.sensorPose = mrpt::poses::CPose3D(newPose - p);
+}
+
+void DepthErrorModel::declareParams(TParameterDefinitions& params)
+{
+	params["depth_error_scale"] = TParamEntry("%lf", &scale);
+	params["depth_error_offset"] = TParamEntry("%lf", &offset);
+	params["depth_error_radial_k1"] = TParamEntry("%lf", &radialK1);
+	params["depth_error_radial_k2"] = TParamEntry("%lf", &radialK2);
+}
+
+void DepthErrorModel::apply(mrpt::math::CMatrixFloat& depth, const mrpt::img::TCamera& cam) const
+{
+	const double cx = cam.cx();
+	const double cy = cam.cy();
+	const double fx = cam.fx();
+	const double fy = cam.fy();
+	for (int r = 0; r < depth.rows(); r++)
+	{
+		const double y = (r - cy) / fy;
+		for (int c = 0; c < depth.cols(); c++)
+		{
+			float& d = depth(r, c);
+			if (!(d > 0))
+			{
+				continue;
+			}
+			const double x = (c - cx) / fx;
+			const double r2 = x * x + y * y;
+			const double m = d * (scale + radialK1 * r2 + radialK2 * r2 * r2) + offset;
+			d = m > 0 ? static_cast<float>(m) : 0.0f;
+		}
+	}
 }
 
 void DepthCameraSensor::freeOpenGLResources()

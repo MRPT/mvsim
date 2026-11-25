@@ -298,6 +298,8 @@ void CameraDistortionOptions::declareParams(
 	params[prefix + "p2"] = TParamEntry("%lf", &p2);
 	params[prefix + "k3"] = TParamEntry("%lf", &k3);
 	params[prefix + "image_noise_std"] = TParamEntry("%lf", &imageNoiseStd);
+	params[prefix + "rolling_shutter_line_time"] = TParamEntry("%lf", &rollingShutterLineTime);
+	params[prefix + "rolling_shutter_bands"] = TParamEntry("%i", &rollingShutterBands);
 }
 
 void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
@@ -309,6 +311,10 @@ void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
 	ASSERTMSG_(
 		std::isfinite(imageNoiseStd) && imageNoiseStd >= 0,
 		"<image_noise_std> must be a finite, non-negative number");
+	ASSERTMSG_(
+		std::isfinite(rollingShutterLineTime) && rollingShutterLineTime >= 0,
+		"<rolling_shutter_line_time> must be a finite, non-negative number");
+	ASSERTMSG_(rollingShutterBands >= 1, "<rolling_shutter_bands> must be at least 1");
 
 	if (distortionModel == "plumb_bob")
 	{

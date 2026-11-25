@@ -1145,61 +1145,67 @@ void World::internalGraphicsLoopTasksForSimulation()
 	}
 }
 
+namespace
+{
+mrpt::math::TPoint3Df lightDirection(const float azimuth, const float elevation)
+{
+	return {-cos(azimuth) * cos(elevation), -sin(azimuth) * cos(elevation), -sin(elevation)};
+}
+}  // namespace
+
 void World::applyLightOptions()
 {
 	const auto& lo = lightOptions_;
 
 	setLightDirectionFromAzimuthElevation(lo.light_azimuth, lo.light_elevation);
 
-	auto vv = worldVisual_->getViewport();
-	auto vp = worldPhysical_.getViewport();
+	applyLightOptionsTo(*worldVisual_->getViewport());
+	applyLightOptionsTo(*worldPhysical_.getViewport());
+}
 
-	const auto extraLights = pointAndSpotLightsForRendering();
+void World::applyLightOptionsTo(mrpt::viz::Viewport& v) const
+{
+	const auto& lo = lightOptions_;
 
-	auto lambdaSetLightParams = [&lo, &extraLights](const mrpt::viz::Viewport::Ptr& v)
+	// enable shadows and set the shadow map texture size:
+	const int sms = lo.shadow_map_size;
+	v.enableShadowCasting(lo.enable_shadows, sms, sms);
+
+	// light color and intensities:
+	const auto colf = mrpt::img::TColorf(lo.light_color);
+
+	auto& vlp = v.lightParameters();
+
+	if (!vlp.lights.empty())
 	{
-		// enable shadows and set the shadow map texture size:
-		const int sms = lo.shadow_map_size;
-		v->enableShadowCasting(lo.enable_shadows, sms, sms);
+		vlp.lights[0].color = colf;
+		vlp.lights[0].diffuse = lo.light_diffuse;
+		vlp.lights[0].specular = lo.light_specular;
+		vlp.lights[0].direction = lightDirection(lo.light_azimuth, lo.light_elevation);
+	}
 
-		// light color and intensities:
-		const auto colf = mrpt::img::TColorf(lo.light_color);
+	// Hemisphere ambient lighting (replaces fill light):
+	vlp.ambient = lo.light_ambient;
+	vlp.ambientSkyColor = mrpt::img::TColorf(lo.ambient_sky_color);
+	vlp.ambientGroundColor = mrpt::img::TColorf(lo.ambient_ground_color);
 
-		auto& vlp = v->lightParameters();
+	// Add extra lights (point and spot) from XML:
+	for (const auto& el : pointAndSpotLightsForRendering())
+	{
+		vlp.lights.push_back(el);
+	}
 
-		if (!vlp.lights.empty())
-		{
-			vlp.lights[0].color = colf;
-			vlp.lights[0].diffuse = lo.light_diffuse;
-			vlp.lights[0].specular = lo.light_specular;
-		}
+	vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
 
-		// Hemisphere ambient lighting (replaces fill light):
-		vlp.ambient = lo.light_ambient;
-		vlp.ambientSkyColor = mrpt::img::TColorf(lo.ambient_sky_color);
-		vlp.ambientGroundColor = mrpt::img::TColorf(lo.ambient_ground_color);
+	vlp.minimum_shadow_map_extension_ratio = lo.minimum_shadow_map_extension_ratio;
+	vlp.shadow_cascades = static_cast<uint8_t>(lo.shadow_cascades);
+	// light view frustrum near/far planes:
+	v.setLightShadowClipDistances(lo.light_clip_plane_min, lo.light_clip_plane_max);
 
-		// Add extra lights (point and spot) from XML:
-		for (const auto& el : extraLights)
-		{
-			vlp.lights.push_back(el);
-		}
-
-		vlp.eyeDistance2lightShadowExtension = lo.eye_distance_to_shadow_map_extension;
-
-		vlp.minimum_shadow_map_extension_ratio = lo.minimum_shadow_map_extension_ratio;
-		vlp.shadow_cascades = static_cast<uint8_t>(lo.shadow_cascades);
-		// light view frustrum near/far planes:
-		v->setLightShadowClipDistances(lo.light_clip_plane_min, lo.light_clip_plane_max);
-
-		// Shadow bias should be proportional to clip range:
-		vlp.shadow_bias = lo.shadow_bias;
-		vlp.shadow_bias_cam2frag = lo.shadow_bias_cam2frag;
-		vlp.shadow_bias_normal = lo.shadow_bias_normal;
-	};
-
-	lambdaSetLightParams(vv);
-	lambdaSetLightParams(vp);
+	// Shadow bias should be proportional to clip range:
+	vlp.shadow_bias = lo.shadow_bias;
+	vlp.shadow_bias_cam2frag = lo.shadow_bias_cam2frag;
+	vlp.shadow_bias_normal = lo.shadow_bias_normal;
 }
 
 std::vector<mrpt::viz::TLight> World::pointAndSpotLightsForRendering() const
@@ -1268,8 +1274,7 @@ void World::setLightIntensityFactor(const float factor)
 
 void World::setLightDirectionFromAzimuthElevation(const float azimuth, const float elevation)
 {
-	const mrpt::math::TPoint3Df dir = {
-		-cos(azimuth) * cos(elevation), -sin(azimuth) * cos(elevation), -sin(elevation)};
+	const mrpt::math::TPoint3Df dir = lightDirection(azimuth, elevation);
 
 	ASSERT_(worldVisual_);
 

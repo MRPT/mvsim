@@ -37,6 +37,13 @@
     <depth_clip_min>${depth_clip_min|0.01}</depth_clip_min>
     <depth_clip_max>${depth_clip_max|15.0}</depth_clip_max>
     <depth_noise_sigma>${depth_noise_sigma|0.05}</depth_noise_sigma>
+    <!-- Systematic depth errors (defaults: none): a depth d is measured as
+         d * (scale + radial_k1 r^2 + radial_k2 r^4) + offset [m], with r the
+         normalized distance of the pixel to the principal point. -->
+    <depth_error_scale>${depth_error_scale|1.0}</depth_error_scale>
+    <depth_error_offset>${depth_error_offset|0}</depth_error_offset>
+    <depth_error_radial_k1>${depth_error_radial_k1|0}</depth_error_radial_k1>
+    <depth_error_radial_k2>${depth_error_radial_k2|0}</depth_error_radial_k2>
 
     <rgb_ncols>640</rgb_ncols>
     <rgb_nrows>480</rgb_nrows>
@@ -51,6 +58,10 @@
     <rgb_k1>${k1|0}</rgb_k1> <rgb_k2>${k2|0}</rgb_k2> <rgb_p1>${p1|0}</rgb_p1> <rgb_p2>${p2|0}</rgb_p2> <rgb_k3>${k3|0}</rgb_k3>
     <!-- Optional Gaussian noise added to each RGB pixel channel [intensity levels, 0-255]. Requires MRPT >= 3.6.0 -->
     <rgb_image_noise_std>${image_noise_std|0}</rgb_image_noise_std>
+    <!-- Optional rolling shutter of the RGB image, mvsim-dataset-gen only: time between rows [s]
+         (0: global shutter), rendered as this many bands. -->
+    <rgb_rolling_shutter_line_time>${rolling_shutter_line_time|0}</rgb_rolling_shutter_line_time>
+    <rgb_rolling_shutter_bands>${rolling_shutter_bands|8}</rgb_rolling_shutter_bands>
 
     <visual> <model_uri>${MVSIM_CURRENT_FILE_DIRECTORY}/../models/simple_camera.dae</model_uri> <model_pitch>90</model_pitch> </visual>
 
