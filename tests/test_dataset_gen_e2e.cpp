@@ -1522,6 +1522,8 @@ void test_clock_offsets()
 	const std::string outC = tempPath("clockC.rawlog");
 	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset nope=0.1") == 0);
 	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset imu1=abc") == 0);
+	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset imu1=910000000000") == 0);
+	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset imu1=9e12") == 0);
 	// A sensor named as the odometry stream is rejected, before any output
 	// is written:
 	EXPECT_TRUE(runDatasetGen(kWorld, kTraj, outC, "--duration 0.2") == 0);

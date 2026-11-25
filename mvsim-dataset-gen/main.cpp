@@ -156,7 +156,9 @@ std::map<std::string, double> parseClockOffsets(const std::vector<std::string>& 
 			const std::string v = arg.substr(eq + 1);
 			char* end = nullptr;
 			value = std::strtod(v.c_str(), &end);
-			ok = end != v.c_str() && *end == '\0' && std::isfinite(value);
+			// Representable as a clock tick count (100 ns):
+			ok = end != v.c_str() && *end == '\0' && std::isfinite(value) &&
+				 std::abs(value) * 1e7 < 9e18;
 		}
 		if (!ok)
 		{
@@ -439,6 +441,21 @@ int main(int argc, char** argv)
 		const double t0 = traj.startTime();
 		const double simDuration = duration > 0 ? duration : (traj.endTime() - traj.startTime());
 		const double t1 = t0 + simDuration;
+
+		// Every stamp, sampling time plus clock offset, must fit in the clock
+		// tick count:
+		for (const auto& [label, offset] : clockOffsets)
+		{
+			constexpr int64_t kMax = std::numeric_limits<int64_t>::max();
+			constexpr int64_t kMin = std::numeric_limits<int64_t>::min();
+			const int64_t off = std::llround(offset * 1e7);
+			const int64_t first = timeFromSeconds(t0).time_since_epoch().count();
+			const int64_t last = timeFromSeconds(t1).time_since_epoch().count();
+			if ((off > 0 && last > kMax - off) || (off < 0 && first < kMin - off))
+			{
+				THROW_EXCEPTION("--clock-offset: the offset of '" + label + "' is out of range");
+			}
+		}
 
 		LidarSimOptions simOpts;
 		simOpts.shutter = shutterStr == "rolling" ? ShutterMode::Rolling : ShutterMode::Global;
