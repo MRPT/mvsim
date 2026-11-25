@@ -192,6 +192,19 @@ uint32_t cameraNoiseSeed(unsigned seed, const std::string& label)
 	return h ^ (seed * 0x9E3779B9u);
 }
 
+/** Calls a function when it goes out of scope, also during stack unwinding. */
+class AtScopeExit
+{
+   public:
+	explicit AtScopeExit(std::function<void()> f) : f_(std::move(f)) {}
+	~AtScopeExit() { f_(); }
+	AtScopeExit(const AtScopeExit&) = delete;
+	AtScopeExit& operator=(const AtScopeExit&) = delete;
+
+   private:
+	std::function<void()> f_;
+};
+
 /** File name of a path, without its directory. */
 std::string fileNameOf(const std::string& path)
 {
@@ -754,12 +767,27 @@ int main(int argc, char** argv)
 
 		// Cameras: rendered with OpenGL (EGL) from a scene of the world,
 		// images in files in <output name>_Images/. The first renderer owns the
-		// OpenGL context; renderers are released in reverse order (below).
+		// OpenGL context, so renderers are released in reverse order, on every
+		// exit path (the generators hold them too):
 		size_t nImages = 0;
 		std::unique_ptr<CameraScene> cameraScene;
 		std::vector<std::shared_ptr<RgbCameraSim>> rgbSims;
 		std::vector<std::shared_ptr<DepthCameraSim>> depthSims;
 		std::shared_ptr<ImageWriter> imageWriter;
+		const AtScopeExit releaseRenderers(
+			[&]()
+			{
+				gens.clear();
+				while (!depthSims.empty())
+				{
+					depthSims.pop_back();
+				}
+				while (!rgbSims.empty())
+				{
+					rgbSims.pop_back();
+				}
+				cameraScene.reset();
+			});
 		const std::string imagesDirName =
 			mrpt::system::extractFileName(outputPath) + std::string("_Images");
 		const std::string imagesDir =
@@ -1010,18 +1038,6 @@ int main(int argc, char** argv)
 		{
 			printTiming(depthCameras.at(i)->getName(), depthSims[i]->timing());
 		}
-
-		// OpenGL resources: the renderer that owns the context goes last.
-		gens.clear();
-		while (!depthSims.empty())
-		{
-			depthSims.pop_back();
-		}
-		while (!rgbSims.empty())
-		{
-			rgbSims.pop_back();
-		}
-		cameraScene.reset();
 	}
 	catch (const std::exception& e)
 	{

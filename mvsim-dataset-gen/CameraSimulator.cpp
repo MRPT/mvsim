@@ -193,13 +193,24 @@ void CameraScene::setTime(double tEpochSeconds)
 
 ImageWriter::ImageWriter(size_t threads)
 {
-	for (size_t i = 0; i < std::max<size_t>(1, threads); i++)
+	try
 	{
-		threads_.emplace_back([this]() { worker(); });
+		for (size_t i = 0; i < std::max<size_t>(1, threads); i++)
+		{
+			threads_.emplace_back([this]() { worker(); });
+		}
+	}
+	catch (...)
+	{
+		// The destructor does not run: join the threads already started.
+		stopWorkers();
+		throw;
 	}
 }
 
-ImageWriter::~ImageWriter()
+ImageWriter::~ImageWriter() { stopWorkers(); }
+
+void ImageWriter::stopWorkers()
 {
 	{
 		std::lock_guard<std::mutex> lck(mtx_);
@@ -210,6 +221,7 @@ ImageWriter::~ImageWriter()
 	{
 		t.join();
 	}
+	threads_.clear();
 }
 
 void ImageWriter::write(mrpt::img::CImage img, const std::string& path)

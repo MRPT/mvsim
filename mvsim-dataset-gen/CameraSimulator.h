@@ -120,6 +120,7 @@ class ImageWriter
 
    private:
 	void worker();
+	void stopWorkers();
 
 	std::vector<std::thread> threads_;
 	std::mutex mtx_;
