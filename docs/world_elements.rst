@@ -255,6 +255,9 @@ Properties can have any of these types: ``bool``, ``string``, or ``double``.
 * **<y_min>, <y_max>** - Y-axis bounds of the region
 * **<z_min>, <z_max>** - Z-axis bounds (default: [-1000, 1000])
 
+The bounds are in world coordinates, also in georeferenced worlds rotated wrt ENU (and they are
+UTM coordinates in UTM worlds, see :ref:`world-georeference`).
+
 **Well-Defined Properties:**
 
 The following property names have special meanings in the simulator:
