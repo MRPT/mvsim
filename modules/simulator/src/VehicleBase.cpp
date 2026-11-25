@@ -227,8 +227,8 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 		attribs["zmin"] = TParamEntry("%lf", &veh->chassis_z_min_);
 		attribs["zmax"] = TParamEntry("%lf", &veh->chassis_z_max_);
 		attribs["color"] = TParamEntry("%color", &veh->chassis_color_);
-		attribs["linear_damping"] = TParamEntry("%lf", &veh->linear_damping_);
-		attribs["angular_damping"] = TParamEntry("%lf", &veh->angular_damping_);
+		attribs["linear_damping"] = TParamEntry("%f", &veh->linear_damping_);
+		attribs["angular_damping"] = TParamEntry("%f", &veh->angular_damping_);
 
 		parse_xmlnode_attribs(*xml_chassis, attribs, varValues, "[VehicleBase::factory]");
 
@@ -247,9 +247,9 @@ VehicleBase::Ptr VehicleBase::factory(World* parent, const rapidxml::xml_node<ch
 	{
 		TParameterDefinitions attribs;
 
-		attribs["x_multiplier"] = TParamEntry("%f", &odoParam.x_multiplier);
-		attribs["y_multiplier"] = TParamEntry("%f", &odoParam.y_multiplier);
-		attribs["yaw_multiplier"] = TParamEntry("%f", &odoParam.yaw_multiplier);
+		attribs["x_multiplier"] = TParamEntry("%lf", &odoParam.x_multiplier);
+		attribs["y_multiplier"] = TParamEntry("%lf", &odoParam.y_multiplier);
+		attribs["yaw_multiplier"] = TParamEntry("%lf", &odoParam.yaw_multiplier);
 
 		parse_xmlnode_attribs(*odom_node, attribs, {}, "[VehicleBase::factory]");
 	}

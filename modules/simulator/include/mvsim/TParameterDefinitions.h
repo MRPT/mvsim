@@ -11,6 +11,8 @@
 #include <cstdlib>
 #include <map>
 #include <string>
+#include <string_view>
+#include <type_traits>
 
 namespace mvsim
 {
@@ -46,8 +48,40 @@ struct TParamEntry
 
 	template <typename T>
 	TParamEntry(const char* format_, T* targetVariable)
-		: format(format_), val(reinterpret_cast<void*>(targetVariable))
+		: format(matchFloatFormat<T>(format_)), val(reinterpret_cast<void*>(targetVariable))
 	{
+	}
+
+	/** sscanf() needs "%f" for float and "%lf" for double: returns the variant
+	 * matching T, so a mismatched format neither leaves part of a double
+	 * unset nor writes past the end of a float. */
+	template <typename T>
+	static const char* matchFloatFormat(const char* f)
+	{
+		const std::string_view s(f);
+		if constexpr (std::is_same_v<T, double>)
+		{
+			if (s == "%f")
+			{
+				return "%lf";
+			}
+			if (s == "%f_deg")
+			{
+				return "%lf_deg";
+			}
+		}
+		else if constexpr (std::is_same_v<T, float>)
+		{
+			if (s == "%lf")
+			{
+				return "%f";
+			}
+			if (s == "%lf_deg")
+			{
+				return "%f_deg";
+			}
+		}
+		return f;
 	}
 
 	/** Tries to parse the given input string according to the expected format,
