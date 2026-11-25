@@ -401,7 +401,15 @@ int main(int argc, char** argv)
 			else if (auto d = std::dynamic_pointer_cast<mvsim::DepthCameraSensor>(s);
 					 d && !noCameras)
 			{
-				depthCameras.push_back(d);
+				if (d->senseRgb() || d->senseDepth())
+				{
+					depthCameras.push_back(d);
+				}
+				else
+				{
+					std::cerr << "[mvsim-dataset-gen] Warning: '" << d->getName()
+							  << "' senses neither RGB nor depth: skipped.\n";
+				}
 			}
 		}
 		if (lidars.empty())

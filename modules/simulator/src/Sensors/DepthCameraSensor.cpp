@@ -527,8 +527,8 @@ void DepthCameraSensor::depthToRangeImage(mrpt::obs::CObservation3DRangeScan& ob
 	}
 
 	// Valid depths can only be below one range unit with a near clip distance
-	// below it. They must not become invalid (0):
-	if (depth_clip_min_ < obs.rangeUnits)
+	// below it, or after the depth errors. They must not become invalid (0):
+	if (depth_clip_min_ < obs.rangeUnits || depthErrors_.enabled())
 	{
 		for (size_t k = 0; k < N; k++)
 		{

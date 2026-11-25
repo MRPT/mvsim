@@ -358,6 +358,12 @@ void test_frame_times_and_depth()
 	for (size_t i = 0; same && i < others.size(); i++)
 	{
 		same = others[i]->timestamp == noCam[i]->timestamp;
+		auto oa = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(others[i]);
+		auto ob = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(noCam[i]);
+		if (oa || ob)
+		{
+			same = same && oa && ob && oa->odometry == ob->odometry;
+		}
 		auto a = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(others[i]);
 		auto b = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(noCam[i]);
 		if (a && b)
@@ -475,6 +481,64 @@ void test_lens_distortion()
 #endif
 }
 
+void test_determinism()
+{
+	// The same seed gives the same images, with depth and pixel noise:
+#if MRPT_VERSION >= 0x030600
+	const std::string rgbNoise = "<rgb_image_noise_std>3</rgb_image_noise_std>";
+#else
+	const std::string rgbNoise;
+#endif
+	const std::string world =
+		writeWorld("", "<depth_noise_sigma>0.003</depth_noise_sigma>" + rgbNoise);
+	const std::string traj = writeTrajectory();
+	const std::string outA = tempPath("detA.rawlog");
+	const std::string outB = tempPath("detB.rawlog");
+	EXPECT_TRUE(runDatasetGen(world, traj, outA, "--duration 0.3 --seed 5") == 0);
+	EXPECT_TRUE(runDatasetGen(world, traj, outB, "--duration 0.3 --seed 5") == 0);
+
+	const auto load = [](const std::string& out)
+	{
+		mrpt::img::CImage::setImagesPathBase(imagesDirOf(out));
+		std::vector<mrpt::obs::CObservation3DRangeScan::Ptr> frames;
+		for (const auto& o : loadObservations(out))
+		{
+			if (auto d = std::dynamic_pointer_cast<mrpt::obs::CObservation3DRangeScan>(o); d)
+			{
+				d->load();
+				frames.push_back(d);
+			}
+		}
+		return frames;
+	};
+	const auto a = load(outA);
+	const auto b = load(outB);
+	EXPECT_TRUE(a.size() == 4 && a.size() == b.size());
+	bool same = a.size() == b.size();
+	bool noisy = false;
+	for (size_t i = 0; same && i < a.size(); i++)
+	{
+		same = a[i]->rangeImage == b[i]->rangeImage;
+		const auto& ia = a[i]->intensityImage;
+		const auto& ib = b[i]->intensityImage;
+		const size_t rowBytes = ia.getWidth() * ia.channels();
+		for (int r = 0; same && r < static_cast<int>(ia.getHeight()); r++)
+		{
+			same = std::equal(
+				ia.ptrLine<uint8_t>(r), ia.ptrLine<uint8_t>(r) + rowBytes, ib.ptrLine<uint8_t>(r));
+		}
+		// The wall (fronto-parallel) has noisy depths:
+		noisy = noisy || a[i]->rangeImage(40, 100) != a[i]->rangeImage(40, 101);
+	}
+	EXPECT_TRUE(same);
+	EXPECT_TRUE(noisy);
+
+	removeOutputs(outA);
+	removeOutputs(outB);
+	std::remove(world.c_str());
+	std::remove(traj.c_str());
+}
+
 void test_depth_errors()
 {
 	// d -> d (1.02 + 0.01 r^2) + 0.05:
@@ -544,6 +608,7 @@ int main()
 		test_frame_times_and_depth();
 		test_rolling_shutter();
 		test_lens_distortion();
+		test_determinism();
 		test_depth_errors();
 	}
 	catch (const std::exception& e)
