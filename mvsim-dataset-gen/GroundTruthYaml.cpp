@@ -70,6 +70,28 @@ std::string num(double v)
 	return s;
 }
 
+/** num() of a value that a sensor holds in single precision: the shortest
+ * decimal that reads back as the same float (0.1, not 0.10000000149011612).
+ * Values that are not exactly a float are written in full. */
+std::string numf(double v)
+{
+	const auto f = static_cast<float>(v);
+	if (!std::isfinite(f) || static_cast<double>(f) != v)
+	{
+		return num(v);
+	}
+	char buf[64];
+	for (int prec = 1; prec < 9; prec++)
+	{
+		std::snprintf(buf, sizeof(buf), "%.*g", prec, static_cast<double>(f));
+		if (std::strtof(buf, nullptr) == f)
+		{
+			return num(std::strtod(buf, nullptr));
+		}
+	}
+	return num(v);
+}
+
 /** A string as a YAML scalar: plain if it starts with a letter, '_' or '/',
  * has only letters, digits and "_-./", and is not a word that YAML 1.1
  * readers take for a boolean or null; else double-quoted and escaped. */
@@ -327,11 +349,11 @@ void writeCameraImage(
 	{
 		o << indent << "distortion: {model: none, coeffs: []}\n";
 	}
-	o << indent << "clip_m: " << vec({im.clipMin, im.clipMax}) << "\n";
+	o << indent << "clip_m: [" << numf(im.clipMin) << ", " << numf(im.clipMax) << "]\n";
 	if (im.isDepth)
 	{
-		o << indent << "depth_unit_m: " << num(im.depthUnit) << "\n";
-		o << indent << "depth_noise_std_m: " << num(im.noiseStd) << "\n";
+		o << indent << "depth_unit_m: " << numf(im.depthUnit) << "\n";
+		o << indent << "depth_noise_std_m: " << numf(im.noiseStd) << "\n";
 		const auto& e = im.depthErrors;
 		o << indent << "depth_errors: {scale: " << num(e.scale) << ", offset_m: " << num(e.offset)
 		  << ", radial: " << vec({e.radialK1, e.radialK2}) << "}\n";

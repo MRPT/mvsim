@@ -339,7 +339,9 @@ void test_frame_times_and_depth()
 	EXPECT_NEAR(cam["pose_in_vehicle"]["xyz"](2).as<double>(), 1.2, 1e-12);
 	const auto& rgbd = gt["sensors"]["rgbd1"];
 	EXPECT_TRUE(rgbd["type"].as<std::string>() == "rgbd_camera");
-	EXPECT_NEAR(rgbd["intrinsics"]["depth"]["depth_unit_m"].as<double>(), 1e-3, 1e-9);
+	// Values the sensors hold in single precision, written as given:
+	EXPECT_TRUE(rgbd["intrinsics"]["depth"]["depth_unit_m"].as<double>() == 1e-3);
+	EXPECT_TRUE(rgbd["intrinsics"]["depth"]["clip_m"](0).as<double>() == 0.1);
 	EXPECT_NEAR(rgbd["intrinsics"]["rgb"]["pose_in_vehicle"]["xyz"](2).as<double>(), 1.0, 1e-12);
 	// Both optical frames look along +X of the vehicle:
 	EXPECT_NEAR(rgbd["pose_in_vehicle"]["ypr_deg"](0).as<double>(), -90.0, 1e-9);
