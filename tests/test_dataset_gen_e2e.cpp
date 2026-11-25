@@ -11,10 +11,12 @@
 // inspects the resulting .rawlog, exercising the whole pipeline (World
 // loading, SceneBuilder, TrajectorySource, ray casting, rawlog I/O).
 
+#include <mrpt/containers/yaml.h>
 #include <mrpt/io/CFileGZInputStream.h>
 #include <mrpt/maps/CGenericPointsMap.h>
 #include <mrpt/math/CQuaternion.h>
 #include <mrpt/math/wrap2pi.h>
+#include <mrpt/obs/CObservationGPS.h>
 #include <mrpt/obs/CObservationIMU.h>
 #include <mrpt/obs/CObservationOdometry.h>
 #include <mrpt/obs/CObservationPointCloud.h>
@@ -22,6 +24,7 @@
 #include <mrpt/poses/CPose3D.h>
 #include <mrpt/serialization/CArchive.h>
 #include <mrpt/system/filesystem.h>
+#include <mrpt/topography/conversions.h>
 
 #include <algorithm>
 #include <cmath>
@@ -363,11 +366,21 @@ void setEnv(const char* name, const char* value)
 #endif
 }
 
+void unsetEnv(const char* name)
+{
+#ifdef _WIN32
+	_putenv_s(name, "");
+#else
+	unsetenv(name);
+#endif
+}
+
 void removeOutputs(const std::string& rawlog)
 {
 	std::remove(rawlog.c_str());
 	std::remove(gtPath(rawlog, "gt.tum").c_str());
 	std::remove(gtPath(rawlog, "lidar1.gt.tum").c_str());
+	std::remove(gtPath(rawlog, "gt.yaml").c_str());
 }
 
 void test_realistic_error_model()
@@ -1208,6 +1221,466 @@ void test_imu_lever_arm()
 	std::remove(gtPath(out, "lidar1.gt.tum").c_str());
 }
 
+/** The sensor ground truth YAML file of a rawlog. */
+mrpt::containers::yaml loadGroundTruth(const std::string& rawlog)
+{
+	return mrpt::containers::yaml::FromFile(gtPath(rawlog, "gt.yaml"));
+}
+
+/** Every observation of a rawlog, in file order. */
+std::vector<mrpt::obs::CObservation::Ptr> loadObservations(const std::string& rawlogPath)
+{
+	std::vector<mrpt::obs::CObservation::Ptr> out;
+	mrpt::io::CFileGZInputStream f(rawlogPath);
+	auto arch = mrpt::serialization::archiveFrom(f);
+	for (;;)
+	{
+		mrpt::serialization::CSerializable::Ptr obj;
+		try
+		{
+			arch >> obj;
+		}
+		catch (const std::exception&)
+		{
+			break;	// EOF
+		}
+		if (!obj)
+		{
+			break;
+		}
+		if (auto obs = std::dynamic_pointer_cast<mrpt::obs::CObservation>(obj); obs)
+		{
+			out.push_back(obs);
+		}
+	}
+	return out;
+}
+
+void test_ground_truth_beam_errors()
+{
+	// Per-beam errors only, no range noise, so that ground returns follow
+	// the ground truth exactly:
+	resetErrorModelEnv();
+	setEnv("sensor_std_noise", "0");
+	setEnv("sensor_beam_elevation_std_deg", "0.5");
+	setEnv("sensor_beam_azimuth_std_deg", "0.2");
+	setEnv("sensor_beam_range_bias_std", "0.05");
+	setEnv("sensor_calibration_seed", "3");
+	const std::string out = tempPath("beamgt.rawlog");
+	EXPECT_TRUE(runDatasetGen(out, "--duration 0.3 --seed 1 --shutter global") == 0);
+	resetErrorModelEnv();
+	unsetEnv("sensor_std_noise");
+
+	const auto gt = loadGroundTruth(out);
+	EXPECT_TRUE(gt["format"].as<std::string>() == "mvsim/dataset_gt/1");
+	const auto& lidar = gt["sensors"]["lidar1"];
+	EXPECT_TRUE(lidar["type"].as<std::string>() == "lidar3d");
+	EXPECT_NEAR(lidar["pose_in_vehicle"]["xyz"](2).as<double>(), kLidarZ, 1e-12);
+	const auto& intr = lidar["intrinsics"];
+	const int nRings = intr["rings"].as<int>();
+	EXPECT_TRUE(nRings == 16);
+	EXPECT_NEAR(intr["beam_error_std"]["elevation_deg"].as<double>(), 0.5, 1e-12);
+	EXPECT_TRUE(intr["calibration_seed"].as<int>() == 3);
+
+	std::vector<double> elev;
+	std::vector<double> dElev;
+	std::vector<double> dRange;
+	double maxAbsDAz = 0;
+	for (int r = 0; r < nRings; r++)
+	{
+		elev.push_back(intr["elevations_deg"](r).as<double>());
+		const auto& row = intr["beam_errors"](r);
+		EXPECT_TRUE(row["ring"].as<int>() == r);
+		dElev.push_back(row["d_elevation_deg"].as<double>());
+		dRange.push_back(row["d_range_m"].as<double>());
+		maxAbsDAz = std::max(maxAbsDAz, std::abs(row["d_azimuth_deg"].as<double>()));
+	}
+	EXPECT_GT(maxAbsDAz, 0.0);
+
+	// Ground returns: the ray samples the ground at the perturbed elevation
+	// and reports that range plus the bias, along the nominal direction:
+	size_t nGround = 0;
+	size_t nMatchGt = 0;
+	size_t nMatchNominal = 0;
+	for (const auto& sw : loadSweeps(out))
+	{
+		for (size_t i = 0; i < sw.pts->size(); i++)
+		{
+			const auto ring = sw.pts->getPointField_uint16(i, "ring");
+			if (elev.at(ring) > -5.0)
+			{
+				continue;
+			}
+			float x;
+			float y;
+			float z;
+			sw.pts->getPoint(i, x, y, z);
+			const double range = std::sqrt(double(x) * x + double(y) * y + double(z) * z);
+			const double eTrue = mrpt::DEG2RAD(elev[ring] + dElev[ring]);
+			const double expected = kLidarZ / std::sin(-eTrue) + dRange[ring];
+			const double nominal = kLidarZ / std::sin(-mrpt::DEG2RAD(elev[ring]));
+			nGround++;
+			nMatchGt += std::abs(range - expected) < 1e-4 ? 1 : 0;
+			nMatchNominal += std::abs(range - nominal) < 1e-4 ? 1 : 0;
+		}
+	}
+	EXPECT_GT(nGround, 1000);
+	EXPECT_GT(nMatchGt, 0.8 * nGround);
+	EXPECT_LT(nMatchNominal, 0.05 * nGround);
+
+	removeOutputs(out);
+}
+
+void test_ground_truth_imu_errors()
+{
+	const std::vector<std::pair<const char*, const char*>> vars = {
+		{"sensor_angular_velocity_white_noise_std_noise", "0"},
+		{"sensor_linear_acceleration_white_noise_std_noise", "0"},
+		{"sensor_angular_velocity_bias", "0.01 -0.02 0.03"},
+		{"sensor_linear_acceleration_bias", "0.1 0.2 -0.3"},
+		{"sensor_angular_velocity_scale", "0.9"},
+		{"sensor_linear_acceleration_scale", "1.0 1.0 1.05"},
+		{"sensor_linear_acceleration_misalignment", "0 0.01 0 -0.02 0 0"}};
+	for (const auto& [name, value] : vars)
+	{
+		setEnv(name, value);
+	}
+	const std::string out = tempPath("imugt.rawlog");
+	const std::string outIdeal = tempPath("imugtideal.rawlog");
+	EXPECT_TRUE(runDatasetGen(out, "--duration 0.5 --seed 1 --shutter global") == 0);
+	EXPECT_TRUE(runDatasetGen(outIdeal, "--duration 0.5 --seed 1 --noiseless") == 0);
+	for (const auto& [name, value] : vars)
+	{
+		unsetEnv(name);
+	}
+
+	// The demo trajectory has constant velocity: the true readings are
+	// w = 0 and f = (0, 0, g).
+	constexpr double kG = 9.81;
+	const mrpt::math::TVector3D fExpected(0.01 * kG + 0.1, -0.02 * kG + 0.2, 1.05 * kG - 0.3);
+	int nImu = 0;
+	double maxErr = 0;
+	for (const auto& obs : loadObservations(out))
+	{
+		auto imu = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(obs);
+		if (!imu)
+		{
+			continue;
+		}
+		nImu++;
+		maxErr = std::max(maxErr, std::abs(imu->get(mrpt::obs::IMU_WX) - 0.01));
+		maxErr = std::max(maxErr, std::abs(imu->get(mrpt::obs::IMU_WY) + 0.02));
+		maxErr = std::max(maxErr, std::abs(imu->get(mrpt::obs::IMU_WZ) - 0.03));
+		maxErr = std::max(maxErr, std::abs(imu->get(mrpt::obs::IMU_X_ACC) - fExpected.x));
+		maxErr = std::max(maxErr, std::abs(imu->get(mrpt::obs::IMU_Y_ACC) - fExpected.y));
+		maxErr = std::max(maxErr, std::abs(imu->get(mrpt::obs::IMU_Z_ACC) - fExpected.z));
+	}
+	EXPECT_GT(nImu, 5);
+	EXPECT_LT(maxErr, 1e-6);
+
+	const auto gt = loadGroundTruth(out);
+	const auto& acc = gt["sensors"]["imu1"]["intrinsics"]["accelerometer"];
+	EXPECT_NEAR(acc["scale"](2).as<double>(), 1.05, 1e-12);
+	EXPECT_NEAR(acc["bias"](1).as<double>(), 0.2, 1e-12);
+	EXPECT_NEAR(acc["misalignment"](0)(2).as<double>(), 0.01, 1e-12);
+	EXPECT_NEAR(acc["sensitivity_matrix"](1)(2).as<double>(), -0.02, 1e-12);
+	EXPECT_NEAR(acc["sensitivity_matrix"](2)(2).as<double>(), 1.05, 1e-12);
+	// Without a bias random walk, no bias time series is written:
+	EXPECT_FALSE(mrpt::system::fileExists(gtPath(out, "imu1.bias.txt")));
+
+	// --noiseless removes the deterministic errors too:
+	const auto gtIdeal = loadGroundTruth(outIdeal);
+	const auto& accIdeal = gtIdeal["sensors"]["imu1"]["intrinsics"]["accelerometer"];
+	EXPECT_NEAR(accIdeal["scale"](2).as<double>(), 1.0, 1e-12);
+	EXPECT_NEAR(accIdeal["bias"](1).as<double>(), 0.0, 1e-12);
+
+	for (const auto& f : {out, outIdeal})
+	{
+		removeOutputs(f);
+	}
+}
+
+/** A copy of the demo world (in a temporary file) whose IMU is named
+ * `name`. */
+std::string demoWorldWithImuNamed(const std::string& name)
+{
+	std::ifstream in(kWorld);
+	std::stringstream ss;
+	ss << in.rdbuf();
+	std::string xml = ss.str();
+	const std::string rel = "../definitions/";
+	const std::string defs = std::string(MVSIM_TUTORIAL_DIR) + "/" + rel;
+	for (size_t pos = xml.find(rel); pos != std::string::npos;
+		 pos = xml.find(rel, pos + defs.size()))
+	{
+		xml.replace(pos, rel.size(), defs);
+	}
+	const std::string imu = "sensor_name=\"imu1\"";
+	const size_t pos = xml.find(imu);
+	EXPECT_TRUE(pos != std::string::npos);
+	if (pos != std::string::npos)
+	{
+		xml.replace(pos, imu.size(), "sensor_name=\"" + name + "\"");
+	}
+	const std::string path = tempPath(name + ".world.xml");
+	std::ofstream(path) << xml;
+	return path;
+}
+
+void test_clock_offsets()
+{
+	const std::string outA = tempPath("clockA.rawlog");
+	const std::string outB = tempPath("clockB.rawlog");
+	EXPECT_TRUE(runDatasetGen(outA, "--duration 0.5 --seed 2") == 0);
+	EXPECT_TRUE(
+		runDatasetGen(
+			outB,
+			"--duration 0.5 --seed 2 --clock-offset lidar1=0.02 --clock-offset imu1=0.004 "
+			"--clock-offset odom=0.01") == 0);
+
+	// Same data, stamps shifted per sensor, and still in stamp order:
+	const auto obsA = loadObservations(outA);
+	const auto obsB = loadObservations(outB);
+	std::map<std::string, std::vector<mrpt::obs::CObservation::Ptr>> byLabelA;
+	std::map<std::string, std::vector<mrpt::obs::CObservation::Ptr>> byLabelB;
+	for (const auto& o : obsA)
+	{
+		byLabelA[o->sensorLabel].push_back(o);
+	}
+	double lastT = -1e300;
+	bool chronological = true;
+	for (const auto& o : obsB)
+	{
+		byLabelB[o->sensorLabel].push_back(o);
+		const double t = mrpt::Clock::toDouble(o->timestamp);
+		chronological = chronological && t >= lastT;
+		lastT = t;
+	}
+	EXPECT_TRUE(chronological);
+	// The LiDAR is now stamped after the odometry sampled with it, but both
+	// share the noise RNG: the data must not change.
+	const std::map<std::string, double> offsets = {
+		{"lidar1", 0.02}, {"imu1", 0.004}, {"odom", 0.01}};
+	for (const auto& [label, offset] : offsets)
+	{
+		const auto& a = byLabelA[label];
+		const auto& b = byLabelB[label];
+		EXPECT_TRUE(!a.empty() && a.size() == b.size());
+		for (size_t i = 0; i < std::min(a.size(), b.size()); i++)
+		{
+			const double dt =
+				1e-7 * static_cast<double>((b[i]->timestamp - a[i]->timestamp).count());
+			EXPECT_NEAR(dt, offset, 1e-7);
+		}
+	}
+	const auto& imuA = byLabelA["imu1"];
+	const auto& imuB = byLabelB["imu1"];
+	if (!imuA.empty() && imuA.size() == imuB.size())
+	{
+		auto a = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(imuA.back());
+		auto b = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(imuB.back());
+		EXPECT_TRUE(a && b && a->get(mrpt::obs::IMU_Z_ACC) == b->get(mrpt::obs::IMU_Z_ACC));
+	}
+	const auto& lidarA = byLabelA["lidar1"];
+	const auto& lidarB = byLabelB["lidar1"];
+	for (size_t i = 0; i < std::min(lidarA.size(), lidarB.size()); i++)
+	{
+		auto a = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(lidarA[i]);
+		auto b = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(lidarB[i]);
+		EXPECT_TRUE(a && b && a->pointcloud->size() == b->pointcloud->size());
+		if (!a || !b || a->pointcloud->size() != b->pointcloud->size())
+		{
+			continue;
+		}
+		bool same = true;
+		for (size_t k = 0; k < a->pointcloud->size(); k++)
+		{
+			float ax;
+			float ay;
+			float az;
+			float bx;
+			float by;
+			float bz;
+			a->pointcloud->getPoint(k, ax, ay, az);
+			b->pointcloud->getPoint(k, bx, by, bz);
+			same = same && ax == bx && ay == by && az == bz;
+		}
+		EXPECT_TRUE(same);
+	}
+	const auto& odomA = byLabelA["odom"];
+	const auto& odomB = byLabelB["odom"];
+	if (!odomA.empty() && odomA.size() == odomB.size())
+	{
+		auto a = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(odomA.back());
+		auto b = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(odomB.back());
+		EXPECT_TRUE(a && b && a->odometry == b->odometry);
+	}
+	EXPECT_NEAR(
+		loadGroundTruth(outB)["sensors"]["imu1"]["clock_offset_s"].as<double>(), 0.004, 1e-15);
+
+	// Errors: unknown stream, malformed value:
+	const std::string outC = tempPath("clockC.rawlog");
+	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset nope=0.1") == 0);
+	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset imu1=abc") == 0);
+	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset imu1=910000000000") == 0);
+	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset imu1=9e12") == 0);
+	// A sensor named as the odometry stream is rejected, before any output
+	// is written:
+	EXPECT_TRUE(runDatasetGen(kWorld, kTraj, outC, "--duration 0.2") == 0);
+	const std::string outCopy = tempPath("clockCcopy.rawlog");
+	{
+		std::ifstream in(outC, std::ios::binary);
+		std::ofstream(outCopy, std::ios::binary) << in.rdbuf();
+	}
+	const std::string worldOdom = demoWorldWithImuNamed("odom");
+	EXPECT_FALSE(runDatasetGen(worldOdom, kTraj, outC, "--duration 0.2") == 0);
+	EXPECT_TRUE(filesEqual(outC, outCopy));
+	std::remove(worldOdom.c_str());
+	std::remove(outCopy.c_str());
+
+	// Labels that YAML would read as numbers stay strings:
+	const std::string worldNum = demoWorldWithImuNamed("1_000");
+	EXPECT_TRUE(runDatasetGen(worldNum, kTraj, outC, "--duration 0.2") == 0);
+	{
+		std::ifstream in(gtPath(outC, "gt.yaml"));
+		std::stringstream ss;
+		ss << in.rdbuf();
+		EXPECT_TRUE(ss.str().find("\n  \"1_000\":\n") != std::string::npos);
+		const auto gt = loadGroundTruth(outC);
+		EXPECT_TRUE(gt["sensors"]["1_000"]["frame_id"].as<std::string>() == "1_000");
+	}
+	std::remove(worldNum.c_str());
+
+	for (const auto& f : {outA, outB, outC})
+	{
+		removeOutputs(f);
+	}
+}
+
+void test_gnss_generator()
+{
+	// Exact readings (zero noise), an RTK float episode (with a position jump
+	// inside), a false fix and an outage. Event times are relative to the
+	// trajectory start, and away from the 0.1 s sample times.
+	const std::string world = tempPath("gnss.world.xml");
+	{
+		std::ofstream f(world);
+		f << R"(<mvsim_world version="1.0">
+  <georeference> <latitude>36.0</latitude> <longitude>-2.0</longitude> <height>100.0</height> </georeference>
+  <element class="horizontal_plane">
+    <x_min>-20</x_min> <y_min>-20</y_min> <x_max>20</x_max> <y_max>20</y_max> <z>0</z>
+  </element>
+  <vehicle name="r1">
+    <dynamics class="differential">
+      <l_wheel pos="0  0.3" mass="1.0" width="0.05" diameter="0.20" />
+      <r_wheel pos="0 -0.3" mass="1.0" width="0.05" diameter="0.20" />
+      <chassis mass="10.0" zmin="0.05" zmax="0.25" />
+    </dynamics>
+    <init_pose>0 0 0</init_pose>
+    <sensor class="lidar3d" name="lidar1">
+      <pose_3d>0 0 0.75 0 0 0</pose_3d>
+      <vert_nrays>8</vert_nrays> <vert_fov_degrees>30</vert_fov_degrees> <horz_nrays>360</horz_nrays>
+      <sensor_period>0.1</sensor_period> <range_std_noise>0</range_std_noise>
+    </sensor>
+    <sensor class="gnss" name="gps1">
+      <pose_3d>0.2 0.1 1.5 0 0 0</pose_3d>
+      <sensor_period>0.1</sensor_period>
+      <horizontal_std_noise>0</horizontal_std_noise> <vertical_std_noise>0</vertical_std_noise>
+      <fix_type>rtk_fixed</fix_type>
+      <event start="0.25" end="0.55" fix_type="rtk_float" horizontal_std_noise="0.3" vertical_std_noise="0.5" />
+      <event start="0.35" end="0.45" offset="0 0 1.0" />
+      <event start="0.55" end="0.75" offset="2.0 -1.0 0.5" />
+      <event start="0.75" end="0.95" outage="true" />
+    </sensor>
+  </vehicle>
+</mvsim_world>
+)";
+	}
+	const std::string out = tempPath("gnss.rawlog");
+	const std::string outIdeal = tempPath("gnssideal.rawlog");
+	EXPECT_TRUE(runDatasetGen(world, kTraj, out, "--duration 1.2 --seed 3") == 0);
+	EXPECT_TRUE(runDatasetGen(world, kTraj, outIdeal, "--duration 1.2 --seed 3 --noiseless") == 0);
+
+	const mrpt::topography::TGeodeticCoords ref(36.0, -2.0, 100.0);
+	const auto check = [&](const std::string& rawlog, bool falseFix)
+	{
+		int nGnss = 0;
+		int nFloat = 0;
+		int nFalse = 0;
+		for (const auto& obs : loadObservations(rawlog))
+		{
+			auto gps = std::dynamic_pointer_cast<mrpt::obs::CObservationGPS>(obs);
+			if (!gps)
+			{
+				continue;
+			}
+			nGnss++;
+			EXPECT_NEAR(gps->sensorPose.z(), 1.5, 1e-12);
+			const double tRel = mrpt::Clock::toDouble(gps->timestamp) - kTrajT0;
+			const auto& gga = gps->getMsgByClass<mrpt::obs::gnss::Message_NMEA_GGA>().fields;
+			mrpt::math::TPoint3D enu;
+			mrpt::topography::geodeticToENU_WGS84(
+				mrpt::topography::TGeodeticCoords(
+					gga.latitude_degrees, gga.longitude_degrees, gga.altitude_meters),
+				enu, ref);
+			// The vehicle moves along +X at 1 m/s from the origin:
+			const mrpt::math::TPoint3D antenna(tRel + 0.2, 0.1, 1.5);
+			if (tRel > 0.25 && tRel < 0.55)
+			{
+				nFloat++;
+				EXPECT_TRUE(gps->fix_type == mrpt::obs::GnssFixType::RTK_FLOAT);
+				EXPECT_TRUE(gga.fix_quality == 5);
+				EXPECT_NEAR((*gps->covariance_enu)(0, 0), 0.09, 1e-12);
+				EXPECT_NEAR((*gps->covariance_enu)(2, 2), 0.25, 1e-12);
+				continue;
+			}
+			EXPECT_TRUE(gps->fix_type == mrpt::obs::GnssFixType::RTK_FIXED);
+			EXPECT_TRUE(gga.fix_quality == 4);
+			EXPECT_NEAR((*gps->covariance_enu)(0, 0), 0.0, 1e-12);
+			mrpt::math::TPoint3D err = enu - antenna;
+			if (tRel > 0.55 && tRel < 0.75 && falseFix)
+			{
+				nFalse++;
+				err = err - mrpt::math::TPoint3D(2.0, -1.0, 0.5);
+			}
+			EXPECT_LT(err.norm(), 1e-3);
+		}
+		// 13 samples in [0, 1.2] s, minus 2 in the outage:
+		EXPECT_TRUE(nGnss == 11);
+		EXPECT_TRUE(nFloat == 3);
+		EXPECT_TRUE(nFalse == (falseFix ? 2 : 0));
+	};
+	check(out, true);
+	check(outIdeal, false);
+
+	const auto gt = loadGroundTruth(out);
+	const auto& gnss = gt["sensors"]["gps1"];
+	EXPECT_TRUE(gnss["type"].as<std::string>() == "gnss");
+	EXPECT_NEAR(gnss["pose_in_vehicle"]["xyz"](0).as<double>(), 0.2, 1e-12);
+	EXPECT_NEAR(gnss["rate_hz"].as<double>(), 10.0, 1e-9);
+	// The values in effect over each interval, overlaps included:
+	const auto& episodes = gnss["intrinsics"]["episodes"];
+	EXPECT_TRUE(episodes.size() == 5);
+	const std::vector<std::string> qualities = {
+		"rtk_float", "rtk_float", "rtk_float", "rtk_fixed", "outage"};
+	for (size_t i = 0; i < std::min<size_t>(episodes.size(), qualities.size()); i++)
+	{
+		EXPECT_TRUE(episodes(i)["quality"].as<std::string>() == qualities[i]);
+	}
+	EXPECT_NEAR(episodes(1)["t_start"].as<double>(), kTrajT0 + 0.35, 1e-6);
+	EXPECT_NEAR(episodes(1)["horizontal_std"].as<double>(), 0.3, 1e-12);
+	EXPECT_NEAR(episodes(1)["injected_error_m"](2).as<double>(), 1.0, 1e-12);
+	EXPECT_NEAR(episodes(2)["injected_error_m"](2).as<double>(), 0.0, 1e-12);
+	EXPECT_NEAR(episodes(3)["t_start"].as<double>(), kTrajT0 + 0.55, 1e-6);
+	EXPECT_NEAR(episodes(3)["horizontal_std"].as<double>(), 0.0, 1e-12);
+	EXPECT_NEAR(episodes(3)["injected_error_m"](0).as<double>(), 2.0, 1e-12);
+
+	for (const auto& f : {out, outIdeal})
+	{
+		removeOutputs(f);
+	}
+	std::remove(world.c_str());
+}
 }  // namespace
 
 // ---------------------------------------------------------------
@@ -1228,6 +1701,10 @@ int main()
 	test_moving_block_errors();
 	test_2d_trajectory_terrain_following();
 	test_imu_lever_arm();
+	test_ground_truth_beam_errors();
+	test_ground_truth_imu_errors();
+	test_clock_offsets();
+	test_gnss_generator();
 
 	if (g_failures == 0)
 	{

@@ -577,6 +577,7 @@ void World::GeoreferenceOptions::parse_from(
 	const rapidxml::xml_node<char>& node, mrpt::system::COutputLogger& logger)
 {
 	parse_xmlnode_children_as_param(node, params, {}, "[World::GeoreferenceOptions]", &logger);
+	is_set = true;
 }
 
 void World::parse_tag_joint(const XmlParserContext& ctx)
