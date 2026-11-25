@@ -76,8 +76,8 @@ struct CameraImageModel
 	float clipMax = 1e4f;
 	double noiseStd = 0;  //!< [intensity levels, 0-255]
 	/** Time between rows [s], 0: global shutter. The image is rendered as
-	 * `rollingShutterBands` bands of rows, each from the pose at the time of
-	 * its middle row. */
+	 * `rollingShutterBands` bands of rows (at most one per row), each from the
+	 * pose at the time of its middle row. */
 	double rollingShutterLineTime = 0;
 	int rollingShutterBands = 8;
 };

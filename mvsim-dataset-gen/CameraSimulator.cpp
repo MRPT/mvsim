@@ -138,7 +138,7 @@ void renderRgb(
 	// Rolling shutter: row `i` is exposed at t + i * lineTime. Each band of
 	// rows comes from the pose at the time of its middle row:
 	const int rows = static_cast<int>(m.camera.nrows);
-	const int bands = std::clamp(m.rollingShutterBands, 1, rows);
+	const int bands = m.rollingShutterBands;
 	mrpt::img::CImage band;
 	for (int k = 0; k < bands; k++)
 	{
@@ -156,6 +156,24 @@ void renderRgb(
 			std::memcpy(out.ptrLine<uint8_t>(i), band.ptrLine<uint8_t>(i), rowBytes);
 		}
 	}
+}
+
+/** Image files are named after the sensor, so its name must be a single
+ * file name component. */
+void checkLabelIsFileName(const std::string& label)
+{
+	ASSERTMSG_(
+		!label.empty() && label != "." && label != ".." &&
+			label.find_first_of("/\\") == std::string::npos,
+		"Camera sensor name '" + label +
+			"' cannot name its image files: it must not contain '/' or '\\', nor be '.' or "
+			"'..'");
+}
+
+/** At most one band per image row: the band count that is rendered. */
+void limitRollingShutterBands(CameraImageModel& m)
+{
+	m.rollingShutterBands = std::min(m.rollingShutterBands, static_cast<int>(m.camera.nrows));
 }
 
 /** Writes `img` as a PNG file (in the background) and makes it an
@@ -300,6 +318,8 @@ RgbCameraSim::RgbCameraSim(
 	std::shared_ptr<ImageWriter> writer, uint32_t noiseSeed, bool createEglContext)
 	: model_(model), files_{imagesDir, label, std::move(writer), 0}
 {
+	checkLabelIsFileName(label);
+	limitRollingShutterBands(model_);
 	renderer_ = makeRenderer(model_.camera, createEglContext);
 	setImageFormation(*renderer_, model_, noiseSeed);
 }
@@ -332,6 +352,7 @@ DepthCameraSim::DepthCameraSim(
 	  files_{imagesDir, sensor.getName(), std::move(writer), 0},
 	  rng_(noiseSeed)
 {
+	checkLabelIsFileName(sensor.getName());
 	pattern_.sensorLabel = sensor.getName();
 	const auto& opts = sensor.rgbImageOptions();
 
@@ -342,6 +363,7 @@ DepthCameraSim::DepthCameraSim(
 	rgb_.noiseStd = opts.imageNoiseStd * noiseScale;
 	rgb_.rollingShutterLineTime = opts.rollingShutterLineTime;
 	rgb_.rollingShutterBands = opts.rollingShutterBands;
+	limitRollingShutterBands(rgb_);
 
 	depth_.camera = pattern_.cameraParams;
 	depth_.poseOnVehicle = pattern_.sensorPose + depthOpticalRot();
@@ -353,11 +375,14 @@ DepthCameraSim::DepthCameraSim(
 	{
 		depth_.errors = sensor.depthErrors();
 	}
-	// Range images are 16-bit: every depth in range must fit.
+	// Range images are 16-bit: every depth in range must fit, and the range
+	// must hold at least one unit.
+	const double rangeUnits = depth_.clipMax / depth_.unit;
 	ASSERTMSG_(
-		!sensor.senseDepth() || depth_.clipMax / depth_.unit <= 65535.0,
+		!sensor.senseDepth() || (rangeUnits >= 1.0 && rangeUnits <= 65535.0),
 		"'" + sensor.getName() +
-			"': depth_clip_max / depth_resolution must be at most 65535 (16-bit depth images)");
+			"': depth_clip_max / depth_resolution must be between 1 and 65535 (16-bit depth "
+			"images)");
 
 	// One render gives both images if both cameras see the same view, as in
 	// the interactive simulator:

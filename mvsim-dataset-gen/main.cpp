@@ -819,18 +819,20 @@ int main(int argc, char** argv)
 				firstRenderer = false;
 				rgbSims.push_back(sim);
 
+				// The model as rendered (e.g. the band count it uses):
+				const auto& sm = sim->model();
 				CameraGroundTruth camGt;
 				camGt.label = label;
 				camGt.clockOffset = clockOffsetOf(label);
 				camGt.period = cam->sensor_period();
 				CameraImageGroundTruth im;
-				im.camera = m.camera;
-				im.pose = m.poseOnVehicle;
-				im.clipMin = m.clipMin;
-				im.clipMax = m.clipMax;
-				im.noiseStd = m.noiseStd;
-				im.rollingShutterLineTime = m.rollingShutterLineTime;
-				im.rollingShutterBands = m.rollingShutterBands;
+				im.camera = sm.camera;
+				im.pose = sm.poseOnVehicle;
+				im.clipMin = sm.clipMin;
+				im.clipMax = sm.clipMax;
+				im.noiseStd = sm.noiseStd;
+				im.rollingShutterLineTime = sm.rollingShutterLineTime;
+				im.rollingShutterBands = sm.rollingShutterBands;
 				im.files = imagesDirName + "/" + label + "_%06d.png";
 				camGt.rgb = im;
 				groundTruth.cameras.push_back(camGt);
