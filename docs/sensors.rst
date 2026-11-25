@@ -637,7 +637,8 @@ where ``r`` is the distance of the pixel to the principal point in
 normalized image coordinates (a "bowl" that grows towards the image
 borders), with the tags ``depth_error_scale`` (default 1),
 ``depth_error_offset`` [m], ``depth_error_radial_k1`` and
-``depth_error_radial_k2``. Depths that become non-positive are invalid.
+``depth_error_radial_k2``. Depths that become non-positive are invalid, and
+depths beyond ``depth_clip_max`` stay invalid.
 
 Rolling shutter (offline datasets)
 ##################################

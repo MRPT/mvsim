@@ -440,7 +440,7 @@ void DepthCameraSensor::simulateOn3DScene(mrpt::viz::Scene& world3DScene)
 		curObs.range_is_depth = true;
 		if (depthErrors_.enabled())
 		{
-			depthErrors_.apply(depthImage_, curObs.cameraParams);
+			depthErrors_.apply(depthImage_, curObs.cameraParams, curObs.maxRange);
 		}
 		depthToRangeImage(curObs);
 	}
@@ -572,7 +572,8 @@ void DepthErrorModel::declareParams(TParameterDefinitions& params)
 	params["depth_error_radial_k2"] = TParamEntry("%lf", &radialK2);
 }
 
-void DepthErrorModel::apply(mrpt::math::CMatrixFloat& depth, const mrpt::img::TCamera& cam) const
+void DepthErrorModel::apply(
+	mrpt::math::CMatrixFloat& depth, const mrpt::img::TCamera& cam, double maxDepth) const
 {
 	const double cx = cam.cx();
 	const double cy = cam.cy();
@@ -584,8 +585,9 @@ void DepthErrorModel::apply(mrpt::math::CMatrixFloat& depth, const mrpt::img::TC
 		for (int c = 0; c < depth.cols(); c++)
 		{
 			float& d = depth(r, c);
-			if (!(d > 0))
+			if (!(d > 0) || d > maxDepth)
 			{
+				d = 0.0f;
 				continue;
 			}
 			const double x = (c - cx) / fx;

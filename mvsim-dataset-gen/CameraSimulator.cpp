@@ -399,18 +399,11 @@ mrpt::obs::CObservation3DRangeScan::Ptr DepthCameraSim::simulate(
 
 	if (singlePass_ || depthRenderer_)
 	{
-		// Beyond the depth camera range (possible with a single render, clipped
-		// at the RGB range): no return, before any error moves it into range.
-		for (auto& d : depthImage_)
-		{
-			if (d > depth_.clipMax)
-			{
-				d = 0.0f;
-			}
-		}
+		// Depths beyond the depth camera range (possible with a single render,
+		// clipped at the RGB range) are no return, also after the errors:
 		if (depth_.errors.enabled())
 		{
-			depth_.errors.apply(depthImage_, depth_.camera);
+			depth_.errors.apply(depthImage_, depth_.camera, depth_.clipMax);
 		}
 		// Gaussian noise (one draw per pixel, so the stream does not depend on
 		// the image contents), then range image units:

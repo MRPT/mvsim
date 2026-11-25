@@ -25,7 +25,8 @@ namespace mvsim
  * `d * (scale + radial_k1 * r^2 + radial_k2 * r^4) + offset`, where `r` is
  * the distance of the pixel to the principal point in normalized image
  * coordinates (a "bowl" growing towards the image borders). Depths that
- * become non-positive are invalid (0). From the XML tags `depth_error_scale`,
+ * become non-positive are invalid (0), and so are those beyond the range,
+ * before the errors. From the XML tags `depth_error_scale`,
  * `depth_error_offset` [m], `depth_error_radial_k1` and
  * `depth_error_radial_k2`.
  * \ingroup sensors_module
@@ -42,8 +43,11 @@ struct DepthErrorModel
 	/** Adds the XML parameters */
 	void declareParams(TParameterDefinitions& params);
 
-	/** Applies the errors to a depth image [m] (0: no return) of `cam` */
-	void apply(mrpt::math::CMatrixFloat& depth, const mrpt::img::TCamera& cam) const;
+	/** Applies the errors to a depth image [m] (0: no return) of `cam`.
+	 * Depths beyond `maxDepth` (the sensor range) become no return first, so
+	 * the errors never move them into range. */
+	void apply(
+		mrpt::math::CMatrixFloat& depth, const mrpt::img::TCamera& cam, double maxDepth) const;
 };
 
 /** "RGB+D" or just "D" (depth without RGB) camera sensor on board a vehicle.
