@@ -37,6 +37,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <queue>
@@ -642,6 +643,20 @@ int main(int argc, char** argv)
 				 odomGt.clockOffset});
 		}
 
+		// Each stream label identifies one stream (sensors are already unique,
+		// but one may be named as the odometry stream):
+		for (size_t i = 0; i < gens.size(); i++)
+		{
+			for (size_t j = i + 1; j < gens.size(); j++)
+			{
+				if (gens[i].label == gens[j].label)
+				{
+					THROW_EXCEPTION(
+						"Two sensor streams are labeled '" + gens[i].label +
+						"' (the wheel odometry stream is 'odom'): rename the sensor");
+				}
+			}
+		}
 		// Every --clock-offset must name a stream:
 		for (const auto& [label, offset] : clockOffsets)
 		{
@@ -653,33 +668,40 @@ int main(int argc, char** argv)
 			}
 		}
 
-		// Merge all sensor streams into the rawlog in strict global stamp
-		// order (min-heap over each generator's next stamp, in exact clock
-		// ticks, then its sampling time and index):
-		using Entry = std::tuple<int64_t, double, size_t>;
+		// Observations are generated in sampling time order (min-heap over
+		// each generator's next sampling time), so that clock offsets never
+		// change the order in which the streams draw from the shared RNG, and
+		// written in stamp order through a reorder buffer: a buffered
+		// observation is written once no later sample can have an earlier
+		// stamp (exact clock ticks, then sampling time, stream index and
+		// generation order). Without offsets, both orders are the same.
 		const auto offsetTicks = [](const SensorGen& g)
 		{ return mrpt::Clock::duration(std::llround(g.clockOffset * 1e7)); };
-		const auto entryOf = [&](size_t i) -> Entry
+		mrpt::Clock::duration minOffset = mrpt::Clock::duration::max();
+		for (const auto& g : gens)
 		{
-			const auto stamp = timeFromSeconds(gens[i].nextTime) + offsetTicks(gens[i]);
-			return {stamp.time_since_epoch().count(), gens[i].nextTime, i};
-		};
+			minOffset = std::min(minOffset, offsetTicks(g));
+		}
+		using Entry = std::pair<double, size_t>;
 		std::priority_queue<Entry, std::vector<Entry>, std::greater<>> pq;
 		for (size_t i = 0; i < gens.size(); i++)
 		{
 			if (gens[i].nextTime <= t1 + 1e-9)
 			{
-				pq.push(entryOf(i));
+				pq.push({gens[i].nextTime, i});
 			}
 		}
+		using Pending = std::tuple<int64_t, double, size_t, size_t>;
+		std::priority_queue<Pending, std::vector<Pending>, std::greater<>> pending;
+		std::map<size_t, mrpt::obs::CObservation::Ptr> pendingObs;	// by generation order
+		size_t nGenerated = 0;
 		mrpt::system::CTicTac progressTimer;
 		double lastProgressPrintTime = 0.0;
 		while (!pq.empty())
 		{
-			const size_t idx = std::get<2>(pq.top());
+			const auto [t, idx] = pq.top();
 			pq.pop();
 			auto& g = gens[idx];
-			const double t = g.nextTime;  // sampling time
 			auto obs = g.generate(t);
 			if (obs)
 			{
@@ -688,12 +710,25 @@ int main(int argc, char** argv)
 					// In exact clock ticks: epoch seconds in a double are coarser.
 					obs->timestamp += offsetTicks(g);
 				}
-				arch << *obs;
+				pending.push({obs->timestamp.time_since_epoch().count(), t, idx, nGenerated});
+				pendingObs[nGenerated++] = obs;
 			}
 			g.nextTime += g.period;
 			if (g.nextTime <= t1 + 1e-9)
 			{
-				pq.push(entryOf(idx));
+				pq.push({g.nextTime, idx});
+			}
+			// Later samples are stamped at or after this bound:
+			const int64_t bound =
+				pq.empty()
+					? std::numeric_limits<int64_t>::max()
+					: (timeFromSeconds(pq.top().first) + minOffset).time_since_epoch().count();
+			while (!pending.empty() && std::get<0>(pending.top()) < bound)
+			{
+				const auto it = pendingObs.find(std::get<3>(pending.top()));
+				arch << *it->second;
+				pendingObs.erase(it);
+				pending.pop();
 			}
 
 			const double elapsed = progressTimer.Tac();

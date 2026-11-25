@@ -1408,7 +1408,7 @@ void test_clock_offsets()
 	EXPECT_TRUE(
 		runDatasetGen(
 			outB,
-			"--duration 0.5 --seed 2 --clock-offset lidar1=-0.002 --clock-offset imu1=0.004 "
+			"--duration 0.5 --seed 2 --clock-offset lidar1=0.02 --clock-offset imu1=0.004 "
 			"--clock-offset odom=0.01") == 0);
 
 	// Same data, stamps shifted per sensor, and still in stamp order:
@@ -1430,8 +1430,10 @@ void test_clock_offsets()
 		lastT = t;
 	}
 	EXPECT_TRUE(chronological);
+	// The LiDAR is now stamped after the odometry sampled with it, but both
+	// share the noise RNG: the data must not change.
 	const std::map<std::string, double> offsets = {
-		{"lidar1", -0.002}, {"imu1", 0.004}, {"odom", 0.01}};
+		{"lidar1", 0.02}, {"imu1", 0.004}, {"odom", 0.01}};
 	for (const auto& [label, offset] : offsets)
 	{
 		const auto& a = byLabelA[label];
@@ -1452,6 +1454,40 @@ void test_clock_offsets()
 		auto b = std::dynamic_pointer_cast<mrpt::obs::CObservationIMU>(imuB.back());
 		EXPECT_TRUE(a && b && a->get(mrpt::obs::IMU_Z_ACC) == b->get(mrpt::obs::IMU_Z_ACC));
 	}
+	const auto& lidarA = byLabelA["lidar1"];
+	const auto& lidarB = byLabelB["lidar1"];
+	for (size_t i = 0; i < std::min(lidarA.size(), lidarB.size()); i++)
+	{
+		auto a = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(lidarA[i]);
+		auto b = std::dynamic_pointer_cast<mrpt::obs::CObservationPointCloud>(lidarB[i]);
+		EXPECT_TRUE(a && b && a->pointcloud->size() == b->pointcloud->size());
+		if (!a || !b || a->pointcloud->size() != b->pointcloud->size())
+		{
+			continue;
+		}
+		bool same = true;
+		for (size_t k = 0; k < a->pointcloud->size(); k++)
+		{
+			float ax;
+			float ay;
+			float az;
+			float bx;
+			float by;
+			float bz;
+			a->pointcloud->getPoint(k, ax, ay, az);
+			b->pointcloud->getPoint(k, bx, by, bz);
+			same = same && ax == bx && ay == by && az == bz;
+		}
+		EXPECT_TRUE(same);
+	}
+	const auto& odomA = byLabelA["odom"];
+	const auto& odomB = byLabelB["odom"];
+	if (!odomA.empty() && odomA.size() == odomB.size())
+	{
+		auto a = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(odomA.back());
+		auto b = std::dynamic_pointer_cast<mrpt::obs::CObservationOdometry>(odomB.back());
+		EXPECT_TRUE(a && b && a->odometry == b->odometry);
+	}
 	EXPECT_NEAR(
 		loadGroundTruth(outB)["sensors"]["imu1"]["clock_offset_s"].as<double>(), 0.004, 1e-15);
 
@@ -1459,6 +1495,30 @@ void test_clock_offsets()
 	const std::string outC = tempPath("clockC.rawlog");
 	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset nope=0.1") == 0);
 	EXPECT_FALSE(runDatasetGen(outC, "--duration 0.2 --clock-offset imu1=abc") == 0);
+	// A sensor named as the odometry stream:
+	const std::string worldOdom = tempPath("odomlabel.world.xml");
+	{
+		std::ifstream in(kWorld);
+		std::stringstream ss;
+		ss << in.rdbuf();
+		std::string xml = ss.str();
+		const std::string defs = std::string(MVSIM_TUTORIAL_DIR) + "/../definitions/";
+		for (size_t pos = xml.find("../definitions/"); pos != std::string::npos;
+			 pos = xml.find("../definitions/", pos + defs.size()))
+		{
+			xml.replace(pos, std::string("../definitions/").size(), defs);
+		}
+		const size_t imu = xml.find("sensor_name=\"imu1\"");
+		EXPECT_TRUE(imu != std::string::npos);
+		if (imu != std::string::npos)
+		{
+			xml.replace(imu, std::string("sensor_name=\"imu1\"").size(), "sensor_name=\"odom\"");
+		}
+		std::ofstream(worldOdom) << xml;
+	}
+	EXPECT_TRUE(runDatasetGen(kWorld, kTraj, outC, "--duration 0.2") == 0);
+	EXPECT_FALSE(runDatasetGen(worldOdom, kTraj, outC, "--duration 0.2") == 0);
+	std::remove(worldOdom.c_str());
 
 	for (const auto& f : {outA, outB, outC})
 	{

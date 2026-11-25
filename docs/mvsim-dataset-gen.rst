@@ -165,8 +165,10 @@ Real sensors stamp their data with some delay or advance. To simulate it,
 timestamps of one stream: each observation is sampled at its true time
 ``t`` and stamped ``t + offset`` (positive: stamped late). The data itself
 does not change, and the LiDAR per-point ``t`` field stays relative to the
-observation timestamp. The label of the wheel odometry stream is ``odom``.
-Ground-truth files keep the true times.
+observation timestamp: streams are generated in sampling time order and
+written in stamp order, so the offsets change the stamps only. The label of
+the wheel odometry stream is ``odom``, which no sensor may have. Ground-truth
+files keep the true times.
 
 .. code-block:: console
 
