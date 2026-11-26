@@ -272,7 +272,8 @@ The user must provide the camera intrinsic and extrinsic parameters:
 		/>
 
 Optional **lens distortion** (``distortion_model=plumb_bob`` with ``k1``, ``k2``, ``p1``, ``p2``,
-``k3``, as in OpenCV and ROS ``camera_info``) and Gaussian **pixel noise** (``image_noise_std``, in
+``k3``, as in OpenCV and ROS ``camera_info``, or ``distortion_model=kannala_brandt`` for fisheye
+lenses, with ``k1``, ``k2``, ``k3``, ``k4``) and Gaussian **pixel noise** (``image_noise_std``, in
 intensity levels), both applied on the GPU while rendering. The published ``camera_info`` includes
 the distortion model and coefficients, so standard rectification gives back the pinhole image.
 They require MRPT >= 3.6.0 (loading a world that uses them fails with older versions).
@@ -648,6 +649,16 @@ Rolling shutter (offline datasets)
 exposures of consecutive image rows [s], 0 (default) for a global shutter,
 with ``rolling_shutter_bands`` render bands. Only simulated by
 :doc:`mvsim-dataset-gen`.
+
+Fisheye lenses (offline datasets)
+#################################
+
+The interactive simulator renders a ``kannala_brandt`` lens through one
+enlarged pinhole view, so its field of view is limited (about 150 deg
+across). :doc:`mvsim-dataset-gen` renders ``camera`` sensors with this model
+from the faces of a cube, so they can see 180 deg and more. There,
+``image_circle_fov_deg`` (0 by default: none) sets the field of view of the
+lens image circle: pixels beyond it are black.
 
 
 ----

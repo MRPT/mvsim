@@ -297,14 +297,16 @@ void CameraDistortionOptions::declareParams(
 	params[prefix + "p1"] = TParamEntry("%lf", &p1);
 	params[prefix + "p2"] = TParamEntry("%lf", &p2);
 	params[prefix + "k3"] = TParamEntry("%lf", &k3);
+	params[prefix + "k4"] = TParamEntry("%lf", &k4);
 	params[prefix + "image_noise_std"] = TParamEntry("%lf", &imageNoiseStd);
+	params[prefix + "image_circle_fov_deg"] = TParamEntry("%lf", &imageCircleFovDeg);
 	params[prefix + "rolling_shutter_line_time"] = TParamEntry("%lf", &rollingShutterLineTime);
 	params[prefix + "rolling_shutter_bands"] = TParamEntry("%i", &rollingShutterBands);
 }
 
 void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
 {
-	for (const double k : {k1, k2, p1, p2, k3})
+	for (const double k : {k1, k2, p1, p2, k3, k4})
 	{
 		ASSERTMSG_(std::isfinite(k), "Camera distortion coefficients must be finite numbers");
 	}
@@ -315,6 +317,9 @@ void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
 		std::isfinite(rollingShutterLineTime) && rollingShutterLineTime >= 0,
 		"<rolling_shutter_line_time> must be a finite, non-negative number");
 	ASSERTMSG_(rollingShutterBands >= 1, "<rolling_shutter_bands> must be at least 1");
+	ASSERTMSG_(
+		std::isfinite(imageCircleFovDeg) && imageCircleFovDeg >= 0 && imageCircleFovDeg <= 360,
+		"<image_circle_fov_deg> must be a number between 0 and 360");
 
 	if (distortionModel == "plumb_bob")
 	{
@@ -325,11 +330,20 @@ void CameraDistortionOptions::applyTo(mrpt::img::TCamera& cam) const
 		cam.p2(p2);
 		cam.k3(k3);
 	}
+	else if (distortionModel == "kannala_brandt" || distortionModel == "equidistant")
+	{
+		cam.setDistortionKannalaBrandt(k1, k2, k3, k4);
+	}
 	else
 	{
-		ASSERTMSG_(distortionModel == "none", "<distortion_model> must be 'none' or 'plumb_bob'");
+		ASSERTMSG_(
+			distortionModel == "none",
+			"<distortion_model> must be 'none', 'plumb_bob' or 'kannala_brandt'");
 		cam.distortion = mrpt::img::DistortionModel::none;
 	}
+	ASSERTMSG_(
+		imageCircleFovDeg == 0 || cam.distortion == mrpt::img::DistortionModel::kannala_brandt,
+		"<image_circle_fov_deg> is only valid with the kannala_brandt distortion model");
 
 #if MRPT_VERSION < MIN_MRPT_VERSION_CAMERA_DISTORTION
 	ASSERTMSG_(

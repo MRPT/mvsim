@@ -83,6 +83,7 @@ struct CameraImageGroundTruth
 	double noiseStd = 0;  //!< RGB: [intensity levels]; depth: [m]
 	double rollingShutterLineTime = 0;	//!< [s], RGB only
 	int rollingShutterBands = 0;
+	double imageCircleFovDeg = 0;  //!< [deg], fisheye lenses; 0: none
 	std::string files;	//!< Path pattern, relative to the dataset directory
 	bool isDepth = false;
 	double depthUnit = 0;  //!< [m]

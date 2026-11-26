@@ -345,6 +345,12 @@ void writeCameraImage(
 		o << indent << "distortion: {model: plumb_bob, coeffs: "
 		  << vec({c.k1(), c.k2(), c.p1(), c.p2(), c.k3()}) << "}  # k1 k2 p1 p2 k3\n";
 	}
+	else if (c.distortion == mrpt::img::DistortionModel::kannala_brandt)
+	{
+		o << indent
+		  << "distortion: {model: kannala_brandt, coeffs: " << vec({c.k1(), c.k2(), c.k3(), c.k4()})
+		  << "}  # k1 k2 k3 k4\n";
+	}
 	else
 	{
 		o << indent << "distortion: {model: none, coeffs: []}\n";
@@ -366,6 +372,10 @@ void writeCameraImage(
 			o << indent << "rolling_shutter_bands: " << im.rollingShutterBands << "\n";
 		}
 		o << indent << "image_noise_std: " << num(im.noiseStd) << "\n";
+		if (im.imageCircleFovDeg > 0)
+		{
+			o << indent << "image_circle_fov_deg: " << num(im.imageCircleFovDeg) << "\n";
+		}
 	}
 	o << indent << "files: " << str(im.files) << "\n";
 }

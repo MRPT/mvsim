@@ -28,6 +28,7 @@
 #include <mvsim/Sensors/DepthCameraSensor.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -489,6 +490,199 @@ void test_lens_distortion()
 #endif
 }
 
+/** Red pixels centroid in a window of the image, if any. */
+std::optional<mrpt::math::TPoint2D> redBlobNear(
+	const mrpt::img::CImage& img, const mrpt::math::TPoint2D& p, int halfWidth)
+{
+	double su = 0;
+	double sv = 0;
+	size_t n = 0;
+	const int W = static_cast<int>(img.getWidth());
+	const int H = static_cast<int>(img.getHeight());
+	for (int v = std::max(0, static_cast<int>(p.y) - halfWidth);
+		 v <= std::min(H - 1, static_cast<int>(p.y) + halfWidth); v++)
+	{
+		const uint8_t* row = img.ptrLine<uint8_t>(v);
+		for (int u = std::max(0, static_cast<int>(p.x) - halfWidth);
+			 u <= std::min(W - 1, static_cast<int>(p.x) + halfWidth); u++)
+		{
+			const int R = row[3 * u];
+			const int G = row[3 * u + 1];
+			const int B = row[3 * u + 2];
+			if (R > 50 && R > 2 * std::max(G, B) + 20)
+			{
+				su += u;
+				sv += v;
+				n++;
+			}
+		}
+	}
+	if (n < 10)
+	{
+		return std::nullopt;
+	}
+	return mrpt::math::TPoint2D(su / n, sv / n);
+}
+
+void test_fisheye()
+{
+#if MRPT_VERSION >= 0x030600
+	// A fisheye camera with a 200 deg image circle, at rest, sees red disks
+	// (30 cm wide, 3 m away, facing it, above the floor) at 0 to 97 deg from
+	// its optical axis: each is where the Kannala-Brandt projection of its
+	// center says.
+	constexpr double fx = 180;
+	constexpr double fy = 181;
+	constexpr double cx = 321.3;
+	constexpr double cy = 238.7;
+	const std::array<double, 4> k = {0.02, -0.004, 0.0005, -0.00005};
+	const mrpt::math::TPoint3D cam(kCamX, 0, 1.2);	// on the vehicle (and world)
+	// Directions (deg): angle from the optical axis, azimuth in the image:
+	const std::vector<std::pair<double, double>> dirs = {
+		{0, 0}, {40, 180}, {70, -30}, {85, 170}, {97, -35}};
+
+	const auto opticalToWorld = [](const mrpt::math::TPoint3D& d)
+	{
+		// The optical frame (+Z forward, +X right, +Y down) of a camera
+		// looking along +X of the vehicle:
+		return mrpt::math::TPoint3D(d.z, -d.x, -d.y);
+	};
+	const auto projectKB = [&](const mrpt::math::TPoint3D& p)
+	{
+		const double r = std::hypot(p.x, p.y);
+		const double th = std::atan2(r, p.z);
+		const double t2 = th * th;
+		const double td = th * (1 + t2 * (k[0] + t2 * (k[1] + t2 * (k[2] + t2 * k[3]))));
+		const double s = r > 1e-12 ? td / r : 1.0;
+		return mrpt::math::TPoint2D(cx + fx * s * p.x, cy + fy * s * p.y);
+	};
+
+	std::ostringstream disks;
+	std::vector<mrpt::math::TPoint2D> expected;
+	for (size_t i = 0; i < dirs.size(); i++)
+	{
+		const double th = mrpt::DEG2RAD(dirs[i].first);
+		const double ph = mrpt::DEG2RAD(dirs[i].second);
+		const mrpt::math::TPoint3D d(
+			std::sin(th) * std::cos(ph), std::sin(th) * std::sin(ph), std::cos(th));
+		expected.push_back(projectKB(d));
+		const auto w = opticalToWorld(d);
+		const auto pos = cam + w * 3.0;
+		// The disk axis (local +Z) along the viewing ray:
+		const double yaw = mrpt::RAD2DEG(std::atan2(w.y, w.x));
+		const double pitch = mrpt::RAD2DEG(std::acos(std::clamp(w.z, -1.0, 1.0)));
+		disks
+			<< "<block name=\"disk" << i
+			<< "\"><static>true</static><skip_elevation_adjust/><color>#ff0000</color>"
+			   "<geometry type=\"cylinder\" radius=\"0.15\" length=\"0.001\" vertex_count=\"64\" />"
+			   "<init_pose3d>"
+			<< pos.x << " " << pos.y << " " << pos.z << " " << yaw << " " << pitch
+			<< " 0</init_pose3d></block>\n";
+	}
+
+	const std::string world = tempPath("fisheye.world.xml");
+	{
+		std::ofstream f(world);
+		f << R"(<mvsim_world version="1.0">
+  <lights><light_ambient>1.0</light_ambient><enable_shadows>false</enable_shadows></lights>
+  <element class="horizontal_plane"><x_min>-20</x_min><x_max>20</x_max><y_min>-20</y_min><y_max>20</y_max><z>0</z><color>#808080</color></element>
+)" << disks.str()
+		  << R"(  <vehicle name="r1">
+    <dynamics class="differential">
+      <l_wheel pos="0  0.3" mass="1.0" width="0.05" diameter="0.20" />
+      <r_wheel pos="0 -0.3" mass="1.0" width="0.05" diameter="0.20" />
+      <chassis mass="10.0" zmin="0.05" zmax="0.25" />
+    </dynamics>
+    <init_pose>0 0 0</init_pose>
+    <sensor class="lidar3d" name="lidar1"><pose_3d>0 0 0.75 0 0 0</pose_3d><vert_nrays>8</vert_nrays>
+      <vert_fov_degrees>30</vert_fov_degrees><horz_nrays>360</horz_nrays><sensor_period>0.1</sensor_period></sensor>
+    <sensor class="camera" name="cam1">
+      <pose_3d>)"
+		  << kCamX << R"( 0 1.2 -90 0 -90</pose_3d>
+      <sensor_period>0.05</sensor_period>
+      <ncols>640</ncols><nrows>480</nrows><cx>321.3</cx><cy>238.7</cy><fx>180</fx><fy>181</fy>
+      <clip_min>0.05</clip_min><clip_max>200</clip_max>
+      <distortion_model>kannala_brandt</distortion_model>
+      <k1>0.02</k1><k2>-0.004</k2><k3>0.0005</k3><k4>-0.00005</k4>
+      <image_circle_fov_deg>200</image_circle_fov_deg>
+      <image_noise_std>2.0</image_noise_std>
+    </sensor>
+  </vehicle>
+</mvsim_world>
+)";
+	}
+	const std::string traj = writeTrajectory(0.0);
+	const std::string out = tempPath("fisheye.rawlog");
+	EXPECT_TRUE(runDatasetGen(world, traj, out, "--duration 0.1 --seed 3") == 0);
+
+	mrpt::img::CImage::setImagesPathBase(imagesDirOf(out));
+	double maxErr = 0;
+	int n = 0;
+	int nFound = 0;
+	for (const auto& o : loadObservations(out))
+	{
+		auto im = std::dynamic_pointer_cast<mrpt::obs::CObservationImage>(o);
+		if (!im)
+		{
+			continue;
+		}
+		im->load();
+		n++;
+		for (const auto& p : expected)
+		{
+			const auto blob = redBlobNear(im->image, p, 30);
+			if (!blob)
+			{
+				continue;
+			}
+			nFound++;
+			maxErr = std::max(maxErr, std::hypot(blob->x - p.x, blob->y - p.y));
+		}
+		// Outside the image circle (100 deg: 325 px from the center), black
+		// (also with pixel noise):
+		const uint8_t* top = im->image.ptrLine<uint8_t>(0);
+		const uint8_t* bottom = im->image.ptrLine<uint8_t>(479);
+		EXPECT_TRUE(top[0] == 0 && top[3 * 639] == 0 && bottom[0] == 0 && bottom[3 * 639] == 0);
+		// ...and the floor inside it (60 deg below the optical axis):
+		const uint8_t* floorRow = im->image.ptrLine<uint8_t>(431);
+		EXPECT_TRUE(floorRow[3 * 321] > 30);
+	}
+	EXPECT_TRUE(n == 3);
+	EXPECT_TRUE(nFound == 3 * static_cast<int>(expected.size()));
+	EXPECT_LT(maxErr, 0.5);
+	std::cout << "Fisheye landmark error: " << maxErr << " px (" << nFound
+			  << " landmarks, up to 97 deg off-axis)\n";
+
+	const auto gt =
+		mrpt::containers::yaml::FromFile(mrpt::system::fileNameChangeExtension(out, "gt.yaml"));
+	const auto& in = gt["sensors"]["cam1"]["intrinsics"];
+	EXPECT_TRUE(in["distortion"]["model"].as<std::string>() == "kannala_brandt");
+	EXPECT_NEAR(in["distortion"]["coeffs"](3).as<double>(), -0.00005, 1e-15);
+	EXPECT_NEAR(in["image_circle_fov_deg"].as<double>(), 200.0, 1e-12);
+
+	// No rolling shutter with this lens model:
+	const std::string worldRs = tempPath("fisheye_rs.world.xml");
+	{
+		std::ifstream fin(world);
+		std::stringstream ss;
+		ss << fin.rdbuf();
+		std::string xml = ss.str();
+		const std::string tag = "<image_circle_fov_deg>";
+		xml.insert(xml.find(tag), "<rolling_shutter_line_time>1e-5</rolling_shutter_line_time>");
+		std::ofstream fout(worldRs);
+		fout << xml;
+	}
+	const std::string outRs = tempPath("fisheye_rs.rawlog");
+	EXPECT_TRUE(runDatasetGen(worldRs, traj, outRs, "--duration 0.1 --seed 3") != 0);
+
+	removeOutputs(out);
+	removeOutputs(outRs);
+	std::remove(world.c_str());
+	std::remove(worldRs.c_str());
+	std::remove(traj.c_str());
+#endif
+}
+
 void test_determinism()
 {
 	// The same seed gives the same images, with depth and pixel noise:
@@ -662,6 +856,7 @@ int main()
 		test_frame_times_and_depth();
 		test_rolling_shutter();
 		test_lens_distortion();
+		test_fisheye();
 		test_determinism();
 		test_depth_errors();
 	}
