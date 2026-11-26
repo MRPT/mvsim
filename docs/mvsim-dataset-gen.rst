@@ -169,8 +169,8 @@ trajectory, from a scene of the world elements and blocks (never the
 vehicle carrying the sensors; moving blocks at their poses), lit by the
 world ``<lights>``. ``--no-cameras`` skips them. Images use the sensor
 options of the interactive simulator: intrinsics, clip distances, the
-``plumb_bob`` lens distortion and Gaussian pixel noise (both need MRPT >=
-3.6.0), and for depth images the resolution, the noise
+``plumb_bob`` or ``kannala_brandt`` lens distortion and Gaussian pixel noise
+(both need MRPT >= 3.6.0), and for depth images the resolution, the noise
 (``depth_noise_sigma``) and the systematic depth errors (``depth_error_*``,
 see :doc:`sensors`). Noise uses a stream of its own per camera, so cameras
 never change the other sensors' data, and ``--noiseless`` removes the noise
@@ -187,6 +187,14 @@ and the depth errors.
   ``rolling_shutter_bands`` (default 8) bands of rows, each from the pose at
   the time of its middle row: an approximation whose error is half a band's
   readout time.
+- **Fisheye lenses** (``camera`` sensors with ``kannala_brandt``
+  distortion): any field of view, also 180 deg and more. The scene is
+  rendered as up to six 90 deg pinhole views (the faces of a cube centered
+  on the optical center, each cropped to the part the image sees, sampled
+  about 1.5 times finer than the image center), resampled bilinearly into
+  the fisheye image, and the pixel noise is added after resampling.
+  ``image_circle_fov_deg`` sets the field of view of the lens image circle
+  (black beyond it). No rolling shutter with this model.
 
 Images are written next to the rawlog, in ``<output name>_Images/`` (the
 images directory MRPT looks for), and referenced from the observations by
@@ -397,10 +405,12 @@ format, ``mvsim/dataset_gt/1``:
 - ``camera`` (also an ``rgbd_camera`` without depth): the pose is that of
   the optical frame (+Z forward, +X right, +Y down). ``width``, ``height``,
   ``fx``, ``fy``, ``cx``, ``cy`` (OpenCV convention), ``distortion:
-  {model: none|plumb_bob, coeffs: [k1, k2, p1, p2, k3]}``, ``clip_m``,
+  {model: none|plumb_bob|kannala_brandt, coeffs: [...]}`` (``[k1, k2, p1,
+  p2, k3]`` or ``[k1, k2, k3, k4]``), ``clip_m``,
   ``rolling_shutter_line_time_s`` (0: global shutter; with
-  ``rolling_shutter_bands`` otherwise), ``image_noise_std`` and ``files``
-  (the path pattern of the images, relative to the dataset).
+  ``rolling_shutter_bands`` otherwise), ``image_noise_std``,
+  ``image_circle_fov_deg`` (fisheye lenses with an image circle only) and
+  ``files`` (the path pattern of the images, relative to the dataset).
 - ``depth_camera`` (an ``rgbd_camera`` without RGB): the same keys, but
   ``depth_unit_m``, ``depth_noise_std_m`` and ``depth_errors: {scale,
   offset_m, radial: [k1, k2]}`` instead of the rolling shutter and pixel
