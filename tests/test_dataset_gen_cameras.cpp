@@ -528,8 +528,9 @@ void test_fisheye()
 {
 #if MRPT_VERSION >= 0x030600
 	// A fisheye camera with a 200 deg image circle, at rest, sees red disks
-	// (30 cm wide, 3 m away, facing it) at 0 to 97 deg from its optical axis:
-	// each is where the Kannala-Brandt projection of its center says.
+	// (30 cm wide, 3 m away, facing it, above the floor) at 0 to 97 deg from
+	// its optical axis: each is where the Kannala-Brandt projection of its
+	// center says.
 	constexpr double fx = 180;
 	constexpr double fy = 181;
 	constexpr double cx = 321.3;
@@ -538,7 +539,7 @@ void test_fisheye()
 	const mrpt::math::TPoint3D cam(kCamX, 0, 1.2);	// on the vehicle (and world)
 	// Directions (deg): angle from the optical axis, azimuth in the image:
 	const std::vector<std::pair<double, double>> dirs = {
-		{0, 0}, {40, 180}, {70, 30}, {85, 170}, {97, 35}};
+		{0, 0}, {40, 180}, {70, -30}, {85, 170}, {97, -35}};
 
 	const auto opticalToWorld = [](const mrpt::math::TPoint3D& d)
 	{
