@@ -126,8 +126,8 @@ class CubeFisheyeRenderer
 	struct Sample
 	{
 		int8_t face = -1;
-		float x = 0;
-		float y = 0;
+		double x = 0;
+		double y = 0;
 	};
 
 	CameraImageModel model_;

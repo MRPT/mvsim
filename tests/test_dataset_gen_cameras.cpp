@@ -605,6 +605,7 @@ void test_fisheye()
       <distortion_model>kannala_brandt</distortion_model>
       <k1>0.02</k1><k2>-0.004</k2><k3>0.0005</k3><k4>-0.00005</k4>
       <image_circle_fov_deg>200</image_circle_fov_deg>
+      <image_noise_std>2.0</image_noise_std>
     </sensor>
   </vehicle>
 </mvsim_world>
@@ -637,7 +638,8 @@ void test_fisheye()
 			nFound++;
 			maxErr = std::max(maxErr, std::hypot(blob->x - p.x, blob->y - p.y));
 		}
-		// Outside the image circle (100 deg: 325 px from the center), black:
+		// Outside the image circle (100 deg: 325 px from the center), black
+		// (also with pixel noise):
 		const uint8_t* top = im->image.ptrLine<uint8_t>(0);
 		const uint8_t* bottom = im->image.ptrLine<uint8_t>(479);
 		EXPECT_TRUE(top[0] == 0 && top[3 * 639] == 0 && bottom[0] == 0 && bottom[3 * 639] == 0);

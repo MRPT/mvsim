@@ -470,8 +470,8 @@ CubeFisheyeRenderer::CubeFisheyeRenderer(
 			b.used = true;
 			auto& s = lut_[static_cast<size_t>(v) * W + u];
 			s.face = static_cast<int8_t>(best);
-			s.x = static_cast<float>(fu);  // face coordinates, for now
-			s.y = static_cast<float>(fv);
+			s.x = fu;  // face coordinates, for now
+			s.y = fv;
 		}
 	}
 
@@ -517,9 +517,12 @@ CubeFisheyeRenderer::CubeFisheyeRenderer(
 		}
 		const int k = s.face;
 		s.face = faceIndex[k];
-		s.x -= static_cast<float>(i0s[k]);
-		s.y -= static_cast<float>(j0s[k]);
+		s.x -= i0s[k];
+		s.y -= j0s[k];
 	}
+	ASSERTMSG_(
+		!faces_.empty(),
+		"Fisheye camera: no pixel sees anything (is the image circle too small for the image?)");
 }
 
 size_t CubeFisheyeRenderer::facePixels() const
@@ -551,8 +554,9 @@ void CubeFisheyeRenderer::render(
 			f.image.channels() == 3);
 	}
 
-	// Bilinear resampling, then noise (one draw per pixel and channel, so the
-	// noise stream does not depend on the image contents):
+	// Bilinear resampling, then noise (one draw per pixel and channel, also
+	// outside the image circle, so the noise stream does not depend on the
+	// image contents):
 	const int W = static_cast<int>(model_.camera.ncols);
 	const int H = static_cast<int>(model_.camera.nrows);
 	out = mrpt::img::CImage(W, H, mrpt::img::CH_RGB);
@@ -583,8 +587,11 @@ void CubeFisheyeRenderer::render(
 			for (int c = 0; c < 3; c++)
 			{
 				const double n = noiseStd > 0 ? noiseStd * noise(rng_) : 0.0;
+				// Outside the image circle: black, without noise.
 				row[3 * u + c] =
-					static_cast<uint8_t>(std::clamp(std::round(rgb[c] + n), 0.0, 255.0));
+					s.face < 0
+						? 0
+						: static_cast<uint8_t>(std::clamp(std::round(rgb[c] + n), 0.0, 255.0));
 			}
 		}
 	}
