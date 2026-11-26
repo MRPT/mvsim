@@ -23,21 +23,31 @@
 namespace mvsim
 {
 /** Lens distortion and pixel noise options of an RGB camera image, read from
- * the XML tags `distortion_model`, `k1`, `k2`, `p1`, `p2`, `k3` and
+ * the XML tags `distortion_model`, `k1`, `k2`, `p1`, `p2`, `k3`, `k4` and
  * `image_noise_std`, optionally with a prefix (e.g. `rgb_k1`). Also the
- * rolling shutter (`rolling_shutter_line_time`, `rolling_shutter_bands`),
- * only simulated by mvsim-dataset-gen.
+ * rolling shutter (`rolling_shutter_line_time`, `rolling_shutter_bands`) and
+ * the image circle of fisheye lenses (`image_circle_fov_deg`), only
+ * simulated by mvsim-dataset-gen.
  * \ingroup sensors_module
  */
 struct CameraDistortionOptions
 {
-	std::string distortionModel = "none";  //!< "none" or "plumb_bob"
+	/** "none", "plumb_bob" (k1 k2 p1 p2 k3) or "kannala_brandt" (fisheye,
+	 * k1 k2 k3 k4; also accepted as "equidistant") */
+	std::string distortionModel = "none";
 	double k1 = 0;
 	double k2 = 0;
 	double p1 = 0;
 	double p2 = 0;
 	double k3 = 0;
+	double k4 = 0;	//!< Only for kannala_brandt
 	double imageNoiseStd = 0;  //!< Gaussian pixel noise [intensity levels, 0-255]
+
+	/** Fisheye (kannala_brandt) lenses: full field of view of the image
+	 * circle [deg]. Pixels whose rays are more than half of it away from the
+	 * optical axis are black. 0: no image circle. Used by mvsim-dataset-gen
+	 * only. */
+	double imageCircleFovDeg = 0;
 
 	/** Rolling shutter: time between the exposures of consecutive image rows
 	 * [s] (0: global shutter). Used by mvsim-dataset-gen only. */

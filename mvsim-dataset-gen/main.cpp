@@ -814,10 +814,17 @@ int main(int argc, char** argv)
 				m.noiseStd = cam->imageOptions().imageNoiseStd * camNoiseScale;
 				m.rollingShutterLineTime = cam->imageOptions().rollingShutterLineTime;
 				m.rollingShutterBands = cam->imageOptions().rollingShutterBands;
+				m.imageCircleFovDeg = cam->imageOptions().imageCircleFovDeg;
 				auto sim = std::make_shared<RgbCameraSim>(
 					m, label, imagesDir, imageWriter, cameraNoiseSeed(seed, label), firstRenderer);
 				firstRenderer = false;
 				rgbSims.push_back(sim);
+				if (const auto* fe = sim->fisheye(); fe)
+				{
+					std::cout << "[mvsim-dataset-gen] Camera '" << label
+							  << "': fisheye, rendered as " << fe->faceCount() << " cube faces ("
+							  << fe->facePixels() << " pixels) per image.\n";
+				}
 
 				// The model as rendered (e.g. the band count it uses):
 				const auto& sm = sim->model();
@@ -833,6 +840,7 @@ int main(int argc, char** argv)
 				im.noiseStd = sm.noiseStd;
 				im.rollingShutterLineTime = sm.rollingShutterLineTime;
 				im.rollingShutterBands = sm.rollingShutterBands;
+				im.imageCircleFovDeg = sm.imageCircleFovDeg;
 				im.files = imagesDirName + "/" + label + "_%06d.png";
 				camGt.rgb = im;
 				groundTruth.cameras.push_back(camGt);

@@ -18,8 +18,10 @@
 #include <mvsim/World.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
+#include <limits>
 
 #include "TimeUtils.h"
 
@@ -183,6 +185,70 @@ void storePng(mrpt::img::CImage& img, const ImageFiles& files, const std::string
 	files.writer->write(img.makeDeepCopy(), files.imagesDir + "/" + name);
 	img.setExternalStorage(name);
 }
+
+/** Kannala-Brandt lens: the distorted angle theta_d of a ray at `theta` [rad]
+ * from the optical axis, theta (1 + k1 theta^2 + k2 theta^4 + k3 theta^6 +
+ * k4 theta^8), and its derivative. */
+double kbThetaD(const mrpt::img::TCamera& c, double theta)
+{
+	const double t2 = theta * theta;
+	return theta * (1.0 + t2 * (c.k1() + t2 * (c.k2() + t2 * (c.k3() + t2 * c.k4()))));
+}
+
+double kbThetaDDerivative(const mrpt::img::TCamera& c, double theta)
+{
+	const double t2 = theta * theta;
+	return 1.0 + t2 * (3 * c.k1() + t2 * (5 * c.k2() + t2 * (7 * c.k3() + t2 * 9 * c.k4())));
+}
+
+/** The largest ray angle [rad] of the lens: where its model stops being
+ * monotonic, at most pi, and at most half the image circle, if any. */
+double kbMaxTheta(const mrpt::img::TCamera& c, double imageCircleFovDeg)
+{
+	constexpr int kSteps = 3600;
+	double maxTheta = M_PI;
+	for (int i = 1; i <= kSteps; i++)
+	{
+		const double theta = M_PI * i / kSteps;
+		if (kbThetaDDerivative(c, theta) <= 0)
+		{
+			maxTheta = M_PI * (i - 1) / kSteps;
+			break;
+		}
+	}
+	if (imageCircleFovDeg > 0)
+	{
+		maxTheta = std::min(maxTheta, 0.5 * mrpt::DEG2RAD(imageCircleFovDeg));
+	}
+	return maxTheta;
+}
+
+/** The six faces of a cube around the optical center: the rotation of each
+ * face optical frame (columns: its +X, +Y, +Z axes in the camera optical
+ * frame): front (+Z), right (+X), left (-X), down (+Y), up (-Y), back (-Z). */
+std::array<mrpt::math::CMatrixDouble33, 6> cubeFaceRotations()
+{
+	const auto make = [](const std::array<double, 9>& rowMajor)
+	{
+		mrpt::math::CMatrixDouble33 R;
+		for (int r = 0; r < 3; r++)
+		{
+			for (int c = 0; c < 3; c++)
+			{
+				R(r, c) = rowMajor[3 * r + c];
+			}
+		}
+		return R;
+	};
+	return {
+		make({1, 0, 0, 0, 1, 0, 0, 0, 1}),	// front
+		make({0, 0, 1, 0, 1, 0, -1, 0, 0}),	 // right: x=-Z, y=+Y, z=+X
+		make({0, 0, -1, 0, 1, 0, 1, 0, 0}),	 // left: x=+Z, y=+Y, z=-X
+		make({1, 0, 0, 0, 0, 1, 0, -1, 0}),	 // down: x=+X, y=-Z, z=+Y
+		make({1, 0, 0, 0, 0, -1, 0, 1, 0}),	 // up: x=+X, y=+Z, z=-Y
+		make({-1, 0, 0, 0, 1, 0, 0, 0, -1})	 // back: x=-X, y=+Y, z=-Z
+	};
+}
 }  // namespace
 
 // ---------------------------------------------------------------------------
@@ -313,6 +379,218 @@ std::string ImageFiles::name(const std::string& suffixAndExt) const
 }
 
 // ---------------------------------------------------------------------------
+bool CubeFisheyeRenderer::pixelRay(
+	const mrpt::img::TCamera& cam, double maxThetaRad, double u, double v,
+	mrpt::math::TPoint3D& ray)
+{
+	const double xd = (u - cam.cx()) / cam.fx();
+	const double yd = (v - cam.cy()) / cam.fy();
+	const double rd = std::hypot(xd, yd);
+	if (rd < 1e-12)
+	{
+		ray = {0.0, 0.0, 1.0};
+		return true;
+	}
+	// theta_d grows monotonically up to maxThetaRad: beyond it, nothing.
+	if (rd > kbThetaD(cam, maxThetaRad))
+	{
+		return false;
+	}
+	// Bisection, to double precision:
+	double lo = 0;
+	double hi = maxThetaRad;
+	for (int i = 0; i < 64 && hi - lo > 1e-15; i++)
+	{
+		const double mid = 0.5 * (lo + hi);
+		(kbThetaD(cam, mid) < rd ? lo : hi) = mid;
+	}
+	const double theta = 0.5 * (lo + hi);
+	const double s = std::sin(theta) / rd;
+	ray = {xd * s, yd * s, std::cos(theta)};
+	return true;
+}
+
+CubeFisheyeRenderer::CubeFisheyeRenderer(
+	const CameraImageModel& model, bool createEglContext, uint32_t noiseSeed)
+	: model_(model), rng_(noiseSeed)
+{
+	const auto& cam = model_.camera;
+	ASSERT_(cam.distortion == mrpt::img::DistortionModel::kannala_brandt);
+	const int W = static_cast<int>(cam.ncols);
+	const int H = static_cast<int>(cam.nrows);
+	ASSERT_(W > 0 && H > 0);
+	const double maxTheta = kbMaxTheta(cam, model_.imageCircleFovDeg);
+
+	// Faces sample about 1.5 times finer than the image center:
+	const double F = 1.5 * std::max(cam.fx(), cam.fy());
+	const auto rotations = cubeFaceRotations();
+
+	struct Box
+	{
+		double u0 = std::numeric_limits<double>::max();
+		double u1 = -std::numeric_limits<double>::max();
+		double v0 = std::numeric_limits<double>::max();
+		double v1 = -std::numeric_limits<double>::max();
+		bool used = false;
+	};
+	std::array<Box, 6> boxes;
+	lut_.assign(static_cast<size_t>(W) * static_cast<size_t>(H), Sample());
+	for (int v = 0; v < H; v++)
+	{
+		for (int u = 0; u < W; u++)
+		{
+			mrpt::math::TPoint3D d;
+			if (!pixelRay(cam, maxTheta, u, v, d))
+			{
+				continue;
+			}
+			// The face the ray leaves the cube through:
+			int best = 0;
+			double bestZ = -2;
+			for (int k = 0; k < 6; k++)
+			{
+				const auto& R = rotations[k];
+				const double z = R(0, 2) * d.x + R(1, 2) * d.y + R(2, 2) * d.z;
+				if (z > bestZ)
+				{
+					bestZ = z;
+					best = k;
+				}
+			}
+			const auto& R = rotations[best];
+			const double x = R(0, 0) * d.x + R(1, 0) * d.y + R(2, 0) * d.z;
+			const double y = R(0, 1) * d.x + R(1, 1) * d.y + R(2, 1) * d.z;
+			const double fu = F * x / bestZ;
+			const double fv = F * y / bestZ;
+			auto& b = boxes[best];
+			b.u0 = std::min(b.u0, fu);
+			b.u1 = std::max(b.u1, fu);
+			b.v0 = std::min(b.v0, fv);
+			b.v1 = std::max(b.v1, fv);
+			b.used = true;
+			auto& s = lut_[static_cast<size_t>(v) * W + u];
+			s.face = static_cast<int8_t>(best);
+			s.x = static_cast<float>(fu);  // face coordinates, for now
+			s.y = static_cast<float>(fv);
+		}
+	}
+
+	// One renderer per face seen, cropped to what the image samples (with
+	// one pixel more on each side for the bilinear interpolation):
+	std::array<int8_t, 6> faceIndex;
+	faceIndex.fill(-1);
+	std::array<int, 6> i0s{};
+	std::array<int, 6> j0s{};
+	bool createContext = createEglContext;
+	for (int k = 0; k < 6; k++)
+	{
+		const auto& b = boxes[k];
+		if (!b.used)
+		{
+			continue;
+		}
+		const int i0 = static_cast<int>(std::floor(b.u0)) - 1;
+		const int i1 = static_cast<int>(std::floor(b.u1)) + 2;
+		const int j0 = static_cast<int>(std::floor(b.v0)) - 1;
+		const int j1 = static_cast<int>(std::floor(b.v1)) + 2;
+		Face f;
+		f.rotation = mrpt::poses::CPose3D(rotations[k], mrpt::math::CVectorFixedDouble<3>());
+		f.camera.ncols = static_cast<uint32_t>(i1 - i0 + 1);
+		f.camera.nrows = static_cast<uint32_t>(j1 - j0 + 1);
+		f.camera.fx(F);
+		f.camera.fy(F);
+		f.camera.cx(-i0);
+		f.camera.cy(-j0);
+		f.camera.distortion = mrpt::img::DistortionModel::none;
+		f.renderer = makeRenderer(f.camera, createContext);
+		createContext = false;
+		faceIndex[k] = static_cast<int8_t>(faces_.size());
+		i0s[k] = i0;
+		j0s[k] = j0;
+		faces_.push_back(std::move(f));
+	}
+	for (auto& s : lut_)
+	{
+		if (s.face < 0)
+		{
+			continue;
+		}
+		const int k = s.face;
+		s.face = faceIndex[k];
+		s.x -= static_cast<float>(i0s[k]);
+		s.y -= static_cast<float>(j0s[k]);
+	}
+}
+
+size_t CubeFisheyeRenderer::facePixels() const
+{
+	size_t n = 0;
+	for (const auto& f : faces_)
+	{
+		n += static_cast<size_t>(f.camera.ncols) * f.camera.nrows;
+	}
+	return n;
+}
+
+void CubeFisheyeRenderer::render(
+	CameraScene& scene, const TrajectorySource& traj, double tEpochSeconds, mrpt::img::CImage& out)
+{
+	auto viewport = scene.scene().getViewport();
+	viewport->setViewportClipDistances(model_.clipMin, model_.clipMax);
+	const mvsim::ViewportShadowSettingsGuard shadowGuard(*viewport);
+	viewport->lightParameters().shadow_cascades =
+		static_cast<uint8_t>(scene.world().sensor_shadow_cascades());
+	scene.setTime(tEpochSeconds);
+	for (auto& f : faces_)
+	{
+		placeCamera(
+			*f.renderer, scene, traj, f.camera, model_.poseOnVehicle + f.rotation, tEpochSeconds);
+		f.renderer->render_RGB(scene.scene(), f.image);
+		ASSERT_(
+			f.image.getWidth() == f.camera.ncols && f.image.getHeight() == f.camera.nrows &&
+			f.image.channels() == 3);
+	}
+
+	// Bilinear resampling, then noise (one draw per pixel and channel, so the
+	// noise stream does not depend on the image contents):
+	const int W = static_cast<int>(model_.camera.ncols);
+	const int H = static_cast<int>(model_.camera.nrows);
+	out = mrpt::img::CImage(W, H, mrpt::img::CH_RGB);
+	std::normal_distribution<double> noise(0.0, 1.0);
+	const double noiseStd = model_.noiseStd;
+	for (int v = 0; v < H; v++)
+	{
+		uint8_t* row = out.ptrLine<uint8_t>(v);
+		for (int u = 0; u < W; u++)
+		{
+			const auto& s = lut_[static_cast<size_t>(v) * W + u];
+			std::array<double, 3> rgb = {0, 0, 0};
+			if (s.face >= 0)
+			{
+				const auto& img = faces_[s.face].image;
+				const int x0 = static_cast<int>(s.x);
+				const int y0 = static_cast<int>(s.y);
+				const double ax = s.x - x0;
+				const double ay = s.y - y0;
+				const uint8_t* r0 = img.ptrLine<uint8_t>(y0) + 3 * x0;
+				const uint8_t* r1 = img.ptrLine<uint8_t>(y0 + 1) + 3 * x0;
+				for (int c = 0; c < 3; c++)
+				{
+					rgb[c] = (1 - ay) * ((1 - ax) * r0[c] + ax * r0[c + 3]) +
+							 ay * ((1 - ax) * r1[c] + ax * r1[c + 3]);
+				}
+			}
+			for (int c = 0; c < 3; c++)
+			{
+				const double n = noiseStd > 0 ? noiseStd * noise(rng_) : 0.0;
+				row[3 * u + c] =
+					static_cast<uint8_t>(std::clamp(std::round(rgb[c] + n), 0.0, 255.0));
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 RgbCameraSim::RgbCameraSim(
 	const CameraImageModel& model, const std::string& label, const std::string& imagesDir,
 	std::shared_ptr<ImageWriter> writer, uint32_t noiseSeed, bool createEglContext)
@@ -320,6 +598,15 @@ RgbCameraSim::RgbCameraSim(
 {
 	checkLabelIsFileName(label);
 	limitRollingShutterBands(model_);
+	if (model_.camera.distortion == mrpt::img::DistortionModel::kannala_brandt)
+	{
+		ASSERTMSG_(
+			model_.rollingShutterLineTime <= 0,
+			"Camera '" + label +
+				"': the rolling shutter is not supported with the kannala_brandt lens model");
+		fisheye_ = std::make_unique<CubeFisheyeRenderer>(model_, createEglContext, noiseSeed);
+		return;
+	}
 	renderer_ = makeRenderer(model_.camera, createEglContext);
 	setImageFormation(*renderer_, model_, noiseSeed);
 }
@@ -333,7 +620,14 @@ mrpt::obs::CObservationImage::Ptr RgbCameraSim::simulate(
 	obs->cameraPose = model_.poseOnVehicle;
 	obs->cameraParams = model_.camera;
 	mrpt::system::CTicTac tic;
-	renderRgb(*renderer_, scene, traj, model_, tEpochSeconds, obs->image);
+	if (fisheye_)
+	{
+		fisheye_->render(scene, traj, tEpochSeconds, obs->image);
+	}
+	else
+	{
+		renderRgb(*renderer_, scene, traj, model_, tEpochSeconds, obs->image);
+	}
 	timing_.render += tic.Tac();
 	tic.Tic();
 	storePng(obs->image, files_, files_.name(".png"));
@@ -364,6 +658,9 @@ DepthCameraSim::DepthCameraSim(
 	rgb_.rollingShutterLineTime = opts.rollingShutterLineTime;
 	rgb_.rollingShutterBands = opts.rollingShutterBands;
 	limitRollingShutterBands(rgb_);
+	ASSERTMSG_(
+		opts.imageCircleFovDeg == 0,
+		"'" + sensor.getName() + "': image circles are only simulated for camera sensors");
 
 	depth_.camera = pattern_.cameraParams;
 	depth_.poseOnVehicle = pattern_.sensorPose + depthOpticalRot();

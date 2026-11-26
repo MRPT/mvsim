@@ -10,6 +10,7 @@
 
 #include <mrpt/img/CImage.h>
 #include <mrpt/img/TCamera.h>
+#include <mrpt/math/TPoint3D.h>
 #include <mrpt/obs/CObservation3DRangeScan.h>
 #include <mrpt/obs/CObservationImage.h>
 #include <mrpt/opengl/CFBORender.h>
@@ -80,6 +81,59 @@ struct CameraImageModel
 	 * pose at the time of its middle row. */
 	double rollingShutterLineTime = 0;
 	int rollingShutterBands = 8;
+	/** Fisheye (kannala_brandt) cameras: field of view of the image circle
+	 * [deg], black beyond it; 0: none. */
+	double imageCircleFovDeg = 0;
+};
+
+/** Renders fisheye (kannala_brandt) images of any field of view, also 180
+ * degrees and wider: the scene is rendered as up to six 90-degree pinhole
+ * views (the faces of a cube centered on the optical center, each cropped to
+ * the part of it the image sees), which are then resampled (bilinear) into
+ * the fisheye image. Pixel noise is added after resampling. */
+class CubeFisheyeRenderer
+{
+   public:
+	CubeFisheyeRenderer(const CameraImageModel& model, bool createEglContext, uint32_t noiseSeed);
+
+	/** Renders the image of the camera on the vehicle following `traj` at
+	 * `tEpochSeconds`. */
+	void render(
+		CameraScene& scene, const TrajectorySource& traj, double tEpochSeconds,
+		mrpt::img::CImage& out);
+
+	/** Faces rendered per image, and their total pixel count. */
+	size_t faceCount() const { return faces_.size(); }
+	size_t facePixels() const;
+
+	/** The ray (unit vector in the optical frame: +Z forward, +X right, +Y
+	 * down) of the pixel at image coordinates (u, v) (OpenCV convention), if
+	 * the lens sees anything there. */
+	static bool pixelRay(
+		const mrpt::img::TCamera& cam, double maxThetaRad, double u, double v,
+		mrpt::math::TPoint3D& ray);
+
+   private:
+	struct Face
+	{
+		mrpt::poses::CPose3D rotation;	//!< Of the face optical frame
+		mrpt::img::TCamera camera;	//!< Cropped pinhole view
+		std::shared_ptr<mrpt::opengl::CFBORender> renderer;
+		mrpt::img::CImage image;
+	};
+	/** Where each output pixel comes from: a face (-1: black) and the image
+	 * coordinates in it. */
+	struct Sample
+	{
+		int8_t face = -1;
+		float x = 0;
+		float y = 0;
+	};
+
+	CameraImageModel model_;
+	std::vector<Face> faces_;
+	std::vector<Sample> lut_;
+	std::mt19937 rng_;
 };
 
 /** What the depth images of a depth camera contain. */
@@ -161,12 +215,15 @@ class RgbCameraSim
 
 	const CameraImageModel& model() const { return model_; }
 	const CameraTiming& timing() const { return timing_; }
+	/** The cube face renderer of a fisheye camera, or null. */
+	const CubeFisheyeRenderer* fisheye() const { return fisheye_.get(); }
 
    private:
 	CameraImageModel model_;
 	CameraTiming timing_;
 	ImageFiles files_;
 	std::shared_ptr<mrpt::opengl::CFBORender> renderer_;
+	std::unique_ptr<CubeFisheyeRenderer> fisheye_;	//!< kannala_brandt cameras
 };
 
 /** Renders the images of a depth camera ("rgbd_camera" sensor): RGB and/or
